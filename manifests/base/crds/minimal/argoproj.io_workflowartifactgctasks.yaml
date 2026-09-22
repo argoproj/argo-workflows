@@ -572,6 +572,8 @@ spec:
                               x-kubernetes-map-type: atomic
                             tokenExpirationInMinutes:
                               format: int32
+                              maximum: 720
+                              minimum: 15
                               type: integer
                             useSDKCreds:
                               type: boolean
@@ -1163,6 +1165,8 @@ spec:
                                 x-kubernetes-map-type: atomic
                               tokenExpirationInMinutes:
                                 format: int32
+                                maximum: 720
+                                minimum: 15
                                 type: integer
                               useSDKCreds:
                                 type: boolean

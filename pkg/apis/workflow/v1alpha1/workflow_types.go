@@ -2900,6 +2900,11 @@ type S3Bucket struct {
 	// DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
 	// range, otherwise the request is rejected. It has no effect on static credentials or
 	// other SDK-resolved credential providers.
+	// other SDK-resolved credential providers.
+	// +kubebuilder:validation:Minimum=15
+	// +kubebuilder:validation:Maximum=720
+	// minimum: 15
+	// maximum: 720
 	TokenExpirationInMinutes *int32 `json:"tokenExpirationInMinutes,omitempty" protobuf:"varint,14,opt,name=tokenExpirationInMinutes"`
 }
 

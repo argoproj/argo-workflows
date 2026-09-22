@@ -2067,7 +2067,12 @@ spec:
                                 DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                 range, otherwise the request is rejected. It has no effect on static credentials or
                                 other SDK-resolved credential providers.
+                                other SDK-resolved credential providers.
+                                minimum: 15
+                                maximum: 720
                               format: int32
+                              maximum: 720
+                              minimum: 15
                               type: integer
                             useSDKCreds:
                               description: UseSDKCreds tells the driver to figure
@@ -5036,7 +5041,12 @@ spec:
                                       DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                       range, otherwise the request is rejected. It has no effect on static credentials or
                                       other SDK-resolved credential providers.
+                                      other SDK-resolved credential providers.
+                                      minimum: 15
+                                      maximum: 720
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     description: UseSDKCreds tells the driver to figure
@@ -7045,6 +7055,8 @@ spec:
                             x-kubernetes-map-type: atomic
                           tokenExpirationInMinutes:
                             format: int32
+                            maximum: 720
+                            minimum: 15
                             type: integer
                           useSDKCreds:
                             type: boolean
@@ -9141,6 +9153,8 @@ spec:
                                             x-kubernetes-map-type: atomic
                                           tokenExpirationInMinutes:
                                             format: int32
+                                            maximum: 720
+                                            minimum: 15
                                             type: integer
                                           useSDKCreds:
                                             type: boolean
@@ -9820,6 +9834,8 @@ spec:
                                                   x-kubernetes-map-type: atomic
                                                 tokenExpirationInMinutes:
                                                   format: int32
+                                                  maximum: 720
+                                                  minimum: 15
                                                   type: integer
                                                 useSDKCreds:
                                                   type: boolean
@@ -10567,6 +10583,8 @@ spec:
                                     x-kubernetes-map-type: atomic
                                   tokenExpirationInMinutes:
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     type: boolean
@@ -11982,6 +12000,8 @@ spec:
                                   x-kubernetes-map-type: atomic
                                 tokenExpirationInMinutes:
                                   format: int32
+                                  maximum: 720
+                                  minimum: 15
                                   type: integer
                                 useSDKCreds:
                                   type: boolean
@@ -12765,6 +12785,8 @@ spec:
                                   x-kubernetes-map-type: atomic
                                 tokenExpirationInMinutes:
                                   format: int32
+                                  maximum: 720
+                                  minimum: 15
                                   type: integer
                                 useSDKCreds:
                                   type: boolean
@@ -13495,6 +13517,8 @@ spec:
                                     x-kubernetes-map-type: atomic
                                   tokenExpirationInMinutes:
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     type: boolean
@@ -15701,6 +15725,8 @@ spec:
                                           x-kubernetes-map-type: atomic
                                         tokenExpirationInMinutes:
                                           format: int32
+                                          maximum: 720
+                                          minimum: 15
                                           type: integer
                                         useSDKCreds:
                                           type: boolean
@@ -16374,6 +16400,8 @@ spec:
                                                 x-kubernetes-map-type: atomic
                                               tokenExpirationInMinutes:
                                                 format: int32
+                                                maximum: 720
+                                                minimum: 15
                                                 type: integer
                                               useSDKCreds:
                                                 type: boolean
@@ -19334,7 +19362,12 @@ spec:
                                 DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                 range, otherwise the request is rejected. It has no effect on static credentials or
                                 other SDK-resolved credential providers.
+                                other SDK-resolved credential providers.
+                                minimum: 15
+                                maximum: 720
                               format: int32
+                              maximum: 720
+                              minimum: 15
                               type: integer
                             useSDKCreds:
                               description: UseSDKCreds tells the driver to figure
@@ -23726,7 +23759,12 @@ spec:
                                                 DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                                 range, otherwise the request is rejected. It has no effect on static credentials or
                                                 other SDK-resolved credential providers.
+                                                other SDK-resolved credential providers.
+                                                minimum: 15
+                                                maximum: 720
                                               format: int32
+                                              maximum: 720
+                                              minimum: 15
                                               type: integer
                                             useSDKCreds:
                                               description: UseSDKCreds tells the driver
@@ -25152,7 +25190,12 @@ spec:
                                                       DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                                       range, otherwise the request is rejected. It has no effect on static credentials or
                                                       other SDK-resolved credential providers.
+                                                      other SDK-resolved credential providers.
+                                                      minimum: 15
+                                                      maximum: 720
                                                     format: int32
+                                                    maximum: 720
+                                                    minimum: 15
                                                     type: integer
                                                   useSDKCreds:
                                                     description: UseSDKCreds tells
@@ -26561,7 +26604,12 @@ spec:
                                         DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                         range, otherwise the request is rejected. It has no effect on static credentials or
                                         other SDK-resolved credential providers.
+                                        other SDK-resolved credential providers.
+                                        minimum: 15
+                                        maximum: 720
                                       format: int32
+                                      maximum: 720
+                                      minimum: 15
                                       type: integer
                                     useSDKCreds:
                                       description: UseSDKCreds tells the driver to
@@ -29364,7 +29412,12 @@ spec:
                                       DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                       range, otherwise the request is rejected. It has no effect on static credentials or
                                       other SDK-resolved credential providers.
+                                      other SDK-resolved credential providers.
+                                      minimum: 15
+                                      maximum: 720
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     description: UseSDKCreds tells the driver to figure
@@ -30780,7 +30833,12 @@ spec:
                                       DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                       range, otherwise the request is rejected. It has no effect on static credentials or
                                       other SDK-resolved credential providers.
+                                      other SDK-resolved credential providers.
+                                      minimum: 15
+                                      maximum: 720
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     description: UseSDKCreds tells the driver to figure
@@ -32161,7 +32219,12 @@ spec:
                                         DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                         range, otherwise the request is rejected. It has no effect on static credentials or
                                         other SDK-resolved credential providers.
+                                        other SDK-resolved credential providers.
+                                        minimum: 15
+                                        maximum: 720
                                       format: int32
+                                      maximum: 720
+                                      minimum: 15
                                       type: integer
                                     useSDKCreds:
                                       description: UseSDKCreds tells the driver to
@@ -36831,7 +36894,12 @@ spec:
                                               DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                               range, otherwise the request is rejected. It has no effect on static credentials or
                                               other SDK-resolved credential providers.
+                                              other SDK-resolved credential providers.
+                                              minimum: 15
+                                              maximum: 720
                                             format: int32
+                                            maximum: 720
+                                            minimum: 15
                                             type: integer
                                           useSDKCreds:
                                             description: UseSDKCreds tells the driver
@@ -38224,7 +38292,12 @@ spec:
                                                     DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
                                                     range, otherwise the request is rejected. It has no effect on static credentials or
                                                     other SDK-resolved credential providers.
+                                                    other SDK-resolved credential providers.
+                                                    minimum: 15
+                                                    maximum: 720
                                                   format: int32
+                                                  maximum: 720
+                                                  minimum: 15
                                                   type: integer
                                                 useSDKCreds:
                                                   description: UseSDKCreds tells the
@@ -43356,6 +43429,8 @@ spec:
                             x-kubernetes-map-type: atomic
                           tokenExpirationInMinutes:
                             format: int32
+                            maximum: 720
+                            minimum: 15
                             type: integer
                           useSDKCreds:
                             type: boolean
@@ -44003,6 +44078,8 @@ spec:
                                     x-kubernetes-map-type: atomic
                                   tokenExpirationInMinutes:
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     type: boolean
@@ -44686,6 +44763,8 @@ spec:
                                     x-kubernetes-map-type: atomic
                                   tokenExpirationInMinutes:
                                     format: int32
+                                    maximum: 720
+                                    minimum: 15
                                     type: integer
                                   useSDKCreds:
                                     type: boolean
@@ -45390,6 +45469,8 @@ spec:
                               x-kubernetes-map-type: atomic
                             tokenExpirationInMinutes:
                               format: int32
+                              maximum: 720
+                              minimum: 15
                               type: integer
                             useSDKCreds:
                               type: boolean
