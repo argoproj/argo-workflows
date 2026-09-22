@@ -13892,17 +13892,17 @@ func TestSubstitute(t *testing.T) {
 		"inputs.parameters.baz": "qux",
 	}
 	// Case 1: Simple substitution
-	res, err := woc.Substitute("{{inputs.parameters.foo}}", scope)
+	res, err := woc.Substitute("{{inputs.parameters.foo}}", scope, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", res)
 
 	// Case 2: Substitution in expression (non-JSON)
-	res, err = woc.Substitute("{{inputs.parameters.foo}} == bar", scope)
+	res, err = woc.Substitute("{{inputs.parameters.foo}} == bar", scope, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "bar == bar", res)
 
 	// Case 3: Substitution with invalid JSON (should not error with "cannot do template replacements with invalid JSON")
-	res, err = woc.Substitute("{{inputs.parameters.foo}} invalid json", scope)
+	res, err = woc.Substitute("{{inputs.parameters.foo}} invalid json", scope, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "bar invalid json", res)
 }
