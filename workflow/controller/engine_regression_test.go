@@ -420,3 +420,52 @@ func TestRegression_StepsNameForExpandedStep(t *testing.T) {
 	}
 	assert.Equal(t, []string{"A(0:alpha)"}, args)
 }
+
+// 9. A task whose only dependency is omitted in the same pass must still be
+// linked under that dependency's (Omitted) node, not left with no parent.
+var regOrphanedDependant = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-orphan
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        template: echo
+        depends: A
+      - name: C
+        template: echo
+        depends: B.Omitted
+        when: "false"
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_DependantOfOmittedTaskIsLinked(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regOrphanedDependant)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx) // A pod
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx) // A failed -> B omitted -> C skipped
+
+	b, err := woc.wf.GetNodeByName("reg-orphan.B")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeOmitted, b.Phase)
+	c, err := woc.wf.GetNodeByName("reg-orphan.C")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSkipped, c.Phase)
+	assert.Contains(t, b.Children, c.ID, "C must hang off its dependency B")
+}
