@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
@@ -121,7 +122,35 @@ func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, subst
 		Hooks:        s.step.Hooks,
 		Dependencies: s.dependencies,
 	}}
-	return dt.Expand(ctx, scope, substitutor)
+	expanded, err := dt.Expand(ctx, scope, substitutor)
+	if err != nil {
+		return nil, err
+	}
+	for i := range expanded {
+		expanded[i] = expandedStepTask{Task: expanded[i]}
+	}
+	return expanded, nil
+}
+
+// expandedStepTask is one item of an expanded step. Its task name keeps the
+// "[i]." group prefix the Engine schedules by; its display name, which is
+// what {{steps.name}} and the steps.<name> scope keys carry, is the item name
+// alone (e.g. "A(0:x)"), as it was before the Engine.
+type expandedStepTask struct {
+	dag.Task
+}
+
+func (t expandedStepTask) GetDisplayName() string {
+	return stepNameOf(t.GetName())
+}
+
+// stepNameOf is the inverse of stepTaskNameFor: the step (or expanded item)
+// name without the "[i]." group prefix.
+func stepNameOf(taskName string) string {
+	if _, name, ok := strings.Cut(taskName, "]."); ok && strings.HasPrefix(taskName, "[") {
+		return name
+	}
+	return taskName
 }
 
 // executeSteps executes a Steps template by converting step groups into DAG tasks
