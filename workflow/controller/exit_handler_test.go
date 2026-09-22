@@ -14,54 +14,8 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-var stepsOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-on-exit
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: leafA
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              parameters:
-              - name: input
-                value: '{{steps.leafA.outputs.parameters.result}}'
-        template: whalesay
-    - - name: leafB
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              parameters:
-              - name: input
-                value: '{{steps.leafB.outputs.parameters.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: "welcome"
-          path: /tmp/hello_world.txt
-  - name: exitContainer
-
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
-
 func TestStepsOnExitTmpl(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmpl)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/steps-on-exit-tmpl.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -80,56 +34,9 @@ func TestStepsOnExitTmpl(t *testing.T) {
 	}
 	assert.True(t, onExitNodeIsPresent)
 }
-
-var dagOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-on-exit
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    dag:
-      tasks:
-      - name: leafA
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              parameters:
-              - name: input
-                value: '{{tasks.leafA.outputs.parameters.result}}'
-        template: whalesay
-      - name: leafB
-        dependencies: [leafA]
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              parameters:
-              - name: input
-                value: '{{tasks.leafB.outputs.parameters.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: "welcome"
-          path: /tmp/hello_world.txt
-  - name: exitContainer
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
 
 func TestDAGOnExitTmpl(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmpl)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/dag-on-exit-tmpl.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -149,47 +56,8 @@ func TestDAGOnExitTmpl(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var stepsOnExitTmplWithArt = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-on-exit
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: leafA
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              artifacts:
-              - name: input
-                from: '{{steps.leafA.outputs.artifacts.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      artifacts:
-      - name: result
-        path: /tmp/hello_world.txt
-  - name: exitContainer
-    inputs:
-      artifacts:
-      - name: input
-        path: /my-artifact
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
-
 func TestStepsOnExitTmplWithArt(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsOnExitTmplWithArt)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/steps-on-exit-tmpl-with-art.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -224,47 +92,9 @@ func TestStepsOnExitTmplWithArt(t *testing.T) {
 	}
 	assert.True(t, onExitNodeIsPresent)
 }
-
-var dagOnExitTmplWithArt = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-on-exit
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: leafA
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              artifacts:
-              - name: input
-                from: '{{tasks.leafA.outputs.artifacts.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      artifacts:
-      - name: result
-        path: /tmp/hello_world.txt
-  - name: exitContainer
-    inputs:
-      artifacts:
-      - name: input
-        path: /my-artifact
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]`
 
 func TestDAGOnExitTmplWithArt(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagOnExitTmplWithArt)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/dag-on-exit-tmpl-with-art.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -300,56 +130,8 @@ func TestDAGOnExitTmplWithArt(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var stepsTmplOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-on-exit
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: leafA
-        onExit: exitContainer1
-        template: whalesay
-    - - name: leafB
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              parameters:
-              - name: input
-                value: '{{steps.leafB.outputs.parameters.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: "welcome"
-          path: /tmp/hello_world.txt
-  - name: exitContainer
-    inputs:
-      parameters:
-      - name: input
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-  - name: exitContainer1
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
-
 func TestStepsTmplOnExit(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsTmplOnExit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/steps-tmpl-on-exit.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -403,58 +185,8 @@ func TestStepsTmplOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var dagOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-on-exit
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    dag:
-      tasks:
-      - name: leafA
-        onExit: exitContainer1
-        template: whalesay
-      - name: leafB
-        dependencies: [leafA]
-        hooks:
-          exit:
-            template: exitContainer
-            arguments:
-              parameters:
-              - name: input
-                value: '{{tasks.leafB.outputs.parameters.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: "welcome"
-          path: /tmp/hello_world.txt
-  - name: exitContainer
-    inputs:
-      parameters:
-      - name: input
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world  {{inputs.parameters.input}}"]
-  - name: exitContainer1
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
-
 func TestDAGOnExit(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagOnExit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/dag-on-exit.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -507,191 +239,8 @@ func TestDAGOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var dagOnExitAndRetryStrategy = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-workflow-with-retry-strategy8h899
-spec:
-  entrypoint: WORKFLOW
-  templates:
-  - name: WORKFLOW
-    steps:
-    - - name: Execute
-        template: DAG
-  - container:
-      args:
-      - -c
-      - set -xe && ls -ltr /
-      command:
-      - sh
-      image: alpine:3.23
-    inputs:
-      parameters:
-      - name: IMAGE
-    name: LinuxExitHandler
-  - container:
-      args:
-      - -c
-      - set -xe && ls -ltr /
-      command:
-      - sh
-      image: alpine:3.23
-    name: LinuxJobBase
-    retryStrategy:
-      limit: "3"
-      retryPolicy: OnError
-  - dag:
-      tasks:
-      - hooks:
-          exit:
-            arguments:
-              parameters:
-              - name: IMAGE
-                value: alpine:3.23
-            template: LinuxExitHandler
-        name: Python2Compile
-        template: LinuxJobBase
-      - depends: Python2Compile.Succeeded
-        hooks:
-          exit:
-            arguments:
-              parameters:
-              - name: IMAGE
-                value: alpine:3.23
-            template: LinuxExitHandler
-        name: DependencyTesting
-        template: LinuxJobBase
-    name: DAG
-status:
-  nodes:
-    test-workflow-with-retry-strategy8h899:
-      children:
-      - test-workflow-with-retry-strategy8h899-1555287363
-      displayName: test-workflow-with-retry-strategy8h899
-      finishedAt: "2021-07-29T16:16:47Z"
-      id: test-workflow-with-retry-strategy8h899
-      name: test-workflow-with-retry-strategy8h899
-      outboundNodes:
-      - test-workflow-with-retry-strategy8h899-4242067666
-      phase: Running
-      startedAt: "2021-07-29T16:16:07Z"
-      templateName: WORKFLOW
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Steps
-    test-workflow-with-retry-strategy8h899-379180998:
-      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
-      displayName: DependencyTesting(0)
-      finishedAt: "2021-07-29T16:16:23Z"
-      id: test-workflow-with-retry-strategy8h899-379180998
-      name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting(0)
-      phase: Succeeded
-      startedAt: "2021-07-29T16:16:17Z"
-      templateName: LinuxJobBase
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Pod
-    test-workflow-with-retry-strategy8h899-961031240:
-      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
-      children:
-      - test-workflow-with-retry-strategy8h899-3783705931
-      displayName: Python2Compile(0)
-      finishedAt: "2021-07-29T16:16:13Z"
-      id: test-workflow-with-retry-strategy8h899-961031240
-      name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile(0)
-      phase: Succeeded
-      startedAt: "2021-07-29T16:16:07Z"
-      templateName: LinuxJobBase
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Pod
-    test-workflow-with-retry-strategy8h899-1555287363:
-      boundaryID: test-workflow-with-retry-strategy8h899
-      children:
-      - test-workflow-with-retry-strategy8h899-3078096906
-      displayName: '[0]'
-      id: test-workflow-with-retry-strategy8h899-1555287363
-      name: test-workflow-with-retry-strategy8h899[0]
-      phase: Running
-      startedAt: "2021-07-29T16:16:07Z"
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: StepGroup
-    test-workflow-with-retry-strategy8h899-3078096906:
-      boundaryID: test-workflow-with-retry-strategy8h899
-      children:
-      - test-workflow-with-retry-strategy8h899-3585476721
-      displayName: Execute
-      id: test-workflow-with-retry-strategy8h899-3078096906
-      name: test-workflow-with-retry-strategy8h899[0].Execute
-      outboundNodes:
-      - test-workflow-with-retry-strategy8h899-4242067666
-      phase: Running
-      startedAt: "2021-07-29T16:16:07Z"
-      templateName: DAG
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: DAG
-    test-workflow-with-retry-strategy8h899-3585476721:
-      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
-      children:
-      - test-workflow-with-retry-strategy8h899-961031240
-      - test-workflow-with-retry-strategy8h899-3756356520
-      displayName: Python2Compile
-      finishedAt: "2021-07-29T16:16:17Z"
-      id: test-workflow-with-retry-strategy8h899-3585476721
-      name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile
-      phase: Succeeded
-      startedAt: "2021-07-29T16:16:07Z"
-      templateName: LinuxJobBase
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Retry
-    test-workflow-with-retry-strategy8h899-3756356520:
-      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
-      displayName: Python2Compile.onExit
-      finishedAt: "2021-07-29T16:16:33Z"
-      id: test-workflow-with-retry-strategy8h899-3756356520
-      inputs:
-        parameters:
-        - name: IMAGE
-          value: alpine:3.23
-      name: test-workflow-with-retry-strategy8h899[0].Execute.Python2Compile.onExit
-      phase: Succeeded
-      startedAt: "2021-07-29T16:16:27Z"
-      templateName: LinuxExitHandler
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Pod
-    test-workflow-with-retry-strategy8h899-3783705931:
-      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
-      children:
-      - test-workflow-with-retry-strategy8h899-379180998
-      - test-workflow-with-retry-strategy8h899-4242067666
-      displayName: DependencyTesting
-      finishedAt: "2021-07-29T16:16:27Z"
-      id: test-workflow-with-retry-strategy8h899-3783705931
-      name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting
-      phase: Succeeded
-      startedAt: "2021-07-29T16:16:17Z"
-      templateName: LinuxJobBase
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Retry
-    test-workflow-with-retry-strategy8h899-4242067666:
-      boundaryID: test-workflow-with-retry-strategy8h899-3078096906
-      displayName: DependencyTesting.onExit
-      finishedAt: "2021-07-29T16:16:43Z"
-      id: test-workflow-with-retry-strategy8h899-4242067666
-      inputs:
-        parameters:
-        - name: IMAGE
-          value: alpine:3.23
-      name: test-workflow-with-retry-strategy8h899[0].Execute.DependencyTesting.onExit
-      phase: Succeeded
-      startedAt: "2021-07-29T16:16:27Z"
-      templateName: LinuxExitHandler
-      templateScope: local/test-workflow-with-retry-strategy8h899
-      type: Pod
-  phase: Running
-  startedAt: "2021-07-29T16:16:07Z"
-`
-
 func TestDagOnExitAndRetryStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagOnExitAndRetryStrategy)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/dag-on-exit-and-retry-strategy.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -703,47 +252,8 @@ func TestDagOnExitAndRetryStrategy(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var testWorkflowOnExitHTTPReconciliation = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-sx6lw
-spec:
-  entrypoint: whalesay
-  onExit: exit-handler
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-    name: whalesay
-  - http:
-      url: https://example.com
-    name: exit-handler
-status:
-  nodes:
-    hello-world-sx6lw:
-      displayName: hello-world-sx6lw
-      finishedAt: "2021-10-27T14:38:30Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-sx6lw
-      name: hello-world-sx6lw
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2021-10-27T14:38:27Z"
-      templateName: whalesay
-      templateScope: local/hello-world-sx6lw
-      type: Pod
-  phase: Running
-  startedAt: "2021-10-27T14:38:27Z"
-`
-
 func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitHTTPReconciliation)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/workflow-on-exit-http-reconciliation.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -761,87 +271,8 @@ func TestWorkflowOnExitHttpReconciliation(t *testing.T) {
 	assert.Len(t, taskSets.Items, 1)
 }
 
-var testWorkflowOnExitStepsHTTPReconciliation = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-647r7
-spec:
-  arguments: {}
-  entrypoint: whalesay
-  onExit: exit-handler
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: whalesay
-    outputs: {}
-  - inputs: {}
-    metadata: {}
-    name: exit-handler
-    outputs: {}
-    steps:
-    - - arguments: {}
-        name: run-example-com
-        template: example-com
-  - http:
-      url: https://example.com
-    inputs: {}
-    metadata: {}
-    name: example-com
-    outputs: {}
-status:
-  nodes:
-    hello-world-647r7:
-      displayName: hello-world-647r7
-      finishedAt: "2021-12-09T04:11:35Z"
-      hostNodeName: dev-capact-control-plane
-      id: hello-world-647r7
-      name: hello-world-647r7
-      outputs:
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      startedAt: "2021-12-09T04:11:30Z"
-      templateName: whalesay
-      templateScope: local/hello-world-647r7
-      type: Pod
-    hello-world-647r7-206029318:
-      children:
-      - hello-world-647r7-1045616760
-      displayName: hello-world-647r7.onExit
-      finishedAt: null
-      id: hello-world-647r7-206029318
-      name: hello-world-647r7.onExit
-      phase: Running
-      progress: 0/1
-      startedAt: "2021-12-09T04:11:36Z"
-      templateName: exit-handler
-      templateScope: local/hello-world-647r7
-      type: Steps
-    hello-world-647r7-1045616760:
-      boundaryID: hello-world-647r7-206029318
-      displayName: '[0]'
-      finishedAt: null
-      id: hello-world-647r7-1045616760
-      name: hello-world-647r7.onExit[0]
-      phase: Running
-      progress: 0/1
-      startedAt: "2021-12-09T04:11:36Z"
-      templateScope: local/hello-world-647r7
-      type: StepGroup
-  phase: Running
-  startedAt: "2021-12-09T04:11:30Z"
-`
-
 func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testWorkflowOnExitStepsHTTPReconciliation)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/workflow-on-exit-steps-http-reconciliation.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -861,130 +292,7 @@ func TestWorkflowOnExitStepsHttpReconciliation(t *testing.T) {
 }
 
 func TestWorkflowOnExitWorkflowStatus(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: exit-handler-with-param-96rrj
-spec:
-  entrypoint: first
-  templates:
-  - dag:
-      tasks:
-      - hooks:
-          exit:
-            arguments:
-              parameters:
-              - name: message
-                value: '{{tasks.step-1.status}}'
-            template: exit
-        name: step-1
-        template: output
-    name: first
-  - container:
-      args:
-      - echo -n hello world > /tmp/hello_world.txt
-      command:
-      - sh
-      - -c
-      image: python:alpine3.23
-      name: ""
-    name: output
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: Foobar
-          path: /tmp/hello_world.txt
-  - inputs:
-      parameters:
-      - name: message
-    name: exit
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      name: ""
-      source: |
-        print("{{inputs.parameters.message}}")
-status:
-  nodes:
-    exit-handler-with-param-96rrj:
-      children:
-      - exit-handler-with-param-96rrj-588897729
-      displayName: exit-handler-with-param-96rrj
-      finishedAt: "2022-08-17T15:59:10Z"
-      id: exit-handler-with-param-96rrj
-      name: exit-handler-with-param-96rrj
-      outboundNodes:
-      - exit-handler-with-param-96rrj-588897729
-      phase: Running
-      progress: 2/2
-      resourcesDuration:
-        cpu: 7
-        memory: 5
-      startedAt: "2022-08-17T15:58:59Z"
-      templateName: first
-      templateScope: local/exit-handler-with-param-96rrj
-      type: DAG
-    exit-handler-with-param-96rrj-588897729:
-      boundaryID: exit-handler-with-param-96rrj
-      children:
-      - exit-handler-with-param-96rrj-1481430296
-      displayName: step-1
-      finishedAt: "2022-08-17T15:59:03Z"
-      hostNodeName: kind-control-plane
-      id: exit-handler-with-param-96rrj-588897729
-      name: exit-handler-with-param-96rrj.step-1
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: exit-handler-with-param-96rrj/exit-handler-with-param-96rrj-output-588897729/main.log
-        exitCode: "0"
-        parameters:
-        - name: result
-          value: hello world
-          valueFrom:
-            default: Foobar
-            path: /tmp/hello_world.txt
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 4
-        memory: 3
-      startedAt: "2022-08-17T15:58:59Z"
-      templateName: output
-      templateScope: local/exit-handler-with-param-96rrj
-      type: Pod
-#    exit-handler-with-param-96rrj-1481430296:
-#      boundaryID: exit-handler-with-param-96rrj
-#      displayName: step-1.onExit
-#      finishedAt: "2022-08-17T15:59:09Z"
-#      hostNodeName: kind-control-plane
-#      id: exit-handler-with-param-96rrj-1481430296
-#      inputs:
-#        parameters:
-#        - name: message
-#          value: Succeeded
-#      name: exit-handler-with-param-96rrj.step-1.onExit
-#      outputs:
-#        artifacts:
-#        - name: main-logs
-#          s3:
-#            key: exit-handler-with-param-96rrj/exit-handler-with-param-96rrj-exit-1481430296/main.log
-#        exitCode: "0"
-#      phase: Succeeded
-#      progress: 1/1
-#      resourcesDuration:
-#        cpu: 3
-#        memory: 2
-#      startedAt: "2022-08-17T15:59:05Z"
-#      templateName: exit
-#      templateScope: local/exit-handler-with-param-96rrj
-#      type: Pod
-  phase: Running
-  progress: 2/2
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/workflow-on-exit-workflow-status.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -999,41 +307,7 @@ status:
 }
 
 func TestStepsTemplateOnExitStatusArgument(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: lifecycle-hook-tmpl-level-
-  labels:
-    test: test
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: main
-            template: echo
-            hooks:
-              exit:
-                template: hook
-                arguments:
-                  parameters:
-                    - name: status
-                      value: "{{steps.main.status}}"
-    - name: echo
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["echo hi"]
-    - name: hook
-      inputs:
-        parameters:
-          - name: status
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["echo {{inputs.parameters.status}}"]
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/exit_handler/steps-template-on-exit-status-argument.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
