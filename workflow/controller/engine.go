@@ -500,6 +500,11 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 						// Deliberate throttling — don't fail, just stop dispatching this pass.
 						return executedTasks, nil
 					}
+					if stderrors.Is(err, ErrRequeue) {
+						// A dependency output is not in scope yet; the workflow has
+						// been requeued and the child is retried next cycle.
+						continue
+					}
 					// A per-task error that is already recorded as a terminal phase
 					// on the child's node is that child's outcome and rolls up
 					// through phase assessment; only an error that left no node
@@ -514,6 +519,9 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 				if _, err := e.executeTask(ctx, task, true); err != nil {
 					if isThrottleErr(err) {
 						return executedTasks, nil
+					}
+					if stderrors.Is(err, ErrRequeue) {
+						continue
 					}
 					if firstErr == nil && !e.errRecordedOnNode(ctx, result.TaskName) {
 						firstErr = err
@@ -1111,6 +1119,11 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 	// Evaluate 'When' clause
 	proceed, err := e.evaluateWhenClause(ctx, task, scope)
 	if err != nil {
+		if stderrors.Is(err, ErrRequeue) {
+			e.log.WithField("task", taskName).WithError(err).Debug(ctx, "was unable to find variable")
+			e.woc.requeue()
+			return nil, err
+		}
 		e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		for _, parent := range parentNodeNames {
 			e.woc.addChildNode(ctx, parent, taskNodeName)
@@ -1169,6 +1182,13 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 	// template when-clauses.
 	args, err = scope.resolveArguments(ctx, args, e.woc.globalParams())
 	if err != nil {
+		if stderrors.Is(err, ErrRequeue) {
+			// Not this task's failure: a dependency output is not in scope yet.
+			// Leave the task uncreated and come back to it.
+			e.log.WithField("task", taskName).WithError(err).Debug(ctx, "was unable to find variable")
+			e.woc.requeue()
+			return nil, err
+		}
 		e.initTerminalErrorNode(ctx, taskNodeName, parentNodeNames, err)
 		return nil, err
 	}
@@ -1731,8 +1751,13 @@ func (e *Engine) evaluateWhenClause(ctx context.Context, task dag.Task, scope *w
 	if err != nil {
 		return false, err
 	}
-	substituted, err := tmpl.Replace(ctx, merged, true)
+	// Task and step references must resolve (see resolveArguments): a miss is
+	// reported as ErrRequeue rather than evaluated as a literal.
+	substituted, err := tmpl.ReplaceStrict(ctx, merged, []string{"tasks", "steps"})
 	if err != nil {
+		if template.IsMissingVariableErr(err) {
+			return false, fmt.Errorf("%w: %w", ErrRequeue, err)
+		}
 		return false, err
 	}
 	return shouldExecute(substituted)
