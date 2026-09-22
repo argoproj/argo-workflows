@@ -8,8 +8,11 @@ import (
 
 // Substitutor defines an interface for substituting variables in a string.
 type Substitutor interface {
-	// Substitute substitutes variables in the given template string.
-	Substitute(template string, scope map[string]string) (string, error)
+	// Substitute substitutes variables in the given template string. A tag
+	// whose name starts with one of strictPrefixes (as a dot-separated
+	// segment) must resolve; any other unresolved tag is left in place for a
+	// later substitution pass.
+	Substitute(template string, scope map[string]string, strictPrefixes []string) (string, error)
 }
 
 // Task represents a task in a workflow (DAG or Steps) that has a name and dependency information.

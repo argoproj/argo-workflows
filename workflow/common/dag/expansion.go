@@ -45,7 +45,7 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 				if val == nil || val.Type == intstr.Int {
 					return val, nil
 				}
-				resolved, subErr := substitutor.Substitute(val.String(), scope)
+				resolved, subErr := substitutor.Substitute(val.String(), scope, nil)
 				if subErr != nil {
 					return val, subErr
 				}
@@ -83,10 +83,21 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 		return nil, errors.InternalWrapError(err)
 	}
 
+	// An item reference must resolve at expansion: {{item.name}} against a
+	// plain-string item is an error here, not a literal that reaches the pod.
+	// The one exception is a task whose when clause is already known to be
+	// false, which never runs, so its body may stay unresolved, as processItem
+	// did before the Engine. A when clause that itself needs {{item}} cannot be
+	// evaluated yet and gets the strict treatment.
+	itemStrict := []string{"item"}
+	if proceed, whenErr := shouldExecute(task.When); whenErr == nil && !proceed {
+		itemStrict = nil
+	}
+
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(ctx, taskBytes, task.Name, i, item, &newTask, scope, substitutor)
+		newTaskName, err := processItem(ctx, taskBytes, task.Name, i, item, &newTask, scope, substitutor, itemStrict)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +126,7 @@ func resolveWithParam(withParam string, scope map[string]string, substitutor Sub
 	// Wrap in a JSON object: {"v":"<withParam>"} so the substitutor's escaping
 	// is appropriate for the JSON string context.
 	jsonWrapped := `{"v":` + strconv.Quote(withParam) + `}`
-	resolved, err := substitutor.Substitute(jsonWrapped, scope)
+	resolved, err := substitutor.Substitute(jsonWrapped, scope, nil)
 	if err != nil {
 		return "", err
 	}
@@ -230,7 +241,7 @@ func abs64(x int64) int64 {
 	return x
 }
 
-func processItem(_ context.Context, taskBytes []byte, taskName string, i int, item wfv1.Item, newTask *wfv1.DAGTask, globalScope map[string]string, substitutor Substitutor) (string, error) {
+func processItem(_ context.Context, taskBytes []byte, taskName string, i int, item wfv1.Item, newTask *wfv1.DAGTask, globalScope map[string]string, substitutor Substitutor, strictPrefixes []string) (string, error) {
 	var newTaskName string
 
 	err := json.Unmarshal(taskBytes, newTask)
@@ -272,7 +283,7 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 		if marshalErr != nil {
 			return "", errors.InternalWrapError(marshalErr)
 		}
-		substituted, substErr := substitutor.Substitute(string(taskJSON), substScope)
+		substituted, substErr := substitutor.Substitute(string(taskJSON), substScope, strictPrefixes)
 		if substErr != nil {
 			return "", substErr
 		}
