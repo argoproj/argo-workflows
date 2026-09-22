@@ -161,6 +161,22 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 			if depNode.Type == wfv1.NodeTypeRetry {
 				// For retry nodes, use the evaluator's assessment to determine dep state.
 				retryResult := e.evaluateRetryNode(ctx, depName, depNode)
+				// The assessment is derived from the attempt children and can run
+				// ahead of the retry node's own phase: the engine marks the node
+				// Succeeded/Failed only when it dispatches this result. Until then
+				// the dependency is pending. Dispatching a dependant in the same
+				// pass would link it under the last attempt before the retry node
+				// is finalized, and handleRetries would then see an unfulfilled
+				// descendant and start a spurious extra attempt. It would also
+				// run before the exit hook the engine creates on finalization
+				// (#12192). A running daemon child is the exception below.
+				if (retryResult.Action == ActionSucceed || retryResult.Action == ActionFail) && !depNode.Fulfilled() {
+					evalTaskName := normalizeTaskName(depName)
+					evalScope[evalTaskName] = taskResult{}
+					hasPendingDeps = true
+					pendingDepNames[depName] = true
+					continue
+				}
 				if retryResult.Action == ActionFail {
 					// Retry is done — use the actual child phase (Error vs Failed)
 					evalTaskName := normalizeTaskName(depName)

@@ -88,6 +88,56 @@ func TestRegression_DependantWaitsForExitHookOfRetriedTask(t *testing.T) {
 	assert.False(t, nodeExists(woc, "reg-hook.z(1)"), "z already succeeded; no second attempt may be created")
 }
 
+// 1b. The same hazard with no hook at all: a dependant that sorts before its
+// retried dependency must not be dispatched in the pass that finalizes the
+// retry node, or the retry node sees an unfulfilled descendant and starts a
+// second attempt for a task that already succeeded.
+var regNoSecondAttempt = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-retry
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: z
+        template: retried
+      - name: b
+        template: echo
+        depends: z
+  - name: retried
+    retryStrategy:
+      limit: 1
+    container:
+      image: argoproj/argosay:v2
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_NoSecondAttemptAfterSuccessWithDependant(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regNoSecondAttempt)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx) // creates z(0)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx) // z(0) succeeded -> z succeeded -> b dispatched
+
+	z, err := woc.wf.GetNodeByName("reg-retry.z")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, z.Phase)
+	assert.True(t, nodeExists(woc, "reg-retry.b"), "b runs once z has succeeded")
+	assert.False(t, nodeExists(woc, "reg-retry.z(1)"), "z already succeeded; no second attempt may be created")
+}
+
 // 2. A Steps template whose earlier group failed must end Failed even when a
 // step in a later group carries continueOn.
 var regStepsFailedGroupThenContinueOn = `
