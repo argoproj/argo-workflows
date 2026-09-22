@@ -939,7 +939,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 		}
 		e.hooks.ref.Status.Set(scope.scope, string(taskNode.Phase), task.GetDisplayName())
 		hookCompleted, err := e.hooks.ExecuteLifecycleHooks(ctx, scope, task.GetHooks(), taskNode, task.GetDisplayName())
-		if err != nil {
+		if err != nil && !isThrottleErr(err) {
 			e.woc.markNodeError(ctx, taskNodeName, err)
 		}
 		if !hookCompleted {
