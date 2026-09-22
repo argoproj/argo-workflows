@@ -971,10 +971,24 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 		return taskNode, nil
 	}
 
+	// A scope or expansion failure is this task's own terminal outcome: it is
+	// recorded on an Error node linked under the task's parents (as
+	// executeDAGTask did), so siblings keep running and the boundary rolls up
+	// from its children. Marking a node that does not exist yet would record
+	// nothing and escalate the error to the boundary instead.
+	var parentNodeNames []string
+	if addChild {
+		parentNodeNames = e.parentNodeNames(ctx, taskName)
+	}
+	failTask := func(err error) (*wfv1.NodeStatus, error) {
+		e.initTerminalErrorNode(ctx, taskNodeName, parentNodeNames, err)
+		return e.getTaskNode(ctx, taskName), err
+	}
+
 	// build a local scope for the task
 	scope, err := e.buildLocalScopeFromTask(ctx, task)
 	if err != nil {
-		return e.woc.markNodeError(ctx, taskNodeName, err), err
+		return failTask(err)
 	}
 
 	// The task's when clause is evaluated once, in createDesiredTask (which
@@ -986,11 +1000,11 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 		// A withParam/withSequence reference to an absent optional (skipped/omitted output, no
 		// default) is terminal here, matching main; the string-map Substitutor below can't see it.
 		if err = e.gateExpansionAbsentOptional(ctx, task, scope); err != nil {
-			return e.woc.markNodeError(ctx, taskNodeName, err), err
+			return failTask(err)
 		}
 		expandedTasks, expandErr := task.Expand(ctx, e.expansionScope(scope), e.woc)
 		if expandErr != nil {
-			return e.woc.markNodeError(ctx, taskNodeName, expandErr), expandErr
+			return failTask(expandErr)
 		}
 
 		// Empty expansion (e.g., withParam resolves to []) → skip the task

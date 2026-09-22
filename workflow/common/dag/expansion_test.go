@@ -162,7 +162,7 @@ func TestExpandedTaskName(t *testing.T) {
 // as the controller's wfOperationCtx does.
 type templateSubstitutor struct{}
 
-func (templateSubstitutor) Substitute(s string, scope map[string]string) (string, error) {
+func (templateSubstitutor) Substitute(s string, scope map[string]string, strictPrefixes []string) (string, error) {
 	tmpl, err := template.NewTemplate(s)
 	if err != nil {
 		return "", err
@@ -171,7 +171,7 @@ func (templateSubstitutor) Substitute(s string, scope map[string]string) (string
 	for k, v := range scope {
 		replaceMap[k] = v
 	}
-	return tmpl.Replace(context.Background(), replaceMap, true)
+	return tmpl.ReplaceStrict(context.Background(), replaceMap, strictPrefixes)
 }
 
 // Expanded task names and substituted {{item}} values for each item shape,
@@ -202,7 +202,7 @@ func TestProcessItem_ItemShapes(t *testing.T) {
 			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
 
 			var newTask wfv1.DAGTask
-			newTaskName, err := processItem(context.Background(), taskBytes, task.Name, 0, items[0], &newTask, nil, templateSubstitutor{})
+			newTaskName, err := processItem(context.Background(), taskBytes, task.Name, 0, items[0], &newTask, nil, templateSubstitutor{}, []string{"item"})
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedName, newTaskName)
 			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())

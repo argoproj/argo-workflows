@@ -1017,8 +1017,9 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 	}
 }
 
-// Substitute replaces parameters in a string
-func (woc *wfOperationCtx) Substitute(text string, scope map[string]string) (string, error) {
+// Substitute replaces parameters in a string. Tags under strictPrefixes must
+// resolve; other unresolved tags are left for a later pass (see dag.Substitutor).
+func (woc *wfOperationCtx) Substitute(text string, scope map[string]string, strictPrefixes []string) (string, error) {
 	t, err := template.NewTemplate(text)
 	if err != nil {
 		return "", err
@@ -1028,7 +1029,7 @@ func (woc *wfOperationCtx) Substitute(text string, scope map[string]string) (str
 		replaceMap[k] = v
 	}
 	ctx := logging.WithLogger(context.Background(), woc.log)
-	return t.Replace(ctx, replaceMap, true)
+	return t.ReplaceStrict(ctx, replaceMap, strictPrefixes)
 }
 
 // deadlineExceeded reports whether this operation has run past its deadline.
