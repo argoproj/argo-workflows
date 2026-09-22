@@ -824,7 +824,7 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 		// to the workflow status (operator.go uses entry node.Message for
 		// workflow.status.Message), and callers / tests rely on it to identify
 		// which child triggered the failure (e.g. TestNodeSuspendResume).
-		_ = e.woc.markNodePhase(ctx, e.nodeName, phase, e.boundaryFailureMessage())
+		_ = e.woc.markNodePhase(ctx, e.nodeName, phase, e.boundaryFailureMessage(ctx))
 		return nil
 	}
 
@@ -851,48 +851,35 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 }
 
 // boundaryFailureMessage returns the failure message to propagate to the
-// boundary node when the engine transitions it to Failed/Error. Matches old
-// executeSteps/executeDAG semantics:
-//   - Steps: propagate the first failed StepGroup's message (which
-//     assessStepGroups sets to "child '<leaf-id>' failed").
-//   - DAG: build "child '<task-id>' failed" naming the first failed,
-//     non-Hooked task node within this boundary.
+// boundary node when it is marked Failed/Error:
+//   - Steps: the message of the last failed StepGroup in declaration order,
+//     which is the group that stopped execution (executeSteps marked the
+//     boundary with that group's message).
+//   - DAG: "child '<task-id>' failed" naming the first failed task in
+//     declaration order. Task nodes are named, never their retry attempts.
 //
-// Nodes nested inside the boundary may not be direct children of the
-// boundary's node.Children (e.g. Steps groups chain through one another), so
-// scan wf.Status.Nodes by BoundaryID instead of walking node.Children.
-// Returns "" if no failing in-boundary node is found.
-func (e *Engine) boundaryFailureMessage() string {
-	boundaryNode, err := e.woc.wf.GetNodeByName(e.nodeName)
-	if err != nil {
-		return ""
-	}
-	wantType := wfv1.NodeTypeStepGroup
-	if e.tmpl.GetType() == wfv1.TemplateTypeDAG {
-		wantType = ""
-	}
-	for _, n := range e.woc.wf.Status.Nodes {
-		if n.BoundaryID != boundaryNode.ID {
-			continue
-		}
-		if n.NodeFlag != nil && n.NodeFlag.Hooked {
-			continue
-		}
-		if !n.FailedOrError() {
-			continue
-		}
-		if wantType != "" {
-			if n.Type != wantType {
+// Walking the template rather than wf.Status.Nodes keeps the message stable
+// between operate cycles; the map order would make it vary. Returns "" if
+// no failing task or group is found.
+func (e *Engine) boundaryFailureMessage(ctx context.Context) string {
+	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
+		var message string
+		for i := range e.tmpl.Steps {
+			sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i))
+			if err != nil || !sgNode.FailedOrError() || sgNode.Message == "" {
 				continue
 			}
-			// Propagate the StepGroup's already-formatted message verbatim.
-			if n.Message != "" {
-				return n.Message
-			}
-			continue
+			message = sgNode.Message
 		}
-		// DAG: name the failed task itself.
-		return fmt.Sprintf("child '%s' failed", n.ID)
+		return message
+	}
+	if e.tmpl.DAG == nil {
+		return ""
+	}
+	for _, task := range e.tmpl.DAG.Tasks {
+		if node := e.getTaskNode(ctx, task.Name); node != nil && node.FailedOrError() {
+			return fmt.Sprintf("child '%s' failed", node.ID)
+		}
 	}
 	return ""
 }
