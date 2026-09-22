@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -230,8 +231,17 @@ func (s *wfScope) resolveArguments(ctx context.Context, args wfv1.Arguments, glo
 	}
 	argsStr := string(argsBytes)
 	if strings.Contains(argsStr, "{{") {
-		resolved, err := template.Replace(ctx, argsStr, mergedParams, true)
+		// References to other tasks or steps must resolve: a missing one means the
+		// producer's output is not in scope yet (or never will be), and the task
+		// must not run with the literal tag. Such a miss is reported as ErrRequeue
+		// so the caller waits, as resolveDependencyReferences and resolveReferences
+		// did before the Engine (#15513). Other tags stay for the later template
+		// passes.
+		resolved, err := template.ReplaceStrictAny(ctx, argsStr, mergedParams, []string{"tasks", "steps"})
 		if err != nil {
+			if template.IsMissingVariableErr(err) {
+				return args, fmt.Errorf("%w: %w", ErrRequeue, err)
+			}
 			return args, err
 		}
 		var resolvedParams []wfv1.Parameter
