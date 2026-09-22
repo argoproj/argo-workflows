@@ -88,6 +88,7 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	// emit — finite, since static tasks and their expansions are finite. So the
 	// loop converges in at most O(unique-task-names) iterations.
 	executedTasks := make(map[string]bool)
+	hooksDone := true
 	for {
 		results := e.evaluateAll(ctx)
 		newExecuted, err := e.converge(ctx, tasks, results)
@@ -98,6 +99,19 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 		// Assess TaskGroup nodes created during this iteration so that
 		// downstream tasks see them as fulfilled in the next iteration.
 		e.assessTaskGroups(ctx, tasks)
+		// Hooks pass: drive hooks for tasks that became fulfilled in this
+		// iteration BEFORE the next evaluation, so a dependant sees the pending
+		// exit hook node and waits for it (#12192). Running this only after the
+		// loop would let the next iteration dispatch dependants of a task whose
+		// exit handler has not been created yet. It also ensures exit handlers
+		// trigger in the same operate cycle as task completion: without that,
+		// finalize marks the boundary fulfilled and later cycles skip the engine
+		// entirely (handleNodeFulfilled returns early). A task's exit handler
+		// driven by an earlier pass is only inspected here, not re-run; see
+		// hookHandler.exitDriven (#14392 / PR #16088). processHooks returns a nil
+		// error (per-task errors are isolated and logged inside).
+		passDone, _ := e.processHooks(ctx, tasks)
+		hooksDone = hooksDone && passDone
 		anyNew := false
 		for k, v := range newExecuted {
 			if v && !executedTasks[k] {
@@ -109,15 +123,6 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 			break
 		}
 	}
-
-	// Second hooks pass: process hooks for tasks that became fulfilled during scheduling.
-	// This ensures exit handlers trigger in the same operate cycle as task completion.
-	// Without this, the Steps/DAG boundary gets marked fulfilled by finalize, and
-	// subsequent operate cycles skip the engine entirely (handleNodeFulfilled returns early).
-	// A task's exit handler driven by the first pass is only inspected here (not re-run);
-	// see hookHandler.exitDriven (#14392 / PR #16088).
-	// processHooks returns nil error (per-task errors are isolated and logged inside).
-	hooksDone, _ := e.processHooks(ctx, tasks)
 
 	onExitCompleted = onExitCompleted && hooksDone
 
