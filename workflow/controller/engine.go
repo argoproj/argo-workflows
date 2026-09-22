@@ -349,17 +349,22 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 			}
 		}
 
-		// Default to Running; only a clean (non-pending, non-running) success or
-		// an outright failure moves the StepGroup off Running.
+		// Default to Running; the StepGroup only leaves Running once every step
+		// has finished, as executeStepGroup did: a failed step does not fail
+		// the group while a sibling is still running. Marking it early would
+		// let linkStepGroups hang the next group off a step still in flight.
 		newPhase := wfv1.NodeRunning
 		var newMessage string
+		if isPending || isRunning {
+			continue
+		}
 		if isFailed {
 			// Always use Failed for FailedOrError children, matching old executeStepGroup behavior.
 			newPhase = wfv1.NodeFailed
 			if failingChildID != "" {
 				newMessage = fmt.Sprintf("child '%s' failed", failingChildID)
 			}
-		} else if isSucceeded && !isPending && !isRunning {
+		} else if isSucceeded {
 			newPhase = wfv1.NodeSucceeded
 			if allOmitted {
 				// A group whose every step was omitted because an earlier group
