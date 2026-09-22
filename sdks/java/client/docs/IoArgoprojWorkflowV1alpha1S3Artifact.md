@@ -21,7 +21,7 @@ Name | Type | Description | Notes
 **roleARN** | **String** | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  [optional]
 **secretKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **sessionTokenSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
-**tokenExpirationInMinutes** | **Integer** | TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it |  [optional]
+**tokenExpirationInMinutes** | **Integer** | TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. |  [optional]
 **useSDKCreds** | **Boolean** | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  [optional]
 
 
