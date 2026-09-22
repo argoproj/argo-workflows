@@ -103,10 +103,13 @@ func (s *StepAdapter) GetExitHook(args wfv1.Arguments) *wfv1.LifecycleHook {
 }
 
 func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, substitutor dag.Substitutor) ([]dag.Task, error) {
-	// Construct a temporary DAGTask to reuse the DAG expansion logic
+	// Construct a temporary DAGTask to reuse the DAG expansion logic. Every
+	// WorkflowStep field that DAGTask also has must be carried over: the
+	// expanded task is what the reconciler resolves the template from.
 	dt := &dag.DAGTask{DAGTask: &wfv1.DAGTask{
 		Name:         s.GetName(),
 		Template:     s.step.Template,
+		Inline:       s.step.Inline,
 		Arguments:    s.step.Arguments,
 		WithItems:    s.step.WithItems,
 		WithParam:    s.step.WithParam,
