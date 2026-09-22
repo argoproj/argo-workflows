@@ -126,23 +126,6 @@ func (s *workflowStore) getNode(taskName string) *wfv1.NodeStatus {
 	return node
 }
 
-// getTaskChildNodes returns the child nodes for a task.
-func (s *workflowStore) getTaskChildNodes(taskName string) []*wfv1.NodeStatus {
-	node := s.getNode(taskName)
-	if node == nil {
-		return nil
-	}
-
-	children := make([]*wfv1.NodeStatus, 0, len(node.Children))
-	for _, childID := range node.Children {
-		child, err := s.nodes.Get(childID)
-		if err == nil {
-			children = append(children, child)
-		}
-	}
-	return children
-}
-
 // getRetryChildren returns the non-hook child nodes of a Retry node,
 // ordered by their position in the Children slice (attempt order).
 func (s *workflowStore) getRetryChildren(taskName string) []*wfv1.NodeStatus {
@@ -168,14 +151,22 @@ func (s *workflowStore) getRetryChildren(taskName string) []*wfv1.NodeStatus {
 // node (i.e. excludes hook and retry-attempt scaffolding nodes). Returns nil if
 // the named task has no node, or its node isn't a TaskGroup.
 func (s *workflowStore) getTaskGroupChildren(taskName string) []*wfv1.NodeStatus {
+	children, _ := s.taskGroupChildren(taskName)
+	return children
+}
+
+// taskGroupChildren is getTaskGroupChildren plus whether any listed child is
+// missing from the node map (pruned or offloaded), which the filtered length
+// alone cannot tell apart from a hook child.
+func (s *workflowStore) taskGroupChildren(taskName string) (children []*wfv1.NodeStatus, missing bool) {
 	node := s.getNode(taskName)
 	if node == nil || node.Type != wfv1.NodeTypeTaskGroup {
-		return nil
+		return nil, false
 	}
-	var children []*wfv1.NodeStatus
 	for _, childID := range node.Children {
 		child, err := s.nodes.Get(childID)
 		if err != nil {
+			missing = true
 			continue
 		}
 		if child.NodeFlag != nil && (child.NodeFlag.Hooked || child.NodeFlag.Retried) {
@@ -183,7 +174,7 @@ func (s *workflowStore) getTaskGroupChildren(taskName string) []*wfv1.NodeStatus
 		}
 		children = append(children, child)
 	}
-	return children
+	return children, missing
 }
 
 // areHooksFulfilled checks if all lifecycle hooks for a task are fulfilled.

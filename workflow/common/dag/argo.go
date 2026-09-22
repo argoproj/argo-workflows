@@ -225,8 +225,9 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 		allFailed := false
 
 		if depNode.Type == wfv1.NodeTypeTaskGroup {
-			children := e.store.getTaskChildNodes(depName)
-			missingChildren := len(children) < len(depNode.Children)
+			// Only the expanded items count: a lifecycle hook hanging off the
+			// group is not an item and must not make it AnySucceeded.
+			children, missingChildren := e.store.taskGroupChildren(depName)
 			allFailed = len(children) > 0 && !missingChildren
 
 			for _, child := range children {
@@ -859,7 +860,10 @@ func (e *DAGEvaluator) evaluateTaskGroupNode(ctx context.Context, taskName strin
 		// For Succeeded nodes, fall through to re-verify children.
 	}
 
-	children := e.store.getTaskChildNodes(taskName)
+	// Items only: hook and retry-attempt nodes under the group are assessed
+	// elsewhere (areHooksFulfilled, evaluateRetryNode), and the Engine's
+	// assessTaskGroupPhase skips them too, so both sides see the same set.
+	children, missingChildren := e.store.taskGroupChildren(taskName)
 	if len(children) == 0 {
 		if node.Phase == wfv1.NodeSucceeded {
 			// Children pruned/GC'd — trust the authoritative Succeeded phase.
@@ -869,7 +873,7 @@ func (e *DAGEvaluator) evaluateTaskGroupNode(ctx context.Context, taskName strin
 		return result // still being expanded
 	}
 
-	if len(children) < len(node.Children) {
+	if missingChildren {
 		if node.Phase == wfv1.NodeSucceeded {
 			result.FulfilledForDeps = true
 			return result
