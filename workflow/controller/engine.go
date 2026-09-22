@@ -1059,6 +1059,15 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 		return nil, err
 	}
 
+	// spec.volumes may reference the outputs of earlier tasks or steps
+	// (docs/variables.md), so substitute them from this task's scope before
+	// its pod is built, as resolveDependencyReferences and resolveReferences
+	// did before the Engine. Globals were substituted once at operate start.
+	if err = e.woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil)); err != nil {
+		e.woc.markNodeError(ctx, taskNodeName, err)
+		return nil, err
+	}
+
 	// Evaluate 'When' clause
 	proceed, err := e.evaluateWhenClause(ctx, task, scope)
 	if err != nil {
