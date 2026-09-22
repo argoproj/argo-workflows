@@ -680,6 +680,12 @@ func (e *Engine) reconcileExpandedChildren(ctx context.Context, task dag.Task) {
 	}
 	newTmplCtx, resolvedTmpl, _, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
 	if err != nil {
+		// The items already ran; their outcome stands. Before the Engine this
+		// marked the fulfilled node Error (#13548), which was a side effect of
+		// avoiding a nil dereference rather than a decision, so only log it:
+		// the children's post-execution handling (sync release, metrics) is
+		// skipped this cycle.
+		e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to resolve template for completed task group; skipping its children")
 		return
 	}
 
