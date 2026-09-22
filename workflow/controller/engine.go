@@ -281,7 +281,7 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 		return
 	}
 	for i, stepGroup := range e.tmpl.Steps {
-		sgNodeName := fmt.Sprintf("%s[%d]", e.nodeName, i)
+		sgNodeName := e.stepGroupNodeNameAt(i)
 		sgNode, err := e.woc.wf.GetNodeByName(sgNodeName)
 		if err != nil || sgNode.Fulfilled() {
 			continue
@@ -1177,6 +1177,20 @@ func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, results m
 		}
 	}
 
+	// Steps templates: a step's continueOn is applied when its StepGroup is
+	// assessed, and groups run in sequence, so the template fails as soon as
+	// any group has failed (matching the pre-Engine executeSteps). The DAG leaf
+	// rule below must not be used here: a later step omitted because an earlier
+	// group failed would otherwise excuse that failure with its own continueOn.
+	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
+		for i := range e.tmpl.Steps {
+			if sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i)); err == nil && sgNode.FailedOrError() {
+				return wfv1.NodeFailed
+			}
+		}
+		return wfv1.NodeSucceeded
+	}
+
 	// Build set of leaf tasks (tasks that no other task depends on).
 	leafTasks := e.findLeafTasks(ctx, tasks)
 
@@ -1342,11 +1356,16 @@ func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string 
 	return parents
 }
 
+// stepGroupNodeNameAt is the name of the StepGroup node for group index i.
+func (e *Engine) stepGroupNodeNameAt(i int) string {
+	return fmt.Sprintf("%s[%d]", e.nodeName, i)
+}
+
 // stepGroupNodeName extracts the StepGroup node name from a task name.
 // Task names for Steps are formatted as "[N].stepName" by StepAdapter.GetName().
 func (e *Engine) stepGroupNodeName(taskName string) string {
 	if groupIdx, ok := stepGroupIndexOf(taskName); ok {
-		return fmt.Sprintf("%s[%d]", e.nodeName, groupIdx)
+		return e.stepGroupNodeNameAt(groupIdx)
 	}
 	return ""
 }
