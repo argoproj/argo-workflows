@@ -469,3 +469,127 @@ func TestRegression_DependantOfOmittedTaskIsLinked(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSkipped, c.Phase)
 	assert.Contains(t, b.Children, c.ID, "C must hang off its dependency B")
 }
+
+// 10. A StepGroup stays Running until every step in it has finished, even
+// after one step has failed; it is only then marked Failed.
+var regStepGroupWaitsForSiblings = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-sg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: echo
+      - name: B
+        template: echo
+    - - name: C
+        template: echo
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_StepGroupWaitsForRunningSiblings(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regStepGroupWaitsForSiblings)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx) // A and B pods
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == "reg-sg[0].A" {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodRunning // B keeps running
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	sg0, err := woc.wf.GetNodeByName("reg-sg[0]")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, sg0.Phase, "group must wait for B before it is Failed")
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	b, err := woc.wf.GetNodeByName("reg-sg[0].B")
+	require.NoError(t, err)
+	if sg1, getErr := woc.wf.GetNodeByName("reg-sg[1]"); getErr == nil {
+		assert.NotContains(t, b.Children, sg1.ID, "the next group must not be linked under a still-running step")
+	}
+
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == "reg-sg[0].B" {
+			return apiv1.PodSucceeded // B finishes
+		}
+		return ""
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	sg0, err = woc.wf.GetNodeByName("reg-sg[0]")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, sg0.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// 11. A throttle (parallelism reached) while starting an exit hook is not an
+// error of the task or the boundary; the hook is simply tried again later.
+var regHookThrottled = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-throttle
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 2
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a-long
+        template: echo
+      - name: b-nested
+        template: nested
+        hooks:
+          exit:
+            template: echo
+      - name: c-x
+        template: echo
+  - name: nested
+    dag:
+      tasks:
+      - name: skip
+        template: echo
+        when: "false"
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_ThrottledExitHookIsNotAnError(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regHookThrottled)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx) // a-long and c-x take both slots; b-nested completes at once and its hook is throttled
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	nested, err := woc.wf.GetNodeByName("reg-throttle.b-nested")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, nested.Phase)
+	root, err := woc.wf.GetNodeByName("reg-throttle")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "a throttled hook must not error the boundary")
+
+	woc = operateUntilFulfilled(t, woc, apiv1.PodSucceeded, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	hook, err := woc.wf.GetNodeByName("reg-throttle.b-nested.onExit")
+	require.NoError(t, err, "the hook runs once a slot is free")
+	assert.Equal(t, wfv1.NodeSucceeded, hook.Phase)
+}
