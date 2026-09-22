@@ -149,6 +149,14 @@ func (h *hookHandler) ProcessAllTaskHooks(ctx context.Context, tasks []dag.Task,
 
 		hookCompleted, hookErr := h.ExecuteLifecycleHooks(ctx, scope, task.GetHooks(), taskNode, task.GetDisplayName())
 		if hookErr != nil {
+			if isThrottleErr(hookErr) {
+				// Deliberate back-pressure (parallelism, rate limit, deadline):
+				// not the task's failure. Leave the hook incomplete; it is tried
+				// again once a slot is free, as before the Engine.
+				h.log.WithError(hookErr).WithField("task", taskName).Info(ctx, "task lifecycle hook throttled")
+				onExitCompleted = false
+				continue
+			}
 			h.log.WithError(hookErr).WithField("task", taskName).Error(ctx, "task lifecycle hook errored; isolating to this task")
 			onError(ctx, taskNode, hookErr)
 			onExitCompleted = false
@@ -208,6 +216,13 @@ func (h *hookHandler) driveExitHandler(ctx context.Context, task dag.Task, node 
 	hasOnExitNode, onExitNode, exitErr := h.ExecuteExitHandler(ctx, task.GetExitHook(h.woc.execWf.Spec.Arguments), node, task.GetDisplayName(), scope)
 	h.exitDriven[node.Name] = true
 	if exitErr != nil {
+		if isThrottleErr(exitErr) {
+			// Deliberate back-pressure (parallelism, rate limit, deadline): not
+			// the task's failure and not the boundary's. Leave the handler
+			// incomplete; it is tried again next cycle, as before the Engine.
+			h.log.WithError(exitErr).WithField("task", task.GetName()).WithField("node", node.Name).Info(ctx, "task exit handler throttled")
+			return false
+		}
 		h.log.WithError(exitErr).WithField("task", task.GetName()).WithField("node", node.Name).Error(ctx, "task exit handler errored; isolating to this task")
 		onError(ctx, node, exitErr)
 		return false
