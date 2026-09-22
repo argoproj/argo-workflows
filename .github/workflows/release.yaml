@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           version: v0.37.1
 
@@ -198,7 +198,7 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
-          cosign-release: 'v2.2.3'
+          cosign-release: 'v2.6.5'
 
       - name: Push Multiarch Image
         env:
@@ -384,7 +384,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.26"
+          go-version: "1.27"
       - name: Download UI artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -433,11 +433,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.26"
+          go-version: "1.27"
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
-          cosign-release: 'v2.2.3'
+          cosign-release: 'v2.6.5'
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
       - run: |
           if [ ${GITHUB_REF##*/} = main ]; then

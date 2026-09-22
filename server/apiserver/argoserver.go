@@ -68,6 +68,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/workflowarchive"
 	"github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/ui"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/json"
@@ -165,7 +166,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	} else {
 		log.Info(ctx, "SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache, envutil.LookupEnvDurationOr(ctx, "ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL", time.Minute))
 	if err != nil {
 		return nil, err
 	}
