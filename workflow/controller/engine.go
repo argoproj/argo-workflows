@@ -308,7 +308,7 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 		failingChildID := ""
 
 		for _, step := range stepGroup.Steps {
-			childNodeName := fmt.Sprintf("%s[%d].%s", e.nodeName, i, step.Name)
+			childNodeName := e.taskNodeName(stepTaskNameFor(i, step.Name))
 			childNode, err := e.woc.wf.GetNodeByName(childNodeName)
 			if err != nil {
 				isPending = true
@@ -1450,7 +1450,7 @@ func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string 
 
 // stepGroupNodeNameAt is the name of the StepGroup node for group index i.
 func (e *Engine) stepGroupNodeNameAt(i int) string {
-	return fmt.Sprintf("%s[%d]", e.nodeName, i)
+	return stepGroupNodeName(e.nodeName, i)
 }
 
 // stepGroupNodeName extracts the StepGroup node name from a task name.
