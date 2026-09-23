@@ -457,7 +457,7 @@ func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Arti
 
 	switch {
 	case isTar:
-		err = untar(tempArtPath, artPath)
+		err = untar(unarchiveCtx, tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	case isZip:
 		err = unzip(unarchiveCtx, tempArtPath, artPath)
@@ -714,7 +714,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 	// localArtPath now points to a .tgz file, and the archive strategy is *not* tar. We need to untar it
 	logger.WithField("path", localArtPath).Info(ctx, "Untarring archive before upload")
 	unarchivedArtPath := path.Join(filepath.Dir(localArtPath), art.Name)
-	err = untar(localArtPath, unarchivedArtPath)
+	err = untar(ctx, localArtPath, unarchivedArtPath)
 	if err != nil {
 		return "", "", err
 	}
@@ -1182,7 +1182,8 @@ func isTarball(ctx context.Context, filePath string) (bool, error) {
 
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
-func untar(tarPath string, destPath string) error {
+func untar(ctx context.Context, tarPath string, destPath string) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 	decompressor := func(src string, dest string) error {
 		f, err := os.Open(src)
 		if err != nil {
@@ -1206,8 +1207,13 @@ func untar(tarPath string, destPath string) error {
 				continue
 			}
 			target := filepath.Join(dest, filepath.Clean(header.Name))
-			if !strings.HasPrefix(target, filepath.Clean(dest)+string(os.PathSeparator)) {
-				return fmt.Errorf("illegal file path: %s", header.Name)
+			cleanDest := filepath.Clean(dest)
+			if !strings.HasPrefix(target, cleanDest+string(os.PathSeparator)) {
+				if target == cleanDest && header.Typeflag == tar.TypeDir {
+					logger.WithFields(logging.Fields{"target": target, "typeflag": header.Typeflag}).Info(ctx, "extracted archive root directory entry matches destination, skipping")
+				} else {
+					return fmt.Errorf("illegal file path: %s", header.Name)
+				}
 			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:

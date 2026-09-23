@@ -402,6 +402,7 @@ func TestUnzip(t *testing.T) {
 }
 
 func TestUntar(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	tarPath := "testdata/file.tar.gz"
 	destPath := "testdata/untarredDir"
 	filePath := "testdata/untarredDir/file"
@@ -409,7 +410,7 @@ func TestUntar(t *testing.T) {
 	emptyDirPath := "testdata/untarredDir/empty-dir"
 
 	// test
-	err := untar(tarPath, destPath)
+	err := untar(ctx, tarPath, destPath)
 	require.NoError(t, err)
 
 	// check untarred contents
@@ -439,6 +440,118 @@ func TestUntar(t *testing.T) {
 	require.NoError(t, err)
 	err = os.Remove(destPath)
 	require.NoError(t, err)
+}
+
+func buildTarGz(t *testing.T, path string, entries []struct {
+	header  tar.Header
+	content string
+},
+) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	gw := gzip.NewWriter(f)
+	tw := tar.NewWriter(gw)
+	for _, e := range entries {
+		h := e.header
+		if e.content != "" {
+			h.Size = int64(len(e.content))
+		}
+		require.NoError(t, tw.WriteHeader(&h))
+		if e.content != "" {
+			_, err := tw.Write([]byte(e.content))
+			require.NoError(t, err)
+		}
+	}
+	require.NoError(t, tw.Close())
+	require.NoError(t, gw.Close())
+}
+
+func TestUntarRootDirEntryIsNoOp(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpDir := t.TempDir()
+	tarPath := filepath.Join(tmpDir, "dataset.tar.gz")
+	destDir := filepath.Join(tmpDir, "dest")
+
+	buildTarGz(t, tarPath, []struct {
+		header  tar.Header
+		content string
+	}{
+		{header: tar.Header{Name: "./", Typeflag: tar.TypeDir, Mode: 0o755}},
+		{header: tar.Header{Name: "./file.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "hello"},
+		{header: tar.Header{Name: "./subdir/", Typeflag: tar.TypeDir, Mode: 0o755}},
+		{header: tar.Header{Name: "./subdir/nested.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "nested"},
+	})
+
+	err := untar(ctx, tarPath, destDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(destDir, "file.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "hello", string(content))
+
+	content, err = os.ReadFile(filepath.Join(destDir, "subdir", "nested.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "nested", string(content))
+}
+
+func TestUntarRootEntryNonDirRejected(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	tests := []struct {
+		name    string
+		header  tar.Header
+		content string // tar disallows body data on non-regular entries (e.g. symlinks)
+	}{
+		{
+			name:    "regular file at root",
+			header:  tar.Header{Name: ".", Typeflag: tar.TypeReg, Mode: 0o644},
+			content: "pwned",
+		},
+		{
+			name:   "symlink at root",
+			header: tar.Header{Name: ".", Typeflag: tar.TypeSymlink, Linkname: "/etc/passwd", Mode: 0o777},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			tarPath := filepath.Join(tmpDir, "malicious.tar.gz")
+			destDir := filepath.Join(tmpDir, "dest")
+
+			buildTarGz(t, tarPath, []struct {
+				header  tar.Header
+				content string
+			}{
+				{header: tt.header, content: tt.content},
+			})
+
+			err := untar(ctx, tarPath, destDir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "illegal file path")
+		})
+	}
+}
+
+func TestUntarPathTraversalRejected(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpDir := t.TempDir()
+	tarPath := filepath.Join(tmpDir, "malicious.tar.gz")
+	destDir := filepath.Join(tmpDir, "dest")
+	require.NoError(t, os.MkdirAll(destDir, 0o755))
+
+	buildTarGz(t, tarPath, []struct {
+		header  tar.Header
+		content string
+	}{
+		{header: tar.Header{Name: "../../../../etc/pwned", Typeflag: tar.TypeReg, Mode: 0o644}, content: "pwned"},
+	})
+
+	err := untar(ctx, tarPath, destDir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "illegal file path")
 }
 
 func TestChmod(t *testing.T) {
@@ -823,7 +936,8 @@ func TestUntarMaliciousSymlink(t *testing.T) {
 	destDir := filepath.Join(tmpDir, "dest")
 
 	// Perform untar
-	err = untar(tarPath, destDir)
+	ctx := logging.TestContext(t.Context())
+	err = untar(ctx, tarPath, destDir)
 	// This should return an error because the symlink is outside the extraction root
 	require.Error(t, err)
 
