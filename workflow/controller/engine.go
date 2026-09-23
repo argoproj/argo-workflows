@@ -6,6 +6,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"maps"
+	"slices"
 	"sort"
 	"strings"
 
@@ -456,12 +457,7 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 	// Sort result keys for deterministic dispatch order. Map iteration would
 	// otherwise vary per cycle and, under parallelism limits, the winner of a
 	// limited slot becomes random — breaking reproducibility.
-	keys := make([]string, 0, len(results))
-	for k := range results {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
+	for _, k := range slices.Sorted(maps.Keys(results)) {
 		result := results[k]
 		if result.Error != nil {
 			// The evaluator could not assess this task (e.g. its depends
