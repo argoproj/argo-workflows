@@ -19,17 +19,17 @@ func evaluateDocsExpression(t *testing.T, depends string, phaseA, phaseB wfv1.No
 	t.Helper()
 	wf := newTestWorkflow("test-wf")
 	if phaseA != "" {
-		addNodeToWorkflow(testCtx(), wf, "dag.A", phaseA)
+		addNodeToWorkflow(testCtx(t), wf, "dag.A", phaseA)
 	}
 	if phaseB != "" {
-		addNodeToWorkflow(testCtx(), wf, "dag.B", phaseB)
+		addNodeToWorkflow(testCtx(t), wf, "dag.B", phaseB)
 	}
 	tmpl := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A", Template: "t"},
 		{Name: "B", Template: "t"},
 		{Name: "C", Template: "t", Depends: depends},
 	})
-	return NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateTask(testCtx(), "C")
+	return NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateTask(testCtx(t), "C")
 }
 
 // Before settled evaluation, "A || B" waited for both tasks to finish and
