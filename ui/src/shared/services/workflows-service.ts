@@ -8,7 +8,6 @@ import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Workflow, WorkflowList
 import {ResubmitOpts, RetryOpts} from '../models';
 import {SubmitOpts} from '../models/submit-opts';
 import {Pagination} from '../pagination';
-import {getMainContainerNames} from '../template-resolution';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 import {queryParams} from './utils';
@@ -23,7 +22,7 @@ function isNodePendingOrRunning(node: NodeStatus) {
 
 function hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
     const node = workflow.status.nodes[nodeId];
-    return !!node && getMainContainerNames(workflow, node).includes(container) && node.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
+    return node?.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
 }
 
 export const WorkflowsService = {
@@ -264,7 +263,7 @@ export const WorkflowsService = {
             return getLogsFromArtifact();
         }
 
-        // Return archived logs when the container is finished and has an artifact.
+        // Return archived logs when the node has finished and has a <container>-logs artifact for one of its main containers.
         return from(this.getWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
             switchMap(({workflow: updatedWorkflow, isPendingOrRunning}) => {
                 if (!isPendingOrRunning && hasArtifactLogs(updatedWorkflow, nodeId, container)) {
