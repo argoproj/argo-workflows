@@ -76,15 +76,7 @@ func (s *StepAdapter) GetContinueOn() *wfv1.ContinueOn {
 }
 
 func (s *StepAdapter) ContinuesOn(phase wfv1.NodePhase) bool {
-	if s.step.ContinueOn != nil {
-		if s.step.ContinueOn.Failed && phase == wfv1.NodeFailed {
-			return true
-		}
-		if s.step.ContinueOn.Error && phase == wfv1.NodeError {
-			return true
-		}
-	}
-	return false
+	return s.step.ContinuesOn(phase)
 }
 
 func (s *StepAdapter) GetHooks() wfv1.LifecycleHooks {
@@ -92,15 +84,7 @@ func (s *StepAdapter) GetHooks() wfv1.LifecycleHooks {
 }
 
 func (s *StepAdapter) GetExitHook(args wfv1.Arguments) *wfv1.LifecycleHook {
-	onExit := s.step.OnExit //nolint:staticcheck // OnExit is deprecated but still honored for backward compatibility
-	hasExitHook := (s.step.Hooks != nil && s.step.Hooks.HasExitHook()) || onExit != ""
-	if !hasExitHook {
-		return nil
-	}
-	if onExit != "" {
-		return &wfv1.LifecycleHook{Template: onExit, Arguments: args}
-	}
-	return s.step.Hooks.GetExitHook().WithArgs(args)
+	return s.step.GetExitHook(args)
 }
 
 func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, substitutor dag.Substitutor) ([]dag.Task, error) {
