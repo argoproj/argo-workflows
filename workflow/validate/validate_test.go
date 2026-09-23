@@ -3633,6 +3633,29 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
 }
 
+var dynamicTemplateRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-template-ref-name
+spec:
+  templates:
+  - name: main
+    inputs:
+      parameters:
+        - name: workflow-name
+    steps:
+      - - name: run
+          templateRef:
+            name: "{{inputs.parameters.workflow-name}}"
+            template: main
+`
+
+func TestDynamicTemplateRefName(t *testing.T) {
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), dynamicTemplateRefName, Opts{})
+	require.NoError(t, err)
+}
+
 var inlineWorkflowTemplate14329 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
