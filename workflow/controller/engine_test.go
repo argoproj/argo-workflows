@@ -389,3 +389,49 @@ func TestAssessTaskGroupPhase_WorstPhaseWins(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeError, tgNode.Phase)
 }
+
+// The Engine logs the evaluator's diagnostics for a waiting task at debug
+// level, so why a task has not started can be read from the logs.
+func TestEngineLogsWaitingTask(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: log-waiting
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+      - name: b
+        template: echo
+        depends: a
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`)
+	hook := logging.NewTestHook()
+	ctx := logging.WithLogger(t.Context(), logging.NewTestLogger(logging.Debug, logging.Text, hook))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	var found *logging.TestEntry
+	for _, e := range hook.AllEntries() {
+		if e.Msg == "task evaluation" && e.Fields["task"] == "b" {
+			found = &e
+			break
+		}
+	}
+	require.NotNil(t, found, "b's evaluation is logged while it waits on a")
+	assert.Equal(t, logging.Debug, found.Level)
+	assert.Equal(t, true, found.Fields["waiting"])
+	assert.Equal(t, []string{"a"}, found.Fields["waitingOn"])
+	assert.Equal(t, dag.ActionNone, found.Fields["action"])
+}

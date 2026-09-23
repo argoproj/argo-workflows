@@ -1,24 +1,50 @@
 package dag
 
 import (
+	"fmt"
 	"time"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-// Action describes the side effect the engine must perform for a task.
+// Action is the evaluator's decision for a retry or task-group node. The
+// Engine dispatches the task through executeTask for Execute, Succeed and
+// Fail alike; the distinction records what the evaluator concluded, and is
+// what the evaluator's tests check.
 type Action int
 
 const (
-	// ActionNone means no side effect is needed; the engine should do nothing.
+	// ActionNone means there is nothing to dispatch this pass: the task is
+	// waiting, already recorded, or backing off (see RequeueAfter).
 	ActionNone Action = iota
-	// ActionExecute means the engine should create/schedule a pod (or create the next retry attempt).
+	// ActionExecute means the task should be dispatched: its node created, or
+	// the next retry attempt scheduled.
 	ActionExecute
-	// ActionSucceed means the engine should mark the task as Succeeded.
+	// ActionSucceed means the evaluator judges the node Succeeded. The Engine
+	// does not mark it; dispatching it lets the operator's retry handling or
+	// the TaskGroup assessment record the outcome, and post-execution handling
+	// (lock release, metrics) run.
 	ActionSucceed
-	// ActionFail means the engine should mark the task as Failed.
+	// ActionFail means the evaluator judges the node Failed or Errored
+	// (CurrentPhase says which). As for ActionSucceed, the Engine dispatches it
+	// and the operator records the outcome.
 	ActionFail
 )
+
+func (a Action) String() string {
+	switch a {
+	case ActionNone:
+		return "None"
+	case ActionExecute:
+		return "Execute"
+	case ActionSucceed:
+		return "Succeed"
+	case ActionFail:
+		return "Fail"
+	default:
+		return fmt.Sprintf("Action(%d)", int(a))
+	}
+}
 
 // Key uniquely identifies a task in the DAG.
 type Key = string
@@ -50,18 +76,27 @@ type taskResult struct {
 
 // EvaluationResult contains the evaluation result for a single task.
 type EvaluationResult struct {
-	TaskName     string
-	ShouldRun    bool
-	Suspended    bool
-	WaitingOn    []string
+	TaskName string
+	// ShouldRun is set when the task's dependencies allow it to run now. For
+	// a retry or task-group node it accompanies ActionExecute.
+	ShouldRun bool
+	// Suspended is set while the task waits on dependencies whose outcome
+	// could still change its result, and WaitingOn names them. Both are
+	// diagnostic: the Engine logs them and does not act on them.
+	Suspended bool
+	WaitingOn []string
+	// Skipped is set when the task can never run; the Engine creates its
+	// Omitted node with SkipReason.
 	Skipped      bool
 	SkipReason   string
 	Error        error
 	CurrentPhase wfv1.NodePhase
 
-	// Action is the side effect the engine must perform for this task.
+	// Action is the evaluator's decision for a retry or task-group node; see
+	// the Action constants for what the Engine does with each.
 	Action Action
-	// ActionReason is a human-readable explanation for the chosen Action.
+	// ActionReason explains the chosen Action. The Engine logs it at debug
+	// level with the task's other diagnostics.
 	ActionReason string
 	// RequeueAfter is the retry backoff duration the engine should wait before
 	// re-evaluating this task. A zero value means no requeue is needed.

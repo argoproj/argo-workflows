@@ -475,6 +475,9 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 			}
 			continue
 		}
+		e.logEvaluation(ctx, result)
+		// Execute, Succeed and Fail are all dispatched: for Succeed and Fail the
+		// operator's retry handling or TaskGroup assessment records the outcome.
 		needsExecution := result.Action == dag.ActionExecute || result.ShouldRun ||
 			result.Action == dag.ActionSucceed || result.Action == dag.ActionFail
 
@@ -533,6 +536,24 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 		}
 	}
 	return executedTasks, firstErr
+}
+
+// logEvaluation records the evaluator's diagnostics for a task at debug
+// level, so "why has this task not started" can be answered from the logs.
+func (e *Engine) logEvaluation(ctx context.Context, result dag.EvaluationResult) {
+	if result.ActionReason == "" && !result.Suspended && !result.Skipped {
+		return
+	}
+	e.log.WithFields(logging.Fields{
+		"task":       result.TaskName,
+		"action":     result.Action,
+		"reason":     result.ActionReason,
+		"shouldRun":  result.ShouldRun,
+		"waiting":    result.Suspended,
+		"waitingOn":  result.WaitingOn,
+		"skipped":    result.Skipped,
+		"skipReason": result.SkipReason,
+	}).Debug(ctx, "task evaluation")
 }
 
 // errRecordedOnNode reports whether a dispatch error has already been recorded

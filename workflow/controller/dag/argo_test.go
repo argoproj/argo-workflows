@@ -2801,3 +2801,11 @@ func TestTaskNodeName_RoundTrip(t *testing.T) {
 	assert.Equal(t, "boundaryother", TaskNameFromNodeName("boundary", "boundaryother"))
 	assert.Equal(t, "elsewhere.x", TaskNameFromNodeName("boundary", "elsewhere.x"))
 }
+
+func TestActionString(t *testing.T) {
+	assert.Equal(t, "None", ActionNone.String())
+	assert.Equal(t, "Execute", ActionExecute.String())
+	assert.Equal(t, "Succeed", ActionSucceed.String())
+	assert.Equal(t, "Fail", ActionFail.String())
+	assert.Equal(t, "Action(9)", Action(9).String())
+}
