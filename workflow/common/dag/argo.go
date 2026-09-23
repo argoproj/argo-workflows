@@ -397,7 +397,7 @@ func (e *DAGEvaluator) evaluateAllStates(ctx context.Context) {
 	// Single pass: O(N) instead of O(N²) fixed-point for linear chains.
 	for _, key := range e.tasks.TopologicalOrder() {
 		phase := e.store.getPhase(ctx, key)
-		if isTerminalPhase(phase) || phase == wfv1.NodeRunning {
+		if phase.Fulfilled(nil) || phase == wfv1.NodeRunning {
 			continue
 		}
 		result, err := e.isReady(ctx, key)
@@ -500,7 +500,7 @@ func (e *DAGEvaluator) evaluateTaskResult(ctx context.Context, taskName string) 
 		deps, _ := e.tasks.GetDependencies(ctx, taskName)
 		for _, dep := range deps {
 			depPhase := e.store.getPhase(ctx, dep)
-			if isTerminalPhase(depPhase) {
+			if depPhase.Fulfilled(nil) {
 				continue
 			}
 			depNode := e.store.getNode(dep)
