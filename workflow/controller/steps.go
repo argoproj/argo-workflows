@@ -28,6 +28,13 @@ func stepTaskNameFor(groupIndex int, stepName string) string {
 	return fmt.Sprintf("[%d].%s", groupIndex, stepName)
 }
 
+// stepGroupNodeName is the node name of the groupIndex-th step group of the
+// Steps node stepsNodeName: "<steps node>[<group index>]". A step's node name
+// is this followed by ".<step name>" (dag.TaskNodeName over stepTaskNameFor).
+func stepGroupNodeName(stepsNodeName string, groupIndex int) string {
+	return fmt.Sprintf("%s[%d]", stepsNodeName, groupIndex)
+}
+
 // stepGroupIndexOf recovers the step group index from a Steps task name
 // produced by stepTaskNameFor. ok is false for any other name.
 func stepGroupIndexOf(taskName string) (groupIndex int, ok bool) {
@@ -165,7 +172,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		// Create StepGroup node. Only [0] is linked to the Steps root here; [i>0]
 		// is wired after engine.Execute once the previous group's children exist
 		// (see linkStepGroups below).
-		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
+		sgNodeName := stepGroupNodeName(nodeName, i)
 		if _, err := woc.wf.GetNodeByName(sgNodeName); err != nil {
 			_, _ = woc.initializeNode(ctx, sgNodeName, wfv1.NodeTypeStepGroup, tmplCtx.GetTemplateScope(), &wfv1.WorkflowStep{}, node.ID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 			if i == 0 {
@@ -207,8 +214,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 // retry completion.
 func (woc *wfOperationCtx) linkStepGroups(ctx context.Context, nodeName string, tmpl *wfv1.Template) error {
 	for i := 1; i < len(tmpl.Steps); i++ {
-		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		prevSgNodeName := fmt.Sprintf("%s[%d]", nodeName, i-1)
+		sgNodeName := stepGroupNodeName(nodeName, i)
+		prevSgNodeName := stepGroupNodeName(nodeName, i-1)
 		prevSgNode, err := woc.wf.GetNodeByName(prevSgNodeName)
 		if err != nil {
 			return err
