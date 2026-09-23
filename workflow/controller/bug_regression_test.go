@@ -14,13 +14,13 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
 
 // TestBug_Depends_NegationCausesPrematureOmit documents Critical #2 as it
 // actually manifests at runtime.
 //
-// workflow/common/dag/argo.go:253-274 uses an "all fields true" value as
+// workflow/controller/dag/argo.go:253-274 uses an "all fields true" value as
 // the best-case scope for pending deps, in order to decide whether the
 // depends expression is structurally unsatisfiable.  For any negated
 // reference (e.g. "!X.Failed"), all-true is the WORST case, not the best:

@@ -14,7 +14,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
 
 // newDAGEvaluator builds a DAGEvaluator over a DAG template's tasks, mirroring

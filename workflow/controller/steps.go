@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
