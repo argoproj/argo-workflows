@@ -138,6 +138,17 @@ func TestExpandSequence_CountAndRange(t *testing.T) {
 	assert.Equal(t, "60", strVals(items)[0])
 	assert.Equal(t, "50", strVals(items)[10])
 
+	items, err = expandSequence(&wfv1.Sequence{Start: intstrPtr("8"), End: intstrPtr("8")})
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, "8", items[0].GetStrVal())
+
+	items, err = expandSequence(&wfv1.Sequence{Format: "testuser%02X", Count: intstrPtr("10"), Start: intstrPtr("1")})
+	require.NoError(t, err)
+	require.Len(t, items, 10)
+	assert.Equal(t, "testuser01", items[0].GetStrVal())
+	assert.Equal(t, "testuser0A", items[9].GetStrVal())
+
 	items, err = expandSequence(&wfv1.Sequence{Count: intstrPtr("0")})
 	require.NoError(t, err)
 	assert.Empty(t, items)
@@ -183,12 +194,15 @@ func TestProcessItem_ItemShapes(t *testing.T) {
 		expectedName  string
 		expectedParam string
 	}{
+		{"string", `["string"]`, `task-name(0:string)`, `string`},
+		{"multiline string", `["alpha\nbeta"]`, `task-name(0:alpha\nbeta)`, "alpha\nbeta"},
 		{"number", `[42]`, `task-name(0:42)`, `42`},
 		{"boolean", `[true]`, `task-name(0:true)`, `true`},
 		{"map", `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
 			`task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`,
 			`{"json":{"list":[0,"1"],"number":2,"string":"foo"},"list":[0,"1"],"number":2,"string":"foo"}`},
 		{"list", `[[1, "two", 3]]`, `task-name(0:[1 two 3])`, `[1,"two",3]`},
+		{"list of maps", `[[{"foo": "bar"}]]`, `task-name(0:[{"foo":"bar"}])`, `[{"foo":"bar"}]`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

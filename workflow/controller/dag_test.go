@@ -1035,6 +1035,11 @@ func TestOnExitDAGPhase(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
+	// The DAG boundary stays Running while B's exit hook is pending.
+	dagNode, err := woc.wf.GetNodeByName("dag-diamond-88trp")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, dagNode.Phase)
+
 	onExitNode, err := woc.wf.GetNodeByName("dag-diamond-88trp.B.onExit")
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
