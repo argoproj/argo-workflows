@@ -10,7 +10,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
 
 // fakeReconciler captures DesiredTasks so tests can assert exactly what the
