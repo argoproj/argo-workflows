@@ -3,6 +3,8 @@ package dag
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -276,11 +278,7 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 	// undecided (waiting). If only true is possible, the task can fire
 	// now regardless of how pending deps resolve (ready). If only false
 	// is possible, the expression is provably unsatisfiable (omit).
-	pendingDeps := make([]string, 0, len(pendingDepNames))
-	for depName := range pendingDepNames {
-		pendingDeps = append(pendingDeps, depName)
-	}
-	sort.Strings(pendingDeps)
+	pendingDeps := slices.Sorted(maps.Keys(pendingDepNames))
 
 	canBeTrue, canBeFalse := e.enumerateOutcomes(logic, evalScope, pendingDeps, result)
 	if !canBeTrue {

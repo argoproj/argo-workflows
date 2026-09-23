@@ -49,9 +49,7 @@ func RetryBackoffWait(rs *wfv1.RetryStrategy, attempts int) (time.Duration, erro
 		if err != nil {
 			return 0, err
 		}
-		if timeToWait > capDuration {
-			timeToWait = capDuration
-		}
+		timeToWait = min(timeToWait, capDuration)
 	}
 	return timeToWait, nil
 }
