@@ -185,11 +185,7 @@ func templateSubstitutor(t *testing.T) Substitutor {
 		if err != nil {
 			return "", err
 		}
-		replaceMap := make(map[string]any, len(scope))
-		for k, v := range scope {
-			replaceMap[k] = v
-		}
-		return tmpl.ReplaceStrict(ctx, replaceMap, strictPrefixes)
+		return tmpl.ReplaceStrict(ctx, template.ToAnyMap(scope), strictPrefixes)
 	})
 }
 
