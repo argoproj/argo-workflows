@@ -96,7 +96,7 @@ func TestStepsEngine_PerChildDispatch(t *testing.T) {
 	}
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, results)
+	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 	got := fake.allDesiredTaskNames()
 	sort.Strings(got)
@@ -118,10 +118,10 @@ func TestStepsEngine_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 		"[0].client": {TaskName: "[0].client", CurrentPhase: wfv1.NodeRunning, Error: errors.New("depends expression failed to evaluate")},
 	}
 	fake.calls = nil
-	executed, err := engine.converge(ctx, tasks, results)
+	executed, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 	assert.Empty(t, fake.calls)
-	assert.True(t, executed["[0].client"])
+	assert.True(t, executed.executed["[0].client"])
 
 	node, err := woc.wf.GetNodeByName(engine.taskNodeName("[0].client"))
 	require.NoError(t, err)

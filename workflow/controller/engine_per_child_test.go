@@ -135,7 +135,7 @@ func TestIntegration_EvaluatorPerChild_AllPending_DispatchesEachChild(t *testing
 
 	// Reset the fake reconciler so we only count dispatches caused by converge.
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, results)
+	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 
 	// Each per-child result should have triggered one dispatch through
@@ -167,7 +167,7 @@ func TestIntegration_EvaluatorPerChild_OnlyPendingDispatched(t *testing.T) {
 	assert.Equal(t, dag.ActionNone, results["client(2:2)"].Action)
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, results)
+	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 
 	gotNames := fake.allDesiredTaskNames()
@@ -189,7 +189,7 @@ func TestIntegration_EvaluatorPerChild_AllSucceeded_NoDispatches(t *testing.T) {
 	}
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, results)
+	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 	assert.Empty(t, fake.calls,
 		"all-Succeeded children should not produce per-child dispatches")
@@ -275,7 +275,7 @@ func TestIntegration_Converge_RouteByParentTaskName_StaticVsChild(t *testing.T) 
 	}
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, results)
+	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 
 	// Exactly one reconcile, for the per-child result.
