@@ -487,7 +487,7 @@ func TestDAGOnExit(t *testing.T) {
 				},
 			}
 			woc1.wf.Status.Nodes[idx] = node
-			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+			woc1.wf.Status.MarkTaskResultComplete(ctx, node.ID)
 		}
 	}
 	woc2 := newWorkflowOperationCtx(ctx, woc1.wf, controller)
