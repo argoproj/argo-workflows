@@ -56,19 +56,6 @@ func createDAGTemplate(tasks []wfv1.DAGTask) *wfv1.Template {
 	}
 }
 
-// --- Tests for isTerminalPhase ---
-
-func TestIsTerminalPhase(t *testing.T) {
-	assert.True(t, isTerminalPhase(wfv1.NodeSucceeded))
-	assert.True(t, isTerminalPhase(wfv1.NodeFailed))
-	assert.True(t, isTerminalPhase(wfv1.NodeError))
-	assert.True(t, isTerminalPhase(wfv1.NodeSkipped))
-	assert.True(t, isTerminalPhase(wfv1.NodeOmitted))
-	assert.False(t, isTerminalPhase(wfv1.NodePending))
-	assert.False(t, isTerminalPhase(wfv1.NodeRunning))
-	assert.False(t, isTerminalPhase(""))
-}
-
 // --- Tests for workflowStore ---
 
 func TestWorkflowStore_New(t *testing.T) {

@@ -98,7 +98,7 @@ func (s *workflowStore) getPhase(_ context.Context, key Key) wfv1.NodePhase {
 	// No workflow node. Check internal phases map for evaluator-managed states
 	// (e.g. Omitted marking from unreachable depends conditions).
 	s.mu.RLock()
-	if phase, ok := s.phases[key]; ok && isTerminalPhase(phase) {
+	if phase, ok := s.phases[key]; ok && phase.Fulfilled(nil) {
 		s.mu.RUnlock()
 		return phase
 	}
