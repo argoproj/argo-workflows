@@ -377,10 +377,11 @@ func (e *DAGEvaluator) enumerateOutcomes(logic string, scope map[string]taskResu
 // conditions can never be met are omitted in the same pass.
 //
 // IMPORTANT: This method clears previously-set Omitted states at the start,
-// then re-evaluates from scratch. It must be called before any method that
-// reads task phases (EvaluateAll, EvaluateTask) to ensure
-// consistent state. Multiple calls within the same evaluation cycle are safe
-// but wasteful — prefer calling EvaluateAll once and reusing the results.
+// then re-evaluates from scratch. EvaluateAll, the production entry point,
+// calls it first so that every result it returns is read against a
+// consistent state; anything else that reads task phases must run after it.
+// Multiple calls within the same evaluation cycle are safe but wasteful —
+// prefer calling EvaluateAll once and reusing the results.
 func (e *DAGEvaluator) evaluateAllStates(ctx context.Context) {
 	// Clear Omitted states set by the previous call.
 	// Conditions may have changed (e.g., a dep finished), so we must
