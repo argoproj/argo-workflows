@@ -67,6 +67,7 @@ func customEventAggregatorFuncWithAnnotations(event *apiv1.Event) (string, strin
 }
 
 func (m *eventRecorderManager) Get(ctx context.Context, namespace string) record.EventRecorder {
+	//nolint:contextcheck // The shared broadcaster must not inherit a request's cancellation or values.
 	m.once.Do(func() {
 		options := record.CorrelatorOptions{BurstSize: defaultSpamBurst, KeyFunc: customEventAggregatorFuncWithAnnotations}
 		// Get may receive a short-lived server request context. The shared
@@ -113,13 +114,13 @@ func (r *namespaceEventRecorder) Event(object runtime.Object, eventtype, reason,
 	}
 }
 
-func (r *namespaceEventRecorder) Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...interface{}) {
+func (r *namespaceEventRecorder) Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...any) {
 	if r.accepts(object) {
 		r.recorder.Eventf(object, eventtype, reason, messageFmt, args...)
 	}
 }
 
-func (r *namespaceEventRecorder) AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...interface{}) {
+func (r *namespaceEventRecorder) AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...any) {
 	if r.accepts(object) {
 		r.recorder.AnnotatedEventf(object, annotations, eventtype, reason, messageFmt, args...)
 	}

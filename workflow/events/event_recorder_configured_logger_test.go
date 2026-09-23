@@ -33,12 +33,12 @@ func (b *eventLogBuffer) Write(p []byte) (int, error) {
 func (b *eventLogBuffer) snapshot() string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.Buffer.String()
+	return b.String()
 }
 
 // Keep the original callable signature, including assignment to a function value.
 func TestEventRecorderLegacyConstructor(t *testing.T) {
-	var constructor func(kubernetes.Interface) EventRecorderManager = NewEventRecorderManager
+	var constructor func(kubernetes.Interface) EventRecorderManager = NewEventRecorderManager //nolint:staticcheck // The explicit type checks compatibility with the original callable signature.
 	transport := &eventTransport{events: make(map[string]corev1.Event), requests: make(chan eventRequest, 8)}
 	client, err := kubernetes.NewForConfigAndClient(&rest.Config{Host: "https://events.invalid"}, &http.Client{Transport: transport})
 	require.NoError(t, err)
