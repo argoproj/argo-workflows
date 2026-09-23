@@ -80,14 +80,15 @@ dag.TaskNodeName / dag.TaskNameFromNodeName // task ↔ node name convention
 
 Fields of `EvaluationResult` the engine acts on:
 
-- `Action` / `ActionReason` — what to do (`ActionExecute`, `ActionSucceed`, `ActionFail`, `ActionNone`); `ShouldRun` mirrors "execute".
+- `Action` — the evaluator's decision for a retry or task-group node (`ActionExecute`, `ActionSucceed`, `ActionFail`, `ActionNone`); `ShouldRun` — the task's dependencies allow it to run.
+  The engine dispatches the task for Execute, Succeed and Fail alike: for Succeed and Fail the operator's retry handling or the TaskGroup assessment records the outcome.
 - `CurrentPhase` and `FulfilledForDeps` — for boundary phase assessment and dependency gating (a running daemon is fulfilled for its dependants).
 - `RequeueAfter` — retry backoff still to wait.
 - `Skipped` / `SkipReason` — the task will never run; the engine creates the Omitted node with this reason.
 - `Error` — the task could not be assessed; the engine records a terminal Error node.
 - `ParentTaskName` — set on expanded-child results so the engine can dispatch them without parsing the name.
 
-`Suspended` and `WaitingOn` are informational and not currently read by the engine.
+`ActionReason`, `Suspended` and `WaitingOn` are diagnostic: the engine logs them at debug level and does not act on them.
 
 ## Architecture
 

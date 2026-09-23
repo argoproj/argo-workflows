@@ -48,7 +48,11 @@ type DesiredTask struct {
 	ParentNodeNames []string
 }
 
-// TaskReconciler defines the interface for actuating the desired state.
+// TaskReconciler is the Engine's dispatch seam: it turns desired tasks into
+// nodes and pods (K8sTaskReconciler, via executeProcessedTemplate), and is
+// what tests replace with a fake to observe dispatch. Only dispatch goes
+// through it. The Engine records omitted and errored nodes, group phases and
+// hooks on the workflow status directly.
 type TaskReconciler interface {
 	// Reconcile ensures the cluster state matches the desired tasks.
 	Reconcile(ctx context.Context, desired []DesiredTask) error
