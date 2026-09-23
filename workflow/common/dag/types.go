@@ -14,10 +14,6 @@ const (
 	ActionNone Action = iota
 	// ActionExecute means the engine should create/schedule a pod (or create the next retry attempt).
 	ActionExecute
-	// ActionSkip means the engine should mark the task as Skipped.
-	ActionSkip
-	// ActionOmit means the engine should mark the task as Omitted.
-	ActionOmit
 	// ActionSucceed means the engine should mark the task as Succeeded.
 	ActionSucceed
 	// ActionFail means the engine should mark the task as Failed.

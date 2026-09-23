@@ -8,6 +8,7 @@ Both template types use it — Steps tasks are adapted to the same `Task` interf
 
 | File | Purpose |
 |------|---------|
+| `doc.go` | Package comment |
 | `argo.go` | `DAGEvaluator` — readiness evaluation, cascading omission, retry and task-group assessment, public API |
 | `topology.go` | `WorkflowTasks` — task collection, dependency resolution, topological order |
 | `store.go` | `workflowStore` — maps task names to workflow nodes; `TaskNodeName` / `TaskNameFromNodeName` naming convention |
@@ -33,7 +34,7 @@ A new evaluator is created every reconcile cycle, so nothing here is long-lived.
 ### 2. Dependency resolution
 
 A user-written `depends` expression is tokenized with `common.ParseDepends` — the same grammar workflow validation uses, so an expression cannot pass validation and be read differently here.
-Legacy `dependencies` lists (and the synthetic dependencies of Steps tasks, named `[i].step`) are structured data and are expanded directly with `common.ExpandDependency`; they are never re-parsed as an expression.
+Legacy `dependencies` lists (and the synthetic dependencies of Steps tasks, whose names are `[<group index>].<step name>`, for example `[0].build`) are structured data and are expanded directly with `common.ExpandDependency`; they are never re-parsed as an expression.
 
 Task names are rewritten to hex-encoded identifiers (`my-task` → `t6d792d7461736b`) so they are valid, collision-free identifiers in the evaluated expression.
 The dependency graph is sorted topologically (Kahn's algorithm) once, at construction.
@@ -46,7 +47,7 @@ For each pending task, `evaluateDependsReadiness` builds a scope of dependency s
 - **waiting** — the expression is false, but some outcome of a pending dependency could still make it true.
 - **omit** — the expression is false and no realistic outcome of the pending dependencies can make it true.
 
-The "could it still become true" check enumerates the realistic outcome shapes of each pending dependency (`pendingDepOutcomes`, nine shapes, so negated references such as `!B.Failed` are handled correctly) for up to five pending dependencies (`maxEnumerationDeps`).
+The "could it still become true" check enumerates the realistic outcome shapes of each pending dependency (`pendingDepOutcomes`, eleven shapes, so negated references such as `!B.Failed` and partially failed groups are handled correctly) for up to five pending dependencies (`maxEnumerationDeps`).
 With more pending dependencies than that, both outcomes are conservatively assumed possible and the task waits rather than being omitted.
 
 ### 4. Cascading omission
@@ -90,7 +91,7 @@ Fields of `EvaluationResult` the engine acts on:
 
 ## Architecture
 
-```
+```text
 Engine (workflow/controller/engine.go)
   │
   ├── DAGEvaluator (argo.go)
