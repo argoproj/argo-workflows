@@ -56,13 +56,7 @@ func engineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, *fake
 	require.NoError(t, err, "workflow root node must exist after operate")
 
 	// Locate the template by name; tests use entrypoint=main.
-	var tmpl *wfv1.Template
-	for i := range woc.execWf.Spec.Templates {
-		if woc.execWf.Spec.Templates[i].Name == "main" {
-			tmpl = &woc.execWf.Spec.Templates[i]
-			break
-		}
-	}
+	tmpl := woc.execWf.GetTemplateByName("main")
 	require.NotNil(t, tmpl, "test workflows must define a 'main' template")
 
 	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")

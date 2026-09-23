@@ -105,12 +105,7 @@ func (w *WorkflowTasks) GetDependsError(taskName string) error {
 
 // TaskNames returns all task names (sorted).
 func (w *WorkflowTasks) TaskNames() []string {
-	names := make([]string, 0, len(w.taskMap))
-	for name := range w.taskMap {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
+	return slices.Sorted(maps.Keys(w.taskMap))
 }
 
 // GetTask returns the Task with the given name, or nil if not found.

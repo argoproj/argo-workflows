@@ -208,8 +208,8 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 
 	// When both end and count are specified, count limits the number of items
 	numElements := abs64(end-start) + 1
-	if seq.Count != nil && count < numElements {
-		numElements = count
+	if seq.Count != nil {
+		numElements = min(numElements, count)
 	}
 
 	format := "%d"
