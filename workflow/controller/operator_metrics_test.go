@@ -519,6 +519,12 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	attribs := attribute.NewSet(attribute.String("label", "foobar"), attribute.String("workflowName", "test-foobar"))
 	value, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
+	// The realtime value is derived from time.Since(Status.StartedAt), and StartedAt
+	// carries no monotonic reading, so this reads the wall clock. Two back-to-back
+	// collections land in the same wall clock tick on platforms with a coarse timer
+	// (~0.5ms on Windows) and report an identical duration, so wait out a tick before
+	// asserting the gauge has advanced.
+	time.Sleep(10 * time.Millisecond)
 	value1, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	t.Logf("%v new %v old", value1, value)
