@@ -491,6 +491,65 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 			assert.Contains(t, node.Message, "Stop")
 		}
 	})
+	t.Run("WorkflowTemplateRefWithSuspendWithShutdownTerminate", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
+		wf1 := wf.DeepCopy()
+		wf1.Spec.Suspend = new(true)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf1, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+		defer cancel()
+
+		woc := newWorkflowOperationCtx(ctx, wf1, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		assert.Empty(t, woc.wf.Status.Nodes)
+		require.NotNil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+		assert.True(t, *woc.wf.Status.StoredWorkflowSpec.Suspend)
+
+		wf2 := woc.wf.DeepCopy()
+		wf2.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc = newWorkflowOperationCtx(ctx, wf2, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes.FindByDisplayName(wf.Name)
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		assert.Contains(t, node.Message, "Terminate")
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", woc.wf.Status.Message)
+	})
+
+	t.Run("WorkflowTemplateRefWithSuspendWithShutdownStop", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
+		wf1 := wf.DeepCopy()
+		wf1.Spec.Suspend = new(true)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf1, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+		defer cancel()
+
+		woc := newWorkflowOperationCtx(ctx, wf1, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		assert.Empty(t, woc.wf.Status.Nodes)
+		require.NotNil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
+		assert.True(t, *woc.wf.Status.StoredWorkflowSpec.Suspend)
+
+		wf2 := woc.wf.DeepCopy()
+		wf2.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc = newWorkflowOperationCtx(ctx, wf2, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes.FindByDisplayName(wf.Name)
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		assert.Contains(t, node.Message, "Stop")
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Stop'", woc.wf.Status.Message)
+	})
 }
 
 var suspendwf = `apiVersion: argoproj.io/v1alpha1

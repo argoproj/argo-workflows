@@ -46,7 +46,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
     RESUME: {
         title: 'RESUME',
         iconClassName: 'fa fa-play',
-        disabled: (wf: Workflow) => !isWorkflowSuspended(wf),
+        disabled: (wf: Workflow) => !isWorkflowSuspended(wf) || isWorkflowShutdown(wf),
         action: (wf: Workflow) => services.workflows.resume(wf.metadata.name, wf.metadata.namespace, null)
     },
     STOP: {
@@ -84,6 +84,10 @@ function isWorkflowSuspended(wf: Workflow): boolean {
         }
     }
     return false;
+}
+
+function isWorkflowShutdown(wf: Workflow): boolean {
+    return !!wf?.spec?.shutdown && !isWorkflowRunning(wf);
 }
 
 function isWorkflowRunning(wf: Workflow): boolean {
