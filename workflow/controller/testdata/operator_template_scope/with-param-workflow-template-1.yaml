@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-template-scope-with-param-1
+  namespace: default
+spec:
+  templates:
+    - name: main
+      steps:
+        - - name: print-string
+            template: print-string
+            arguments:
+              parameters:
+               - name: letter
+                 value: '{{item}}'
+            withParam: '["x", "y", "z"]'
+    - name: print-string
+      inputs:
+        parameters:
+         - name: letter
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.letter}}"]
