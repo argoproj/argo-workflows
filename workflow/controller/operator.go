@@ -1024,12 +1024,8 @@ func (woc *wfOperationCtx) Substitute(text string, scope map[string]string, stri
 	if err != nil {
 		return "", err
 	}
-	replaceMap := make(map[string]any)
-	for k, v := range scope {
-		replaceMap[k] = v
-	}
 	ctx := logging.WithLogger(context.Background(), woc.log)
-	return t.ReplaceStrict(ctx, replaceMap, strictPrefixes)
+	return t.ReplaceStrict(ctx, template.ToAnyMap(scope), strictPrefixes)
 }
 
 // deadlineExceeded reports whether this operation has run past its deadline.
