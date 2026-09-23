@@ -314,10 +314,10 @@ func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 		},
 	}
 	fake.calls = nil
-	executed, err := engine.converge(ctx, tasks, results)
+	executed, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
-	assert.True(t, executed["client"])
+	assert.True(t, executed.executed["client"])
 
 	node, err := engine.woc.wf.GetNodeByName(engine.taskNodeName("client"))
 	require.NoError(t, err)
@@ -325,10 +325,10 @@ func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	assert.Equal(t, "depends expression failed to evaluate", node.Message)
 
 	// Idempotent: a second pass neither re-creates nor re-dispatches.
-	executed, err = engine.converge(ctx, tasks, results)
+	executed, err = engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	require.NoError(t, err)
 	assert.Empty(t, fake.calls)
-	assert.Empty(t, executed)
+	assert.Empty(t, executed.executed)
 }
 
 // An explicitly empty withItems list is not an expansion: the task runs once
