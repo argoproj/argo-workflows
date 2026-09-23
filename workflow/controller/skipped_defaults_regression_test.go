@@ -603,8 +603,16 @@ func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
 	for _, node := range woc.wf.Status.Nodes {
 		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
 	}
-	assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
-	assert.NotEqual(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	// Both steps are skipped, so nothing runs and the workflow completes at once;
+	// a workflow left Running would be the hang this test exists to catch.
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	skippedItems := 0
+	for _, node := range woc.wf.Status.Nodes {
+		if strings.HasPrefix(node.DisplayName, "consumer(") && node.Phase == wfv1.NodeSkipped {
+			skippedItems++
+		}
+	}
+	assert.Equal(t, 1, skippedItems, "the consumer item is Skipped")
 }
 
 var skippedRefConsumeWorkflowTemplate = `
