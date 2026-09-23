@@ -76,7 +76,7 @@ func (s *eventTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	} else if req.Method != http.MethodPost {
 		return nil, fmt.Errorf("unexpected event method %s", req.Method)
 	}
-	if err := json.Unmarshal(body, &event); err != nil {
+	if err = json.Unmarshal(body, &event); err != nil {
 		return nil, err
 	}
 	if s.transientError {
@@ -201,7 +201,7 @@ func TestEventRecorderObjectReferences(t *testing.T) {
 	// Unstructured CronWorkflow is the malformed cron caller's actual input;
 	// Workflow and WorkflowEventBinding exercise the CRD reference fallback.
 	for _, kind := range []string{"Workflow", "CronWorkflow", "WorkflowEventBinding"} {
-		objects = append(objects, &unstructured.Unstructured{Object: map[string]interface{}{"apiVersion": "argoproj.io/v1alpha1", "kind": kind, "metadata": map[string]interface{}{"namespace": "alpha", "name": kind, "uid": kind + "-uid"}}})
+		objects = append(objects, &unstructured.Unstructured{Object: map[string]any{"apiVersion": "argoproj.io/v1alpha1", "kind": kind, "metadata": map[string]any{"namespace": "alpha", "name": kind, "uid": kind + "-uid"}}})
 	}
 	for _, obj := range objects {
 		emitEvent(manager.Get(ctx, "alpha"), "AnnotatedEventf", obj, "Sibling")
@@ -269,6 +269,17 @@ func TestEventRecorderConcurrentGetAndRequestCancellation(t *testing.T) {
 	assert.Same(t, broadcaster, manager.broadcaster)
 	require.Eventually(t, func() bool { return runtime.NumGoroutine() <= before+4 }, time.Second, time.Millisecond)
 	t.Logf("128 concurrent new namespaces: goroutine delta=%d", runtime.NumGoroutine()-before)
+}
+
+func TestEventRecorderAlreadyCanceledFirstRequest(t *testing.T) {
+	manager, transport := newTestEventManager(t)
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+	cancel()
+	first := manager.Get(ctx, "alpha")
+	emitEvent(first, "Event", eventPod("alpha", "first", "first"), "AlreadyCanceled")
+	assert.Equal(t, "AlreadyCanceled", nextEventRequest(t, transport).event.Reason)
+	emitEvent(manager.Get(logging.TestContext(t.Context()), "beta"), "Event", eventPod("beta", "second", "second"), "StillAlive")
+	assert.Equal(t, "StillAlive", nextEventRequest(t, transport).event.Reason)
 }
 
 func TestEventRecorderLoggingDoesNotRetainFirstRequest(t *testing.T) {
