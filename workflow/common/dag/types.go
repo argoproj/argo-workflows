@@ -23,16 +23,6 @@ const (
 // Key uniquely identifies a task in the DAG.
 type Key = string
 
-// isTerminalPhase returns true if the phase is a terminal state.
-func isTerminalPhase(phase wfv1.NodePhase) bool {
-	switch phase {
-	case wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeSkipped, wfv1.NodeOmitted, wfv1.NodeError:
-		return true
-	default:
-		return false
-	}
-}
-
 // readinessResult indicates the readiness state of a task.
 type readinessResult int
 
