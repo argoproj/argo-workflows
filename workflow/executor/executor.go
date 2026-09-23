@@ -1209,11 +1209,10 @@ func untar(ctx context.Context, tarPath string, destPath string) error {
 			target := filepath.Join(dest, filepath.Clean(header.Name))
 			cleanDest := filepath.Clean(dest)
 			if !strings.HasPrefix(target, cleanDest+string(os.PathSeparator)) {
-				if target == cleanDest && header.Typeflag == tar.TypeDir {
-					logger.WithFields(logging.Fields{"target": target, "typeflag": header.Typeflag}).Info(ctx, "extracted archive root directory entry matches destination, skipping")
-				} else {
+				if target != cleanDest || header.Typeflag != tar.TypeDir {
 					return fmt.Errorf("illegal file path: %s", header.Name)
 				}
+				logger.WithFields(logging.Fields{"target": target, "typeflag": header.Typeflag}).Info(ctx, "extracted archive root directory entry matches destination, skipping")
 			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:
