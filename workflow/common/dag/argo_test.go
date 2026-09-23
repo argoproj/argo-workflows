@@ -16,9 +16,10 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// testCtx returns a context with a test logger for Argo workflow operations.
-func testCtx() context.Context {
-	return logging.TestContext(context.Background())
+// testCtx returns the test's context with a test logger attached.
+func testCtx(t testing.TB) context.Context {
+	t.Helper()
+	return logging.TestContext(t.Context())
 }
 
 // --- Helper functions for creating test workflows ---
@@ -86,9 +87,9 @@ func TestWorkflowStore_GetState(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
 		store := newWorkflowStore(wf, "", "dag")
 
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
 
-		state := store.getPhase(context.Background(), "taskA")
+		state := store.getPhase(t.Context(), "taskA")
 		assert.Equal(t, wfv1.NodeSucceeded, state)
 	})
 
@@ -96,7 +97,7 @@ func TestWorkflowStore_GetState(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
 		store := newWorkflowStore(wf, "", "dag")
 
-		state := store.getPhase(context.Background(), "nonexistent")
+		state := store.getPhase(t.Context(), "nonexistent")
 		assert.Equal(t, wfv1.NodePending, state)
 	})
 }
@@ -106,7 +107,7 @@ func TestWorkflowStore_GetNode(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
 		store := newWorkflowStore(wf, "", "dag")
 
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
 
 		node := store.getNode("taskA")
 		require.NotNil(t, node)
@@ -155,7 +156,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		deps, err := tasks.GetDependencies(ctx, "taskC")
 
 		require.NoError(t, err)
@@ -172,7 +173,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		deps, err := tasks.GetDependencies(ctx, "taskC")
 
 		require.NoError(t, err)
@@ -188,7 +189,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		deps, err := tasks.GetDependencies(ctx, "taskC")
 
 		require.NoError(t, err)
@@ -203,7 +204,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		deps, err := tasks.GetDependencies(ctx, "taskA")
 
 		require.NoError(t, err)
@@ -219,7 +220,7 @@ func TestWorkflowTasks_GetDependsLogic(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		logic := tasks.GetDependsLogic(ctx, "taskB")
 
 		// Should be expanded to include .Succeeded, .Skipped, .Daemoned
@@ -233,7 +234,7 @@ func TestWorkflowTasks_GetDependsLogic(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := context.Background()
+		ctx := t.Context()
 		logic := tasks.GetDependsLogic(ctx, "taskB")
 
 		assert.Contains(t, logic, normalizeTaskName("taskA")+".Failed")
@@ -269,7 +270,7 @@ func TestDAGEvaluator_NewDAGEvaluator(t *testing.T) {
 
 		assert.NotNil(t, evaluator)
 		// Verify it can evaluate (internals are properly initialized)
-		ctx := context.Background()
+		ctx := t.Context()
 		result := evaluator.EvaluateTask(ctx, "taskA")
 		assert.Equal(t, "taskA", result.TaskName)
 	})
@@ -294,7 +295,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 
 	t.Run("succeeded task should not run", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -309,7 +310,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 
 	t.Run("running_task_should_continue_running", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeRunning)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeRunning)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -339,7 +340,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 
 	t.Run("task with fulfilled dependencies should run", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -356,7 +357,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 
 	t.Run("task omitted when depends condition not met", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeFailed)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeFailed)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -388,7 +389,7 @@ func TestDAGEvaluator_DiamondDAG(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Initially, only A should be ready to run
 		result := evaluator.EvaluateTask(ctx, "A")
@@ -404,7 +405,7 @@ func TestDAGEvaluator_DiamondDAG(t *testing.T) {
 		assert.True(t, result.Suspended)
 
 		// After A succeeds
-		addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeSucceeded)
 		evaluator = NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		result = evaluator.EvaluateTask(ctx, "B")
@@ -417,8 +418,8 @@ func TestDAGEvaluator_DiamondDAG(t *testing.T) {
 		assert.True(t, result.Suspended)
 
 		// After B and C succeed
-		addNodeToWorkflow(testCtx(), wf, "dag.B", wfv1.NodeSucceeded)
-		addNodeToWorkflow(testCtx(), wf, "dag.C", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.B", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.C", wfv1.NodeSucceeded)
 		evaluator = NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		result = evaluator.EvaluateTask(ctx, "D")
@@ -437,7 +438,7 @@ func TestDAGEvaluator_FindLeafTaskNames(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		leafTasks := evaluator.FindLeafTaskNames(ctx)
 
 		assert.Len(t, leafTasks, 1)
@@ -453,7 +454,7 @@ func TestDAGEvaluator_FindLeafTaskNames(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		leafTasks := evaluator.FindLeafTaskNames(ctx)
 
 		assert.Len(t, leafTasks, 2)
@@ -470,7 +471,7 @@ func TestDAGEvaluator_FindLeafTaskNames(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		leafTasks := evaluator.FindLeafTaskNames(ctx)
 
 		assert.Len(t, leafTasks, 3)
@@ -488,7 +489,7 @@ func TestDAGEvaluator_GetTargetTasks(t *testing.T) {
 		tmpl.DAG.Target = "taskA taskB"
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		targets := evaluator.GetTargetTasks(ctx)
 
 		assert.Equal(t, []string{"taskA", "taskB"}, targets)
@@ -502,7 +503,7 @@ func TestDAGEvaluator_GetTargetTasks(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		targets := evaluator.GetTargetTasks(ctx)
 
 		assert.Equal(t, []string{"taskB"}, targets)
@@ -519,7 +520,7 @@ func TestDAGEvaluator_EvaluateAll(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		results := evaluator.EvaluateAll(ctx)
 
 		assert.Len(t, results, 3)
@@ -534,8 +535,8 @@ func TestDAGEvaluator_EvaluateAll(t *testing.T) {
 func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 	t.Run("OR expression with one succeeded", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
-		addNodeToWorkflow(testCtx(), wf, "dag.taskB", wfv1.NodeFailed)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskB", wfv1.NodeFailed)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -544,7 +545,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		result := evaluator.EvaluateTask(ctx, "taskC")
 
 		assert.True(t, result.ShouldRun)
@@ -552,8 +553,8 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 
 	t.Run("AND expression with both conditions met", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
-		addNodeToWorkflow(testCtx(), wf, "dag.taskB", wfv1.NodeFailed)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskB", wfv1.NodeFailed)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -562,7 +563,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		result := evaluator.EvaluateTask(ctx, "taskC")
 
 		assert.True(t, result.ShouldRun)
@@ -570,8 +571,8 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 
 	t.Run("AND expression with one condition not met", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.taskA", wfv1.NodeSucceeded)
-		addNodeToWorkflow(testCtx(), wf, "dag.taskB", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
+		addNodeToWorkflow(testCtx(t), wf, "dag.taskB", wfv1.NodeSucceeded)
 
 		tmpl := createDAGTemplate([]wfv1.DAGTask{
 			{Name: "taskA"},
@@ -580,7 +581,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := context.Background()
+		ctx := t.Context()
 		result := evaluator.EvaluateTask(ctx, "taskC")
 
 		assert.False(t, result.ShouldRun)
@@ -593,7 +594,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 func TestDAGEvaluator_UnreachableTask(t *testing.T) {
 	// A fails, B depends on A.Succeeded → B should be Skipped
 	wf := newTestWorkflow("test-wf")
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeFailed)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeFailed)
 
 	tmpl := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A"},
@@ -601,7 +602,7 @@ func TestDAGEvaluator_UnreachableTask(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := evaluator.EvaluateTask(ctx, "B")
 
 	assert.False(t, result.ShouldRun, "B should not run since A failed")
@@ -613,7 +614,7 @@ func TestDAGEvaluator_CascadingOmission(t *testing.T) {
 	// A fails, B depends on A.Succeeded, C depends on B
 	// B is marked Omitted, C sees B as Omitted and is also Skipped
 	wf := newTestWorkflow("test-wf")
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeFailed)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeFailed)
 
 	tmpl := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A"},
@@ -622,7 +623,7 @@ func TestDAGEvaluator_CascadingOmission(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	resultB := evaluator.EvaluateTask(ctx, "B")
 	assert.True(t, resultB.Skipped, "B should be skipped")
@@ -636,7 +637,7 @@ func TestDAGEvaluator_CascadingOmission(t *testing.T) {
 func TestDAGEvaluator_EnhancedDependsAfterFailure(t *testing.T) {
 	// A fails, B depends on A.Failed → B should run
 	wf := newTestWorkflow("test-wf")
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeFailed)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeFailed)
 
 	tmpl := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A"},
@@ -644,7 +645,7 @@ func TestDAGEvaluator_EnhancedDependsAfterFailure(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := evaluator.EvaluateTask(ctx, "B")
 
 	assert.True(t, result.ShouldRun, "B should run since A.Failed is true")
@@ -656,7 +657,7 @@ func TestDAGEvaluator_MixedReachability(t *testing.T) {
 	// Diamond: A(failed), B depends on A.Succeeded (unreachable),
 	// C depends on A.Failed (reachable), D depends on B && C
 	wf := newTestWorkflow("test-wf")
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeFailed)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeFailed)
 
 	tmpl := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A"},
@@ -666,7 +667,7 @@ func TestDAGEvaluator_MixedReachability(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	resultB := evaluator.EvaluateTask(ctx, "B")
 	assert.True(t, resultB.Skipped, "B should be skipped (A.Succeeded is false)")
@@ -684,7 +685,7 @@ func TestDAGEvaluator_MixedReachability(t *testing.T) {
 func TestWorkflowStore_SetStateAndGetState(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
 	store := newWorkflowStore(wf, "", "dag")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	t.Run("SetState is now reflected by GetState", func(t *testing.T) {
 		store.setPhase(ctx, "taskX", wfv1.NodeOmitted)
@@ -703,7 +704,7 @@ func TestWorkflowStore_SetStateAndGetState(t *testing.T) {
 func TestWorkflowStore_GetStateWithDaemonedNode(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
 	store := newWorkflowStore(wf, "", "dag")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	// Create a daemoned running node
 	nodeID := wf.NodeID("dag.daemon-task")
@@ -723,7 +724,7 @@ func TestWorkflowStore_GetStateWithDaemonedNode(t *testing.T) {
 
 func TestDAGEvaluator_DaemonedCompletedNode(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	nodeID := wf.NodeID("dag.A")
 	daemoned := true
@@ -748,7 +749,7 @@ func TestDAGEvaluator_DaemonedCompletedNode(t *testing.T) {
 
 func TestDAGEvaluator_DaemonedFailedNode(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	nodeID := wf.NodeID("dag.A")
 	daemoned := true
@@ -839,7 +840,7 @@ func TestDAGEvaluator_LegacyDependencies(t *testing.T) {
 	// Task B uses legacy "dependencies: [A]" instead of "depends: A"
 	// Both should produce equivalent evaluation results.
 	wf := newTestWorkflow("test-wf")
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeSucceeded)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeSucceeded)
 
 	tmplWithDepends := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A"},
@@ -851,7 +852,7 @@ func TestDAGEvaluator_LegacyDependencies(t *testing.T) {
 		{Name: "B", Dependencies: []string{"A"}},
 	})
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	evalDepends := NewDAGEvaluator(wf, tmplWithDepends, "", "dag")
 	resultDepends := evalDepends.EvaluateTask(ctx, "B")
@@ -871,7 +872,7 @@ func TestDAGEvaluator_LegacyDependencies(t *testing.T) {
 // when the real problem is a broken expression.
 func TestDAGEvaluator_BrokenDependsExpression(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeSucceeded)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeSucceeded)
 
 	tmpl := createDAGTemplate([]wfv1.DAGTask{
 		{Name: "A"},
@@ -879,7 +880,7 @@ func TestDAGEvaluator_BrokenDependsExpression(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := evaluator.EvaluateTask(ctx, "B")
 
 	// B's depends expression references "A.InvalidStatus" which is not a valid
@@ -899,13 +900,13 @@ func TestEvaluateRetryNode_ChildRunning(t *testing.T) {
 	retryNodeID := wf.NodeID("dag.A")
 	childNodeID := wf.NodeID("dag.A(0)")
 
-	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
 		ID:    childNodeID,
 		Name:  "dag.A(0)",
 		Phase: wfv1.NodeRunning,
 		Type:  wfv1.NodeTypePod,
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -918,7 +919,7 @@ func TestEvaluateRetryNode_ChildRunning(t *testing.T) {
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := eval.EvaluateTask(ctx, "A")
 
 	assert.Equal(t, ActionNone, result.Action, "should wait for running child")
@@ -936,14 +937,14 @@ func TestEvaluateRetryNode_ChildDaemoned(t *testing.T) {
 	childNodeID := wf.NodeID("dag.A(0)")
 	daemoned := true
 
-	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
 		ID:       childNodeID,
 		Name:     "dag.A(0)",
 		Phase:    wfv1.NodeRunning,
 		Type:     wfv1.NodeTypePod,
 		Daemoned: &daemoned,
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -956,7 +957,7 @@ func TestEvaluateRetryNode_ChildDaemoned(t *testing.T) {
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := eval.EvaluateTask(ctx, "A")
 
 	assert.Equal(t, ActionNone, result.Action, "daemoned child needs no action")
@@ -972,14 +973,14 @@ func TestEvaluateRetryNode_ChildFailed_WithinLimit(t *testing.T) {
 	retryNodeID := wf.NodeID("dag.A")
 	childNodeID := wf.NodeID("dag.A(0)")
 
-	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
 		ID:       childNodeID,
 		Name:     "dag.A(0)",
 		Phase:    wfv1.NodeFailed,
 		Type:     wfv1.NodeTypePod,
 		NodeFlag: &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -993,7 +994,7 @@ func TestEvaluateRetryNode_ChildFailed_WithinLimit(t *testing.T) {
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := eval.EvaluateTask(ctx, "A")
 
 	assert.Equal(t, ActionExecute, result.Action, "should schedule retry within limit")
@@ -1011,19 +1012,19 @@ func TestEvaluateRetryNode_ChildFailed_Exhausted(t *testing.T) {
 	child1ID := wf.NodeID("dag.A(1)")
 	child2ID := wf.NodeID("dag.A(2)")
 
-	wf.Status.Nodes.Set(testCtx(), child0ID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), child0ID, wfv1.NodeStatus{
 		ID: child0ID, Name: "dag.A(0)", Phase: wfv1.NodeFailed,
 		Type: wfv1.NodeTypePod, NodeFlag: &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), child1ID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), child1ID, wfv1.NodeStatus{
 		ID: child1ID, Name: "dag.A(1)", Phase: wfv1.NodeFailed,
 		Type: wfv1.NodeTypePod, NodeFlag: &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), child2ID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), child2ID, wfv1.NodeStatus{
 		ID: child2ID, Name: "dag.A(2)", Phase: wfv1.NodeFailed,
 		Type: wfv1.NodeTypePod, NodeFlag: &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -1037,7 +1038,7 @@ func TestEvaluateRetryNode_ChildFailed_Exhausted(t *testing.T) {
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := eval.EvaluateTask(ctx, "A")
 
 	assert.Equal(t, ActionFail, result.Action, "should fail when retry limit exhausted")
@@ -1054,13 +1055,13 @@ func TestEvaluateRetryNode_ChildSucceeded(t *testing.T) {
 	retryNodeID := wf.NodeID("dag.A")
 	childNodeID := wf.NodeID("dag.A(0)")
 
-	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
 		ID:    childNodeID,
 		Name:  "dag.A(0)",
 		Phase: wfv1.NodeSucceeded,
 		Type:  wfv1.NodeTypePod,
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -1073,7 +1074,7 @@ func TestEvaluateRetryNode_ChildSucceeded(t *testing.T) {
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := eval.EvaluateTask(ctx, "A")
 
 	assert.Equal(t, ActionSucceed, result.Action, "should succeed when child succeeded")
@@ -1091,14 +1092,14 @@ func TestEvaluateRetryNode_DaemonChildFailed_Retries(t *testing.T) {
 	childNodeID := wf.NodeID("dag.A(0)")
 
 	// Daemoned is nil (pod crashed before becoming a daemon), Phase is Failed.
-	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
 		ID:       childNodeID,
 		Name:     "dag.A(0)",
 		Phase:    wfv1.NodeFailed,
 		Type:     wfv1.NodeTypePod,
 		NodeFlag: &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -1112,7 +1113,7 @@ func TestEvaluateRetryNode_DaemonChildFailed_Retries(t *testing.T) {
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("3")})
 
-	ctx := testCtx()
+	ctx := testCtx(t)
 	result := eval.EvaluateTask(ctx, "A")
 
 	assert.Equal(t, ActionExecute, result.Action, "failed daemon pod should be retried")
@@ -1146,7 +1147,7 @@ func TestDependsReadiness_RetryDaemonFulfillsDeps(t *testing.T) {
 	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
 	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	result := eval.EvaluateTask(ctx, "B")
 	assert.True(t, result.ShouldRun, "B should be ready when A's retry daemon child is running")
 }
@@ -1172,7 +1173,7 @@ func TestEvaluateTaskGroupNode_AllSucceeded(t *testing.T) {
 		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
-	ctx := context.Background()
+	ctx := t.Context()
 	result := eval.EvaluateTask(ctx, "A")
 	assert.Equal(t, ActionSucceed, result.Action)
 	assert.True(t, result.FulfilledForDeps)
@@ -1199,7 +1200,7 @@ func TestEvaluateTaskGroupNode_ChildFailed(t *testing.T) {
 		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
-	ctx := context.Background()
+	ctx := t.Context()
 	result := eval.EvaluateTask(ctx, "A")
 	assert.Equal(t, ActionFail, result.Action)
 	assert.True(t, result.FulfilledForDeps)
@@ -1226,7 +1227,7 @@ func TestEvaluateTaskGroupNode_ChildStillRunning(t *testing.T) {
 		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
-	ctx := context.Background()
+	ctx := t.Context()
 	result := eval.EvaluateTask(ctx, "A")
 	assert.Equal(t, ActionNone, result.Action)
 	assert.False(t, result.FulfilledForDeps)
@@ -1266,7 +1267,7 @@ func TestEval_DaemonedRunningNodeNotReEvaluated(t *testing.T) {
 	}}
 
 	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Verify the node is actually daemoned and running
 	node := eval.store.getNode("daemoned-task")
@@ -1290,7 +1291,7 @@ func TestEval_DaemonedRunningNodeNotReEvaluated(t *testing.T) {
 // 1. Retry limit zero — limit=0, one child Failed → ActionFail (0 retries allowed)
 func TestEval_Retry_LimitZero(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1316,7 +1317,7 @@ func TestEval_Retry_LimitZero(t *testing.T) {
 // 2. Retry nil limit — limit=nil (no limit set), child Failed → ActionExecute (unlimited retries)
 func TestEval_Retry_NilLimit(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1343,7 +1344,7 @@ func TestEval_Retry_NilLimit(t *testing.T) {
 // 3. Retry all children are hooks — only hook children → ActionExecute (treated as no children)
 func TestEval_Retry_AllChildrenAreHooks(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	hookChildID := wf.NodeID("dag.A.hook")
@@ -1370,7 +1371,7 @@ func TestEval_Retry_AllChildrenAreHooks(t *testing.T) {
 // 4. Retry OnError policy with Failed child → ActionFail (not retried)
 func TestEval_Retry_OnErrorPolicy_FailedChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1399,7 +1400,7 @@ func TestEval_Retry_OnErrorPolicy_FailedChild(t *testing.T) {
 // 5. Retry OnError policy with Error child → ActionExecute (retried)
 func TestEval_Retry_OnErrorPolicy_ErrorChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1428,7 +1429,7 @@ func TestEval_Retry_OnErrorPolicy_ErrorChild(t *testing.T) {
 // 6. Retry Always policy with Failed child → ActionExecute
 func TestEval_Retry_AlwaysPolicy_FailedChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1457,7 +1458,7 @@ func TestEval_Retry_AlwaysPolicy_FailedChild(t *testing.T) {
 // 7. Retry Always policy with Error child → ActionExecute
 func TestEval_Retry_AlwaysPolicy_ErrorChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1486,7 +1487,7 @@ func TestEval_Retry_AlwaysPolicy_ErrorChild(t *testing.T) {
 // 8. Retry OnTransientError with Failed → ActionExecute
 func TestEval_Retry_OnTransientError_FailedChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1515,7 +1516,7 @@ func TestEval_Retry_OnTransientError_FailedChild(t *testing.T) {
 // 9. Retry OnTransientError with Error → ActionExecute
 func TestEval_Retry_OnTransientError_ErrorChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1544,7 +1545,7 @@ func TestEval_Retry_OnTransientError_ErrorChild(t *testing.T) {
 // 10. Retry succeeded sets FulfilledForDeps — child Succeeded → ActionSucceed + FulfilledForDeps=true
 func TestEval_Retry_SucceededSetsFulfilledForDeps(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1570,7 +1571,7 @@ func TestEval_Retry_SucceededSetsFulfilledForDeps(t *testing.T) {
 // 11. Retry daemon child sets CurrentPhase=Succeeded — daemoned running child → CurrentPhase=Succeeded + FulfilledForDeps=true
 func TestEval_Retry_DaemonChildSetsCurrentPhaseSucceeded(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1599,7 +1600,7 @@ func TestEval_Retry_DaemonChildSetsCurrentPhaseSucceeded(t *testing.T) {
 // 12. Dead daemon triggers retry — child Daemoned=true + Phase=Failed → ActionExecute (phase guard works)
 func TestEval_Retry_DeadDaemonTriggersRetry(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1628,7 +1629,7 @@ func TestEval_Retry_DeadDaemonTriggersRetry(t *testing.T) {
 // 13. Retry Skipped child with Always policy → ActionExecute (retries)
 func TestEval_Retry_SkippedChild_AlwaysPolicy(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1657,7 +1658,7 @@ func TestEval_Retry_SkippedChild_AlwaysPolicy(t *testing.T) {
 // 14. Retry Skipped child with default policy → ActionFail
 func TestEval_Retry_SkippedChild_DefaultPolicy(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1684,7 +1685,7 @@ func TestEval_Retry_SkippedChild_DefaultPolicy(t *testing.T) {
 // 15. Retry Omitted child → ActionFail
 func TestEval_Retry_OmittedChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	childID := wf.NodeID("dag.A(0)")
@@ -1710,7 +1711,7 @@ func TestEval_Retry_OmittedChild(t *testing.T) {
 // 16. Retry exhausted sets FulfilledForDeps — 3 children all Failed, limit=2 → ActionFail + FulfilledForDeps=true
 func TestEval_Retry_ExhaustedSetsFulfilledForDeps(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	child0ID := wf.NodeID("dag.A(0)")
@@ -1742,7 +1743,7 @@ func TestEval_Retry_ExhaustedSetsFulfilledForDeps(t *testing.T) {
 // 17. Retry exhausted propagates child phase — child=NodeError, limit exhausted → CurrentPhase=NodeError
 func TestEval_Retry_ExhaustedPropagatesChildPhase(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	child0ID := wf.NodeID("dag.A(0)")
@@ -1778,7 +1779,7 @@ func TestEval_Retry_ExhaustedPropagatesChildPhase(t *testing.T) {
 func TestEval_Retry_ExactLimitBoundary(t *testing.T) {
 	makeEval := func(numChildren int) EvaluationResult {
 		wf := newTestWorkflow("test")
-		ctx := testCtx()
+		ctx := testCtx(t)
 
 		retryNodeID := wf.NodeID("dag.A")
 		childIDs := make([]string, numChildren)
@@ -1812,7 +1813,7 @@ func TestEval_Retry_ExactLimitBoundary(t *testing.T) {
 // 19. Retry fallback child lookup — store lookup fails but node.Children has valid IDs → children resolved via fallback
 func TestEval_Retry_FallbackChildLookup(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	// Use a boundary that won't match the store's naming convention
 	// so getRetryChildren returns nil, triggering the fallback path.
@@ -1844,7 +1845,7 @@ func TestEval_Retry_FallbackChildLookup(t *testing.T) {
 // 20. Retry hook children don't count toward limit — 1 real child + 1 hook child, limit=1 → ActionExecute
 func TestEval_Retry_HookChildrenDontCountTowardLimit(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	retryNodeID := wf.NodeID("dag.A")
 	realChildID := wf.NodeID("dag.A(0)")
@@ -1881,7 +1882,7 @@ func TestEval_Retry_HookChildrenDontCountTowardLimit(t *testing.T) {
 // 21. TaskGroup all children succeeded → ActionSucceed + CurrentPhase=Succeeded
 func TestEval_TaskGroup_AllSucceeded(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -1911,7 +1912,7 @@ func TestEval_TaskGroup_AllSucceeded(t *testing.T) {
 // 22. TaskGroup child failed → ActionFail + CurrentPhase=Failed
 func TestEval_TaskGroup_ChildFailed(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -1941,7 +1942,7 @@ func TestEval_TaskGroup_ChildFailed(t *testing.T) {
 // 23. TaskGroup child Error → ActionFail + CurrentPhase=Error (worst phase)
 func TestEval_TaskGroup_ChildError(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -1971,7 +1972,7 @@ func TestEval_TaskGroup_ChildError(t *testing.T) {
 // 24. TaskGroup child still running → ActionNone
 func TestEval_TaskGroup_ChildStillRunning(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -2000,7 +2001,7 @@ func TestEval_TaskGroup_ChildStillRunning(t *testing.T) {
 // 25. TaskGroup no children → ActionNone (still expanding)
 func TestEval_TaskGroup_NoChildren(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 
@@ -2021,7 +2022,7 @@ func TestEval_TaskGroup_NoChildren(t *testing.T) {
 // 26. TaskGroup daemoned child → ActionNone (daemon hasn't completed)
 func TestEval_TaskGroup_DaemonedChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -2049,7 +2050,7 @@ func TestEval_TaskGroup_DaemonedChild(t *testing.T) {
 // 27. TaskGroup stale Succeeded with failed child — node.Phase=Succeeded, child=Failed → CurrentPhase != Succeeded
 func TestEval_TaskGroup_StaleSucceededWithFailedChild(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -2080,7 +2081,7 @@ func TestEval_TaskGroup_StaleSucceededWithFailedChild(t *testing.T) {
 // 28. TaskGroup orphaned children — node.Phase=Succeeded, children not in store → FulfilledForDeps=true (trust phase)
 func TestEval_TaskGroup_OrphanedChildren(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	// Children exist in the node's Children list but are not in the store (pruned/GC'd)
@@ -2104,7 +2105,7 @@ func TestEval_TaskGroup_OrphanedChildren(t *testing.T) {
 // 29. TaskGroup with Retry child exhausted → ActionFail
 func TestEval_TaskGroup_RetryChildExhausted(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	// The retry node is a child of the task group
@@ -2143,7 +2144,7 @@ func TestEval_TaskGroup_RetryChildExhausted(t *testing.T) {
 // 30. TaskGroup mixed Error and Failed — one child Error, one Failed → CurrentPhase=Error (worst)
 func TestEval_TaskGroup_MixedErrorAndFailed(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	tgID := wf.NodeID("dag.A")
 	c0ID := wf.NodeID("dag.A(0)")
@@ -2174,7 +2175,7 @@ func TestEval_TaskGroup_MixedErrorAndFailed(t *testing.T) {
 
 // addTaskGroupChild adds a child node under a TaskGroup parent. The parent's
 // Children list is updated. nodeType defaults to NodeTypePod when empty.
-func addTaskGroupChild(wf *wfv1.Workflow, parent *wfv1.NodeStatus, name string, phase wfv1.NodePhase, nodeType wfv1.NodeType, flag *wfv1.NodeFlag) {
+func addTaskGroupChild(t testing.TB, wf *wfv1.Workflow, parent *wfv1.NodeStatus, name string, phase wfv1.NodePhase, nodeType wfv1.NodeType, flag *wfv1.NodeFlag) {
 	if nodeType == "" {
 		nodeType = wfv1.NodeTypePod
 	}
@@ -2186,13 +2187,13 @@ func addTaskGroupChild(wf *wfv1.Workflow, parent *wfv1.NodeStatus, name string, 
 		Type:     nodeType,
 		NodeFlag: flag,
 	}
-	wf.Status.Nodes.Set(testCtx(), childID, child)
+	wf.Status.Nodes.Set(testCtx(t), childID, child)
 	parent.Children = append(parent.Children, childID)
-	wf.Status.Nodes.Set(testCtx(), parent.ID, *parent)
+	wf.Status.Nodes.Set(testCtx(t), parent.ID, *parent)
 }
 
 // addTaskGroupParent creates a TaskGroup parent node (Running) for a withSequence/withItems/withParam task.
-func addTaskGroupParent(wf *wfv1.Workflow, name string) *wfv1.NodeStatus {
+func addTaskGroupParent(t testing.TB, wf *wfv1.Workflow, name string) *wfv1.NodeStatus {
 	id := wf.NodeID(name)
 	parent := wfv1.NodeStatus{
 		ID:    id,
@@ -2200,7 +2201,7 @@ func addTaskGroupParent(wf *wfv1.Workflow, name string) *wfv1.NodeStatus {
 		Phase: wfv1.NodeRunning,
 		Type:  wfv1.NodeTypeTaskGroup,
 	}
-	wf.Status.Nodes.Set(testCtx(), id, parent)
+	wf.Status.Nodes.Set(testCtx(t), id, parent)
 	return &parent
 }
 
@@ -2254,7 +2255,7 @@ func TestDAGEvaluator_EvaluateAll_NoExpansion_OneResultPerTask(t *testing.T) {
 		{Name: "a"},
 		{Name: "b", Depends: "a"},
 	})
-	results := NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateAll(testCtx())
+	results := NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateAll(testCtx(t))
 
 	assert.Len(t, results, 2)
 	for _, name := range []string{"a", "b"} {
@@ -2266,12 +2267,12 @@ func TestDAGEvaluator_EvaluateAll_NoExpansion_OneResultPerTask(t *testing.T) {
 func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 	t.Run("emits one result per expanded child plus the parent", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client(1:1)", wfv1.NodePending, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client(2:2)", wfv1.NodePending, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(1:1)", wfv1.NodePending, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(2:2)", wfv1.NodePending, "", nil)
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx(t))
 
 		assert.Len(t, results, 4, "1 parent + 3 children")
 		for _, name := range []string{"client", "client(0:0)", "client(1:1)", "client(2:2)"} {
@@ -2281,11 +2282,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 
 	t.Run("pending child gets ActionExecute and ShouldRun", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 
 		assert.Equal(t, ActionExecute, r.Action)
 		assert.True(t, r.ShouldRun)
@@ -2296,11 +2297,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 
 	t.Run("running child gets ActionNone — kube reconciler owns it", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeRunning, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeRunning, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 
 		assert.Equal(t, ActionNone, r.Action)
 		assert.False(t, r.ShouldRun)
@@ -2309,11 +2310,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 
 	t.Run("succeeded child gets ActionNone", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeSucceeded, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeSucceeded, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 
 		assert.Equal(t, ActionNone, r.Action)
 		assert.False(t, r.ShouldRun)
@@ -2321,22 +2322,22 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 
 	t.Run("failed child gets ActionNone (no auto-retry at this layer)", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeFailed, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeFailed, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 
 		assert.Equal(t, ActionNone, r.Action)
 	})
 
 	t.Run("hooked children are not emitted", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client.onExit", wfv1.NodePending, "", &wfv1.NodeFlag{Hooked: true})
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client.onExit", wfv1.NodePending, "", &wfv1.NodeFlag{Hooked: true})
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx(t))
 
 		assert.Contains(t, results, "client(0:0)")
 		assert.NotContains(t, results, "client.onExit",
@@ -2345,10 +2346,10 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 
 	t.Run("retry-attempt children are not emitted", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", &wfv1.NodeFlag{Retried: true})
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", &wfv1.NodeFlag{Retried: true})
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx(t))
 
 		assert.NotContains(t, results, "client(0:0)",
 			"Retry-attempt scaffolding must not show up as a schedulable child")
@@ -2359,11 +2360,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 		// evaluator must hand off, not fabricate ActionExecute. With no retry attempts
 		// yet, evaluateRetryNode returns ActionExecute ("first retry attempt needed").
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeRunning, wfv1.NodeTypeRetry, nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeRunning, wfv1.NodeTypeRetry, nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 
 		assert.Equal(t, ActionExecute, r.Action,
 			"with no retry attempts, evaluateRetryNode should request the first attempt")
@@ -2377,7 +2378,7 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren(t *testing.T) {
 		// but no TaskGroup node has been created yet. EvaluateAll should still
 		// return the parent's own result without crashing or fabricating children.
 		wf := newTestWorkflow("wf")
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx(t))
 		assert.Len(t, results, 1)
 		assert.Contains(t, results, "client")
 	})
@@ -2426,11 +2427,11 @@ func TestWorkflowStore_TaskNameFromNodeName(t *testing.T) {
 func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 	t.Run("returns expanded children, skips Hooked and Retried", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client(1:1)", wfv1.NodeRunning, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client.onExit", wfv1.NodeSucceeded, "", &wfv1.NodeFlag{Hooked: true})
-		addTaskGroupChild(wf, parent, "dag.client(2:2)(0)", wfv1.NodeSucceeded, "", &wfv1.NodeFlag{Retried: true})
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(1:1)", wfv1.NodeRunning, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client.onExit", wfv1.NodeSucceeded, "", &wfv1.NodeFlag{Hooked: true})
+		addTaskGroupChild(t, wf, parent, "dag.client(2:2)(0)", wfv1.NodeSucceeded, "", &wfv1.NodeFlag{Retried: true})
 
 		s := newWorkflowStore(wf, "", "dag")
 		children := s.getTaskGroupChildren("client")
@@ -2450,7 +2451,7 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 		// A regular Pod task with no expansion shouldn't be treated as a TaskGroup
 		// even if it somehow has child references.
 		wf := newTestWorkflow("wf")
-		addNodeToWorkflow(testCtx(), wf, "dag.client", wfv1.NodeRunning) // type=Pod
+		addNodeToWorkflow(testCtx(t), wf, "dag.client", wfv1.NodeRunning) // type=Pod
 
 		s := newWorkflowStore(wf, "", "dag")
 		assert.Nil(t, s.getTaskGroupChildren("client"))
@@ -2462,8 +2463,8 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 		// (range loop is a no-op), but exposing the distinction keeps the
 		// diagnostic useful if someone audits the state.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client.onExit", wfv1.NodePending, "", &wfv1.NodeFlag{Hooked: true})
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client.onExit", wfv1.NodePending, "", &wfv1.NodeFlag{Hooked: true})
 
 		s := newWorkflowStore(wf, "", "dag")
 		children := s.getTaskGroupChildren("client")
@@ -2474,11 +2475,11 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 		// Defensive: garbage-collected children or pre-init parent state
 		// shouldn't crash the evaluator.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
+		parent := addTaskGroupParent(t, wf, "dag.client")
 		// Add a real child plus a dangling ID
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
 		parent.Children = append(parent.Children, "non-existent-id")
-		wf.Status.Nodes.Set(testCtx(), parent.ID, *parent)
+		wf.Status.Nodes.Set(testCtx(t), parent.ID, *parent)
 
 		s := newWorkflowStore(wf, "", "dag")
 		children := s.getTaskGroupChildren("client")
@@ -2491,12 +2492,12 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 	t.Run("mixed phases: Pending re-dispatches, Running/Succeeded do not", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeSucceeded, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client(1:1)", wfv1.NodePending, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client(2:2)", wfv1.NodeRunning, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeSucceeded, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(1:1)", wfv1.NodePending, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(2:2)", wfv1.NodeRunning, "", nil)
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx(t))
 
 		assert.Equal(t, ActionNone, results["client(0:0)"].Action, "Succeeded → ActionNone")
 		assert.Equal(t, ActionExecute, results["client(1:1)"].Action, "Pending → ActionExecute")
@@ -2514,12 +2515,12 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// shared mutex, none have run yet, evaluator should mark every one for
 		// dispatch so handleSynchronization gets a chance to TryAcquire.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
+		parent := addTaskGroupParent(t, wf, "dag.client")
 		for i := range 5 {
-			addTaskGroupChild(wf, parent, fmt.Sprintf("dag.client(%d:%d)", i, i), wfv1.NodePending, "", nil)
+			addTaskGroupChild(t, wf, parent, fmt.Sprintf("dag.client(%d:%d)", i, i), wfv1.NodePending, "", nil)
 		}
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "5"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "5"), "", "dag").EvaluateAll(testCtx(t))
 
 		for i := range 5 {
 			r := results[fmt.Sprintf("client(%d:%d)", i, i)]
@@ -2530,12 +2531,12 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 
 	t.Run("all children Succeeded: no dispatches, parent should be ready to terminate", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
+		parent := addTaskGroupParent(t, wf, "dag.client")
 		for i := range 3 {
-			addTaskGroupChild(wf, parent, fmt.Sprintf("dag.client(%d:%d)", i, i), wfv1.NodeSucceeded, "", nil)
+			addTaskGroupChild(t, wf, parent, fmt.Sprintf("dag.client(%d:%d)", i, i), wfv1.NodeSucceeded, "", nil)
 		}
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx(t))
 
 		for i := range 3 {
 			r := results[fmt.Sprintf("client(%d:%d)", i, i)]
@@ -2546,11 +2547,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 
 	t.Run("Failed and Pending mixed: Failed left alone (no auto-retry), Pending re-dispatches", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeFailed, "", nil)
-		addTaskGroupChild(wf, parent, "dag.client(1:1)", wfv1.NodePending, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeFailed, "", nil)
+		addTaskGroupChild(t, wf, parent, "dag.client(1:1)", wfv1.NodePending, "", nil)
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "2"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "2"), "", "dag").EvaluateAll(testCtx(t))
 
 		assert.Equal(t, ActionNone, results["client(0:0)"].Action,
 			"Failed without retryStrategy stays terminal — must not be re-dispatched")
@@ -2559,11 +2560,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 
 	t.Run("Errored child also stays terminal", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeError, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeError, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 		assert.Equal(t, ActionNone, r.Action)
 	})
 
@@ -2572,10 +2573,10 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// long-lived. The per-child evaluator must treat them as Running
 		// (no re-dispatch) — they're not "stuck pending on sync" candidates.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
+		parent := addTaskGroupParent(t, wf, "dag.client")
 		childID := wf.NodeID("dag.client(0:0)")
 		daemoned := true
-		wf.Status.Nodes.Set(testCtx(), childID, wfv1.NodeStatus{
+		wf.Status.Nodes.Set(testCtx(t), childID, wfv1.NodeStatus{
 			ID:       childID,
 			Name:     "dag.client(0:0)",
 			Phase:    wfv1.NodeRunning,
@@ -2583,20 +2584,20 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 			Daemoned: &daemoned,
 		})
 		parent.Children = []string{childID}
-		wf.Status.Nodes.Set(testCtx(), parent.ID, *parent)
+		wf.Status.Nodes.Set(testCtx(t), parent.ID, *parent)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 		assert.Equal(t, ActionNone, r.Action,
 			"daemoned Running child should not be re-dispatched")
 	})
 
 	t.Run("TaskGroup with only Hooked children: parent result only, no children", func(t *testing.T) {
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client.onExit", wfv1.NodeSucceeded, "", &wfv1.NodeFlag{Hooked: true})
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client.onExit", wfv1.NodeSucceeded, "", &wfv1.NodeFlag{Hooked: true})
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx(t))
 		assert.Len(t, results, 1, "only the parent should appear")
 		assert.Contains(t, results, "client")
 	})
@@ -2605,13 +2606,13 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// The per-child results are appended; the parent's EvaluationResult
 		// must come from evaluateTaskResult (which routes to evaluateTaskGroupNode).
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
+		parent := addTaskGroupParent(t, wf, "dag.client")
 		// All children Succeeded → evaluateTaskGroupNode returns ActionSucceed.
 		for i := range 3 {
-			addTaskGroupChild(wf, parent, fmt.Sprintf("dag.client(%d:%d)", i, i), wfv1.NodeSucceeded, "", nil)
+			addTaskGroupChild(t, wf, parent, fmt.Sprintf("dag.client(%d:%d)", i, i), wfv1.NodeSucceeded, "", nil)
 		}
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "3"), "", "dag").EvaluateAll(testCtx(t))
 
 		// Parent assessment: all children done → ActionSucceed (parent's own action).
 		parentResult := results["client"]
@@ -2625,7 +2626,7 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// retryStrategy.Limit defaults to none, so absent strategy means "no
 		// retries allowed" — first failure is terminal.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
+		parent := addTaskGroupParent(t, wf, "dag.client")
 		retryChildName := "dag.client(0:0)"
 		retryChildID := wf.NodeID(retryChildName)
 		retryChild := wfv1.NodeStatus{
@@ -2637,7 +2638,7 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// One failed attempt under the Retry node.
 		attemptName := "dag.client(0:0)(0)"
 		attemptID := wf.NodeID(attemptName)
-		wf.Status.Nodes.Set(testCtx(), attemptID, wfv1.NodeStatus{
+		wf.Status.Nodes.Set(testCtx(t), attemptID, wfv1.NodeStatus{
 			ID:       attemptID,
 			Name:     attemptName,
 			Phase:    wfv1.NodeFailed,
@@ -2645,12 +2646,12 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 			NodeFlag: &wfv1.NodeFlag{Retried: true},
 		})
 		retryChild.Children = []string{attemptID}
-		wf.Status.Nodes.Set(testCtx(), retryChildID, retryChild)
+		wf.Status.Nodes.Set(testCtx(t), retryChildID, retryChild)
 		parent.Children = []string{retryChildID}
-		wf.Status.Nodes.Set(testCtx(), parent.ID, *parent)
+		wf.Status.Nodes.Set(testCtx(t), parent.ID, *parent)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 
 		assert.Equal(t, ActionFail, r.Action,
 			"with no retry strategy and a failed attempt, delegate must return ActionFail")
@@ -2663,7 +2664,7 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// via templates that fan out), the per-child evaluator must NOT recurse.
 		// The grandchildren belong to the inner TaskGroup's own dispatch loop.
 		wf := newTestWorkflow("wf")
-		outer := addTaskGroupParent(wf, "dag.outer")
+		outer := addTaskGroupParent(t, wf, "dag.outer")
 		// Inner is itself a TaskGroup, child of outer
 		innerName := "dag.outer(0:0)"
 		innerID := wf.NodeID(innerName)
@@ -2676,19 +2677,19 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// Grandchild under inner
 		grandName := "dag.outer(0:0).inner(0:0)"
 		grandID := wf.NodeID(grandName)
-		wf.Status.Nodes.Set(testCtx(), grandID, wfv1.NodeStatus{
+		wf.Status.Nodes.Set(testCtx(t), grandID, wfv1.NodeStatus{
 			ID:    grandID,
 			Name:  grandName,
 			Phase: wfv1.NodePending,
 			Type:  wfv1.NodeTypePod,
 		})
 		inner.Children = []string{grandID}
-		wf.Status.Nodes.Set(testCtx(), innerID, inner)
+		wf.Status.Nodes.Set(testCtx(t), innerID, inner)
 		outer.Children = []string{innerID}
-		wf.Status.Nodes.Set(testCtx(), outer.ID, *outer)
+		wf.Status.Nodes.Set(testCtx(t), outer.ID, *outer)
 
 		// We only care about outer's per-child emission here.
-		results := NewDAGEvaluator(wf, withSequenceTemplate("outer", "1"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("outer", "1"), "", "dag").EvaluateAll(testCtx(t))
 
 		// outer(0:0) (the inner TaskGroup) should appear as outer's child.
 		assert.Contains(t, results, "outer(0:0)")
@@ -2701,12 +2702,12 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// Defensive: if a child ID in parent.Children doesn't resolve to a node
 		// (GC, partial write, etc.), the evaluator must not crash.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
 		parent.Children = append(parent.Children, "phantom-id")
-		wf.Status.Nodes.Set(testCtx(), parent.ID, *parent)
+		wf.Status.Nodes.Set(testCtx(t), parent.ID, *parent)
 
-		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx())
+		results := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").EvaluateAll(testCtx(t))
 		assert.Contains(t, results, "client(0:0)", "real child preserved")
 		// Should not blow up; phantom not present.
 	})
@@ -2715,11 +2716,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// A child whose 'when' evaluated false is marked Skipped (terminal). The
 		// per-child evaluator must NOT try to re-dispatch it; that would loop.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeSkipped, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeSkipped, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 		assert.Equal(t, ActionNone, r.Action)
 		assert.False(t, r.ShouldRun)
 	})
@@ -2727,11 +2728,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 	t.Run("Omitted child is treated as terminal — no re-dispatch", func(t *testing.T) {
 		// Same logic as Skipped: terminal, leave alone.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodeOmitted, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodeOmitted, "", nil)
 
 		r := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag").
-			EvaluateAll(testCtx())["client(0:0)"]
+			EvaluateAll(testCtx(t))["client(0:0)"]
 		assert.Equal(t, ActionNone, r.Action)
 	})
 
@@ -2739,11 +2740,11 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		// EvaluateAll returns a fresh map each call. Subsequent state changes
 		// must not leak into the previously returned snapshot.
 		wf := newTestWorkflow("wf")
-		parent := addTaskGroupParent(wf, "dag.client")
-		addTaskGroupChild(wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
+		parent := addTaskGroupParent(t, wf, "dag.client")
+		addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, "", nil)
 		evaluator := NewDAGEvaluator(wf, withSequenceTemplate("client", "1"), "", "dag")
 
-		first := evaluator.EvaluateAll(testCtx())
+		first := evaluator.EvaluateAll(testCtx(t))
 		require.Equal(t, ActionExecute, first["client(0:0)"].Action)
 
 		// Mark the child Succeeded and re-evaluate. The first snapshot must not
@@ -2754,7 +2755,7 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 				wf.Status.Nodes[id] = node
 			}
 		}
-		second := evaluator.EvaluateAll(testCtx())
+		second := evaluator.EvaluateAll(testCtx(t))
 		assert.Equal(t, ActionNone, second["client(0:0)"].Action, "second call sees the new phase")
 		assert.Equal(t, ActionExecute, first["client(0:0)"].Action, "first call must remain unchanged")
 	})
@@ -2769,14 +2770,14 @@ func TestEvaluateRetryNode_RetryDeciderIsAuthoritative(t *testing.T) {
 	retryNodeID := wf.NodeID("dag.A")
 	childNodeID := wf.NodeID("dag.A(0)")
 
-	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
 		ID:       childNodeID,
 		Name:     "dag.A(0)",
 		Phase:    wfv1.NodeFailed,
 		Type:     wfv1.NodeTypePod,
 		NodeFlag: &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -2793,7 +2794,7 @@ func TestEvaluateRetryNode_RetryDeciderIsAuthoritative(t *testing.T) {
 	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2"), RetryPolicy: wfv1.RetryPolicyAlways})
 	eval.SetRetryDecider("A", func(_ context.Context, _, _ *wfv1.NodeStatus, _ *wfv1.RetryStrategy) bool { return false })
 
-	result := eval.EvaluateTask(testCtx(), "A")
+	result := eval.EvaluateTask(testCtx(t), "A")
 
 	assert.Equal(t, ActionFail, result.Action)
 	assert.False(t, result.ShouldRun)

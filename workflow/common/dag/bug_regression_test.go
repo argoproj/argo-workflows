@@ -42,7 +42,7 @@ func TestBug_RetryBackoff_NotHonored(t *testing.T) {
 
 	// Child failed 1s ago — backoff of 30s has not elapsed.
 	justNow := metav1.NewTime(time.Now().Add(-1 * time.Second))
-	wf.Status.Nodes.Set(testCtx(), childID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), childID, wfv1.NodeStatus{
 		ID:         childID,
 		Name:       "dag.A(0)",
 		Phase:      wfv1.NodeFailed,
@@ -51,7 +51,7 @@ func TestBug_RetryBackoff_NotHonored(t *testing.T) {
 		FinishedAt: justNow,
 		NodeFlag:   &wfv1.NodeFlag{Retried: true},
 	})
-	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
 		ID:       retryNodeID,
 		Name:     "dag.A",
 		Phase:    wfv1.NodeRunning,
@@ -70,7 +70,7 @@ func TestBug_RetryBackoff_NotHonored(t *testing.T) {
 		},
 	})
 
-	result := eval.EvaluateTask(testCtx(), "A")
+	result := eval.EvaluateTask(testCtx(t), "A")
 
 	assert.NotEqual(t, ActionExecute, result.Action,
 		"evaluator must not schedule a new retry while backoff is active")
@@ -95,7 +95,7 @@ func TestBug_Depends_NegationWithPendingDep(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
 
 	// A has succeeded.
-	addNodeToWorkflow(testCtx(), wf, "dag.A", wfv1.NodeSucceeded)
+	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeSucceeded)
 
 	// B has no node yet — it's pending.  C depends on A and on B NOT having
 	// failed.  Since B could still fail, C must wait, not fire.
@@ -108,7 +108,7 @@ func TestBug_Depends_NegationWithPendingDep(t *testing.T) {
 	tmpl := createDAGTemplate(dagTasks)
 
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	result := eval.EvaluateTask(testCtx(), "C")
+	result := eval.EvaluateTask(testCtx(t), "C")
 
 	assert.False(t, result.ShouldRun,
 		"C must wait while B is still pending — !B.Failed is not decidable yet")
@@ -137,7 +137,7 @@ func TestBug_Depends_NegationWithPendingDep(t *testing.T) {
 // and the retry is allowed to proceed.
 func TestBug_TaskGroupRetry_KeyStripsPrefix(t *testing.T) {
 	wf := newTestWorkflow("test")
-	ctx := testCtx()
+	ctx := testCtx(t)
 
 	// Static task "A" is a TaskGroup. Its child "dag.A-retry" is a Retry
 	// node that has had exactly one failed attempt so far. With limit=3,
