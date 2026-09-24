@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-template-whalesay-9pk8f
+spec:
+  entrypoint: whalesay
+  templates:
+  - inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: number of times the outer workflow was invoked
+        name: workflow_counter
+    name: whalesay
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello world
+        name: call-whalesay-template
+        template: whalesay-template
+  - container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: number of times the template was executed
+        name: template_counter
+    name: whalesay-template
+    outputs: {}
+    retryStrategy:
+      limit: "2"

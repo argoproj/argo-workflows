@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-running
+  namespace: argo
+spec:
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: sleep
+    # This hook never triggered by following test.
+    # To guarantee workflow does not wait forever for untriggered hooks.
+    failure:
+      expression: workflow.status == "Failed"
+      template: sleep
+  templates:
+    - name: main
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo", "This template finish fastest"]
+    - name: sleep
+      script:
+        image: alpine:3.23
+        command: [sh]
+        source: |
+          sleep 10

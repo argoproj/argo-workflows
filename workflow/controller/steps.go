@@ -96,7 +96,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			} else {
 				for _, childID := range prevStepGroupNode.Children {
 					outboundNodeIDs := woc.getOutboundNodes(ctx, childID)
-					woc.log.WithFields(logging.Fields{"childID": childID, "outboundNodeIDs": outboundNodeIDs}).Info(ctx, "SG Outbound nodes")
+					woc.log.WithFields(logging.Fields{"childID": childID, "outboundNodeIDs": outboundNodeIDs}).Debug(ctx, "SG Outbound nodes")
 					for _, outNodeID := range outboundNodeIDs {
 						outNodeName, nameErr := woc.wf.Status.Nodes.GetName(outNodeID)
 						if nameErr != nil {
@@ -114,7 +114,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			return woc.markNodeError(ctx, sgNodeName, execErr), nil
 		}
 		if !sgNode.Fulfilled() {
-			woc.log.WithField("nodeID", sgNode.ID).Info(ctx, "Workflow step group node not yet completed")
+			woc.log.WithField("nodeID", sgNode.ID).Debug(ctx, "Workflow step group node not yet completed")
 			return node, nil
 		}
 
@@ -376,7 +376,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			return woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, failMessage), nil
 		}
 	}
-	woc.log.WithField("nodeID", node.ID).Info(ctx, "Step group node successful")
+	woc.log.WithField("nodeID", node.ID).Debug(ctx, "Step group node successful")
 	return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded), nil
 }
 
@@ -507,7 +507,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
-				woc.log.WithError(err).Warn(ctx, "was unable to find variable")
+				woc.log.WithError(err).Debug(ctx, "was unable to find variable")
 				return ErrRequeue
 			}
 			return err
