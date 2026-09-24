@@ -859,8 +859,15 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	// reference has to be rewritten.
 	replaceRegexp := regexp.MustCompile("^" + regexp.QuoteMeta(wf.Name))
 	now := metav1.Time{Time: time.Now().UTC()}
+	rename := func(name string) string {
+		return replaceRegexp.ReplaceAllString(name, newWF.Name)
+	}
+	newIDs, err := newNodeIDs(wf, &newWF, rename)
+	if err != nil {
+		return nil, err
+	}
 	memoize := func(node wfv1.NodeStatus) wfv1.NodeStatus {
-		node.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
+		node.Name = rename(node.Name)
 		node.StartedAt = now
 		node.FinishedAt = now
 		if node.Type == wfv1.NodeTypePod {
@@ -880,8 +887,10 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		}
 		return node
 	}
+	// A reference to a node that is not in the status at all maps to no ID,
+	// and applyResetPlan drops it.
 	mapID := func(id string) string {
-		return convertNodeID(&newWF, replaceRegexp, id, wf.Status.Nodes)
+		return newIDs[id]
 	}
 	applyResetPlan(ctx, wf, &newWF, plan, memoize, mapID)
 
@@ -919,11 +928,42 @@ func keepExistingNodeIDs(nodes wfv1.Nodes, ids []string) []string {
 	return kept
 }
 
-// convertNodeID converts an old nodeID to a new nodeID
-func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
-	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.Name)
-	return newWf.NodeID(newNodeName)
+// newNodeIDs works out the ID each node of wf takes under the name of newWf.
+// A node ID is a hash of the node name, which starts with the workflow name,
+// so renaming the workflow rehashes the whole graph: names that collided
+// before may not any more, and names that did not may now. Nodes are assigned
+// in name order, so the result does not depend on map iteration order, and a
+// name that finds its 32-bit slot taken gets the widened one instead, which is
+// where Workflow.ResolveNode looks for it.
+//
+// Nodes the reset plan deletes are given an ID too, so that a reference to one
+// cannot land on the ID of a node that is kept and so survive the pruning
+// applyResetPlan does.
+func newNodeIDs(wf, newWf *wfv1.Workflow, rename func(name string) string) (map[string]string, error) {
+	oldIDs := make([]string, 0, len(wf.Status.Nodes))
+	for id := range wf.Status.Nodes {
+		oldIDs = append(oldIDs, id)
+	}
+	slices.SortFunc(oldIDs, func(a, b string) int {
+		return strings.Compare(wf.Status.Nodes[a].Name, wf.Status.Nodes[b].Name)
+	})
+	newIDs := make(map[string]string, len(oldIDs))
+	taken := make(map[string]bool, len(oldIDs))
+	for _, oldID := range oldIDs {
+		name := rename(wf.Status.Nodes[oldID].Name)
+		newID := newWf.NodeID(name)
+		if taken[newID] {
+			// the 32-bit slot has gone to another name: widen, as the
+			// controller does when it creates a node
+			newID = newWf.NodeID64(name)
+			if taken[newID] {
+				return nil, errors.Errorf(errors.CodeBadRequest, "cannot resubmit %s as %s: node %s collides with another node at both ID widths", wf.Name, newWf.Name, name)
+			}
+		}
+		taken[newID] = true
+		newIDs[oldID] = newID
+	}
+	return newIDs, nil
 }
 
 func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
