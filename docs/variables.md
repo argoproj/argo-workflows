@@ -240,8 +240,21 @@ When using the `expression` field within `retryStrategy`, special variables are 
 | `lastRetry.status` | Status of the last retry |
 | `lastRetry.duration` | Duration in seconds of the last retry |
 | `lastRetry.message` | Message output from the last retry (available from version 3.5) |
+| `lastRetry.exitCodes` | Comma-separated exit codes of all previous attempts, oldest first (empty on the first attempt) |
 
 Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
+
+`lastRetry.exitCodes` carries the full history so an expression can escalate a resource cumulatively per failure type — e.g. grow memory once per prior OOM and hold it across non-OOM (eviction) retries, which `lastRetry.exitCode` (the last attempt alone) cannot express:
+
+```yaml
+podSpecPatch: |
+  containers:
+    - name: main
+      resources:
+        requests:
+          # 2Gi base + 1Gi per previous OOM (exit 137); held across non-OOM retries
+          memory: "{{=2 + (len(filter(split(lastRetry.exitCodes, ','), {# == '137'})))}}Gi"
+```
 
 ### Container/Script Templates
 
