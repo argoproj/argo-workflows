@@ -22,26 +22,6 @@ If your `containerSet` relied on a failing container stopping its siblings early
 
 Additionally, a container whose dependency is killed before it can report an exit code now ends with exit code 64 and the message `died without reporting exit code`, and the node is marked `Error` rather than `Failed`.
 
-### DAG `depends` expressions take effect as soon as they are settled
-
-Previously a DAG task's `depends` expression was only evaluated once every task it referenced had finished.
-It is now evaluated whenever a referenced task changes state and takes effect as soon as its result is settled.
-A task therefore runs as soon as its expression is true under every possible outcome of the tasks still pending (for example `task-1 || task-2` runs as soon as either bare reference is satisfied, without waiting for the other), and is marked `Omitted` as soon as no possible outcome could make the expression true (for example `task-1.Succeeded && task-2` is omitted as soon as `task-1` fails).
-Expressions whose result still depends on a pending task, including negated references such as `!task-3.Failed`, wait exactly as before.
-An expression is only settled early while at most five of the tasks it references are still pending; with more than five pending it waits, as before.
-
-If a task relied on `depends: "task-1 || task-2"` to wait for both tasks, say so in the expression.
-A referenced task is only known to have finished once every result it could end with is covered, so add a clause per task that lists them all:
-
-```yaml
-depends: "(task-1 || task-2) && (task-1 || task-1.Failed || task-1.Errored || task-1.Omitted) && (task-2 || task-2.Failed || task-2.Errored || task-2.Omitted)"
-```
-
-This waits for both tasks and then runs if either bare reference is satisfied, exactly as before.
-Alternatively, reference the result you actually need.
-
-See [When a task runs](enhanced-depends-logic.md#when-a-task-runs).
-
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade

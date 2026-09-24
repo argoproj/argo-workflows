@@ -80,9 +80,9 @@ type EvaluationResult struct {
 	// ShouldRun is set when the task's dependencies allow it to run now. For
 	// a retry or task-group node it accompanies ActionExecute.
 	ShouldRun bool
-	// Suspended is set while the task waits on dependencies whose outcome
-	// could still change its result, and WaitingOn names them. Both are
-	// diagnostic: the Engine logs them and does not act on them.
+	// Suspended is set while the task waits on dependencies that have not
+	// finished, and WaitingOn names them. Both are diagnostic: the Engine
+	// logs them and does not act on them.
 	Suspended bool
 	WaitingOn []string
 	// Skipped is set when the task can never run; the Engine creates its

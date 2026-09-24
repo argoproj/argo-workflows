@@ -664,9 +664,17 @@ func TestDAGEvaluator_MixedReachability(t *testing.T) {
 	assert.True(t, resultC.ShouldRun, "C should run (A.Failed is true)")
 	assert.False(t, resultC.Skipped, "C should not be skipped")
 
+	// D waits for C even though B && C can no longer be true: a depends
+	// expression is only evaluated once every task it references has finished.
 	resultD := evaluator.EvaluateTask(ctx, "D")
-	assert.True(t, resultD.Skipped, "D should be skipped (B is unreachable, so B && C can never be true)")
-	assert.False(t, resultD.Suspended, "D should not be suspended")
+	assert.False(t, resultD.Skipped, "D waits for C before it is omitted")
+	assert.True(t, resultD.Suspended, "D is waiting")
+	assert.Contains(t, resultD.WaitingOn, "C")
+
+	addNodeToWorkflow(ctx, wf, "dag.C", wfv1.NodeSucceeded)
+	resultD = NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateTask(ctx, "D")
+	assert.True(t, resultD.Skipped, "D is omitted once C has finished (B is omitted, so B && C is false)")
+	assert.False(t, resultD.Suspended)
 }
 
 func TestWorkflowStore_SetStateAndGetState(t *testing.T) {
