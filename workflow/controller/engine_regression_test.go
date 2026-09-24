@@ -846,7 +846,7 @@ func TestRegression_PartiallyFailedGroupCanSatisfyDepends(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	if b, err := woc.wf.GetNodeByName("reg-partial.b"); err == nil {
-		assert.NotEqual(t, wfv1.NodeOmitted, b.Phase, "b is undecided while a runs")
+		assert.NotEqual(t, wfv1.NodeOmitted, b.Phase, "b waits while a runs")
 	}
 
 	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
@@ -952,4 +952,69 @@ func TestRegression_BoundaryFailureMessageIsDeterministic(t *testing.T) {
 	for _, msg := range seen[1:] {
 		assert.Equal(t, seen[0], msg, "the DAG failure message does not vary between runs")
 	}
+}
+
+// A depends expression is only evaluated once every task it references has
+// finished, as on main: "a || b" does not run while b is still running although
+// a has succeeded, and "a.Failed && b" is not omitted early either.
+var regDependsWaitsForAll = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-waitall
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+      - name: b
+        template: echo
+      - name: either
+        template: echo
+        depends: a || b
+      - name: never
+        template: echo
+        depends: a.Failed && b
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_DependsWaitsForEveryReferencedTask(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regDependsWaitsForAll)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == "reg-waitall.a" {
+			return apiv1.PodSucceeded
+		}
+		return apiv1.PodRunning
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.False(t, nodeExists(woc, "reg-waitall.either"), "either waits for b")
+	assert.False(t, nodeExists(woc, "reg-waitall.never"), "never is not omitted before b finishes")
+
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == "reg-waitall.b" {
+			return apiv1.PodSucceeded
+		}
+		return ""
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.True(t, nodeExists(woc, "reg-waitall.either"), "either runs once a and b have finished")
+	never, err := woc.wf.GetNodeByName("reg-waitall.never")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeOmitted, never.Phase)
 }

@@ -17,23 +17,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
 
-// TestBug_Depends_NegationCausesPrematureOmit documents Critical #2 as it
-// actually manifests at runtime.
-//
-// workflow/controller/dag/argo.go:253-274 uses an "all fields true" value as
-// the best-case scope for pending deps, in order to decide whether the
-// depends expression is structurally unsatisfiable.  For any negated
-// reference (e.g. "!X.Failed"), all-true is the WORST case, not the best:
-// it sets X.Failed to true, which makes !X.Failed false.
-//
-// Consequence: on the first operate cycle, when no task has started yet,
-// a task whose depends expression negates a sibling is marked Omitted
-// before the sibling has a chance to run.  createOmittedNodes persists
-// that verdict into wf.Status.Nodes, so subsequent cycles never
-// re-evaluate the task — even after the deps complete successfully.
-//
-// The correct behavior: wait while any realistic future outcome of the
-// pending deps could still make the expression true.
+// TestBug_Depends_NegationCausesPrematureOmit: a task whose depends
+// expression negates a sibling ("!slow-task.Failed") must not be omitted
+// before the sibling has run. An Omitted node is permanent, so omitting it on
+// the first cycle would skip it even after both deps succeed. The task waits
+// until every task it references has finished, then runs.
 func TestBug_Depends_NegationCausesPrematureOmit(t *testing.T) {
 	const wfYAML = `
 apiVersion: argoproj.io/v1alpha1

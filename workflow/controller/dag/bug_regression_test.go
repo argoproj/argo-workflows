@@ -80,17 +80,11 @@ func TestBug_RetryBackoff_NotHonored(t *testing.T) {
 		"RequeueAfter should be bounded by the backoff duration")
 }
 
-// TestBug_Depends_NegationWithPendingDep is a regression test for Critical #2.
-//
-// For a depends expression that negates a non-fulfilled dep (e.g.
-// "A.Succeeded && !B.Failed") where A is Succeeded and B is still pending,
-// the evaluator must return `waiting` — B could still fail, so the
-// expression is not yet decidable.
-//
-// Before the fix, the evaluator injected pending deps as taskResult{} and
-// returned `ready` immediately because `true && !false = true`.  The fix
-// enumerates plausible future outcomes for pending deps and only fires the
-// task when the expression is true under every outcome.
+// TestBug_Depends_NegationWithPendingDep: for "A.Succeeded && !B.Failed"
+// with A Succeeded and B still pending, C waits. Evaluating the expression
+// with B's fields all false would read !B.Failed as true and run C before B
+// could fail; a depends expression is only evaluated once every task it
+// references has finished.
 func TestBug_Depends_NegationWithPendingDep(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
 

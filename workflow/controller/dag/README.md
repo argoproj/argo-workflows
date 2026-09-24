@@ -41,14 +41,10 @@ The dependency graph is sorted topologically (Kahn's algorithm) once, at constru
 
 ### 3. Readiness evaluation
 
-For each pending task, `evaluateDependsReadiness` builds a scope of dependency states — a `taskResult` per dependency with the fields `Succeeded`, `Failed`, `Errored`, `Skipped`, `Omitted`, `Daemoned`, `AnySucceeded`, `AllFailed` (the same vocabulary as `common.TaskResult*`) — and evaluates the normalized expression with a cached, compiled `expr` program:
-
-- **ready** — the expression is true, or is true under every possible outcome of the still-pending dependencies.
-- **waiting** — the expression is false, but some outcome of a pending dependency could still make it true.
-- **omit** — the expression is false and no realistic outcome of the pending dependencies can make it true.
-
-The "could it still become true" check enumerates the realistic outcome shapes of each pending dependency (`pendingDepOutcomes`, eleven shapes, so negated references such as `!B.Failed` and partially failed groups are handled correctly) for up to five pending dependencies (`maxEnumerationDeps`).
-With more pending dependencies than that, both outcomes are conservatively assumed possible and the task waits rather than being omitted.
+A task **waits** while any dependency is still pending: not started, running, a retry node whose outcome the engine has not recorded yet, or finished with lifecycle or exit hooks still running.
+A running daemon counts as finished.
+Once every dependency has finished, `evaluateDependsReadiness` builds a scope of dependency states — a `taskResult` per dependency with the fields `Succeeded`, `Failed`, `Errored`, `Skipped`, `Omitted`, `Daemoned`, `AnySucceeded`, `AllFailed` (the same vocabulary as `common.TaskResult*`) — and evaluates the normalized expression with a cached, compiled `expr` program.
+The task is **ready** if the expression is true and is **omitted** if it is false.
 
 ### 4. Cascading omission
 

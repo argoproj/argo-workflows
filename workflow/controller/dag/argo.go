@@ -3,8 +3,6 @@ package dag
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -109,8 +107,11 @@ func (e *DAGEvaluator) isReady(ctx context.Context, key Key) (readinessResult, e
 	return e.evaluateDependsReadiness(ctx, key)
 }
 
-// evaluateDependsReadiness evaluates the depends expression for a task
-// and returns a readinessResult.
+// evaluateDependsReadiness evaluates the depends expression for a task and
+// returns a readinessResult. The task waits while any dependency it references
+// is still pending; once every one has finished, the expression decides
+// whether it runs or is omitted. This is the pre-Engine rule: an expression is
+// never evaluated against a dependency that has not finished.
 func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName string) (readinessResult, error) {
 	node := e.store.getNode(taskName)
 	if node != nil && node.Fulfilled() {
@@ -118,9 +119,6 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 	}
 
 	evalScope := make(map[string]taskResult)
-	hasPendingDeps := false
-	// Track deps treated as pending so the best-case check can upgrade them.
-	pendingDepNames := make(map[string]bool)
 
 	deps, _ := e.tasks.GetDependencies(ctx, taskName)
 	for _, depName := range deps {
@@ -133,24 +131,15 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 				evalScope[evalTaskName] = taskResult{Omitted: true}
 				continue
 			}
-			// Dep hasn't started — include with all-false fields so we can
-			// still evaluate the expression to detect unsatisfiable conditions.
-			evalTaskName := normalizeTaskName(depName)
-			evalScope[evalTaskName] = taskResult{}
-			hasPendingDeps = true
-			pendingDepNames[depName] = true
-			continue
+			// Dep hasn't started.
+			return waiting, nil
 		}
 		// A dependency whose lifecycle or exit hooks are still running is not
 		// ready for its dependants, whatever its own type or phase (#12192).
 		// Checked before the type-specific handling below so that retry nodes,
 		// whose assessment returns early, are gated too.
 		if !e.store.areHooksFulfilled(depName) {
-			evalTaskName := normalizeTaskName(depName)
-			evalScope[evalTaskName] = taskResult{}
-			hasPendingDeps = true
-			pendingDepNames[depName] = true
-			continue
+			return waiting, nil
 		}
 		// Daemoned and still running — fulfilled for dependency purposes, so skip
 		// the retry/not-fulfilled handling and fall through to evalScope building
@@ -173,11 +162,7 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 				// run before the exit hook the engine creates on finalization
 				// (#12192). A running daemon child is the exception below.
 				if (retryResult.Action == ActionSucceed || retryResult.Action == ActionFail) && !depNode.Fulfilled() {
-					evalTaskName := normalizeTaskName(depName)
-					evalScope[evalTaskName] = taskResult{}
-					hasPendingDeps = true
-					pendingDepNames[depName] = true
-					continue
+					return waiting, nil
 				}
 				if retryResult.Action == ActionFail {
 					// Retry is done — use the actual child phase (Error vs Failed)
@@ -202,19 +187,11 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 					continue
 				}
 				if !depNode.Fulfilled() {
-					evalTaskName := normalizeTaskName(depName)
-					evalScope[evalTaskName] = taskResult{}
-					hasPendingDeps = true
-					pendingDepNames[depName] = true
-					continue
+					return waiting, nil
 				}
 			} else if !depNode.Fulfilled() {
-				// Dep running but not fulfilled — include with all-false fields
-				evalTaskName := normalizeTaskName(depName)
-				evalScope[evalTaskName] = taskResult{}
-				hasPendingDeps = true
-				pendingDepNames[depName] = true
-				continue
+				// Dep running but not fulfilled.
+				return waiting, nil
 			}
 		}
 
@@ -251,11 +228,7 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 	}
 
 	logic := e.tasks.GetDependsLogic(ctx, taskName)
-
 	if logic == "" {
-		if hasPendingDeps {
-			return waiting, nil
-		}
 		return ready, nil
 	}
 
@@ -263,110 +236,10 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 	if err != nil {
 		return omit, fmt.Errorf("depends expression evaluation failed for task %s: %w", taskName, err)
 	}
-
-	if !hasPendingDeps {
-		// All deps are in terminal states — the expression cannot change.
-		if result {
-			return ready, nil
-		}
-		return omit, nil
-	}
-
-	// Some deps are pending. Determine whether the expression could still
-	// evaluate true under any realistic future outcome, and whether it
-	// could still evaluate false. If both are possible, the task is
-	// undecided (waiting). If only true is possible, the task can fire
-	// now regardless of how pending deps resolve (ready). If only false
-	// is possible, the expression is provably unsatisfiable (omit).
-	pendingDeps := slices.Sorted(maps.Keys(pendingDepNames))
-
-	canBeTrue, canBeFalse := e.enumerateOutcomes(logic, evalScope, pendingDeps, result)
-	if !canBeTrue {
-		return omit, nil
-	}
-	if !canBeFalse {
+	if result {
 		return ready, nil
 	}
-	return waiting, nil
-}
-
-// pendingDepOutcomes is the set of realistic taskResult shapes a pending
-// dep could eventually resolve to. Listing discrete shapes rather than
-// the cartesian product of all 8 boolean fields keeps the enumeration
-// tractable while still covering the states that affect real depends
-// expressions — including the "did-not-fail" shape that proves negated
-// references are satisfiable.
-var pendingDepOutcomes = []taskResult{
-	{Succeeded: true},
-	{Succeeded: true, AnySucceeded: true},
-	{Failed: true},
-	{Failed: true, AllFailed: true},
-	// A group with both failed and succeeded items is Failed (or Errored)
-	// with AnySucceeded set: "A.Failed && A.AnySucceeded" is satisfiable.
-	{Failed: true, AnySucceeded: true},
-	{Errored: true},
-	{Errored: true, AnySucceeded: true},
-	{Skipped: true},
-	{Omitted: true},
-	{Daemoned: true},
-	{Daemoned: true, Succeeded: true},
-}
-
-// enumerateOutcomes tries each combination of pendingDepOutcomes for the
-// given pending deps and reports whether the expression can evaluate true
-// (canBeTrue) and/or false (canBeFalse). Stops as soon as both are known.
-//
-// currentResult seeds canBeTrue/canBeFalse from the already-computed
-// evaluation with the naive (all-false) scope for pending deps — this
-// ensures that state is included in the search space (the "running, no
-// signal yet" shape) without an extra evalBool call.
-//
-// To avoid exponential cost on tasks with many pending deps, enumeration
-// is capped: beyond the cap, both outcomes are conservatively assumed
-// possible so the task waits rather than being prematurely omitted.
-func (e *DAGEvaluator) enumerateOutcomes(logic string, scope map[string]taskResult, pendingDeps []string, currentResult bool) (canBeTrue, canBeFalse bool) {
-	if currentResult {
-		canBeTrue = true
-	} else {
-		canBeFalse = true
-	}
-
-	const maxEnumerationDeps = 5
-	if len(pendingDeps) > maxEnumerationDeps {
-		return true, true
-	}
-
-	var recurse func(idx int)
-	recurse = func(idx int) {
-		if canBeTrue && canBeFalse {
-			return
-		}
-		if idx == len(pendingDeps) {
-			r, err := e.evalBool(logic, scope)
-			if err != nil {
-				return
-			}
-			if r {
-				canBeTrue = true
-			} else {
-				canBeFalse = true
-			}
-			return
-		}
-		depName := pendingDeps[idx]
-		evalName := normalizeTaskName(depName)
-		original := scope[evalName]
-		for _, outcome := range pendingDepOutcomes {
-			scope[evalName] = outcome
-			recurse(idx + 1)
-			if canBeTrue && canBeFalse {
-				break
-			}
-		}
-		scope[evalName] = original
-	}
-	recurse(0)
-	return canBeTrue, canBeFalse
+	return omit, nil
 }
 
 // evaluateAllStates evaluates all tasks and handles cascading omission in a
