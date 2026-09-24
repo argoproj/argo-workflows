@@ -15,6 +15,7 @@ export type Icon =
     | 'chevron-right'
     | 'circle'
     | 'circle-notch'
+    | 'clipboard'
     | 'clock'
     | 'code'
     | 'cog'
