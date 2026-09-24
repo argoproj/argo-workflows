@@ -1,0 +1,12 @@
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: kubectl
+    path: /bin/kubectl
+    http:
+      url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+script:
+  image: alpine:3.23
+  command: [sh]
+  source: |
+    ls /bin/kubectl
