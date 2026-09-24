@@ -19,7 +19,7 @@ func (f lookupFunc) Lookup(ctx context.Context, image string, options Options) (
 	return f(ctx, image, options)
 }
 
-func TestCacheIndexLookupAlwaysRefreshesCache(t *testing.T) {
+func TestCacheIndexLookupAlwaysBypassesCache(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	first := &Image{Entrypoint: []string{"/first"}}
 	refreshed := &Image{Entrypoint: []string{"/refreshed"}}
@@ -43,10 +43,75 @@ func TestCacheIndexLookupAlwaysRefreshesCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.Same(t, refreshed, actual)
 
-	actual, err = index.Lookup(ctx, "example.com/app:latest", Options{ImagePullPolicy: apiv1.PullIfNotPresent})
-	require.NoError(t, err)
-	assert.Same(t, refreshed, actual)
 	assert.Equal(t, 2, lookups)
+}
+
+func TestCacheIndexLookupAlwaysPreservesOrdinaryCache(t *testing.T) {
+	for _, policy := range []apiv1.PullPolicy{"", apiv1.PullIfNotPresent, apiv1.PullNever} {
+		for _, freshImage := range []string{"example.com/app:latest", "example.com/other:latest"} {
+			t.Run(string(policy)+"/"+freshImage, func(t *testing.T) {
+				ctx := logging.TestContext(t.Context())
+				cached := &Image{Entrypoint: []string{"/old"}}
+				fresh := &Image{Entrypoint: []string{"/new"}}
+				lookups := 0
+				index := &cacheIndex{
+					cache: lru.New(1),
+					delegate: lookupFunc(func(context.Context, string, Options) (*Image, error) {
+						lookups++
+						if lookups == 1 {
+							return cached, nil
+						}
+						return fresh, nil
+					}),
+				}
+
+				actual, err := index.Lookup(ctx, "example.com/app:latest", Options{ImagePullPolicy: policy})
+				require.NoError(t, err)
+				assert.Same(t, cached, actual)
+
+				actual, err = index.Lookup(ctx, freshImage, Options{ImagePullPolicy: apiv1.PullAlways})
+				require.NoError(t, err)
+				assert.Same(t, fresh, actual)
+
+				actual, err = index.Lookup(ctx, "example.com/app:latest", Options{ImagePullPolicy: policy})
+				require.NoError(t, err)
+				assert.Same(t, cached, actual)
+				assert.Equal(t, 2, lookups)
+			})
+		}
+	}
+}
+
+func TestCacheIndexLookupAlwaysDoesNotPopulateOrdinaryCache(t *testing.T) {
+	for _, policy := range []apiv1.PullPolicy{"", apiv1.PullIfNotPresent, apiv1.PullNever} {
+		t.Run(string(policy), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			fresh := &Image{Entrypoint: []string{"/always"}}
+			ordinary := &Image{Entrypoint: []string{"/ordinary"}}
+			lookups := 0
+			index := &cacheIndex{
+				cache: lru.New(1),
+				delegate: lookupFunc(func(context.Context, string, Options) (*Image, error) {
+					lookups++
+					if lookups == 1 {
+						return fresh, nil
+					}
+					return ordinary, nil
+				}),
+			}
+
+			actual, err := index.Lookup(ctx, "example.com/app:latest", Options{ImagePullPolicy: apiv1.PullAlways})
+			require.NoError(t, err)
+			assert.Same(t, fresh, actual)
+
+			for range 2 {
+				actual, err = index.Lookup(ctx, "example.com/app:latest", Options{ImagePullPolicy: policy})
+				require.NoError(t, err)
+				assert.Same(t, ordinary, actual)
+			}
+			assert.Equal(t, 2, lookups)
+		})
+	}
 }
 
 func TestCacheIndexLookupUsesCacheForOrdinaryPullPolicies(t *testing.T) {

@@ -18,16 +18,16 @@ func (i *cacheIndex) Lookup(ctx context.Context, image string, options Options) 
 	logger := logging.RequireLoggerFromContext(ctx)
 	if options.ImagePullPolicy == apiv1.PullAlways {
 		logger.WithField("image", image).Debug(ctx, "Cache bypassed due to image pull policy")
-	} else {
-		if cmd, ok := i.cache.Get(image); ok {
-			logger.WithFields(logging.Fields{
-				"image": image,
-				"cmd":   cmd,
-			}).Debug(ctx, "Cache hit")
-			return cmd.(*Image), nil
-		}
-		logger.WithField("image", image).Debug(ctx, "Cache miss")
+		return i.delegate.Lookup(ctx, image, options)
 	}
+	if cmd, ok := i.cache.Get(image); ok {
+		logger.WithFields(logging.Fields{
+			"image": image,
+			"cmd":   cmd,
+		}).Debug(ctx, "Cache hit")
+		return cmd.(*Image), nil
+	}
+	logger.WithField("image", image).Debug(ctx, "Cache miss")
 	v, err := i.delegate.Lookup(ctx, image, options)
 	if err != nil {
 		return nil, err
