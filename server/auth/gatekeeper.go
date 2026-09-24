@@ -35,7 +35,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/cache"
 	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
-	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 	"github.com/argoproj/argo-workflows/v4/util/kubeconfig"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -275,13 +274,13 @@ func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace strin
 		serviceAccounts = append(serviceAccounts, serviceAccount)
 	}
 	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
+	env, err := claims.ExprEnv()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshall claims: %w", err)
+	}
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
-		v, err := jsonutil.Jsonify(claims)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshall claims: %w", err)
-		}
-		allow, err := argoexpr.EvalBool(rule, v)
+		allow, err := argoexpr.EvalBool(rule, env)
 		if err != nil {
 			return nil, fmt.Errorf("failed to evaluate rule: %w", err)
 		}
