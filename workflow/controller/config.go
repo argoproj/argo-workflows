@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 )
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
@@ -26,6 +27,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	}
 	logger.Info(ctx, "Configuration updated")
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
+	wfc.namespaceDefaults = namespacedefaults.New(wfc.kubeclientset)
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()

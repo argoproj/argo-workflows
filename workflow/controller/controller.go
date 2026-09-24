@@ -67,6 +67,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/gccontroller"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -103,6 +104,8 @@ type WorkflowController struct {
 	Config config.Config
 	// get the artifact repository
 	artifactRepositories artifactrepositories.Interface
+	// get namespace-level workflow defaults
+	namespaceDefaults namespacedefaults.Interface
 	// get images
 	entrypoint entrypoint.Interface
 
@@ -1519,13 +1522,27 @@ func (wfc *WorkflowController) updateEstimatorFactory(ctx context.Context) {
 	wfc.estimatorFactory = estimation.NewEstimatorFactory(ctx, wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
-// setWorkflowDefaults sets values in the workflow.Spec with defaults from the
-// workflowController. Values in the workflow will be given the upper hand over the defaults.
-// The defaults for the workflow controller are set in the workflow-controller config map
-func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
+// setWorkflowDefaults sets values in the workflow.Spec with defaults from the namespace the
+// workflow runs in and from the workflowController. Values in the workflow are given the
+// upper hand over both, and namespace defaults over controller defaults.
+// The controller defaults are set in the workflow-controller config map; the namespace
+// defaults in the workflow-defaults config map of the workflow's own namespace.
+func (wfc *WorkflowController) setWorkflowDefaults(ctx context.Context, wf *wfv1.Workflow) error {
+	// Namespace defaults are merged before the controller defaults because MergeTo
+	// lets the target win: each pass only fills fields that are still empty. Merging
+	// the more specific defaults first therefore yields the precedence
+	// workflow > namespace > controller.
+	namespaceDefaults, err := wfc.namespaceDefaults.Get(ctx, wf.Namespace)
+	if err != nil {
+		return err
+	}
+	if namespaceDefaults != nil {
+		if err := util.MergeTo(namespaceDefaults, wf); err != nil {
+			return err
+		}
+	}
 	if wfc.Config.WorkflowDefaults != nil {
-		err := util.MergeTo(wfc.Config.WorkflowDefaults, wf)
-		if err != nil {
+		if err := util.MergeTo(wfc.Config.WorkflowDefaults, wf); err != nil {
 			return err
 		}
 	}
