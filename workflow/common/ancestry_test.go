@@ -65,6 +65,11 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeItems}, deps)
 	assert.Equal(t, "task-1.Succeeded && task-1.AnySucceeded", logic)
 
+	task := &wfv1.DAGTask{Depends: "task-1.Failed"}
+	deps, logic := GetTaskDependencies(ctx, task, dctx)
+	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeItems}, deps)
+	assert.Equal(t, "task-1.Failed", logic)
+
 	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true}
 	task = &wfv1.DAGTask{Depends: "task-1"}
 	deps, logic = GetTaskDependencies(ctx, task, dctx)
