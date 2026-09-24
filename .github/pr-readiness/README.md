@@ -8,7 +8,7 @@ A standalone bot ([`pr-readiness.yaml`](../workflows/pr-readiness.yaml)) that lo
 |---|---|---|
 | Lint | `Lint` (CI) | `make pre-commit -B` |
 | Codegen | `Codegen` (CI) | `make codegen -B` |
-| UI | `UI` (CI) | `yarn --cwd ui …` |
+| UI | `UI build and unit tests` (CI) | `yarn --cwd ui …` |
 | Build | `Build Binaries (cli/controller)` (CI) | `make cli` / `make controller` |
 | Docs | `docs` (Docs) | `make docs` |
 | PR title | `title-check` (PR Title Check) | conventional commits |

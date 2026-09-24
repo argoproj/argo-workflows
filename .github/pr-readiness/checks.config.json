@@ -15,9 +15,9 @@
     },
     {
       "id": "ui",
-      "match": { "check": "UI" },
-      "title": "UI",
-      "guidance": "The UI build/lint failed. Run `yarn --cwd ui install && yarn --cwd ui build && yarn --cwd ui lint` locally and commit any fixes."
+      "match": { "check": "UI build and unit tests" },
+      "title": "UI build and unit tests",
+      "guidance": "The UI build, unit tests or lint failed. Run `yarn --cwd ui install && yarn --cwd ui build && yarn --cwd ui test && yarn --cwd ui lint` locally and commit any fixes."
     },
     {
       "id": "build-cli",
