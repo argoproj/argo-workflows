@@ -4,6 +4,7 @@ import {ConfirmDialog} from '../pages/confirm-dialog';
 import {LoginPage} from '../pages/login-page';
 import {WorkflowDetailsPage} from '../pages/workflow-details-page';
 import {WorkflowListPage} from '../pages/workflow-list-page';
+import {WorkflowLogsPanel} from '../pages/workflow-logs-panel';
 import {ApiClient} from './api';
 
 interface Fixtures {
@@ -12,6 +13,7 @@ interface Fixtures {
     loginPage: LoginPage;
     workflowDetailsPage: WorkflowDetailsPage;
     workflowListPage: WorkflowListPage;
+    workflowLogsPanel: WorkflowLogsPanel;
 }
 
 export const test = base.extend<Fixtures>({
@@ -43,6 +45,9 @@ export const test = base.extend<Fixtures>({
     },
     workflowListPage: async ({page}, use) => {
         await use(new WorkflowListPage(page));
+    },
+    workflowLogsPanel: async ({page}, use) => {
+        await use(new WorkflowLogsPanel(page));
     }
 });
 
