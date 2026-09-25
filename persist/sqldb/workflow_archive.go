@@ -119,7 +119,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 		workflow = bytes.ReplaceAll(workflow, []byte("\\u0000"), []byte(postgresNullReplacement))
 	}
 	return r.sessionProxy.TxWith(ctx, func(s *sqldb.SessionProxy) error {
-		sess := s.Session()
+		sess := s.Session(ctx)
 		_, err := sess.SQL().
 			DeleteFrom(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -679,7 +679,7 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 
 	var result *wfv1.Workflow
 	err := r.sessionProxy.With(queryCtx, func(s db.Session) error {
-		selector := s.WithContext(queryCtx).SQL().
+		selector := s.SQL().
 			Select("name", "namespace", "uid", "startedat", "finishedat").
 			From(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).

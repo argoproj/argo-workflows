@@ -203,6 +203,12 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 		return false
 	}
 
+	// context.DeadlineExceeded satisfies net.Error with Timeout() == true, so
+	// check for it before the pattern and net.Error checks below.
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+
 	errStr := strings.ToLower(err.Error())
 
 	if errors.Is(err, io.ErrUnexpectedEOF) ||
@@ -260,7 +266,8 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 	return false
 }
 
-// With executes with a db Session
+// With executes fn with a db Session bound to ctx, so cancelling ctx cancels
+// the running statement.
 func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	sp.mu.RLock()
@@ -277,13 +284,13 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 		return fmt.Errorf("no active session")
 	}
 
-	err := fn(sess)
+	err := fn(sess.WithContext(ctx))
 	if err == nil {
 		return nil
 	}
 
-	// If it's not a network error or inside a tx do not retry
-	if !sp.isNetworkError(err) || sp.insideTransaction {
+	// If the caller has given up, it's not a network error, or inside a tx do not retry
+	if ctx.Err() != nil || !sp.isNetworkError(err) || sp.insideTransaction {
 		return err
 	}
 
@@ -299,7 +306,7 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 		return fmt.Errorf("no active session after reconnection")
 	}
 
-	if retryErr := fn(sess); retryErr != nil {
+	if retryErr := fn(sess.WithContext(ctx)); retryErr != nil {
 		return fmt.Errorf("operation failed after reconnection: %w", retryErr)
 	}
 
@@ -365,13 +372,16 @@ func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
 	return fmt.Errorf("reconnection failed after %d retries, last error: %w", sp.maxRetries, err)
 }
 
-// Session returns the underlying session. Use With() for operations that need reconnection.
+// Session returns the underlying session bound to ctx. Use With() for operations that need reconnection.
 // This method is provided for cases where you need direct access to the session,
 // but it won't provide automatic reconnection.
-func (sp *SessionProxy) Session() db.Session {
+func (sp *SessionProxy) Session(ctx context.Context) db.Session {
 	sp.mu.RLock()
 	defer sp.mu.RUnlock()
-	return sp.sess
+	if sp.sess == nil {
+		return nil
+	}
+	return sp.sess.WithContext(ctx)
 }
 
 // Close closes the session proxy and underlying session

@@ -60,7 +60,7 @@ func (d *Info) Migrate(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Setting up sync manager database")
 	if !d.Config.SkipMigration {
-		err := migrate(ctx, d.SessionProxy.Session(), d.SessionProxy.DBType(), &d.Config)
+		err := migrate(ctx, d.SessionProxy.Session(ctx), d.SessionProxy.DBType(), &d.Config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
 			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
