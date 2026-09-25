@@ -53,23 +53,24 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig            clientcmd.ClientConfig
-		configMap               string // --configmap
-		executorImage           string // --executor-image
-		executorImagePullPolicy string // --executor-image-pull-policy
-		logLevel                string // --loglevel
-		glogLevel               int    // --gloglevel
-		logFormat               string // --log-format
-		workflowWorkers         int    // --workflow-workers
-		workflowTTLWorkers      int    // --workflow-ttl-workers
-		podCleanupWorkers       int    // --pod-cleanup-workers
-		cronWorkflowWorkers     int    // --cron-workflow-workers
-		workflowArchiveWorkers  int    // --workflow-archive-workers
-		burst                   int
-		qps                     float32
-		namespaced              bool   // --namespaced
-		managedNamespace        string // --managed-namespace
-		executorPlugins         bool
+		clientConfig                 clientcmd.ClientConfig
+		configMap                    string // --configmap
+		executorImage                string // --executor-image
+		executorImagePullPolicy      string // --executor-image-pull-policy
+		logLevel                     string // --loglevel
+		glogLevel                    int    // --gloglevel
+		logFormat                    string // --log-format
+		workflowWorkers              int    // --workflow-workers
+		workflowTTLWorkers           int    // --workflow-ttl-workers
+		podCleanupWorkers            int    // --pod-cleanup-workers
+		cronWorkflowWorkers          int    // --cron-workflow-workers
+		workflowArchiveWorkers       int    // --workflow-archive-workers
+		burst                        int
+		qps                          float32
+		namespaced                   bool   // --namespaced
+		managedNamespace             string // --managed-namespace
+		executorPlugins              bool
+		workflowLevelExecutorPlugins bool
 	)
 
 	command := cobra.Command{
@@ -79,7 +80,7 @@ func NewRootCommand() *cobra.Command {
 			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
 			ctx, log, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
-				logging.InitLogger().WithError(err).WithFatal().Error(c.Context(), "Failed to create workflow-controller cmd logger")
+				cmdutil.FatalBootstrap(logFormat, err, "Failed to create workflow-controller cmd logger")
 				return err
 			}
 
@@ -121,8 +122,7 @@ func NewRootCommand() *cobra.Command {
 			if namespaced && managedNamespace == "" {
 				managedNamespace = namespace
 			}
-
-			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins)
+			wfController, err := controller.NewWorkflowController(ctx, config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, logFormat, configMap, executorPlugins, workflowLevelExecutorPlugins)
 			if err != nil {
 				return err
 			}
@@ -221,10 +221,10 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
+	command.Flags().BoolVar(&workflowLevelExecutorPlugins, "workflow-level-executor-plugins", false, "enable workflow-level executor plugins")
 	ctx, log, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
-		os.Exit(1)
+		cmdutil.FatalBootstrap(logFormat, err, "Failed to create workflow-controller logger")
 	}
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags

@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "noEmit": true,
+        "resolveJsonModule": true,
+        "types": ["node", "@playwright/test"],
+        "lib": ["ES2020", "DOM"]
+    },
+    "include": ["./**/*", "../playwright.config.ts"]
+}

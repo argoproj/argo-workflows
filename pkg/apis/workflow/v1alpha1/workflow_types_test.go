@@ -1680,3 +1680,140 @@ func TestInlineStore(t *testing.T) {
 		})
 	}
 }
+
+func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
+	t.Run("Remove holder from waiting when acquiring lock", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{
+				{
+					Semaphore: "test-semaphore",
+					Holders:   []string{"workflow-1/node-1", "workflow-2/node-2"},
+				},
+			},
+		}
+
+		// Acquire lock for workflow-1/node-1
+		result := ss.LockAcquired("workflow-1/node-1", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-1/node-1")
+
+		// Verify it's removed from waiting
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.NotContains(t, waiting.Holders, "workflow-1/node-1")
+		assert.Contains(t, waiting.Holders, "workflow-2/node-2")
+	})
+
+	t.Run("Remove waiting entry when last holder acquires lock", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{
+				{
+					Semaphore: "test-semaphore",
+					Holders:   []string{"workflow-1/node-1"},
+				},
+			},
+		}
+
+		// Acquire lock for the only waiting holder
+		result := ss.LockAcquired("workflow-1/node-1", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-1/node-1")
+
+		// Verify waiting entry is removed entirely
+		idx, _ := ss.GetWaiting("test-semaphore")
+		assert.Equal(t, -1, idx, "waiting entry should be removed when empty")
+	})
+
+	t.Run("Acquire lock when not in waiting", func(t *testing.T) {
+		ss := &SemaphoreStatus{}
+
+		// Acquire lock without being in waiting first
+		result := ss.LockAcquired("workflow-1/node-1", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-1/node-1")
+
+		// Verify waiting is empty
+		idx, _ := ss.GetWaiting("test-semaphore")
+		assert.Equal(t, -1, idx)
+	})
+
+	t.Run("Multiple holders in waiting, only one acquires", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{
+				{
+					Semaphore: "test-semaphore",
+					Holders:   []string{"workflow-1/node-1", "workflow-2/node-2", "workflow-3/node-3"},
+				},
+			},
+		}
+
+		// Acquire lock for workflow-2/node-2
+		result := ss.LockAcquired("workflow-2/node-2", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-2/node-2")
+
+		// Verify it's removed from waiting but others remain
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.NotContains(t, waiting.Holders, "workflow-2/node-2")
+		assert.Contains(t, waiting.Holders, "workflow-1/node-1")
+		assert.Contains(t, waiting.Holders, "workflow-3/node-3")
+		assert.Len(t, waiting.Holders, 2)
+	})
+}
+
+func TestSynchronizationStatus_GetStatus(t *testing.T) {
+	t.Run("nil pointers yield a nil interface", func(t *testing.T) {
+		ss := &SynchronizationStatus{}
+		// A typed nil (*SemaphoreStatus)(nil) inside the interface would be != nil,
+		// so callers guarding with `if s != nil` would then panic in LockReleased.
+		assert.Nil(t, ss.GetStatus(SynchronizationTypeSemaphore))
+		assert.Nil(t, ss.GetStatus(SynchronizationTypeMutex))
+	})
+	t.Run("set pointers are returned", func(t *testing.T) {
+		ss := &SynchronizationStatus{Semaphore: &SemaphoreStatus{}, Mutex: &MutexStatus{}}
+		assert.Same(t, ss.Semaphore, ss.GetStatus(SynchronizationTypeSemaphore))
+		assert.Same(t, ss.Mutex, ss.GetStatus(SynchronizationTypeMutex))
+	})
+	t.Run("unknown type panics", func(t *testing.T) {
+		ss := &SynchronizationStatus{}
+		assert.Panics(t, func() { ss.GetStatus(SynchronizationTypeUnknown) })
+	})
+}
+
+func TestArtGCStatusPods(t *testing.T) {
+	t.Run("nothing recorded counts as all recouped", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		assert.True(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+	t.Run("recorded pod awaits recoup", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.RecordArtifactGCPod("pod-a")
+		assert.False(t, gcStatus.IsArtifactGCPodRecouped("pod-a"))
+		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		assert.True(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+	t.Run("recording again does not reset a recouped pod", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		gcStatus.RecordArtifactGCPod("pod-a")
+		assert.True(t, gcStatus.IsArtifactGCPodRecouped("pod-a"))
+	})
+	t.Run("one outstanding pod blocks", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		gcStatus.RecordArtifactGCPod("pod-b")
+		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+}

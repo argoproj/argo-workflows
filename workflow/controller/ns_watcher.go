@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	authutil "github.com/argoproj/argo-workflows/v4/util/auth"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
@@ -43,19 +44,21 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 	labelSelector := labels.NewSelector().
 		Add(*limitReq)
 
-	listFunc := func(opts metav1.ListOptions) (runtime.Object, error) {
+	listFunc := func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 		opts.LabelSelector = labelSelector.String()
 		return c.List(ctx, opts)
 	}
 
-	watchFunc := func(opts metav1.ListOptions) (watch.Interface, error) {
+	watchFunc := func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 		opts.Watch = true
 		opts.LabelSelector = labelSelector.String()
 		return c.Watch(ctx, opts)
 	}
 
-	source := &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+	source := &cache.ListWatch{ListWithContextFunc: listFunc, WatchFuncWithContext: watchFunc}
 	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, kubeclientset), &apiv1.Namespace{}, nsResyncPeriod, cache.Indexers{})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 
 	_, err := informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{

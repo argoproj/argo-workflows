@@ -1,9 +1,9 @@
-#syntax=docker/dockerfile:1.22
+#syntax=docker/dockerfile:1.27
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.26.1-alpine3.23 AS builder
+FROM golang:1.27.1-alpine3.23 AS builder
 
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
@@ -23,6 +23,16 @@ COPY go.sum .
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
+
+####################################################################################################
+
+# Delve debugger, copied into the `-dev` images so the controller/server/executor
+# can be run under `dlv exec` when Tilt is invoked with `--debug=...`. Pinned to a
+# release that supports the builder's Go toolchain. Dev-only: never used by the
+# distroless production targets.
+FROM builder AS dlv-build
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    go install github.com/go-delve/delve/cmd/dlv@v1.27.0
 
 ####################################################################################################
 
@@ -80,7 +90,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:28efbe90d0b2f2a3ee465cc5b44f3f2cf5533514cf4d51447a977a5dc8e526d0 AS argoexec-base
+FROM gcr.io/distroless/static-debian13:latest@sha256:58133991db06659feaabe0f4e97a35cebf15ef4ea08f8a4c6d2ee5f75e4aa6a0 AS argoexec-base
 
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
@@ -105,7 +115,7 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:28efbe90d0b2f2a3ee465cc5b44f3f2cf5533514cf4d51447a977a5dc8e526d0 AS workflow-controller
+FROM gcr.io/distroless/static-debian13:latest@sha256:58133991db06659feaabe0f4e97a35cebf15ef4ea08f8a4c6d2ee5f75e4aa6a0 AS workflow-controller
 
 USER 8737
 
@@ -117,7 +127,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:28efbe90d0b2f2a3ee465cc5b44f3f2cf5533514cf4d51447a977a5dc8e526d0 AS argocli
+FROM gcr.io/distroless/static-debian13:latest@sha256:58133991db06659feaabe0f4e97a35cebf15ef4ea08f8a4c6d2ee5f75e4aa6a0 AS argocli
 
 USER 8737
 
@@ -128,3 +138,57 @@ COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]
+
+####################################################################################################
+
+FROM registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789 AS argo-workflows-crdinstaller
+
+USER 8737
+
+# The base image sets no HOME, so kubectl would put its discovery cache in
+# /.kube/cache, which UID 8737 cannot write. /tmp is world-writable (1777).
+ENV HOME=/tmp
+
+COPY manifests/base/crds/full/argoproj.io_*.yaml /crds/full/
+
+CMD [ "apply", "--server-side", "--force-conflicts", "-v=6", "-f", "/crds/full/" ]
+
+####################################################################################################
+# Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The
+# binaries are compiled on the host (by Tilt local_resources) and COPYed from
+# the build context, so each binary is built exactly once. On change Tilt
+# rebuilds these (trivial COPY) and recreates the pod.
+
+FROM alpine:3.24 AS workflow-controller-dev
+RUN apk add --no-cache ca-certificates
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+COPY dist/workflow-controller /bin/workflow-controller
+# Delve, for `tilt up -- --debug=controller` (the Tiltfile wraps the entrypoint).
+COPY --from=dlv-build /go/bin/dlv /bin/dlv
+# Match the prod image's non-root user so runAsNonRoot is satisfied.
+USER 8737
+ENTRYPOINT [ "workflow-controller" ]
+
+####################################################################################################
+
+FROM alpine:3.24 AS argocli-dev
+RUN apk add --no-cache ca-certificates
+WORKDIR /home/argo
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+COPY dist/argo /bin/argo
+# Delve, for `tilt up -- --debug=server` (the Tiltfile wraps the entrypoint).
+COPY --from=dlv-build /go/bin/dlv /bin/dlv
+USER 8737
+ENTRYPOINT [ "argo" ]
+
+####################################################################################################
+
+FROM alpine:3.24 AS argoexec-dev
+RUN apk add --no-cache ca-certificates mailcap
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+COPY dist/argoexec /bin/argoexec
+USER 8737
+ENTRYPOINT [ "argoexec" ]

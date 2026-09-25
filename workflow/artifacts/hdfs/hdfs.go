@@ -234,6 +234,13 @@ func (driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtif
 	return hdfscli.CopyToRemote(path, driver.Path)
 }
 
+// SaveStream saves an artifact from an io.Reader to HDFS compliant storage
+func (driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return common.SaveStreamViaTempFile(reader, "hdfs-upload-*", func(path string) error {
+		return driver.Save(ctx, path, outputArtifact)
+	})
+}
+
 // Delete is unsupported for the hdfs artifacts
 func (driver *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported

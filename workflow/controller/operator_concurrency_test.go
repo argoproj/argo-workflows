@@ -22,117 +22,15 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 )
 
-const configMap = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-config
-data:
-  workflow: "2"
-  template: "1"
-  step: "1"
-`
+const configMap = "@testdata/operator_concurrency/semaphore-configmap.yaml"
 
-const wfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-  namespace: default
-spec:
-  entrypoint: whalesay
-  templates:
-    -
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      name: whalesay
-`
+const wfWithSemaphore = "@testdata/operator_concurrency/wf-with-semaphore.yaml"
 
-const ScriptWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: scriptTmpl
-  templates:
-  - name: scriptTmpl
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-    script:
-      image: python:alpine3.23
-      command: ["python"]
-      # fail with a 66% probability
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([0, 1, 1]);
-        sys.exit(exit_code)
-`
+const ScriptWfWithSemaphore = "@testdata/operator_concurrency/script-wf-with-semaphore.yaml"
 
-const ScriptWfWithSemaphoreDifferentNamespace = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: scriptTmpl
-  templates:
-  - name: scriptTmpl
-    synchronization:
-      semaphores:
-        - namespace: other
-          configMapKeyRef:
-            key: template
-            name: my-config
-    script:
-      image: python:alpine3.23
-      command: ["python"]
-      # fail with a 66% probability
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([0, 1, 1]);
-        sys.exit(exit_code)
-`
+const ScriptWfWithSemaphoreDifferentNamespace = "@testdata/operator_concurrency/script-wf-with-semaphore-different-namespace.yaml"
 
-const ResourceWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: resource-wf
-  namespace: default
-spec:
-  entrypoint: resourceTmpl
-  templates:
-  - name: resourceTmpl
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-    resource:
-      action: create
-      manifest: |
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: workflow-controller-configmap1
-`
+const ResourceWfWithSemaphore = "@testdata/operator_concurrency/resource-wf-with-semaphore.yaml"
 
 var workflowExistenceFunc = func(key string) bool {
 	return true
@@ -164,10 +62,10 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -225,10 +123,10 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -285,10 +183,10 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("other").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -347,10 +245,10 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -409,8 +307,8 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	defer cancel()
 
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
@@ -432,32 +330,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	})
 }
 
-var DAGWithMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: dag-mutex
- namespace: default
-spec:
- entrypoint: diamond
- templates:
- - name: diamond
-   dag:
-     tasks:
-     - name: A
-       template: mutex
-     - name: B
-       depends: A
-       template: mutex
-
- - name: mutex
-   synchronization:
-     mutexes:
-       - name: welcome
-   container:
-     image: alpine:3.23
-     command: [sh, -c, "exit 0"]
-`
+const DAGWithMutex = "@testdata/operator_concurrency/dag-with-mutex.yaml"
 
 func TestMutexInDAG(t *testing.T) {
 	assert := assert.New(t)
@@ -465,8 +338,8 @@ func TestMutexInDAG(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
@@ -492,44 +365,7 @@ func TestMutexInDAG(t *testing.T) {
 	})
 }
 
-var DAGWithInterpolatedMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: dag-mutex
- namespace: default
-spec:
- entrypoint: diamond
- templates:
- - name: diamond
-   dag:
-     tasks:
-     - name: A
-       template: mutex
-       arguments:
-         parameters:
-         - name: message
-           value: foo/bar
-
-     - name: B
-       depends: A
-       template: mutex
-       arguments:
-         parameters:
-         - name: message
-           value: foo/bar
-
- - name: mutex
-   synchronization:
-     mutexes:
-       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
-   inputs:
-     parameters:
-     - name: message
-   container:
-     image: alpine:3.23
-     command: [sh, -c, "echo {{inputs.parameters.message}}"]
-`
+const DAGWithInterpolatedMutex = "@testdata/operator_concurrency/dag-with-interpolated-mutex.yaml"
 
 func TestMutexInDAGWithInterpolation(t *testing.T) {
 	assert := assert.New(t)
@@ -537,8 +373,8 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	t.Run("InterpolatedMutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithInterpolatedMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
@@ -565,46 +401,17 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	})
 }
 
-const RetryWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: step1
-  retryStrategy:
-    limit: 10
-  templates:
-    - name: step1
-      steps:
-        - - name: hello1
-            template: whalesay
-        - - name: hello2
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-`
+const RetryWfWithSemaphore = "@testdata/operator_concurrency/retry-wf-with-semaphore.yaml"
 
 func TestSynchronizationWithRetry(t *testing.T) {
 	assert := assert.New(t)
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
@@ -644,175 +451,19 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	})
 }
 
-const StepWithSync = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-jklcl
-  namespace: default
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  -
-    name: hello-hello-hello
-    steps:
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello1
-        name: hello1
-        template: whalesay
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
-  -
-    container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay
-    inputs:
-      parameters:
-      - name: message
-    name: whalesay
-`
+const StepWithSync = "@testdata/operator_concurrency/step-with-sync.yaml"
 
-const StepWithSyncStatus = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-jklcl
-  namespace: default
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  - inputs: {}
-    name: hello-hello-hello
-    steps:
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello1
-        name: hello1
-        template: whalesay
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
-  - container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay
-      resources: {}
-    inputs:
-      parameters:
-      - name: message
-    name: whalesay
-status:
-  artifactRepositoryRef:
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  - status: "True"
-    type: Completed
-  finishedAt: "2021-02-11T19:46:55Z"
-  nodes:
-    steps-jklcl:
-      children:
-      - steps-jklcl-3895081407
-      displayName: steps-jklcl
-      finishedAt: "2021-02-11T19:46:55Z"
-      id: steps-jklcl
-      name: steps-jklcl
-      outboundNodes:
-      - steps-jklcl-969694128
-      phase: Running
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateName: hello-hello-hello
-      templateScope: local/steps-jklcl
-      type: Steps
-    steps-jklcl-969694128:
-      boundaryID: steps-jklcl
-      displayName: hello1
-      finishedAt: "2021-02-11T19:46:44Z"
-      id: steps-jklcl-969694128
-      inputs:
-        parameters:
-        - name: message
-          value: hello1
-      name: steps-jklcl[0].hello1
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: steps-jklcl/steps-jklcl-969694128/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateName: whalesay
-      templateScope: local/steps-jklcl
-      type: Pod
-    steps-jklcl-3895081407:
-      boundaryID: steps-jklcl
-      children:
-      - steps-jklcl-969694128
-      displayName: '[0]'
-      finishedAt: "2021-02-11T19:46:55Z"
-      id: steps-jklcl-3895081407
-      name: steps-jklcl[0]
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateScope: local/steps-jklcl
-      type: StepGroup
-  phase: Succeeded
-  progress: 1/1
-  resourcesDuration:
-    cpu: 7
-    memory: 4
-  startedAt: "2021-02-11T19:46:33Z"
-
-`
+const StepWithSyncStatus = "@testdata/operator_concurrency/step-with-sync-status.yaml"
 
 func TestSynchronizationWithStep(t *testing.T) {
 	assert := assert.New(t)
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -855,41 +506,17 @@ func TestSynchronizationWithStep(t *testing.T) {
 	})
 }
 
-const wfWithStepRetry = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: my-workflow-
-spec:
-  entrypoint: step-entry
-  templates:
-    - name: step-entry
-      steps:
-      - - name: step1
-          template: sleep
-
-    - name: sleep
-      retryStrategy:
-        limit: 5
-        retryPolicy: Always
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              name: my-config
-              key: template
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["sleep 300"]`
+const wfWithStepRetry = "@testdata/operator_concurrency/wf-with-step-retry.yaml"
 
 func TestSynchronizationWithStepRetry(t *testing.T) {
 	assert := assert.New(t)
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -927,30 +554,14 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	})
 }
 
-const pendingWfWithShutdownStrategy = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: synchronization-wf-level
-  namespace: default
-spec:
-  entrypoint: whalesay
-  onExit: whalesay
-  synchronization:
-    mutexes:
-      - name:  test
-  templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const pendingWfWithShutdownStrategy = "@testdata/operator_concurrency/pending-wf-with-shutdown-strategy.yaml"
 
 func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 
 	t.Run("PendingShuttingdownTerminatingWf", func(t *testing.T) {
 		// Create and acquire the lock for the first workflow
@@ -986,11 +597,32 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		require.NoError(t, err)
 
-		// The pending workflow that's being shutdown should have succeeded and released the lock.
+		// The pending workflow that's being shutdown should have failed and released the lock.
 		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowFailed, wocTwo.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", wocTwo.wf.Status.Message)
 		assert.Nil(t, wocTwo.wf.Status.Synchronization)
+		// The workflow never ran, so no nodes should have been created for it.
+		assert.Empty(t, wocTwo.wf.Status.Nodes)
+
+		// Release the lock from the first workflow.
+		woc.wf.Status.Phase = wfv1.WorkflowSucceeded
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.Synchronization)
+
+		// The terminated workflow must also have been removed from the lock's
+		// waiting queue, so a new workflow acquires the lock immediately.
+		wfThree := wf.DeepCopy()
+		wfThree.Name = "three-terminating"
+		wfThree, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfThree, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wocThree := newWorkflowOperationCtx(ctx, wfThree, controller)
+		wocThree.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, wocThree.wf.Status.Phase)
+		require.NotNil(t, wocThree.wf.Status.Synchronization)
+		require.NotNil(t, wocThree.wf.Status.Synchronization.Mutex)
+		assert.Len(t, wocThree.wf.Status.Synchronization.Mutex.Holding, 1)
 	})
 
 	t.Run("PendingShuttingdownStoppingWf", func(t *testing.T) {
@@ -1049,48 +681,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 }
 
 func TestWorkflowMemoizationWithMutex(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: example-steps-simple
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: job-1
-            template: sleep
-            arguments:
-              parameters:
-                - name: sleep_duration
-                  value: 10
-          - name: job-2
-            template: sleep
-            arguments:
-              parameters:
-                - name: sleep_duration
-                  value: 5
-
-    - name: sleep
-      synchronization:
-        mutexes:
-          - name: mutex-example-steps-simple
-      inputs:
-        parameters:
-          - name: sleep_duration
-      script:
-        image: alpine:3.23
-        command: [/bin/sh]
-        source: |
-          echo "Sleeping for {{ inputs.parameters.sleep_duration }}"
-          sleep {{ inputs.parameters.sleep_duration }}
-      memoize:
-        key: "memo-key-1"
-        cache:
-          configMap:
-            name: cache-example-steps-simple
-    `)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_concurrency/wf-memoization-with-mutex.yaml")
 	wf.Name = "example-steps-simple-gas12"
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
@@ -1135,4 +726,111 @@ spec:
 			assert.True(t, node.MemoizationStatus.Hit)
 		}
 	}
+}
+
+const bareWfWithTmplMutex = "@testdata/operator_concurrency/bare-wf-with-tmpl-mutex.yaml"
+
+const stepsWfWithTmplMutex = "@testdata/operator_concurrency/steps-wf-with-tmpl-mutex.yaml"
+
+const dagWfWithTmplMutex = "@testdata/operator_concurrency/dag-wf-with-tmpl-mutex.yaml"
+
+// TestShutdownWaitingForTmplLevelLock ensures that shutting down a workflow
+// whose node is still waiting to acquire a template-level synchronization lock
+// fails that node immediately instead of silently ignoring the shutdown until
+// the lock becomes available.
+func TestShutdownWaitingForTmplLevelLock(t *testing.T) {
+	tests := []struct {
+		name       string
+		waiterYAML string
+		strategy   wfv1.ShutdownStrategy
+	}{
+		{"BareTerminate", bareWfWithTmplMutex, wfv1.ShutdownStrategyTerminate},
+		{"StepsTerminate", stepsWfWithTmplMutex, wfv1.ShutdownStrategyTerminate},
+		{"DAGTerminate", dagWfWithTmplMutex, wfv1.ShutdownStrategyTerminate},
+		{"BareStop", bareWfWithTmplMutex, wfv1.ShutdownStrategyStop},
+		{"StepsStop", stepsWfWithTmplMutex, wfv1.ShutdownStrategyStop},
+		{"DAGStop", dagWfWithTmplMutex, wfv1.ShutdownStrategyStop},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx)
+			defer cancel()
+			controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+			}, workflowExistenceFunc, false)
+			mutexName := "tmpl-shutdown-" + strings.ToLower(tt.name)
+
+			// The holder acquires the mutex and keeps it for the duration of the test.
+			holder := wfv1.MustUnmarshalWorkflow(bareWfWithTmplMutex)
+			holder.Name = "holder-" + strings.ToLower(tt.name)
+			holder.Spec.Templates[0].Synchronization.Mutexes[0].Name = mutexName
+			holder, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(holder.Namespace).Create(ctx, holder, metav1.CreateOptions{})
+			require.NoError(t, err)
+			wocHolder := newWorkflowOperationCtx(ctx, holder, controller)
+			wocHolder.operate(ctx)
+			require.NotNil(t, wocHolder.wf.Status.Synchronization)
+			require.Len(t, wocHolder.wf.Status.Synchronization.Mutex.Holding, 1)
+
+			// The waiter's node blocks waiting for the mutex.
+			waiter := wfv1.MustUnmarshalWorkflow(tt.waiterYAML)
+			waiter.Name = "waiter-" + strings.ToLower(tt.name)
+			for i := range waiter.Spec.Templates {
+				if waiter.Spec.Templates[i].Synchronization != nil {
+					waiter.Spec.Templates[i].Synchronization.Mutexes[0].Name = mutexName
+				}
+			}
+			waiter, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(waiter.Namespace).Create(ctx, waiter, metav1.CreateOptions{})
+			require.NoError(t, err)
+			wocWaiter := newWorkflowOperationCtx(ctx, waiter, controller)
+			wocWaiter.operate(ctx)
+			waitingNode := findWaitingSyncNode(wocWaiter.wf)
+			require.NotNil(t, waitingNode, "expected a node waiting for the lock")
+			require.Equal(t, wfv1.NodePending, waitingNode.Phase)
+
+			// Shut the waiter down while it is still waiting for the lock.
+			patch, err := json.Marshal(map[string]any{"spec": map[string]any{"shutdown": tt.strategy}})
+			require.NoError(t, err)
+			// Persist the waiter's status from the first operate before patching.
+			wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(waiter.Namespace).Get(ctx, waiter.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			wf.Status = wocWaiter.wf.Status
+			wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+			require.NoError(t, err)
+			wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+			require.NoError(t, err)
+
+			wocWaiter = newWorkflowOperationCtx(ctx, wf, controller)
+			wocWaiter.operate(ctx)
+
+			message := fmt.Sprintf("Stopped with strategy '%s'", tt.strategy)
+			node := findWaitingSyncNodeByID(wocWaiter.wf, waitingNode.ID)
+			require.NotNil(t, node)
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+			assert.Equal(t, message, node.Message)
+			// No node may be left behind unfulfilled: the shutdown must
+			// propagate to the whole tree.
+			for _, n := range wocWaiter.wf.Status.Nodes {
+				assert.NotEqual(t, wfv1.NodePending, n.Phase, "node %s left pending after shutdown", n.Name)
+			}
+			assert.Equal(t, wfv1.WorkflowFailed, wocWaiter.wf.Status.Phase)
+		})
+	}
+}
+
+func findWaitingSyncNode(wf *wfv1.Workflow) *wfv1.NodeStatus {
+	for _, node := range wf.Status.Nodes {
+		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+			return &node
+		}
+	}
+	return nil
+}
+
+func findWaitingSyncNodeByID(wf *wfv1.Workflow, id string) *wfv1.NodeStatus {
+	for _, node := range wf.Status.Nodes {
+		if node.ID == id {
+			return &node
+		}
+	}
+	return nil
 }

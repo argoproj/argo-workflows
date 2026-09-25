@@ -17,6 +17,11 @@ type ArgoServerOpts struct {
 	// use custom http client
 	HTTP1Client *http.Client
 	Headers     []string
+	// client certificate and key file paths
+	ClientCert string
+	ClientKey  string
+	// certificate authority file path
+	CACert string
 }
 
 func (o ArgoServerOpts) GetURL() string {
@@ -27,5 +32,5 @@ func (o ArgoServerOpts) GetURL() string {
 }
 
 func (o ArgoServerOpts) String() string {
-	return fmt.Sprintf("(url=%s,path=%s,secure=%v,insecureSkipVerify=%v,http=%v)", o.URL, o.Path, o.Secure, o.InsecureSkipVerify, o.HTTP1)
+	return fmt.Sprintf("(url=%s,path=%s,secure=%v,insecureSkipVerify=%v,http=%v,clientCert=%v,clientKey=%v,caCert=%v)", o.URL, o.Path, o.Secure, o.InsecureSkipVerify, o.HTTP1, o.ClientCert, o.ClientKey, o.CACert)
 }

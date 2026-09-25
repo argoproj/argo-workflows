@@ -191,7 +191,7 @@ type DocGeneratorContext struct {
 	queue      []string
 	external   []string
 	index      map[string]Set
-	jsonName   map[string]string
+	jsonNames  map[string]Set
 	defs       map[string]any
 }
 
@@ -214,10 +214,10 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 			"io.argoproj.workflow.v1alpha1.WorkflowTemplate", "io.argoproj.workflow.v1alpha1.WorkflowEventBinding",
 			"io.argoproj.workflow.v1alpha1.InfoResponse",
 		},
-		external: []string{},
-		index:    make(map[string]Set),
-		jsonName: make(map[string]string),
-		defs:     make(map[string]any),
+		external:  []string{},
+		index:     make(map[string]Set),
+		jsonNames: make(map[string]Set),
+		defs:      make(map[string]any),
 	}
 }
 
@@ -276,9 +276,15 @@ func (c *DocGeneratorContext) addToQueue(ref, jsonFieldName string) {
 	if ref == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
 		ref = "io.argoproj.workflow.v1alpha1.WorkflowStep"
 	}
+	// A type can be referenced under several field names (e.g. ResourceRequirements
+	// via both `resources` and `podResources`); collect them all for example lookup.
+	if set, ok := c.jsonNames[ref]; ok {
+		set[jsonFieldName] = true
+	} else {
+		c.jsonNames[ref] = Set{jsonFieldName: true}
+	}
 	if _, ok := c.doneFields[ref]; !ok {
 		c.doneFields[ref] = true
-		c.jsonName[ref] = jsonFieldName
 		if strings.Contains(ref, "io.argoproj.workflow") {
 			c.queue = append(c.queue, ref)
 		} else {
@@ -307,23 +313,28 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 	if set, ok := c.index[name]; ok {
 		out += getExamples(set, "Examples")
 	}
-	if jsonName, ok := c.jsonName[key]; ok {
-		if set, ok := c.index[jsonName]; ok {
-			// HACK: The "spec" field usually refers to a WorkflowSpec, but other CRDs
-			// have different definitions, and the examples with "spec" aren't applicable.
-			// Similarly, "labels" appears in metadata.labels for every workflow, but we
-			// only want examples that actually use the field (e.g., MetricLabel in prometheus.labels).
-			showExamples := true
-			if jsonName == "spec" && name != "WorkflowSpec" && name != "CronWorkflowSpec" {
-				showExamples = false
-			}
-			if jsonName == "labels" && name != "ObjectMeta" {
-				showExamples = false
-			}
-			if showExamples {
-				out += getExamples(set, "Examples with this field")
-			}
+	fieldExamples := make(Set)
+	for jsonName := range c.jsonNames[key] {
+		set, ok := c.index[jsonName]
+		if !ok {
+			continue
 		}
+		// HACK: The "spec" field usually refers to a WorkflowSpec, but other CRDs
+		// have different definitions, and the examples with "spec" aren't applicable.
+		// Similarly, "labels" appears in metadata.labels for every workflow, but we
+		// only want examples that actually use the field (e.g., MetricLabel in prometheus.labels).
+		if jsonName == "spec" && name != "WorkflowSpec" && name != "CronWorkflowSpec" {
+			continue
+		}
+		if jsonName == "labels" && name != "ObjectMeta" {
+			continue
+		}
+		for fileName := range set {
+			fieldExamples[fileName] = true
+		}
+	}
+	if len(fieldExamples) > 0 {
+		out += getExamples(fieldExamples, "Examples with this field")
 	}
 
 	var properties map[string]any

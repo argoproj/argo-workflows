@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	persistsqldb "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
@@ -76,7 +77,9 @@ func NewFakeDataCommand() *cobra.Command {
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
-				wfArchive := persistsqldb.NewWorkflowArchive(session, cluster, "", instanceIDService, dbType)
+				dbConfig := dbConfigFromType(dbType)
+				proxy := sqldb.NewSessionProxyFromSession(session, dbConfig, "", "")
+				wfArchive := persistsqldb.NewWorkflowArchive(proxy, cluster, "", instanceIDService)
 				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}
@@ -130,6 +133,17 @@ func randomTime() time.Time {
 	min := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 	max := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 	return time.Unix(rand.Int63nRange(min, max), 0)
+}
+
+func dbConfigFromType(dbType sqldb.DBType) *config.DBConfig {
+	switch dbType {
+	case sqldb.Postgres:
+		return &config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{}}
+	case sqldb.MySQL:
+		return &config.DBConfig{MySQL: &config.MySQLConfig{}}
+	default:
+		return &config.DBConfig{}
+	}
 }
 
 func randomizeWorkflow(wfTmpl *wfv1.Workflow, namespaces []string) *wfv1.Workflow {

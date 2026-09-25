@@ -3,7 +3,7 @@ package webhook
 import (
 	"net/http"
 
-	"gopkg.in/go-playground/webhooks.v5/bitbucket"
+	"github.com/go-playground/webhooks/v6/bitbucket"
 )
 
 func bitbucketMatch(secret string, r *http.Request) bool {

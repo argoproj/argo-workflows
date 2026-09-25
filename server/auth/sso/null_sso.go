@@ -11,6 +11,18 @@ var NullSSO Interface = nullService{}
 
 type nullService struct{}
 
+func (n nullService) LogoutURL() string {
+	return ""
+}
+
+func (n nullService) LogoutRedirectURL() string {
+	return ""
+}
+
+func (n nullService) ClientID() string {
+	return ""
+}
+
 func (n nullService) IsRBACEnabled() bool {
 	return false
 }

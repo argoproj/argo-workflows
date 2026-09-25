@@ -70,7 +70,7 @@ type Given struct {
 	config            *config.Config
 }
 
-// creates a workflow based on the parameter, this may be:
+// Workflow creates a workflow based on the parameter, which may be:
 //
 // 1. A file name if it starts with "@"
 // 2. Raw YAML.
@@ -82,7 +82,7 @@ func (g *Given) Workflow(text string) *Given {
 	return g
 }
 
-// Load parsed Workflow that's assumed to be from the "examples/" directory
+// ExampleWorkflow loads a parsed Workflow that is assumed to be from the "examples/" directory.
 func (g *Given) ExampleWorkflow(wf *wfv1.Workflow) *Given {
 	g.t.Helper()
 	g.wf = wf
@@ -91,7 +91,7 @@ func (g *Given) ExampleWorkflow(wf *wfv1.Workflow) *Given {
 	return g
 }
 
-// Load created workflow
+// WorkflowWorkflow loads an already-created workflow.
 func (g *Given) WorkflowWorkflow(wf *wfv1.Workflow) *Given {
 	g.t.Helper()
 	g.wf = wf
@@ -271,7 +271,7 @@ func (g *Given) Exec(name string, args []string, stdin string, block func(t *tes
 	return g
 }
 
-// Use Kubectl to server-side apply the given file
+// KubectlApply uses kubectl to server-side apply the given file.
 func (g *Given) KubectlApply(file string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
 	return g.Exec("kubectl", append([]string{"-n", Namespace, "apply", "--server-side", "-f"}, file), "", block)

@@ -3,7 +3,6 @@ package fixtures
 import (
 	"context"
 
-	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v4/config"
@@ -15,7 +14,7 @@ import (
 
 type Persistence struct {
 	WorkflowArchive       persist.WorkflowArchive
-	session               db.Session
+	sessionProxy          *sqldb.SessionProxy
 	OffloadNodeStatusRepo persist.OffloadNodeStatusRepo
 }
 
@@ -28,7 +27,7 @@ func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, dbType, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
+		session, _, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
 		if err != nil {
 			panic(err)
 		}
@@ -37,13 +36,14 @@ func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 			panic(err)
 		}
 		log := logging.RequireLoggerFromContext(ctx)
-		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		sessionProxy := sqldb.NewSessionProxyFromSession(session, &persistence.DBConfig, "", "")
+		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
 		if err != nil {
 			panic(err)
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService, dbType)
-		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
+		workflowArchive := persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), Namespace, instanceIDService)
+		return &Persistence{workflowArchive, sessionProxy, offloadNodeStatusRepo}
 	}
 	return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 }
@@ -54,7 +54,7 @@ func (s *Persistence) IsEnabled() bool {
 
 func (s *Persistence) Close() {
 	if s.IsEnabled() {
-		err := s.session.Close()
+		err := s.sessionProxy.Close()
 		if err != nil {
 			panic(err)
 		}

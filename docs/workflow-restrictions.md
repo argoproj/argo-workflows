@@ -12,6 +12,41 @@ Workflow Restrictions allow you to set requirements for all Workflows.
 * `templateReferencing: Strict`: Only process Workflows using `workflowTemplateRef`. You can use this to require usage of WorkflowTemplates, disallowing arbitrary Workflow execution.
 * `templateReferencing: Secure`: Same as `Strict` _plus_ enforce that a referenced WorkflowTemplate hasn't changed between operations. If a running Workflow's underlying WorkflowTemplate changes, the Workflow will error out.
 
+## Allowed Workflow Fields Under `templateReferencing`
+
+When `templateReferencing` is set to `Strict` or `Secure`, the submitted `Workflow` may only set fields that are explicitly allowed on top of the referenced `WorkflowTemplate`. Any other field present on the submission is rejected and the Workflow errors out.
+
+This prevents users from overriding security-sensitive fields defined in the `WorkflowTemplate` (such as `serviceAccountName`, `securityContext`, `volumes`, `hostNetwork`, `podSpecPatch`, or injecting additional `templates`) via their submission.
+
+The allow-listed fields are:
+
+* `arguments`
+* `entrypoint`
+* `shutdown`
+* `suspend`
+* `activeDeadlineSeconds`
+* `priority`
+* `ttlStrategy`
+* `podGC`
+* `volumeClaimGC`
+* `archiveLogs`
+* `workflowMetadata`
+* `workflowTemplateRef`
+* `metrics`
+* `artifactGC`
+
+All other fields on the submitted `Workflow` spec must be defined on the referenced `WorkflowTemplate` instead.
+
+### Extending the Allow-List
+
+You can add fields to the allow-list with the `WORKFLOW_USER_OVERRIDE_ALLOWLIST` [environment variable](environment-variables.md) on the Controller.
+Set it to a comma-separated list of `WorkflowSpec` field names, using the YAML/JSON names you would write in a `Workflow`, for example `WORKFLOW_USER_OVERRIDE_ALLOWLIST=podSpecPatch,volumes`.
+
+Use this when you have decided that a normally-blocked field is safe for submitters to override in your environment.
+An unknown field name fails the Controller at startup rather than being silently ignored, so typos are surfaced.
+
+The nested `artifactGC.podSpecPatch`, `artifactGC.serviceAccountName`, and `artifactGC.podMetadata` fields remain blocked and are not relaxed by this variable.
+
 ## Setting Workflow Restrictions
 
 You can add `workflowRestrictions` in the [`workflow-controller-configmap`](./workflow-controller-configmap.yaml).

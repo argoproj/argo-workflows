@@ -10,7 +10,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -71,8 +71,15 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 			Nodes: map[string]wfv1.NodeStatus{},
 		},
 	}
+	wf.Status.Nodes.Set(ctx, wfName, wfv1.NodeStatus{
+		ID:    wfName,
+		Name:  wfName,
+		Type:  wfv1.NodeTypeSteps,
+		Phase: wfv1.NodeFailed,
+	})
 	onExitID := wf.NodeID(onExitName)
 	onExitNode := wfv1.NodeStatus{
+		ID:    onExitID,
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
@@ -83,6 +90,491 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
+}
+
+// memoizedResubmitFixture is a failed DAG fan-out: gen succeeded, fan(0:a) and fan(2:c) succeeded,
+// fan(1:b) is a retry node that exhausted two attempts, and the dependant "after" was omitted.
+// The nested "inner" DAG under fan(0:a) has its leaf pod pointing at "after", the shape that used
+// to leave a memoized resubmit Running forever.
+const memoizedResubmitFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: items
+      value: "[a, b, c]"
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+      - name: fan
+        template: inner
+        dependencies: [gen]
+        withParam: "{{workflow.parameters.items}}"
+      - name: after
+        template: run
+        dependencies: [fan]
+  - name: inner
+    dag:
+      tasks:
+      - name: step
+        template: run
+  - name: run
+    retryStrategy: {limit: 1}
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      outputs:
+        result: "[1]"
+      children: [wf-fan]
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: TaskGroup
+      boundaryID: wf
+      phase: Failed
+      children: [wf-fan-a, wf-fan-b, wf-fan-c]
+    wf-fan-a:
+      id: wf-fan-a
+      name: wf.fan(0:a)
+      type: DAG
+      boundaryID: wf
+      phase: Succeeded
+      children: [wf-fan-a-step]
+      outboundNodes: [wf-fan-a-step]
+    wf-fan-a-step:
+      id: wf-fan-a-step
+      name: wf.fan(0:a).step
+      type: Pod
+      boundaryID: wf-fan-a
+      phase: Succeeded
+      children: [wf-after]
+    wf-fan-b:
+      id: wf-fan-b
+      name: wf.fan(1:b)
+      type: Retry
+      boundaryID: wf
+      phase: Failed
+      message: No more retries left
+      children: [wf-fan-b-0, wf-fan-b-1]
+    wf-fan-b-0:
+      id: wf-fan-b-0
+      name: wf.fan(1:b)(0)
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      nodeFlag: {retried: true}
+    wf-fan-b-1:
+      id: wf-fan-b-1
+      name: wf.fan(1:b)(1)
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      nodeFlag: {retried: true}
+      children: [wf-after]
+    wf-fan-c:
+      id: wf-fan-c
+      name: wf.fan(2:c)
+      type: DAG
+      boundaryID: wf
+      phase: Succeeded
+      children: [wf-fan-c-step]
+      outboundNodes: [wf-fan-c-step]
+    wf-fan-c-step:
+      id: wf-fan-c-step
+      name: wf.fan(2:c).step
+      type: Pod
+      boundaryID: wf-fan-c
+      phase: Succeeded
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Skipped
+      boundaryID: wf
+      phase: Omitted
+      message: "omitted: depends condition not met"
+`
+
+func TestFormulateResubmitWorkflowMemoized(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+
+	get := func(suffix string) *wfv1.NodeStatus {
+		node, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + suffix))
+		require.NoError(t, err, "expected node %s%s to exist", newWf.Name, suffix)
+		return node
+	}
+	has := func(suffix string) bool {
+		return newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name + suffix))
+	}
+
+	t.Run("succeeded pods are memoized placeholders that keep their outputs", func(t *testing.T) {
+		gen := get(".gen")
+		assert.Equal(t, wfv1.NodeTypeSkipped, gen.Type)
+		assert.Equal(t, wfv1.NodeSkipped, gen.Phase)
+		assert.Equal(t, "original pod: wf-gen", gen.Message)
+		assert.Equal(t, "[1]", *gen.Outputs.Result)
+		assert.Equal(t, wfv1.NodeTypeSkipped, get(".fan(0:a).step").Type)
+		assert.Equal(t, wfv1.NodeTypeSkipped, get(".fan(2:c).step").Type)
+	})
+
+	t.Run("succeeded templates are kept as succeeded so they are not re-run", func(t *testing.T) {
+		assert.Equal(t, wfv1.NodeSucceeded, get(".fan(0:a)").Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, get(".fan(2:c)").Phase)
+	})
+
+	t.Run("the failed path is reset the way a retry resets it", func(t *testing.T) {
+		assert.Equal(t, wfv1.NodeRunning, get("").Phase)
+		assert.Equal(t, wfv1.NodeRunning, get(".fan").Phase)
+		retry := get(".fan(1:b)")
+		assert.Equal(t, wfv1.NodeRunning, retry.Phase)
+		assert.Empty(t, retry.Message)
+		assert.Empty(t, retry.Children, "old attempts must go so the retry budget starts afresh")
+		assert.False(t, has(".fan(1:b)(0)"))
+		assert.False(t, has(".fan(1:b)(1)"))
+	})
+
+	t.Run("omitted dependants are deleted so they are re-evaluated", func(t *testing.T) {
+		assert.False(t, has(".after"))
+	})
+
+	t.Run("nothing references a deleted node", func(t *testing.T) {
+		for _, node := range newWf.Status.Nodes {
+			for _, child := range node.Children {
+				assert.True(t, newWf.Status.Nodes.Has(child), "node %s still references deleted child %s", node.Name, child)
+			}
+			for _, outbound := range node.OutboundNodes {
+				assert.True(t, newWf.Status.Nodes.Has(outbound), "node %s still references deleted outbound node %s", node.Name, outbound)
+			}
+		}
+		assert.Empty(t, get(".fan(0:a).step").Children)
+		assert.Equal(t, []string{get(".fan(0:a).step").ID}, get(".fan(0:a)").OutboundNodes, "references to kept nodes are preserved")
+	})
+
+	t.Run("everything is renamed under the new workflow", func(t *testing.T) {
+		for id, node := range newWf.Status.Nodes {
+			assert.True(t, strings.HasPrefix(node.Name, newWf.Name), "node %s not renamed", node.Name)
+			assert.Equal(t, newWf.NodeID(node.Name), id)
+			assert.Equal(t, id, node.ID)
+			if node.BoundaryID != "" {
+				assert.True(t, newWf.Status.Nodes.Has(node.BoundaryID), "node %s has unknown boundary %s", node.Name, node.BoundaryID)
+			}
+		}
+	})
+}
+
+func TestFormulateResubmitWorkflowMemoizedParameterOverride(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, []string{"items=[x]"})
+	require.NoError(t, err)
+
+	// Overriding parameters can change the fan-out, so a reset TaskGroup loses its expanded
+	// children for the controller to re-expand them, as retry does.
+	fan, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".fan"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, fan.Phase)
+	assert.Empty(t, fan.Children)
+	for _, suffix := range []string{".fan(0:a)", ".fan(0:a).step", ".fan(1:b)", ".fan(2:c)", ".fan(2:c).step"} {
+		assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+suffix)), "%s should have been deleted", suffix)
+	}
+	assert.Equal(t, "[x]", newWf.Spec.Arguments.Parameters[0].Value.String())
+}
+
+func TestFormulateResubmitWorkflowMemoizedUnfinishedPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: set
+      - name: b
+        template: run
+  - name: set
+    containerSet:
+      containers:
+      - name: one
+        image: busybox
+      - name: two
+        image: busybox
+        dependencies: [one]
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: Steps
+      phase: Failed
+      children: [wf-sg]
+    wf-sg:
+      id: wf-sg
+      name: wf[0]
+      type: StepGroup
+      boundaryID: wf
+      phase: Failed
+      children: [wf-a, wf-b]
+    wf-a:
+      id: wf-a
+      name: wf[0].a
+      type: Pod
+      boundaryID: wf
+      phase: Running
+      children: [wf-a-one]
+    wf-a-one:
+      id: wf-a-one
+      name: wf[0].a.one
+      type: Container
+      boundaryID: wf-a
+      phase: Succeeded
+      children: [wf-a-two]
+    wf-a-two:
+      id: wf-a-two
+      name: wf[0].a.two
+      type: Container
+      boundaryID: wf-a
+      phase: Running
+    wf-b:
+      id: wf-b
+      name: wf[0].b
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	// A pod that never finished cannot be memoized, its pod belongs to the old workflow, and
+	// neither can anything under it, even a container that had already succeeded.
+	for _, suffix := range []string{"[0].a", "[0].a.one", "[0].a.two", "[0].b"} {
+		assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+suffix)), "%s should have been dropped", suffix)
+	}
+	sg, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + "[0]"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, sg.Phase)
+	assert.Empty(t, sg.Children)
+}
+
+// A failure that no execution node owns: the fan-out's withParam could not be expanded, which the
+// controller records as a Skipped node in Error. Memoized resubmit must still reset the path to it.
+const nonPodFailureFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+      - name: fan
+        template: run
+        dependencies: [gen]
+        withParam: "{{tasks.gen.outputs.result}}"
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      outputs:
+        result: not json
+      children: [wf-fan]
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: Skipped
+      boundaryID: wf
+      phase: Error
+      message: "withParam value could not be parsed as a JSON list"
+`
+
+func TestFormulateResubmitWorkflowMemoizedNonPodFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(nonPodFailureFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get(newWf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the root must be revisited, not carried over as Error")
+	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".fan")), "the failed node must be re-created")
+	gen, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".gen"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeSkipped, gen.Type, "the succeeded pod is still memoized")
+}
+
+func TestFormulateRetryWorkflowNonPodFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(nonPodFailureFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase)
+	assert.False(t, newWf.Status.Nodes.Has("wf-fan"))
+	assert.True(t, newWf.Status.Nodes.Has("wf-gen"))
+}
+
+// A pod that failed but was carried past with continueOn is memoized as a failed placeholder; it
+// must not be re-run, and it must not claim a pod under the new workflow.
+func TestFormulateResubmitWorkflowMemoizedContinueOn(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: flaky
+        template: run
+        continueOn: {failed: true}
+      - name: after
+        template: run
+        dependencies: [flaky]
+      - name: broken
+        template: run
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-flaky, wf-broken]
+    wf-flaky:
+      id: wf-flaky
+      name: wf.flaky
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      message: "exit code 1"
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+    wf-broken:
+      id: wf-broken
+      name: wf.broken
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      message: "exit code 2"
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	flaky, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".flaky"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, flaky.Phase)
+	assert.Equal(t, wfv1.NodeTypeSkipped, flaky.Type, "no pod exists for it under the new workflow")
+	assert.Equal(t, "original pod: wf-flaky: exit code 1", flaky.Message)
+	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".broken")), "the real failure is re-run")
+}
+
+// A workflow left behind by the memoized resubmit of an older version can reference nodes that no
+// longer exist. It must still be resubmittable.
+func TestFormulateResubmitWorkflowMemoizedDanglingInput(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	gen := wf.Status.Nodes["wf-gen"]
+	gen.Children = append(gen.Children, "wf-gone")
+	wf.Status.Nodes.Set(ctx, "wf-gen", gen)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	for _, node := range newWf.Status.Nodes {
+		for _, child := range node.Children {
+			assert.True(t, newWf.Status.Nodes.Has(child), "node %s still references %s", node.Name, child)
+		}
+	}
+}
+
+func TestFormulateResubmitWorkflowMemoizedNoRootNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	wf.Status.Nodes.Delete(ctx, "wf")
+	_, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.ErrorContains(t, err, "no root node")
+}
+
+func TestFormulateResubmitWorkflowMemoizedNoNodes(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  message: invalid spec
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	assert.Empty(t, newWf.Status.Nodes)
+	assert.Equal(t, wfv1.WorkflowUnknown, newWf.Status.Phase)
 }
 
 // TestReadFromSingleorMultiplePath ensures we can read the content of a single file or multiple files correctly using the ReadFromFilePathsOrUrls function
@@ -1048,7 +1540,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		assert.Len(t, wf.Status.Nodes, 1)
+		// The root failed on its own, with nothing beneath it to blame, so it is
+		// the failure and is re-created rather than carried over as Failed.
+		assert.Empty(t, wf.Status.Nodes)
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1136,6 +1630,30 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes["1"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
+	})
+	t.Run("Orphaned Retried Node Flag", func(t *testing.T) {
+		// A node can be flagged NodeFlag.Retried=true without a corresponding NodeTypeRetry
+		// node listing it as a direct child (e.g. the flag was inherited from an ancestor's
+		// retryStrategy several levels up). FormulateRetryWorkflow must not panic in that case.
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "wf-with-orphaned-retried-flag",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"wf-with-orphaned-retried-flag": {ID: "wf-with-orphaned-retried-flag", Name: "wf-with-orphaned-retried-flag", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"orphan"}},
+					"orphan":                        {ID: "orphan", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "wf-with-orphaned-retried-flag", NodeFlag: &wfv1.NodeFlag{Retried: true}},
+				},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		require.NotPanics(t, func() {
+			_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		})
+		require.NoError(t, err)
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -4601,31 +5119,31 @@ status:
 
 	// Assertion 2: The parent task group node should be in Running state
 	// The target node's parent task group is "subdag-iterate-jrfch-1295605062" (echo-group(0:foo))
-	parentTaskGroupNode := retryWf.Status.Nodes["subdag-iterate-jrfch-1295605062"]
-	require.NotNil(t, parentTaskGroupNode, "Parent task group node should exist")
+	parentTaskGroupNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-1295605062"]
+	require.True(t, ok, "Parent task group node should exist")
 	assert.Equal(t, wfv1.NodeRunning, parentTaskGroupNode.Phase,
 		"Parent task group node should be in Running state")
 
 	// Assertion 3: Other nodes in different iterations should remain unchanged
 	// Check nodes from other iterations (bar and baz) remain succeeded
-	barIterationNode := retryWf.Status.Nodes["subdag-iterate-jrfch-4005883592"] // echo-group(1:bar)
-	require.NotNil(t, barIterationNode, "Bar iteration node should exist")
+	barIterationNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-4005883592"] // echo-group(1:bar)
+	require.True(t, ok, "Bar iteration node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, barIterationNode.Phase,
 		"Bar iteration node should remain succeeded")
 
-	bazIterationNode := retryWf.Status.Nodes["subdag-iterate-jrfch-851163487"] // echo-group(2:baz)
-	require.NotNil(t, bazIterationNode, "Baz iteration node should exist")
+	bazIterationNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-851163487"] // echo-group(2:baz)
+	require.True(t, ok, "Baz iteration node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, bazIterationNode.Phase,
 		"Baz iteration node should remain succeeded")
 
 	// Check that nodes from other iterations' pods remain succeeded
-	barPodNode := retryWf.Status.Nodes["subdag-iterate-jrfch-2240770818"] // bar echo-bye pod
-	require.NotNil(t, barPodNode, "Bar pod node should exist")
+	barPodNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-2240770818"] // bar echo-bye pod
+	require.True(t, ok, "Bar pod node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, barPodNode.Phase,
 		"Bar pod node should remain succeeded")
 
-	bazPodNode := retryWf.Status.Nodes["subdag-iterate-jrfch-656740947"] // baz echo-bye pod
-	require.NotNil(t, bazPodNode, "Baz pod node should exist")
+	bazPodNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-656740947"] // baz echo-bye pod
+	require.True(t, ok, "Baz pod node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, bazPodNode.Phase,
 		"Baz pod node should remain succeeded")
 
@@ -4635,14 +5153,14 @@ status:
 
 	// Assertion 5: Verify workflow integrity is maintained
 	// Check that the root workflow node is in Running state
-	rootNode := retryWf.Status.Nodes["subdag-iterate-jrfch"]
-	require.NotNil(t, rootNode, "Root workflow node should exist")
+	rootNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch"]
+	require.True(t, ok, "Root workflow node should exist")
 	assert.Equal(t, wfv1.NodeRunning, rootNode.Phase,
 		"Root workflow node should be in Running state")
 
 	// Check that the main task group is in Running state
-	mainTaskGroupNode := retryWf.Status.Nodes["subdag-iterate-jrfch-1869003913"]
-	require.NotNil(t, mainTaskGroupNode, "Main task group node should exist")
+	mainTaskGroupNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-1869003913"]
+	require.True(t, ok, "Main task group node should exist")
 	assert.Equal(t, wfv1.NodeRunning, mainTaskGroupNode.Phase,
 		"Main task group node should be in Running state")
 
@@ -4656,15 +5174,695 @@ status:
 
 	// Additional verification: Check that the target node's sibling (echo-param) is NOT deleted
 	// since retrying echo-bye should only affect that specific node, not its siblings
-	siblingNode := retryWf.Status.Nodes["subdag-iterate-jrfch-3231869949"] // foo echo-param pod
-	require.NotNil(t, siblingNode, "Sibling node should remain in the workflow")
+	siblingNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-3231869949"] // foo echo-param pod
+	require.True(t, ok, "Sibling node should remain in the workflow")
 	assert.Equal(t, wfv1.NodeSucceeded, siblingNode.Phase,
 		"Sibling node should remain succeeded")
 
 	// Verify that the pod deletion list has the correct number of entries
-	// Should include only the target node
 	assert.Len(t, podsToDelete, 1,
 		"Pod deletion list should contain 1 pod (only the target)")
-	assert.Contains(t, podsToDelete, "subdag-iterate-jrfch-echo-1786915540",
-		"Pod deletion list should contain the target node's pod")
+}
+
+// TestFormulateRetryWorkflowWithParamOverride tests issue #15802:
+// When retrying a workflow with withParam + retryStrategy and overriding
+// the workflow parameter to a different value, the stale expanded nodes
+// from the old parameter value should be cleaned up.
+//
+// Scenario:
+// - Workflow has wfparams=["pass","fail"], expanding to launch(0:pass) and launch(1:fail)
+// - launch(0:pass) succeeds, launch(1:fail) fails -> workflow Failed
+// - User retries with parameter override wfparams=["fail"]
+// - Expected: launch(0:pass) and its children are removed (stale nodes)
+// - Bug: launch(0:pass) survives and causes inconsistent node tree
+func TestFormulateRetryWorkflowWithParamOverride(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	workflowYaml := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-retry
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: wfparams
+        value: '["pass","fail"]'
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: launch
+            template: passfail
+            arguments:
+              parameters:
+                - name: pfparam
+                  value: "{{item}}"
+            withParam: "{{workflow.parameters.wfparams}}"
+    - name: passfail
+      retryStrategy:
+        limit: "0"
+      inputs:
+        parameters:
+          - name: pfparam
+      container:
+        image: alpine:3.15.4
+        command: [sh, -c]
+        args:
+          - |
+            if [ "{{inputs.parameters.pfparam}}" = "fail" ]; then exit 1; else exit 0; fi
+status:
+  phase: Failed
+  conditions:
+  - status: "True"
+    type: Completed
+  nodes:
+    workflow-retry:
+      id: workflow-retry
+      name: workflow-retry
+      displayName: workflow-retry
+      type: DAG
+      phase: Failed
+      templateName: main
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:32Z"
+      children:
+        - workflow-retry-2014360908
+      outboundNodes:
+        - workflow-retry-3976347509
+        - workflow-retry-1861571805
+    workflow-retry-2014360908:
+      id: workflow-retry-2014360908
+      name: workflow-retry.launch
+      displayName: launch
+      type: TaskGroup
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      nodeFlag: {}
+      children:
+        - workflow-retry-816771446
+        - workflow-retry-1743784750
+    workflow-retry-816771446:
+      id: workflow-retry-816771446
+      name: workflow-retry.launch(0:pass)
+      displayName: launch(0:pass)
+      type: Retry
+      phase: Succeeded
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-3976347509
+    workflow-retry-3976347509:
+      id: workflow-retry-3976347509
+      name: workflow-retry.launch(0:pass)(0)
+      displayName: launch(0:pass)(0)
+      type: Pod
+      phase: Succeeded
+      boundaryID: workflow-retry
+      hostNodeName: node1
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      taskResultSynced: true
+      inputs:
+        parameters:
+          - name: pfparam
+            value: pass
+      outputs:
+        exitCode: "0"
+    workflow-retry-1743784750:
+      id: workflow-retry-1743784750
+      name: workflow-retry.launch(1:fail)
+      displayName: launch(1:fail)
+      type: Retry
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      message: No more retries left
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-1861571805
+    workflow-retry-1861571805:
+      id: workflow-retry-1861571805
+      name: workflow-retry.launch(1:fail)(0)
+      displayName: launch(1:fail)(0)
+      type: Pod
+      phase: Failed
+      boundaryID: workflow-retry
+      hostNodeName: node1
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      taskResultSynced: true
+      inputs:
+        parameters:
+          - name: pfparam
+            value: fail
+      outputs:
+        exitCode: "1"
+  startedAt: "2026-03-24T00:40:00Z"
+  finishedAt: "2026-03-24T00:42:32Z"`
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
+
+	// Retry with parameter override: change wfparams to ["fail"]
+	parameters := []string{`wfparams=["fail"]`}
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", parameters)
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+
+	// Verify the workflow parameter was overridden
+	for _, p := range retryWf.Spec.Arguments.Parameters {
+		if p.Name == "wfparams" {
+			assert.Equal(t, `["fail"]`, p.GetValue(),
+				"wfparams should be overridden to [\"fail\"]")
+		}
+	}
+
+	// BUG ASSERTION (issue #15802):
+	// The stale node launch(0:pass) from the old parameter expansion should NOT exist
+	// in the retry workflow, because the new parameter ["fail"] will expand differently.
+	// If it still exists, the controller will create launch(0:fail) alongside the stale
+	// launch(0:pass), resulting in two children in the TaskGroup and a stuck workflow.
+	_, staleNodeExists := retryWf.Status.Nodes["workflow-retry-816771446"] // launch(0:pass)
+	assert.False(t, staleNodeExists,
+		"Stale node launch(0:pass) should be deleted when parameter override changes withParam expansion")
+
+	_, stalePodExists := retryWf.Status.Nodes["workflow-retry-3976347509"] // launch(0:pass)(0)
+	assert.False(t, stalePodExists,
+		"Stale pod launch(0:pass)(0) should be deleted when parameter override changes withParam expansion")
+
+	// The failed nodes should be deleted (standard retry behavior)
+	_, failedRetryExists := retryWf.Status.Nodes["workflow-retry-1743784750"] // launch(1:fail)
+	assert.False(t, failedRetryExists,
+		"Failed retry node launch(1:fail) should be deleted")
+
+	_, failedPodExists := retryWf.Status.Nodes["workflow-retry-1861571805"] // launch(1:fail)(0)
+	assert.False(t, failedPodExists,
+		"Failed pod launch(1:fail)(0) should be deleted")
+
+	// The TaskGroup should be reset to Running
+	taskGroupNode, ok := retryWf.Status.Nodes["workflow-retry-2014360908"] // launch TaskGroup
+	require.True(t, ok, "TaskGroup node should exist")
+	assert.Equal(t, wfv1.NodeRunning, taskGroupNode.Phase,
+		"TaskGroup should be reset to Running")
+
+	// The TaskGroup should have NO children (all old expansion nodes should be cleaned up)
+	assert.Empty(t, taskGroupNode.Children,
+		"TaskGroup children should be empty after parameter override changes the expansion")
+
+	// The failed pod should be in the deletion list
+	assert.Contains(t, podsToDelete, "workflow-retry-passfail-1861571805",
+		"Failed pod should be in deletion list")
+
+	// The succeeded pod from the stale expansion should also be in the deletion list
+	assert.Contains(t, podsToDelete, "workflow-retry-passfail-3976347509",
+		"Stale succeeded pod should also be in deletion list")
+}
+
+// retryMultiParentTaskGroup is a diamond where the failed leaf X has two ancestry
+// branches: one through a plain pod (P) and one through a fan-out TaskGroup (G,
+// expanded into G0/G1). X therefore has more than one parent, and whether a retry
+// resets G depends on which branch resetPath walks up from X.
+const retryMultiParentTaskGroup = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  name: retry-multiparent
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: P
+        template: echo
+      - name: G
+        template: echo
+        withItems: [a, b]
+      - name: X
+        template: echo
+        depends: P && G
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo]
+status:
+  phase: Failed
+  nodes:
+    retry-multiparent:
+      id: retry-multiparent
+      name: retry-multiparent
+      displayName: retry-multiparent
+      type: DAG
+      phase: Failed
+      templateName: main
+      children:
+      - retry-multiparent-P
+      - retry-multiparent-G
+    retry-multiparent-P:
+      id: retry-multiparent-P
+      name: retry-multiparent.P
+      displayName: P
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-G:
+      id: retry-multiparent-G
+      name: retry-multiparent.G
+      displayName: G
+      type: TaskGroup
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      nodeFlag: {}
+      children:
+      - retry-multiparent-G0
+      - retry-multiparent-G1
+    retry-multiparent-G0:
+      id: retry-multiparent-G0
+      name: retry-multiparent.G(0:a)
+      displayName: G(0:a)
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-G1:
+      id: retry-multiparent-G1
+      name: retry-multiparent.G(1:b)
+      displayName: G(1:b)
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-X:
+      id: retry-multiparent-X
+      name: retry-multiparent.X
+      displayName: X
+      type: Pod
+      phase: Failed
+      boundaryID: retry-multiparent
+      templateName: echo
+`
+
+// TestFormulateRetryWorkflowDeterministicReset guards against map-order dependence
+// in FormulateRetryWorkflow. A node with more than one parent is assigned a single
+// parent by newWorkflowsDag, and resetPath walks that one chain. If the parent is
+// chosen by Go map iteration order, retrying the same workflow can reset different
+// nodes from one call to the next. The set of nodes a retry resets must be stable.
+func TestFormulateRetryWorkflowDeterministicReset(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	resetNodeIDs := func() map[string]bool {
+		wf := wfv1.MustUnmarshalWorkflow(retryMultiParentTaskGroup)
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.NoError(t, err)
+		reset := make(map[string]bool)
+		for _, node := range newWf.Status.Nodes {
+			if node.Phase == wfv1.NodeRunning {
+				reset[node.ID] = true
+			}
+		}
+		return reset
+	}
+
+	want := resetNodeIDs()
+	for i := range 50 {
+		require.Equal(t, want, resetNodeIDs(), "reset set differed between retry invocations on iteration %d", i)
+	}
+}
+
+func TestOverrideArtifacts(t *testing.T) {
+	t.Run("Override artifact key in workflow arguments", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "my-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "original-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"my-artifact=new-key"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", key)
+	})
+
+	t.Run("Override multiple artifacts", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "artifact1",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "key1",
+								},
+							},
+						},
+						{
+							Name: "artifact2",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "key2",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"artifact1=new-key1", "artifact2=new-key2"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		key1, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key1", key1)
+
+		key2, err := wf.Spec.Arguments.Artifacts[1].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key2", key2)
+	})
+
+	t.Run("Override with StoredWorkflowSpec", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "my-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "original-key",
+								},
+							},
+						},
+					},
+				},
+			},
+			Status: wfv1.WorkflowStatus{
+				StoredWorkflowSpec: &wfv1.WorkflowSpec{
+					Arguments: wfv1.Arguments{
+						Artifacts: []wfv1.Artifact{
+							{
+								Name: "my-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "stored-key",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"my-artifact=new-key"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		// Check main spec
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", key)
+
+		// Check stored spec
+		storedKey, err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", storedKey)
+	})
+
+	t.Run("Invalid format should return error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{},
+				},
+			},
+		}
+
+		artifacts := []string{"invalid-format"}
+		err := overrideArtifacts(wf, artifacts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected artifact of the form: NAME=KEY")
+	})
+
+	t.Run("Empty artifacts should not error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{},
+				},
+			},
+		}
+
+		artifacts := []string{}
+		err := overrideArtifacts(wf, artifacts)
+		assert.NoError(t, err)
+	})
+}
+
+func TestParseArtifactOverrides(t *testing.T) {
+	t.Run("valid single override", func(t *testing.T) {
+		got, err := ParseArtifactOverrides([]string{"my-artifact=new-key"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"my-artifact": "new-key"}, got)
+	})
+
+	t.Run("valid multiple overrides", func(t *testing.T) {
+		got, err := ParseArtifactOverrides([]string{"a=1", "b=2"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"a": "1", "b": "2"}, got)
+	})
+
+	t.Run("empty input returns empty map", func(t *testing.T) {
+		got, err := ParseArtifactOverrides(nil)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+
+	t.Run("duplicate name: last one wins", func(t *testing.T) {
+		got, err := ParseArtifactOverrides([]string{"a=1", "a=2"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"a": "2"}, got)
+	})
+
+	t.Run("missing '=' is rejected", func(t *testing.T) {
+		_, err := ParseArtifactOverrides([]string{"no-equals-sign"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected artifact of the form: NAME=KEY")
+	})
+
+	t.Run("empty name is rejected", func(t *testing.T) {
+		_, err := ParseArtifactOverrides([]string{"=key"})
+		require.Error(t, err)
+	})
+
+	t.Run("empty key is rejected", func(t *testing.T) {
+		_, err := ParseArtifactOverrides([]string{"name="})
+		require.Error(t, err)
+	})
+}
+
+func TestApplyOverridesToTemplateArtifacts(t *testing.T) {
+	templateArtifacts := []wfv1.Artifact{
+		{
+			Name: "artifact-a",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "original-a"},
+			},
+		},
+		{
+			Name: "artifact-b",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "original-b"},
+			},
+		},
+	}
+
+	t.Run("applies override key to matching artifact", func(t *testing.T) {
+		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"artifact-a": "new-a"})
+		require.NoError(t, err)
+		require.Len(t, applied, 1)
+		key, err := applied[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-a", key)
+	})
+
+	t.Run("unmatched override name is an error", func(t *testing.T) {
+		// A typo'd or stale override that matches no template artifact must surface as an
+		// error, not be silently dropped after the caller was told the upload succeeded.
+		_, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"no-such-artifact": "new-key"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no-such-artifact")
+	})
+
+	t.Run("empty overrides yields empty result", func(t *testing.T) {
+		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{})
+		require.NoError(t, err)
+		assert.Empty(t, applied)
+	})
+
+	t.Run("partial override applies only to matching artifacts, leaving original template untouched", func(t *testing.T) {
+		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"artifact-b": "new-b"})
+		require.NoError(t, err)
+		require.Len(t, applied, 1)
+		assert.Equal(t, "artifact-b", applied[0].Name)
+		key, err := applied[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-b", key)
+
+		// The pure function must not mutate its input.
+		originalKey, err := templateArtifacts[1].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "original-b", originalKey)
+	})
+}
+
+func TestApplySubmitOptsWithArtifacts(t *testing.T) {
+	t.Run("Apply submit opts with artifact overrides", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "input-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "default-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		opts := &wfv1.SubmitOpts{
+			Artifacts: []string{"input-artifact=uploads/new-key"},
+		}
+
+		err := ApplySubmitOpts(wf, opts)
+		require.NoError(t, err)
+
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/new-key", key)
+	})
+
+	t.Run("Apply submit opts with parameters and artifacts", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{Name: "message", Value: wfv1.AnyStringPtr("hello")},
+					},
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "input-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "default-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		opts := &wfv1.SubmitOpts{
+			Parameters: []string{"message=world"},
+			Artifacts:  []string{"input-artifact=uploads/new-key"},
+		}
+
+		err := ApplySubmitOpts(wf, opts)
+		require.NoError(t, err)
+
+		// Check parameter override
+		assert.Equal(t, "world", wf.Spec.Arguments.Parameters[0].Value.String())
+
+		// Check artifact override
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/new-key", key)
+	})
+
+	t.Run("unmatched override on a self-contained workflow is an error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{Name: "input-artifact", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "default-key"}}},
+					},
+				},
+			},
+		}
+
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"typo=uploads/new-key"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "typo")
+	})
+
+	t.Run("unmatched override on a workflowTemplateRef workflow is deferred, not an error", func(t *testing.T) {
+		// A templateRef workflow has no artifacts of its own here; the overrides target the
+		// referenced template and are validated on the templateRef path instead, so this
+		// no-op must not error.
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "some-template"},
+			},
+		}
+
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"input-artifact=uploads/new-key"}})
+		require.NoError(t, err)
+	})
 }

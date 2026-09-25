@@ -1,4 +1,4 @@
-# The E2E CI workflow passes this file to k3s using "--kubelet-arg=config=".
+# hack/tilt/k3d-up.sh passes this file to k3s using "--kubelet-arg=config=".
 # Docs: https://docs.k3s.io/cli/agent?_highlight=kubelet&_highlight=arg#customized-flags
 
 # API reference: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/

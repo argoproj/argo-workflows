@@ -8,7 +8,7 @@ This is based on the most recently successful workflow submitted from the same w
 
 To get this data, the controller queries the Kubernetes API first (as this is faster) and then [workflow archive](workflow-archive.md) (if enabled).
 
-If you've used tools like Jenkins, you'll know that that estimates can be inaccurate:
+If you've used tools like Jenkins, you'll know that estimates can be inaccurate:
 
 * A pod spent a long amount of time pending scheduling.
 * The workflow is non-deterministic, e.g. it uses `when` to execute different paths.

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -153,6 +154,42 @@ spec:
 			return strings.Contains(status.Name, "a")
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.NotContains(t, pod.Name, "--")
+		})
+}
+
+func (s *WorkflowSuite) TestWorkflowPodResources() {
+	s.Given().Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.Type == v1alpha1.NodeTypePod
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			require.NotNil(t, pod)
+			require.NotNil(t, pod.Spec.Resources, "pod-level resources should be set on the pod spec; nil means the API server stripped them (PodLevelResources feature gate)")
+			assert.Equal(t, "100m", pod.Spec.Resources.Requests.Cpu().String())
+			assert.Equal(t, "64Mi", pod.Spec.Resources.Requests.Memory().String())
+			assert.Equal(t, "1", pod.Spec.Resources.Limits.Cpu().String())
+			assert.Equal(t, "256Mi", pod.Spec.Resources.Limits.Memory().String())
 		})
 }
 

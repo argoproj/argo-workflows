@@ -3,12 +3,12 @@ import {useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
-import {deleteCookie, setCookie} from '../shared/cookie';
+import {setCookie} from '../shared/cookie';
 import {useCollectEvent} from '../shared/use-collect-event';
 
 import './login.scss';
 
-export function Login({location, history}: RouteComponentProps<any>) {
+export function Login({location}: RouteComponentProps<any>) {
     const urlParams = new URLSearchParams(location.search);
     const redirect = new URLSearchParams({redirect: urlParams.get('redirect') ?? uiUrl('workflows')});
     const [token, setToken] = useState('');
@@ -31,7 +31,9 @@ export function Login({location, history}: RouteComponentProps<any>) {
                             <br /> it depends on how it is configured.
                         </p>
                         <p>
-                            <a href='https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/'>Learn more</a>.
+                            <a href='https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/' target='_blank' rel='noreferrer'>
+                                Learn more
+                            </a>
                         </p>
                     </div>
                     <div className='white-box login__sso-section'>
@@ -48,7 +50,11 @@ export function Login({location, history}: RouteComponentProps<any>) {
                         <p>
                             If your organisation has configured <b>client authentication</b>,
                             <br />
-                            get your token following this instructions from <a href='https://argo-workflows.readthedocs.io/en/latest/access-token/#token-creation'>here</a> and
+                            get your token following this instructions from{' '}
+                            <a href='https://argo-workflows.readthedocs.io/en/latest/access-token/#token-creation' target='_blank' rel='noreferrer'>
+                                here
+                            </a>{' '}
+                            and
                             <br />
                             paste in this box:
                         </p>
@@ -63,12 +69,7 @@ export function Login({location, history}: RouteComponentProps<any>) {
                     </div>
                     <div className='white-box login__logout-section'>
                         <p>Something wrong? Try logging out and logging back in:</p>
-                        <a
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                deleteCookie('authorization');
-                                history.go(0);
-                            }}>
+                        <a className='argo-button argo-button--base-o' href={uiUrl('auth/logout')}>
                             <i className='fa fa-sign-out-alt' /> Logout
                         </a>
                     </div>

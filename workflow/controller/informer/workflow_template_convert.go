@@ -39,7 +39,7 @@ func interfaceToWorkflowTemplate(object any) (*wfv1.WorkflowTemplate, error) {
 	return v, nil
 }
 
-// Get WorkflowTemplates from Informer
+// WorkflowTemplateFromInformerGetter gets WorkflowTemplates from an Informer.
 type WorkflowTemplateFromInformerGetter struct {
 	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
 	namespace      string

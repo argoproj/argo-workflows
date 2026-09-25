@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	execplugin "github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -240,8 +242,8 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
-// return the ultimate ArtifactGCStrategy for the Artifact
-// (defined on the Workflow level but can be overridden on the Artifact level)
+// GetArtifactGCStrategy returns the ultimate ArtifactGCStrategy for the Artifact
+// (defined on the Workflow level but can be overridden on the Artifact level).
 func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
 	artifactStrategy := a.GetArtifactGC().GetStrategy()
 	wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
@@ -310,7 +312,7 @@ type WorkflowSpec struct {
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
-	// e.g. {{workflow.parameters.myparam}}
+	// e.g. workflow.parameters.myparam
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
@@ -467,6 +469,34 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// Specifies executor plugins at the workflow level.
+	//
+	// This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+	// feature gate is enabled.
+	//
+	// If this field contains one or more executor plugins, executor plugin
+	// settings from the controller ConfigMap are ignored.
+	//
+	// If this field is empty or not set, the controller falls back to the
+	// ConfigMap configuration.
+	ExecutorPlugins []ExecutorPlugin `json:"executorPlugins,omitempty" protobuf:"bytes,44,rep,name=executorPlugins"`
+
+	// PodResources defines pod-level resource requests and limits to apply to all workflow pods.
+	// Will be overridden if a template's podResources is set.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely.
+	// Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates.
+	// A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 type LabelValueFrom struct {
@@ -508,7 +538,7 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	return wfs.VolumeClaimGC
 }
 
-// ArtifactGC returns the ArtifactGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+// GetArtifactGC returns the ArtifactGC that was defined in the workflow spec. If none was provided, a default value is returned.
 func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 	if wfs.ArtifactGC == nil {
 		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
@@ -519,6 +549,34 @@ func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
+}
+
+// AsExecutorPluginSpec maps proto models to v4/pkg/plugins/spec models.
+func (wfs WorkflowSpec) AsExecutorPluginSpec() ([]execplugin.Plugin, error) {
+	plugins := make([]execplugin.Plugin, 0, len(wfs.ExecutorPlugins))
+	for _, plugin := range wfs.ExecutorPlugins {
+		sidecar := execplugin.Sidecar{
+			AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
+			Container:                    plugin.Spec.Sidecar.Container,
+		}
+
+		if plugin.Name == "" {
+			return nil, fmt.Errorf("executor plugin metadata name is mandatory")
+		}
+		err := sidecar.Validate()
+		if err != nil {
+			return nil, err
+		}
+
+		spec := execplugin.PluginSpec{
+			Sidecar: sidecar,
+		}
+		plugins = append(plugins, execplugin.Plugin{
+			ObjectMeta: plugin.ObjectMeta,
+			Spec:       spec,
+		})
+	}
+	return plugins, nil
 }
 
 // GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
@@ -584,6 +642,7 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
+// ParallelSteps is a list of workflow steps that run in parallel.
 // swagger:ignore
 type ParallelSteps struct {
 	// Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
@@ -592,8 +651,8 @@ type ParallelSteps struct {
 	Steps []WorkflowStep `json:"steps" protobuf:"bytes,1,rep,name=steps"`
 }
 
-// WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
-// custom Unmarshaller
+// UnmarshalJSON implements a custom unmarshaller for ParallelSteps. WorkflowStep is an anonymous list inside
+// of ParallelSteps (i.e. it does not have a key), so it needs its own custom unmarshaller.
 func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	// Since we are writing a custom unmarshaller, we have to enforce the "DisallowUnknownFields" requirement manually.
 
@@ -797,6 +856,27 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+
+	// PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+	// It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+	// This duration may not be applied to Step or DAG templates.
+	PendingTimeout string `json:"pendingTimeout,omitempty" protobuf:"bytes,45,opt,name=pendingTimeout"`
+
+	// PodResources defines pod-level resource requests and limits for this template's pod.
+	// Overrides the workflow-level podResources.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,46,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// Replaces the workflow-level resourceClaims as a whole rather than merging with it.
+	// Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
+	// A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 // SetType will set the template object based on template type.
@@ -989,7 +1069,7 @@ func (in Inputs) IsEmpty() bool {
 	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
-// Pod metadata
+// Metadata is pod metadata.
 type Metadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,opt,name=annotations"`
 	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
@@ -1012,7 +1092,7 @@ type Parameter struct {
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
 
 	// GlobalName exports an output parameter to the global scope, making it available as
-	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+	// workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
@@ -1038,7 +1118,7 @@ type ValueFrom struct {
 	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
-	// (e.g. '{{steps.mystep.outputs.myparam}}')
+	// (e.g. steps.mystep.outputs.myparam)
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Supplied value to be filled in directly, either through the CLI, API, etc.
@@ -1094,7 +1174,7 @@ type Artifact struct {
 	ArtifactLocation `json:",inline" protobuf:"bytes,5,opt,name=artifactLocation"`
 
 	// GlobalName exports an output artifact to the global scope, making it available as
-	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+	// workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,6,opt,name=globalName"`
 
 	// Archive controls how the artifact will be saved to the artifact repository.
@@ -1119,7 +1199,7 @@ type Artifact struct {
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 }
 
-// ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
+// GetArtifactGC returns the ArtifactGC that was defined by the artifact. If none was provided, a default value is returned.
 func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	if a.ArtifactGC == nil {
 		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
@@ -1213,6 +1293,24 @@ type WorkflowLevelArtifactGC struct {
 
 	// PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,3,opt,name=podSpecPatch"`
+}
+
+// ExecutorPlugin describes workflow-level executor plugin
+type ExecutorPlugin struct {
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,2,opt,name=metadata"`
+	Spec              ExecutorPluginSpec `json:"spec" protobuf:"bytes,1,opt,name=spec"`
+}
+
+type ExecutorPluginSpec struct {
+	Sidecar ExecutorPluginSidecar `json:"sidecar" protobuf:"bytes,1,opt,name=sidecar"`
+}
+
+type ExecutorPluginSidecar struct {
+	// AutomountServiceAccountToken enables mounting the service account token.
+	// The service account must be named <plugin-name>-executor-plugin.
+	AutomountServiceAccountToken bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,1,opt,name=automountServiceAccountToken"`
+	// Container defines the Kubernetes container specification for the sidecar.
+	Container apiv1.Container `json:"container" protobuf:"bytes,2,opt,name=container"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
@@ -1386,7 +1484,7 @@ func (a *ArtifactLocation) HasKey() bool {
 	return key != ""
 }
 
-// set the key to a new value, use path.Join to combine items
+// SetKey sets the key to a new value; use path.Join to combine items.
 func (a *ArtifactLocation) SetKey(key string) error {
 	v, err := a.Get()
 	if err != nil {
@@ -1439,6 +1537,7 @@ func (a *ArtifactLocation) GetKey() (string, error) {
 	return v.GetKey()
 }
 
+// ArtifactRepositoryRef is a reference to an artifact repository config map.
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
 	// The name of the config map. Defaults to "artifact-repositories".
@@ -1468,6 +1567,7 @@ func (r *ArtifactRepositoryRef) String() string {
 	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
 }
 
+// ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace info.
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRefStatus struct {
 	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
@@ -1541,10 +1641,20 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	return false
 }
 
-func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
+// RecordArtifactGCPod records that a GC Pod has been created and is awaiting recoup. A Pod that has already been
+// recouped is left as is, so it is safe to call again when a strategy is retried.
+func (gcStatus *ArtGCStatus) RecordArtifactGCPod(podName string) {
 	if gcStatus.PodsRecouped == nil {
-		return false
+		gcStatus.PodsRecouped = make(map[string]bool)
 	}
+	if _, found := gcStatus.PodsRecouped[podName]; !found {
+		gcStatus.PodsRecouped[podName] = false
+	}
+}
+
+// AllArtifactGCPodsRecouped is true when no recorded GC Pod is still awaiting recoup. Pods are recorded when they
+// are created, so an empty map means there is nothing outstanding.
+func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 	for _, recouped := range gcStatus.PodsRecouped {
 		if !recouped {
 			return false
@@ -1905,8 +2015,8 @@ func (n Nodes) FindByName(name string) *NodeStatus {
 	return n.Find(NodeWithName(name))
 }
 
-func (n Nodes) FindByChild(childID string) *NodeStatus {
-	return n.Find(NodeWithChild(childID))
+func (n Nodes) FindRetryNodeByChild(childID string) *NodeStatus {
+	return n.Find(RetryNodeWithChild(childID))
 }
 
 func (n Nodes) Any(f func(NodeStatus) bool) bool {
@@ -1932,13 +2042,13 @@ func (n Nodes) Get(key string) (*NodeStatus, error) {
 	return &val, nil
 }
 
-// Check if the Nodes map has a key entry
+// Has checks if the Nodes map has a key entry.
 func (n Nodes) Has(key string) bool {
 	_, err := n.Get(key)
 	return err == nil
 }
 
-// Get the Phase of a Node
+// GetPhase returns the Phase of a Node by key.
 func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 	val, err := n.Get(key)
 	if err != nil {
@@ -1977,7 +2087,7 @@ func (n Nodes) Delete(ctx context.Context, key string) {
 	delete(n, key)
 }
 
-// Get the name of a node by key
+// GetName returns the name of a node by key.
 func (n Nodes) GetName(key string) (string, error) {
 	val, err := n.Get(key)
 	if err != nil {
@@ -1994,9 +2104,9 @@ func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
 
-func NodeWithChild(childID string) func(n NodeStatus) bool {
+func RetryNodeWithChild(childID string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool {
-		return n.HasChild(childID)
+		return n.HasChild(childID) && n.Type == NodeTypeRetry
 	}
 }
 
@@ -2231,6 +2341,7 @@ func (w *Workflow) GetOffloadNodeStatusVersion() string {
 	return w.Status.GetOffloadNodeStatusVersion()
 }
 
+// RetryPolicy defines the policy for retrying workflow steps.
 // +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
 type RetryPolicy string
 
@@ -2302,7 +2413,7 @@ func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
 	return RetryPolicyAlways
 }
 
-// The amount of requested resource * the duration that request was used.
+// ResourceDuration is the amount of requested resource * the duration that request was used.
 // This is represented as duration in seconds, so can be converted to and from
 // duration (with loss of precision).
 type ResourceDuration int64
@@ -2319,8 +2430,8 @@ func (in ResourceDuration) String() string {
 	return in.Duration().String()
 }
 
-// This contains each duration by request requested.
-// e.g. 100m CPU * 1h, 1Gi memory * 1h
+// ResourcesDuration contains each duration by resource requested,
+// e.g. 100m CPU * 1h, 1Gi memory * 1h.
 type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
 func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
@@ -2779,6 +2890,18 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// AddressingStyle defines how buckets are addressed by the S3 client.
+	// This is required for some S3-compatible providers that only support
+	// virtual-hosted-style bucket addressing.
+	//
+	// Valid values are:
+	// - "" (default, auto-detect)
+	// - "path"
+	// - "virtual-hosted"
+	//
+	// +kubebuilder:validation:Enum="";path;virtual-hosted
+	AddressingStyle string `json:"addressingStyle,omitempty" protobuf:"bytes,13,opt,name=addressingStyle"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -2898,9 +3021,7 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-//	func (a *ArtifactoryArtifact) String() string {
-//		return a.URL
-//	}
+// GetKey returns the URL path of the ArtifactoryArtifact as its key.
 func (a *ArtifactoryArtifact) GetKey() (string, error) {
 	u, err := url.Parse(a.URL)
 	if err != nil {
@@ -3077,7 +3198,7 @@ type OAuth2Auth struct {
 	EndpointParams     []OAuth2EndpointParam    `json:"endpointParams,omitempty" protobuf:"bytes,6,rep,name=endpointParams"`
 }
 
-// EndpointParam is for requesting optional fields that should be sent in the oauth request
+// OAuth2EndpointParam is an optional field that should be sent in the OAuth request.
 type OAuth2EndpointParam struct {
 	// Name is the header name
 	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
@@ -3102,6 +3223,12 @@ type HTTPArtifact struct {
 
 	// Auth contains information for client authentication
 	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
+
+	// SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+	// so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+	// false (the default) SaveStream sends the reader directly and cannot follow such a
+	// redirect, since a one-shot reader cannot be replayed.
+	SaveStreamViaFile bool `json:"saveStreamViaFile,omitempty" protobuf:"varint,4,opt,name=saveStreamViaFile"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {
@@ -3452,7 +3579,7 @@ func (tmpl *Template) IsDaemon() bool {
 	return tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon
 }
 
-// if logs should be saved as an artifact
+// SaveLogsAsArtifact reports whether logs should be saved as an artifact.
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
 }
@@ -3730,8 +3857,48 @@ func (w *Workflow) GetTemplateByName(name string) *Template {
 }
 
 func (w *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
-	nodeID := w.NodeID(nodeName)
-	return w.Status.Nodes.Get(nodeID)
+	node, _ := w.ResolveNode(nodeName)
+	if node == nil {
+		return nil, fmt.Errorf("key was not found for %s", nodeName)
+	}
+	return node, nil
+}
+
+// ResolveNode finds the node for a spec-derived node name, tolerating node
+// ID collisions. It returns the existing node and its ID if there is one.
+// Otherwise it returns nil and the ID a node with this name must be created
+// with.
+//
+// Distinct names can hash to the same 32-bit ID. A node whose name loses
+// that race is stored under the widened NodeID64(name) instead, so lookups
+// try the 32-bit slot and fall back to the 64-bit slot, comparing the stored
+// Name. The 64-bit slot is also tried when the 32-bit slot is empty, because
+// a retry can delete the node that held it while the widened node survives.
+// There is no third level: a 64-bit collision between names that also
+// collide at 32 bits is not resolved, and initializeNode refuses to create
+// the node.
+func (w *Workflow) ResolveNode(name string) (*NodeStatus, string) {
+	id32 := w.NodeID(name)
+	n32, ok32 := w.Status.Nodes[id32]
+	if ok32 && n32.Name == name {
+		return &n32, id32
+	}
+	id64 := w.NodeID64(name)
+	if n64, ok := w.Status.Nodes[id64]; ok && n64.Name == name {
+		return &n64, id64
+	}
+	if ok32 {
+		// the 32-bit slot is held by a different name: widen
+		return nil, id64
+	}
+	return nil, id32
+}
+
+// ResolveNodeID returns the ID of the node with this spec-derived name, or
+// the ID it will be created with if it does not exist yet.
+func (w *Workflow) ResolveNodeID(name string) string {
+	_, id := w.ResolveNode(name)
+	return id
 }
 
 // GetResourceScope returns the template scope of workflow.
@@ -3757,6 +3924,19 @@ func (w *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", w.Name, h.Sum32())
+}
+
+// NodeID64 creates the widened node ID a node is stored under when its name
+// collides with a different name under NodeID. FNV-1a has no finalisation
+// step, so a 32-bit collision carries over to every common extension of the
+// two names, but their 64-bit hashes are independent of it.
+func (w *Workflow) NodeID64(name string) string {
+	if name == w.Name {
+		return w.Name
+	}
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(name))
+	return fmt.Sprintf("%s-%v", w.Name, h.Sum64())
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
@@ -4047,7 +4227,7 @@ type Counter struct {
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
-// Memoization enables caching for the Outputs of the template
+// Memoize enables caching for the Outputs of the template.
 type Memoize struct {
 	// Key is the key to use as the caching key
 	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
@@ -4129,15 +4309,31 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	holdingName := holderKey
+	updated := false
 	if i < 0 {
 		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
-		return true
+		updated = true
 	} else if !slices.Contains(semaphoreHolding.Holders, holdingName) {
 		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
-		return true
+		updated = true
 	}
-	return false
+
+	waitingIdx, semaphoreWaiting := ss.GetWaiting(lockKey)
+	if waitingIdx >= 0 {
+		prevN := len(semaphoreWaiting.Holders)
+		semaphoreWaiting.Holders = slices.DeleteFunc(semaphoreWaiting.Holders,
+			func(x string) bool { return x == holdingName })
+		if len(semaphoreWaiting.Holders) == 0 {
+			ss.Waiting = slices.Delete(ss.Waiting, waitingIdx, waitingIdx+1)
+			updated = true
+		} else if prevN != len(semaphoreWaiting.Holders) {
+			ss.Waiting[waitingIdx] = semaphoreWaiting
+			updated = true
+		}
+	}
+
+	return updated
 }
 
 func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
@@ -4263,11 +4459,19 @@ const (
 	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
 )
 
+// GetStatus returns the status for the given lock type, or a nil interface
+// (not a typed nil pointer) when that status has not been initialised.
 func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
 	switch syncType {
 	case SynchronizationTypeSemaphore:
+		if ss.Semaphore == nil {
+			return nil
+		}
 		return ss.Semaphore
 	case SynchronizationTypeMutex:
+		if ss.Mutex == nil {
+			return nil
+		}
 		return ss.Mutex
 	default:
 		panic("invalid syncType in GetStatus")

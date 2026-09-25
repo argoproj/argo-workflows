@@ -9,6 +9,6 @@ resources:
 components:
 - ../components/base
 - ../../../../manifests/components/postgres
-- ../components/local-argo
+- ../components/in-cluster-argo
 
 namespace: argo

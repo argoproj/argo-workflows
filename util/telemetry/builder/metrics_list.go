@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func createMetricsListGo(filename string, metrics *metricsList) error {
@@ -21,7 +22,7 @@ func writeMetricsListGo(filename string, metrics *metricsList) error {
 	defer f.Close()
 	fmt.Fprintf(f, "%s\n", generatedBanner)
 	fmt.Fprintf(f, "//\n")
-	fmt.Fprintf(f, "//go:generate go run ./builder --metricsListGo %s\n", filename)
+	fmt.Fprintf(f, "//go:generate go run ./builder --metricsListGo %s\n", filepath.Base(filename))
 	fmt.Fprintf(f, "package telemetry\n\n")
 	for _, metric := range *metrics {
 		fmt.Fprintf(f, "var Instrument%s = BuiltinInstrument{\n", metric.Name)

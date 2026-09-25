@@ -21,7 +21,7 @@ func New(d common.ArtifactDriver) common.ArtifactDriver {
 
 func (d *driver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Loading artifact")
+	log.Info(ctx, "Loading artifact")
 	t := time.Now()
 	key, _ := inputArtifact.GetKey()
 	err := d.ArtifactDriver.Load(ctx, inputArtifact, path)
@@ -35,7 +35,7 @@ func (d *driver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path st
 
 func (d *driver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Opening stream")
+	log.Info(ctx, "Opening stream")
 	t := time.Now()
 	key, _ := inputArtifact.GetKey()
 	rc, err := d.ArtifactDriver.OpenStream(ctx, inputArtifact)
@@ -49,7 +49,7 @@ func (d *driver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (
 
 func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Saving artifact")
+	log.Info(ctx, "Saving artifact")
 	t := time.Now()
 	key, _ := outputArtifact.GetKey()
 	err := d.ArtifactDriver.Save(ctx, path, outputArtifact)
@@ -61,15 +61,37 @@ func (d *driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 	return err
 }
 
+func (d *driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	log := logging.RequireLoggerFromContext(ctx)
+	log.Info(ctx, "Saving artifact stream")
+	t := time.Now()
+	key, _ := outputArtifact.GetKey()
+	err := d.ArtifactDriver.SaveStream(ctx, reader, outputArtifact)
+	log.WithField("artifactName", outputArtifact.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
+		Info(ctx, "Save artifact stream")
+	return err
+}
+
 func (d *driver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Deleting artifact")
-	return d.ArtifactDriver.Delete(ctx, s)
+	log.Info(ctx, "Deleting artifact")
+	t := time.Now()
+	key, _ := s.GetKey()
+	err := d.ArtifactDriver.Delete(ctx, s)
+	log.WithField("artifactName", s.Name).
+		WithField("key", key).
+		WithField("duration", time.Since(t)).
+		WithError(err).
+		Info(ctx, "Delete artifact")
+	return err
 }
 
 func (d *driver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Listing objects")
+	log.Info(ctx, "Listing objects")
 	t := time.Now()
 	key, _ := artifact.GetKey()
 	list, err := d.ArtifactDriver.ListObjects(ctx, artifact)
@@ -83,7 +105,7 @@ func (d *driver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]st
 
 func (d *driver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("driver", d.ArtifactDriver).Info(ctx, "Checking if directory")
+	log.Info(ctx, "Checking if directory")
 	t := time.Now()
 	key, _ := artifact.GetKey()
 	isDir, err := d.ArtifactDriver.IsDirectory(ctx, artifact)

@@ -271,6 +271,15 @@
         }
       }
     },
+    "artifact.GetCapabilitiesResponse": {
+      "type": "object",
+      "properties": {
+        "supports_save_stream": {
+          "type": "boolean",
+          "description": "supports_save_stream indicates whether this plugin implements the streaming\nSaveStream RPC. Callers should check this before invoking SaveStream, since a\nreader already partially consumed cannot be rewound to fall back to Save."
+        }
+      }
+    },
     "artifact.IsDirectoryRequest": {
       "type": "object",
       "properties": {

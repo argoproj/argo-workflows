@@ -45,9 +45,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -77,6 +79,8 @@ func NewWorkflowInformer(ctx context.Context, dclient dynamic.Interface, ns stri
 		tweakListRequestListOptions,
 		tweakWatchRequestListOptions,
 	)
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 	return informer
 }
 
@@ -239,7 +243,7 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, par
 	}
 }
 
-// Apply the Submit options into workflow object
+// ApplySubmitOpts applies the submit options to a workflow object.
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if wf == nil {
 		return fmt.Errorf("workflow cannot be nil")
@@ -289,6 +293,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if err != nil {
 		return err
 	}
+	err = overrideArtifacts(wf, opts.Artifacts)
+	if err != nil {
+		return err
+	}
 	if opts.GenerateName != "" {
 		wf.GenerateName = opts.GenerateName
 	}
@@ -326,6 +334,112 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 			wf.Status.StoredWorkflowSpec.Arguments.Parameters = newParams
 		}
 	}
+	return nil
+}
+
+// ParseArtifactOverrides parses "name=key" override strings into a map, keyed by artifact name.
+// Fails fast on the first malformed entry (no "=", or an empty name or key). If the same name
+// appears more than once, the last occurrence wins.
+func ParseArtifactOverrides(overrides []string) (map[string]string, error) {
+	result := make(map[string]string, len(overrides))
+	for _, artifactStr := range overrides {
+		parts := strings.SplitN(artifactStr, "=", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("expected artifact of the form: NAME=KEY. Received: %s", artifactStr)
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result, nil
+}
+
+// ApplyOverridesToTemplateArtifacts returns a deep copy of each artifact in templateArtifacts
+// whose name has an entry in overrides, with its key set to the override value. Artifacts
+// without a matching override are omitted from the result. Every override must match a
+// template artifact; an override naming an unknown artifact is an error rather than a silent
+// no-op, so a typo'd or stale override does not run the workflow with default settings after
+// the caller was told the upload succeeded. This is a pure function: it does not resolve
+// artifact repositories or mutate its inputs.
+func ApplyOverridesToTemplateArtifacts(templateArtifacts []wfv1.Artifact, overrides map[string]string) ([]wfv1.Artifact, error) {
+	applied := make([]wfv1.Artifact, 0, len(overrides))
+	consumed := make(map[string]bool, len(overrides))
+	for _, tmplArt := range templateArtifacts {
+		newKey, ok := overrides[tmplArt.Name]
+		if !ok {
+			continue
+		}
+		consumed[tmplArt.Name] = true
+		artCopy := tmplArt.DeepCopy()
+		if err := artCopy.SetKey(newKey); err != nil {
+			return nil, fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err)
+		}
+		applied = append(applied, *artCopy)
+	}
+	if err := unmatchedOverridesError(overrides, consumed); err != nil {
+		return nil, err
+	}
+	return applied, nil
+}
+
+// unmatchedOverridesError names any override whose artifact name matched no artifact, so a
+// typo'd or stale override surfaces as an error instead of being silently dropped. Returns
+// nil when every override was consumed.
+func unmatchedOverridesError(overrides map[string]string, consumed map[string]bool) error {
+	unmatched := make([]string, 0)
+	for name := range overrides {
+		if !consumed[name] {
+			unmatched = append(unmatched, name)
+		}
+	}
+	if len(unmatched) == 0 {
+		return nil
+	}
+	slices.Sort(unmatched)
+	return fmt.Errorf("artifact override(s) matched no artifact: %s", strings.Join(unmatched, ", "))
+}
+
+func overrideArtifacts(wf *wfv1.Workflow, artifacts []string) error {
+	if len(artifacts) == 0 {
+		return nil
+	}
+
+	overrides, err := ParseArtifactOverrides(artifacts)
+	if err != nil {
+		return err
+	}
+
+	// Override artifact keys in workflow arguments
+	// Note: For workflowTemplateRef workflows, artifacts are handled in workflow_server.go
+	// which has access to the WorkflowTemplate to copy the full artifact configuration
+	consumed := make(map[string]bool, len(overrides))
+	for i, artifact := range wf.Spec.Arguments.Artifacts {
+		if newKey, ok := overrides[artifact.Name]; ok {
+			consumed[artifact.Name] = true
+			if err := wf.Spec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+				return fmt.Errorf("failed to set key for artifact %s: %w", artifact.Name, err)
+			}
+		}
+	}
+
+	// Also update StoredWorkflowSpec if present
+	if wf.Status.StoredWorkflowSpec != nil {
+		for i, artifact := range wf.Status.StoredWorkflowSpec.Arguments.Artifacts {
+			if newKey, ok := overrides[artifact.Name]; ok {
+				consumed[artifact.Name] = true
+				if err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+					return fmt.Errorf("failed to set key for artifact %s in stored spec: %w", artifact.Name, err)
+				}
+			}
+		}
+	}
+
+	// For workflowTemplateRef workflows the artifacts live in the template, not here, so
+	// unmatched overrides are expected and are validated on the templateRef path instead
+	// (ApplyOverridesToTemplateArtifacts). Only flag unmatched overrides when this workflow
+	// is the authority for its own artifacts.
+	if wf.Spec.WorkflowTemplateRef == nil {
+		return unmatchedOverridesError(overrides, consumed)
+	}
+
 	return nil
 }
 
@@ -510,7 +624,7 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	} else {
 		wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	paramName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 	if index == -1 {
 		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
@@ -707,56 +821,78 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		return &newWF, nil
 	}
 
-	// Iterate the previous nodes.
-	replaceRegexp := regexp.MustCompile("^" + wf.Name)
-	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	onExitNodeName := wf.Name + ".onExit"
-	var err = packer.DecompressWorkflow(ctx, wf)
+	err := packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
 		log.WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
 	}
-	for _, node := range wf.Status.Nodes {
-		newNode := node.DeepCopy()
-		if strings.HasPrefix(node.Name, onExitNodeName) {
-			continue
-		}
-		originalID := node.ID
-		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
-		newNode.ID = newWF.NodeID(newNode.Name)
-		if node.BoundaryID != "" {
-			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
-		}
-		if newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
-			newNode.StartedAt = metav1.Time{}
-			newNode.FinishedAt = metav1.Time{}
-		} else {
-			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			newNode.FinishedAt = newNode.StartedAt
-		}
-		newChildren := make([]string, len(node.Children))
-		for i, childID := range node.Children {
-			newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
-		}
-		newNode.Children = newChildren
-		newOutboundNodes := make([]string, len(node.OutboundNodes))
-		for i, outboundID := range node.OutboundNodes {
-			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
-		}
-		newNode.OutboundNodes = newOutboundNodes
-		switch {
-		case !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod:
-			newNode.Phase = wfv1.NodeSkipped
-			newNode.Type = wfv1.NodeTypeSkipped
-			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
-		case newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)):
-			newWF.Status.Nodes.Delete(ctx, newNode.ID)
-			continue
-		default:
-			newNode.Phase = wfv1.NodePending
-			newNode.Message = ""
-		}
-		newWF.Status.Nodes.Set(ctx, newNode.ID, *newNode)
+
+	// A workflow that was itself produced by the memoized resubmit of an older
+	// version may still reference nodes that resubmit deleted. The graph
+	// analysis below rejects such references, so scrub them first.
+	for id, node := range wf.Status.Nodes {
+		node.Children = keepExistingNodeIDs(wf.Status.Nodes, node.Children)
+		node.OutboundNodes = keepExistingNodeIDs(wf.Status.Nodes, node.OutboundNodes)
+		wf.Status.Nodes.Set(ctx, id, node)
 	}
+
+	// Decide what to keep, reset and delete exactly as a retry of the original
+	// workflow would. Doing so gives memoized resubmit the same handling of
+	// fan-out TaskGroups, retry nodes and parameter overrides as retry, instead
+	// of a parallel implementation that has to be fixed separately.
+	plan, err := planReset(ctx, wf, false, "", len(parameters) > 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// An execution node that did not finish cannot be re-used, its pod
+	// belongs to the original workflow. Delete it along with everything that
+	// came after it, as a retry deletes a failed node, so the controller
+	// creates them afresh under the new workflow.
+	for id, node := range wf.Status.Nodes {
+		if isExecutionNodeType(node.Type) && !node.Phase.Completed() {
+			markSubtree(wf.Status.Nodes, id, plan.toDelete)
+		}
+	}
+
+	// Apply the plan under the new workflow name. Node IDs are derived from node
+	// names, which start with the workflow name, so every name, ID and
+	// reference has to be rewritten.
+	replaceRegexp := regexp.MustCompile("^" + regexp.QuoteMeta(wf.Name))
+	now := metav1.Time{Time: time.Now().UTC()}
+	rename := func(name string) string {
+		return replaceRegexp.ReplaceAllString(name, newWF.Name)
+	}
+	newIDs, err := newNodeIDs(wf, &newWF, rename)
+	if err != nil {
+		return nil, err
+	}
+	memoize := func(node wfv1.NodeStatus) wfv1.NodeStatus {
+		node.Name = rename(node.Name)
+		node.StartedAt = now
+		node.FinishedAt = now
+		if node.Type == wfv1.NodeTypePod {
+			// A completed pod is memoized: it keeps its phase and outputs but
+			// becomes a placeholder that points at the pod of the original
+			// workflow rather than expecting one here. A failed pod is only
+			// still here because the workflow carried on past it, through
+			// continueOn or a later attempt that succeeded, so it keeps its
+			// failure and its message.
+			node.Type = wfv1.NodeTypeSkipped
+			if node.FailedOrError() {
+				node.Message = fmt.Sprintf("original pod: %s: %s", node.ID, node.Message)
+			} else {
+				node.Phase = wfv1.NodeSkipped
+				node.Message = fmt.Sprintf("original pod: %s", node.ID)
+			}
+		}
+		return node
+	}
+	// A reference to a node that is not in the status at all maps to no ID,
+	// and applyResetPlan drops it.
+	mapID := func(id string) string {
+		return newIDs[id]
+	}
+	applyResetPlan(ctx, wf, &newWF, plan, memoize, mapID)
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
 	maps.Copy(newWF.Status.StoredTemplates, wf.Status.StoredTemplates)
@@ -767,11 +903,67 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	return &newWF, nil
 }
 
-// convertNodeID converts an old nodeID to a new nodeID
-func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
-	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.Name)
-	return newWf.NodeID(newNodeName)
+// markSubtree adds id and every node reachable from it through children to set.
+func markSubtree(nodes wfv1.Nodes, id string, set map[string]bool) {
+	if set[id] {
+		return
+	}
+	set[id] = true
+	if node, ok := nodes[id]; ok {
+		for _, child := range node.Children {
+			markSubtree(nodes, child, set)
+		}
+	}
+}
+
+// keepExistingNodeIDs returns ids without any that are not present in nodes,
+// preserving order.
+func keepExistingNodeIDs(nodes wfv1.Nodes, ids []string) []string {
+	var kept []string
+	for _, id := range ids {
+		if nodes.Has(id) {
+			kept = append(kept, id)
+		}
+	}
+	return kept
+}
+
+// newNodeIDs works out the ID each node of wf takes under the name of newWf.
+// A node ID is a hash of the node name, which starts with the workflow name,
+// so renaming the workflow rehashes the whole graph: names that collided
+// before may not any more, and names that did not may now. Nodes are assigned
+// in name order, so the result does not depend on map iteration order, and a
+// name that finds its 32-bit slot taken gets the widened one instead, which is
+// where Workflow.ResolveNode looks for it.
+//
+// Nodes the reset plan deletes are given an ID too, so that a reference to one
+// cannot land on the ID of a node that is kept and so survive the pruning
+// applyResetPlan does.
+func newNodeIDs(wf, newWf *wfv1.Workflow, rename func(name string) string) (map[string]string, error) {
+	oldIDs := make([]string, 0, len(wf.Status.Nodes))
+	for id := range wf.Status.Nodes {
+		oldIDs = append(oldIDs, id)
+	}
+	slices.SortFunc(oldIDs, func(a, b string) int {
+		return strings.Compare(wf.Status.Nodes[a].Name, wf.Status.Nodes[b].Name)
+	})
+	newIDs := make(map[string]string, len(oldIDs))
+	taken := make(map[string]bool, len(oldIDs))
+	for _, oldID := range oldIDs {
+		name := rename(wf.Status.Nodes[oldID].Name)
+		newID := newWf.NodeID(name)
+		if taken[newID] {
+			// the 32-bit slot has gone to another name: widen, as the
+			// controller does when it creates a node
+			newID = newWf.NodeID64(name)
+			if taken[newID] {
+				return nil, errors.Errorf(errors.CodeBadRequest, "cannot resubmit %s as %s: node %s collides with another node at both ID widths", wf.Name, newWf.Name, name)
+			}
+		}
+		taken[newID] = true
+		newIDs[oldID] = newID
+	}
+	return newIDs, nil
 }
 
 func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
@@ -846,7 +1038,12 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 
 	// create mapping from node to parent
 	// as well as creating temp mappings from nodeID to node
-	for _, wfNode := range wf.Status.Nodes {
+	// A node may appear as a child of more than one node (e.g. a task that
+	// `depends` on several others). Only one parent is recorded, so iterate in a
+	// deterministic order to keep the resulting parent chain, and therefore the
+	// reset set computed by resetPath, stable across invocations.
+	for _, nodeID := range slices.Sorted(maps.Keys(wf.Status.Nodes)) {
+		wfNode := wf.Status.Nodes[nodeID]
 		n := dagNode{}
 		n.n = &wfNode
 		nodes[wfNode.ID] = &n
@@ -1137,47 +1334,67 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 	return sortedNodes
 }
 
-// FormulateRetryWorkflow attempts to retry a workflow
+// resetPlan lists the nodes that must be touched for the failed parts of a
+// workflow to run again. Nodes in toDelete are removed so the controller
+// re-creates them from scratch. Nodes in toReset are kept but have their
+// phase rolled back by resetNode so the controller revisits them. A node in
+// both sets is deleted.
+type resetPlan struct {
+	toReset  map[string]bool
+	toDelete map[string]bool
+}
+
+// planReset works out which nodes of wf a retry has to reset and which it has
+// to delete. It is shared by FormulateRetryWorkflow, which applies the plan
+// under the same workflow name, and by the memoized mode of
+// FormulateResubmitWorkflow, which applies it under a new one. Both apply it
+// with applyResetPlan.
+//
 // The logic is as follows:
 // create a DAG
 // topological sort
 // iterate through all must delete nodes: iterator $node
 // obtain singular path to each $node
 // reset all "reset points" to $node
-func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-	switch wf.Status.Phase {
-	case wfv1.WorkflowFailed, wfv1.WorkflowError:
-	case wfv1.WorkflowSucceeded:
-		if !restartSuccessful || len(nodeFieldSelector) == 0 {
-			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+//
+// Nodes matched by nodeFieldSelector are restarted even if they succeeded when
+// restartSuccessful is set. When parametersOverridden is set, the expanded
+// children of every TaskGroup and StepGroup being reset are deleted too, so
+// the controller re-expands them with the new parameter values.
+//
+// A status with nodes must contain the root node, named after the workflow,
+// and every child reference must resolve; otherwise an error is returned.
+func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parametersOverridden bool) (resetPlan, error) {
+	if len(wf.Status.Nodes) > 0 {
+		hasRoot := false
+		for _, node := range wf.Status.Nodes {
+			if node.Name == wf.Name {
+				hasRoot = true
+				break
+			}
 		}
-	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
+		if !hasRoot {
+			return resetPlan{}, errors.Errorf(errors.CodeBadRequest, "workflow %s has nodes but no root node, cannot work out what to reset", wf.Name)
+		}
 	}
-
-	onExitNodeName := wf.Name + ".onExit"
-	var err error
-	err = packer.DecompressWorkflow(ctx, wf)
-	if err != nil {
-		logging.RequireLoggerFromContext(ctx).WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
-	}
-
-	newWf, err := createNewRetryWorkflow(ctx, wf, parameters)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	deleteNodesMap, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
-		return nil, nil, err
+		return resetPlan{}, err
 	}
 
 	failed := make(map[string]bool)
 	for nodeID, node := range wf.Status.Nodes {
-		if node.FailedOrError() && isExecutionNodeType(node.Type) {
+		// A failure belongs to the node that actually failed, not to the group
+		// nodes above it, which only fail because a descendant did. That is an
+		// execution node, or a leaf of any other type: a template that could
+		// not be resolved or expanded is recorded as a Skipped node in Error,
+		// and a suspend node that outlived its deadline as Failed.
+		if node.FailedOrError() && (isExecutionNodeType(node.Type) || len(node.Children) == 0) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
-				node = *wf.Status.Nodes.FindByChild(nodeID)
+				if parentNode := wf.Status.Nodes.FindRetryNodeByChild(nodeID); parentNode != nil {
+					node = *parentNode
+				}
 			}
 			if !isDescendantNodeSucceeded(ctx, wf, node, deleteNodesMap) {
 				failed[nodeID] = true
@@ -1190,7 +1407,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	nodes, err := newWorkflowsDag(wf)
 	if err != nil {
-		return nil, nil, err
+		return resetPlan{}, err
 	}
 
 	toReset := make(map[string]bool)
@@ -1227,87 +1444,153 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		pathToReset, pathToDelete, err := resetPath(nodes, currNode.n.ID)
 		if err != nil {
-			return nil, nil, err
+			return resetPlan{}, err
 		}
 		toReset = setUnion(toReset, pathToReset)
 		toDelete = setUnion(toDelete, pathToDelete)
 	}
 
-	for nodeID := range toReset {
-		// avoid resetting nodes that are marked for deletion
-		if in := toDelete[nodeID]; in {
-			continue
+	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,
+	// so the controller can re-expand them with the new values. Fixes #15802.
+	if parametersOverridden {
+		for nodeID := range toReset {
+			if toDelete[nodeID] {
+				continue
+			}
+			n, ok := wf.Status.Nodes[nodeID]
+			if !ok {
+				continue
+			}
+			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
+				if dagNode, okNode := nodesMap[nodeID]; okNode {
+					for childID := range getChildren(dagNode) {
+						toDelete[childID] = true
+					}
+				}
+			}
 		}
-
-		n := wf.Status.Nodes[nodeID]
-
-		newWf.Status.Nodes.Set(ctx, nodeID, resetNode(*n.DeepCopy()))
 	}
 
+	return resetPlan{toReset: toReset, toDelete: toDelete}, nil
+}
+
+// FormulateRetryWorkflow attempts to retry a workflow in place, see planReset
+// for how the nodes to reset and delete are chosen.
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
+	switch wf.Status.Phase {
+	case wfv1.WorkflowFailed, wfv1.WorkflowError:
+	case wfv1.WorkflowSucceeded:
+		if !restartSuccessful || len(nodeFieldSelector) == 0 {
+			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+		}
+	default:
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
+	}
+
+	onExitNodeName := wf.Name + ".onExit"
+	var err error
+	err = packer.DecompressWorkflow(ctx, wf)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
+	}
+
+	newWf, err := createNewRetryWorkflow(ctx, wf, parameters)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	plan, err := planReset(ctx, wf, restartSuccessful, nodeFieldSelector, len(parameters) > 0)
+	if err != nil {
+		return nil, nil, err
+	}
+	applyResetPlan(ctx, wf, newWf, plan, nil, nil)
+
+	// The pods of deleted nodes, and of the whole onExit subtree, belong to
+	// this workflow and must go so the controller can re-create them.
 	deletedPods := make(map[string]bool)
 	podsToDelete := []string{}
-
-	for nodeID := range toDelete {
+	for nodeID := range plan.toDelete {
 		n := wf.Status.Nodes[nodeID]
 		if n.Type == wfv1.NodeTypePod {
 			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, n, deletedPods, podsToDelete)
 		}
 	}
-
-	for id, n := range wf.Status.Nodes {
-		shouldDelete := toDelete[id] || strings.HasPrefix(n.Name, onExitNodeName)
-		if _, err := newWf.Status.Nodes.Get(id); err != nil && !shouldDelete {
-			newWf.Status.Nodes.Set(ctx, id, *n.DeepCopy())
-		}
-		if n.Name == onExitNodeName {
-			queue := list.New()
-			queue.PushBack(&n)
-			for {
-				currNode := queue.Front()
-				if currNode == nil {
-					break
-				}
-				curr := currNode.Value.(*wfv1.NodeStatus)
-				deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, *curr, deletedPods, podsToDelete)
-				for i := range curr.Children {
-					child, err := wf.Status.Nodes.Get(curr.Children[i])
-					if err != nil {
-						return nil, nil, err
-					}
-					queue.PushBack(child)
-				}
-				queue.Remove(currNode)
-			}
-		}
-	}
-	for id, oldWfNode := range wf.Status.Nodes {
-		if !newWf.Status.Nodes.Has(id) {
+	for _, n := range wf.Status.Nodes {
+		if n.Name != onExitNodeName {
 			continue
 		}
-
-		newChildren := []string{}
-		for _, childID := range oldWfNode.Children {
-			if toDelete[childID] {
-				continue
+		queue := list.New()
+		queue.PushBack(&n)
+		for {
+			currNode := queue.Front()
+			if currNode == nil {
+				break
 			}
-			newChildren = append(newChildren, childID)
-		}
-		newOutboundNodes := []string{}
-
-		for _, outBoundNodeID := range oldWfNode.OutboundNodes {
-			if toDelete[outBoundNodeID] {
-				continue
+			curr := currNode.Value.(*wfv1.NodeStatus)
+			deletedPods, podsToDelete = deletePodNodeDuringRetryWorkflow(wf, *curr, deletedPods, podsToDelete)
+			for i := range curr.Children {
+				child, err := wf.Status.Nodes.Get(curr.Children[i])
+				if err != nil {
+					return nil, nil, err
+				}
+				queue.PushBack(child)
 			}
-			newOutboundNodes = append(newOutboundNodes, outBoundNodeID)
+			queue.Remove(currNode)
 		}
-
-		wfNode := newWf.Status.Nodes[id]
-		wfNode.Children = newChildren
-		wfNode.OutboundNodes = newOutboundNodes
-		newWf.Status.Nodes.Set(ctx, id, *wfNode.DeepCopy())
 	}
 
 	return newWf, podsToDelete, nil
+}
+
+// applyResetPlan fills dst.Status.Nodes with the nodes of wf that survive
+// plan. Nodes in plan.toDelete and the onExit subtree are dropped, nodes in
+// plan.toReset go through resetNode, and references to nodes that did not
+// survive are scrubbed from the rest. Deleted nodes are most commonly still
+// referenced by the leaf nodes of a nested DAG or Steps template whose
+// dependant was deleted; the DAG phase assessment follows those references
+// and treats a missing node as still running, so a dangling reference would
+// leave the nested template, and with it the whole workflow, Running forever.
+// The controller re-creates the links when it re-creates the nodes.
+//
+// rewrite, if set, is applied to every surviving node before it is reset.
+// mapID, if set, rewrites every node ID and reference. Memoized resubmit uses
+// them to move the nodes under a new workflow name and to turn pods into
+// placeholders; retry passes neither.
+func applyResetPlan(ctx context.Context, wf, dst *wfv1.Workflow, plan resetPlan, rewrite func(node wfv1.NodeStatus) wfv1.NodeStatus, mapID func(id string) string) {
+	onExitNodeName := wf.Name + ".onExit"
+	dst.Status.Nodes = make(wfv1.Nodes)
+	for id, node := range wf.Status.Nodes {
+		if plan.toDelete[id] || strings.HasPrefix(node.Name, onExitNodeName) {
+			continue
+		}
+		newNode := *node.DeepCopy()
+		if rewrite != nil {
+			newNode = rewrite(newNode)
+		}
+		if plan.toReset[id] {
+			newNode = resetNode(newNode)
+		}
+		newID := id
+		if mapID != nil {
+			newID = mapID(id)
+			newNode.ID = newID
+			if newNode.BoundaryID != "" {
+				newNode.BoundaryID = mapID(newNode.BoundaryID)
+			}
+			for i, childID := range newNode.Children {
+				newNode.Children[i] = mapID(childID)
+			}
+			for i, outboundID := range newNode.OutboundNodes {
+				newNode.OutboundNodes[i] = mapID(outboundID)
+			}
+		}
+		dst.Status.Nodes.Set(ctx, newID, newNode)
+	}
+	for id, node := range dst.Status.Nodes {
+		node.Children = keepExistingNodeIDs(dst.Status.Nodes, node.Children)
+		node.OutboundNodes = keepExistingNodeIDs(dst.Status.Nodes, node.OutboundNodes)
+		dst.Status.Nodes.Set(ctx, id, node)
+	}
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
@@ -1450,7 +1733,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }
 
-// Reads from stdin
+// ReadFromStdin reads from stdin.
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
 	body, err := io.ReadAll(reader)
@@ -1460,7 +1743,7 @@ func ReadFromStdin() ([]byte, error) {
 	return body, err
 }
 
-// Reads the content of a url
+// ReadFromURL reads the content of a URL.
 func ReadFromURL(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -1610,4 +1893,16 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 		return -1, err
 	}
 	return waitCtrIndex, nil
+}
+
+// FindAuxiliaryCtrIndex returns the index of the auxiliary executor container
+// on the pod — wait in the legacy layout, supervisor in the init-less layout.
+// Returns -1 and an error if neither is found.
+func FindAuxiliaryCtrIndex(pod *apiv1.Pod) (int, error) {
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.WaitContainerName || ctr.Name == common.SupervisorContainerName {
+			return i, nil
+		}
+	}
+	return -1, errors.Errorf("-1", "Could not find wait or supervisor container in pod spec")
 }

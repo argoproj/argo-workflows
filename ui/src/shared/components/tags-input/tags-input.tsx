@@ -31,7 +31,7 @@ export function TagsInput(props: TagsInputProps) {
         <div className={classNames('tags-input argo-field', {'tags-input--focused': focused || !!input})} onClick={() => inputRef.current?.focus()}>
             {props.tags ? (
                 props.tags.map((tag, i) => (
-                    <span className='tags-input__tag' key={tag}>
+                    <span className='tags-input__tag' key={tag} title={tag}>
                         {tag}{' '}
                         <i
                             className='fa fa-times'

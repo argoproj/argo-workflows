@@ -1,0 +1,69 @@
+name: PR Readiness Helper
+
+# Standalone helper that fires when CI workflows complete on a PR and keeps a
+# single sticky comment guiding the contributor through contributor-fixable
+# problems (lint, codegen, docs, title, DCO, feature files, and an unfilled
+# PR description checked against the template). Blocking problems also apply
+# the problem/bot-not-ready label, removed automatically once resolved.
+# See .github/pr-readiness/README.md for design, security model and tuning.
+#
+# Security: this runs with write permissions from the default branch's
+# workflow definition. It must NEVER check out or execute PR-head code, and
+# PR-controlled strings (title/body/branch) must only be handled as data.
+
+on:
+  workflow_run:
+    workflows: ["CI", "Docs", "PR Title Check", "PR Feature Check"]
+    types: [completed]
+
+permissions: {} # default deny; the job grants the minimum it needs
+
+concurrency:
+  # Serialize per head SHA: several of the above workflows can finish within
+  # seconds of each other. Never cancel — each completion must be processed
+  # so the comment converges on the final state.
+  group: pr-readiness-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+  # Dry-run: set to "true" to render to the job summary instead of
+  # commenting/labelling.
+  DRY_RUN: "false"
+
+jobs:
+  assess:
+    name: Assess PR readiness
+    if: github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write # sticky comment + not-ready label
+      contents: read # checkout of the default branch (scripts, OWNERS, template)
+      actions: read # job/step conclusions for the feature check
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+
+      # Default branch only — never the PR head.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Assess PR and render comment
+        id: assess
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { run } = require('./.github/pr-readiness/main.ts');
+            await run({ github, context, core });
+
+      - name: Upsert sticky comment
+        if: steps.assess.outputs.should_comment == 'true' && env.DRY_RUN != 'true'
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: pr-readiness-bot
+          number_force: ${{ steps.assess.outputs.pr_number }}
+          path: ${{ runner.temp }}/pr-readiness/comment.md
+          skip_unchanged: true

@@ -1,4 +1,4 @@
-# Changelog
+# Changelog for version 2
 
 ## v3.0.0-rc1 (2021-02-08)
 
@@ -5037,4 +5037,3 @@ Full Changelog: [v0.1.0...v0.2.0](https://github.com/argoproj/argo-workflows/com
 * Edward Lee
 
 </details>
-

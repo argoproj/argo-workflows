@@ -22,7 +22,7 @@ const workflowPaginationLimit = 500
 func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupVersionResource, client dynamic.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListRequestListOptions internalinterfaces.TweakListOptionsFunc, tweakWatchRequestListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListRequestListOptions != nil {
 					tweakListRequestListOptions(&options)
 				}
@@ -31,6 +31,10 @@ func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupV
 				options.Limit = workflowPaginationLimit
 				for {
 					options.Continue = continueTok
+					if options.Continue != "" {
+						options.ResourceVersion = ""
+						options.ResourceVersionMatch = ""
+					}
 					unList, err := client.Resource(resource).Namespace(namespace).List(ctx, options)
 					if err != nil {
 						return nil, err
@@ -50,7 +54,7 @@ func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupV
 					Items: allWorkflows,
 				}, nil
 			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 				if tweakWatchRequestListOptions != nil {
 					tweakWatchRequestListOptions(&options)
 				}

@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-skipped-withparam-default-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: producer
+            template: produce
+            when: "false" # -> Skipped, produces no real output
+          - name: consumer
+            template: consume
+            depends: "producer.Succeeded || producer.Skipped"
+            withParam: "{{tasks.producer.outputs.parameters.items}}"
+            arguments:
+              parameters:
+                - name: in
+                  value: "{{item}}"
+    - name: produce
+      outputs:
+        parameters:
+          - name: items
+            valueFrom:
+              path: /tmp/out.txt
+              default: '["a","b"]' # <- expansion source when the node is skipped
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", '["real"]', "/tmp/out.txt"]
+    - name: consume
+      inputs:
+        parameters:
+          - name: in
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "consumer got: [{{inputs.parameters.in}}]"]

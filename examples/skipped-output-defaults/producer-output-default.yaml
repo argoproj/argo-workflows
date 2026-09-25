@@ -1,0 +1,46 @@
+# Producer output default flows to a downstream consumer when the producer is skipped.
+#
+# `producer` never runs (when: "false") so it produces no outputs. Because its output parameter
+# `msg` declares a `valueFrom.default`, any task that references `{{tasks.producer.outputs.parameters.msg}}`
+# receives that declared default ("hello-from-producer") instead of an empty string.
+#
+# Expected: consumer logs "consumer got: [hello-from-producer]".
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: producer-output-default-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: producer
+            template: produce
+            when: "false"                      # -> Skipped, produces no real output
+          - name: consumer
+            template: consume
+            depends: "producer.Succeeded || producer.Skipped"
+            arguments:
+              parameters:
+                - name: in
+                  value: "{{tasks.producer.outputs.parameters.msg}}"
+
+    - name: produce
+      outputs:
+        parameters:
+          - name: msg
+            valueFrom:
+              path: /tmp/out.txt
+              default: "hello-from-producer"   # <- used when the node is skipped/omitted
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "real-value", "/tmp/out.txt"]
+
+    - name: consume
+      inputs:
+        parameters:
+          - name: in
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "consumer got: [{{inputs.parameters.in}}]"]

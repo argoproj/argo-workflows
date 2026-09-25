@@ -1,0 +1,11 @@
+# plugins profile + init-less pod mode. Used by CI for the test-plugins
+# initless matrix entry. Requires K8s image volumes (Beta in 1.33 behind a
+# feature gate, GA in 1.36).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../plugins
+
+components:
+  - ../components/initless-pod

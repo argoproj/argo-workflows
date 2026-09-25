@@ -28,6 +28,8 @@ They must be applied using [server-side apply](https://kubernetes.io/docs/refere
 
 Previous versions used [minimal CRDs](https://github.com/argoproj/argo-workflows/tree/main/manifests/base/crds/minimal) that stripped out validation information to avoid the size limits.
 
+If your installation tooling cannot perform server-side apply, you can install the full CRDs with the [CRD installer image](crd-installer.md).
+
 #### Argo Workflows Helm Chart
 
 You can install Argo Workflows using the community maintained [Helm charts](https://github.com/argoproj/argo-helm).

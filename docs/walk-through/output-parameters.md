@@ -45,6 +45,9 @@ spec:
 
 DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-parameter.outputs.parameters.hello-param}}`.
 
+If the producing step or task was skipped or omitted, you can declare a `valueFrom.default` on its output parameter to provide a value for that case.
+See [Outputs of Skipped and Omitted Nodes](../variables.md#outputs-of-skipped-and-omitted-nodes) for how such references resolve.
+
 ## `result` output parameter
 
 For script and container templates, the `result` output parameter captures up to 256 kb of the standard output.

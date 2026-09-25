@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
 )
 
 const (
@@ -90,6 +91,33 @@ func TestFindOverlappingVolume(t *testing.T) {
 	assert.Equal(t, &volMntTrailing, FindOverlappingVolume(templateWithVolMount, "/trailing-slash/with-subpath"))
 
 	assert.Nil(t, FindOverlappingVolume(templateWithVolMount, "/user-mount-coincidental-prefix/"))
+}
+
+func TestFindVolumeMountNestedUnderPath(t *testing.T) {
+	mnt := corev1.VolumeMount{Name: "shared", MountPath: "/data/shared"}
+	mntTrailing := corev1.VolumeMount{Name: "aux", MountPath: "/logs/out/"}
+	tmpl := &wfv1.Template{
+		Container: &corev1.Container{
+			VolumeMounts: []corev1.VolumeMount{mnt, mntTrailing},
+		},
+	}
+
+	// path is a proper ancestor of a mount → detected.
+	assert.Equal(t, &mnt, FindVolumeMountNestedUnderPath(tmpl, "/data"))
+	assert.Equal(t, &mnt, FindVolumeMountNestedUnderPath(tmpl, "/data/"))
+	assert.Equal(t, &mntTrailing, FindVolumeMountNestedUnderPath(tmpl, "/logs"))
+
+	// Exact match is NOT reported (that's the ordinary overlap case).
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/data/shared"))
+
+	// path inside a mount is NOT an ancestor.
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/data/shared/sub"))
+
+	// Coincidental prefix is not an ancestor.
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/dat"))
+
+	// Unrelated path.
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/tmp"))
 }
 
 func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
@@ -362,4 +390,63 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
+}
+
+// TestProcessArgsAbsentOptional pins the three branches of the AbsentOptionalArgumentValue handling:
+// the sentinel marks an argument that was a pure reference to a skipped/omitted node's output with no
+// producer default, and ProcessArgs must treat it as unsupplied. The terminal "neither" branch must
+// NOT look like a missing-variable error, otherwise the controller would requeue forever.
+func TestProcessArgsAbsentOptional(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	paramName := "in"
+
+	sentinelArgs := wfv1.Inputs{Parameters: []wfv1.Parameter{
+		{Name: paramName, Value: wfv1.AnyStringPtr(AbsentOptionalArgumentValue)},
+	}}
+
+	globalParams := make(map[string]string)
+	localParams := make(map[string]string)
+
+	configMapKey := "config-map-key"
+	configMapValue := "config-map-value"
+	configMapStore := mockConfigMapStore{}
+	configMapStore.getByKey = func(key string) (any, bool, error) {
+		return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{LabelKeyConfigMapType: LabelValueTypeConfigMapParameter}},
+			Data: map[string]string{configMapKey: configMapValue},
+		}, true, nil
+	}
+
+	t.Run("input default applies", func(t *testing.T) {
+		tmpl := wfv1.Template{}
+		tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, Default: wfv1.AnyStringPtr("fallback")}}
+		newTmpl, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, "", configMapStore)
+		require.NoError(t, err)
+		require.NotNil(t, newTmpl)
+		assert.Equal(t, "fallback", newTmpl.Inputs.Parameters[0].Value.String())
+	})
+
+	t.Run("input valueFrom applies", func(t *testing.T) {
+		tmpl := wfv1.Template{}
+		tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, ValueFrom: &wfv1.ValueFrom{
+			ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "config-map-name"},
+				Key:                  configMapKey,
+			},
+		}}}
+		newTmpl, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, "", configMapStore)
+		require.NoError(t, err)
+		require.NotNil(t, newTmpl)
+		assert.Equal(t, configMapValue, newTmpl.Inputs.Parameters[0].Value.String())
+	})
+
+	t.Run("no default nor valueFrom fails terminally without requeue", func(t *testing.T) {
+		tmpl := wfv1.Template{}
+		tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName}}
+		_, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, "", configMapStore)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "absent optional")
+		// Must NOT match IsMissingVariableErr, which would requeue the node forever.
+		assert.False(t, template.IsMissingVariableErr(err))
+	})
 }

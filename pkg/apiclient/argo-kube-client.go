@@ -112,7 +112,7 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		Kubernetes: kubeClient,
 		Workflow:   wfClient,
 	}
-	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
+	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil, 0)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -179,7 +179,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 
 func (a *argoKubeClient) NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace, nil)
 	go wfServer.Run(a.opts.CachingCloseCh)
 	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }

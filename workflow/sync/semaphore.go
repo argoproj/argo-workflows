@@ -9,6 +9,7 @@ import (
 	sema "golang.org/x/sync/semaphore"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type prioritySemaphore struct {
@@ -37,19 +38,31 @@ func newInternalSemaphore(ctx context.Context, name string, nextWorkflow NextWor
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 	}
-	var err error
-	limit := sem.getLimit(ctx)
-	if limit == 0 {
-		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	// Resolve the limit directly through limitGetter rather than getLimit(), since
+	// getLimit() falls back to the cache's zero-value on a fetch error, which would
+	// make a genuine error indistinguishable from a semaphore that legitimately
+	// starts at limit 0 (e.g. an "approval gate" held closed until raised).
+	limit, changed, err := sem.limitGetter.get(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize semaphore %s: %w", name, err)
 	}
-	return sem, err
+	if changed && !sem.resize(ctx, limit) {
+		return nil, fmt.Errorf("failed to size semaphore %s to limit %d", name, limit)
+	}
+	return sem, nil
 }
 
 func (s *prioritySemaphore) getLimit(ctx context.Context) int {
 	limit, changed, err := s.limitGetter.get(ctx, s.name)
 	if err != nil {
-		s.logger(ctx).WithError(err).WithField("name", s.name).Error(ctx, "failed to get limit for semaphore")
-		return 0
+		// Fall back to the last known limit (returned by the cache alongside
+		// the error). Returning 0 here would make release() treat a transient
+		// fetch failure as a downward resize and permanently leak a slot.
+		s.logger(ctx).WithError(err).WithFields(logging.Fields{
+			"name":          s.name,
+			"fallbackLimit": limit,
+		}).Error(ctx, "failed to get limit for semaphore, using last known limit")
+		return limit
 	}
 	if changed {
 		s.resize(ctx, limit)
@@ -163,12 +176,30 @@ func (s *prioritySemaphore) removeFromQueue(ctx context.Context, holderKey strin
 	return nil
 }
 
-func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *transaction) bool {
+func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) (bool, error) {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
+}
+
+// reacquire re-establishes a recorded holder at startup, ignoring the limit. It
+// always registers the holder, even when the recorded holders already exceed the
+// current limit (e.g. the limit was lowered while held). The weighted semaphore
+// is capped at the limit, so a slot is only taken when one is free; the excess is
+// tracked solely in lockHolder, exactly as a downward resize leaves it. release()
+// already tolerates len(lockHolder) > limit and only frees a weighted slot once
+// the count drops below the limit, so new acquisitions wait until every recorded
+// holder has drained. It never fails: the in-memory map is the source of truth
+// here, so registering the holder is always possible.
+func (s *prioritySemaphore) reacquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) error {
+	if _, ok := s.lockHolder[holderKey]; ok {
+		return nil
+	}
+	s.semaphore.TryAcquire(1) // best effort: take a slot if one is free
+	s.lockHolder[holderKey] = true
+	return nil
 }
 
 func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
@@ -189,7 +220,7 @@ func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
 //	false, true if we already have the lock
 //	false, false if the lock is not acquirable
 //	string return is a user facing message when not acquirable
-func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, _ *transaction) (bool, bool, string) {
+func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, _ *sqldb.SessionProxy) (bool, bool, string) {
 	logger := s.logger(ctx)
 	limit := s.getLimit(ctx)
 	if holderKey == "" {
@@ -230,17 +261,18 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	return false, false, waitingMsg
 }
 
-func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, string) {
+func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string, error) {
 	logger := s.logger(ctx)
 	acq, already, msg := s.checkAcquire(ctx, holderKey, tx)
 	if already {
-		return true, msg
+		return true, msg, nil
 	}
 	if !acq {
-		return false, msg
+		return false, msg, nil
 	}
-	if s.acquire(ctx, holderKey, tx) {
-		s.pending.pop()
+	acquired, _ := s.acquire(ctx, holderKey, tx)
+	if acquired {
+		s.pending.remove(holderKey)
 		limit := s.getLimit(ctx)
 		logger.WithFields(logging.Fields{
 			"name":      s.name,
@@ -249,10 +281,10 @@ func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 			"limit":     limit,
 		}).Info(ctx, "acquired")
 		s.notifyWaiters(ctx)
-		return true, ""
+		return true, "", nil
 	}
 	logger.WithField("lockHolder", s.lockHolder).Debug(ctx, "Current semaphore Holders")
-	return false, msg
+	return false, msg, nil
 }
 
 func (s *prioritySemaphore) probeWaiting(_ context.Context) {}

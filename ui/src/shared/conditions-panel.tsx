@@ -10,6 +10,10 @@ interface Props {
 const WarningConditions: ConditionType[] = ['SpecWarning'];
 const ErrorConditions: ConditionType[] = ['MetricsError', 'SubmissionError', 'SpecError', 'ArtifactGCError'];
 
+export function getErrorCondition(conditions: Condition[]): Condition | undefined {
+    return conditions.find(condition => ErrorConditions.includes(condition.type));
+}
+
 export function hasWarningConditionBadge(conditions: Condition[]): boolean {
     for (const condition of conditions) {
         if (WarningConditions.includes(condition.type)) {

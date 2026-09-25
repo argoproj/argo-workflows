@@ -1,0 +1,37 @@
+# This example demonstrates requesting a device through Kubernetes Dynamic
+# Resource Allocation, which lets a pod ask a driver for a device rather than
+# counting an extended resource.
+# Requires the DynamicResourceAllocation feature gate, a DRA driver installed on
+# the cluster, and the ResourceClaimTemplate named below to already exist in the
+# workflow's namespace. Argo passes the claims through to the pod; Kubernetes
+# allocates the devices and manages the ResourceClaim lifecycle.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+spec:
+  entrypoint: show-devices
+  # Applies to every pod that runs a template, unless that template sets its own
+  # resourceClaims. The shared agent pod behind HTTP and Plugin templates does not
+  # get them.
+  # A ResourceClaimTemplate gives every pod its own claim, which is deleted with
+  # the pod; use resourceClaimName instead to share one pre-created claim.
+  # Note that a pod cannot start until every claim listed here is allocated, even
+  # if none of its containers ask for it. Setting a claim workflow-wide therefore
+  # occupies a device for every step, so prefer the template level when only some
+  # steps need the device.
+  resourceClaims:
+  - name: accelerator
+    resourceClaimTemplateName: example-device-claim-template
+  templates:
+  - name: show-devices
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["echo using the allocated device"]
+      # A container only sees a claim it asks for by name.
+      resources:
+        claims:
+        - name: accelerator

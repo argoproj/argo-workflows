@@ -30,6 +30,7 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// ConcurrencyPolicy defines how to treat concurrent executions of a CronWorkflow.
 // +kubebuilder:validation:Enum=Allow;Forbid;Replace
 type ConcurrencyPolicy string
 
@@ -65,7 +66,7 @@ type CronWorkflowSpec struct {
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
 	// v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/?-]+\s+){4}[0-9*,/?-]+)$`
+	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?-]+\s+){4}[A-Za-z0-9*,/?-]+)$`
 	Schedules []string `json:"schedules" protobuf:"bytes,11,opt,name=schedules"`
 	// v3.6 and after: When is an expression that determines if a run should be scheduled.
 	When string `json:"when,omitempty" protobuf:"bytes,12,opt,name=when"`
@@ -145,8 +146,8 @@ func (c *CronWorkflowSpec) GetScheduleString() string {
 	return c.getScheduleString(false)
 }
 
-// GetScheduleString returns the schedule expression with timezone, if available. If multiple
-// expressions are configured it returns a comma separated list of cron expressions
+// GetScheduleWithTimezoneString returns the schedule expression with timezone, if available. If multiple
+// expressions are configured it returns a comma separated list of cron expressions.
 func (c *CronWorkflowSpec) GetScheduleWithTimezoneString() string {
 	return c.getScheduleString(true)
 }

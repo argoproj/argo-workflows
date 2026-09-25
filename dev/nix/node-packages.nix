@@ -868,15 +868,6 @@ let
         sha512 = "r0NEbP1dsM+IqB62Ru9TXLP/HDaTdBNIeylYXumuBi6Xv4ufjE1/g3TnslYL8VNqNcGAGbMptQFHrrdfoZ/Sug==";
       };
     };
-    "markdown-spellcheck-1.3.1" = {
-      name = "markdown-spellcheck";
-      packageName = "markdown-spellcheck";
-      version = "1.3.1";
-      src = fetchurl {
-        url = "https://registry.npmjs.org/markdown-spellcheck/-/markdown-spellcheck-1.3.1.tgz";
-        sha512 = "9uyovbDg3Kh2H89VDtqOkXKS9wuRgpLvOHXzPYWMR71tHQZWt2CAf28EIpXNhkFqqoEjXYAx+fXLuKufApYHRQ==";
-      };
-    };
     "markdownlint-0.27.0" = {
       name = "markdownlint";
       packageName = "markdownlint";
@@ -1493,14 +1484,6 @@ let
       })
       sources."markdown-link-check-3.11.1"
       sources."markdown-link-extractor-3.1.0"
-      (sources."markdown-spellcheck-1.3.1" // {
-        dependencies = [
-          sources."async-2.6.4"
-          sources."chalk-2.4.2"
-          sources."commander-2.20.3"
-          sources."marked-0.3.19"
-        ];
-      })
       sources."markdownlint-0.27.0"
       (sources."markdownlint-cli-0.33.0" // {
         dependencies = [

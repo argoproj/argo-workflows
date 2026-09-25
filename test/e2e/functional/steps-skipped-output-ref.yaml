@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-skipped-output-ref-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: job1
+            template: run-job
+        - - name: job2
+            template: run-job
+            when: "\"{{steps.job1.outputs.parameters.status}}\" == \"FAILED\""
+        - - name: job2-error-handler
+            template: run-job
+            when: "\"{{steps.job2.outputs.parameters.status}}\" != \"SUCCESS\" && \"{{steps.job1.outputs.parameters.status}}\" == \"SUCCESS\""
+    - name: run-job
+      outputs:
+        parameters:
+          - name: status
+            valueFrom:
+              path: /tmp/status.txt
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "SUCCESS", "/tmp/status.txt"]

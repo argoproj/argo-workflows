@@ -15,6 +15,9 @@ You can scale the controller vertically in these ways:
 
 If you observe the Controller using its total CPU or memory requests, you should increase those.
 
+At scale the Controller's memory usage is dominated by its informer caches, which hold every live Workflow, Pod and related object it watches.
+Since v4.1 the Controller strips `metadata.managedFields` from objects before caching them, which reduces the memory needed per cached object; keep this in mind when comparing heap profiles across versions.
+
 ### Adding Goroutines to Increase Concurrency
 
 If you have sufficient CPU cores, you can take advantage of them with more goroutines:

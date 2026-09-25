@@ -114,21 +114,27 @@ func TestMutexLock(t *testing.T) {
 	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
-		}, WorkflowExistenceFunc)
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
 		wfclientset := fakewfclientset.NewClientset(wf)
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(ctx, wfList.Items)
+		staleHolds, err := syncManager.Initialize(ctx, wfList.Items)
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
 		var nextWorkflow string
-		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			nextWorkflow = key
-		}, WorkflowExistenceFunc)
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexWf)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -207,9 +213,11 @@ func TestMutexLock(t *testing.T) {
 
 	t.Run("WfLevelMutexOthernamespace", func(t *testing.T) {
 		var nextWorkflow string
-		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			nextWorkflow = key
-		}, WorkflowExistenceFunc)
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexWfNamespaced)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -398,9 +406,11 @@ func TestMutexTmplLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			// nextKey = key
-		}, WorkflowExistenceFunc)
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]
 

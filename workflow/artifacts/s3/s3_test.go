@@ -422,9 +422,30 @@ func TestSaveS3Artifact(t *testing.T) {
 		bucket    string
 		key       string
 		localPath string
-		done      bool
-		errMsg    string
+		// skipBucketCreation leaves CreateBucketIfNotPresent nil, covering the
+		// path where MakeBucket must not be called at all.
+		skipBucketCreation bool
+		done               bool
+		errMsg             string
 	}{
+		"Skips MakeBucket when CreateBucketIfNotPresent is unset": {
+			s3client: newMockClient(
+				map[string][]string{
+					"my-bucket": {},
+				},
+				map[string]error{
+					// If MakeBucket were called, this would fail the upload.
+					"MakeBucket": minio.ErrorResponse{
+						Code: "AccessDenied",
+					},
+				}),
+			bucket:             "my-bucket",
+			key:                "/folder/hello-art.tar.gz",
+			localPath:          tempFile,
+			skipBucketCreation: true,
+			done:               true,
+			errMsg:             "",
+		},
 		"Success as File": {
 			s3client: newMockClient(
 				map[string][]string{
@@ -516,6 +537,10 @@ func TestSaveS3Artifact(t *testing.T) {
 	for name, tc := range tests {
 		t.Setenv(transientEnvVarKey, "this error is transient")
 		t.Run(name, func(t *testing.T) {
+			var createBucketIfNotPresent *wfv1.CreateS3BucketOptions
+			if !tc.skipBucketCreation {
+				createBucketIfNotPresent = &wfv1.CreateS3BucketOptions{}
+			}
 			success, err := saveS3Artifact(ctx,
 				tc.s3client,
 				tc.localPath,
@@ -524,7 +549,7 @@ func TestSaveS3Artifact(t *testing.T) {
 						S3: &wfv1.S3Artifact{
 							S3Bucket: wfv1.S3Bucket{
 								Bucket:                   tc.bucket,
-								CreateBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+								CreateBucketIfNotPresent: createBucketIfNotPresent,
 								EncryptionOptions: &wfv1.S3EncryptionOptions{
 									EnableEncryption: true,
 								},
@@ -739,4 +764,21 @@ func TestDisallowedComboOptions(t *testing.T) {
 		_, err := NewClient(ctx, opts)
 		assert.Error(t, err)
 	})
+}
+
+func TestParseAddressingStyle(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected AddressingStyle
+	}{
+		"empty string returns auto-detect":  {input: "", expected: AutoDetectStyle},
+		"path returns path style":           {input: "path", expected: PathStyle},
+		"virtual-hosted returns virtual":    {input: "virtual-hosted", expected: VirtualHostedStyle},
+		"unknown value returns auto-detect": {input: "garbage", expected: AutoDetectStyle},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, parseAddressingStyle(tc.input))
+		})
+	}
 }

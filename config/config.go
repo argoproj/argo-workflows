@@ -128,6 +128,34 @@ type Config struct {
 	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
 	// infrastructure issues without requiring a retryStrategy on templates.
 	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+
+	// DisableAgentPodCreation disables the creation of agent pods for HTTP and Plugin templates.
+	// This is useful when external agents are responsible for executing these templates and the controller should not create agent pods.
+	// Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
+	DisableAgentPodCreation bool `json:"disableAgentPodCreation,omitempty"`
+
+	// InitlessPod configures an opt-in pod layout that omits the argoexec init container.
+	// The argoexec binary is delivered to the main container via a Kubernetes image volume
+	// (KEP-4639 — Beta in K8s 1.33 behind a feature gate, GA in 1.36), and a new
+	// `supervisor` container replaces `wait`, taking on pre-main responsibilities
+	// (template write, script staging, input artifact download, readiness signaling) in
+	// addition to its existing post-main work.
+	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
+}
+
+// InitlessPodConfig configures the init-less pod layout.
+//
+// BETA — off by default and may change in incompatible ways in future minor
+// releases before being promoted to stable. See Config.InitlessPod.
+type InitlessPodConfig struct {
+	// Enabled selects the init-less pod layout for all workflow pods scheduled by this controller.
+	// Default is false (legacy pod layout with argoexec init container).
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// IsEnabled returns true if the init-less pod layout is enabled.
+func (c *InitlessPodConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
 }
 
 // FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
@@ -277,6 +305,33 @@ type DBConfig struct {
 	MySQL *MySQLConfig `json:"mysql,omitempty"`
 	// Pooled connection settings for all types of database connections
 	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
+	// DBReconnectConfig are configuration options for database retries and reconnections
+	DBReconnectConfig *DBReconnectConfig `json:"reconnectionConfig,omitempty"`
+	// ConnectionTimeoutSeconds is the timeout in seconds for establishing a database connection, 5 seconds if not set.
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty"`
+}
+
+const defaultDBConnectionTimeout = 5 * time.Second
+
+// ConnectionTimeout returns the database connection-establishment timeout,
+// defaulting to 5s when unset.
+func (c DBConfig) ConnectionTimeout() time.Duration {
+	if c.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(c.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultDBConnectionTimeout
+}
+
+// DBReconnectConfig contains database reconnect settings
+type DBReconnectConfig struct {
+	// MaxRetries defines how many connection attempts should be made before we give up. Default: 5
+	MaxRetries int `json:"maxRetries"`
+	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
+	BaseDelaySeconds int `json:"baseDelaySeconds"`
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
+	MaxDelaySeconds int `json:"maxDelaySeconds"`
+	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
+	RetryMultiple float64 `json:"retryMultiple"`
 }
 
 // PersistConfig contains workflow persistence configuration
@@ -381,6 +436,8 @@ type PostgreSQLConfig struct {
 	SSLMode string `json:"sslMode,omitempty"`
 	// AzureToken specifies if the password should be fetched as an Azure token
 	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+	// AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+	AWSRDSToken *AWSRDSTokenConfig `json:"awsRDSToken,omitempty"`
 }
 
 type AzureTokenConfig struct {
@@ -388,6 +445,13 @@ type AzureTokenConfig struct {
 	Enabled bool `json:"enabled,omitempty"`
 	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
 	Scope string `json:"scope,omitempty"`
+}
+
+type AWSRDSTokenConfig struct {
+	// Enabled enables AWS RDS IAM auth token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Region is the AWS region of the RDS instance. Auto-detected if empty.
+	Region string `json:"region,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration

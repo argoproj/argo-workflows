@@ -3,6 +3,8 @@ package errors
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -13,6 +15,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -118,6 +121,18 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("ConnectionRefusedTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(ctx, connectionRefusedErr))
 	})
+	t.Run("GRPCClientRequestTimeout", func(t *testing.T) {
+		err := errors.New("Timeout: request did not complete within requested timeout")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
+	t.Run("GRPCClientRequestTimeoutInternalWrap", func(t *testing.T) {
+		inner := errors.New("Timeout: request did not complete within requested timeout")
+		assert.True(t, IsTransientErr(ctx, argoerrs.InternalWrapError(inner)))
+	})
+	t.Run("ClientGoRateLimiterWaitDeadline", func(t *testing.T) {
+		err := errors.New("client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
 }
 
 func TestIsTransientUErr(t *testing.T) {
@@ -146,5 +161,17 @@ func TestIsTransientUErr(t *testing.T) {
 	})
 	t.Run("EOFUErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(ctx, EOFUErr))
+	})
+	t.Run("ClientGoResponseBodyReadErr", func(t *testing.T) {
+		err := fmt.Errorf("unexpected error when reading response body. Please retry. Original error: %w", io.ErrUnexpectedEOF)
+		assert.True(t, IsTransientErr(ctx, err))
+	})
+	t.Run("ClientGoUnexpectedResponseBodyReadErr", func(t *testing.T) {
+		err := errors.New("unexpected error when reading response body")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
+	t.Run("ClientGoStreamResponseBodyReadErr", func(t *testing.T) {
+		err := errors.New("stream error when reading response body")
+		assert.True(t, IsTransientErr(ctx, err))
 	})
 }

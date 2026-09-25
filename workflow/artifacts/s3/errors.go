@@ -2,6 +2,9 @@ package s3
 
 import (
 	"context"
+	stderrors "errors"
+
+	"github.com/minio/minio-go/v7"
 
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -32,6 +35,16 @@ func isTransientS3Err(ctx context.Context, err error) bool {
 			log.WithError(err).Error(ctx, "Transient S3 error")
 			return true
 		}
+	}
+	// When the response body is not a parsable S3 XML document (e.g. a proxy
+	// or load balancer returned a bare 5xx response), minio-go sets Code to
+	// the raw HTTP status string ("503 Service Unavailable"), which does not
+	// match any entry in s3TransientErrorCodes. Fall back to StatusCode so
+	// 5xx responses are still treated as transient per S3 retry semantics.
+	var minioErr minio.ErrorResponse
+	if stderrors.As(err, &minioErr) && minioErr.StatusCode >= 500 && minioErr.StatusCode < 600 {
+		log.WithError(err).Error(ctx, "Transient S3 error")
+		return true
 	}
 	return errors.IsTransientErr(ctx, err)
 }

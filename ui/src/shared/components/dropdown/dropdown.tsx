@@ -6,7 +6,7 @@ import './dropdown.scss';
 
 export interface DropDownProps {
     isMenu?: boolean;
-    anchor: JSX.Element;
+    anchor: JSX.Element | ((opened: boolean) => JSX.Element);
     closeOnInsideClick?: boolean;
     children: ReactNode;
 }
@@ -81,10 +81,14 @@ export function DropDown({isMenu, anchor, closeOnInsideClick, children}: DropDow
             <div
                 className='argo-dropdown__anchor'
                 onClick={event => {
-                    open();
+                    if (opened) {
+                        setOpened(false);
+                    } else {
+                        open();
+                    }
                     event.stopPropagation();
                 }}>
-                {anchor}
+                {typeof anchor === 'function' ? anchor(opened) : anchor}
             </div>
             {createPortal(
                 <div className={classNames('argo-dropdown__content', {opened, 'is-menu': isMenu})} style={{top, left}} ref={contentRef}>

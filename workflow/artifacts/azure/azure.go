@@ -215,8 +215,10 @@ func (azblobDriver *ArtifactDriver) DownloadDirectory(ctx context.Context, conta
 			continue
 		}
 
-		relKeyPath := strings.TrimPrefix(file, artifact.Azure.Blob)
-		localPath := filepath.Join(path, relKeyPath)
+		localPath, err := artifactscommon.LocalPathForObject(path, artifact.Azure.Blob, file)
+		if err != nil {
+			return err
+		}
 
 		err = DownloadFile(ctx, containerClient, file, localPath)
 		if err != nil {
@@ -301,6 +303,26 @@ func (azblobDriver *ArtifactDriver) Save(ctx context.Context, path string, outpu
 		}
 	}
 
+	return nil
+}
+
+// SaveStream saves an artifact from an io.Reader to Azure Blob Storage
+func (azblobDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("endpoint", outputArtifact.Azure.Endpoint).
+		WithField("container", outputArtifact.Azure.Container).
+		WithField("blob", outputArtifact.Azure.Blob).
+		Info(ctx, "Streaming to Azure Blob Storage")
+
+	containerClient, err := azblobDriver.newAzureContainerClient(ctx)
+	if err != nil {
+		return fmt.Errorf("unable to create Azure Blob Container client for %s: %w", outputArtifact.Azure.Blob, err)
+	}
+
+	blobClient := containerClient.NewBlockBlobClient(outputArtifact.Azure.Blob)
+	if _, err = blobClient.UploadStream(ctx, reader, nil); err != nil {
+		return fmt.Errorf("unable to upload stream to Azure blob %s: %w", outputArtifact.Azure.Blob, err)
+	}
 	return nil
 }
 

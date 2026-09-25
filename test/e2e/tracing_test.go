@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -27,7 +28,7 @@ type TracingSuite struct {
 
 // findLastWorkflowSpan finds the last workflow span in the list (most recent)
 func findLastWorkflowSpan(spans []fixtures.CollectedSpan) *fixtures.CollectedSpan {
-	for i := len(spans) - 1; i >= 0; i-- {
+	for i := range slices.Backward(spans) {
 		if spans[i].Name == "workflow" {
 			return &spans[i]
 		}

@@ -17,10 +17,19 @@ func NewInterface(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *Interface {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &Interface{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -73,7 +82,7 @@ type Interface_Authorize_Call struct {
 
 // Authorize is a helper method to define mock.On call
 //   - authorization string
-func (_e *Interface_Expecter) Authorize(authorization interface{}) *Interface_Authorize_Call {
+func (_e *Interface_Expecter) Authorize(authorization any) *Interface_Authorize_Call {
 	return &Interface_Authorize_Call{Call: _e.mock.On("Authorize", authorization)}
 }
 
@@ -100,6 +109,50 @@ func (_c *Interface_Authorize_Call) RunAndReturn(run func(authorization string) 
 	return _c
 }
 
+// ClientID provides a mock function for the type Interface
+func (_mock *Interface) ClientID() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for ClientID")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// Interface_ClientID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClientID'
+type Interface_ClientID_Call struct {
+	*mock.Call
+}
+
+// ClientID is a helper method to define mock.On call
+func (_e *Interface_Expecter) ClientID() *Interface_ClientID_Call {
+	return &Interface_ClientID_Call{Call: _e.mock.On("ClientID")}
+}
+
+func (_c *Interface_ClientID_Call) Run(run func()) *Interface_ClientID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *Interface_ClientID_Call) Return(s string) *Interface_ClientID_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *Interface_ClientID_Call) RunAndReturn(run func() string) *Interface_ClientID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // HandleCallback provides a mock function for the type Interface
 func (_mock *Interface) HandleCallback(writer http.ResponseWriter, request *http.Request) {
 	_mock.Called(writer, request)
@@ -114,7 +167,7 @@ type Interface_HandleCallback_Call struct {
 // HandleCallback is a helper method to define mock.On call
 //   - writer http.ResponseWriter
 //   - request *http.Request
-func (_e *Interface_Expecter) HandleCallback(writer interface{}, request interface{}) *Interface_HandleCallback_Call {
+func (_e *Interface_Expecter) HandleCallback(writer any, request any) *Interface_HandleCallback_Call {
 	return &Interface_HandleCallback_Call{Call: _e.mock.On("HandleCallback", writer, request)}
 }
 
@@ -160,7 +213,7 @@ type Interface_HandleRedirect_Call struct {
 // HandleRedirect is a helper method to define mock.On call
 //   - writer http.ResponseWriter
 //   - request *http.Request
-func (_e *Interface_Expecter) HandleRedirect(writer interface{}, request interface{}) *Interface_HandleRedirect_Call {
+func (_e *Interface_Expecter) HandleRedirect(writer any, request any) *Interface_HandleRedirect_Call {
 	return &Interface_HandleRedirect_Call{Call: _e.mock.On("HandleRedirect", writer, request)}
 }
 
@@ -232,6 +285,94 @@ func (_c *Interface_IsRBACEnabled_Call) Return(b bool) *Interface_IsRBACEnabled_
 }
 
 func (_c *Interface_IsRBACEnabled_Call) RunAndReturn(run func() bool) *Interface_IsRBACEnabled_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// LogoutRedirectURL provides a mock function for the type Interface
+func (_mock *Interface) LogoutRedirectURL() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for LogoutRedirectURL")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// Interface_LogoutRedirectURL_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LogoutRedirectURL'
+type Interface_LogoutRedirectURL_Call struct {
+	*mock.Call
+}
+
+// LogoutRedirectURL is a helper method to define mock.On call
+func (_e *Interface_Expecter) LogoutRedirectURL() *Interface_LogoutRedirectURL_Call {
+	return &Interface_LogoutRedirectURL_Call{Call: _e.mock.On("LogoutRedirectURL")}
+}
+
+func (_c *Interface_LogoutRedirectURL_Call) Run(run func()) *Interface_LogoutRedirectURL_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *Interface_LogoutRedirectURL_Call) Return(s string) *Interface_LogoutRedirectURL_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *Interface_LogoutRedirectURL_Call) RunAndReturn(run func() string) *Interface_LogoutRedirectURL_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// LogoutURL provides a mock function for the type Interface
+func (_mock *Interface) LogoutURL() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for LogoutURL")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// Interface_LogoutURL_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LogoutURL'
+type Interface_LogoutURL_Call struct {
+	*mock.Call
+}
+
+// LogoutURL is a helper method to define mock.On call
+func (_e *Interface_Expecter) LogoutURL() *Interface_LogoutURL_Call {
+	return &Interface_LogoutURL_Call{Call: _e.mock.On("LogoutURL")}
+}
+
+func (_c *Interface_LogoutURL_Call) Run(run func()) *Interface_LogoutURL_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *Interface_LogoutURL_Call) Return(s string) *Interface_LogoutURL_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *Interface_LogoutURL_Call) RunAndReturn(run func() string) *Interface_LogoutURL_Call {
 	_c.Call.Return(run)
 	return _c
 }

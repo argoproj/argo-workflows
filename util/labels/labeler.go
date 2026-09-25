@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// label the object with the first non-empty value, if all value are empty, it is not set at all
+// Label labels the object with the first non-empty value; if all values are empty, it is not set at all.
 func Label(obj metav1.Object, name string, values ...string) {
 	for _, value := range values {
 		if value == "" {

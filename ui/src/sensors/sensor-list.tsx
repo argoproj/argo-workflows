@@ -26,7 +26,11 @@ import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
 import {statusIconClasses} from './utils';
 
-const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argoproj.github.io/argo-events/concepts/sensor/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function SensorList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -106,7 +110,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} extraNamespaces={nsUtils.getUniqueNamespaces(sensors)} />]
             }}>
             <ErrorNotice error={error} />
             {loading && <Loading />}

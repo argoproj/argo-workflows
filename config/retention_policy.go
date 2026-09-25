@@ -1,6 +1,6 @@
 package config
 
-// Workflow retention by number of workflows
+// RetentionPolicy configures workflow retention by number of workflows.
 type RetentionPolicy struct {
 	// Completed is the number of completed Workflows to retain
 	Completed int `json:"completed,omitempty"`

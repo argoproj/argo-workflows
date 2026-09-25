@@ -107,8 +107,7 @@ func NewSubmitCommand() *cobra.Command {
 	// Only complete files with appropriate extension.
 	ctx, _, err := cmdutil.ContextWithLogger(command, string(logging.Info), string(logging.Text))
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create submit logger")
-		os.Exit(1)
+		cmdutil.FatalBootstrap(string(logging.Text), err, "Failed to create submit logger")
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	err = command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})

@@ -1,0 +1,36 @@
+# An expression can detect a skipped output's absence and choose a fallback with `??`.
+#
+# `producer` never runs (when: "false") and its output parameter `msg` declares NO default, so it
+# resolves to an absent (nil) optional rather than an empty string. The DAG's own output `result` is
+# computed by a ValueFrom.Expression that uses expr-lang's nil-coalescing operator `??`, letting the
+# author decide the fallback. A real empty output ("") would NOT trigger `??` — only true absence does.
+#
+# Expected: the workflow's output parameter `result` resolves to "expr-fallback".
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: expression-fallback-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: producer
+            template: produce
+            when: "false"                      # -> Skipped, produces no real output
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              expression: "tasks.producer.outputs.parameters.msg ?? 'expr-fallback'"
+
+    - name: produce
+      outputs:
+        parameters:
+          - name: msg
+            valueFrom:
+              path: /tmp/out.txt               # NOTE: no default -> absent (nil) when skipped
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "real-value", "/tmp/out.txt"]

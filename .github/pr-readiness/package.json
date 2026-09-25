@@ -1,0 +1,15 @@
+{
+  "name": "pr-readiness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PR Readiness Helper bot logic. Runs via actions/github-script (Node 24 strips the types at runtime); type-checked and unit-tested in CI. No runtime dependencies.",
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.0"
+  }
+}

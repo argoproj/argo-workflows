@@ -13,6 +13,9 @@ import (
 
 type Controller interface {
 	Get(context.Context) (*Config, error)
+	// Parse returns the configuration held in an already-fetched copy of the configmap,
+	// e.g. one delivered to an informer event handler.
+	Parse(cm *apiv1.ConfigMap) (*Config, error)
 	GetNamespace() string
 	GetName() string
 }
@@ -54,12 +57,16 @@ func parseConfigMap(cm *apiv1.ConfigMap, config *Config) error {
 }
 
 func (cc *controller) Get(ctx context.Context) (*Config, error) {
-	config := &Config{}
 	cmClient := cc.kubeclientset.CoreV1().ConfigMaps(cc.namespace)
 	cm, err := cmClient.Get(ctx, cc.configMap, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
+	return cc.Parse(cm)
+}
+
+func (cc *controller) Parse(cm *apiv1.ConfigMap) (*Config, error) {
+	config := &Config{}
 	return config, parseConfigMap(cm, config)
 }
 
