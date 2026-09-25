@@ -470,30 +470,86 @@ func buildTarGz(t *testing.T, path string, entries []struct {
 
 func TestUntarRootDirEntryIsNoOp(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	tmpDir := t.TempDir()
-	tarPath := filepath.Join(tmpDir, "dataset.tar.gz")
-	destDir := filepath.Join(tmpDir, "dest")
 
-	buildTarGz(t, tarPath, []struct {
-		header  tar.Header
-		content string
-	}{
-		{header: tar.Header{Name: "./", Typeflag: tar.TypeDir, Mode: 0o755}},
-		{header: tar.Header{Name: "./file.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "hello"},
-		{header: tar.Header{Name: "./subdir/", Typeflag: tar.TypeDir, Mode: 0o755}},
-		{header: tar.Header{Name: "./subdir/nested.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "nested"},
-	})
+	// rootDirEntryNames are the spellings tar writers use for the archive root:
+	// GNU/BSD `tar -C <dir> .` writes "./", Python's tarfile.add(".") writes ".".
+	var rootDirEntryNames = []string{"./", "."}
 
-	err := untar(ctx, tarPath, destDir)
-	require.NoError(t, err)
+	for _, rootName := range rootDirEntryNames {
+		t.Run(rootName, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			tarPath := filepath.Join(tmpDir, "dataset.tar.gz")
+			destDir := filepath.Join(tmpDir, "dest")
 
-	content, err := os.ReadFile(filepath.Join(destDir, "file.txt"))
-	require.NoError(t, err)
-	assert.Equal(t, "hello", string(content))
+			buildTarGz(t, tarPath, []struct {
+				header  tar.Header
+				content string
+			}{
+				{header: tar.Header{Name: rootName, Typeflag: tar.TypeDir, Mode: 0o755}},
+				{header: tar.Header{Name: "./file.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "hello"},
+				{header: tar.Header{Name: "./subdir/", Typeflag: tar.TypeDir, Mode: 0o755}},
+				{header: tar.Header{Name: "./subdir/nested.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "nested"},
+			})
 
-	content, err = os.ReadFile(filepath.Join(destDir, "subdir", "nested.txt"))
-	require.NoError(t, err)
-	assert.Equal(t, "nested", string(content))
+			err := untar(ctx, tarPath, destDir)
+			require.NoError(t, err)
+
+			// The root entry must not add anything: dest holds exactly the archive's children.
+			entries, err := os.ReadDir(destDir)
+			require.NoError(t, err)
+			names := make([]string, 0, len(entries))
+			for _, e := range entries {
+				names = append(names, e.Name())
+			}
+			assert.Equal(t, []string{"file.txt", "subdir"}, names)
+
+			content, err := os.ReadFile(filepath.Join(destDir, "file.txt"))
+			require.NoError(t, err)
+			assert.Equal(t, "hello", string(content))
+
+			content, err = os.ReadFile(filepath.Join(destDir, "subdir", "nested.txt"))
+			require.NoError(t, err)
+			assert.Equal(t, "nested", string(content))
+		})
+	}
+}
+
+// A `tar -C <dir> .` archive of a directory holding a single file goes through
+// unpack()'s single-entry branch, which renames that entry to destPath. This
+// pins the existing behaviour: dest becomes the file, not a directory holding it.
+func TestUntarRootDirEntrySingleChild(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// rootDirEntryNames are the spellings tar writers use for the archive root:
+	// GNU/BSD `tar -C <dir> .` writes "./", Python's tarfile.add(".") writes ".".
+	var rootDirEntryNames = []string{"./", "."}
+
+	for _, rootName := range rootDirEntryNames {
+		t.Run(rootName, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			tarPath := filepath.Join(tmpDir, "dataset.tar.gz")
+			destDir := filepath.Join(tmpDir, "dest")
+
+			buildTarGz(t, tarPath, []struct {
+				header  tar.Header
+				content string
+			}{
+				{header: tar.Header{Name: rootName, Typeflag: tar.TypeDir, Mode: 0o755}},
+				{header: tar.Header{Name: "./file.txt", Typeflag: tar.TypeReg, Mode: 0o644}, content: "hello"},
+			})
+
+			err := untar(ctx, tarPath, destDir)
+			require.NoError(t, err)
+
+			fi, err := os.Stat(destDir)
+			require.NoError(t, err)
+			assert.True(t, fi.Mode().IsRegular(), "dest should be the single extracted file")
+
+			content, err := os.ReadFile(destDir)
+			require.NoError(t, err)
+			assert.Equal(t, "hello", string(content))
+		})
+	}
 }
 
 func TestUntarRootEntryNonDirRejected(t *testing.T) {
@@ -503,15 +559,18 @@ func TestUntarRootEntryNonDirRejected(t *testing.T) {
 		name    string
 		header  tar.Header
 		content string // tar disallows body data on non-regular entries (e.g. symlinks)
+		wantErr string
 	}{
 		{
 			name:    "regular file at root",
 			header:  tar.Header{Name: ".", Typeflag: tar.TypeReg, Mode: 0o644},
 			content: "pwned",
+			wantErr: "illegal file path: .",
 		},
 		{
-			name:   "symlink at root",
-			header: tar.Header{Name: ".", Typeflag: tar.TypeSymlink, Linkname: "/etc/passwd", Mode: 0o777},
+			name:    "symlink at root",
+			header:  tar.Header{Name: ".", Typeflag: tar.TypeSymlink, Linkname: "/etc/passwd", Mode: 0o777},
+			wantErr: "illegal file path: .",
 		},
 	}
 
@@ -529,8 +588,9 @@ func TestUntarRootEntryNonDirRejected(t *testing.T) {
 			})
 
 			err := untar(ctx, tarPath, destDir)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "illegal file path")
+			// Exact match: later checks in untar also reject these entries, with a
+			// different message, so a substring match would not catch a regression here.
+			require.EqualError(t, err, tt.wantErr)
 		})
 	}
 }
