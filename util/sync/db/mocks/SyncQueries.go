@@ -1291,7 +1291,7 @@ type SyncQueries_RemoveFromQueue_Call struct {
 //   - semaphoreName string
 //   - holderKey string
 //   - controllerName string
-func (_e *SyncQueries_Expecter) RemoveFromQueue(ctx interface{}, semaphoreName interface{}, holderKey interface{}, controllerName any) *SyncQueries_RemoveFromQueue_Call {
+func (_e *SyncQueries_Expecter) RemoveFromQueue(ctx interface{}, semaphoreName interface{}, holderKey interface{}, controllerName interface{}) *SyncQueries_RemoveFromQueue_Call {
 	return &SyncQueries_RemoveFromQueue_Call{Call: _e.mock.On("RemoveFromQueue", ctx, semaphoreName, holderKey, controllerName)}
 }
 
