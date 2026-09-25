@@ -17,7 +17,7 @@ import {Artifact, NodeStatus, Workflow} from '../../../shared/models';
 import {getPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
-import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {getMainContainerNames, getResolvedTemplates} from '../../../shared/template-resolution';
 import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
 import './workflow-node-info.scss';
@@ -173,7 +173,7 @@ function WorkflowNodeSummary(props: Props) {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
-    const showLogs = (x = 'main') => props.onShowContainerLogs(props.node.id, x);
+    const showLogs = () => props.onShowContainerLogs(props.node.id, getMainContainerNames(props.workflow, props.node)[0]);
 
     return (
         <div className='white-box'>
