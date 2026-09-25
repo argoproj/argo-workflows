@@ -249,7 +249,6 @@ Common environment variables used in examples:
 ## Documentation
 
 - [Go SDK Guide](../../docs/go-sdk-guide.md) - Comprehensive SDK documentation
-- [Migration Guide](../../docs/go-sdk-migration-guide.md) - Migrating to v3.7+
 - [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v4)
 - [Argo Workflows Docs](https://argo-workflows.readthedocs.io/)
 
