@@ -55,3 +55,29 @@ data:
       parallelism: 3
 
 ```
+
+## Namespace-Level Default Workflow Values
+
+Defaults can also be set per namespace, in a ConfigMap named `workflow-defaults` in the same namespace as the Workflows they apply to. The value under the `workflowDefaults` key has the same shape as the one in the controller config map, so the same document works in either place.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-defaults
+  namespace: my-namespace
+data:
+  workflowDefaults: |
+    spec:
+      serviceAccountName: my-namespace-sa
+      ttlStrategy:
+        secondsAfterCompletion: 60
+```
+
+A namespace can have at most one, because the name is fixed and Kubernetes already guarantees that names are unique within a namespace.
+
+Values are merged rather than replaced, and the more specific value wins:
+
+`Workflow` > namespace `workflow-defaults` > controller `workflowDefaults`
+
+A namespace without the ConfigMap has no namespace-level defaults. A ConfigMap that exists but is missing the `workflowDefaults` key, or whose value is not valid YAML, is an error rather than being ignored, so that defaults never silently fail to apply.

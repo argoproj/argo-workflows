@@ -52,6 +52,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
@@ -301,6 +302,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
+		namespaceDefaults:          namespacedefaults.New(kube),
 		cliExecutorLogFormat:       "text",
 		kubeclientset:              kube,
 		dynamicInterface:           dynamicClient,
@@ -663,7 +665,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()))
 		defer cancel()
 		workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-		err := controller.setWorkflowDefaults(workflow)
+		err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 		require.NoError(t, err)
 		assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(helloWorldWf))
 	})
@@ -671,7 +673,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		cancel, controller := newControllerWithDefaults(logging.TestContext(t.Context()))
 		defer cancel()
 		defaultWorkflowSpec := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-		err := controller.setWorkflowDefaults(defaultWorkflowSpec)
+		err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), defaultWorkflowSpec)
 		require.NoError(t, err)
 		assert.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
 		assert.NotEqual(t, defaultWorkflowSpec, wfv1.MustUnmarshalWorkflow(helloWorldWf))
@@ -687,7 +689,7 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
 	assert.Nil(t, workflow.Spec.TTLStrategy)
 	assert.Contains(t, workflow.Labels, "foo")
-	err := controller.setWorkflowDefaults(workflow)
+	err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 	require.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWf))
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
@@ -704,7 +706,7 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWfTTL)
 	var ten int32 = 10
 	var five int32 = 5
-	err := controller.setWorkflowDefaults(workflow)
+	err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 	require.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWfTTL))
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
@@ -720,7 +722,7 @@ func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
 	cancel, controller := newControllerWithDefaultsVolumeClaimTemplate(logging.TestContext(t.Context()))
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
-	err := controller.setWorkflowDefaults(workflow)
+	err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 	require.NoError(t, err)
 	assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultVolumeClaimTemplateWf))
 }
@@ -1966,4 +1968,36 @@ func TestExpireCompletedVersions(t *testing.T) {
 	assert.False(t, completedWf)
 	outdated, _ = controller.isOutdated(ctx, &metav1.ObjectMeta{UID: inFlight.UID, ResourceVersion: "99"})
 	assert.True(t, outdated, "in-flight records must not expire")
+}
+
+func TestNamespaceWorkflowDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// newControllerWithDefaults sets hostNetwork: true at the controller level. The
+	// namespace defaults below set it to false, so the assertion on it distinguishes
+	// which layer wins rather than merely proving that some default was applied.
+	cancel, controller := newControllerWithDefaults(ctx)
+	defer cancel()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: namespacedefaults.ConfigMapName, Namespace: "default"},
+		Data: map[string]string{
+			namespacedefaults.Key: "spec:\n  serviceAccountName: from-namespace\n  entrypoint: from-namespace\n  hostNetwork: false\n",
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	workflow.Namespace = "default"
+	require.NoError(t, controller.setWorkflowDefaults(ctx, workflow))
+
+	// A field only the namespace sets is applied.
+	assert.Equal(t, "from-namespace", workflow.Spec.ServiceAccountName)
+
+	// A field both layers set takes the namespace value, not the controller one.
+	require.NotNil(t, workflow.Spec.HostNetwork)
+	assert.False(t, *workflow.Spec.HostNetwork, "namespace defaults must win over controller defaults")
+
+	// A field the workflow itself sets is untouched by either layer.
+	assert.Equal(t, wfv1.MustUnmarshalWorkflow(helloWorldWf).Spec.Entrypoint, workflow.Spec.Entrypoint,
+		"the workflow's own value must win over namespace defaults")
 }

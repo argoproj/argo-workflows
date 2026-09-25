@@ -4564,7 +4564,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		ctx = woc.markWorkflowError(ctx, err)
 		return ctx, err
 	default:
-		err := woc.controller.setWorkflowDefaults(woc.wf)
+		err := woc.controller.setWorkflowDefaults(ctx, woc.wf)
 		if err != nil {
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
