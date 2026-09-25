@@ -76,7 +76,7 @@ func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v usqldb.MySQLVari
 	return NewWorkflowArchive(proxy, "test", "", instanceid.NewService(""))
 }
 
-// TestMySQLListWorkflows verifies that JSON_EXTRACT/JSON_UNQUOTE queries in
+// TestMySQLListWorkflows verifies that JSON_EXTRACT/JSON_UNQUOTE queries and paging in
 // ListWorkflows execute correctly against both MySQL and MariaDB.
 func TestMySQLListWorkflows(t *testing.T) {
 	for name, variant := range usqldb.MySQLVariants {
@@ -127,6 +127,8 @@ func TestMySQLListWorkflows(t *testing.T) {
 			assert.Equal(t, new(true), wf.Spec.Suspend)
 			assert.Equal(t, "hello", wf.Spec.Arguments.Parameters[0].Value.String())
 			assert.Equal(t, wfv1.EstimatedDuration(30), wf.Status.EstimatedDuration)
+
+			testListWorkflowsPaging(ctx, t, archive)
 		})
 	}
 }
