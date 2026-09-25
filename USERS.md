@@ -83,6 +83,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Enso Finance](https://enso.finance/)
 1. [Equinor](https://www.equinor.com/)
 1. [Elastic](https://www.elastic.co/)
+1. [EvenUp](https://evenup.ai)
 1. [Fairwinds](https://fairwinds.com/)
 1. [FOLIO](http://corp.folio-sec.com/)
 1. [freee](https://corp.freee.co.jp/en/company/)
