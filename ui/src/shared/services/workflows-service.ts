@@ -263,10 +263,10 @@ export const WorkflowsService = {
             return getLogsFromArtifact();
         }
 
-        // return archived log if main container is finished and has artifact
+        // return archived log if container is finished and has artifact
         return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
             switchMap(isPendingOrRunning => {
-                if (!isPendingOrRunning && hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
+                if (!isPendingOrRunning && hasArtifactLogs(workflow, nodeId, container)) {
                     return getLogsFromArtifact().pipe(catchError(getLogsFromCluster));
                 }
                 return getLogsFromCluster().pipe(catchError(getLogsFromArtifact));

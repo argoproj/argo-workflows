@@ -8,7 +8,7 @@ To enable automatic pipeline logging, you need to configure `archiveLogs` at wor
 
 Archive logs follows priorities:
 
-workflow-controller config (on) > workflow spec (on/off) > template (on/off)
+workflow-controller config (on) > template (on/off) > workflow spec (on/off)
 
 | Controller Config Map | Workflow Spec | Template | are we archiving logs? |
 |-----------------------|---------------|----------|------------------------|
@@ -61,6 +61,54 @@ spec:
     archiveLocation:
       archiveLogs: true
 ```
+
+## Archiving System Container Logs
+
+By default, only the `main` container's logs are archived.
+In the legacy pod layout, Workflow Pods also run Argo's own system containers — an `init` container (which loads input artifacts) and a `wait` container (which saves outputs and logs) — whose logs are normally not archived.
+
+Set `archiveSystemContainerLogs: true` to also archive the `init` and `wait` container logs.
+They are stored alongside `main-logs` as artifacts named `init-logs` and `wait-logs`, and can be viewed from the Argo UI for garbage-collected Pods.
+This is mainly useful for inspecting what the system containers did after the Pod is gone, such as debugging artifact/output upload failures in `wait`, or reviewing which input artifacts the `init` container loaded.
+Note that in the legacy layout a *failing* `init` container is not captured (see [Limitations](#limitations) below).
+
+`archiveSystemContainerLogs` is controlled separately from `archiveLogs` so that you only pay to store these extra logs when you need them.
+It can be set at the workflow-controller config-map, workflow spec, or template level, and follows the same priorities as `archiveLogs`, shown in the table at the top of this page.
+Note that enabling it in the workflow-controller config-map turns it on for every workflow, and individual workflows and templates cannot then disable it.
+
+The two settings are independent: you can archive the system container logs without archiving the `main` container logs (`archiveLogs: false`, `archiveSystemContainerLogs: true`), and vice versa.
+
+In [init-less pod mode](initless-pod.md) there is no separate `init` and `wait` container — a single `supervisor` container performs both roles.
+In that mode `archiveSystemContainerLogs: true` archives the supervisor's log as a single artifact named `supervisor-logs` instead of `init-logs` and `wait-logs`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: archive-location-
+spec:
+  entrypoint: hello-world
+  templates:
+  - name: hello-world
+    container:
+      image: busybox
+      command: [echo]
+      args: ["hello world"]
+    archiveLocation:
+      archiveLogs: true
+      archiveSystemContainerLogs: true
+```
+
+### Limitations
+
+* **Legacy layout only: `init` failures are not archived.**
+  If the `init` container fails, the `wait` container never starts, so the archiving step does not run and `init-logs` is not produced.
+  Kubernetes runs init containers sequentially before the main containers, so this cannot be worked around.
+  The init-less layout is not affected: the `supervisor` container archives `supervisor-logs` even when loading input artifacts fails.
+* **The system container log is a best-effort snapshot.**
+  The `wait` container, or `supervisor` in the init-less layout, archives its own log, so the few final lines produced while it is uploading its own log (and any work that happens after, such as reporting outputs) are not included.
+* **Abrupt termination is not archived.**
+  If the `wait` container, or `supervisor` in the init-less layout, is killed (for example `OOMKilled` or node eviction), the archiving step does not run.
 
 ## Suggested alternatives
 
