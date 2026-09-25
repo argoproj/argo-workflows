@@ -117,7 +117,11 @@ func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionPr
 		proxy.retryMultiple = 1.0
 	}
 
-	if err := proxy.connect(ctx); err != nil {
+	// Establish the initial connection with the same retry and backoff policy
+	// as reconnections, so that components don't crash-loop ("flap") while the
+	// database is still starting up. Non-transient errors (e.g. bad
+	// configuration or credentials) still fail fast.
+	if err := proxy.Reconnect(ctx); err != nil {
 		return nil, fmt.Errorf("failed to create initial database session: %w", err)
 	}
 
@@ -190,6 +194,8 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 
 	err = sess.Ping()
 	if err != nil {
+		// Close the unusable session so retries don't leak connection pools.
+		sess.Close()
 		return err
 	}
 	sp.closed = false
