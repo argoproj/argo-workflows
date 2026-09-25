@@ -115,10 +115,10 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 // PostgreSQL session builder so the password and token paths cannot drift apart.
 func postgresSSLMode(cfg *config.PostgreSQLConfig) string {
 	switch {
-	case !cfg.SSL:
-		return "disable"
 	case cfg.SSLMode != "":
 		return cfg.SSLMode
+	case !cfg.SSL:
+		return "disable"
 	default:
 		// Preserve the default behavior of the upper/db postgresql adapter,
 		// which used sslmode=prefer. lib/pq defaults to sslmode=require.

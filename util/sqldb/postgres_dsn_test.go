@@ -109,7 +109,7 @@ func TestPostgresSSLMode(t *testing.T) {
 		want string
 	}{
 		{"ssl disabled", false, "", "disable"},
-		{"ssl disabled ignores mode", false, "require", "disable"},
+		{"explicit mode overrides ssl disabled", false, "require", "require"},
 		{"explicit mode", true, "verify-ca", "verify-ca"},
 		{"adapter default preserved", true, "", "prefer"},
 	} {
