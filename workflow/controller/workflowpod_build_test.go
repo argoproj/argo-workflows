@@ -44,6 +44,7 @@ type stubPodBuilderDeps struct {
 	executorImage     string
 	archiveLogs       bool
 	initContainerName string // name of the init container legacyLayout asks for
+	lookupOptions     []entrypoint.Options
 
 	// gotTimeoutNow records the now value build threads into checkTemplateTimeouts,
 	// so a test can assert build uses the captured snapshot time rather than the
@@ -59,7 +60,8 @@ func newStubDeps() *stubPodBuilderDeps {
 }
 
 // lookupImage returns a fixed entrypoint so build never reaches the network.
-func (s *stubPodBuilderDeps) lookupImage(_ context.Context, _ string, _ entrypoint.Options) (*entrypoint.Image, error) {
+func (s *stubPodBuilderDeps) lookupImage(_ context.Context, _ string, options entrypoint.Options) (*entrypoint.Image, error) {
+	s.lookupOptions = append(s.lookupOptions, options)
 	return &entrypoint.Image{Entrypoint: []string{"/stub-entrypoint"}, Cmd: []string{"stub-cmd"}}, nil
 }
 
@@ -164,6 +166,21 @@ func TestBuild_ThreadsSnapshotNowIntoTimeout(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, snapshotNow, deps.gotTimeoutNow,
 		"build must pass the captured snapshot time into checkTemplateTimeouts, not the live wall-clock")
+}
+
+func TestBuild_ForwardsImagePullPolicyToEntrypointLookup(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpl := simpleContainerTemplate()
+	tmpl.Container.Command = nil
+	main := tmpl.Container.DeepCopy()
+	main.ImagePullPolicy = apiv1.PullAlways
+
+	deps := newStubDeps()
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
+	_, err := pb.build(ctx)
+	require.NoError(t, err)
+	require.Len(t, deps.lookupOptions, 1)
+	assert.Equal(t, apiv1.PullAlways, deps.lookupOptions[0].ImagePullPolicy)
 }
 
 // newTestPodBuilder constructs a podBuilder entirely from literals — no woc, no
