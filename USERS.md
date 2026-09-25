@@ -131,6 +131,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
 1. [MariaDB](https://mariadb.com/)
 1. [Marmalade](https://www.marmalade.co/)
+1. [Massdriver](https://www.massdriver.cloud/)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Maya](https://www.maya.ph/)
 1. [Microba](https://www.microba.com/)
