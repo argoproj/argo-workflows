@@ -1,5 +1,10 @@
 import {Arguments, kubernetes, WorkflowTemplateRef} from './index';
 
+// labels that Argo Events puts on the resources its Sensor triggers create
+export const eventsLabels = {
+    sensor: 'events.argoproj.io/sensor'
+};
+
 export interface Event {
     metadata: kubernetes.ObjectMeta;
     involvedObject: {
