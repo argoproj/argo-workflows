@@ -267,6 +267,8 @@ artifacts:
       endpoint: s3.amazonaws.com
       bucket: my-s3-bucket
       key: path/in/bucket/my-output-artifact.tgz
+      # Optional S3 storage class, for example STANDARD_IA or INTELLIGENT_TIERING.
+      # storageClass: INTELLIGENT_TIERING
       # The following fields are secret selectors.
       # They reference the k8s secret named 'my-s3-credentials'.
       # This secret is expected to have the keys 'accessKey' and 'secretKey',
