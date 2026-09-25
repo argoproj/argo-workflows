@@ -252,7 +252,7 @@ func TestLockMetricsDatabase(t *testing.T) {
 			require.NoError(t, err)
 			defer cleanup()
 
-			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
 			require.NoError(t, err)
 
 			mgr := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)

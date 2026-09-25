@@ -53,7 +53,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			logger.Info(ctx, "Persistence Session created successfully")
 			wfc.sessionProxy = sessionProxy
 		}
-		sqldb.ConfigureDBSession(wfc.sessionProxy.Session(), persistence.ConnectionPool)
+		sqldb.ConfigureDBSession(wfc.sessionProxy.Session(ctx), persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
 			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), tableName)
 			if err != nil {
@@ -105,7 +105,7 @@ func (wfc *WorkflowController) initDB(ctx context.Context) error {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.sessionProxy.Session(), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType())
+	return persist.Migrate(ctx, wfc.sessionProxy.Session(ctx), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType())
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {
