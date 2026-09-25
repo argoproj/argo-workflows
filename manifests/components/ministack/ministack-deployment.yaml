@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ministack
+  labels:
+    app: ministack
+spec:
+  selector:
+    matchLabels:
+      app: ministack
+  template:
+    metadata:
+      labels:
+        app: ministack
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: main
+          image: ministackorg/ministack:1.5.14@sha256:62c0ac878ea843596c481c2cf9a6d1f12d6e310209b50e0ab60fde3f38022c98
+          ports:
+            - containerPort: 4566
+              name: api
+          lifecycle:
+            postStart:
+              exec:
+                # The bucket the artifact repository expects. Retried because the
+                # server binds the port before it finishes starting, and kept
+                # non-fatal so a slow start cannot kill the container.
+                command:
+                  - sh
+                  - -c
+                  - for i in $(seq 1 60); do awslocal s3 mb s3://my-bucket >/dev/null 2>&1 && break; sleep 1; done; exit 0
+          readinessProbe:
+            httpGet:
+              path: /_ministack/health
+              port: 4566
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /_ministack/health
+              port: 4566
+            initialDelaySeconds: 5
+            periodSeconds: 10

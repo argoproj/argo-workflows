@@ -1,0 +1,5 @@
+$patch: delete
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
