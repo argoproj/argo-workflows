@@ -68,7 +68,7 @@ func tokenFilename(name string) string {
 func getPluginNames(ctx context.Context) []string {
 	var names []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginNames)), &names); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin names")
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to unmarshal plugin names")
 		os.Exit(1)
 	}
 	return names
@@ -77,7 +77,7 @@ func getPluginNames(ctx context.Context) []string {
 func getPluginAddresses(ctx context.Context) []string {
 	var addresses []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin addresses")
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to unmarshal plugin addresses")
 		os.Exit(1)
 	}
 	return addresses
@@ -115,12 +115,12 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 
 	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
+		logger.Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
 		os.Exit(1)
 	}
 	workflowUID, ok := os.LookupEnv(common.EnvVarWorkflowUID)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
+		logger.Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
 		os.Exit(1)
 	}
 
@@ -135,7 +135,7 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 			Info(ctx, "loading token file for plugin")
 		data, err := os.ReadFile(filename)
 		if err != nil {
-			logger.WithError(err).WithFatal().Error(ctx, "Failed to read token file")
+			logger.WithError(err).Error(ctx, "Failed to read token file")
 			os.Exit(1)
 		}
 		plugins = append(plugins, rpc.New(address, string(data)))

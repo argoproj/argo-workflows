@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -123,8 +124,8 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(ctx context.Context
 		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
 		childNodeName, err := woc.wf.Status.Nodes.GetName(child)
 		if err != nil {
-			woc.log.WithField("nodeID", child).WithFatal().Error(ctx, "was unable to get child node name for nodeID")
-			panic("unable to obtain child node name")
+			woc.log.WithField("nodeID", child).Error(ctx, "was unable to get child node name for nodeID")
+			os.Exit(1)
 		}
 		if woc.nodeRequiresTaskSetReconciliation(ctx, childNodeName) {
 			return true
