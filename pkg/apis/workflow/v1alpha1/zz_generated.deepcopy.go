@@ -141,6 +141,11 @@ func (in *Artifact) DeepCopyInto(out *Artifact) {
 		*out = new(ArtifactGC)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Description != nil {
+		in, out := &in.Description, &out.Description
+		*out = new(AnyString)
+		**out = **in
+	}
 	return
 }
 
