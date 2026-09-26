@@ -2,7 +2,7 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
 import * as links from './links';
-import {Tooltip} from './tooltip';
+import {Tooltip, TooltipIcon} from './tooltip';
 
 // The global jest.config.js aliases react-markdown to a fragment stub, which
 // hides regressions in how the wrapper wires plugins and the <a> override.
@@ -113,5 +113,57 @@ describe('Tooltip', () => {
         expect(spy).not.toHaveBeenCalled();
 
         spy.mockRestore();
+    });
+});
+
+describe('TooltipIcon', () => {
+    beforeEach(() => {
+        argoTooltipSpy.mockClear();
+    });
+
+    it('renders a native, keyboard-focusable button as the trigger', () => {
+        render(<TooltipIcon content='Some helpful description' />);
+        const trigger = screen.getByRole('button');
+        expect(trigger.tagName).toBe('BUTTON');
+        expect(trigger.getAttribute('type')).toBe('button');
+        // Native buttons are in the tab order by default (no explicit tabIndex needed).
+        expect(trigger.tabIndex).toBe(0);
+    });
+
+    it('derives the accessible name from string content by default', () => {
+        render(<TooltipIcon content='Only workflows in view are summarized' />);
+        expect(screen.getByRole('button', {name: 'Only workflows in view are summarized'})).toBeInTheDocument();
+    });
+
+    it('falls back to a generic accessible name when content is not a plain string', () => {
+        render(
+            <TooltipIcon
+                content={
+                    <span>
+                        rich <b>content</b>
+                    </span>
+                }
+            />
+        );
+        expect(screen.getByRole('button', {name: 'More information'})).toBeInTheDocument();
+    });
+
+    it('lets callers override the accessible name explicitly', () => {
+        render(<TooltipIcon content='Some description' label='Parameter help' />);
+        expect(screen.getByRole('button', {name: 'Parameter help'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Some description'})).not.toBeInTheDocument();
+    });
+
+    it('applies the requested Font Awesome icon class, defaulting to question-circle', () => {
+        const {rerender} = render(<TooltipIcon content='desc' />);
+        expect(screen.getByRole('button').className).toContain('fa-question-circle');
+
+        rerender(<TooltipIcon content='desc' icon='fa-info-circle' />);
+        expect(screen.getByRole('button').className).toContain('fa-info-circle');
+    });
+
+    it('forwards extra tooltipProps (e.g. arrow) to the underlying Tooltip', () => {
+        render(<TooltipIcon content='desc' tooltipProps={{arrow: false}} />);
+        expect(argoTooltipSpy.mock.calls[0][0].arrow).toBe(false);
     });
 });

@@ -2,7 +2,7 @@ import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
 import {useState} from 'react';
 
-import {Tooltip} from '../../../shared/components/tooltip';
+import {TooltipIcon} from '../../../shared/components/tooltip';
 import {Parameter} from '../../../shared/models';
 
 interface SuspendInputProps {
@@ -31,11 +31,7 @@ export function SuspendInputs(props: SuspendInputProps) {
             <React.Fragment key={parameter.name}>
                 <br />
                 <label>{parameter.name}</label>
-                {parameter.description && (
-                    <Tooltip content={parameter.description}>
-                        <i className='fa fa-question-circle' style={{marginLeft: 4}} />
-                    </Tooltip>
-                )}
+                {parameter.description && <TooltipIcon content={parameter.description} style={{marginLeft: 4}} />}
                 <Select
                     value={parameter.value || parameter.default}
                     options={parameter.enum.map(value => ({

@@ -11,7 +11,7 @@ import LinkifiedText from '../../../shared/components/linkified-text';
 import {Links} from '../../../shared/components/links';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp, TimestampSwitch} from '../../../shared/components/timestamp';
-import {Tooltip} from '../../../shared/components/tooltip';
+import {TooltipIcon} from '../../../shared/components/tooltip';
 import * as models from '../../../shared/models';
 import {Artifact, NodeStatus, Workflow} from '../../../shared/models';
 import {getPodName} from '../../../shared/pod-name';
@@ -316,9 +316,12 @@ function EnvVar(props: {env: models.kubernetes.EnvVar}) {
     const secret = env.valueFrom?.secretKeyRef;
     const secretValue = secret ? (
         <>
-            <Tooltip content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'} arrow={false}>
-                <i className='fa fa-key' />
-            </Tooltip>
+            <TooltipIcon
+                content={'The value of this environment variable has been hidden for security reasons because it comes from a kubernetes secret.'}
+                icon='fa-key'
+                label='This value is hidden because it comes from a Kubernetes secret'
+                tooltipProps={{arrow: false}}
+            />
             {secret.name}/{secret.key}
         </>
     ) : undefined;
