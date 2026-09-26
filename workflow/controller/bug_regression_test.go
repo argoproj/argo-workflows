@@ -1,0 +1,498 @@
+package controller
+
+// Regression tests for bugs found while unifying DAG and Steps execution in
+// the Engine. Each test asserts the correct behavior and locks the fix in.
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
+)
+
+// TestBug_Depends_NegationCausesPrematureOmit: a task whose depends
+// expression negates a sibling ("!slow-task.Failed") must not be omitted
+// before the sibling has run. An Omitted node is permanent, so omitting it on
+// the first cycle would skip it even after both deps succeed. The task waits
+// until every task it references has finished, then runs.
+func TestBug_Depends_NegationCausesPrematureOmit(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: negation-premature-omit
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fast-task
+        template: echo
+      - name: slow-task
+        template: echo
+      - name: dependent
+        depends: "fast-task.Succeeded && !slow-task.Failed"
+        template: echo
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, hello]
+`
+
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Cycle 1: fast-task and slow-task scheduled.  Dependent must not be
+	// prematurely omitted — its expression can still become true.
+	woc.operate(ctx)
+	require.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("fast-task"))
+	require.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("slow-task"))
+	if dep := woc.wf.Status.Nodes.FindByDisplayName("dependent"); dep != nil {
+		assert.NotEqual(t, wfv1.NodeOmitted, dep.Phase,
+			"dependent must not be prematurely omitted in cycle 1")
+	}
+
+	// Cycle 2: both pods succeed.  Dependent's expression evaluates to
+	// `true && !false = true`, so dependent should be scheduled.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	dep := woc.wf.Status.Nodes.FindByDisplayName("dependent")
+	require.NotNil(t, dep, "dependent should exist after cycle 2")
+	assert.NotEqual(t, wfv1.NodeOmitted, dep.Phase,
+		"dependent must run once fast-task succeeded and slow-task did not fail")
+
+	// Cycle 3: dependent pod succeeds.  Workflow completes Succeeded.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	dep = woc.wf.Status.Nodes.FindByDisplayName("dependent")
+	require.NotNil(t, dep)
+	assert.Equal(t, wfv1.NodeSucceeded, dep.Phase,
+		"dependent must end Succeeded")
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase,
+		"workflow should end Succeeded, not stuck with an omitted dependent")
+}
+
+// TestBug_DAGTargetDoesNotScheduleUnrelatedRoots documents a target-filtering
+// regression in the shared engine. A DAG target should schedule the target task
+// and its ancestors. It must not schedule unrelated roots outside the target's
+// ancestry.
+func TestBug_DAGTargetDoesNotScheduleUnrelatedRoots(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: target-filtering
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      target: deploy
+      tasks:
+      - name: build
+        template: echo
+      - name: deploy
+        dependencies: [build]
+        template: echo
+      - name: unrelated
+        template: echo
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, hello]
+`
+
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	build := woc.wf.Status.Nodes.FindByDisplayName("build")
+	require.NotNil(t, build, "target ancestor should be scheduled")
+	assert.Equal(t, wfv1.NodePending, build.Phase)
+
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("deploy"),
+		"target task should wait until its ancestor is fulfilled")
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("unrelated"),
+		"unrelated root outside dag.target ancestry must not be scheduled")
+}
+
+// TestBug_ReconcileErrorMasking documents Critical #3.
+//
+// Two collaborating sites silently reclassify genuine reconciler failures
+// as ErrParallelismReached:
+//
+//   - workflow/controller/reconciler_k8s.go:55-58
+//     Reconcile() returns nil on ErrParallelismReached / ErrResourceRateLimitReached.
+//     The converge loop treats the task as dispatched even though no pod
+//     was created — fine for deliberate throttling, wrong for anything else.
+//
+//   - workflow/controller/operator.go:2193-2199
+//     reconcileTemplate() converts any "node not found after reconciliation"
+//     into ErrParallelismReached at Debug level.  A silently-missing node
+//     from a non-throttle path produces identical log output to legitimate
+//     throttling.
+//
+// A proper fix would:
+//
+//   - Introduce a distinct sentinel such as ErrReconcilerNoMaterialize for
+//     "reconciler returned nil but the expected node was not created".
+//   - Raise the log level to Warn when that sentinel is used.
+//   - Leave ErrParallelismReached exclusively for the deliberate throttling
+//     path.
+func TestBug_ReconcileErrorMasking(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: missing-materialized-node
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, hello]
+`
+
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	tmpl := woc.execWf.GetTemplateByName("main")
+	require.NotNil(t, tmpl)
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+
+	mainNode := &wfv1.NodeStatus{
+		ID:           woc.wf.NodeID(wf.Name),
+		Name:         wf.Name,
+		DisplayName:  wf.Name,
+		TemplateName: tmpl.Name,
+		Type:         wfv1.NodeTypeDAG,
+		Phase:        wfv1.NodeRunning,
+	}
+	woc.wf.Status.Nodes = wfv1.Nodes{mainNode.ID: *mainNode}
+
+	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode, mainNode.ID, false)
+	engine.reconciler = &fakeReconciler{}
+	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, []dag.Task{
+		&dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]},
+	}, tmpl, mainNode.ID, mainNode.Name)
+
+	node, err := engine.executeTask(ctx, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]}, true)
+
+	require.Error(t, err,
+		"engine must surface a reconciler materialization failure when Reconcile returns nil but no task node exists")
+	assert.Nil(t, node)
+	require.ErrorIs(t, err, ErrReconcilerNoMaterialize,
+		"missing materialization must be reported with its own sentinel")
+	assert.NotErrorIs(t, err, ErrParallelismReached,
+		"missing materialization must not be reported as ordinary parallelism throttling")
+}
+
+// TestBug_AssessNodeStatus_OutputsNotReady_NonContainerSet verifies that a
+// regular Container template that declares outputs.parameters is NOT marked
+// Succeeded while its WorkflowTaskResult is still pending — i.e. the node's
+// Outputs has been partially populated by the controller (e.g. ExitCode from
+// the pod status), but the executor-sourced Parameters have not yet arrived.
+//
+// Regression #14568: the new code in assessNodeStatus only fired the
+// outputs-not-ready guard for ContainerSet templates, so Container/Script/
+// Resource templates with declared outputs were flushed straight to
+// Succeeded before taskResult sync, breaking downstream
+// {{tasks.X.outputs.parameters.*}} resolution.
+func TestBug_AssessNodeStatus_OutputsNotReady_NonContainerSet(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: outputs-param-
+  name: outputs-param-test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: produce
+    - name: produce
+      container:
+        image: alpine:3.23
+        command: [sh, -c, "echo hello > /tmp/out.txt"]
+      outputs:
+        parameters:
+          - name: msg
+            valueFrom:
+              path: /tmp/out.txt
+`
+
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	dagNodeID := wf.Name
+	woc.wf.Status.Nodes = make(wfv1.Nodes)
+	woc.wf.Status.Nodes[dagNodeID] = wfv1.NodeStatus{
+		ID:            dagNodeID,
+		Name:          wf.Name,
+		TemplateName:  "main",
+		Phase:         wfv1.NodeRunning,
+		Type:          wfv1.NodeTypeDAG,
+		TemplateScope: "local/main",
+	}
+
+	nodeName := wf.Name + ".a"
+	nodeID := "node-a-id"
+	// Simulate the realistic mid-sync state: the controller has already
+	// captured the pod's ExitCode into node.Outputs, but the executor's
+	// WorkflowTaskResult (which carries Parameters) has not yet been merged.
+	exitCode := "0"
+	woc.wf.Status.Nodes[nodeID] = wfv1.NodeStatus{
+		ID:           nodeID,
+		Name:         nodeName,
+		TemplateName: "produce",
+		Phase:        wfv1.NodeRunning,
+		Type:         wfv1.NodeTypePod,
+		BoundaryID:   dagNodeID,
+		Outputs: &wfv1.Outputs{
+			ExitCode: &exitCode,
+		},
+	}
+
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nodeName,
+			Labels: map[string]string{
+				"workflows.argoproj.io/workflow": wf.Name,
+			},
+			Namespace: "default",
+		},
+		Status: apiv1.PodStatus{
+			Phase: apiv1.PodSucceeded,
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name: "main",
+					State: apiv1.ContainerState{
+						Terminated: &apiv1.ContainerStateTerminated{
+							ExitCode: 0,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Outputs.Parameters not yet synced — assessNodeStatus must keep node Running.
+	node := woc.wf.Status.Nodes[nodeID]
+	updated := woc.assessNodeStatus(ctx, pod, &node)
+	require.NotNil(t, updated)
+	assert.Equal(t, wfv1.NodeRunning, updated.Phase,
+		"Container template with declared output parameter must not flip to Succeeded before outputs.parameters is synced (regression #14568)")
+
+	// Once outputs.parameters is populated, the node should be marked Succeeded.
+	nodeWithOutputs := node.DeepCopy()
+	nodeWithOutputs.Outputs.Parameters = []wfv1.Parameter{{Name: "msg"}}
+	woc.wf.Status.Nodes[nodeID] = *nodeWithOutputs
+	node = woc.wf.Status.Nodes[nodeID]
+
+	updated = woc.assessNodeStatus(ctx, pod, &node)
+	require.NotNil(t, updated)
+	assert.Equal(t, wfv1.NodeSucceeded, updated.Phase,
+		"Should be Succeeded once outputs.parameters are populated")
+}
+
+// TestBug_Retry_AllowsUnresolvedTags pins the contract of the retry-path
+// SubstituteParams call (operator_template_execution.go ~line 259).
+//
+// Bug: that call site passed opts.onExitTemplate as the allowUnresolved
+// flag. opts.onExitTemplate is a bool meaning "this call is for an onExit
+// handler" — semantically unrelated to "allow unresolved tags". For normal
+// (non-exit) retries it evaluates to false, making template.Replace strict
+// and erroring on any late-resolved tag (e.g. {{pod.name}} in a non-pod
+// retry-decorated template, {{tasks.X.outputs.*}} carried into the inner
+// template body) inside the retry-decorated template.
+//
+// Origin/main hardcoded allowUnresolved=true at this call site. The fix
+// on v4 hardcodes true too.
+//
+// This is a contract-pinning test: it verifies (a) SubstituteParams with
+// allowUnresolved=true passes through late tags, mirroring the post-fix
+// retry-path behavior, and (b) SubstituteParams with allowUnresolved=false
+// errors on the same input — i.e. the bug's failure mode. The call site
+// MUST pass true. If a future refactor reintroduces the boolean confusion,
+// this test still documents the expected semantics.
+func TestBug_Retry_AllowsUnresolvedTags(t *testing.T) {
+	tmpl := &wfv1.Template{
+		Name: "main",
+		Container: &apiv1.Container{
+			Image:   "alpine:3.23",
+			Command: []string{"sh", "-c", "echo {{tasks.upstream.outputs.parameters.late}}"},
+		},
+	}
+
+	// Mimic the retry-path localParams as constructed in
+	// operator_template_execution.go around lines 221-249.
+	localParams := common.Parameters{
+		"retries":               "0",
+		"retries.last.exitCode": "",
+		"retries.last.status":   "",
+		"retries.last.duration": "0",
+		"retries.last.message":  "",
+		"pod.name":              "retry-unresolved-main-1",
+	}
+	globalParams := common.Parameters{
+		"workflow.name":      "retry-unresolved",
+		"workflow.namespace": "argo",
+	}
+
+	ctx := logging.TestContext(t.Context())
+
+	// allowUnresolved=true (origin/main, post-fix v4): must succeed.
+	_, errAllow := common.SubstituteParams(ctx, tmpl, globalParams, localParams, true)
+	require.NoError(t, errAllow,
+		"SubstituteParams(allowUnresolved=true) must pass through unresolved late tags — this is the contract the retry path relies on")
+
+	// allowUnresolved=false (the value the buggy v4 call site forwards when
+	// opts.onExitTemplate=false): must error. This documents the failure
+	// mode the retry path inadvertently triggered.
+	_, errDeny := common.SubstituteParams(ctx, tmpl, globalParams, localParams, false)
+	require.Error(t, errDeny,
+		"SubstituteParams(allowUnresolved=false) must error on unresolved late tags — demonstrates the failure mode the retry path triggered when it forwarded opts.onExitTemplate (false) as allowUnresolved")
+	assert.Contains(t, errDeny.Error(), "failed to resolve",
+		"the strict-path error must report the unresolved tag")
+}
+
+// TestBug_MarkNodePhase_RefusesPostTerminalTransition verifies that markNodePhase
+// does NOT flip a terminal node to a different phase (e.g. late TaskResult or
+// duplicate hook delivery trying to demote Succeeded -> Failed).
+//
+// markNodePhase previously logged-and-allowed invalid SM transitions. Downstream
+// consumers (exit handlers, metrics, taskset reconciliation) assume a node
+// observed Succeeded stays Succeeded; the transition must be refused.
+func TestBug_MarkNodePhase_RefusesPostTerminalTransition(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: t
+  namespace: argo
+spec:
+  entrypoint: e
+  templates:
+  - name: e
+    container:
+      image: alpine
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Initialize a node directly as Succeeded.
+	woc.initializeNode(ctx, "t.A", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeSucceeded, &wfv1.NodeFlag{}, true)
+
+	// Attempt to flip the terminal node to Failed (e.g. late TaskResult or
+	// duplicate hook delivery). markNodePhase must refuse.
+	woc.markNodePhase(ctx, "t.A", wfv1.NodeFailed, "late TaskResult")
+
+	node, err := woc.wf.GetNodeByName("t.A")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase,
+		"terminal node phase must not flip; got %s", node.Phase)
+}
+
+var dagRetryConsumerAbsentOptional = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-retry-absent-optional
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: stage-a
+            template: echo
+          - name: stage-b
+            template: produce
+            depends: "stage-a.Failed"
+          - name: stage-c
+            template: consume
+            depends: "stage-a && (stage-b || stage-b.Omitted)"
+            arguments:
+              parameters:
+                - name: msg
+                  value: "{{tasks.stage-b.outputs.parameters.output-message}}"
+    - name: echo
+      container:
+        image: argoproj/argosay:v2
+    - name: produce
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: argoproj/argosay:v2
+    - name: consume
+      retryStrategy:
+        limit: "2"
+      inputs:
+        parameters:
+          - name: msg
+      container:
+        image: argoproj/argosay:v2
+`
+
+// TestBug_RetryPath_ToleratesLateTags is the end-to-end counterpart of
+// TestBug_Retry_AllowsUnresolvedTags: a retry-decorated task whose argument is
+// an unhandled absent optional must reach the engine's terminal "absent
+// optional" handling. If the retry path's SubstituteParams call forwarded a
+// strict allowUnresolved, it would fail first with a generic "failed to
+// resolve" error instead.
+func TestBug_RetryPath_ToleratesLateTags(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagRetryConsumerAbsentOptional)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	for i := 0; i < 3 && !woc.wf.Status.Fulfilled(); i++ {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	nodeC := woc.wf.Status.Nodes.FindByDisplayName("stage-c")
+	require.NotNil(t, nodeC, "stage-c must be materialized as a terminal node")
+	assert.Equal(t, wfv1.NodeError, nodeC.Phase)
+	assert.Contains(t, nodeC.Message, "absent optional")
+	assert.NotContains(t, nodeC.Message, "failed to resolve")
+}

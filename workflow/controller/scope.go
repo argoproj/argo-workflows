@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -33,8 +34,12 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
-			val := scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
-			varkeys.InputsParameterByName.Set(scope.scope, val, param.Name)
+			p := scope.tmpl.Inputs.GetParameterByName(param.Name)
+			if p.Value != nil {
+				varkeys.InputsParameterByName.Set(scope.scope, p.Value.String(), param.Name)
+			} else if p.Default != nil {
+				varkeys.InputsParameterByName.Set(scope.scope, p.Default.String(), param.Name)
+			}
 		}
 		for _, param := range scope.tmpl.Inputs.Artifacts {
 			art := scope.tmpl.Inputs.GetArtifactByName(param.Name)
@@ -61,6 +66,15 @@ func (s *wfScope) getParametersAny(globals common.Parameters) map[string]any {
 		}
 	}
 	return params
+}
+
+// getParameters returns the scope's string-valued parameters as a flat string map, DROPPING absent
+// optionals (nil values for skipped/omitted outputs with no default) and artifacts. Used by the
+// substitution surfaces that operate on a plain string map and cannot represent absence — item /
+// withParam / withSequence expansion (via the dag.Substitutor) and retry-node local params. Callers
+// that must distinguish absent from empty (arguments, when-clause `??` fallbacks) use getParametersAny.
+func (s *wfScope) getParameters() common.Parameters {
+	return common.Parameters(s.scope.AsStringMap())
 }
 
 // absentOptionalRef reports whether an argument value is a single pure reference (e.g.
@@ -112,8 +126,8 @@ func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
 // fails terminally rather than leaving the workflow stuck. No-op for any node
 // that actually produced outputs. includeArtifacts additionally registers empty placeholders for the
 // template's declared output artifacts: steps relies on this to keep artifact references resolvable,
-// while DAG deliberately leaves them unresolved (resolveDependencyReferences omits optional artifacts
-// and errors on required ones).
+// while DAG deliberately leaves them unresolved (the pre-Engine dependency resolution omitted optional
+// artifacts and errored on required ones).
 func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
 	if node == nil || node.Outputs != nil {
 		return
@@ -190,6 +204,88 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 	// IsSkipped is true only for a placeholder written via Key.SetSkipped (a skipped/omitted node
 	// output with no producer default), i.e. an absent optional.
 	return val, s.scope.IsSkipped(tag), err
+}
+
+// resolveArguments resolves argument parameter and artifact references against the scope.
+// Parameter values containing {{steps.X.outputs.parameters.Y}} (or tasks.*) references
+// are substituted. Artifact arguments with From/FromExpression are resolved to concrete
+// storage locations. This should be called before ProcessArgs so that scope-level
+// references don't leak into the child template body via SubstituteParams.
+func (s *wfScope) resolveArguments(ctx context.Context, args wfv1.Arguments, globalParams common.Parameters) (wfv1.Arguments, error) {
+	// nil-preserving view so expression tags can apply `??` fallbacks to skipped/omitted outputs
+	mergedParams := s.getParametersAny(globalParams)
+
+	// Replace arguments that are pure references to a skipped/omitted node's output with no producer
+	// default with a sentinel BEFORE substitution; common.ProcessArgs interprets it as "unsupplied"
+	// at consumption time so the consumed template's input default applies (or fails terminally).
+	s.markAbsentOptionalArgs(&args)
+
+	// Resolve parameter value references by JSON-marshaling the arguments,
+	// performing template replacement, then unmarshaling, as the pre-Engine
+	// dependency resolution did: simpleReplace escapes values for
+	// JSON context, and the unmarshal step reverses the escaping. Doing direct
+	// string replacement would double-escape values containing quotes.
+	argsBytes, err := json.Marshal(args.Parameters)
+	if err != nil {
+		return args, err
+	}
+	argsStr := string(argsBytes)
+	if strings.Contains(argsStr, "{{") {
+		// References to other tasks or steps must resolve: a missing one means the
+		// producer's output is not in scope yet (or never will be), and the task
+		// must not run with the literal tag. Such a miss is reported as ErrRequeue
+		// so the caller waits, as resolveDependencyReferences and resolveReferences
+		// did before the Engine (#15513). Other tags stay for the later template
+		// passes.
+		resolved, err := template.ReplaceStrictAny(ctx, argsStr, mergedParams, []string{"tasks", "steps"})
+		if err != nil {
+			if template.IsMissingVariableErr(err) {
+				return args, fmt.Errorf("%w: %w", ErrRequeue, err)
+			}
+			return args, err
+		}
+		var resolvedParams []wfv1.Parameter
+		if err := json.Unmarshal([]byte(resolved), &resolvedParams); err != nil {
+			return args, err
+		}
+		args.Parameters = resolvedParams
+	}
+
+	// Resolve artifact from/fromExpression references. Build a fresh slice so
+	// the caller's backing array isn't mutated through the slice header.
+	if len(args.Artifacts) > 0 {
+		resolvedArtifacts := make(wfv1.Artifacts, 0, len(args.Artifacts))
+		for i := range args.Artifacts {
+			art := args.Artifacts[i]
+			if art.From == "" && art.FromExpression == "" {
+				resolvedArtifacts = append(resolvedArtifacts, art)
+				continue
+			}
+			resolvedArt, err := s.resolveArtifact(ctx, &art)
+			if err != nil {
+				if art.Optional {
+					// Optional artifact that failed to resolve: drop it from
+					// arguments, as the pre-Engine dependency resolution did.
+					continue
+				}
+				return args, err
+			}
+			if resolvedArt == nil {
+				continue
+			}
+			if art.Optional && !resolvedArt.HasLocationOrKey() {
+				// An optional artifact from a skipped or omitted step resolves
+				// to an empty placeholder; passing it on would fail the pod
+				// with an unresolvable input (#16839).
+				continue
+			}
+			resolvedArt.Name = art.Name
+			resolvedArtifacts = append(resolvedArtifacts, *resolvedArt)
+		}
+		args.Artifacts = resolvedArtifacts
+	}
+
+	return args, nil
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
