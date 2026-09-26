@@ -183,3 +183,47 @@ func TestPersistUpdatesMarksReapplyFailedOnNonConflictError(t *testing.T) {
 
 	assert.True(t, woc.reapplyFailed, "non-conflict persist error should mark reapply-failed to keep the throttler slot")
 }
+
+func TestPersistUpdatesPreservesAggregatesWhenWorkflowIsNotHydrated(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+status:
+  phase: Running
+  progress: 1031/1033
+  resourcesDuration:
+    cpu: 100
+    memory: 200
+  offloadNodeStatusVersion: abc123
+  nodes: {}
+`)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	expectedProgress := wf.Status.Progress
+	expectedResourcesDuration := wf.Status.ResourcesDuration.DeepCopy()
+
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, true)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.updated = true
+	woc.persistUpdates(ctx)
+
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, expectedProgress, wf.Status.Progress)
+	assert.Equal(t, expectedResourcesDuration, wf.Status.ResourcesDuration)
+}
