@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argo/lint/mocks"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 	workflowmocks "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow/mocks"
 	wftemplatemocks "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate/mocks"
 	wf "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -454,10 +455,8 @@ data:
 	assert.Contains(t, res.Msg(), `key "key" already set in map`)
 }
 
-// TestLintKindNotRequestedWithDuplicateKey verifies that a strict-invalid document of a
-// known Argo kind is still reported when that kind's client is not initialized, i.e. when
-// the kind was not requested through --kinds. The document is broken whichever kinds are
-// being linted, so the preserved parse error must not be dropped (#9550, CodeRabbit review).
+// TestLintKindNotRequestedWithDuplicateKey verifies that an unrequested Argo kind
+// is ignored even when its YAML has a duplicate key.
 func TestLintKindNotRequestedWithDuplicateKey(t *testing.T) {
 	dir := t.TempDir()
 	validWf := `apiVersion: argoproj.io/v1alpha1
@@ -502,16 +501,37 @@ spec:
 		Formatter:      formatterSimple{},
 	})
 	require.NoError(t, err)
-	assert.False(t, res.Success, "lint must fail when a file of a non-requested kind has a YAML error")
-	assert.Contains(t, res.Msg(), "badcron.yaml", "the error must name the offending file")
-	assert.Contains(t, res.Msg(), `in "bad-cron" (CronWorkflow)`, "the object name must be reported")
-	assert.Contains(t, res.Msg(), `key "schedules" already set in map`)
+	assert.True(t, res.Success, res.Msg())
+	assert.NotContains(t, res.Msg(), "badcron.yaml")
 	wfMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
 }
 
-// TestLintKindNotRequestedStaysIgnored verifies the counterpart of the case above: a valid
-// document whose kind was not requested is still ignored, so reporting parse errors does
-// not turn --kinds into a no-op.
+func TestLintCronKindIgnoresMalformedWorkflowTemplate(t *testing.T) {
+	path := "../../../test/e2e/cron/cron-and-malformed-template.yaml"
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{path},
+		Strict:         true,
+		ServiceClients: ServiceClients{CronWorkflowsClient: &apiclient.OfflineCronWorkflowServiceClient{}},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.True(t, res.Success, res.Msg())
+
+	templateMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
+	res, err = Lint(ctx, &Options{
+		Files:          []string{path},
+		Strict:         true,
+		ServiceClients: ServiceClients{WorkflowTemplatesClient: templateMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success)
+	assert.Contains(t, res.Msg(), `unknown field "spec.entrypoints"`)
+	templateMock.AssertNotCalled(t, "LintWorkflowTemplate")
+}
+
+// TestLintKindNotRequestedStaysIgnored checks that a valid unrequested kind is skipped.
 func TestLintKindNotRequestedStaysIgnored(t *testing.T) {
 	dir := t.TempDir()
 	validWf := `apiVersion: argoproj.io/v1alpha1

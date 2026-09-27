@@ -167,7 +167,6 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 		case *wfv1.ClusterWorkflowTemplate:
 			objName = getObjectName(wf.ClusterWorkflowTemplateKind, v, i)
 			if opts.ServiceClients.ClusterWorkflowTemplateClient == nil {
-				res.addParseErr(objName, err)
 				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
@@ -181,7 +180,6 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 		case *wfv1.CronWorkflow:
 			objName = getObjectName(wf.CronWorkflowKind, v, i)
 			if opts.ServiceClients.CronWorkflowsClient == nil {
-				res.addParseErr(objName, err)
 				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
@@ -195,7 +193,6 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 		case *wfv1.Workflow:
 			objName = getObjectName(wf.WorkflowKind, v, i)
 			if opts.ServiceClients.WorkflowsClient == nil {
-				res.addParseErr(objName, err)
 				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
@@ -214,7 +211,6 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 		case *wfv1.WorkflowTemplate:
 			objName = getObjectName(wf.WorkflowTemplateKind, v, i)
 			if opts.ServiceClients.WorkflowTemplatesClient == nil {
-				res.addParseErr(objName, err)
 				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
@@ -237,10 +233,8 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 	return res
 }
 
-// addParseErr records a parse error that ParseObjects preserved for an object the linter
-// will not lint, e.g. because its kind was not requested through --kinds. A document that
-// does not parse is broken whichever kinds are being linted, so the error must not be
-// dropped together with the object. It is a no-op when err is nil.
+// addParseErr records a parse error when parsing returned no typed object or
+// there is no lint endpoint for its kind. It is a no-op when err is nil.
 func (r *Result) addParseErr(objName string, err error) {
 	if err == nil {
 		return
