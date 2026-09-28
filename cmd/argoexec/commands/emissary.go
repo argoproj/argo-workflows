@@ -1,16 +1,14 @@
 package commands
 
 import (
-	"compress/gzip"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,12 +19,13 @@ import (
 
 	argoexecexecutor "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/archive"
 	argoerrors "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver/k8s"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
@@ -127,41 +126,6 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		return fmt.Errorf("failed to write ready marker: %w", err)
 	}
 
-	name, args := args[0], args[1:]
-
-	// Check if args were offloaded to a file (for large args that exceed exec limit)
-	if argsFile := os.Getenv(common.EnvVarContainerArgsFile); argsFile != "" {
-		logger.WithField("argsFile", argsFile).Info(ctx, "Reading container args from file")
-		argsData, readErr := os.ReadFile(argsFile)
-		if readErr != nil {
-			return fmt.Errorf("failed to read container args file %s: %w", argsFile, readErr)
-		}
-		var fileArgs []string
-		if err = json.Unmarshal(argsData, &fileArgs); err != nil {
-			return fmt.Errorf("failed to unmarshal container args: %w", err)
-		}
-		args = append(args, fileArgs...)
-		logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
-
-		// Check for a large args and offload to file if needed
-		// This avoids the exec() "argument list too long" error
-		// Downstream programs should support @filename for parsing large args
-		for i := 0; i < len(args); i++ {
-			if len(args[i]) > common.MaxEnvVarLen {
-				filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
-				if err = os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
-					return fmt.Errorf("failed to write large arg %d to file: %w", i, err)
-				}
-				logger.WithFields(logging.Fields{
-					"argIndex": i,
-					"size":     len(args[i]),
-					"filePath": filePath,
-				}).Info(ctx, "Offloaded large argument to file. Downstream program must support @filename syntax")
-				args[i] = "@" + filePath
-			}
-		}
-	}
-
 	// In init-less pod mode the supervisor, not an init container, writes
 	// /var/run/argo/template. Supervisor and main start concurrently, so
 	// block until supervisor signals readiness (or failure) before reading
@@ -181,15 +145,25 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		}
 	}
 
-	data, err := readTemplate()
+	// The pod spec delivers exactly one task: the template (file, or
+	// ARGO_TEMPLATE for init-less templates without a supervisor), the
+	// command from argv plus any offloaded args file, and the environment.
+	source := &k8s.PodSource{
+		VarRunArgo:          varRunArgo,
+		TemplateEnv:         os.Getenv(common.EnvVarTemplate),
+		OffloadDir:          common.EnvConfigMountPath,
+		ArgsFile:            os.Getenv(common.EnvVarContainerArgsFile),
+		NodeID:              os.Getenv(common.EnvVarNodeID),
+		ContainerName:       containerName,
+		Command:             args,
+		Env:                 os.Environ(),
+		IncludeScriptOutput: includeScriptOutput,
+	}
+	task, _, err := source.Next(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to read template: %w", err)
+		return err
 	}
-
-	template := &wfv1.Template{}
-	if err = json.Unmarshal(data, template); err != nil {
-		return fmt.Errorf("failed to unmarshal template: %w", err)
-	}
+	template := task.Template
 
 	// In init-less pod mode, main can't use the legacy per-artifact
 	// SubPath bind mount (kubelet races the supervisor's write). The
@@ -218,10 +192,11 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		return waitErr
 	}
 
-	name, err = exec.LookPath(name)
+	name, err := exec.LookPath(task.Command[0])
 	if err != nil {
 		return fmt.Errorf("failed to find name in PATH: %w", err)
 	}
+	task.Command[0] = name
 
 	if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
 		// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
@@ -237,49 +212,22 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		return fmt.Errorf("failed to get retry strategy: %w", err)
 	}
 
+	// Each attempt hands its outputs to a fresh collector; only the last
+	// attempt's are staged, once retries are done.
+	var outputs outputCollector
 	cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-		command, closer, err := startCommand(ctx, name, args, template, containerName, includeScriptOutput)
-		if err != nil {
-			return fmt.Errorf("failed to start command: %w", err)
-		}
-		defer closer()
-
-		forwardSignals(ctx, signals, command.Process.Pid, false)
-		pid := command.Process.Pid
 		innerCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		startFileSignalHandler(innerCtx, pid, containerName)
-		for _, sidecarName := range template.GetSidecarNames() {
-			if sidecarName == containerName {
-				em, err := emissary.New()
-				if err != nil {
-					return fmt.Errorf("failed to create emissary: %w", err)
-				}
-
-				go func() {
-					mainContainerNames := template.GetMainContainerNames()
-					err = em.Wait(innerCtx, mainContainerNames)
-					if err != nil {
-						logger.WithError(err).WithFields(logging.Fields{
-							"mainContainerNames": mainContainerNames,
-						}).Error(innerCtx, "failed to wait for main container(s)")
-					}
-
-					logger.WithFields(logging.Fields{
-						"mainContainerNames": mainContainerNames,
-						"containerName":      containerName,
-					}).Info(innerCtx, "main container(s) exited, terminating container")
-					err = em.Kill(innerCtx, []string{containerName}, argoexecexecutor.TerminationGracePeriodDuration())
-					if err != nil {
-						logger.WithField("containerName", containerName).WithError(err).Error(innerCtx, "failed to terminate/kill container")
-					}
-				}()
-
-				break
+		task.OnStart = func(pid int) {
+			forwardSignals(ctx, signals, pid, false)
+			startFileSignalHandler(innerCtx, pid, containerName)
+			if slices.Contains(template.GetSidecarNames(), containerName) {
+				go terminateWhenMainExits(innerCtx, logger, template, containerName)
 			}
 		}
-
-		return osspecific.Wait(command.Process)
+		outputs = nil
+		_, err := k8s.Container{}.Run(ctx, task, &outputs)
+		return err
 	})
 	logger.WithError(cmdErr).Info(ctx, "sub-process exited")
 
@@ -295,18 +243,10 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 	exitCode = exitCodeFromErr(cmdErr, exitCode)
 
 	if containerName == common.MainContainerName {
-		for _, x := range template.Outputs.Parameters {
-			if x.ValueFrom != nil && x.ValueFrom.Path != "" {
-				if err := saveParameter(ctx, template, x.ValueFrom.Path); err != nil {
-					return err
-				}
-			}
-		}
-		for _, x := range template.Outputs.Artifacts {
-			if x.Path != "" {
-				if err := saveArtifact(ctx, template, x.Path); err != nil {
-					return err
-				}
+		sink := k8s.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
+		for _, out := range outputs {
+			if err := sink.Put(ctx, task.NodeID, out); err != nil {
+				return err
 			}
 		}
 	} else {
@@ -316,32 +256,37 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 	return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 }
 
-// readTemplate returns the serialized template JSON. It prefers
-// /var/run/argo/template (legacy: init container wrote it; init-less with
-// supervisor: supervisor wrote it), and falls back to the ARGO_TEMPLATE env
-// var when the file is absent. This covers the init-less case for templates
-// that don't run a supervisor (data, resource-without-logs) — the controller
-// sets ARGO_TEMPLATE directly on main in that case.
-//
-// Offload-sentinel resolution is shared with the legacy init container via
-// common.ResolveTemplateEnvValue.
-func readTemplate() ([]byte, error) {
-	return readTemplateAt(varRunArgo+"/template", common.EnvConfigMountPath)
+// outputCollector is a ResultSink that records what one attempt produced, so
+// outputs are staged once after retries rather than on every attempt.
+type outputCollector []maindriver.Output
+
+func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output) error {
+	*c = append(*c, out)
+	return nil
 }
 
-// readTemplateAt is the path-parameterized form used by tests; production
-// calls readTemplate with the constants.
-func readTemplateAt(filePath, offloadDir string) ([]byte, error) {
-	if data, err := os.ReadFile(filePath); err == nil {
-		return data, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return nil, err
+// terminateWhenMainExits stops this sidecar once the template's main
+// containers have exited.
+func terminateWhenMainExits(ctx context.Context, logger logging.Logger, template *wfv1.Template, containerName string) {
+	em, err := emissary.New()
+	if err != nil {
+		logger.WithError(err).Error(ctx, "failed to create emissary")
+		return
 	}
-	envVal, ok := os.LookupEnv(common.EnvVarTemplate)
-	if !ok {
-		return nil, fmt.Errorf("neither %s nor %s is available", filePath, common.EnvVarTemplate)
+	mainContainerNames := template.GetMainContainerNames()
+	if err := em.Wait(ctx, mainContainerNames); err != nil {
+		logger.WithError(err).WithFields(logging.Fields{
+			"mainContainerNames": mainContainerNames,
+		}).Error(ctx, "failed to wait for main container(s)")
 	}
-	return common.ResolveTemplateEnvValue(envVal, offloadDir)
+
+	logger.WithFields(logging.Fields{
+		"mainContainerNames": mainContainerNames,
+		"containerName":      containerName,
+	}).Info(ctx, "main container(s) exited, terminating container")
+	if err := em.Kill(ctx, []string{containerName}, argoexecexecutor.TerminationGracePeriodDuration()); err != nil {
+		logger.WithField("containerName", containerName).WithError(err).Error(ctx, "failed to terminate/kill container")
+	}
 }
 
 func stageInputArtifacts(ctx context.Context, tmpl *wfv1.Template) error {
@@ -729,77 +674,4 @@ func startCommand(ctx context.Context, name string, args []string, template *wfv
 	}
 
 	return command, closer, nil
-}
-
-func saveArtifact(ctx context.Context, template *wfv1.Template, srcPath string) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-
-	if common.FindOverlappingVolume(template, srcPath) != nil {
-		logger.WithField("srcPath", srcPath).Info(ctx, "no need to save artifact - on overlapping volume")
-		return nil
-	}
-	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
-		return nil
-	}
-	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
-	logger.WithFields(logging.Fields{
-		"src": srcPath,
-		"dst": dstPath,
-	}).Info(ctx, "saving artifact")
-	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
-		return fmt.Errorf("failed to create directory %s: %w", z, err)
-	}
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return fmt.Errorf("failed to create destination %s: %w", dstPath, err)
-	}
-	defer func() { _ = dst.Close() }()
-	if err = archive.TarGzToWriter(ctx, srcPath, gzip.DefaultCompression, dst); err != nil {
-		return fmt.Errorf("failed to tarball the output %s to %s: %w", srcPath, dstPath, err)
-	}
-	if err = dst.Close(); err != nil {
-		return fmt.Errorf("failed to close %s: %w", dstPath, err)
-	}
-	return nil
-}
-
-func saveParameter(ctx context.Context, template *wfv1.Template, srcPath string) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-
-	if common.FindOverlappingVolume(template, srcPath) != nil {
-		logger.WithField("src", srcPath).Info(ctx, "no need to save parameter - on overlapping volume")
-		return nil
-	}
-	src, err := os.Open(filepath.Clean(srcPath))
-	if os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("src", srcPath).WithError(err).Warn(ctx, "cannot save parameter, does not exist")
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to open %s: %w", srcPath, err)
-	}
-	defer func() { _ = src.Close() }()
-	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
-	logger.WithFields(logging.Fields{
-		"src": srcPath,
-		"dst": dstPath,
-	}).Info(ctx, "saving parameter")
-	z := filepath.Dir(dstPath)
-	if mkdirErr := os.MkdirAll(z, 0o755); mkdirErr != nil { // chmod rwxr-xr-x
-		return fmt.Errorf("failed to create directory %s: %w", z, mkdirErr)
-	}
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return fmt.Errorf("failed to create %s: %w", srcPath, err)
-	}
-	defer func() { _ = dst.Close() }()
-	if _, err = io.Copy(dst, src); err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %w", srcPath, dstPath, err)
-	}
-	if err = dst.Close(); err != nil {
-		return fmt.Errorf("failed to close %s: %w", dstPath, err)
-	}
-	return nil
 }
