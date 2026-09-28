@@ -1122,13 +1122,14 @@ func TestDAGSkippedRefDynamicTemplateName(t *testing.T) {
 	assert.Equal(t, "FALLBACK", in.Value.String())
 }
 
-// "@testdata/dag/dag-skipped-input-default-suppressed.yaml" mirrors default-demo.yaml: the producer is skipped and its
-// output parameter declares NO valueFrom.default; the consumer references that output in its input,
-// and the consumer's input declares its own default. This is the case where the skipped-marker "" is
-// written into scope, substituted into the consumer's argument, and then clobbers the input default.
 // TestDAGSkippedInputDefaultUsed verifies that when a producer is skipped and its output declares NO
 // valueFrom.default, a consumer referencing that output in its input falls back to the consumer's OWN
 // input default rather than receiving the empty skipped-marker.
+//
+// The fixture mirrors default-demo.yaml: the producer is skipped and its output parameter declares
+// NO valueFrom.default; the consumer references that output in its input, and the consumer's input
+// declares its own default. This is the case where the skipped-marker "" is written into scope,
+// substituted into the consumer's argument, and then clobbers the input default.
 func TestDAGSkippedInputDefaultUsed(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
