@@ -1,0 +1,27 @@
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: from-expression
+spec:
+  entrypoint: main
+  arguments:
+    artifacts:
+    - name: foo
+      raw:
+        data: |
+          Hello
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+        - name: foo
+      steps:
+      - - name: hello
+          inline:
+            container:
+              image: docker/whalesay:latest
+      outputs:
+        artifacts:
+        - name: result
+          fromExpression: "1 == 1 ? inputs.artifacts.foo : inputs.artifacts.foo"
