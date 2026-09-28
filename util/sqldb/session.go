@@ -31,10 +31,12 @@ type SessionProxy struct {
 	password      string
 	dbType        DBType
 
-	// Current session and state
-	sess   db.Session
-	mu     sync.RWMutex
-	closed bool
+	// Keep the last session available to Session() callers while disconnected.
+	// Only closed records an explicit Close, which prevents automatic recovery.
+	sess         db.Session
+	mu           sync.RWMutex
+	closed       bool
+	disconnected bool
 
 	// Retry configuration
 	maxRetries    int
@@ -156,7 +158,6 @@ func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error
 				password:          sp.password,
 				dbType:            sp.dbType,
 				sess:              sess,
-				closed:            sp.closed,
 				maxRetries:        sp.maxRetries,
 				baseDelay:         sp.baseDelay,
 				maxDelay:          sp.maxDelay,
@@ -190,9 +191,11 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 
 	err = sess.Ping()
 	if err != nil {
+		sess.Close()
 		return err
 	}
 	sp.closed = false
+	sp.disconnected = false
 
 	sp.sess = sess
 	return nil
@@ -271,20 +274,24 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 	}
 
 	sess := sp.sess
+	disconnected := sp.disconnected
 	sp.mu.RUnlock()
 
-	if sess == nil {
-		return fmt.Errorf("no active session")
-	}
+	if sess == nil || disconnected {
+		if sp.insideTransaction {
+			return fmt.Errorf("no active session")
+		}
+		// A previous reconnect failed. Try again before passing a session to fn.
+	} else {
+		err := fn(sess)
+		if err == nil {
+			return nil
+		}
 
-	err := fn(sess)
-	if err == nil {
-		return nil
-	}
-
-	// If it's not a network error or inside a tx do not retry
-	if !sp.isNetworkError(err) || sp.insideTransaction {
-		return err
+		// If it's not a network error or inside a tx do not retry.
+		if !sp.isNetworkError(err) || sp.insideTransaction {
+			return err
+		}
 	}
 
 	if reconnectErr := sp.reconnectIfStale(ctx, sess); reconnectErr != nil {
@@ -293,9 +300,14 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 
 	sp.mu.RLock()
 	sess = sp.sess
+	closed := sp.closed
+	disconnected = sp.disconnected
 	sp.mu.RUnlock()
 
-	if sess == nil {
+	if closed {
+		return fmt.Errorf("session proxy is closed")
+	}
+	if sess == nil || disconnected {
 		return fmt.Errorf("no active session after reconnection")
 	}
 
@@ -306,13 +318,15 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 	return nil
 }
 
-// reconnectIfStale reconnects only if the current session is still the
-// same one that produced the error. If another goroutine already
-// reconnected (sp.sess != staleSess), this is a no-op.
+// reconnectIfStale reconnects if the session failed or is disconnected.
+// If another goroutine already established a new session, this is a no-op.
 func (sp *SessionProxy) reconnectIfStale(ctx context.Context, staleSess db.Session) error {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
-	if sp.sess != staleSess {
+	if sp.closed {
+		return fmt.Errorf("session proxy is closed")
+	}
+	if sp.sess != nil && !sp.disconnected && sp.sess != staleSess {
 		return nil
 	}
 	return sp.reconnectLocked(ctx)
@@ -328,16 +342,16 @@ func (sp *SessionProxy) Reconnect(ctx context.Context) error {
 func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
+	// Close the failed session once, but keep it available to direct Session()
+	// callers. Only With() provides automatic recovery from this state.
+	if sp.sess != nil && !sp.closed && !sp.disconnected {
+		sp.sess.Close()
+	}
+	sp.disconnected = true
+
 	var err error
 
 	for attempt := 0; attempt <= sp.maxRetries; attempt++ {
-		// Perform the reconnection attempt
-		// Close the bad connection if it exists
-		if sp.sess != nil {
-			sp.sess.Close()
-			sp.closed = true
-		}
-
 		err = sp.connect(ctx)
 		if err == nil {
 			logger.WithField("attempt_number", attempt).Info(ctx, "connected to database")
@@ -385,7 +399,7 @@ func (sp *SessionProxy) Close() error {
 
 	sp.closed = true
 
-	if sp.sess != nil {
+	if sp.sess != nil && !sp.disconnected {
 		return sp.sess.Close()
 	}
 
