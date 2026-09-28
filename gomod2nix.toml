@@ -275,8 +275,8 @@ schema = 3
     version = "v0.0.0-20160303004610-f177d92a03d3"
     hash = "sha256-fP3cKc0WeRhwtuK1NC8BVKmPg+wmoQ/Wi4vaV/ZYFYI="
   [mod."github.com/dustin/go-humanize"]
-    version = "v1.0.1"
-    hash = "sha256-yuvxYYngpfVkUg9yAmG99IUVmADTQA0tMbBXe0Fq0Mc="
+    version = "v1.1.0"
+    hash = "sha256-Qa7BSAXtgH7CB5STBiXTTOCgivWUiA65u3KxDOSZCkQ="
   [mod."github.com/ebitengine/purego"]
     version = "v0.10.1"
     hash = "sha256-LiJz/PNyealSiA8m/OPE0JnF1XD17YtpIlhx44jd34U="
