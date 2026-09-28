@@ -1,4 +1,4 @@
-package k8s
+package maindriver
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 )
 
 // PodSource yields the single task baked into this pod by the pod spec, then
@@ -40,29 +39,29 @@ type PodSource struct {
 	done bool
 }
 
-var _ maindriver.TaskSource = &PodSource{}
+var _ TaskSource = &PodSource{}
 
-func (s *PodSource) Next(ctx context.Context) (maindriver.Task, bool, error) {
+func (s *PodSource) Next(ctx context.Context) (Task, bool, error) {
 	if s.done {
-		return maindriver.Task{}, false, nil
+		return Task{}, false, nil
 	}
 	s.done = true
 	if len(s.Command) == 0 {
-		return maindriver.Task{}, false, errors.New("no command to run")
+		return Task{}, false, errors.New("no command to run")
 	}
 	command, err := s.command(ctx)
 	if err != nil {
-		return maindriver.Task{}, false, err
+		return Task{}, false, err
 	}
 	data, err := s.readTemplate()
 	if err != nil {
-		return maindriver.Task{}, false, fmt.Errorf("failed to read template: %w", err)
+		return Task{}, false, fmt.Errorf("failed to read template: %w", err)
 	}
 	tmpl := &wfv1.Template{}
 	if err := json.Unmarshal(data, tmpl); err != nil {
-		return maindriver.Task{}, false, fmt.Errorf("failed to unmarshal template: %w", err)
+		return Task{}, false, fmt.Errorf("failed to unmarshal template: %w", err)
 	}
-	return maindriver.Task{
+	return Task{
 		NodeID:              s.NodeID,
 		Template:            tmpl,
 		Command:             command,
