@@ -6,14 +6,21 @@ const suspendedWorkflow = (shutdown?: 'Terminate' | 'Stop'): Workflow =>
         metadata: {name: 'hello-world', namespace: 'argo'},
         spec: {suspend: true, shutdown},
         status: {phase: 'Running'}
-    }) as Workflow;
+    }) as unknown as Workflow;
 
 const terminatedWorkflow = (shutdown?: 'Terminate' | 'Stop'): Workflow =>
     ({
         metadata: {name: 'hello-world', namespace: 'argo'},
         spec: {suspend: true, shutdown},
         status: {phase: 'Failed'}
-    }) as Workflow;
+    }) as unknown as Workflow;
+
+const failedWorkflow = (suspend?: boolean): Workflow =>
+    ({
+        metadata: {name: 'hello-world', namespace: 'argo'},
+        spec: {suspend},
+        status: {phase: 'Failed'}
+    }) as unknown as Workflow;
 
 describe('WorkflowOperationsMap RESUME', () => {
     test('enabled for a suspended workflow with no shutdown strategy', () => {
@@ -40,5 +47,13 @@ describe('WorkflowOperationsMap RESUME', () => {
 
     test('disabled once the workflow is stopped', () => {
         expect(WorkflowOperationsMap.RESUME.disabled(terminatedWorkflow('Stop'))).toBe(true);
+    });
+
+    test('disabled for a failed workflow', () => {
+        expect(WorkflowOperationsMap.RESUME.disabled(failedWorkflow())).toBe(true);
+    });
+
+    test('disabled for a completed suspended workflow', () => {
+        expect(WorkflowOperationsMap.RESUME.disabled(failedWorkflow(true))).toBe(true);
     });
 });

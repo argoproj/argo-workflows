@@ -919,11 +919,6 @@ export interface WorkflowSpec {
     suspend?: boolean;
 
     /**
-     * Shutdown will shutdown the workflow according to its strategy ('Terminate' or 'Stop') once set.
-     */
-    shutdown?: 'Terminate' | 'Stop';
-
-    /**
      * workflowTemplateRef is the reference to the workflow template resource to execute.
      */
     workflowTemplateRef?: WorkflowTemplateRef;
