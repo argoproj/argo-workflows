@@ -180,6 +180,14 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 	if !ok {
 		return errors.New("no task to run")
 	}
+	if task.Template == nil {
+		return errors.New("task has no template")
+	}
+	// The user's process parents its spans to runMainContainer, not to the
+	// controller's span the pod spec carries. Appended so it wins: os/exec
+	// keeps the last value of a duplicated key. Cloned so the source's
+	// slice is untouched.
+	task.Env = injectTraceParent(ctx, slices.Clone(task.Env))
 	template := task.Template
 
 	// In init-less pod mode, main can't use the legacy per-artifact
@@ -209,11 +217,14 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		return waitErr
 	}
 
+	// Resolved once, before the retry loop, so a missing binary is not
+	// retried. Copied rather than written in place: the slice is the
+	// source's, and a source may hand the same Task out again.
 	name, err := exec.LookPath(task.Command[0])
 	if err != nil {
 		return fmt.Errorf("failed to find name in PATH: %w", err)
 	}
-	task.Command[0] = name
+	task.Command = append([]string{name}, task.Command[1:]...)
 
 	if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
 		// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before

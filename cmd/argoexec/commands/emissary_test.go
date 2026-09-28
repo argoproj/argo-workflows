@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -217,6 +218,25 @@ func run(script string) error {
 func testContext() (context.Context, error) {
 	ctx, _, err := cmdutil.ContextWithLogger(NewEmissaryCommand(), string(logging.Info), string(logging.Text))
 	return ctx, err
+}
+
+// The user's process must see the emissary's runMainContainer span, a child
+// of the span the pod spec carries: same trace id, different span id.
+func TestEmissary_ChildGetsRunMainContainerTraceParent(t *testing.T) {
+	varRunArgo = t.TempDir()
+	require.NoError(t, os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600))
+	const podTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	t.Setenv("TRACEPARENT", podTraceParent)
+
+	require.NoError(t, run("echo -n \"$TRACEPARENT\""))
+
+	data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
+	require.NoError(t, err)
+	got := strings.Split(string(data), "-")
+	require.Len(t, got, 4, "not a W3C traceparent: %q", data)
+	assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", got[1], "trace id must be the pod's")
+	assert.NotEqual(t, "b7ad6b7169203331", got[2], "span id must be runMainContainer's, not the pod's")
+	assert.Len(t, got[2], 16)
 }
 
 // A source with no task must fail the emissary rather than run an empty
