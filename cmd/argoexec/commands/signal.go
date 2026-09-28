@@ -15,15 +15,28 @@ import (
 )
 
 // forwardSignals starts a goroutine that forwards OS signals received on the
-// given channel to the process with the given pid. Signals that can be ignored
-// are dropped; when ignoreTerm is true SIGTERM is dropped as well (artifact
-// sidecars stay alive to assist the aux container and are terminated only via
-// the file-signal mechanism). The caller owns the channel's lifecycle
-// (signal.Notify / signal.Reset / close).
+// given channel to the process with the given pid, until the channel is
+// closed or ctx is done. Signals that can be ignored are dropped; when
+// ignoreTerm is true SIGTERM is dropped as well (artifact sidecars stay alive
+// to assist the aux container and are terminated only via the file-signal
+// mechanism). The caller owns the channel's lifecycle (signal.Notify /
+// signal.Reset / close). A caller that runs the process more than once
+// (the emissary's retry loop) scopes ctx to the attempt, so signals never go
+// to a pid from an earlier attempt.
 func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	go func() {
-		for s := range signals {
+		for {
+			var s os.Signal
+			var ok bool
+			select {
+			case <-ctx.Done():
+				return
+			case s, ok = <-signals:
+				if !ok {
+					return
+				}
+			}
 			if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
 				logger.WithField("signal", s).Debug(ctx, "ignore signal")
 				continue

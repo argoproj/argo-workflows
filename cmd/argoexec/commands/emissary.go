@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,7 +26,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver/k8s"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
@@ -49,15 +49,35 @@ func NewEmissaryCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			containerName := os.Getenv(common.EnvVarContainerName)
 			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
-			return runEmissary(cmd.Context(), containerName, includeScriptOutput, args)
+			return runEmissary(cmd.Context(), containerName, newPodSource(containerName, includeScriptOutput, args), maindriver.Container{})
 		},
+	}
+}
+
+// newPodSource is the emissary's composition root for its task. The pod
+// spec delivers exactly one: the template (file, or ARGO_TEMPLATE for
+// init-less templates without a supervisor), the command from argv plus any
+// offloaded args file, and the environment.
+func newPodSource(containerName string, includeScriptOutput bool, args []string) maindriver.TaskSource {
+	return &maindriver.PodSource{
+		VarRunArgo:          varRunArgo,
+		TemplateEnv:         os.Getenv(common.EnvVarTemplate),
+		OffloadDir:          common.EnvConfigMountPath,
+		ArgsFile:            os.Getenv(common.EnvVarContainerArgsFile),
+		NodeID:              os.Getenv(common.EnvVarNodeID),
+		ContainerName:       containerName,
+		Command:             args,
+		Env:                 os.Environ(),
+		IncludeScriptOutput: includeScriptOutput,
 	}
 }
 
 // runEmissary is the emissary body, with everything the command parses from
 // the environment passed in as parameters so it is testable without env or
-// package-level state.
-func runEmissary(ctx context.Context, containerName string, includeScriptOutput bool, args []string) error {
+// package-level state. The pod layout (markers, locks, dependency waits,
+// signals, the exitcode file) lives here; running the command is the
+// driver's, and the task comes from source once the pod is ready for it.
+func runEmissary(ctx context.Context, containerName string, source maindriver.TaskSource, driver maindriver.MainDriver) error {
 	exitCode := 64
 	logger := logging.RequireLoggerFromContext(ctx)
 	// Registered before the exit code defer so that it runs after it: releasing
@@ -145,23 +165,12 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		}
 	}
 
-	// The pod spec delivers exactly one task: the template (file, or
-	// ARGO_TEMPLATE for init-less templates without a supervisor), the
-	// command from argv plus any offloaded args file, and the environment.
-	source := &k8s.PodSource{
-		VarRunArgo:          varRunArgo,
-		TemplateEnv:         os.Getenv(common.EnvVarTemplate),
-		OffloadDir:          common.EnvConfigMountPath,
-		ArgsFile:            os.Getenv(common.EnvVarContainerArgsFile),
-		NodeID:              os.Getenv(common.EnvVarNodeID),
-		ContainerName:       containerName,
-		Command:             args,
-		Env:                 os.Environ(),
-		IncludeScriptOutput: includeScriptOutput,
-	}
-	task, _, err := source.Next(ctx)
+	task, ok, err := source.Next(ctx)
 	if err != nil {
 		return err
+	}
+	if !ok {
+		return errors.New("no task to run")
 	}
 	template := task.Template
 
@@ -212,22 +221,26 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		return fmt.Errorf("failed to get retry strategy: %w", err)
 	}
 
-	// Each attempt hands its outputs to a fresh collector; only the last
-	// attempt's are staged, once retries are done.
+	// The driver hands each attempt's outputs to a collector; they are the
+	// template's declared paths, so staging is deferred until retries are
+	// done rather than repeated per attempt.
 	var outputs outputCollector
 	cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
+		// innerCtx scopes the signal forwarders and sidecar watcher to this
+		// attempt, so a retry never signals an earlier attempt's pid.
 		innerCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		task.OnStart = func(pid int) {
-			forwardSignals(ctx, signals, pid, false)
+			forwardSignals(innerCtx, signals, pid, false)
 			startFileSignalHandler(innerCtx, pid, containerName)
 			if slices.Contains(template.GetSidecarNames(), containerName) {
 				go terminateWhenMainExits(innerCtx, logger, template, containerName)
 			}
 		}
 		outputs = nil
-		_, err := k8s.Container{}.Run(ctx, task, &outputs)
-		return err
+		var runErr error
+		exitCode, runErr = driver.Run(ctx, task, &outputs)
+		return runErr
 	})
 	logger.WithError(cmdErr).Info(ctx, "sub-process exited")
 
@@ -240,24 +253,20 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 		}
 	}
 
-	exitCode = exitCodeFromErr(cmdErr, exitCode)
-
-	if containerName == common.MainContainerName {
-		sink := k8s.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
-		for _, out := range outputs {
-			if err := sink.Put(ctx, task.NodeID, out); err != nil {
-				return err
-			}
+	// The sink decides which containers' outputs are staged (main only).
+	var sink maindriver.ResultSink = maindriver.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
+	for _, out := range outputs {
+		if err := sink.Put(ctx, task.NodeID, out); err != nil {
+			return err
 		}
-	} else {
-		logger.Info(ctx, "not saving outputs - not main container")
 	}
 
 	return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 }
 
-// outputCollector is a ResultSink that records what one attempt produced, so
-// outputs are staged once after retries rather than on every attempt.
+// outputCollector is a ResultSink that records the outputs the driver
+// declares for an attempt, so staging happens once after retries rather than
+// on every attempt.
 type outputCollector []maindriver.Output
 
 func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output) error {
