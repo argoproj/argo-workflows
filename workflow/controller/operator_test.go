@@ -3001,6 +3001,188 @@ func TestSuspendResume(t *testing.T) {
 	assert.Len(t, pods.Items, 2)
 }
 
+func suspendedShutdownWorkflow() *wfv1.Workflow {
+	wf := wfv1.MustUnmarshalWorkflow(noPodsWhenShutdown)
+	wf.Spec.Shutdown = ""
+	wf.Spec.OnExit = "exit-handler"
+	wf.Spec.Templates = append(wf.Spec.Templates, wfv1.Template{
+		Name: "exit-handler",
+		Container: &apiv1.Container{
+			Image:   "docker/whalesay:latest",
+			Command: []string{"cowsay"},
+			Args:    []string{"goodbye world"},
+		},
+	})
+	return wf
+}
+
+func TestTerminateOnSuspendedWorkflow(t *testing.T) {
+	t.Run("StartedSuspended", func(t *testing.T) {
+		wf := suspendedShutdownWorkflow()
+		wf.Spec.Suspend = new(true)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		assert.Empty(t, woc.wf.Status.Nodes)
+		pods, err := listPods(ctx, woc)
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
+
+		wf = woc.wf.DeepCopy()
+		wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("hello-world.onExit"), "terminate must not run the exit handler")
+		pods, err = listPods(ctx, woc)
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", woc.wf.Status.Message)
+		persistedWf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.True(t, *persistedWf.Spec.Suspend)
+	})
+
+	t.Run("SuspendedWhileRunning", func(t *testing.T) {
+		wf := suspendedShutdownWorkflow()
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+
+		wf = woc.wf.DeepCopy()
+		wf.Spec.Suspend = new(true)
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+		wf = woc.wf.DeepCopy()
+		wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node = woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("hello-world.onExit"), "terminate must not run the exit handler")
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", woc.wf.Status.Message)
+		persistedWf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.True(t, *persistedWf.Spec.Suspend)
+	})
+}
+
+func TestStopOnSuspendedWorkflow(t *testing.T) {
+	t.Run("StartedSuspended", func(t *testing.T) {
+		wf := suspendedShutdownWorkflow()
+		wf.Spec.Suspend = new(true)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		assert.Empty(t, woc.wf.Status.Nodes)
+		pods, err := listPods(ctx, woc)
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
+
+		wf = woc.wf.DeepCopy()
+		wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		onExitNode := woc.wf.Status.Nodes.FindByDisplayName("hello-world.onExit")
+		require.NotNil(t, onExitNode, "stop must run the exit handler")
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+		pods, err = listPods(ctx, woc)
+		require.NoError(t, err)
+		assert.Len(t, pods.Items, 1)
+
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Stop'", woc.wf.Status.Message)
+		persistedWf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.True(t, *persistedWf.Spec.Suspend)
+	})
+
+	t.Run("SuspendedWhileRunning", func(t *testing.T) {
+		wf := suspendedShutdownWorkflow()
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		node := woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+
+		wf = woc.wf.DeepCopy()
+		wf.Spec.Suspend = new(true)
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+		wf = woc.wf.DeepCopy()
+		wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node = woc.wf.Status.Nodes.FindByDisplayName("hello-world")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		assert.Contains(t, node.Message, "workflow shutdown with strategy")
+		onExitNode := woc.wf.Status.Nodes.FindByDisplayName("hello-world.onExit")
+		require.NotNil(t, onExitNode, "stop must run the exit handler")
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.NodeFlag != nil && n.NodeFlag.Hooked {
+				return apiv1.PodSucceeded
+			}
+			return ""
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Stop'", woc.wf.Status.Message)
+		persistedWf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.True(t, *persistedWf.Spec.Suspend)
+	})
+}
+
 var suspendTemplateWithDeadline = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
