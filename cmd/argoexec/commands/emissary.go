@@ -33,13 +33,16 @@ import (
 // varRunArgo is a var, not a const, so tests can point it at a temp dir.
 var varRunArgo = common.VarRunArgoPath
 
-func injectTraceParent(ctx context.Context) {
+// traceParentEnv serialises ctx's current span as TRACEPARENT/TRACESTATE
+// entries for a child process's environment.
+func traceParentEnv(ctx context.Context) []string {
 	carrier := propagation.MapCarrier{}
 	propagation.TraceContext{}.Inject(ctx, carrier)
-
+	env := make([]string, 0, len(carrier))
 	for k, v := range carrier {
-		os.Setenv(strings.ToUpper(k), v)
+		env = append(env, strings.ToUpper(k)+"="+v)
 	}
+	return env
 }
 
 func NewEmissaryCommand() *cobra.Command {
@@ -113,7 +116,6 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 	namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
 	defer span.End()
-	injectTraceParent(ctx)
 
 	osspecific.AllowGrantingAccessToEveryone()
 
@@ -172,6 +174,14 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 	if !ok {
 		return errors.New("no task to run")
 	}
+	if task.Template == nil {
+		return errors.New("task has no template")
+	}
+	// The user's process parents its spans to runMainContainer, not to the
+	// controller's span the pod spec carries. Appended so it wins: os/exec
+	// keeps the last value of a duplicated key. Cloned so the source's
+	// slice is untouched.
+	task.Env = append(slices.Clone(task.Env), traceParentEnv(ctx)...)
 	template := task.Template
 
 	// In init-less pod mode, main can't use the legacy per-artifact
@@ -201,11 +211,14 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		return waitErr
 	}
 
+	// Resolved once, before the retry loop, so a missing binary is not
+	// retried. Copied rather than written in place: the slice is the
+	// source's, and a source may hand the same Task out again.
 	name, err := exec.LookPath(task.Command[0])
 	if err != nil {
 		return fmt.Errorf("failed to find name in PATH: %w", err)
 	}
-	task.Command[0] = name
+	task.Command = append([]string{name}, task.Command[1:]...)
 
 	if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
 		// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
