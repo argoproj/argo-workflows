@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 )
 
 func TestEmissary(t *testing.T) {
@@ -205,10 +207,34 @@ func TestEmissary(t *testing.T) {
 }
 
 func run(script string) error {
-	cmd := NewEmissaryCommand()
-	ctx, _, err := cmdutil.ContextWithLogger(cmd, string(logging.Info), string(logging.Text))
+	ctx, err := testContext()
 	if err != nil {
 		return err
 	}
-	return runEmissary(ctx, "main", true, append([]string{"sh", "-c"}, script))
+	return runEmissary(ctx, "main", newPodSource("main", true, append([]string{"sh", "-c"}, script)), maindriver.Container{})
+}
+
+func testContext() (context.Context, error) {
+	ctx, _, err := cmdutil.ContextWithLogger(NewEmissaryCommand(), string(logging.Info), string(logging.Text))
+	return ctx, err
+}
+
+// A source with no task must fail the emissary rather than run an empty
+// command.
+func TestEmissary_ExhaustedSource(t *testing.T) {
+	varRunArgo = t.TempDir()
+	require.NoError(t, os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600))
+	ctx, err := testContext()
+	require.NoError(t, err)
+	source := newPodSource("main", false, []string{"true"})
+	_, ok, err := source.Next(ctx)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	err = runEmissary(ctx, "main", source, maindriver.Container{})
+
+	require.EqualError(t, err, "no task to run")
+	data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")
+	require.NoError(t, err)
+	assert.Equal(t, "64", string(data))
 }

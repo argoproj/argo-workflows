@@ -1,4 +1,4 @@
-package k8s
+package maindriver
 
 import (
 	"compress/gzip"
@@ -13,7 +13,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/archive"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 )
 
 // PodSink stages a task's outputs under VarRunArgo/outputs, where the wait or
@@ -28,16 +27,17 @@ type PodSink struct {
 	Template      *wfv1.Template
 }
 
-var _ maindriver.ResultSink = PodSink{}
+var _ ResultSink = PodSink{}
 
-func (s PodSink) Put(ctx context.Context, _ string, out maindriver.Output) error {
+func (s PodSink) Put(ctx context.Context, _ string, out Output) error {
 	if s.ContainerName != common.MainContainerName {
+		logging.RequireLoggerFromContext(ctx).WithField("path", out.Path).Debug(ctx, "not saving output - not main container")
 		return nil
 	}
 	switch out.Kind {
-	case maindriver.OutputParameter:
+	case OutputParameter:
 		return s.saveParameter(ctx, out.Path)
-	case maindriver.OutputArtifact:
+	case OutputArtifact:
 		return s.saveArtifact(ctx, out.Path)
 	default:
 		return nil
