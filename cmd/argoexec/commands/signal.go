@@ -25,24 +25,38 @@ import (
 // to a pid from an earlier attempt.
 func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) {
 	logger := logging.RequireLoggerFromContext(ctx)
+	forward := func(s os.Signal) {
+		if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
+			logger.WithField("signal", s).Debug(ctx, "ignore signal")
+			return
+		}
+		logger.WithField("signal", s).Debug(ctx, "forwarding signal")
+		_ = osspecific.Kill(pid, s.(syscall.Signal))
+	}
 	go func() {
 		for {
-			var s os.Signal
-			var ok bool
 			select {
 			case <-ctx.Done():
-				return
-			case s, ok = <-signals:
+				// The same SIGTERM that cancels ctx (main.go's NotifyContext)
+				// may already be buffered here; deliver it before leaving,
+				// as the pre-ctx forwarder always did.
+				for {
+					select {
+					case s, ok := <-signals:
+						if !ok {
+							return
+						}
+						forward(s)
+					default:
+						return
+					}
+				}
+			case s, ok := <-signals:
 				if !ok {
 					return
 				}
+				forward(s)
 			}
-			if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
-				logger.WithField("signal", s).Debug(ctx, "ignore signal")
-				continue
-			}
-			logger.WithField("signal", s).Debug(ctx, "forwarding signal")
-			_ = osspecific.Kill(pid, s.(syscall.Signal))
 		}
 	}()
 }
