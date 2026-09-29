@@ -361,7 +361,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	// Re-root under the node span: on a re-entry (informer-lag re-creation, or a
-	// later converge pass) the node already exists, so the leaf executor skipped
+	// later reconcile) the node already exists, so the leaf executor skipped
 	// the initializeExecutableNode call that would have carried the node span in
 	// ctx, leaving the workflow span active. Without this the pod span (started
 	// below) parents under the workflow span instead of the node.

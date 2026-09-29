@@ -23,12 +23,11 @@ import (
 //	       └─→ task-d (depends: task-a.Failed → omitted)
 //
 // Branches covered:
-//   - converge:                      task-a, task-b, task-c, task-e scheduled across cycles
+//   - visit:                         task-a, task-b, task-c, task-e scheduled across cycles
 //   - reconcileTaskGroup:            task-b's TaskGroup completed after its items complete
-//   - processHooks (1st pass):       task-c's exit hook fires after task-c completes
-//   - processHooks (2nd pass):       exit hook completion detected in same cycle
+//   - processHooks:                  task-c's exit hook fires after task-c completes
 //   - reconcileExternalCompletions:  pods that succeed between cycles are re-reconciled
-//   - createOmittedNodes:            task-d omitted because task-a.Failed is false
+//   - visit (omission):              task-d omitted because task-a.Failed is false
 //   - finalize:                      DAG transitions Running → Succeeded
 var engineFullLifecycleDAG = `
 apiVersion: argoproj.io/v1alpha1
@@ -302,31 +301,30 @@ spec:
 // An evaluator error for a task must be recorded as a terminal Error node.
 // Left unrecorded, the task would stay Pending and the boundary would never
 // complete.
-func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
+func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	engine, fake, _, tasks := engineWithFakeReconciler(ctx, t)
 
-	results := map[string]dag.EvaluationResult{
-		"client": {
-			TaskName:     "client",
-			CurrentPhase: wfv1.NodePending,
-			Error:        errors.New("depends expression failed to evaluate"),
-		},
+	result := dag.EvaluationResult{
+		TaskName:     "client",
+		CurrentPhase: wfv1.NodePending,
+		Error:        errors.New("depends expression failed to evaluate"),
 	}
+	task := engine.getTaskByName(tasks, "client")
 	fake.calls = nil
-	executed := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
+	ran, _ := engine.visit(ctx, task, result, true)
 	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
-	assert.True(t, executed.executed["client"])
+	assert.False(t, ran)
 
 	node, err := engine.woc.wf.GetNodeByName(engine.taskNodeName("client"))
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeError, node.Phase)
 	assert.Equal(t, "depends expression failed to evaluate", node.Message)
 
-	// Idempotent: a second pass neither re-creates nor re-dispatches.
-	executed = engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
+	// Idempotent: a second visit neither re-creates nor re-dispatches.
+	ran, _ = engine.visit(ctx, task, result, true)
 	assert.Empty(t, fake.calls)
-	assert.Empty(t, executed.executed)
+	assert.False(t, ran)
 }
 
 // An explicitly empty withItems list is not an expansion: the task runs once
@@ -379,7 +377,7 @@ func TestReconcileTaskGroup_WorstPhaseWins(t *testing.T) {
 	markChildPhase(t, woc, "client(1:1)", wfv1.NodeError)
 	markChildPhase(t, woc, "client(2:2)", wfv1.NodeSucceeded)
 
-	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, engine.evaluateAll(ctx, hooksRun{})))
+	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true)
 
 	assert.Empty(t, fake.calls, "finished items are not reconciled again")
 	tgNode, err := woc.wf.GetNodeByName(engine.taskNodeName("client"))
@@ -432,4 +430,58 @@ spec:
 	assert.Equal(t, true, found.Fields["waiting"])
 	assert.Equal(t, []string{"a"}, found.Fields["waitingOn"])
 	assert.Equal(t, dag.ActionNone, found.Fields["action"])
+}
+
+// A finished task's part of a dependant's scope is built once per reconcile
+// and then reused (Engine.finished); the reused part must be what building it
+// gives, skipped marks included.
+func TestBuildLocalScopeReusesFinishedTaskScope(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: scope-reuse
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: A, template: out, when: "false"}
+      - {name: B, template: out, depends: A}
+  - name: out
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+    container:
+      image: busybox
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	tmpl := woc.execWf.GetTemplateByName("main")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+	root, err := woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	engine := NewEngine(woc, root.Name, tmplCtx, tmpl, root, root.ID, false)
+	tasks := []dag.Task{&dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]}, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[1]}}
+	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, tasks, tmpl, root.ID, root.Name)
+	require.Equal(t, wfv1.NodeSkipped, engine.getTaskNode(ctx, "A").Phase)
+
+	built, err := engine.buildLocalScopeFromTask(ctx, tasks[1])
+	require.NoError(t, err)
+	require.Contains(t, engine.finished, "A")
+	reused, err := engine.buildLocalScopeFromTask(ctx, tasks[1])
+	require.NoError(t, err)
+
+	assert.Equal(t, built.scope.AsAnyMap(), reused.scope.AsAnyMap())
+	assert.Equal(t, "Skipped", reused.scope.AsAnyMap()["tasks.A.status"])
+	assert.True(t, reused.scope.IsSkipped("tasks.A.outputs.parameters.p"), "A's absent optional output keeps its skipped mark")
 }
