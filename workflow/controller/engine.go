@@ -649,12 +649,14 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 // boundaryFailureMessage names the first failed task of a DAG in
 // declaration order, "child '<task-id>' failed", as executeDAG did: the
 // message bubbles up to the workflow status. Task nodes are named, never
-// their retry attempts; walking the template rather than wf.Status.Nodes
+// their retry attempts (failedNodeID is a no-op for those); an expanded
+// task's TaskGroup is resolved to its first failed item instead, as for
+// Steps (see failedNodeID). Walking the template rather than wf.Status.Nodes
 // keeps the message stable between cycles. Returns "" if no task failed.
 func (e *Engine) boundaryFailureMessage(ctx context.Context) string {
 	for _, task := range e.tmpl.DAG.Tasks {
 		if node := e.getTaskNode(ctx, task.Name); node != nil && node.FailedOrError() {
-			return fmt.Sprintf("child '%s' failed", node.ID)
+			return fmt.Sprintf("child '%s' failed", e.failedNodeID(node))
 		}
 	}
 	return ""
