@@ -286,7 +286,8 @@ func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
 	return done
 }
 
-// assessStepGroups transitions StepGroup nodes to a terminal phase once all their
+// assessStepGroups starts each empty StepGroup once the group before it has
+// finished, and transitions StepGroup nodes to a terminal phase once all their
 // step tasks have completed. Unlike dag.TaskGroupPhase, this handles per-step
 // continueOn semantics — each step in a group can have its own continueOn setting.
 // Step child nodes are looked up by constructing names from the template definition
@@ -1216,15 +1217,18 @@ func (e *Engine) parentsFor(ctx context.Context, taskName string) []string {
 }
 
 // startStepGroup returns the name of the StepGroup node for group i,
-// creating it when the group starts, as executeSteps did: when its first step
-// is given a node or, for an empty group, once the group before it has
-// finished. Group 0 hangs off the Steps node, and group i off the outbound
-// nodes of group i-1's children, or off group i-1 itself when it has none.
-// A step of group i only gets a node once every step of group i-1 has
-// finished (the walk has closed group i-1 by then; an empty group i-1 is
-// started here and closed with the other groups after the walk), so the link
-// is made once, complete. A group that never starts, after a Stop or a
-// deadline, never exists.
+// creating it when the group starts, as executeSteps did: when a step of it
+// is first given a node (dispatched, skipped, errored or Omitted) or, for an
+// empty group, once the group before it has finished. Group 0 hangs off the
+// Steps node, and group i off the outbound nodes of group i-1's children, or
+// off group i-1 itself when it has none. A step of group i only gets a node
+// once every step of group i-1 has finished and the walk has closed group
+// i-1; an empty group i-1 has no step for the walk to close it at, so it is
+// started and closed here first. The link is therefore made once, complete
+// (main re-linked it every reconcile). A later group whose steps are
+// recorded Omitted (after a Stop or a deadline) exists and ends Omitted; a
+// group that nothing reaches (after failFast ends the Steps node) never
+// exists.
 func (e *Engine) startStepGroup(ctx context.Context, i int) string {
 	name := e.stepGroupNodeNameAt(i)
 	if _, err := e.woc.wf.GetNodeByName(name); err == nil {
@@ -1233,6 +1237,9 @@ func (e *Engine) startStepGroup(ctx context.Context, i int) string {
 	parents := []string{e.nodeName}
 	if i > 0 {
 		prevName := e.startStepGroup(ctx, i-1)
+		if len(e.tmpl.Steps[i-1].Steps) == 0 {
+			e.assessStepGroup(ctx, i-1)
+		}
 		parents = []string{prevName}
 		if prev, err := e.woc.wf.GetNodeByName(prevName); err == nil && len(prev.Children) > 0 {
 			parents = nil

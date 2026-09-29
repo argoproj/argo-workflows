@@ -4546,6 +4546,9 @@ spec:
 	require.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("child '%s' failed", a.ID), steps.Message)
 	if sg1, err := woc.wf.GetNodeByName("r4-c75-deadline[1]"); err == nil {
+		// Absent at base; on the branch the Omitted b gives it an Omitted
+		// group (R4/R10). It never ran, so it is never Failed.
+		assert.Equal(t, wfv1.NodeOmitted, sg1.Phase, "a StepGroup that never ran")
 		assert.NotEqual(t, "Step exceeded its deadline", sg1.Message, "a StepGroup that never ran is not a deadline-killed step")
 	}
 }
@@ -4686,4 +4689,25 @@ func TestRegressionR4_C30_EmptyGroupRetry(t *testing.T) {
 	woc = r4DriveToEnd(t, ctx, controller, woc, 6)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.Empty(t, r4UnfulfilledTyped(woc.wf))
+}
+
+// TestRegressionR4_C85_EmptyGroupClosedBeforeNext extends C85 to an empty
+// group: when second starts, the empty group [1] before it has already
+// finished, so [2] does not start before [1] finishes (in-memory node times,
+// as the reconcile recorded them).
+func TestRegressionR4_C85_EmptyGroupClosedBeforeNext(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	sg1, err := woc.wf.GetNodeByName("r4-c30-empty[1]")
+	require.NoError(t, err)
+	sg2, err := woc.wf.GetNodeByName("r4-c30-empty[2]")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, sg1.Phase)
+	require.False(t, sg1.FinishedAt.IsZero(), "[1] must have finished")
+	assert.False(t, sg2.StartedAt.Before(&sg1.FinishedAt), "StepGroup [2] started %s, before StepGroup [1] finished %s", sg2.StartedAt, sg1.FinishedAt)
 }
