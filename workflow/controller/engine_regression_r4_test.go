@@ -6316,3 +6316,158 @@ func TestRegressionR4_C58_CsAutoRestartOriginal(t *testing.T) {
 		assert.Equal(t, wfv1.NodeSucceeded, n.Phase, "container node %s", name)
 	}
 }
+
+// C55 (hook side): a hook node that errors while it is created is still
+// linked under the node it hooks, so `argo retry` and `argo resubmit
+// --memoized` find its parent. The exit-hook cases pass at base (runOnExitNode
+// linked unconditionally); the lifecycle-hook and workflow-level-hook cases
+// are the decided always-link rule (T4.1) and fail at base, which returned
+// before linking for those too.
+
+// r4C55HookLinked runs wf to completion and asserts that hookName is an Error
+// node linked under parentName and that `argo retry` (restartSuccessful when
+// asked, so every node is reset) accepts the result.
+func r4C55HookLinked(t *testing.T, manifest, parentName, hookName string, restartSuccessful bool) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := runToCompletion(ctx, t, controller, wf, allSucceed)
+	dumpNodes(t, "finished", woc.wf)
+	hook, err := woc.wf.GetNodeByName(hookName)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, hook.Phase)
+	parent, err := woc.wf.GetNodeByName(parentName)
+	require.NoError(t, err)
+	assert.True(t, slices.Contains(parent.Children, hook.ID), "hook node %s is not linked under %s", hookName, parentName)
+	selector := ""
+	if restartSuccessful {
+		selector = "phase=Succeeded"
+	}
+	_, _, err = wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), restartSuccessful, selector, nil)
+	require.NoError(t, err, "argo retry")
+}
+
+// r4C55HookMissingCM is a hook template whose input comes from a ConfigMap
+// that does not exist: its node errors on creation, with no pod.
+const r4C55HookMissingCM = `
+  - name: hook
+    inputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          configMapKeyRef:
+            name: missing-cm
+            key: msg
+    container:
+      image: busybox
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// The exit hook's image has no command, so the controller cannot look up
+// its entrypoint and the hook node errors on creation.
+func TestRegressionR4_C55_RetryAfterExitHookNodeErrorDag(t *testing.T) {
+	r4C55HookLinked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: g2dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: run
+      - name: b
+        template: run
+        depends: a
+        hooks:
+          exit:
+            template: hook
+  - name: run
+    container:
+      image: busybox
+  - name: hook
+    container:
+      image: hookimg
+`, "g2dag.b", "g2dag.b.onExit", true)
+}
+
+func TestRegressionR4_C55_RetryAfterExitHookArgError(t *testing.T) {
+	r4C55HookLinked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: g3steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: run
+        hooks:
+          exit:
+            template: hook
+    - - name: b
+        template: run
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+`+r4C55HookMissingCM, "g3steps[0].a", "g3steps[0].a.onExit", false)
+}
+
+// Decided behaviour (always-link rule): fails at base.
+func TestRegressionR4_C55_LifecycleHookArgErrorLinked(t *testing.T) {
+	r4C55HookLinked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: g4dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: run
+        hooks:
+          running:
+            expression: "true"
+            template: hook
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+`+r4C55HookMissingCM, "g4dag.a", "g4dag.a.hooks.running", true)
+}
+
+// Decided behaviour (always-link rule): fails at base.
+func TestRegressionR4_C55_WorkflowHookArgErrorLinked(t *testing.T) {
+	r4C55HookLinked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: g5wf
+  namespace: default
+spec:
+  entrypoint: run
+  hooks:
+    running:
+      expression: "true"
+      template: hook
+  templates:
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+`+r4C55HookMissingCM, "g5wf", "g5wf.hooks.running", true)
+}
