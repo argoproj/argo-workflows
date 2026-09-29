@@ -78,27 +78,9 @@ func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.Lif
 		if creating {
 			h.log.Info(ctx, fmt.Sprintf("Running OnExit node for %s", taskNode.Name))
 		}
-		resolvedArgs := exitHook.Arguments
-		// Resolve even when the task produced no outputs: exit-hook args may reference a SIBLING's
-		// skipped/omitted output (an absent optional), which resolveExitTmplArgument rescues via the
-		// scope. The task's own outputs (possibly nil) are merged in by resolveExitTmplArgument.
-		if !resolvedArgs.IsEmpty() {
-			resolvedArgs, err = h.woc.resolveExitTmplArgument(ctx,
-				exitHook.Arguments, h.ref, displayName, taskNode.Outputs, scope)
-			if err != nil {
-				return true, nil, err
-			}
-		}
-		onExitNode, err = h.woc.reconcileTemplate(ctx, onExitNodeName, toTemplateReferenceHolder(exitHook), h.tmplCtx, resolvedArgs, &executeTemplateOpts{
-			boundaryID:     h.boundaryID,
-			onExitTemplate: true,
-			nodeFlag:       &wfv1.NodeFlag{Hooked: true},
-		})
+		onExitNode, err = h.woc.reconcileHookNode(ctx, onExitNodeName, exitHook, taskNode, true, h.boundaryID, h.tmplCtx, h.ref, displayName, scope)
 		if err != nil {
 			return true, nil, err
-		}
-		if creating && onExitNode != nil {
-			h.woc.addChildNode(ctx, taskNode.Name, onExitNode.Name)
 		}
 	}
 	return true, onExitNode, nil

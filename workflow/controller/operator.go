@@ -529,10 +529,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				return
 			}
 
-			// If the onExit node (or any child of the onExit node) requires HTTP reconciliation, do it here
-			if onExitNode != nil && woc.nodeRequiresTaskSetReconciliation(ctx, onExitNode.Name) {
-				woc.taskSetReconciliation(ctx)
-			}
+			woc.reconcileTaskSetFor(ctx, onExitNode)
 
 			if onExitNode == nil || !onExitNode.Fulfilled() {
 				return
