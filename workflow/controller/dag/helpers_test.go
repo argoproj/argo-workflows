@@ -22,8 +22,7 @@ func NewDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template, boundaryID, boundar
 
 // EvaluateTask returns the evaluation result for one task.
 // Test-only convenience over EvaluateAll, so tests see exactly what the
-// engine sees — including the per-child results EvaluateAll emits for
-// expanded (withItems/withParam/withSequence) tasks.
+// engine sees.
 func (e *DAGEvaluator) EvaluateTask(ctx context.Context, taskName string) EvaluationResult {
 	return e.EvaluateAll(ctx)[taskName]
 }

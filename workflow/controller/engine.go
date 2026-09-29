@@ -36,29 +36,26 @@ type Engine struct {
 	log            logging.Logger
 	reconciler     TaskReconciler
 	hooks          *hookHandler
-	// expandingTaskGroups collects the TaskGroup nodes whose expanded items
-	// have not all materialized this reconcile. assessTaskGroups must leave
-	// them alone: an early return out of the reconciler (parallelism, a
-	// deadline, a pending exit hook) can leave later items not yet created
-	// while every created child is already fulfilled, and the group's phase
-	// can only be assessed against the full expanded item list.
-	expandingTaskGroups map[string]bool
+	// expanded holds, per expanded task, the items its latest dispatch in
+	// this reconcile expanded it into, so what else reads the items this
+	// reconcile sees the list that dispatch drove.
+	expanded map[string][]dag.Task
 }
 
 // NewEngine creates a new Engine.
 func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, onExitTemplate bool) *Engine {
 	return &Engine{
-		woc:                 woc,
-		expandingTaskGroups: make(map[string]bool),
-		nodeName:            nodeName,
-		tmplCtx:             tmplCtx,
-		tmpl:                tmpl,
-		orgTmpl:             orgTmpl,
-		boundaryID:          boundaryID,
-		onExitTemplate:      onExitTemplate,
-		log:                 woc.log,
-		reconciler:          NewK8sTaskReconciler(woc, tmplCtx, nodeName),
-		hooks:               newHookHandler(woc, tmplCtx, boundaryID, tmpl, woc.log),
+		woc:            woc,
+		nodeName:       nodeName,
+		tmplCtx:        tmplCtx,
+		tmpl:           tmpl,
+		orgTmpl:        orgTmpl,
+		boundaryID:     boundaryID,
+		onExitTemplate: onExitTemplate,
+		log:            woc.log,
+		reconciler:     NewK8sTaskReconciler(woc, tmplCtx, nodeName),
+		hooks:          newHookHandler(woc, tmplCtx, boundaryID, tmpl, woc.log),
+		expanded:       make(map[string][]dag.Task),
 	}
 }
 
@@ -76,12 +73,12 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 
 	// Each step below takes the value the step before it returns, so the order
 	// the steps must run in is checked by the compiler rather than by comments:
-	// evaluate (after hooks) -> create Omitted nodes -> dispatch -> assess
-	// TaskGroups -> run hooks -> evaluate again. The values are only built by
-	// their own step (TestEnginePassValuesAreBuiltByTheirStep).
+	// evaluate (after hooks) -> create Omitted nodes -> dispatch (which also
+	// completes TaskGroups) -> run hooks -> evaluate again. The values are only
+	// built by their own step (TestEnginePassValuesAreBuiltByTheirStep).
 
 	// First hooks pass: tasks that completed in previous operate cycles.
-	hooks := e.processHooks(ctx, tasks, taskGroupsFromEarlierCycles())
+	hooks := e.processHooks(ctx, tasks, dispatchedInEarlierCycles())
 	exitHooksDone := hooks.done
 
 	// Fixed-point iteration: evaluate all tasks, dispatch any that need execution,
@@ -98,7 +95,7 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	for {
 		omitted := e.createOmittedNodes(ctx, tasks, e.evaluateAll(ctx, hooks))
 		dispatch := e.converge(ctx, tasks, omitted)
-		hooks = e.processHooks(ctx, tasks, e.assessTaskGroups(ctx, tasks, dispatch))
+		hooks = e.processHooks(ctx, tasks, dispatch)
 		exitHooksDone = exitHooksDone && hooks.done
 		anyNew := false
 		for k, v := range dispatch.executed {
@@ -227,20 +224,15 @@ type omissionsRecorded struct {
 	results map[string]dag.EvaluationResult
 }
 
-// dispatched is returned by converge and required by assessTaskGroups;
-// executed names the tasks this pass dispatched.
+// dispatched is returned by converge and required by processHooks: an
+// expanded task's exit hooks run per item once its dispatch has completed the
+// group in the same pass. executed names the tasks this pass dispatched.
 type dispatched struct{ executed map[string]bool }
 
-// taskGroupsAssessed is returned by assessTaskGroups and required by
-// processHooks: an expanded task's exit hooks run per item once its group has
-// been assessed in the same pass.
-type taskGroupsAssessed struct{}
-
-// taskGroupsFromEarlierCycles starts the first hooks pass of a cycle, which
-// handles tasks that completed in earlier operate cycles; those cycles already
-// assessed their TaskGroups.
-func taskGroupsFromEarlierCycles() taskGroupsAssessed {
-	return taskGroupsAssessed{}
+// dispatchedInEarlierCycles starts the first hooks pass of a cycle, which
+// handles tasks dispatched and completed in earlier operate cycles.
+func dispatchedInEarlierCycles() dispatched {
+	return dispatched{}
 }
 
 // settle brings the evaluation up to date after the dispatch loop: tasks that
@@ -257,7 +249,7 @@ func (e *Engine) settle(ctx context.Context, tasks []dag.Task, hooks hooksRun, e
 // are isolated to the failing task node (not the boundary), mirroring the
 // legacy controller's executeDAGTask behavior — a single bad hook on one
 // task must not abort sibling tasks or the DAG/Steps boundary.
-func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task, _ taskGroupsAssessed) hooksRun {
+func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task, _ dispatched) hooksRun {
 	// ProcessAllTaskHooks isolates per-task errors on the task (via the
 	// callback below) and never returns one.
 	done, _ := e.hooks.ProcessAllTaskHooks(ctx, tasks,
@@ -280,27 +272,8 @@ func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task, _ taskGroup
 	return hooksRun{done: done}
 }
 
-// assessTaskGroups transitions TaskGroup nodes (from withItems/withParam/withSequence)
-// to a terminal phase once all their expanded children have completed.
-//
-//nolint:unparam // the result is a hand-off value: its type, not its content, is what processHooks requires
-func (e *Engine) assessTaskGroups(ctx context.Context, tasks []dag.Task, _ dispatched) taskGroupsAssessed {
-	for _, task := range tasks {
-		if !dag.HasExpansion(task) {
-			continue
-		}
-		taskNodeName := e.taskNodeName(task.GetName())
-		tgNode, err := e.woc.wf.GetNodeByName(taskNodeName)
-		if err != nil || tgNode.Type != wfv1.NodeTypeTaskGroup || tgNode.Fulfilled() || e.expandingTaskGroups[taskNodeName] {
-			continue
-		}
-		e.assessTaskGroupPhase(ctx, tgNode)
-	}
-	return taskGroupsAssessed{}
-}
-
 // assessStepGroups transitions StepGroup nodes to a terminal phase once all their
-// step tasks have completed. Unlike assessTaskGroupPhase, this handles per-step
+// step tasks have completed. Unlike dag.TaskGroupPhase, this handles per-step
 // continueOn semantics — each step in a group can have its own continueOn setting.
 // Step child nodes are looked up by constructing names from the template definition
 // (not from node.Children) because not all steps may have nodes yet if parallelism
@@ -429,14 +402,8 @@ func (e *Engine) evaluateAll(ctx context.Context, _ hooksRun) evaluation {
 	if set == nil {
 		return evaluation{results: results}
 	}
-	for k, r := range results {
-		// Expanded TaskGroup children carry the static parent in ParentTaskName;
-		// gate them by the parent's membership.
-		name := r.TaskName
-		if r.ParentTaskName != "" {
-			name = r.ParentTaskName
-		}
-		if !set[name] {
+	for k := range results {
+		if !set[k] {
 			delete(results, k)
 		}
 	}
@@ -465,11 +432,9 @@ func (e *Engine) executableTaskSet(ctx context.Context) map[string]bool {
 	return set
 }
 
-// converge applies evaluation results by performing side effects.
-// Static DAG tasks route through executeTask; expanded TaskGroup children
-// (e.g. "client(0:0)") route through dispatchTaskGroupChild so each per-item
-// instance can be re-reconciled independently — needed when, say, a sync
-// lock is released and a queued sibling needs another TryAcquire.
+// converge applies evaluation results by performing side effects: every task
+// the evaluator reports as runnable is dispatched through executeTask, an
+// expanded task as one unit (see reconcileTaskGroup).
 // The evaluator decides WHAT should happen; this layer just dispatches.
 func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissionsRecorded) dispatched {
 	results := omitted.results
@@ -494,7 +459,7 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissio
 		}
 		e.logEvaluation(ctx, result)
 		// Execute, Succeed and Fail are all dispatched: for Succeed and Fail the
-		// operator's retry handling or TaskGroup assessment records the outcome.
+		// operator's retry handling records the outcome.
 		needsExecution := result.Action == dag.ActionExecute || result.ShouldRun ||
 			result.Action == dag.ActionSucceed || result.Action == dag.ActionFail
 
@@ -511,9 +476,7 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissio
 		if needsExecution {
 			executedTasks[result.TaskName] = true
 			var err error
-			if result.ParentTaskName != "" {
-				err = e.dispatchTaskGroupChild(ctx, tasks, result.ParentTaskName, result.TaskName)
-			} else if task := e.getTaskByName(tasks, result.TaskName); task != nil {
+			if task := e.getTaskByName(tasks, result.TaskName); task != nil {
 				_, err = e.executeTask(ctx, task)
 			}
 			if e.dispatchOutcome(ctx, result.TaskName, err) {
@@ -569,39 +532,6 @@ func (e *Engine) logEvaluation(ctx context.Context, result dag.EvaluationResult)
 	}).Debug(ctx, "task evaluation")
 }
 
-// dispatchTaskGroupChild reconciles a single expanded TaskGroup child by
-// re-expanding the static parent against the current scope and forwarding the
-// matching expanded entry to the reconciler. A re-expansion error is the
-// task's own and ends its TaskGroup node Error, as executeDAGTask did.
-func (e *Engine) dispatchTaskGroupChild(ctx context.Context, tasks []dag.Task, parentTaskName, childTaskName string) error {
-	parentTask := e.getTaskByName(tasks, parentTaskName)
-	if parentTask == nil {
-		return nil
-	}
-	expanded, err := e.expandTask(ctx, parentTask)
-	if err != nil {
-		e.initTerminalErrorNode(ctx, parentTask, nil, err)
-		return err
-	}
-	err = e.reconcileExpanded(ctx, expanded, e.taskNodeName(parentTaskName), func(t dag.Task) bool {
-		return t.GetName() == childTaskName
-	})
-	e.noteExpansionProgress(ctx, e.taskNodeName(parentTaskName), expanded)
-	return err
-}
-
-// noteExpansionProgress records whether every expanded item of a TaskGroup has
-// a node yet, so assessTaskGroups knows which groups are still expanding.
-func (e *Engine) noteExpansionProgress(ctx context.Context, tgNodeName string, expanded []dag.Task) {
-	for _, et := range expanded {
-		if e.getTaskNode(ctx, et.GetName()) == nil {
-			e.expandingTaskGroups[tgNodeName] = true
-			return
-		}
-	}
-	delete(e.expandingTaskGroups, tgNodeName)
-}
-
 // gateExpansionAbsentOptional reproduces main's resolveReferences nil semantics for the
 // withParam/withSequence expansion fields. The dag.Substitutor path flattens scope to a string map
 // (getParameters), which DROPS the nil markers for skipped/omitted outputs with no default — so a
@@ -634,16 +564,6 @@ func (e *Engine) gateExpansionAbsentOptional(ctx context.Context, task dag.Task,
 	return nil
 }
 
-// expandTask resolves parentTask's per-item expansion against the current scope.
-// Pure read: no node creation, no reconciliation.
-func (e *Engine) expandTask(ctx context.Context, parentTask dag.Task) ([]dag.Task, error) {
-	scope, err := e.buildLocalScopeFromTask(ctx, parentTask)
-	if err != nil {
-		return nil, err
-	}
-	return parentTask.Expand(ctx, e.expansionScope(scope), e.woc)
-}
-
 // expansionScope is the string scope items are substituted against: the
 // workflow globals under the task's own scope, as expandTask and expandStep
 // passed before the Engine. Globals are needed here because an expression tag
@@ -657,25 +577,44 @@ func (e *Engine) expansionScope(scope *wfScope) map[string]string {
 	return params
 }
 
-// reconcileExpanded turns each accepted expansion into a DesiredTask, linked
-// under the TaskGroup node tgNodeName when its node is created, and hands the
-// batch to the reconciler. An item whose setup fails is recorded on its own
-// Error node and the other items are still reconciled. A nil accept admits
-// every expanded task.
-func (e *Engine) reconcileExpanded(ctx context.Context, expanded []dag.Task, tgNodeName string, accept func(dag.Task) bool) error {
-	var desired []DesiredTask
-	for _, et := range expanded {
-		if accept != nil && !accept(et) {
-			continue
-		}
-		if dt, _ := e.createDesiredTask(ctx, et, []string{tgNodeName}); dt != nil {
-			desired = append(desired, *dt)
+// reconcileTaskGroup drives the items of an expanded task, as executeDAGTask
+// and executeStepGroup did on every reconcile until the group finished: each
+// item is created if it has no node yet (the rest of a fan-out held back by
+// parallelism or the operation deadline) or re-entered if it has not finished
+// (a deleted pod, a suspend with a duration, a nested template, a lock
+// waiter), one item's error staying with that item. The group is then
+// completed from its items once every one exists and has finished, with its
+// exit hooks. scope is the group's scope, which is each item's. Only the
+// operation deadline stops the items early; its error is returned.
+func (e *Engine) reconcileTaskGroup(ctx context.Context, tgNode *wfv1.NodeStatus, items []dag.Task, scope *wfScope) error {
+	var stopErr error
+	for _, item := range items {
+		err := e.reconcileTask(ctx, item, []string{tgNode.Name}, scope)
+		if e.dispatchOutcome(ctx, item.GetName(), err) {
+			stopErr = err
+			break
 		}
 	}
-	if len(desired) == 0 {
-		return nil
+	itemNodes := make([]*wfv1.NodeStatus, len(items))
+	for i, item := range items {
+		if n := e.getTaskNode(ctx, item.GetName()); n != nil && !e.hasPendingHooks(n) {
+			itemNodes[i] = n
+		}
 	}
-	return e.reconciler.Reconcile(ctx, desired)
+	if phase, done := dag.TaskGroupPhase(itemNodes); done {
+		e.woc.markNodePhase(ctx, tgNode.Name, phase)
+	}
+	return stopErr
+}
+
+// reconcileTask hands one task to the reconciler, linking a node it creates
+// under parents. scope is the task's scope (for an item, its group's).
+func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []string, scope *wfScope) error {
+	desired, err := e.createDesiredTask(ctx, task, parents, scope)
+	if err != nil || desired == nil {
+		return err
+	}
+	return e.reconciler.Reconcile(ctx, []DesiredTask{*desired})
 }
 
 // reconcileExpandedChildren reconciles fulfilled children of a TaskGroup
@@ -1016,31 +955,36 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 			return failTask(expandErr)
 		}
 
-		// Empty expansion (e.g., withParam resolves to []) → skip the task
+		e.expanded[taskName] = expandedTasks
+
+		// Empty expansion (e.g., withParam resolves to []) → skip the task. A
+		// group that already exists and now expands to no items (after `argo
+		// retry --parameter`) is Skipped too where its phase allows it; a
+		// Running group cannot become Skipped, so it is completed Succeeded,
+		// with the same message.
 		if len(expandedTasks) == 0 {
-			return e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
+			if taskNode == nil {
+				return e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
+			}
+			phase := wfv1.NodeSkipped
+			if !isValidPhaseTransition(taskNode.Phase, phase) {
+				phase = wfv1.NodeSucceeded
+			}
+			return e.woc.markNodePhase(ctx, taskNodeName, phase, "Skipped, empty params"), nil
 		}
 
 		tgNode := taskNode
 		if tgNode == nil {
 			tgNode = e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
 		}
-
-		err = e.reconcileExpanded(ctx, expandedTasks, tgNode.Name, nil)
-		e.noteExpansionProgress(ctx, tgNode.Name, expandedTasks)
-		if err != nil {
+		if err := e.reconcileTaskGroup(ctx, tgNode, expandedTasks, scope); err != nil {
 			return nil, err
 		}
 		return tgNode, nil
 	}
 
 	// Use reconciler for leaf task
-	desired, err := e.createDesiredTask(ctx, task, parentNodeNames)
-	if err != nil || desired == nil {
-		return e.getTaskNode(ctx, taskName), err
-	}
-	err = e.reconciler.Reconcile(ctx, []DesiredTask{*desired})
-	if err != nil {
+	if err := e.reconcileTask(ctx, task, parentNodeNames, scope); err != nil {
 		// Throttling sentinels mean "didn't materialize, but it's deliberate".
 		// Propagate them up so callers can distinguish from real failures, but
 		// don't synthesize a fake "no materialization" error here.
@@ -1084,10 +1028,11 @@ func (e *Engine) initTerminalErrorNode(ctx context.Context, task dag.Task, paren
 }
 
 // createDesiredTask builds the DesiredTask the reconciler executes for task,
-// to be linked under parents when its node is created. It returns nil for a
-// task that is already fulfilled. A setup error is recorded on the task's
-// node; ErrRequeue (a dependency output not in scope yet) is not.
-func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents []string) (*DesiredTask, error) {
+// from scope, the task's scope, to be linked under parents when its node is
+// created. It returns nil for a task that is already fulfilled. A setup error
+// is recorded on the task's node; ErrRequeue (a dependency output not in
+// scope yet) is not.
+func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents []string, scope *wfScope) (*DesiredTask, error) {
 	taskName := task.GetName()
 	taskNodeName := e.taskNodeName(taskName)
 
@@ -1101,17 +1046,11 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 		return nil, err
 	}
 
-	// Build scope
-	scope, err := e.buildLocalScopeFromTask(ctx, task)
-	if err != nil {
-		return failTask(err)
-	}
-
 	// spec.volumes may reference the outputs of earlier tasks or steps
 	// (docs/variables.md), so substitute them from this task's scope before
 	// its pod is built, as resolveDependencyReferences and resolveReferences
 	// did before the Engine. Globals were substituted once at operate start.
-	if err = e.woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil)); err != nil {
+	if err := e.woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil)); err != nil {
 		return failTask(err)
 	}
 
@@ -1445,32 +1384,6 @@ func (e *Engine) stepGroupNodeName(taskName string) string {
 		return e.stepGroupNodeNameAt(groupIdx)
 	}
 	return ""
-}
-
-// assessTaskGroupPhase marks a TaskGroup node as terminal once all its non-hook children
-// have reached a terminal phase. This is necessary because TaskGroup nodes are created in
-// Running state and must be explicitly transitioned; the k8s reconciler only manages
-// individual pod nodes, not their TaskGroup parent.
-func (e *Engine) assessTaskGroupPhase(ctx context.Context, tgNode *wfv1.NodeStatus) {
-	groupPhase := wfv1.NodeSucceeded
-	for _, childID := range tgNode.Children {
-		childNode, err := e.woc.wf.Status.Nodes.Get(childID)
-		if err != nil {
-			return // cannot assess phase if a child is missing
-		}
-		if childNode.NodeFlag != nil && (childNode.NodeFlag.Hooked || childNode.NodeFlag.Retried) {
-			continue // hooks and retry placeholders don't affect group phase
-		}
-		if !childNode.Fulfilled() || e.hasPendingHooks(childNode) {
-			return // still waiting (an item's exit hook counts, as in executeDAGTask)
-		}
-		// Worst phase wins: Error outranks Failed (as in the evaluator's
-		// task-group assessment), regardless of child order.
-		if childNode.Phase == wfv1.NodeError || (childNode.Phase == wfv1.NodeFailed && groupPhase != wfv1.NodeError) {
-			groupPhase = childNode.Phase
-		}
-	}
-	e.woc.markNodePhase(ctx, tgNode.Name, groupPhase)
 }
 
 // getChildNodes returns all direct child NodeStatus objects of a node.
