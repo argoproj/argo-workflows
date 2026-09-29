@@ -9747,3 +9747,375 @@ spec:
 		}
 	}
 }
+
+// r4RunResults validates manifest and reconciles it until the workflow
+// completes or rounds run out, then extra more times. After each reconcile
+// every unfinished pod is succeeded, a pod of a template named in results
+// with that script result. setup, if not nil, runs on the controller before
+// the first reconcile. It reconciles from the in-memory status, as the
+// probes it ports did.
+func r4RunResults(t *testing.T, manifest string, results map[string]string, rounds, extra int, setup func(*WorkflowController)) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	r4ValidateWithTemplates(ctx, t, controller, wf)
+	if setup != nil {
+		setup(controller)
+	}
+	withResult := func(pod *apiv1.Pod, w *wfOperationCtx) {
+		node := w.wf.Status.Nodes[w.nodeID(pod)]
+		if r, ok := results[node.TemplateName]; ok {
+			withOutputs(ctx, wfv1.Outputs{Result: &r})(pod, w)
+		}
+	}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range rounds {
+		woc.operate(ctx)
+		if woc.wf.Status.Phase.Completed() {
+			break
+		}
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Phase.Fulfilled(nil) {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		}, withResult)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	for range extra {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc
+}
+
+// r4C39Inner is a Steps template whose output parameter reads a when-false
+// step's output with no default: the output cannot be resolved, an error of
+// the template itself.
+const r4C39Inner = `
+  - name: inner
+    retryStrategy:
+      limit: "2"
+      retryPolicy: OnError
+    steps:
+    - - name: a
+        template: produce
+        when: "false"
+      - name: b
+        template: echo
+    outputs:
+      parameters:
+      - name: x
+        valueFrom:
+          parameter: "{{steps.a.outputs.parameters.p}}"
+  - name: produce
+    container:
+      image: alpine
+      command: [sh, -c, "echo 1 > /tmp/p"]
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+  - name: echo
+    container:
+      image: alpine
+      command: [echo, hi]
+`
+
+// TestRegressionR4_C39_RetryOnError ports TestProbe_v1x28_RetryOnError
+// (v1x28-1_test.go / C39). A Steps template whose outputs cannot be
+// resolved ends Error, as executeSteps' returned error did, so its
+// retryStrategy with retryPolicy OnError retries it: b runs once per
+// attempt. HEAD ended it Failed, which OnError does not retry.
+func TestRegressionR4_C39_RetryOnError(t *testing.T) {
+	woc := r4RunResults(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c39-onerror
+  namespace: default
+spec:
+  entrypoint: top
+  templates:
+  - name: top
+    steps:
+    - - name: call
+        template: inner
+`+r4C39Inner, nil, 12, 3, nil)
+	require.True(t, woc.wf.Status.Phase.Completed())
+	ctx := logging.TestContext(t.Context())
+	assert.Len(t, r4CommandsMatching(ctx, t, woc, "].b"), 3, "b runs once per attempt: %v", r4PodNodeNames(ctx, t, woc))
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c39-onerror[0].call(0)"), "the attempt ends Error")
+}
+
+// TestRegressionR4_C39_ItemsScriptResultOutput ports
+// TestProbe_v1x28_ItemsScriptResultOutput (v1x28-1_test.go / C39). The Steps
+// template's output reads the aggregated result of a withItems script that
+// printed plain text, which cannot be aggregated: the template itself errors,
+// and it and the workflow end Error, not Failed.
+func TestRegressionR4_C39_ItemsScriptResultOutput(t *testing.T) {
+	woc := r4RunResults(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c39-itemsout
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: say
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: [a, b]
+    outputs:
+      parameters:
+      - name: all
+        valueFrom:
+          parameter: "{{steps.gen.outputs.result}}"
+  - name: say
+    inputs:
+      parameters:
+      - name: msg
+    script:
+      image: alpine
+      command: [sh]
+      source: echo hello {{inputs.parameters.msg}}
+`, map[string]string{"say": "hello x"}, 10, 3, nil)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c39-itemsout"))
+}
+
+// TestRegressionR4_C59_PodRejectedMessage ports
+// TestProbe_v1x30_PodRejectedMessage (v1x30-1_test.go / C59). A step whose
+// pod an admission webhook rejects ends Error; its StepGroup ends Error with
+// main's "step group deemed errored due to child <name> error: <reason>",
+// which the Steps node and the workflow carry. HEAD said only "child '<id>'
+// failed" and left the StepGroup Failed. Per P23 the rule is keyed on the
+// step's phase.
+func TestRegressionR4_C59_PodRejectedMessage(t *testing.T) {
+	woc := r4RunResults(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c59-rej
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: work
+    - - name: b
+        template: badpod
+  - name: badpod
+    container:
+      image: alpine
+      args: [reject-me]
+  - name: work
+    container:
+      image: alpine
+`, nil, 8, 2, func(controller *WorkflowController) {
+		r4RejectPodCreate(controller, func(pod *apiv1.Pod) bool {
+			return slices.Contains(pod.Spec.Containers[len(pod.Spec.Containers)-1].Args, "reject-me")
+		}, apierr.NewBadRequest(`admission webhook "policy.example.com" denied the request: image not allowed`))
+	})
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "step group deemed errored due to child r4-c59-rej[1].b error:")
+	assert.Contains(t, woc.wf.Status.Message, "denied the request", "the workflow message carries the reason")
+	root, err := woc.wf.GetNodeByName("r4-c59-rej")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, root.Phase)
+	assert.Contains(t, root.Message, "denied the request", "the Steps node message carries the reason")
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c59-rej[1]"), "the StepGroup")
+}
+
+// TestRegressionR4_C59_WithParamNotJSONMessage ports
+// TestProbe_v1x30_WithParamNotJSONMessage (v1x30-1_test.go / C59). A step
+// whose withParam is not a JSON list errors, and the workflow message says
+// why rather than only naming the step's node.
+func TestRegressionR4_C59_WithParamNotJSONMessage(t *testing.T) {
+	woc := r4RunResults(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c59-wp
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: gen
+    - - name: fan
+        template: echo
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withParam: "{{steps.gen.outputs.result}}"
+  - name: gen
+    script:
+      image: alpine
+      command: [sh]
+      source: echo hi
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine
+      args: ["{{inputs.parameters.msg}}"]
+`, map[string]string{"gen": "not json"}, 8, 2, nil)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "withParam value could not be parsed as a JSON list")
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c59-wp[1]"), "the StepGroup")
+}
+
+// r4C40Say is a withItems script template that prints plain text, whose
+// results cannot be aggregated into a JSON list, and a plain step.
+const r4C40Say = `
+  - name: say
+    inputs:
+      parameters:
+      - name: msg
+    script:
+      image: alpine
+      command: [sh]
+      source: echo hello {{inputs.parameters.msg}}
+  - name: echo
+    inputs:
+      parameters:
+      - name: in
+        value: ""
+    container:
+      image: alpine
+      command: [echo, "{{inputs.parameters.in}}"]
+`
+
+// TestRegressionR4_C40_AggregationErrorWorkflowError ports
+// TestProbe_v1x60_AggregationErrorWorkflowError (v1x60-1_test.go / C40).
+// gen's items print plain text, so their results cannot be aggregated for
+// the next group: as when executeSteps aggregated a finished group into the
+// template's scope, that is an error of the Steps template itself, which
+// ends Error, as does the workflow; use never runs. HEAD recorded the error
+// on use, and the Steps node and the workflow ended Failed.
+func TestRegressionR4_C40_AggregationErrorWorkflowError(t *testing.T) {
+	woc := r4RunResults(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c40-agg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: say
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: [a, b]
+    - - name: use
+        template: echo
+        arguments:
+          parameters:
+          - name: in
+            value: "{{steps.gen.outputs.result}}"
+`+r4C40Say, map[string]string{"say": "hello x"}, 6, 0, nil)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c40-agg"))
+	assert.Empty(t, r4NodePhase(woc, "r4-c40-agg[1].use"), "use never starts")
+}
+
+// TestRegressionR4_C40_AggErrContinueOnError ports
+// TestProbe_v1x60_AggErrContinueOnError (v1x60-1_test.go / C40). The
+// aggregation error is the template's, not use's, so use's continueOn.error
+// does not apply: neither use nor after runs, and the workflow ends Error.
+func TestRegressionR4_C40_AggErrContinueOnError(t *testing.T) {
+	woc := r4RunResults(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c40-cont
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: fan
+        template: say
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: [a, b]
+    - - name: use
+        template: echo
+        continueOn:
+          error: true
+    - - name: after
+        template: echo
+`+r4C40Say, map[string]string{"say": "hello world"}, 8, 0, nil)
+	ctx := logging.TestContext(t.Context())
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Empty(t, r4CommandsMatching(ctx, t, woc, ".use"))
+	assert.Empty(t, r4CommandsMatching(ctx, t, woc, ".after"))
+}
+
+// TestRegressionR4_P16_DaemonDiesAfterGroupSucceeded is a decided deviation
+// (P16): it encodes the chosen behaviour, not main's. db's StepGroup [0] is
+// recorded Succeeded once db is up; db then dies while test runs. [0] keeps
+// the Succeeded it was recorded with, while db, the Steps node and the
+// workflow go Failed, naming db.
+func TestRegressionR4_P16_DaemonDiesAfterGroupSucceeded(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p16
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: db
+        template: daemon
+    - - name: test
+        template: work
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sleep, infinity]}
+  - name: work
+    container: {image: alpine, command: [echo]}
+`)
+	const db, test = "r4-p16[0].db", "r4-p16[1].test"
+	stage := func(phase apiv1.PodPhase, name string, with ...with) {
+		r4SetPodsPhase(t, ctx, r.woc, phase, r4PodForNode(name), with...)
+		r.op(ctx)
+		r.op(ctx)
+	}
+	stage(apiv1.PodRunning, db, r4WithReady)
+	stage(apiv1.PodRunning, test)
+	require.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-p16[0]"), "[0] is recorded Succeeded once db is up")
+	stage(apiv1.PodFailed, db)
+	dbNode, err := r.woc.wf.GetNodeByName(db)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, dbNode.Phase, "db")
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-p16[0]"), "[0] keeps its recorded phase")
+	assert.Equal(t, wfv1.NodeFailed, r4NodePhase(r.woc, "r4-p16"), "the Steps node")
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
+	assert.Equal(t, fmt.Sprintf("child '%s' failed", dbNode.ID), r.woc.wf.Status.Message)
+}
