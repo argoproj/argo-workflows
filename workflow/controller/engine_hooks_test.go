@@ -3,22 +3,85 @@ package controller
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
 
-// TestRegressionR4_C67_NoScopeBuildWithoutHooks: driving the hooks of a task
+// TestEngine_HookScopeErrorReentersExistingHooks: when a task's hooks' scope
+// cannot be built (here an ancestor fan-out's result is not JSON, so its
+// aggregate fails), the error is recorded, but the hook nodes the task already
+// has are still re-entered: a suspend exit hook left alone would never finish
+// and the boundary would wait on it for good.
+func TestEngine_HookScopeErrorReentersExistingHooks(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: scope-err
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: g, template: echo, withItems: [one]}
+      - name: a
+        depends: g
+        template: echo
+        hooks:
+          exit:
+            template: wait
+  - name: echo
+    container:
+      image: busybox
+      command: [echo]
+  - name: wait
+    suspend: {duration: "1s"}
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range 3 {
+		woc.operate(ctx)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	hook, err := woc.wf.GetNodeByName("scope-err.a.onExit")
+	require.NoError(t, err, "a's exit hook runs")
+	require.Equal(t, wfv1.NodeRunning, hook.Phase)
+
+	item, err := woc.wf.GetNodeByName("scope-err.g(0:one)")
+	require.NoError(t, err)
+	notJSON := "{not json"
+	item.Outputs = &wfv1.Outputs{Result: &notJSON}
+	woc.wf.Status.Nodes[item.ID] = *item
+	hook.StartedAt = metav1.NewTime(time.Now().Add(-time.Hour))
+	woc.wf.Status.Nodes[hook.ID] = *hook
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	hook, err = woc.wf.GetNodeByName("scope-err.a.onExit")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, hook.Phase, "the existing hook is re-entered")
+	assert.Contains(t, woc.wf.Status.Message, "failed to aggregate outputs", "the scope error is recorded")
+}
+
+// TestEngine_C67_NoScopeBuildWithoutHooks: driving the hooks of a task
 // without any builds no scope (C67). Building one walks every ancestor, and
 // the walk drives every task's hooks on every reconcile. A scope build over a
 // finished ancestor records the ancestor in engine.finished, so an empty
 // engine.finished shows no scope was built; the hooked task is the control.
-func TestRegressionR4_C67_NoScopeBuildWithoutHooks(t *testing.T) {
+func TestEngine_C67_NoScopeBuildWithoutHooks(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
