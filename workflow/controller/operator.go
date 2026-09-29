@@ -3128,24 +3128,15 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(ctx context.Context, nodeName 
 	return node, nil
 }
 
-func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID string, nodeType wfv1.NodeType) *wfv1.NodeStatus {
-	var leafNode *wfv1.NodeStatus
-	var dfs func(nodeID string)
-	dfs = func(nodeID string) {
-		node, err := woc.wf.Status.Nodes.Get(nodeID)
-		if err != nil {
-			woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
-			return
-		}
-		if node.Type == nodeType {
-			leafNode = node
-		}
-		for _, childID := range node.Children {
-			dfs(childID)
+// failOpenGroups fails every StepGroup and TaskGroup node of the boundary
+// that is still open when failFast ends it: they only group other nodes and
+// are never otherwise assessed once the boundary itself is marked Failed.
+func (woc *wfOperationCtx) failOpenGroups(ctx context.Context, boundaryID, message string) {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.BoundaryID == boundaryID && (node.Type == wfv1.NodeTypeStepGroup || node.Type == wfv1.NodeTypeTaskGroup) && !node.Fulfilled() {
+			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 		}
 	}
-	dfs(boundaryID)
-	return leafNode
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
@@ -3160,11 +3151,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		// Check failFast
 		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
 			if woc.getActivePods(node.ID) == 0 {
-				if tmpl.GetType() == wfv1.TemplateTypeSteps {
-					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, node.ID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
-						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-					}
-				}
+				woc.failOpenGroups(ctx, node.ID, "template has failed or errored children and failFast enabled")
 				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 			}
 			return ErrParallelismReached
@@ -3196,11 +3183,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		// Check failFast
 		if boundaryTemplate != nil && boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			if woc.getActivePods(boundaryID) == 0 {
-				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
-					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
-						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
-					}
-				}
+				woc.failOpenGroups(ctx, boundaryID, "template has failed or errored children and failFast enabled")
 				woc.markNodePhase(ctx, boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 			}
 			return ErrParallelismReached

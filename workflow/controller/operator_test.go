@@ -9601,6 +9601,64 @@ func TestStepsFailFast(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
 
+// TestDAGFailFastItems ports TestProbe_v1x46_DAGFailFastItems (v1x46-1_test.go
+// / C53's pre-existing DAG form). failFast with an expanded task (withItems)
+// and parallelism ends the workflow Failed while one item is still running,
+// leaving the TaskGroup node between the DAG task and its items Running
+// forever: the failFast branch never assesses it. This fails at base too.
+func TestDAGFailFastItems(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-failfast-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 2
+    failFast: true
+    dag:
+      tasks:
+      - name: s
+        template: work
+        withItems: [p1, p2, p3, p4, p5]
+  - name: work
+    container: {image: alpine, command: [echo]}
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	first := true
+	setPodPhases(ctx, woc, func(*wfv1.NodeStatus) apiv1.PodPhase {
+		if first {
+			first = false
+			return apiv1.PodFailed
+		}
+		return apiv1.PodRunning
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.Fulfilled() {
+			return ""
+		}
+		return apiv1.PodSucceeded
+	})
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	for _, n := range woc.wf.Status.Nodes {
+		assert.True(t, n.Fulfilled(), "node %s (%s) left %s", n.Name, n.Type, n.Phase)
+	}
+}
+
 func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/scrip[t.py)"))
