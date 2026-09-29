@@ -274,6 +274,13 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.addArtifactGCFinalizer(reconcileCtx)
 
+	// Populate the phase of all the nodes prior to execution, before task
+	// results are merged: a node whose task result syncs now completes in
+	// this operation (handleNodeFulfilled, exportCompletedNodes).
+	for _, node := range woc.wf.Status.Nodes {
+		woc.preExecutionNodeStatuses[node.ID] = *node.DeepCopy()
+	}
+
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
 	woc.taskResultReconciliation(reconcileCtx)
 
@@ -333,11 +340,6 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// reconcile.
 			return
 		}
-	}
-
-	// Populate the phase of all the nodes prior to execution
-	for _, node := range woc.wf.Status.Nodes {
-		woc.preExecutionNodeStatuses[node.ID] = *node.DeepCopy()
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
@@ -2493,6 +2495,8 @@ func (woc *wfOperationCtx) exportCompletedNodes(ctx context.Context) {
 			completed = append(completed, node)
 		}
 	}
+	// FinishedAt has second precision; nodes that finished in the same
+	// second are ordered by name.
 	slices.SortFunc(completed, func(a, b wfv1.NodeStatus) int {
 		return cmp.Or(a.FinishedAt.Compare(b.FinishedAt.Time), strings.Compare(a.Name, b.Name))
 	})
