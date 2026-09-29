@@ -9750,50 +9750,6 @@ spec:
 	}
 }
 
-// r4RunResults validates manifest and reconciles it until the workflow
-// completes or rounds run out, then extra more times. After each reconcile
-// every unfinished pod is succeeded, a pod of a template named in results
-// with that script result. setup, if not nil, runs on the controller before
-// the first reconcile. It reconciles from the in-memory status, as the
-// probes it ports did.
-func r4RunResults(t *testing.T, manifest string, results map[string]string, rounds, extra int, setup func(*WorkflowController)) *wfOperationCtx {
-	t.Helper()
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(manifest)
-	cancel, controller := newController(ctx, wf)
-	t.Cleanup(cancel)
-	r4ValidateWithTemplates(ctx, t, controller, wf)
-	if setup != nil {
-		setup(controller)
-	}
-	withResult := func(pod *apiv1.Pod, w *wfOperationCtx) {
-		node := w.wf.Status.Nodes[w.nodeID(pod)]
-		if r, ok := results[node.TemplateName]; ok {
-			withOutputs(ctx, wfv1.Outputs{Result: &r})(pod, w)
-		}
-	}
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	for range rounds {
-		woc.operate(ctx)
-		if woc.wf.Status.Phase.Completed() {
-			break
-		}
-		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
-			if n.Phase.Fulfilled(nil) {
-				return ""
-			}
-			return apiv1.PodSucceeded
-		}, withResult)
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-	}
-	for range extra {
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-		woc.operate(ctx)
-	}
-	dumpNodes(t, "final", woc.wf)
-	return woc
-}
-
 // r4C39Inner is a Steps template whose output parameter reads a when-false
 // step's output with no default: the output cannot be resolved, an error of
 // the template itself.
@@ -10283,4 +10239,64 @@ spec:
 		r.op(ctx)
 	}
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_StepGroupErrorMessageFallsBackToPhase covers a Task 5.4
+// review follow-up: stepGroupOutcome (engine.go) built the "step group
+// deemed errored due to child <name> error: <reason>" message straight from
+// the failed node's Message, which trails off into "...error: " when that
+// message is empty. There is no realistic pod path that leaves an Error
+// node's Message empty (markNodeError always writes err.Error()), so this
+// builds an in-flight status directly, the way the C12 legacy-upgrade tests
+// do, with the failed step node already Error and Message "": engine.go
+// must still produce a message naming what happened, falling back to the
+// node's phase. This is a defect in this branch's own new message-building
+// code (T5.4), not a base-vs-branch regression, so it is not basecheck-clean:
+// base's steps.go builds Step Group messages on an entirely different path
+// that predates stepGroupOutcome.
+func TestRegressionR4_StepGroupErrorMessageFallsBackToPhase(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	t.Cleanup(cancel)
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-sg-msg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: denied
+        template: echo
+  - name: echo
+    container:
+      image: alpine
+`)
+	now := metav1.NewTime(time.Now().Add(-time.Minute))
+	root, sg := wf.Name, wf.Name+"[0]"
+	step := sg + ".denied"
+	id := wf.NodeID
+	wf.Status.Phase = wfv1.WorkflowRunning
+	wf.Status.StartedAt = now
+	wf.Status.Nodes = wfv1.Nodes{
+		id(root): {ID: id(root), Name: root, DisplayName: root, Type: wfv1.NodeTypeSteps, TemplateName: "main", TemplateScope: "local/" + wf.Name, Phase: wfv1.NodeRunning, StartedAt: now, Children: []string{id(sg)}},
+		id(sg):   {ID: id(sg), Name: sg, DisplayName: "[0]", Type: wfv1.NodeTypeStepGroup, TemplateName: "main", TemplateScope: "local/" + wf.Name, Phase: wfv1.NodeRunning, BoundaryID: id(root), StartedAt: now, Children: []string{id(step)}},
+		id(step): {ID: id(step), Name: step, DisplayName: "denied", Type: wfv1.NodeTypePod, TemplateName: "echo", TemplateScope: "local/" + wf.Name, Phase: wfv1.NodeError, Message: "", BoundaryID: id(root), StartedAt: now, FinishedAt: now},
+	}
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	sgNode, err := woc.wf.GetNodeByName(sg)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, sgNode.Phase)
+	assert.NotEqual(t, fmt.Sprintf("step group deemed errored due to child %s error: ", step), sgNode.Message,
+		"an empty child message must not leave the group message trailing off")
+	assert.Equal(t, fmt.Sprintf("step group deemed errored due to child %s error: %s", step, wfv1.NodeError), sgNode.Message)
 }

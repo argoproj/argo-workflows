@@ -373,7 +373,7 @@ func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePh
 			failed := e.failedNode(node)
 			phase, message = wfv1.NodeFailed, fmt.Sprintf("child '%s' failed", failed.ID)
 			if failed.Phase == wfv1.NodeError {
-				phase, message = wfv1.NodeError, fmt.Sprintf("step group deemed errored due to child %s error: %s", failed.Name, failed.Message)
+				phase, message = wfv1.NodeError, fmt.Sprintf("step group deemed errored due to child %s error: %s", failed.Name, cmp.Or(failed.Message, string(failed.Phase)))
 			}
 		}
 	}
@@ -607,9 +607,9 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 		if err := e.updateOutboundNodesForTargetTasks(ctx, targetTasks); err != nil {
 			return err
 		}
-		// Surface a "child '<id>' failed" message on the boundary, matching the
-		// pre-refactor executeSteps/executeDAG semantics. This message bubbles up
-		// to the workflow status (operator.go uses entry node.Message for
+		// Surface the failure message on the boundary, matching the pre-refactor
+		// executeSteps/executeDAG semantics. This message bubbles up to the
+		// workflow status (operator.go uses entry node.Message for
 		// workflow.status.Message), and callers / tests rely on it to identify
 		// which child triggered the failure (e.g. TestNodeSuspendResume).
 		_ = e.woc.markNodePhase(ctx, e.nodeName, phase, message)
