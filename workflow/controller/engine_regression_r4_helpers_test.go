@@ -193,8 +193,6 @@ func r4DelayPodWatch(controller *WorkflowController, d time.Duration) {
 // the report-outputs-completed label) for the node named nodeName, as the
 // executor would after a successful run, and waits for the task result
 // informer to catch up.
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4TaskResultOutputs(ctx context.Context, woc *wfOperationCtx, nodeName string, out wfv1.Outputs) {
 	nodeID := woc.wf.NodeID(nodeName)
 	taskResult := &wfv1.WorkflowTaskResult{

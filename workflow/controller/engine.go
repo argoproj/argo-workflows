@@ -1357,23 +1357,12 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 		return err
 	}
 	scope := createScope(e.tmpl)
+	// Seed the scope with the workflow's own outputs so that a template's own
+	// output params/artifacts can read {{workflow.outputs.*}} (C43), as base's
+	// executeSteps did — and, as an improvement, executeDAG too (P8).
+	e.woc.addWorkflowOutputsToLocalScope(e.woc.wf.Status.Outputs, scope)
 
 	includeArtifacts := e.tmpl.GetType() == wfv1.TemplateTypeSteps
-	addNodeToScope := func(taskName string, taskNode *wfv1.NodeStatus, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, name string, tmplHolder wfv1.TemplateReferenceHolder) error {
-		if taskNode.Type == wfv1.NodeTypeTaskGroup {
-			childNodes := e.getChildNodes(taskNode)
-			if aggErr := e.woc.processAggregateNodeOutputs(scope, agg, name, childNodes); aggErr != nil {
-				return aggErr
-			}
-		}
-		e.woc.buildLocalScope(scope, ref, name, e.scopeNodeForTask(taskName, taskNode))
-		// A skipped/omitted task's declared outputs (producer default, else nil) must be in the
-		// aggregation scope too, so the template's own output params — including
-		// ValueFrom.Expression `??` fallbacks — can resolve them instead of failing to traverse nil.
-		e.woc.addSkippedNodeOutputsToScope(ctx, e.tmplCtx, scope, ref, name, taskNode, tmplHolder, includeArtifacts)
-		e.woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
-		return nil
-	}
 
 	if e.tmpl.DAG != nil {
 		for _, task := range e.tmpl.DAG.Tasks {
@@ -1381,9 +1370,10 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 			if taskNode == nil {
 				continue
 			}
-			if err = addNodeToScope(task.Name, taskNode, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, &task); err != nil {
+			if err = e.addTaskNodeToScope(ctx, scope, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, task.Name, taskNode, includeArtifacts); err != nil {
 				return err
 			}
+			e.woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 		}
 	} else if e.tmpl.Steps != nil {
 		for i, stepGroup := range e.tmpl.Steps {
@@ -1394,9 +1384,10 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 				if taskNode == nil {
 					continue
 				}
-				if err = addNodeToScope(taskName, taskNode, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, &step); err != nil {
+				if err = e.addTaskNodeToScope(ctx, scope, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, taskName, taskNode, includeArtifacts); err != nil {
 					return err
 				}
+				e.woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 			}
 		}
 	}
