@@ -3,7 +3,6 @@ package dag
 import (
 	"context"
 	"strings"
-	"sync"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
@@ -15,10 +14,6 @@ type workflowStore struct {
 	boundaryID   string
 	boundaryName string
 	workflow     *wfv1.Workflow
-
-	mu sync.RWMutex
-	// phases caches evaluator-managed phases (e.g. Omitted for unreachable tasks)
-	phases map[Key]wfv1.NodePhase
 }
 
 // newWorkflowStore creates a new workflowStore from a workflow and DAG context.
@@ -28,7 +23,6 @@ func newWorkflowStore(wf *wfv1.Workflow, boundaryID, boundaryName string) *workf
 		boundaryID:   boundaryID,
 		boundaryName: boundaryName,
 		workflow:     wf,
-		phases:       make(map[Key]wfv1.NodePhase),
 	}
 }
 
@@ -75,41 +69,17 @@ func (s *workflowStore) taskNodeID(taskName string) string {
 	return s.workflow.ResolveNodeID(s.taskNodeName(taskName))
 }
 
-// getPhase returns the current phase of a task.
-// It checks the workflow nodes first, then falls back to the internal phases map
-// for terminal states (like Omitted) that the evaluator manages but don't have
-// corresponding workflow nodes yet.
+// getPhase returns the current phase of a task's node, Pending while it has
+// none. A running daemon counts as Succeeded.
 func (s *workflowStore) getPhase(_ context.Context, key Key) wfv1.NodePhase {
-	// Check workflow nodes first (source of truth for actual execution state)
-	nodeID := s.taskNodeID(key)
-	node, err := s.nodes.Get(nodeID)
-	if err == nil {
-		// Node exists — use its phase
-		if node.IsDaemoned() && node.Phase == wfv1.NodeRunning {
-			return wfv1.NodeSucceeded
-		}
-		return node.Phase
+	node, err := s.nodes.Get(s.taskNodeID(key))
+	if err != nil {
+		return wfv1.NodePending
 	}
-
-	// No workflow node. Check internal phases map for evaluator-managed states
-	// (e.g. Omitted marking from unreachable depends conditions).
-	s.mu.RLock()
-	if phase, ok := s.phases[key]; ok && phase.Fulfilled(nil) {
-		s.mu.RUnlock()
-		return phase
+	if node.IsDaemoned() && node.Phase == wfv1.NodeRunning {
+		return wfv1.NodeSucceeded
 	}
-	s.mu.RUnlock()
-
-	return wfv1.NodePending
-}
-
-// setPhase updates the phase of a task.
-// This is primarily used by the evaluator to track internal state;
-// actual node phase updates happen through the workflow controller.
-func (s *workflowStore) setPhase(_ context.Context, key Key, phase wfv1.NodePhase) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.phases[key] = phase
+	return node.Phase
 }
 
 // getNode returns the raw node status for a task.
@@ -120,27 +90,6 @@ func (s *workflowStore) getNode(taskName string) *wfv1.NodeStatus {
 		return nil
 	}
 	return node
-}
-
-// getRetryChildren returns the non-hook child nodes of a Retry node,
-// ordered by their position in the Children slice (attempt order).
-func (s *workflowStore) getRetryChildren(taskName string) []*wfv1.NodeStatus {
-	node := s.getNode(taskName)
-	if node == nil || node.Type != wfv1.NodeTypeRetry {
-		return nil
-	}
-	var children []*wfv1.NodeStatus
-	for _, childID := range node.Children {
-		child, err := s.nodes.Get(childID)
-		if err != nil {
-			continue
-		}
-		if child.NodeFlag != nil && child.NodeFlag.Hooked {
-			continue
-		}
-		children = append(children, child)
-	}
-	return children
 }
 
 // getTaskGroupChildren returns the schedulable expanded children of a TaskGroup

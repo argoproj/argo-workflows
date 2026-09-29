@@ -8034,3 +8034,334 @@ func TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, hookNode.Message, "hook node message")
 }
+
+// r4C2Workflow is the C2 shape: task A (a DAG task or a step, per kind)
+// runs a failing template whose retryStrategy (retry, or the workflow's
+// templateDefaults) is only known once the template is processed. The
+// strategy has a one-hour backoff, so A's second attempt never starts here.
+func r4C2Workflow(kind, defaults, retry string) string {
+	body := "dag:\n      tasks:\n      - name: A"
+	if kind == "steps" {
+		body = "steps:\n    - - name: A"
+	}
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c2-%s
+  namespace: default
+spec:
+  entrypoint: main
+%s  templates:
+  - name: main
+    %s
+        template: fail
+        arguments:
+          parameters:
+          - name: p
+            value: "2"
+  - name: fail
+    inputs:
+      parameters:
+      - name: p
+%s    container:
+      image: alpine
+      command: [sh, -c, exit 1]
+`, kind, defaults, body, retry)
+}
+
+// r4C2BackingOff fails A's first attempt as a kubelet would (a terminated
+// container with a finish time, so the backoff window is open), reconciles
+// a few more times, and checks that A is still backing off and nothing
+// around it has finished: the second attempt is still to come.
+func r4C2BackingOff(t *testing.T, manifest, boundary string) {
+	ctx, r := r4Start(t, manifest)
+	require.Equal(t, wfv1.WorkflowRunning, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, func(*apiv1.Pod) bool { return true }, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		now := metav1.Now()
+		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{{Name: common.MainContainerName, State: apiv1.ContainerState{
+			Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1, StartedAt: metav1.NewTime(now.Add(-2 * time.Second)), FinishedAt: now},
+		}}}
+	})
+	for range 3 {
+		r.op(ctx)
+	}
+	a := r.woc.wf.Status.Nodes.FindByDisplayName("A")
+	require.NotNil(t, a)
+	assert.Equal(t, wfv1.NodeRunning, a.Phase, "A is backing off")
+	assert.True(t, strings.HasPrefix(a.Message, "Backoff for"), "A: %q", a.Message)
+	assert.Len(t, podNames(ctx, r.woc), 1, "no second attempt yet")
+	assert.Equal(t, wfv1.NodeRunning, r4NodePhase(r.woc, boundary), "the boundary waits for A's retries")
+	assert.Equal(t, wfv1.WorkflowRunning, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+}
+
+// C2: A's retry limit comes from its inputs. Ports TestProbe_v1x0_ParamLimitDAG.
+func TestRegressionR4_C2_ParamLimitDAG(t *testing.T) {
+	r4C2BackingOff(t, r4C2Workflow("dag", "", `    retryStrategy:
+      limit: "{{inputs.parameters.p}}"
+      backoff: {duration: 1h}
+`), "c2-dag")
+}
+
+// C2 for Steps, where HEAD reported the workflow Succeeded. Ports
+// TestProbe_v1x0_ParamLimitSteps.
+func TestRegressionR4_C2_ParamLimitSteps(t *testing.T) {
+	r4C2BackingOff(t, r4C2Workflow("steps", "", `    retryStrategy:
+      limit: "{{inputs.parameters.p}}"
+      backoff: {duration: 1h}
+`), "c2-steps")
+}
+
+// C2: A's retryStrategy comes from spec.templateDefaults, which also retries
+// the DAG itself; the DAG's first attempt must keep running. Ports
+// TestProbe_v1x0_TemplateDefaultsDAG.
+func TestRegressionR4_C2_TemplateDefaultsDAG(t *testing.T) {
+	r4C2BackingOff(t, r4C2Workflow("dag", `  templateDefaults:
+    retryStrategy:
+      limit: "2"
+      backoff: {duration: 1h}
+`, ""), "c2-dag(0)")
+}
+
+// C2: A's retry expression refers to its inputs. Ports
+// TestProbe_v1x0_ParamExprDAG.
+func TestRegressionR4_C2_ParamExprDAG(t *testing.T) {
+	r4C2BackingOff(t, r4C2Workflow("dag", "", `    retryStrategy:
+      limit: "2"
+      expression: "'{{inputs.parameters.p}}' == '2'"
+      backoff: {duration: 1h}
+`), "c2-dag")
+}
+
+// r4C27Workflow is a memoized template with a retryStrategy, run as task
+// or step a: a cache miss gives a Retry node whose first attempt is Pending.
+func r4C27Workflow(kind string) string {
+	body := "dag:\n      tasks:\n      - {name: a, template: echo}"
+	if kind == "steps" {
+		body = "steps:\n    - - {name: a, template: echo}"
+	}
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c27-%s
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    %s
+  - name: echo
+    retryStrategy: {limit: 1}
+    memoize:
+      key: my-key
+      cache:
+        configMap: {name: my-cache}
+    container:
+      image: alpine
+      command: [echo, hi]
+`, kind, body)
+}
+
+// r4C27Succeeds lets the recreated pod succeed and checks the workflow ends
+// Succeeded.
+func r4C27Succeeds(ctx context.Context, t *testing.T, r *r4Run) {
+	t.Helper()
+	require.Len(t, podNames(ctx, r.woc), 1, "the Pending attempt's pod is created again")
+	for i := 0; i < 4 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, r.woc, apiv1.PodSucceeded)
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+}
+
+// C27: the Pending pod of a memoized retried DAG task is deleted; the next
+// reconciles must create it again, as base did. Ports
+// TestProbe_v3x12_DagMemoRetryPendingPodDeleted.
+func TestRegressionR4_C27_MemoRetryPendingPodDeleted(t *testing.T) {
+	ctx, r := r4Start(t, r4C27Workflow("dag"))
+	r.op(ctx)
+	require.Len(t, podNames(ctx, r.woc), 1)
+	deletePods(ctx, r.woc)
+	for range 5 {
+		r4BackdateNodes(t, ctx, r.controller, r.woc.wf, time.Hour)
+		r.op(ctx)
+	}
+	r4C27Succeeds(ctx, t, r)
+}
+
+// C27: the first pod creation of a memoized retried step is refused by a
+// ResourceQuota (a transient error that leaves the attempt Pending); once
+// the quota frees up the pod must be created. Ports
+// TestProbe_v3x12_StepsMemoRetryQuotaExceeded.
+func TestRegressionR4_C27_StepsMemoRetryQuotaExceeded(t *testing.T) {
+	quotaFull := true
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C27Workflow("steps"))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	r4RejectPodCreate(controller, func(*apiv1.Pod) bool { return quotaFull },
+		apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "x", fmt.Errorf("exceeded quota: compute-resources, requested: pods=1, used: pods=10, limited: pods=10")))
+	r := &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
+	require.Empty(t, podNames(ctx, r.woc), "the first pod creation is refused")
+	quotaFull = false
+	for range 5 {
+		r.op(ctx)
+	}
+	r4C27Succeeds(ctx, t, r)
+}
+
+// C34: after `argo resubmit --memoized`, a retried DAG task that had
+// Succeeded keeps its Succeeded Retry node over a Skipped placeholder
+// attempt; it must count as Succeeded, not as a failed retry. Ports
+// TestProbe_v2x1_MemoizedRetryLeafDAG.
+func TestRegressionR4_C34_MemoizedRetryLeafDAG(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c34-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: A, template: run}
+      - {name: C, template: run}
+  - name: run
+    retryStrategy: {limit: 1}
+    container:
+      image: busybox
+`)
+	cancel, controller, newWf := memoizedResubmit(ctx, t, wf, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(node.Name, ".A(") {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	})
+	defer cancel()
+	woc := runToCompletion(ctx, t, controller, newWf, allSucceed)
+	assert.Len(t, podNames(ctx, woc), 1, "only A runs again")
+	for _, n := range woc.wf.Status.Nodes {
+		assert.NotEqual(t, wfv1.NodeFailed, n.Phase, "node %s", n.Name)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+// C34 for Steps: the memoized C of the first group must not stop the second
+// group, which never ran. Ports TestProbe_v2x1_MemoizedRetryStepsNextGroup.
+func TestRegressionR4_C34_MemoizedRetryStepsNextGroup(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c34-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - {name: A, template: run}
+      - {name: C, template: run}
+    - - {name: B, template: run}
+  - name: run
+    retryStrategy: {limit: 1}
+    container:
+      image: busybox
+`)
+	cancel, controller, newWf := memoizedResubmit(ctx, t, wf, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(node.Name, "].A(") {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	})
+	defer cancel()
+	woc := runToCompletion(ctx, t, controller, newWf, allSucceed)
+	assert.Len(t, podNames(ctx, woc), 2, "A and B run")
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, newWf.Name+"[1].B"), "B runs once A succeeds")
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+// r4C78DaemonDAG is a daemon server with a retryStrategy and a client that
+// depends on it and sorts before it.
+const r4C78DaemonDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c78
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: server, template: daemon}
+      - {name: client, template: ok, depends: server}
+  - name: daemon
+    daemon: true
+    retryStrategy: {limit: 2}
+    container:
+      image: alpine
+      command: [sh, -c, sleep 9999]
+  - name: ok
+    container:
+      image: alpine
+      command: [sh, -c, exit 0]
+`
+
+// r4C78Start runs the daemon until it is Running and daemoned and the client
+// has started.
+func r4C78Start(t *testing.T) (context.Context, *r4Run) {
+	t.Helper()
+	ctx, r := r4Start(t, r4C78DaemonDAG)
+	for range 2 {
+		makePodsPhase(ctx, r.woc, apiv1.PodRunning)
+		r.op(ctx)
+	}
+	attempt := r.woc.wf.Status.Nodes.FindByDisplayName("server(0)")
+	require.NotNil(t, attempt)
+	require.True(t, attempt.IsDaemoned())
+	require.NotNil(t, r.woc.wf.Status.Nodes.FindByDisplayName("client"))
+	return ctx, r
+}
+
+// C78: the Retry node of a running daemon is itself daemoned, reconcile
+// after reconcile. Ports TestProbe_v1x3_DaemonRetryNodeDaemoned.
+func TestRegressionR4_C78_DaemonRetryNodeDaemoned(t *testing.T) {
+	ctx, r := r4C78Start(t)
+	for i := range 4 {
+		server := r.woc.wf.Status.Nodes.FindByDisplayName("server")
+		require.NotNil(t, server)
+		assert.True(t, server.IsDaemoned(), "reconcile %d: the Retry node of a running daemon is daemoned", i)
+		r.op(ctx)
+	}
+}
+
+// C78: `argo stop` while the daemon and client run ends the daemon's Retry
+// node Succeeded, like its attempt, not Failed "Stopped with strategy".
+// Ports TestProbe_v1x3_DaemonStopRetryNodePhase.
+func TestRegressionR4_C78_DaemonStopRetryNodePhase(t *testing.T) {
+	ctx, r := r4C78Start(t)
+	stored, err := r.controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Get(ctx, "c78", metav1.GetOptions{})
+	require.NoError(t, err)
+	stored.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	_, err = r.controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Update(ctx, stored, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	r.op(ctx)
+	for range 3 {
+		makePodsPhase(ctx, r.woc, apiv1.PodFailed)
+		r.op(ctx)
+	}
+	server := r.woc.wf.Status.Nodes.FindByDisplayName("server")
+	require.NotNil(t, server)
+	attempt := r.woc.wf.Status.Nodes.FindByDisplayName("server(0)")
+	require.NotNil(t, attempt)
+	assert.Equal(t, attempt.Phase, server.Phase, "the Retry node takes its only attempt's phase")
+	assert.Equal(t, wfv1.NodeSucceeded, server.Phase, server.Message)
+}

@@ -321,10 +321,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	woc.addChildNode(ctx, retryParentNode.Name, childNode.Name)
 
 	if !childNode.Phase.Fulfilled(childNode.TaskResultSynced) && childNode.IsDaemoned() {
-		retryParentNode = woc.markNodePhase(ctx, retryParentNode.Name, childNode.Phase)
-		if childNode.IsDaemoned() {
-			retryParentNode.Daemoned = new(true)
-		}
+		retryParentNode = woc.markRetryNodeDaemoned(ctx, retryParentNode.Name, childNode.Phase)
 	}
 
 	// Re-fetch the child node since dispatch (next) may have updated it in-place

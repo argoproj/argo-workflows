@@ -83,9 +83,6 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	e.evaluator = dag.NewDAGEvaluatorFromTasks(e.woc.wf, tasks, e.tmpl, e.boundaryID, e.nodeName)
 
-	// Provide retry strategies to the evaluator
-	e.populateRetryStrategies(ctx, tasks)
-
 	e.reconcileDaemonedTasks(ctx, tasks)
 
 	if hook := e.findTaskHook(ctx, tasks, func(n *wfv1.NodeStatus) bool { return n.Phase == wfv1.NodeError }); hook != nil {
@@ -124,9 +121,6 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching bool) (ran, stop bool) {
 	name := task.GetName()
 	e.logEvaluation(ctx, result)
-	if result.RequeueAfter > 0 {
-		e.woc.requeueAfter(result.RequeueAfter)
-	}
 	node := e.getTaskNode(ctx, name)
 	switch {
 	case result.Error != nil:
@@ -149,28 +143,11 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 			e.initTaskNode(ctx, task, e.parentsFor(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
 		}
 		return false, false
-	case !dispatching || (node == nil && e.hookErr != nil) || !e.needsDispatch(node, result):
+	case !dispatching || (node == nil && e.hookErr != nil) || !result.ShouldRun:
 		return false, false
 	}
 	_, err := e.executeTask(ctx, task)
 	return true, e.dispatchOutcome(ctx, name, err)
-}
-
-// needsDispatch reports whether the evaluator's result asks for the task to
-// be dispatched. Execute, Succeed and Fail all do: for Succeed and Fail the
-// operator's retry handling records the outcome. So does a Running retry
-// node with a daemoned child, so that processNodeRetries propagates the
-// Daemoned flag from the child to the retry node.
-func (e *Engine) needsDispatch(node *wfv1.NodeStatus, result dag.EvaluationResult) bool {
-	switch result.Action {
-	case dag.ActionExecute, dag.ActionSucceed, dag.ActionFail:
-		return true
-	case dag.ActionNone:
-		if node != nil && node.Type == wfv1.NodeTypeRetry && node.Phase == wfv1.NodeRunning {
-			return true
-		}
-	}
-	return result.ShouldRun
 }
 
 // markBoundaryError marks the boundary node with an appropriate error phase.
@@ -188,44 +165,6 @@ func (e *Engine) markBoundaryError(ctx context.Context, err error) {
 	} else {
 		e.woc.markNodeError(ctx, e.nodeName, err)
 	}
-}
-
-// populateRetryStrategies resolves templates for all tasks and registers
-// any retry strategies with the evaluator.
-func (e *Engine) populateRetryStrategies(ctx context.Context, tasks []dag.Task) {
-	for _, task := range tasks {
-		_, resolvedTmpl, _, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
-		if err != nil {
-			continue
-		}
-		rs := e.woc.retryStrategy(resolvedTmpl)
-		if rs != nil {
-			e.evaluator.SetRetryStrategy(task.GetName(), rs)
-			e.evaluator.SetRetryDecider(task.GetName(), e.woc.shouldRetryNode)
-		}
-	}
-}
-
-// shouldRetryNode is the Engine's dag.RetryDecider: the retry policy and
-// retryStrategy.expression checks are the ones processNodeRetries applies
-// when it actually drives the retry, so the evaluator's assessment and the
-// operator's decision cannot disagree.
-func (woc *wfOperationCtx) shouldRetryNode(ctx context.Context, retryNode, lastChild *wfv1.NodeStatus, rs *wfv1.RetryStrategy) bool {
-	retryOnFailed, retryOnError, err := retryPolicyAllows(ctx, lastChild, *rs)
-	if err != nil {
-		return false
-	}
-	if (lastChild.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChild.Phase == wfv1.NodeError && !retryOnError) {
-		return false
-	}
-	if rs.Expression != "" && len(retryNode.Children) > 0 {
-		allowed, err := woc.retryExpressionAllows(retryNode, *rs)
-		if err != nil {
-			return false
-		}
-		return allowed
-	}
-	return true
 }
 
 // reconcileDaemonedTasks re-executes any tasks whose pods are running as daemons.

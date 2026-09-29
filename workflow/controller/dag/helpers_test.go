@@ -1,8 +1,6 @@
 package dag
 
 import (
-	"context"
-
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
@@ -18,11 +16,4 @@ func NewDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template, boundaryID, boundar
 		}
 	}
 	return NewDAGEvaluatorFromTasks(wf, dagTasks, tmpl, boundaryID, boundaryName)
-}
-
-// EvaluateTask returns the evaluation result for one task.
-// Test-only convenience over EvaluateAll, so tests see exactly what the
-// engine sees.
-func (e *DAGEvaluator) EvaluateTask(ctx context.Context, taskName string) EvaluationResult {
-	return e.EvaluateAll(ctx)[taskName]
 }

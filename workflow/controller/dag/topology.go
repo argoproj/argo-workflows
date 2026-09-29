@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"maps"
 	"slices"
-	"sort"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -19,10 +18,6 @@ type dagTopology struct {
 	// dependsLogic maps each task name to its normalized depends expression
 	// (with task names hex-encoded for safe expression evaluation).
 	dependsLogic map[string]string
-	// topoOrder is the topologically sorted task names (dependencies before dependents).
-	// Used by evaluateAllStates to evaluate tasks in dependency order (O(N) single pass)
-	// instead of a fixed-point loop (O(N²) worst case for linear chains).
-	topoOrder []string
 	// dependsErrors maps task names to errors encountered while parsing their depends expressions.
 	dependsErrors map[string]error
 }
@@ -56,17 +51,11 @@ func newWorkflowTasks(tasks []Task) *WorkflowTasks {
 		dependsLogic[name] = logic
 	}
 
-	// Compute topological order using Kahn's algorithm so that
-	// evaluateAllStates can process tasks in dependency order (O(N))
-	// instead of using a fixed-point loop (O(N²) for linear chains).
-	topoOrder := topologicalSort(dependencies)
-
 	return &WorkflowTasks{
 		taskMap: taskMap,
 		topology: &dagTopology{
 			dependencies:  dependencies,
 			dependsLogic:  dependsLogic,
-			topoOrder:     topoOrder,
 			dependsErrors: dependsErrors,
 		},
 	}
@@ -113,11 +102,6 @@ func (w *WorkflowTasks) GetTask(name string) Task {
 	return w.taskMap[name]
 }
 
-// TopologicalOrder returns task names sorted so that dependencies come before dependents.
-func (w *WorkflowTasks) TopologicalOrder() []Key {
-	return w.topology.topoOrder
-}
-
 // LeafTaskNames returns the names of tasks that no other task depends on,
 // sorted. Used both as the implicit dag.target (DAGEvaluator.FindLeafTaskNames,
 // via assessDAGPhase) and as PullOrder's default targets when the template sets
@@ -136,57 +120,6 @@ func (w *WorkflowTasks) LeafTaskNames() []string {
 		}
 	}
 	return leaves
-}
-
-// topologicalSort returns task names in dependency order using Kahn's algorithm.
-// If the graph has a cycle, falls back to the input order (cycles are caught by validation).
-func topologicalSort(dependencies map[string][]string) []string {
-	inDegree := make(map[string]int, len(dependencies))
-	dependents := make(map[string][]string, len(dependencies))
-
-	for name := range dependencies {
-		if _, ok := inDegree[name]; !ok {
-			inDegree[name] = 0
-		}
-		for _, dep := range dependencies[name] {
-			dependents[dep] = append(dependents[dep], name)
-			inDegree[name]++
-		}
-	}
-
-	// Seed queue with roots (no dependencies)
-	queue := make([]string, 0, len(inDegree))
-	for name, deg := range inDegree {
-		if deg == 0 {
-			queue = append(queue, name)
-		}
-	}
-	sort.Strings(queue) // deterministic order among roots
-
-	result := make([]string, 0, len(inDegree))
-	for len(queue) > 0 {
-		name := queue[0]
-		queue = queue[1:]
-		result = append(result, name)
-		for _, dep := range dependents[name] {
-			inDegree[dep]--
-			if inDegree[dep] == 0 {
-				queue = append(queue, dep)
-			}
-		}
-	}
-
-	// Cycle fallback: return whatever we have (validation catches cycles upstream)
-	if len(result) < len(dependencies) {
-		for name := range dependencies {
-			found := slices.Contains(result, name)
-			if !found {
-				result = append(result, name)
-			}
-		}
-	}
-
-	return result
 }
 
 // --- Dependency resolution ---

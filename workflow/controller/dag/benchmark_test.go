@@ -1,6 +1,7 @@
 package dag
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"slices"
@@ -109,6 +110,13 @@ func generateWideFanOut(n int) (*wfv1.Workflow, *wfv1.Template) {
 	return wf, tmpl
 }
 
+// evaluateEach evaluates every task once, as the Engine's walk does.
+func evaluateEach(ctx context.Context, evaluator *DAGEvaluator, tmpl *wfv1.Template) {
+	for _, task := range tmpl.DAG.Tasks {
+		_ = evaluator.Evaluate(ctx, task.Name)
+	}
+}
+
 func BenchmarkDAGEvaluator(b *testing.B) {
 	sizes := []int{1000, 10000, 100000}
 
@@ -121,13 +129,12 @@ func BenchmarkDAGEvaluator(b *testing.B) {
 			b.StartTimer()
 
 			for i := 0; i < b.N; i++ {
-				_ = evaluator.EvaluateAll(ctx)
+				evaluateEach(ctx, evaluator, tmpl)
 			}
 		})
 	}
 
-	// Linear chain: worst case for cascading omission.
-	// With old fixed-point: O(N²). With topological sort: O(N).
+	// Linear chain: the longest dependency chain.
 	chainSizes := []int{100, 1000, 5000}
 	for _, n := range chainSizes {
 		b.Run(fmt.Sprintf("LinearChain/Nodes-%d", n), func(b *testing.B) {
@@ -138,7 +145,7 @@ func BenchmarkDAGEvaluator(b *testing.B) {
 			b.StartTimer()
 
 			for i := 0; i < b.N; i++ {
-				_ = evaluator.EvaluateAll(ctx)
+				evaluateEach(ctx, evaluator, tmpl)
 			}
 		})
 	}
@@ -154,12 +161,12 @@ func BenchmarkDAGEvaluator(b *testing.B) {
 			b.StartTimer()
 
 			for i := 0; i < b.N; i++ {
-				_ = evaluator.EvaluateAll(ctx)
+				evaluateEach(ctx, evaluator, tmpl)
 			}
 		})
 	}
 
-	// Construction cost: measures NewDAGEvaluator (topology parsing + topo sort)
+	// Construction cost: measures NewDAGEvaluator (topology parsing)
 	for _, n := range sizes {
 		b.Run(fmt.Sprintf("Construction/Nodes-%d", n), func(b *testing.B) {
 			b.StopTimer()

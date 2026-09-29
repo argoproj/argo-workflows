@@ -2,10 +2,7 @@ package dag
 
 import (
 	"context"
-	"fmt"
-	"maps"
 	"reflect"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
@@ -260,7 +256,7 @@ func TestDAGEvaluator_NewDAGEvaluator(t *testing.T) {
 		assert.NotNil(t, evaluator)
 		// Verify it can evaluate (internals are properly initialized)
 		ctx := t.Context()
-		result := evaluator.EvaluateTask(ctx, "taskA")
+		result := evaluator.Evaluate(ctx, "taskA")
 		assert.Equal(t, "taskA", result.TaskName)
 	})
 }
@@ -274,7 +270,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := logging.TestContext(t.Context())
-		result := evaluator.EvaluateTask(ctx, "taskA")
+		result := evaluator.Evaluate(ctx, "taskA")
 
 		assert.Equal(t, "taskA", result.TaskName)
 		assert.True(t, result.ShouldRun)
@@ -292,7 +288,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := logging.TestContext(t.Context())
-		result := evaluator.EvaluateTask(ctx, "taskA")
+		result := evaluator.Evaluate(ctx, "taskA")
 
 		assert.False(t, result.ShouldRun)
 	})
@@ -307,7 +303,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := logging.TestContext(t.Context())
-		result := evaluator.EvaluateTask(ctx, "taskA")
+		result := evaluator.Evaluate(ctx, "taskA")
 
 		assert.True(t, result.ShouldRun)
 	})
@@ -321,7 +317,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := logging.TestContext(t.Context())
-		result := evaluator.EvaluateTask(ctx, "taskB")
+		result := evaluator.Evaluate(ctx, "taskB")
 		assert.False(t, result.ShouldRun)
 		assert.True(t, result.Suspended)
 		assert.Contains(t, result.WaitingOn, "taskA")
@@ -338,7 +334,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := logging.TestContext(t.Context())
-		result := evaluator.EvaluateTask(ctx, "taskB")
+		result := evaluator.Evaluate(ctx, "taskB")
 
 		assert.True(t, result.ShouldRun)
 		assert.False(t, result.Suspended)
@@ -355,7 +351,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := logging.TestContext(t.Context())
-		result := evaluator.EvaluateTask(ctx, "taskB")
+		result := evaluator.Evaluate(ctx, "taskB")
 
 		assert.False(t, result.ShouldRun)
 		assert.True(t, result.Skipped)
@@ -381,29 +377,29 @@ func TestDAGEvaluator_DiamondDAG(t *testing.T) {
 		ctx := t.Context()
 
 		// Initially, only A should be ready to run
-		result := evaluator.EvaluateTask(ctx, "A")
+		result := evaluator.Evaluate(ctx, "A")
 		assert.True(t, result.ShouldRun)
 
-		result = evaluator.EvaluateTask(ctx, "B")
+		result = evaluator.Evaluate(ctx, "B")
 		assert.True(t, result.Suspended)
 
-		result = evaluator.EvaluateTask(ctx, "C")
+		result = evaluator.Evaluate(ctx, "C")
 		assert.True(t, result.Suspended)
 
-		result = evaluator.EvaluateTask(ctx, "D")
+		result = evaluator.Evaluate(ctx, "D")
 		assert.True(t, result.Suspended)
 
 		// After A succeeds
 		addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeSucceeded)
 		evaluator = NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		result = evaluator.EvaluateTask(ctx, "B")
+		result = evaluator.Evaluate(ctx, "B")
 		assert.True(t, result.ShouldRun)
 
-		result = evaluator.EvaluateTask(ctx, "C")
+		result = evaluator.Evaluate(ctx, "C")
 		assert.True(t, result.ShouldRun)
 
-		result = evaluator.EvaluateTask(ctx, "D")
+		result = evaluator.Evaluate(ctx, "D")
 		assert.True(t, result.Suspended)
 
 		// After B and C succeed
@@ -411,7 +407,7 @@ func TestDAGEvaluator_DiamondDAG(t *testing.T) {
 		addNodeToWorkflow(testCtx(t), wf, "dag.C", wfv1.NodeSucceeded)
 		evaluator = NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		result = evaluator.EvaluateTask(ctx, "D")
+		result = evaluator.Evaluate(ctx, "D")
 		assert.True(t, result.ShouldRun)
 	})
 }
@@ -499,26 +495,6 @@ func TestDAGEvaluator_GetTargetTasks(t *testing.T) {
 	})
 }
 
-func TestDAGEvaluator_EvaluateAll(t *testing.T) {
-	t.Run("evaluates all tasks", func(t *testing.T) {
-		wf := newTestWorkflow("test-wf")
-		tmpl := createDAGTemplate([]wfv1.DAGTask{
-			{Name: "taskA"},
-			{Name: "taskB", Depends: "taskA"},
-			{Name: "taskC"},
-		})
-		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-		ctx := t.Context()
-		results := evaluator.EvaluateAll(ctx)
-
-		assert.Len(t, results, 3)
-		assert.Contains(t, results, "taskA")
-		assert.Contains(t, results, "taskB")
-		assert.Contains(t, results, "taskC")
-	})
-}
-
 // --- Tests for depends expression evaluation ---
 
 func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
@@ -535,7 +511,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := t.Context()
-		result := evaluator.EvaluateTask(ctx, "taskC")
+		result := evaluator.Evaluate(ctx, "taskC")
 
 		assert.True(t, result.ShouldRun)
 	})
@@ -553,7 +529,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := t.Context()
-		result := evaluator.EvaluateTask(ctx, "taskC")
+		result := evaluator.Evaluate(ctx, "taskC")
 
 		assert.True(t, result.ShouldRun)
 	})
@@ -571,7 +547,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 		ctx := t.Context()
-		result := evaluator.EvaluateTask(ctx, "taskC")
+		result := evaluator.Evaluate(ctx, "taskC")
 
 		assert.False(t, result.ShouldRun)
 		assert.True(t, result.Skipped)
@@ -592,7 +568,7 @@ func TestDAGEvaluator_UnreachableTask(t *testing.T) {
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 	ctx := testCtx(t)
-	result := evaluator.EvaluateTask(ctx, "B")
+	result := evaluator.Evaluate(ctx, "B")
 
 	assert.False(t, result.ShouldRun, "B should not run since A failed")
 	assert.True(t, result.Skipped, "B should be skipped since A.Succeeded can never be true")
@@ -600,8 +576,9 @@ func TestDAGEvaluator_UnreachableTask(t *testing.T) {
 }
 
 func TestDAGEvaluator_CascadingOmission(t *testing.T) {
-	// A fails, B depends on A.Succeeded, C depends on B
-	// B is marked Omitted, C sees B as Omitted and is also Skipped
+	// A fails, B depends on A.Succeeded, C depends on B.
+	// B is skipped; once the Engine has recorded its Omitted node, C sees B
+	// as Omitted and is also skipped.
 	wf := newTestWorkflow("test-wf")
 	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeFailed)
 
@@ -614,11 +591,12 @@ func TestDAGEvaluator_CascadingOmission(t *testing.T) {
 
 	ctx := testCtx(t)
 
-	resultB := evaluator.EvaluateTask(ctx, "B")
+	resultB := evaluator.Evaluate(ctx, "B")
 	assert.True(t, resultB.Skipped, "B should be skipped")
 	assert.False(t, resultB.ShouldRun, "B should not run")
 
-	resultC := evaluator.EvaluateTask(ctx, "C")
+	addNodeToWorkflow(ctx, wf, "dag.B", wfv1.NodeOmitted)
+	resultC := NewDAGEvaluator(wf, tmpl, "", "dag").Evaluate(ctx, "C")
 	assert.True(t, resultC.Skipped, "C should be skipped (B is Omitted, cascading)")
 	assert.False(t, resultC.Suspended, "C should not be suspended")
 }
@@ -635,7 +613,7 @@ func TestDAGEvaluator_EnhancedDependsAfterFailure(t *testing.T) {
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 	ctx := testCtx(t)
-	result := evaluator.EvaluateTask(ctx, "B")
+	result := evaluator.Evaluate(ctx, "B")
 
 	assert.True(t, result.ShouldRun, "B should run since A.Failed is true")
 	assert.False(t, result.Suspended, "B should not be suspended")
@@ -658,44 +636,26 @@ func TestDAGEvaluator_MixedReachability(t *testing.T) {
 
 	ctx := testCtx(t)
 
-	resultB := evaluator.EvaluateTask(ctx, "B")
+	resultB := evaluator.Evaluate(ctx, "B")
 	assert.True(t, resultB.Skipped, "B should be skipped (A.Succeeded is false)")
 	assert.False(t, resultB.ShouldRun, "B should not run")
+	addNodeToWorkflow(ctx, wf, "dag.B", wfv1.NodeOmitted) // as the Engine records it
 
-	resultC := evaluator.EvaluateTask(ctx, "C")
+	resultC := evaluator.Evaluate(ctx, "C")
 	assert.True(t, resultC.ShouldRun, "C should run (A.Failed is true)")
 	assert.False(t, resultC.Skipped, "C should not be skipped")
 
 	// D waits for C even though B && C can no longer be true: a depends
 	// expression is only evaluated once every task it references has finished.
-	resultD := evaluator.EvaluateTask(ctx, "D")
+	resultD := evaluator.Evaluate(ctx, "D")
 	assert.False(t, resultD.Skipped, "D waits for C before it is omitted")
 	assert.True(t, resultD.Suspended, "D is waiting")
 	assert.Contains(t, resultD.WaitingOn, "C")
 
 	addNodeToWorkflow(ctx, wf, "dag.C", wfv1.NodeSucceeded)
-	resultD = NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateTask(ctx, "D")
+	resultD = NewDAGEvaluator(wf, tmpl, "", "dag").Evaluate(ctx, "D")
 	assert.True(t, resultD.Skipped, "D is omitted once C has finished (B is omitted, so B && C is false)")
 	assert.False(t, resultD.Suspended)
-}
-
-func TestWorkflowStore_SetStateAndGetState(t *testing.T) {
-	wf := newTestWorkflow("test-wf")
-	store := newWorkflowStore(wf, "", "dag")
-	ctx := testCtx(t)
-
-	t.Run("SetState is now reflected by GetState", func(t *testing.T) {
-		store.setPhase(ctx, "taskX", wfv1.NodeOmitted)
-
-		state := store.getPhase(ctx, "taskX")
-		assert.Equal(t, wfv1.NodeOmitted, state, "GetState should return Omitted from internal map")
-	})
-
-	t.Run("GetState reads from workflow nodes", func(t *testing.T) {
-		addNodeToWorkflow(ctx, wf, "dag.taskY", wfv1.NodeSucceeded)
-		state := store.getPhase(ctx, "taskY")
-		assert.Equal(t, wfv1.NodeSucceeded, state, "GetState should read from workflow nodes")
-	})
 }
 
 func TestWorkflowStore_GetStateWithDaemonedNode(t *testing.T) {
@@ -740,7 +700,7 @@ func TestDAGEvaluator_DaemonedCompletedNode(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	result := evaluator.EvaluateTask(ctx, "B")
+	result := evaluator.Evaluate(ctx, "B")
 	assert.True(t, result.ShouldRun, "B should run because A is daemoned and non-pending")
 }
 
@@ -765,7 +725,7 @@ func TestDAGEvaluator_DaemonedFailedNode(t *testing.T) {
 	})
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	result := evaluator.EvaluateTask(ctx, "B")
+	result := evaluator.Evaluate(ctx, "B")
 	assert.True(t, result.ShouldRun, "B should run because A is daemoned (Failed but non-Pending)")
 }
 
@@ -852,10 +812,10 @@ func TestDAGEvaluator_LegacyDependencies(t *testing.T) {
 	ctx := testCtx(t)
 
 	evalDepends := NewDAGEvaluator(wf, tmplWithDepends, "", "dag")
-	resultDepends := evalDepends.EvaluateTask(ctx, "B")
+	resultDepends := evalDepends.Evaluate(ctx, "B")
 
 	evalDeps := NewDAGEvaluator(wf, tmplWithDependencies, "", "dag")
-	resultDeps := evalDeps.EvaluateTask(ctx, "B")
+	resultDeps := evalDeps.Evaluate(ctx, "B")
 
 	assert.True(t, resultDepends.ShouldRun, "B should run with depends field")
 	assert.True(t, resultDeps.ShouldRun, "B should run with legacy dependencies field")
@@ -863,10 +823,8 @@ func TestDAGEvaluator_LegacyDependencies(t *testing.T) {
 }
 
 // TestDAGEvaluator_BrokenDependsExpression verifies that a malformed depends
-// expression surfaces an error rather than silently omitting the task.
-// Bug: evaluateAllStates discards the error from isReady (line 264) and
-// marks the task as Omitted, causing the user to see "depends condition not met"
-// when the real problem is a broken expression.
+// expression surfaces an error rather than silently omitting the task with
+// "depends condition not met".
 func TestDAGEvaluator_BrokenDependsExpression(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
 	addNodeToWorkflow(testCtx(t), wf, "dag.A", wfv1.NodeSucceeded)
@@ -878,7 +836,7 @@ func TestDAGEvaluator_BrokenDependsExpression(t *testing.T) {
 	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
 	ctx := testCtx(t)
-	result := evaluator.EvaluateTask(ctx, "B")
+	result := evaluator.Evaluate(ctx, "B")
 
 	// B's depends expression references "A.InvalidStatus" which is not a valid
 	// status field. This should surface as an error, NOT silently omit B.
@@ -888,238 +846,46 @@ func TestDAGEvaluator_BrokenDependsExpression(t *testing.T) {
 
 // --- Tests for evaluateRetryNode ---
 
-func TestEvaluateRetryNode_ChildRunning(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
-	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	childNodeID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
-		ID:    childNodeID,
-		Name:  "dag.A(0)",
-		Phase: wfv1.NodeRunning,
-		Type:  wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{childNodeID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-	ctx := testCtx(t)
-	result := eval.EvaluateTask(ctx, "A")
-
-	assert.Equal(t, ActionNone, result.Action, "should wait for running child")
-	assert.False(t, result.FulfilledForDeps, "running child is not fulfilled for deps")
-	assert.False(t, result.ShouldRun, "should not schedule new work while child is running")
-}
-
-func TestEvaluateRetryNode_ChildDaemoned(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
-	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	childNodeID := wf.NodeID("dag.A(0)")
+// A Retry node is reported by its own phase, which the operator's retry
+// handling records: until it is fulfilled it is dispatched (whatever its
+// attempts show, e.g. a failed attempt whose retry is backing off), and once
+// it is fulfilled, a running daemon included, it is done for its dependants.
+func TestEvaluateRetryNode(t *testing.T) {
 	daemoned := true
+	for _, tt := range []struct {
+		name    string
+		retry   wfv1.NodeStatus
+		wantRun bool
+	}{
+		{"Pending", wfv1.NodeStatus{Phase: wfv1.NodePending}, true},
+		{"Running, backing off", wfv1.NodeStatus{Phase: wfv1.NodeRunning, Message: "Backoff for 1 hour"}, true},
+		{"Running daemon", wfv1.NodeStatus{Phase: wfv1.NodeRunning, Daemoned: &daemoned}, false},
+		{"Succeeded over a Skipped attempt", wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}, false},
+		{"Failed", wfv1.NodeStatus{Phase: wfv1.NodeFailed}, false},
+		{"Error", wfv1.NodeStatus{Phase: wfv1.NodeError}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testCtx(t)
+			wf := newTestWorkflow("test")
+			childID := wf.NodeID("dag.A(0)")
+			wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod})
+			retry := tt.retry
+			retry.ID, retry.Name, retry.Type, retry.Children = wf.NodeID("dag.A"), "dag.A", wfv1.NodeTypeRetry, []string{childID}
+			wf.Status.Nodes.Set(ctx, retry.ID, retry)
 
-	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
-		ID:       childNodeID,
-		Name:     "dag.A(0)",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypePod,
-		Daemoned: &daemoned,
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{childNodeID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-	ctx := testCtx(t)
-	result := eval.EvaluateTask(ctx, "A")
-
-	assert.Equal(t, ActionNone, result.Action, "daemoned child needs no action")
-	assert.True(t, result.FulfilledForDeps, "daemoned child should be fulfilled for deps")
-}
-
-func TestEvaluateRetryNode_ChildFailed_WithinLimit(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
+			result := NewDAGEvaluator(wf, createDAGTemplate([]wfv1.DAGTask{{Name: "A"}}), "", "dag").Evaluate(ctx, "A")
+			assert.Equal(t, tt.wantRun, result.ShouldRun)
+			assert.Equal(t, tt.wantRun, result.Action == ActionExecute)
+			assert.Equal(t, !tt.wantRun, result.FulfilledForDeps)
+			assert.Equal(t, tt.retry.Phase, result.CurrentPhase)
+		})
 	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	childNodeID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
-		ID:       childNodeID,
-		Name:     "dag.A(0)",
-		Phase:    wfv1.NodeFailed,
-		Type:     wfv1.NodeTypePod,
-		NodeFlag: &wfv1.NodeFlag{Retried: true},
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{childNodeID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
-
-	ctx := testCtx(t)
-	result := eval.EvaluateTask(ctx, "A")
-
-	assert.Equal(t, ActionExecute, result.Action, "should schedule retry within limit")
-	assert.True(t, result.ShouldRun, "should be marked as should run")
-}
-
-func TestEvaluateRetryNode_ChildFailed_Exhausted(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
-	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	child0ID := wf.NodeID("dag.A(0)")
-	child1ID := wf.NodeID("dag.A(1)")
-	child2ID := wf.NodeID("dag.A(2)")
-
-	wf.Status.Nodes.Set(testCtx(t), child0ID, wfv1.NodeStatus{
-		ID: child0ID, Name: "dag.A(0)", Phase: wfv1.NodeFailed,
-		Type: wfv1.NodeTypePod, NodeFlag: &wfv1.NodeFlag{Retried: true},
-	})
-	wf.Status.Nodes.Set(testCtx(t), child1ID, wfv1.NodeStatus{
-		ID: child1ID, Name: "dag.A(1)", Phase: wfv1.NodeFailed,
-		Type: wfv1.NodeTypePod, NodeFlag: &wfv1.NodeFlag{Retried: true},
-	})
-	wf.Status.Nodes.Set(testCtx(t), child2ID, wfv1.NodeStatus{
-		ID: child2ID, Name: "dag.A(2)", Phase: wfv1.NodeFailed,
-		Type: wfv1.NodeTypePod, NodeFlag: &wfv1.NodeFlag{Retried: true},
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{child0ID, child1ID, child2ID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
-
-	ctx := testCtx(t)
-	result := eval.EvaluateTask(ctx, "A")
-
-	assert.Equal(t, ActionFail, result.Action, "should fail when retry limit exhausted")
-	assert.False(t, result.ShouldRun, "should not run when limit exhausted")
-	assert.Contains(t, result.ActionReason, "retry limit exhausted")
-}
-
-func TestEvaluateRetryNode_ChildSucceeded(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
-	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	childNodeID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
-		ID:    childNodeID,
-		Name:  "dag.A(0)",
-		Phase: wfv1.NodeSucceeded,
-		Type:  wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{childNodeID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-	ctx := testCtx(t)
-	result := eval.EvaluateTask(ctx, "A")
-
-	assert.Equal(t, ActionSucceed, result.Action, "should succeed when child succeeded")
-}
-
-func TestEvaluateRetryNode_DaemonChildFailed_Retries(t *testing.T) {
-	// A daemon pod that failed (Daemoned=nil, Phase=Failed) should be retried.
-	// This simulates a daemon pod that crashed before becoming daemoned.
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
-	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	childNodeID := wf.NodeID("dag.A(0)")
-
-	// Daemoned is nil (pod crashed before becoming a daemon), Phase is Failed.
-	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
-		ID:       childNodeID,
-		Name:     "dag.A(0)",
-		Phase:    wfv1.NodeFailed,
-		Type:     wfv1.NodeTypePod,
-		NodeFlag: &wfv1.NodeFlag{Retried: true},
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{childNodeID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("3")})
-
-	ctx := testCtx(t)
-	result := eval.EvaluateTask(ctx, "A")
-
-	assert.Equal(t, ActionExecute, result.Action, "failed daemon pod should be retried")
-	assert.True(t, result.ShouldRun, "should schedule a retry for failed daemon pod")
 }
 
 func TestDependsReadiness_RetryDaemonFulfillsDeps(t *testing.T) {
-	// Task B depends on task A. A is a retry node with a daemoned child.
-	// B should be ready because A's daemon is running.
+	// Task B depends on task A, a retry node whose running attempt is a
+	// daemon. B waits until the operator's retry handling has marked A
+	// daemoned, and is ready from then on.
 	wf := &wfv1.Workflow{}
 	wf.Name = "test"
 	wf.Status.Nodes = wfv1.Nodes{}
@@ -1141,12 +907,15 @@ func TestDependsReadiness_RetryDaemonFulfillsDeps(t *testing.T) {
 			{Name: "B", Template: "echo", Depends: "A"},
 		},
 	}}
-	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
-
 	ctx := t.Context()
-	result := eval.EvaluateTask(ctx, "B")
-	assert.True(t, result.ShouldRun, "B should be ready when A's retry daemon child is running")
+	result := NewDAGEvaluator(wf, tmpl, "test", "test").Evaluate(ctx, "B")
+	assert.True(t, result.Suspended, "B waits while A's retry node is not yet daemoned")
+
+	retryNode := wf.Status.Nodes[retryNodeID]
+	retryNode.Daemoned = &daemon
+	wf.Status.Nodes[retryNodeID] = retryNode
+	result = NewDAGEvaluator(wf, tmpl, "test", "test").Evaluate(ctx, "B")
+	assert.True(t, result.ShouldRun, "B is ready once A's retry node is daemoned")
 }
 
 // TestR3S_DaemonedNodeIncorrectlyReEvaluates
@@ -1194,7 +963,7 @@ func TestEval_DaemonedRunningNodeNotReEvaluated(t *testing.T) {
 	// With the bug: Line 365 uses !node.Phase.Fulfilled() which is true for Running,
 	// so it would evaluate depends and possibly set ShouldRun=true.
 	// The daemoned node should NOT need re-evaluation since it's fulfilled for deps.
-	result := eval.EvaluateTask(ctx, "daemoned-task")
+	result := eval.Evaluate(ctx, "daemoned-task")
 	assert.False(t, result.ShouldRun,
 		"BUG: daemoned running node incorrectly re-evaluates depends - "+
 			"node.Phase.Fulfilled()=false but node.Fulfilled()=true for daemoned+Running")
@@ -1231,607 +1000,11 @@ func TestEval_PendingNodeDependsBecameFalseStillShouldRun(t *testing.T) {
 	}}
 	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-	result := eval.EvaluateTask(ctx, "B")
+	result := eval.Evaluate(ctx, "B")
 	assert.True(t, result.ShouldRun,
 		"B's node already exists and is unfinished (Pending); it must keep being dispatched even though A failed and B's depends expression is now false")
 }
 
-// ============================================================
-// Retry edge cases — TestEval_Retry_*
-// ============================================================
-
-// 1. Retry limit zero — limit=0, one child Failed → ActionFail (0 retries allowed)
-func TestEval_Retry_LimitZero(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("0")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionFail, result.Action, "limit=0: one child is already 1 attempt > 0 retries allowed")
-}
-
-// 2. Retry nil limit — limit=nil (no limit set), child Failed → ActionExecute (unlimited retries)
-func TestEval_Retry_NilLimit(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	// RetryStrategy with no Limit field (nil) means unlimited
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: nil})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "nil limit = unlimited retries → should retry")
-}
-
-// 3. Retry all children are hooks — only hook children → ActionExecute (treated as no children)
-func TestEval_Retry_AllChildrenAreHooks(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	hookChildID := wf.NodeID("dag.A.hook")
-
-	wf.Status.Nodes.Set(ctx, hookChildID, wfv1.NodeStatus{
-		ID: hookChildID, Name: "dag.A.hook", Phase: wfv1.NodeSucceeded,
-		Type:     wfv1.NodeTypePod,
-		NodeFlag: &wfv1.NodeFlag{Hooked: true},
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{hookChildID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "all hook children → treated as no real children → first attempt needed")
-}
-
-// 4. Retry OnError policy with Failed child → ActionFail (not retried)
-func TestEval_Retry_OnErrorPolicy_FailedChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("5"),
-		RetryPolicy: wfv1.RetryPolicyOnError,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionFail, result.Action, "OnError policy should not retry a Failed child")
-}
-
-// 5. Retry OnError policy with Error child → ActionExecute (retried)
-func TestEval_Retry_OnErrorPolicy_ErrorChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeError, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("5"),
-		RetryPolicy: wfv1.RetryPolicyOnError,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "OnError policy should retry an Error child")
-}
-
-// 6. Retry Always policy with Failed child → ActionExecute
-func TestEval_Retry_AlwaysPolicy_FailedChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("5"),
-		RetryPolicy: wfv1.RetryPolicyAlways,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "Always policy should retry a Failed child")
-}
-
-// 7. Retry Always policy with Error child → ActionExecute
-func TestEval_Retry_AlwaysPolicy_ErrorChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeError, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("5"),
-		RetryPolicy: wfv1.RetryPolicyAlways,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "Always policy should retry an Error child")
-}
-
-// 8. Retry OnTransientError with Failed → ActionExecute
-func TestEval_Retry_OnTransientError_FailedChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("5"),
-		RetryPolicy: wfv1.RetryPolicyOnTransientError,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "OnTransientError policy should retry a Failed child")
-}
-
-// 9. Retry OnTransientError with Error → ActionExecute
-func TestEval_Retry_OnTransientError_ErrorChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeError, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("5"),
-		RetryPolicy: wfv1.RetryPolicyOnTransientError,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "OnTransientError policy should retry an Error child")
-}
-
-// 10. Retry succeeded sets FulfilledForDeps — child Succeeded → ActionSucceed + FulfilledForDeps=true
-func TestEval_Retry_SucceededSetsFulfilledForDeps(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionSucceed, result.Action)
-	assert.True(t, result.FulfilledForDeps, "succeeded retry node should be fulfilled for deps")
-}
-
-// 11. Retry daemon child sets CurrentPhase=Succeeded — daemoned running child → CurrentPhase=Succeeded + FulfilledForDeps=true
-func TestEval_Retry_DaemonChildSetsCurrentPhaseSucceeded(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-	daemoned := true
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeRunning,
-		Type:     wfv1.NodeTypePod,
-		Daemoned: &daemoned,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, wfv1.NodeSucceeded, result.CurrentPhase, "daemoned child should set CurrentPhase=Succeeded")
-	assert.True(t, result.FulfilledForDeps, "daemoned running child should be fulfilled for deps")
-}
-
-// 12. Dead daemon triggers retry — child Daemoned=true + Phase=Failed → ActionExecute (phase guard works)
-func TestEval_Retry_DeadDaemonTriggersRetry(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-	daemoned := true
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeFailed,
-		Type:     wfv1.NodeTypePod,
-		Daemoned: &daemoned,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("3")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "dead daemon (Daemoned=true + Failed) should trigger retry")
-}
-
-// 13. Retry Skipped child with Always policy → ActionExecute (retries)
-func TestEval_Retry_SkippedChild_AlwaysPolicy(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeSkipped, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("3"),
-		RetryPolicy: wfv1.RetryPolicyAlways,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "Always policy should retry a Skipped child")
-}
-
-// 14. Retry Skipped child with default policy → ActionFail
-func TestEval_Retry_SkippedChild_DefaultPolicy(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeSkipped, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	// Default policy (OnFailure) — no RetryStrategy with explicit policy
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("3")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionFail, result.Action, "default policy should not retry a Skipped child")
-}
-
-// 15. Retry Omitted child → ActionFail
-func TestEval_Retry_OmittedChild(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	childID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)", Phase: wfv1.NodeOmitted, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("3")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionFail, result.Action, "Omitted child without Always policy should result in ActionFail")
-}
-
-// 16. Retry exhausted sets FulfilledForDeps — 3 children all Failed, limit=2 → ActionFail + FulfilledForDeps=true
-func TestEval_Retry_ExhaustedSetsFulfilledForDeps(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	child0ID := wf.NodeID("dag.A(0)")
-	child1ID := wf.NodeID("dag.A(1)")
-	child2ID := wf.NodeID("dag.A(2)")
-
-	for _, id := range []string{child0ID, child1ID, child2ID} {
-		wf.Status.Nodes.Set(ctx, id, wfv1.NodeStatus{
-			ID: id, Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-		})
-	}
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{child0ID, child1ID, child2ID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionFail, result.Action)
-	assert.True(t, result.FulfilledForDeps, "exhausted retry node should be fulfilled for deps")
-}
-
-// 17. Retry exhausted propagates child phase — child=NodeError, limit exhausted → CurrentPhase=NodeError
-func TestEval_Retry_ExhaustedPropagatesChildPhase(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	child0ID := wf.NodeID("dag.A(0)")
-	child1ID := wf.NodeID("dag.A(1)")
-
-	wf.Status.Nodes.Set(ctx, child0ID, wfv1.NodeStatus{
-		ID: child0ID, Phase: wfv1.NodeError, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, child1ID, wfv1.NodeStatus{
-		ID: child1ID, Phase: wfv1.NodeError, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{child0ID, child1ID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{
-		Limit:       intstrutil.ParsePtr("1"),
-		RetryPolicy: wfv1.RetryPolicyOnError,
-	})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionFail, result.Action)
-	assert.Equal(t, wfv1.NodeError, result.CurrentPhase, "exhausted retry with Error child should propagate NodeError")
-}
-
-// 18. Retry at exact limit boundary — limit=2, 2 children Failed → ActionExecute (2 <= 2). 3 children Failed → ActionFail
-func TestEval_Retry_ExactLimitBoundary(t *testing.T) {
-	makeEval := func(numChildren int) EvaluationResult {
-		wf := newTestWorkflow("test")
-		ctx := testCtx(t)
-
-		retryNodeID := wf.NodeID("dag.A")
-		childIDs := make([]string, numChildren)
-		for i := range numChildren {
-			id := wf.NodeID(fmt.Sprintf("dag.A(%d)", i))
-			childIDs[i] = id
-			wf.Status.Nodes.Set(ctx, id, wfv1.NodeStatus{
-				ID: id, Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-			})
-		}
-		wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-			ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-			Type: wfv1.NodeTypeRetry, Children: childIDs,
-		})
-
-		tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-			Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-		}}
-		eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-		eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2")})
-		return eval.EvaluateTask(ctx, "A")
-	}
-
-	result2 := makeEval(2)
-	assert.Equal(t, ActionExecute, result2.Action, "2 children with limit=2 → should still retry (2 <= 2)")
-
-	result3 := makeEval(3)
-	assert.Equal(t, ActionFail, result3.Action, "3 children with limit=2 → exhausted (3 > 2)")
-}
-
-// 19. Retry fallback child lookup — store lookup fails but node.Children has valid IDs → children resolved via fallback
-func TestEval_Retry_FallbackChildLookup(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	// Use a boundary that won't match the store's naming convention
-	// so getRetryChildren returns nil, triggering the fallback path.
-	retryNodeID := wf.NodeID("dag.A")
-	// Use a real child ID but store the node directly (not via store naming)
-	childID := wf.NodeID("dag.A(0)-custom")
-
-	wf.Status.Nodes.Set(ctx, childID, wfv1.NodeStatus{
-		ID: childID, Name: "dag.A(0)-custom", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	// The retry node has the child in its Children list, but the node key
-	// doesn't match what getRetryChildren looks up by task name convention.
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type: wfv1.NodeTypeRetry, Children: []string{childID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("3")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	// The fallback should find the child via node.Children and return ActionExecute
-	assert.Equal(t, ActionExecute, result.Action, "fallback child lookup should find the child and allow retry")
-}
-
-// 20. Retry hook children don't count toward limit — 1 real child + 1 hook child, limit=1 → ActionExecute
-func TestEval_Retry_HookChildrenDontCountTowardLimit(t *testing.T) {
-	wf := newTestWorkflow("test")
-	ctx := testCtx(t)
-
-	retryNodeID := wf.NodeID("dag.A")
-	realChildID := wf.NodeID("dag.A(0)")
-	hookChildID := wf.NodeID("dag.A.hook")
-
-	wf.Status.Nodes.Set(ctx, realChildID, wfv1.NodeStatus{
-		ID: realChildID, Name: "dag.A(0)", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
-	})
-	wf.Status.Nodes.Set(ctx, hookChildID, wfv1.NodeStatus{
-		ID: hookChildID, Name: "dag.A.hook", Phase: wfv1.NodeSucceeded,
-		Type:     wfv1.NodeTypePod,
-		NodeFlag: &wfv1.NodeFlag{Hooked: true},
-	})
-	wf.Status.Nodes.Set(ctx, retryNodeID, wfv1.NodeStatus{
-		ID: retryNodeID, Name: "dag.A", Phase: wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{realChildID, hookChildID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("1")})
-
-	result := eval.EvaluateTask(ctx, "A")
-	assert.Equal(t, ActionExecute, result.Action, "hook children should not count toward limit: 1 real child <= limit=1 → should retry")
-}
-
-// ============================================================
-// TaskGroup edge cases — TestEval_TaskGroup_*
-// ============================================================
-
-// 21. TaskGroup all children succeeded → ActionSucceed + CurrentPhase=Succeeded
 // --- TaskGroup test helpers ---
 
 // addTaskGroupChild adds a Pod child node under a TaskGroup parent. The
@@ -1907,19 +1080,19 @@ func TestHasExpansion(t *testing.T) {
 	})
 }
 
-// EvaluateAll returns one result per task: an expanded task has one, for its
-// TaskGroup, however many items it has; the Engine drives the items.
-func TestDAGEvaluator_EvaluateAll_OneResultPerTask(t *testing.T) {
+// An expanded task has one result, for its TaskGroup, however many items it
+// has; the Engine drives the items.
+func TestDAGEvaluator_Evaluate_OneResultPerTaskGroup(t *testing.T) {
 	wf := newTestWorkflow("wf")
 	parent := addTaskGroupParent(t, wf, "dag.client")
 	addTaskGroupChild(t, wf, parent, "dag.client(0:0)", wfv1.NodePending, nil)
 	addTaskGroupChild(t, wf, parent, "dag.client(1:1)", wfv1.NodeSucceeded, nil)
 	tmpl := withSequenceTemplate("client", "2")
 	tmpl.DAG.Tasks = append(tmpl.DAG.Tasks, wfv1.DAGTask{Name: "after", Depends: "client"})
-	results := NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateAll(testCtx(t))
+	result := NewDAGEvaluator(wf, tmpl, "", "dag").Evaluate(testCtx(t), "client")
 
-	assert.ElementsMatch(t, []string{"client", "after"}, slices.Collect(maps.Keys(results)))
-	assert.Equal(t, ActionExecute, results["client"].Action)
+	assert.Equal(t, "client", result.TaskName)
+	assert.Equal(t, ActionExecute, result.Action)
 }
 
 func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
@@ -1985,46 +1158,6 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 	})
 }
 
-func TestEvaluateRetryNode_RetryDeciderIsAuthoritative(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
-		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
-	}
-
-	retryNodeID := wf.NodeID("dag.A")
-	childNodeID := wf.NodeID("dag.A(0)")
-
-	wf.Status.Nodes.Set(testCtx(t), childNodeID, wfv1.NodeStatus{
-		ID:       childNodeID,
-		Name:     "dag.A(0)",
-		Phase:    wfv1.NodeFailed,
-		Type:     wfv1.NodeTypePod,
-		NodeFlag: &wfv1.NodeFlag{Retried: true},
-	})
-	wf.Status.Nodes.Set(testCtx(t), retryNodeID, wfv1.NodeStatus{
-		ID:       retryNodeID,
-		Name:     "dag.A",
-		Phase:    wfv1.NodeRunning,
-		Type:     wfv1.NodeTypeRetry,
-		Children: []string{childNodeID},
-	})
-
-	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
-		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
-	}}
-	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
-	// Policy Always would retry; the engine-provided decider says no (e.g. a
-	// retryStrategy.expression evaluated to false) and must win.
-	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2"), RetryPolicy: wfv1.RetryPolicyAlways})
-	eval.SetRetryDecider("A", func(_ context.Context, _, _ *wfv1.NodeStatus, _ *wfv1.RetryStrategy) bool { return false })
-
-	result := eval.EvaluateTask(testCtx(t), "A")
-
-	assert.Equal(t, ActionFail, result.Action)
-	assert.False(t, result.ShouldRun)
-	assert.True(t, result.FulfilledForDeps)
-}
-
 func TestTaskNodeName_RoundTrip(t *testing.T) {
 	for _, tt := range []struct{ boundary, task, node string }{
 		{"wf.dag", "build", "wf.dag.build"},
@@ -2042,7 +1175,5 @@ func TestTaskNodeName_RoundTrip(t *testing.T) {
 func TestActionString(t *testing.T) {
 	assert.Equal(t, "None", ActionNone.String())
 	assert.Equal(t, "Execute", ActionExecute.String())
-	assert.Equal(t, "Succeed", ActionSucceed.String())
-	assert.Equal(t, "Fail", ActionFail.String())
 	assert.Equal(t, "Action(9)", Action(9).String())
 }
