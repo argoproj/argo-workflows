@@ -472,7 +472,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	var failures []failedNodeStatus
 	for _, node := range woc.wf.Status.Nodes {
-		if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
+		if node.FailedOrError() && node.Type != wfv1.NodeTypeTaskGroup {
 			failures = append(failures,
 				failedNodeStatus{
 					DisplayName:  node.DisplayName,

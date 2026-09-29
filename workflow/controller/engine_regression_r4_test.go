@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
@@ -10118,4 +10120,96 @@ spec:
 	assert.Equal(t, wfv1.NodeFailed, r4NodePhase(r.woc, "r4-p16"), "the Steps node")
 	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
 	assert.Equal(t, fmt.Sprintf("child '%s' failed", dbNode.ID), r.woc.wf.Status.Message)
+}
+
+// r4WorkflowFailures decodes {{workflow.failures}} into its display names.
+func r4WorkflowFailures(t *testing.T, woc *wfOperationCtx) []string {
+	t.Helper()
+	raw := woc.globalParams()[varkeys.WorkflowFailures.Template()]
+	if uq, err := strconv.Unquote(raw); err == nil {
+		raw = uq
+	}
+	var entries []failedNodeStatus
+	require.NoError(t, json.Unmarshal([]byte(raw), &entries))
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.DisplayName)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// TestRegressionR4_D1_WorkflowFailuresExcludeTaskGroups ports
+// TestProbe_v1x36_StepsFailuresOneItem and _DagFailuresOneItem
+// (v1x36-1_test.go / D1). {{workflow.failures}} must not list a TaskGroup's
+// own entry: only the failed items and the enclosing boundary node. HEAD
+// added this entry for Steps (fixed here). Base already emitted it for a
+// failed expanded DAG task, so excluding it for DAG too is a decided
+// deviation from main (D1 in pr-16290-round4-regressions.md): the DAG
+// subtest is written to the decided behaviour and fails at base as well as
+// on the branch before this fix.
+func TestRegressionR4_D1_WorkflowFailuresExcludeTaskGroups(t *testing.T) {
+	t.Run("Steps", func(t *testing.T) {
+		ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-d1-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: print
+        template: echo
+        withItems: ["a", "b"]
+  - name: echo
+    container: {image: alpine, command: [echo]}
+`)
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, r4PodForNode("r4-d1-steps[0].print(0:a)"))
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode("r4-d1-steps[0].print(1:b)"))
+		r.op(ctx)
+
+		// At base there is no intermediate TaskGroup node at all: the items
+		// hang directly off the StepGroup. HEAD introduced one (named bare
+		// "print", the same DisplayName as the TaskGroup on the DAG side
+		// below) and started listing it here too; that is the regression.
+		names := r4WorkflowFailures(t, r.woc)
+		assert.NotContains(t, names, "print", "workflow.failures must not list the TaskGroup: %v", names)
+		assert.Contains(t, names, "print(0:a)")
+	})
+
+	t.Run("DAG", func(t *testing.T) {
+		ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-d1-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: print
+        template: echo
+        withItems: ["a", "b"]
+  - name: echo
+    container: {image: alpine, command: [echo]}
+`)
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, r4PodForNode("r4-d1-dag.print(0:a)"))
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode("r4-d1-dag.print(1:b)"))
+		r.op(ctx)
+
+		taskGroup, err := r.woc.wf.GetNodeByName("r4-d1-dag.print")
+		require.NoError(t, err)
+		require.Equal(t, wfv1.NodeTypeTaskGroup, taskGroup.Type)
+		require.True(t, taskGroup.FailedOrError(), "the TaskGroup should have failed along with its item")
+
+		names := r4WorkflowFailures(t, r.woc)
+		assert.NotContains(t, names, taskGroup.DisplayName, "workflow.failures must not list the TaskGroup (decided deviation from base, D1): %v", names)
+		assert.Contains(t, names, "print(0:a)")
+	})
 }
