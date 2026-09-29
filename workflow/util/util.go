@@ -933,7 +933,11 @@ func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1
 			logging.RequireLoggerFromContext(ctx).WithField("child", child).WithError(err).Error(ctx, "Coudn't obtain child, panicking")
 		}
 		_, present := nodeIDsToReset[child]
-		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(ctx, wf, *childStatus, nodeIDsToReset) {
+		// A Container child's own Succeeded phase doesn't count: it is a
+		// sibling execution inside the same pod, not a downstream node whose
+		// success would make its ContainerSet pod node safe to leave alone.
+		// Its own children, if any, still count.
+		if (!present && childStatus.Type != wfv1.NodeTypeContainer && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(ctx, wf, *childStatus, nodeIDsToReset) {
 			return true
 		}
 	}
@@ -1347,10 +1351,12 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 	for nodeID, node := range wf.Status.Nodes {
 		// A failure belongs to the node that actually failed, not to the group
 		// nodes above it, which only fail because a descendant did. That is an
-		// execution node, or a leaf of any other type: a template that could
-		// not be resolved or expanded is recorded as a Skipped node in Error,
-		// and a suspend node that outlived its deadline as Failed.
-		if node.FailedOrError() && (isExecutionNodeType(node.Type) || len(node.Children) == 0) {
+		// execution node, or a node with no child that ran: a template that
+		// could not be resolved or expanded is recorded as a Skipped node in
+		// Error, and a suspend node that outlived its deadline as Failed; a
+		// later group hung underneath either one, or a StepGroup/TaskGroup
+		// created on demand after such a failure, exists only as Omitted.
+		if node.FailedOrError() && (isExecutionNodeType(node.Type) || !slices.ContainsFunc(node.Children, func(id string) bool { return wf.Status.Nodes[id].Phase != wfv1.NodeOmitted })) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
 				if parentNode := wf.Status.Nodes.FindRetryNodeByChild(nodeID); parentNode != nil {
