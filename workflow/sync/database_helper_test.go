@@ -69,7 +69,7 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 	require.NotNil(t, info.SessionProxy, "failed to migrate database")
 
 	// Mark this controller as alive immediately
-	_, err = info.SessionProxy.Session().Collection(info.Config.ControllerTable).
+	_, err = info.SessionProxy.Session(ctx).Collection(info.Config.ControllerTable).
 		Insert(&syncdb.ControllerHealthRecord{
 			Controller: info.Config.ControllerName,
 			Time:       time.Now(),
