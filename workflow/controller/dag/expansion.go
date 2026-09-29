@@ -9,18 +9,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Knetic/govaluate"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
-	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 )
 
 // ExpandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
-// expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
-// check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
+// expansion to work with the ShouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
+// check ShouldExecute, if ShouldExecute returns false, we continue on as normal else error out
 func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string, substitutor Substitutor) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
@@ -33,7 +33,7 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 			return nil, resolveErr
 		}
 		if err = json.Unmarshal([]byte(resolvedParam), &items); err != nil {
-			mustExec, mustExecErr := shouldExecute(task.When)
+			mustExec, mustExecErr := ShouldExecute(task.When)
 			if mustExecErr != nil || mustExec {
 				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(resolvedParam), err)
 			}
@@ -63,7 +63,7 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 		}
 		items, err = expandSequence(seq)
 		if err != nil {
-			mustExec, mustExecErr := shouldExecute(task.When)
+			mustExec, mustExecErr := ShouldExecute(task.When)
 			if mustExecErr != nil || mustExec {
 				return nil, err
 			}
@@ -90,7 +90,7 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 	// did before the Engine. A when clause that itself needs {{item}} cannot be
 	// evaluated yet and gets the strict treatment.
 	itemStrict := []string{"item"}
-	if proceed, whenErr := shouldExecute(task.When); whenErr == nil && !proceed {
+	if proceed, whenErr := ShouldExecute(task.When); whenErr == nil && !proceed {
 		itemStrict = nil
 	}
 
@@ -143,15 +143,47 @@ func (e *DAGEvaluator) ExpandTask(ctx context.Context, task wfv1.DAGTask, scope 
 	return ExpandTask(ctx, task, scope, substitutor)
 }
 
-// shouldExecute evaluates a when expression that has NOT been through variable substitution.
-// Uses argoexpr (not govaluate) because at expansion time, variables haven't been substituted yet.
-// Post-substitution evaluation happens in engine.go's evaluateWhenClause using govaluate,
-// which handles unquoted string comparisons (e.g., "odd == even").
-func shouldExecute(when string) (bool, error) {
+// ShouldExecute evaluates a when expression (substituted, or, at expansion
+// time, a task's raw when where {{item}}/{{tasks.*}}/{{steps.*}} have not
+// been resolved yet) to decide whether a task or step should execute. The
+// single evaluator for the Engine, ExpandTask's mustExecute check, and the
+// metrics "when" clause (operator.go).
+func ShouldExecute(when string) (bool, error) {
 	if when == "" {
 		return true, nil
 	}
-	return argoexpr.EvalBool(when, nil)
+	expression, err := govaluate.NewEvaluableExpression(when)
+	if err != nil {
+		if strings.Contains(err.Error(), "Invalid token") {
+			return false, errors.Errorf(errors.CodeBadRequest, `Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes ("))`, when, err)
+		}
+		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
+	}
+	// The following loop converts govaluate variables (which we don't use), into strings. This
+	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
+	tokens := expression.Tokens()
+	for i, tok := range tokens {
+		switch tok.Kind {
+		case govaluate.VARIABLE:
+			tok.Kind = govaluate.STRING
+		default:
+			continue
+		}
+		tokens[i] = tok
+	}
+	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
+	if err != nil {
+		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
+	}
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
+	}
+	boolRes, ok := result.(bool)
+	if !ok {
+		return false, errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
+	}
+	return boolRes, nil
 }
 
 func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {

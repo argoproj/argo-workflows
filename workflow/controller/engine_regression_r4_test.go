@@ -3136,3 +3136,109 @@ spec:
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	assert.NotContains(t, woc.wf.Status.Message, "task r4-c84-pod-retry errored")
 }
+
+// r4WhenBadWfWithGen builds a workflow whose entrypoint has a "gen" step/task
+// producing "heads" and a dependant with an invalid `when` clause containing
+// a stray `@`, in DAG or Steps shape. Shared by the C83 tests.
+func r4WhenBadWfWithGen(name string, dag bool) string {
+	body := `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: tails
+        depends: gen
+        template: echo
+        when: "{{tasks.gen.outputs.result}} == @tails"`
+	if !dag {
+		body = `
+    steps:
+    - - name: gen
+        template: gen
+    - - name: tails
+        template: echo
+        when: "{{steps.gen.outputs.result}} == @tails"`
+	}
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+spec:
+  entrypoint: main
+  templates:
+  - name: main` + body + `
+  - name: gen
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: print("heads")
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, hi]
+`
+}
+
+// TestRegressionR4_C83_DAGInvalidWhenHint ports
+// TestProbe_v1x69_DAGInvalidWhenHint (v1x69-1_test.go / C83). An invalid
+// `when` expression's error message lost the closing quote-hint text when
+// shouldExecute moved into engine.go: base's hint ends
+// `(hint: try wrapping the affected expression in quotes ("))`, HEAD's ends
+// `(hint: try wrapping the affected expression in quotes)`.
+func TestRegressionR4_C83_DAGInvalidWhenHint(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4WhenBadWfWithGen("r4-c83-dag-badwhen", true))
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 6 && !woc.wf.Status.Phase.Completed(); i++ {
+		out := withOutputs(ctx, wfv1.Outputs{Result: new("heads")})
+		onlyGen := func(pod *apiv1.Pod, woc *wfOperationCtx) {
+			if n, ok := woc.wf.Status.Nodes[woc.nodeID(pod)]; ok && n.TemplateName == "gen" {
+				out(pod, woc)
+			}
+		}
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded, onlyGen)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	n := woc.wf.Status.Nodes.FindByDisplayName("tails")
+	require.NotNil(t, n)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
+	assert.Equal(t, `Invalid 'when' expression 'heads == @tails': Invalid token: '@' (hint: try wrapping the affected expression in quotes ("))`, n.Message)
+}
+
+// TestRegressionR4_C83_StepsInvalidWhenHint ports
+// TestProbe_v1x69_StepsInvalidWhenHint (v1x69-1_test.go / C83). Same hint,
+// Steps shape; the node carrying the message differs by tree, so this only
+// requires the full hint to appear somewhere.
+func TestRegressionR4_C83_StepsInvalidWhenHint(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4WhenBadWfWithGen("r4-c83-steps-badwhen", false))
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 6 && !woc.wf.Status.Phase.Completed(); i++ {
+		out := withOutputs(ctx, wfv1.Outputs{Result: new("heads")})
+		onlyGen := func(pod *apiv1.Pod, woc *wfOperationCtx) {
+			if n, ok := woc.wf.Status.Nodes[woc.nodeID(pod)]; ok && n.TemplateName == "gen" {
+				out(pod, woc)
+			}
+		}
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded, onlyGen)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	all := woc.wf.Status.Message + "\n"
+	for _, n := range woc.wf.Status.Nodes {
+		all += n.Message + "\n"
+	}
+	assert.Contains(t, all, `(hint: try wrapping the affected expression in quotes ("))`)
+}
