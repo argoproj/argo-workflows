@@ -481,7 +481,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	varkeys.WorkflowFailures.Set(woc.scope, strconv.Quote(string(failedNodeBytes)))
 
 	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
-	if err != nil {
+	if err != nil && !node.Fulfilled() {
+		// A hook error after the entry node is already fulfilled (C92) has
+		// its own Error hook node (see errorHookNode in hooks.go); marking
+		// the entry node here would just be refused by the strict node
+		// phase state machine and log "refusing invalid node phase
+		// transition" every reconcile until the workflow completes.
 		woc.markNodeError(ctx, node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP/Plugin templates when is not shutdown
