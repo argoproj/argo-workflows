@@ -9,7 +9,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
@@ -381,13 +380,13 @@ func TestBug_ResolveArguments_DoesNotMutateSourceArtifacts(t *testing.T) {
 	}}}
 	expectedFrom := source.Artifacts[0].From
 
-	_, err := scope.resolveArguments(ctx, source, common.Parameters{})
+	_, err := scope.resolveArtifactArguments(ctx, source.Artifacts)
 	require.NoError(t, err)
 
 	assert.Equal(t, expectedFrom, source.Artifacts[0].From,
-		"source.Artifacts[0].From must not be mutated by resolveArguments")
+		"source.Artifacts[0].From must not be mutated by resolveArtifactArguments")
 	assert.Nil(t, source.Artifacts[0].S3,
-		"source.Artifacts[0].S3 must not be populated by resolveArguments")
+		"source.Artifacts[0].S3 must not be populated by resolveArtifactArguments")
 }
 
 // TestBug_ResolveArguments_OptionalArtifactDropped verifies that an optional
@@ -406,9 +405,9 @@ func TestBug_ResolveArguments_OptionalArtifactDropped(t *testing.T) {
 		Optional: true,
 	}}}
 
-	resolved, err := scope.resolveArguments(ctx, source, common.Parameters{})
+	resolved, err := scope.resolveArtifactArguments(ctx, source.Artifacts)
 	require.NoError(t, err)
-	assert.Empty(t, resolved.Artifacts,
+	assert.Empty(t, resolved,
 		"optional artifact that failed to resolve must be dropped from arguments")
 }
 
@@ -442,8 +441,8 @@ func TestResolveArgumentsSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
 		Optional: true,
 	}}}
 
-	resolved, err := scope.resolveArguments(ctx, args, common.Parameters{})
+	resolved, err := scope.resolveArtifactArguments(ctx, args.Artifacts)
 
 	require.NoError(t, err)
-	assert.Empty(t, resolved.Artifacts)
+	assert.Empty(t, resolved)
 }

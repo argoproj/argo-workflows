@@ -2324,14 +2324,13 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 
 	reconciler := NewK8sTaskReconciler(woc, newTmplCtx, nodeName)
 	err = reconciler.Reconcile(ctx, []DesiredTask{{
-		TaskName:         nodeName,
-		OriginalTaskName: nodeName,
-		TemplateScope:    tmplCtx.GetTemplateScope(),
-		Template:         processedTmpl,
-		TemplateRef:      orgTmpl,
-		NodeFlag:         opts.nodeFlag,
-		BoundaryID:       opts.boundaryID,
-		IsOnExit:         opts.onExitTemplate,
+		TaskName:      nodeName,
+		TemplateScope: tmplCtx.GetTemplateScope(),
+		Template:      processedTmpl,
+		TemplateRef:   orgTmpl,
+		NodeFlag:      opts.nodeFlag,
+		BoundaryID:    opts.boundaryID,
+		IsOnExit:      opts.onExitTemplate,
 	}})
 	if err != nil {
 		return nil, err

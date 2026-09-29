@@ -227,3 +227,44 @@ func TestProcessItem_ItemShapes(t *testing.T) {
 		})
 	}
 }
+
+// TestDAGTaskResolve: Resolve returns a new task holding resolve's rewrite
+// of the body, leaving the original task untouched.
+func TestDAGTaskResolve(t *testing.T) {
+	orig := &DAGTask{DAGTask: &wfv1.DAGTask{Name: "a", When: "{{tasks.x.outputs.result}} == y"}}
+	resolved, err := orig.Resolve(func(body wfv1.DAGTask) (wfv1.DAGTask, error) {
+		body.When = "y == y"
+		return body, nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "y == y", resolved.GetWhen())
+	assert.Equal(t, "a", resolved.GetName())
+	assert.Equal(t, "{{tasks.x.outputs.result}} == y", orig.GetWhen())
+}
+
+// TestExpandTaskWhenFalseLenient: a task whose resolved when is false
+// expands leniently, as on main. A dynamic list that does not parse gives no
+// items rather than an error; a literal list gives its items. With the when
+// not false, the unparseable list is an error.
+func TestExpandTaskWhenFalseLenient(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	unparsed := wfv1.DAGTask{Name: "fan", When: "none != none", WithParam: "{{tasks.gen.outputs.result}}"}
+	items, err := ExpandTask(ctx, unparsed, nil, templateSubstitutor(t))
+	require.NoError(t, err)
+	assert.Empty(t, items)
+
+	seq := wfv1.DAGTask{Name: "fan", When: "none != none", WithSequence: &wfv1.Sequence{Count: intstrPtr("{{tasks.gen.outputs.result}}")}}
+	items, err = ExpandTask(ctx, seq, nil, templateSubstitutor(t))
+	require.NoError(t, err)
+	assert.Empty(t, items)
+
+	literal := wfv1.DAGTask{Name: "fan", When: "none != none", WithItems: []wfv1.Item{{Value: json.RawMessage(`"a"`)}}}
+	items, err = ExpandTask(ctx, literal, nil, templateSubstitutor(t))
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Equal(t, "none != none", items[0].When)
+
+	unparsed.When = "none == none"
+	_, err = ExpandTask(ctx, unparsed, nil, templateSubstitutor(t))
+	require.ErrorContains(t, err, "withParam value could not be parsed as a JSON list")
+}

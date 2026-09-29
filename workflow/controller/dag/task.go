@@ -32,6 +32,9 @@ type Task interface {
 	GetExitHook(args wfv1.Arguments) *wfv1.LifecycleHook
 	ContinuesOn(phase wfv1.NodePhase) bool
 	Expand(ctx context.Context, scope map[string]string, substitutor Substitutor) ([]Task, error)
+	// Resolve returns a copy of the task whose body, the task as a
+	// wfv1.DAGTask, is resolve's rewrite of it.
+	Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, error)) (Task, error)
 }
 
 // HasExpansion reports whether the task uses withItems/withParam/withSequence
@@ -59,6 +62,14 @@ func (t *DAGTask) Expand(ctx context.Context, scope map[string]string, substitut
 		tasks[i] = &DAGTask{DAGTask: &expanded[i]}
 	}
 	return tasks, nil
+}
+
+func (t *DAGTask) Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, error)) (Task, error) {
+	body, err := resolve(*t.DAGTask)
+	if err != nil {
+		return nil, err
+	}
+	return &DAGTask{DAGTask: &body}, nil
 }
 
 func (t *DAGTask) GetName() string {

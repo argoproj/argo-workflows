@@ -125,6 +125,16 @@ func (c expandCountingTask) Expand(ctx context.Context, scope map[string]string,
 	return c.Task.Expand(ctx, scope, substitutor)
 }
 
+// Resolve keeps the resolved task counted: the Engine expands the task
+// resolveTask returns.
+func (c expandCountingTask) Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, error)) (dag.Task, error) {
+	resolved, err := c.Task.Resolve(resolve)
+	if err != nil {
+		return nil, err
+	}
+	return expandCountingTask{Task: resolved, expands: c.expands}, nil
+}
+
 // TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch: one visit of a
 // fan-out whose three items are Pending expands the task once
 // and hands each item to the reconciler once, in item order (C19). Each

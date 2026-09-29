@@ -13,9 +13,6 @@ type DesiredTask struct {
 	// TaskName is the name of the task (e.g., "A", "B", or "steps.step-1")
 	TaskName string
 
-	// OriginalTaskName is the name of the task in the DAG/Step definition (used for linking)
-	OriginalTaskName string
-
 	// TemplateScope indicates the scope of the template resolution
 	TemplateScope string
 
