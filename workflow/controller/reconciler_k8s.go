@@ -33,7 +33,7 @@ func NewK8sTaskReconciler(woc *wfOperationCtx, tmplCtx *templateresolution.Templ
 //     (e.g. Skipped re-entry where the node already exists).
 //   - ErrParallelismReached / ErrResourceRateLimitReached / ErrDeadlineExceeded:
 //     returned at once, nothing recorded; the caller decides whether to keep
-//     dispatching this pass.
+//     dispatching.
 //   - any other error is the task's own outcome: recordTaskError records it as
 //     an Error on the task's node (created and linked if the dispatch left
 //     none), the rest of the batch is still reconciled, and the first such

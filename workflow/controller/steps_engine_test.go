@@ -81,18 +81,16 @@ func stepsEngineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, 
 }
 
 // An evaluator error for a step is recorded as a terminal Error node, as for
-// a DAG task (TestConverge_EvaluatorErrorBecomesErrorNode).
+// a DAG task (TestVisit_EvaluatorErrorBecomesErrorNode).
 func TestStepsEngine_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	engine, fake, woc, tasks := stepsEngineWithFakeReconciler(ctx, t)
 
-	results := map[string]dag.EvaluationResult{
-		"[0].client": {TaskName: "[0].client", CurrentPhase: wfv1.NodeRunning, Error: errors.New("depends expression failed to evaluate")},
-	}
+	result := dag.EvaluationResult{TaskName: "[0].client", CurrentPhase: wfv1.NodeRunning, Error: errors.New("depends expression failed to evaluate")}
 	fake.calls = nil
-	executed := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
+	ran, _ := engine.visit(ctx, engine.getTaskByName(tasks, "[0].client"), result, true)
 	assert.Empty(t, fake.calls)
-	assert.True(t, executed.executed["[0].client"])
+	assert.False(t, ran)
 
 	node, err := woc.wf.GetNodeByName(engine.taskNodeName("[0].client"))
 	require.NoError(t, err)

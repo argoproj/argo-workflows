@@ -6,7 +6,6 @@ import (
 	stderrors "errors"
 	"fmt"
 	"maps"
-	"slices"
 	"sort"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
@@ -40,6 +40,11 @@ type Engine struct {
 	// this reconcile expanded it into, so what else reads the items this
 	// reconcile sees the list that dispatch drove.
 	expanded map[string][]dag.Task
+	// finished holds, per finished task, what the task adds to its
+	// dependants' scopes, built on first use: a finished node does not
+	// change within a reconcile, and rebuilding its part for every dependant
+	// makes a chain of n tasks cost n² template resolutions (C67).
+	finished map[string]*variables.Scope
 }
 
 // NewEngine creates a new Engine.
@@ -59,10 +64,21 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 	}
 }
 
-// Execute orchestrates the execution of a DAG or Steps template.
-// It delegates to phase methods that each handle one concern.
-// Errors are handled internally by marking the boundary node with the
-// appropriate phase (Failed for Steps, Error for DAGs).
+// Execute reconciles a DAG or Steps template in one walk over its tasks in
+// dependency order, as main's executeDAG and executeSteps did: the tasks
+// come ordered (DAG: dag.PullOrder from the targets, which leaves out tasks
+// no target needs; Steps: as written). Each task is evaluated immediately
+// before the walk acts on it, so it sees what the walk has just done to its
+// dependencies: an instant completion (a when-false skip, a memoize hit, a
+// nested template that finished), an Omitted node, a StepGroup closed at the
+// group boundary, or an exit hook it must wait for (#12192). Each task is
+// visited once per reconcile, so it is dispatched at most once and its exit
+// handler is driven at most once (#14392).
+//
+// After the walk, externally completed tasks are settled, the StepGroups and
+// the boundary are assessed, and the boundary is finalized. Errors are
+// handled internally by marking the boundary node with the appropriate
+// phase (Failed for Steps, Error for DAGs).
 func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	e.evaluator = dag.NewDAGEvaluatorFromTasks(e.woc.wf, tasks, e.tmpl, e.boundaryID, e.nodeName)
 
@@ -71,49 +87,86 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 
 	e.reconcileDaemonedTasks(ctx, tasks)
 
-	// Each step below takes the value the step before it returns, so the order
-	// the steps must run in is checked by the compiler rather than by comments:
-	// evaluate (after hooks) -> create Omitted nodes -> dispatch (which also
-	// completes TaskGroups) -> run hooks -> evaluate again. The values are only
-	// built by their own step (TestEnginePassValuesAreBuiltByTheirStep).
-
-	// First hooks pass: tasks that completed in previous operate cycles.
-	hooks := e.processHooks(ctx, tasks, dispatchedInEarlierCycles())
-	exitHooksDone := hooks.done
-
-	// Fixed-point iteration: evaluate all tasks, dispatch any that need execution,
-	// repeat until no new task is executed in a pass. The loop exists because some
-	// tasks complete instantly (cache hits, omissions, no-op task groups) and may
-	// unblock dependents in the same operate cycle.
-	//
-	// Termination: every non-terminating iteration must add a task name to
-	// executedTasks (that's what anyNew tracks). executedTasks grows monotonically
-	// and its membership is bounded by the unique task names that EvaluateAll can
-	// emit — finite, since static tasks and their expansions are finite. So the
-	// loop converges in at most O(unique-task-names) iterations.
-	executedTasks := make(map[string]bool)
-	for {
-		omitted := e.createOmittedNodes(ctx, tasks, e.evaluateAll(ctx, hooks))
-		dispatch := e.converge(ctx, tasks, omitted)
-		hooks = e.processHooks(ctx, tasks, dispatch)
-		exitHooksDone = exitHooksDone && hooks.done
-		anyNew := false
-		for k, v := range dispatch.executed {
-			if v && !executedTasks[k] {
-				anyNew = true
-				executedTasks[k] = true
-			}
+	dispatched := make(map[string]bool)
+	exitHooksDone, dispatching, group := true, true, 0
+	for _, task := range tasks {
+		name := task.GetName()
+		// A step group is closed before the next one starts, so a step sees
+		// the recorded phase of the group before it ({{steps.X.status}} of an
+		// expanded step).
+		for i, ok := stepGroupIndexOf(name); ok && group < i; group++ {
+			e.assessStepGroup(ctx, group)
 		}
-		if !anyNew {
-			break
-		}
+		ran, stop := e.visit(ctx, task, e.evaluator.Evaluate(ctx, name), dispatching)
+		dispatched[name] = ran
+		dispatching = dispatching && !stop
+		// The task's hooks are driven before any dependant is evaluated, so a
+		// dependant waits for a pending exit hook in this same walk.
+		exitHooksDone = e.processHooks(ctx, task) && exitHooksDone
 	}
 
-	final := e.settle(ctx, tasks, hooks, executedTasks)
-	e.assessStepGroups(ctx, final)
-	if err := e.finalize(ctx, tasks, final, exitHooksDone); err != nil {
+	results := e.settle(ctx, tasks, dispatched)
+	e.assessStepGroups(ctx)
+	if err := e.finalize(ctx, tasks, results, exitHooksDone); err != nil {
 		e.markBoundaryError(ctx, err)
 	}
+}
+
+// visit acts on one task's evaluation: it records an evaluation error on the
+// task's node, creates the Omitted node of a task that can never run, or
+// dispatches a task the evaluator found runnable, unless dispatching has
+// stopped at the operation deadline. ran reports a dispatch; stop is
+// dispatchOutcome's.
+func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching bool) (ran, stop bool) {
+	name := task.GetName()
+	e.logEvaluation(ctx, result)
+	if result.RequeueAfter > 0 {
+		e.woc.requeueAfter(result.RequeueAfter)
+	}
+	node := e.getTaskNode(ctx, name)
+	switch {
+	case result.Error != nil:
+		// The evaluator could not assess this task (e.g. its depends
+		// expression failed to evaluate). Record that as a terminal Error
+		// node so the boundary can assess it; left unrecorded, the task
+		// would stay Pending and the boundary would never complete.
+		if node == nil || !node.Fulfilled() {
+			e.initTerminalErrorNode(ctx, task, e.parentNodeNames(ctx, name), result.Error)
+		}
+		return false, false
+	case result.Skipped && !result.ShouldRun:
+		// It can never run: record its Omitted node, so its dependants (later
+		// in the walk) and the boundary's assessment see it.
+		if node == nil {
+			reason := result.SkipReason
+			if reason == "" {
+				reason = "depends condition not met"
+			}
+			e.initTaskNode(ctx, task, e.parentNodeNames(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
+		}
+		return false, false
+	case !dispatching || !e.needsDispatch(node, result):
+		return false, false
+	}
+	_, err := e.executeTask(ctx, task)
+	return true, e.dispatchOutcome(ctx, name, err)
+}
+
+// needsDispatch reports whether the evaluator's result asks for the task to
+// be dispatched. Execute, Succeed and Fail all do: for Succeed and Fail the
+// operator's retry handling records the outcome. So does a Running retry
+// node with a daemoned child, so that processNodeRetries propagates the
+// Daemoned flag from the child to the retry node.
+func (e *Engine) needsDispatch(node *wfv1.NodeStatus, result dag.EvaluationResult) bool {
+	switch result.Action {
+	case dag.ActionExecute, dag.ActionSucceed, dag.ActionFail:
+		return true
+	case dag.ActionNone:
+		if node != nil && node.Type == wfv1.NodeTypeRetry && node.Phase == wfv1.NodeRunning {
+			return true
+		}
+	}
+	return result.ShouldRun
 }
 
 // markBoundaryError marks the boundary node with an appropriate error phase.
@@ -188,7 +241,7 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 				taskNode.Daemoned = nil
 				e.woc.wf.Status.Nodes.Set(ctx, taskNode.ID, *taskNode)
 				e.woc.updated = true
-				continue // Skip executeTask — converge will pick it up now
+				continue // Skip executeTask — the walk will pick it up now
 			}
 		}
 
@@ -199,60 +252,24 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 	}
 }
 
-// The values handed from one step of Execute to the next. Each is built only
-// by the step that returns it, so a step cannot run before the one it depends
-// on, and the results travel with them instead of being passed alongside.
-
-// hooksRun is returned by processHooks and required by evaluateAll: every
-// evaluation sees the hook nodes driven for tasks that finished before it, so
-// a dependant waits for a pending exit hook (#12192). done reports whether
-// every exit handler this pass looked at has completed.
-type hooksRun struct{ done bool }
-
-// evaluation is returned by evaluateAll and required by createOmittedNodes.
-type evaluation struct {
-	results map[string]dag.EvaluationResult
-}
-
-// omissionsRecorded is returned by createOmittedNodes and required by
-// converge, assessStepGroups and finalize: the Omitted nodes for these results
-// exist before anything is dispatched from them or assessed. A task whose
-// dependency was omitted in the same pass hangs off that dependency's node,
-// and a StepGroup whose steps were all omitted can only be assessed once
-// their nodes exist.
-type omissionsRecorded struct {
-	results map[string]dag.EvaluationResult
-}
-
-// dispatched is returned by converge and required by processHooks: an
-// expanded task's exit hooks run per item once its dispatch has completed the
-// group in the same pass. executed names the tasks this pass dispatched.
-type dispatched struct{ executed map[string]bool }
-
-// dispatchedInEarlierCycles starts the first hooks pass of a cycle, which
-// handles tasks dispatched and completed in earlier operate cycles.
-func dispatchedInEarlierCycles() dispatched {
-	return dispatched{}
-}
-
-// settle brings the evaluation up to date after the dispatch loop: tasks that
+// settle brings the evaluation up to date after the walk: tasks that
 // completed outside it (e.g. a pod the pod controller marked Succeeded) are
 // re-reconciled for metrics and lock release, then everything is evaluated
-// again and its Omitted nodes created, for StepGroup and boundary assessment.
-func (e *Engine) settle(ctx context.Context, tasks []dag.Task, hooks hooksRun, executedTasks map[string]bool) omissionsRecorded {
-	e.reconcileExternalCompletions(ctx, tasks, executedTasks)
-	return e.createOmittedNodes(ctx, tasks, e.evaluateAll(ctx, hooks))
+// again for StepGroup and boundary assessment.
+func (e *Engine) settle(ctx context.Context, tasks []dag.Task, dispatched map[string]bool) map[string]dag.EvaluationResult {
+	e.reconcileExternalCompletions(ctx, tasks, dispatched)
+	return e.evaluator.EvaluateAll(ctx)
 }
 
-// processHooks runs lifecycle hooks and exit handlers for all tasks.
-// Returns whether all exit handlers have completed. Per-task hook errors
-// are isolated to the failing task node (not the boundary), mirroring the
-// legacy controller's executeDAGTask behavior — a single bad hook on one
-// task must not abort sibling tasks or the DAG/Steps boundary.
-func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task, _ dispatched) hooksRun {
+// processHooks runs a task's lifecycle hooks and exit handlers and reports
+// whether its exit handlers have completed. A hook error is isolated to the
+// failing task node (not the boundary), mirroring the legacy controller's
+// executeDAGTask behavior — a single bad hook on one task must not abort
+// sibling tasks or the DAG/Steps boundary.
+func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
 	// ProcessAllTaskHooks isolates per-task errors on the task (via the
 	// callback below) and never returns one.
-	done, _ := e.hooks.ProcessAllTaskHooks(ctx, tasks,
+	done, _ := e.hooks.ProcessAllTaskHooks(ctx, []dag.Task{task},
 		e.getTaskNode,
 		e.buildLocalScopeFromTask,
 		func(ctx context.Context, taskNode *wfv1.NodeStatus, err error) {
@@ -269,7 +286,7 @@ func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task, _ dispatche
 			}
 		},
 	)
-	return hooksRun{done: done}
+	return done
 }
 
 // assessStepGroups transitions StepGroup nodes to a terminal phase once all their
@@ -278,108 +295,114 @@ func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task, _ dispatche
 // Step child nodes are looked up by constructing names from the template definition
 // (not from node.Children) because not all steps may have nodes yet if parallelism
 // limits prevented scheduling.
-func (e *Engine) assessStepGroups(ctx context.Context, _ omissionsRecorded) {
-	if e.tmpl.GetType() != wfv1.TemplateTypeSteps || e.tmpl.Steps == nil {
+func (e *Engine) assessStepGroups(ctx context.Context) {
+	if e.tmpl.GetType() != wfv1.TemplateTypeSteps {
 		return
 	}
-	for i, stepGroup := range e.tmpl.Steps {
-		sgNodeName := e.stepGroupNodeNameAt(i)
-		sgNode, err := e.woc.wf.GetNodeByName(sgNodeName)
-		if err != nil || sgNode.Fulfilled() {
+	for i := range e.tmpl.Steps {
+		e.assessStepGroup(ctx, i)
+	}
+}
+
+// assessStepGroup records group i's phase once every step in it has finished.
+func (e *Engine) assessStepGroup(ctx context.Context, i int) {
+	stepGroup := e.tmpl.Steps[i]
+	sgNodeName := e.stepGroupNodeNameAt(i)
+	sgNode, err := e.woc.wf.GetNodeByName(sgNodeName)
+	if err != nil || sgNode.Fulfilled() {
+		return
+	}
+
+	isPending := false
+	isRunning := false
+	isFailed := false
+	isSucceeded := true
+	allOmitted := len(stepGroup.Steps) > 0
+	// Track first failing child ID to surface in the StepGroup's failure
+	// message, matching pre-refactor executeStepGroup semantics. The message
+	// `child '<id>' failed` bubbles up through the Steps node to the workflow
+	// status and is what callers / tests (e.g. TestNodeSuspendResume) inspect
+	// to identify which leaf failed.
+	failingChildID := ""
+
+	for _, step := range stepGroup.Steps {
+		childNodeName := e.taskNodeName(stepTaskNameFor(i, step.Name))
+		childNode, err := e.woc.wf.GetNodeByName(childNodeName)
+		if err != nil {
+			isPending = true
+			isSucceeded = false
+			allOmitted = false
 			continue
 		}
+		if childNode.Phase != wfv1.NodeOmitted {
+			allOmitted = false
+		}
 
-		isPending := false
-		isRunning := false
-		isFailed := false
-		isSucceeded := true
-		allOmitted := len(stepGroup.Steps) > 0
-		// Track first failing child ID to surface in the StepGroup's failure
-		// message, matching pre-refactor executeStepGroup semantics. The message
-		// `child '<id>' failed` bubbles up through the Steps node to the workflow
-		// status and is what callers / tests (e.g. TestNodeSuspendResume) inspect
-		// to identify which leaf failed.
-		failingChildID := ""
-
-		for _, step := range stepGroup.Steps {
-			childNodeName := e.taskNodeName(stepTaskNameFor(i, step.Name))
-			childNode, err := e.woc.wf.GetNodeByName(childNodeName)
-			if err != nil {
-				isPending = true
+		switch childNode.Phase {
+		case wfv1.NodeFailed:
+			if step.ContinueOn == nil || !step.ContinueOn.Failed {
+				isFailed = true
 				isSucceeded = false
-				allOmitted = false
-				continue
-			}
-			if childNode.Phase != wfv1.NodeOmitted {
-				allOmitted = false
-			}
-
-			switch childNode.Phase {
-			case wfv1.NodeFailed:
-				if step.ContinueOn == nil || !step.ContinueOn.Failed {
-					isFailed = true
-					isSucceeded = false
-					if failingChildID == "" {
-						failingChildID = childNode.ID
-					}
+				if failingChildID == "" {
+					failingChildID = childNode.ID
 				}
-			case wfv1.NodeError:
-				if step.ContinueOn == nil || !step.ContinueOn.Error {
-					isFailed = true
-					isSucceeded = false
-					if failingChildID == "" {
-						failingChildID = childNode.ID
-					}
+			}
+		case wfv1.NodeError:
+			if step.ContinueOn == nil || !step.ContinueOn.Error {
+				isFailed = true
+				isSucceeded = false
+				if failingChildID == "" {
+					failingChildID = childNode.ID
 				}
-			case wfv1.NodePending:
-				isPending = true
-				isSucceeded = false
-			case wfv1.NodeRunning:
-				isRunning = true
-				isSucceeded = false
-			case wfv1.NodeSucceeded, wfv1.NodeSkipped, wfv1.NodeOmitted:
-				// Succeeded or equivalent
-			default:
-				isSucceeded = false
 			}
+		case wfv1.NodePending:
+			isPending = true
+			isSucceeded = false
+		case wfv1.NodeRunning:
+			isRunning = true
+			isSucceeded = false
+		case wfv1.NodeSucceeded, wfv1.NodeSkipped, wfv1.NodeOmitted:
+			// Succeeded or equivalent
+		default:
+			isSucceeded = false
 		}
+	}
 
-		// Default to Running; the StepGroup only leaves Running once every step
-		// has finished, as executeStepGroup did: a failed step does not fail
-		// the group while a sibling is still running. Marking it early would
-		// let linkStepGroups hang the next group off a step still in flight.
-		newPhase := wfv1.NodeRunning
-		var newMessage string
-		if isPending || isRunning {
-			continue
+	// Default to Running; the StepGroup only leaves Running once every step
+	// has finished, as executeStepGroup did: a failed step does not fail
+	// the group while a sibling is still running. Marking it early would
+	// let linkStepGroups hang the next group off a step still in flight.
+	newPhase := wfv1.NodeRunning
+	var newMessage string
+	if isPending || isRunning {
+		return
+	}
+	if isFailed {
+		// Always use Failed for FailedOrError children, matching old executeStepGroup behavior.
+		newPhase = wfv1.NodeFailed
+		if failingChildID != "" {
+			newMessage = fmt.Sprintf("child '%s' failed", failingChildID)
 		}
-		if isFailed {
-			// Always use Failed for FailedOrError children, matching old executeStepGroup behavior.
-			newPhase = wfv1.NodeFailed
-			if failingChildID != "" {
-				newMessage = fmt.Sprintf("child '%s' failed", failingChildID)
-			}
-		} else if isSucceeded {
-			newPhase = wfv1.NodeSucceeded
-			if allOmitted {
-				// A group whose every step was omitted because an earlier group
-				// failed never ran, so it is Omitted rather than Succeeded. Retry
-				// and memoized resubmit rely on this: they refuse to reset a
-				// failed node with a Succeeded descendant, and this group hangs
-				// off the failed group's outbound nodes.
-				newPhase = wfv1.NodeOmitted
-			}
+	} else if isSucceeded {
+		newPhase = wfv1.NodeSucceeded
+		if allOmitted {
+			// A group whose every step was omitted because an earlier group
+			// failed never ran, so it is Omitted rather than Succeeded. Retry
+			// and memoized resubmit rely on this: they refuse to reset a
+			// failed node with a Succeeded descendant, and this group hangs
+			// off the failed group's outbound nodes.
+			newPhase = wfv1.NodeOmitted
 		}
+	}
 
-		if sgNode.Phase != newPhase {
-			e.woc.markNodePhase(ctx, sgNodeName, newPhase, newMessage)
-		}
+	if sgNode.Phase != newPhase {
+		e.woc.markNodePhase(ctx, sgNodeName, newPhase, newMessage)
 	}
 }
 
 // isThrottleErr reports whether err is a deliberate throttling signal from
-// the reconciler. These are not real failures — the caller should stop
-// dispatching new work this pass but must not treat the situation as fatal.
+// the reconciler. These are not real failures — the caller should hold the
+// work back for now but must not treat the situation as fatal.
 func isThrottleErr(err error) bool {
 	return stderrors.Is(err, ErrParallelismReached) ||
 		stderrors.Is(err, ErrResourceRateLimitReached) ||
@@ -387,116 +410,9 @@ func isThrottleErr(err error) bool {
 		stderrors.Is(err, ErrTimeout)
 }
 
-// evaluateAll evaluates every task and, when the DAG specifies an explicit target,
-// prunes the results to the target tasks plus their transitive ancestors. Without
-// this, the engine schedules every dependency-ready task — including roots outside
-// the target's ancestry — because EvaluateAll/converge operate on the full task set
-// (a push-all-ready model). The legacy executeDAG instead pulled execution
-// recursively from the targets, so unrelated roots were never visited. Pruning here
-// keeps every downstream consumer (converge, createOmittedNodes, assessDAGPhase)
-// consistent: an unscheduled-but-ready root would otherwise also keep the DAG
-// Running forever via assessDAGPhase's pending check.
-func (e *Engine) evaluateAll(ctx context.Context, _ hooksRun) evaluation {
-	results := e.evaluator.EvaluateAll(ctx)
-	set := e.executableTaskSet(ctx)
-	if set == nil {
-		return evaluation{results: results}
-	}
-	for k := range results {
-		if !set[k] {
-			delete(results, k)
-		}
-	}
-	return evaluation{results: results}
-}
-
-// executableTaskSet returns the set of task names eligible for execution given the
-// DAG's target: the union of the target tasks and their transitive ancestors.
-// Returns nil when no explicit target is set (a DAG without target, or a Steps
-// template), meaning "no filtering — every task is eligible".
-func (e *Engine) executableTaskSet(ctx context.Context) map[string]bool {
-	if e.tmpl.DAG == nil || e.tmpl.DAG.Target == "" {
-		return nil
-	}
-	set := make(map[string]bool)
-	for _, target := range e.evaluator.GetTargetTasks(ctx) {
-		set[target] = true
-		ancestors, err := e.evaluator.GetAncestors(ctx, target)
-		if err != nil {
-			continue
-		}
-		for _, ancestor := range ancestors {
-			set[ancestor] = true
-		}
-	}
-	return set
-}
-
-// converge applies evaluation results by performing side effects: every task
-// the evaluator reports as runnable is dispatched through executeTask, an
-// expanded task as one unit (see reconcileTaskGroup).
-// The evaluator decides WHAT should happen; this layer just dispatches.
-func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissionsRecorded) dispatched {
-	results := omitted.results
-	executedTasks := make(map[string]bool)
-	// Sort result keys for deterministic dispatch order. Map iteration would
-	// otherwise vary per cycle and, under parallelism limits, the winner of a
-	// limited slot becomes random — breaking reproducibility.
-	for _, k := range slices.Sorted(maps.Keys(results)) {
-		result := results[k]
-		if result.Error != nil {
-			// The evaluator could not assess this task (e.g. its depends
-			// expression failed to evaluate). Record that as a terminal Error
-			// node so the boundary can assess it; left unrecorded, the task
-			// would stay Pending and the boundary would never complete.
-			if task := e.getTaskByName(tasks, result.TaskName); task != nil {
-				if node := e.getTaskNode(ctx, result.TaskName); node == nil || !node.Fulfilled() {
-					e.initTerminalErrorNode(ctx, task, e.parentNodeNames(ctx, result.TaskName), result.Error)
-					executedTasks[result.TaskName] = true
-				}
-			}
-			continue
-		}
-		e.logEvaluation(ctx, result)
-		// Execute, Succeed and Fail are all dispatched: for Succeed and Fail the
-		// operator's retry handling records the outcome.
-		needsExecution := result.Action == dag.ActionExecute || result.ShouldRun ||
-			result.Action == dag.ActionSucceed || result.Action == dag.ActionFail
-
-		// Retry nodes with a daemoned child (ActionNone + FulfilledForDeps):
-		// still need executeTask so processNodeRetries propagates the Daemoned
-		// flag from child to parent.
-		if !needsExecution && result.Action == dag.ActionNone {
-			node := e.getTaskNode(ctx, result.TaskName)
-			if node != nil && node.Type == wfv1.NodeTypeRetry && node.Phase == wfv1.NodeRunning {
-				needsExecution = true
-			}
-		}
-
-		if needsExecution {
-			executedTasks[result.TaskName] = true
-			var err error
-			if task := e.getTaskByName(tasks, result.TaskName); task != nil {
-				_, err = e.executeTask(ctx, task)
-			}
-			if e.dispatchOutcome(ctx, result.TaskName, err) {
-				return dispatched{executed: executedTasks}
-			}
-			if err != nil {
-				continue
-			}
-		}
-
-		if result.RequeueAfter > 0 {
-			e.woc.requeueAfter(result.RequeueAfter)
-		}
-	}
-	return dispatched{executed: executedTasks}
-}
-
 // dispatchOutcome applies the per-task dispatch error policy, main's, and
-// reports whether to stop dispatching this pass: only the operate deadline
-// does. A task held back by parallelism or a rate limit waits for a free
+// reports whether to stop dispatching for the rest of the walk: only the
+// operate deadline does. A task held back by parallelism or a rate limit waits for a free
 // slot while the others, which may be the ones to free it, are still
 // dispatched; a missing reference requeues the task. Any other error is the
 // task's own outcome, already recorded as an Error on its node (by
@@ -681,7 +597,7 @@ func (e *Engine) reconcileFulfilledNode(ctx context.Context, task dag.Task, reso
 // reconcileExternalCompletions handles tasks that completed between operate cycles
 // (e.g. pod controller marked a node Succeeded). We re-reconcile them so that
 // handleNodeFulfilled emits metrics and releases synchronization locks.
-func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.Task, executedTasks map[string]bool) {
+func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.Task, dispatched map[string]bool) {
 	for _, task := range tasks {
 		// For expanded tasks (withItems/withParam/withSequence), we can't reconcile
 		// the parent (unresolved {{item.*}} in arguments). Instead, reconcile each
@@ -690,9 +606,9 @@ func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.T
 			e.reconcileExpandedChildren(ctx, task)
 			continue
 		}
-		// Skip tasks already processed by converge to avoid double metric emission
+		// Skip tasks the walk dispatched to avoid double metric emission
 		// and redundant reconciliation.
-		if executedTasks[task.GetName()] {
+		if dispatched[task.GetName()] {
 			continue
 		}
 		taskNode := e.getTaskNode(ctx, task.GetName())
@@ -719,31 +635,9 @@ func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.T
 	}
 }
 
-// createOmittedNodes creates Omitted workflow nodes for unreachable tasks.
-// The scheduler marks them Omitted internally; we create corresponding workflow nodes
-// so that downstream tasks and assessDAGPhase can see them.
-func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task, eval evaluation) omissionsRecorded {
-	results := eval.results
-	for _, task := range tasks {
-		taskName := task.GetName()
-		if e.getTaskNode(ctx, taskName) != nil {
-			continue
-		}
-		if result, ok := results[taskName]; ok && result.Skipped && !result.ShouldRun {
-			reason := result.SkipReason
-			if reason == "" {
-				reason = "depends condition not met"
-			}
-			e.initTaskNode(ctx, task, e.parentNodeNames(ctx, taskName), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
-		}
-	}
-	return omissionsRecorded{results: results}
-}
-
 // finalize assesses the overall phase and, if terminal, sets outputs,
 // saves memoization cache, and marks the node Succeeded/Failed/Error.
-func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, omitted omissionsRecorded, onExitCompleted bool) error {
-	results := omitted.results
+func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult, onExitCompleted bool) error {
 	targetTasks := e.evaluator.GetTargetTasks(ctx)
 
 	// Under a Stop shutdown the boundary is failed once its exit handlers are
@@ -1338,9 +1232,8 @@ func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string
 // parentNodeNames returns the nodes a task's node hangs off in the graph.
 // Steps tasks are children of their StepGroup node. DAG tasks are children
 // of the outbound nodes of their dependencies, or of the boundary node when
-// they have none. A dependency with no node yet (a peer that will be Omitted,
-// whose node is only created after the converge loop) is skipped; linkage is
-// reconciled on the next operate cycle once that node exists.
+// they have none. The walk visits a task's dependencies before it, so each
+// has its node by then; a dependency with no node is skipped.
 func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string {
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
 		if sgName := e.stepGroupNodeName(taskName); sgName != "" {
@@ -1403,13 +1296,41 @@ func (e *Engine) getChildNodes(node *wfv1.NodeStatus) []wfv1.NodeStatus {
 // declared outputs (producer's valueFrom.default where present, else nil) so downstream
 // refs resolve instead of requeuing forever. The task (not the node) is the template
 // holder: a skipped node alone resolves to the boundary template, not its own.
+//
+// Once the task has finished, so has everything its part reads (a running
+// daemon has not, and neither has the StepGroup an expanded step is read
+// through until the walk closes it), and its part is built once per
+// reconcile and kept in e.finished.
 func (e *Engine) addTaskNodeToScope(ctx context.Context, scope *wfScope, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, refName, taskName string, node *wfv1.NodeStatus, includeArtifacts bool) error {
+	scopeNode := e.scopeNodeForTask(taskName, node)
+	if !node.Fulfilled() || node.IsDaemoned() || !scopeNode.Fulfilled() {
+		return e.buildTaskNodeScope(ctx, scope, ref, agg, refName, taskName, node, scopeNode, includeArtifacts)
+	}
+	own, ok := e.finished[taskName]
+	if !ok {
+		built := createScope(nil)
+		if err := e.buildTaskNodeScope(ctx, built, ref, agg, refName, taskName, node, scopeNode, includeArtifacts); err != nil {
+			return err
+		}
+		own = built.scope
+		if e.finished == nil {
+			e.finished = make(map[string]*variables.Scope)
+		}
+		e.finished[taskName] = own
+	}
+	scope.scope.Merge(own)
+	return nil
+}
+
+// buildTaskNodeScope adds what addTaskNodeToScope describes to scope, from
+// node and scopeNode, the node that represents the task in the scope.
+func (e *Engine) buildTaskNodeScope(ctx context.Context, scope *wfScope, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, refName, taskName string, node, scopeNode *wfv1.NodeStatus, includeArtifacts bool) error {
 	if node.Type == wfv1.NodeTypeTaskGroup {
 		if err := e.woc.processAggregateNodeOutputs(scope, agg, refName, e.getChildNodes(node)); err != nil {
 			return fmt.Errorf("failed to aggregate outputs for %s: %w", taskName, err)
 		}
 	}
-	e.woc.buildLocalScope(scope, ref, refName, e.scopeNodeForTask(taskName, node))
+	e.woc.buildLocalScope(scope, ref, refName, scopeNode)
 	holder := wfv1.TemplateReferenceHolder(node)
 	if t := e.evaluator.GetTask(taskName); t != nil {
 		holder = t.GetTemplateReferenceHolder()

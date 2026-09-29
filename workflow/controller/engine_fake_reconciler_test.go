@@ -125,8 +125,8 @@ func (c expandCountingTask) Expand(ctx context.Context, scope map[string]string,
 	return c.Task.Expand(ctx, scope, substitutor)
 }
 
-// TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch: one converge
-// pass over a fan-out whose three items are Pending expands the task once
+// TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch: one visit of a
+// fan-out whose three items are Pending expands the task once
 // and hands each item to the reconciler once, in item order (C19). Each
 // Pending item used to be dispatched on its own, re-expanding the whole
 // task every time: O(n²) per reconcile for an n-item fan-out.
@@ -139,7 +139,7 @@ func TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch(t *testing.T) {
 	}
 
 	fake.calls = nil
-	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, engine.evaluateAll(ctx, hooksRun{})))
+	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true)
 
 	assert.Equal(t, 1, expands, "the fan-out should be expanded once per dispatch")
 	assert.Equal(t, []string{

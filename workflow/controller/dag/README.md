@@ -46,9 +46,13 @@ A running daemon counts as finished.
 Once every dependency has finished, `evaluateDependsReadiness` builds a scope of dependency states — a `taskResult` per dependency with the fields `Succeeded`, `Failed`, `Errored`, `Skipped`, `Omitted`, `Daemoned`, `AnySucceeded`, `AllFailed` (the same vocabulary as `common.TaskResult*`) — and evaluates the normalized expression with a cached, compiled `expr` program.
 The task is **ready** if the expression is true and is **omitted** if it is false.
 
+`Evaluate` evaluates one task this way against the nodes as they are now.
+The engine calls it for each task in dependency order, immediately before acting on the task, so the task sees what the engine has just done to its dependencies.
+
 ### 4. Cascading omission
 
-`evaluateAllStates` clears any previously computed Omitted state and evaluates every task in topological order in a single pass.
+The engine creates the Omitted node of each task that can never run before it evaluates that task's dependants, so `Evaluate` sees an omission through the node.
+`EvaluateAll`, which the engine calls once after its walk for phase assessment, still computes omissions itself: `evaluateAllStates` clears any previously computed Omitted state and evaluates every task in topological order in a single pass.
 Because a task is evaluated after all of its dependencies, an omission propagates in the same pass: A fails → B (`depends: A.Succeeded`) is omitted → C (`depends: B`) is omitted.
 
 ### 5. Retry and task-group nodes
@@ -66,7 +70,8 @@ An expanded task has one result, for its TaskGroup node: `evaluateTaskGroupNode`
 What the `Engine` uses:
 
 ```go
-evaluator.EvaluateAll(ctx)              // map of task name → EvaluationResult
+evaluator.Evaluate(ctx, task)           // one task's EvaluationResult, for the walk
+evaluator.EvaluateAll(ctx)              // map of task name → EvaluationResult, for assessment
 evaluator.GetTargetTasks(ctx)           // explicit dag.target tasks, or the leaves
 evaluator.FindLeafTaskNames(ctx)        // tasks nothing depends on
 evaluator.GetAncestors(ctx, task)       // transitive dependencies (unordered)
@@ -75,6 +80,7 @@ evaluator.GetTask(name)                 // the Task by name
 dag.ExpandTask / dag.HasExpansion       // withItems/withParam/withSequence expansion
 dag.TaskNodeName / dag.TaskNameFromNodeName // task ↔ node name convention
 dag.TaskGroupPhase                      // a TaskGroup's phase from its items
+dag.PullOrder                           // a DAG's tasks in walk order: the targets' ancestry, dependencies first
 ```
 
 Fields of `EvaluationResult` the engine acts on:

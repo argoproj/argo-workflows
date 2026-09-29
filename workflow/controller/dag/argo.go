@@ -248,7 +248,7 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 // conditions can never be met are omitted in the same pass.
 //
 // IMPORTANT: This method clears previously-set Omitted states at the start,
-// then re-evaluates from scratch. EvaluateAll, the production entry point,
+// then re-evaluates from scratch. EvaluateAll, the assessment entry point,
 // calls it first so that every result it returns is read against a
 // consistent state; anything else that reads task phases must run after it.
 // Multiple calls within the same evaluation cycle are safe but wasteful —
@@ -416,7 +416,17 @@ func (e *DAGEvaluator) GetTargetTasks(ctx context.Context) []string {
 	return e.FindLeafTaskNames(ctx)
 }
 
-// EvaluateAll evaluates all tasks in the DAG and returns a map of results.
+// Evaluate evaluates one task against the workflow's nodes as they are now.
+// The Engine calls it for each task in dependency order, immediately before
+// acting on the task, so the task sees what was just done to its
+// dependencies; a dependency that can never run already has its Omitted
+// node by then, which is why Evaluate needs no cascading-omission pass.
+func (e *DAGEvaluator) Evaluate(ctx context.Context, taskName string) EvaluationResult {
+	return e.evaluateTaskResult(ctx, taskName)
+}
+
+// EvaluateAll evaluates all tasks in the DAG and returns a map of results,
+// for the boundary's phase assessment.
 // An expanded task has one result, for its TaskGroup: the Engine drives its
 // items when it dispatches the group (see evaluateTaskGroupNode).
 func (e *DAGEvaluator) EvaluateAll(ctx context.Context) map[string]EvaluationResult {
@@ -630,7 +640,7 @@ func (e *DAGEvaluator) evaluateRetryNode(ctx context.Context, taskName string, n
 }
 
 // evaluateTaskGroupNode assesses a TaskGroup node (from withItems/withParam/withSequence).
-// Until the group is fulfilled it is dispatched on every pass: the Engine
+// Until the group is fulfilled it is dispatched on every reconcile: the Engine
 // expands the task, creates or re-enters each item, and completes the group
 // with TaskGroupPhase once every item exists and has finished, as
 // executeDAGTask and executeStepGroup did before the Engine. A completed

@@ -23,12 +23,6 @@ type hookHandler struct {
 	prefix     string              // "tasks" or "steps"
 	ref        varkeys.NodeRefKeys // sibling-node variable keys matching prefix
 	log        logging.Logger
-	// exitDriven records nodes (a task node, or an item node of an expanded
-	// task) whose exit handler has been driven this operate cycle. ProcessAllTaskHooks runs twice per cycle; the second time a completed
-	// task is seen, its onExit node is inspected by name rather than re-run, so the
-	// exit handler is driven at most once per cycle (#14392 / PR #16088). The
-	// hookHandler is created per cycle in NewEngine, so this map is cycle-scoped.
-	exitDriven map[string]bool
 }
 
 func newHookHandler(woc *wfOperationCtx, tmplCtx *templateresolution.TemplateContext, boundaryID string, tmpl *wfv1.Template, log logging.Logger) *hookHandler {
@@ -43,7 +37,6 @@ func newHookHandler(woc *wfOperationCtx, tmplCtx *templateresolution.TemplateCon
 		prefix:     prefix,
 		ref:        ref,
 		log:        log,
-		exitDriven: map[string]bool{},
 	}
 }
 
@@ -116,25 +109,23 @@ func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.Lif
 // that have nodes. Per-task errors are isolated: the failing task's hook
 // error is forwarded to onError (which marks the offending task node Errored),
 // and iteration continues so unrelated siblings' hooks and the engine's
-// converge pass are not blocked. Returns onExitCompleted=false if any
+// walk are not blocked. Returns onExitCompleted=false if any
 // exit handler is still pending OR any hook errored, and always returns
 // a nil error: callers must NOT treat per-task hook errors as boundary-fatal.
 //
 // This mirrors the legacy controller's executeDAGTask behavior, where a hook
 // error on one task did not prevent sibling tasks from running their hooks.
 //
-// ProcessAllTaskHooks runs twice per operate cycle (before and after scheduling).
-// A task's exit handler is driven (reconcileTemplate) at most once per cycle,
-// tracked by h.exitDriven: the second time a completed task is seen, its onExit
-// node is only looked up by name to gate completion, never re-run. This mirrors
-// PR #16088 (#14392): re-running the exit handler would re-run checkParallelism
-// against a pod count this cycle just bumped, spuriously failing the handler.
+// The Engine's walk calls it once per task per operate cycle, so a task's exit
+// handler is driven (reconcileTemplate) at most once per cycle. Re-running it
+// would re-run checkParallelism against a pod count this cycle just bumped,
+// spuriously failing the handler (#14392 / PR #16088).
 func (h *hookHandler) ProcessAllTaskHooks(ctx context.Context, tasks []dag.Task, getTaskNode func(ctx context.Context, taskName string) *wfv1.NodeStatus, buildScope func(ctx context.Context, task dag.Task) (*wfScope, error), onError func(ctx context.Context, taskNode *wfv1.NodeStatus, err error)) (onExitCompleted bool, err error) {
 	onExitCompleted = true
 	for _, task := range tasks {
 		taskName := task.GetName()
 		taskNode := getTaskNode(ctx, taskName)
-		if taskNode == nil {
+		if taskNode == nil || !h.hasHooks(task) {
 			continue
 		}
 
@@ -197,24 +188,17 @@ func (h *hookHandler) ProcessAllTaskHooks(ctx context.Context, tasks []dag.Task,
 	return onExitCompleted, nil
 }
 
+// hasHooks reports whether the task has any lifecycle or exit hook to drive.
+// A task without one needs no scope: building it walks every ancestor.
+func (h *hookHandler) hasHooks(task dag.Task) bool {
+	return len(task.GetHooks()) > 0 || task.GetExitHook(h.woc.execWf.Spec.Arguments) != nil
+}
+
 // driveExitHandler runs the task's exit handler for node (the task node, or
-// one item node of an expanded task) at most once per cycle and reports
-// whether the handler is complete. Errors are forwarded to onError.
+// one item node of an expanded task) and reports whether the handler is
+// complete. Errors are forwarded to onError.
 func (h *hookHandler) driveExitHandler(ctx context.Context, task dag.Task, node *wfv1.NodeStatus, scope *wfScope, onError func(ctx context.Context, taskNode *wfv1.NodeStatus, err error)) bool {
-	if h.exitDriven[node.Name] {
-		// Already driven this cycle (earlier pass). Do not re-run the exit
-		// handler — look up the onExit node by name to gate completion, exactly
-		// as PR #16088's executeDAG target loop does. Re-running reconcileTemplate
-		// here would re-run checkParallelism against a pod count this cycle just
-		// bumped, spuriously failing the handler (#14392).
-		onExitNodeName := common.GenerateOnExitNodeName(node.Name)
-		if onExitNode, lookupErr := h.woc.wf.GetNodeByName(onExitNodeName); lookupErr == nil && onExitNode != nil && !onExitNode.Fulfilled() {
-			return false
-		}
-		return true
-	}
 	hasOnExitNode, onExitNode, exitErr := h.ExecuteExitHandler(ctx, task.GetExitHook(h.woc.execWf.Spec.Arguments), node, task.GetDisplayName(), scope)
-	h.exitDriven[node.Name] = true
 	if exitErr != nil {
 		if isThrottleErr(exitErr) {
 			// Deliberate back-pressure (parallelism, rate limit, deadline): not

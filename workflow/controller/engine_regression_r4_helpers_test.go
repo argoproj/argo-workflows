@@ -117,8 +117,6 @@ func r4RejectPodCreate(controller *WorkflowController, match func(*apiv1.Pod) bo
 
 // r4PodCalls counts pod Create/Get calls seen by the fake clientset,
 // installed by r4CountPodCalls.
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 type r4PodCalls struct {
 	mu            sync.Mutex
 	creates       map[string]int // pod name -> Create calls
@@ -129,8 +127,6 @@ type r4PodCalls struct {
 // r4CountPodCalls prepends fake-clientset reactors that count pod Create and
 // Get calls, for asserting that a pod is only ever created once per
 // reconcile even under informer lag (see r4DelayPodWatch).
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4CountPodCalls(controller *WorkflowController) *r4PodCalls {
 	c := &r4PodCalls{creates: map[string]int{}}
 	cs := controller.kubeclientset.(*fake.Clientset)
@@ -158,8 +154,6 @@ func r4CountPodCalls(controller *WorkflowController) *r4PodCalls {
 // late, as a real API server's watch does relative to an in-process
 // reconcile. Install it right after newController, before the pod informer
 // has started, e.g. before the first r4Operate call.
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4DelayPodWatch(controller *WorkflowController, d time.Duration) {
 	if d == 0 {
 		return

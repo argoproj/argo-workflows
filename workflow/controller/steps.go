@@ -147,9 +147,9 @@ func stepNameOf(taskName string) string {
 
 // executeSteps executes a Steps template by converting step groups into DAG tasks
 // and delegating to the Engine for scheduling and reconciliation.
-// The engine's evaluate-then-converge loop handles cascading instant completions
-// (e.g. when-skipped, cache hits) within a single Execute call, so step groups
-// that complete instantly are processed without extra reconcile cycles.
+// The Engine walks the steps in order, so step groups that complete instantly
+// (e.g. when-skipped, cache hits) are followed by the next group in the same
+// Execute call, without extra reconcile cycles.
 func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
