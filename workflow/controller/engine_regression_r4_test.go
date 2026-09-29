@@ -4142,3 +4142,171 @@ spec:
 	assert.Equal(t, wfv1.NodeSkipped, n.Phase)
 	assert.Equal(t, "when 'heads == tails' evaluated false", n.Message)
 }
+
+// r4C43RunUntilDone operates woc until the workflow completes or rounds is
+// exhausted, succeeding every unfulfilled pod each round. The first round in
+// which the node named producerDisplayName exists, it reports producerOut for
+// that node via a WorkflowTaskResult, as the executor would once its pod
+// succeeds.
+func r4C43RunUntilDone(ctx context.Context, t *testing.T, controller *WorkflowController, woc *wfOperationCtx, producerDisplayName string, producerOut wfv1.Outputs, rounds int) *wfOperationCtx {
+	t.Helper()
+	reported := false
+	for i := 0; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		if !reported {
+			if n := woc.wf.Status.Nodes.FindByDisplayName(producerDisplayName); n != nil {
+				r4TaskResultOutputs(ctx, woc, n.Name, producerOut)
+				reported = true
+			}
+		}
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc
+}
+
+// TestRegressionR4_C43_StepsOutputsExprWorkflowOutputs ports
+// TestProbe_v2x4_StepsOutputsExprWorkflowOutputs (v2x4-1_test.go / C43). The
+// "mid" Steps template's own output param is declared as
+// valueFrom.expression: "workflow.outputs.parameters.g", read from the
+// workflow-level global that "a" exported. Base seeded executeSteps' scope
+// with wf.Status.Outputs, so this resolves; HEAD's setDAGOutputs never adds
+// workflow outputs to its scope, so "mid" fails ("unknown name workflow"),
+// "c" is Omitted and the workflow Fails.
+func TestRegressionR4_C43_StepsOutputsExprWorkflowOutputs(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c43-expr
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+    - - name: mid
+        template: mid
+    - - name: c
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{steps.mid.outputs.parameters.out}}"
+  - name: mid
+    steps:
+    - - name: a
+        template: produce
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          expression: "workflow.outputs.parameters.g"
+  - name: produce
+    container:
+      image: alpine
+      command: [echo]
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          path: /tmp/p
+  - name: consume
+    inputs:
+      parameters:
+      - name: x
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.x}}"]
+`)
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	r4ValidateWithTemplates(ctx, t, controller, wf)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	woc = r4C43RunUntilDone(ctx, t, controller, woc, "a", wfv1.Outputs{
+		Parameters: []wfv1.Parameter{{Name: "p", GlobalName: "g", Value: wfv1.AnyStringPtr("A")}},
+	}, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	c := woc.wf.Status.Nodes.FindByDisplayName("c")
+	require.NotNil(t, c)
+	require.NotNil(t, c.Inputs)
+	require.Len(t, c.Inputs.Parameters, 1)
+	require.NotNil(t, c.Inputs.Parameters[0].Value)
+	assert.Equal(t, "A", c.Inputs.Parameters[0].Value.String())
+}
+
+// TestRegressionR4_C43_StepsOutputsArtFromWorkflowOutputs ports
+// TestProbe_v2x4_StepsOutputsArtFromWorkflowOutputs (v2x4-1_test.go / C43).
+// Artifacts have no global-params fallback, so
+// outputs.artifacts[].from: "{{workflow.outputs.artifacts.ga}}" is the only
+// way for a Steps template to hand out a global artifact as its own output;
+// it needs the same workflow-outputs scope seed as the expression form.
+func TestRegressionR4_C43_StepsOutputsArtFromWorkflowOutputs(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c43-art
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+    - - name: mid
+        template: mid
+    - - name: c
+        template: consume-art
+        arguments:
+          artifacts:
+          - name: a
+            from: "{{steps.mid.outputs.artifacts.out}}"
+  - name: mid
+    steps:
+    - - name: a
+        template: produce-art
+    outputs:
+      artifacts:
+      - name: out
+        from: "{{workflow.outputs.artifacts.ga}}"
+  - name: produce-art
+    container:
+      image: alpine
+      command: [echo]
+    outputs:
+      artifacts:
+      - name: art
+        globalName: ga
+        path: /tmp/a
+  - name: consume-art
+    inputs:
+      artifacts:
+      - name: a
+        path: /tmp/a
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["cat /tmp/a"]
+`)
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	r4ValidateWithTemplates(ctx, t, controller, wf)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	woc = r4C43RunUntilDone(ctx, t, controller, woc, "a", wfv1.Outputs{
+		Artifacts: []wfv1.Artifact{{Name: "art", GlobalName: "ga", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "key-A"}}}},
+	}, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	c := woc.wf.Status.Nodes.FindByDisplayName("c")
+	require.NotNil(t, c)
+	require.NotNil(t, c.Inputs)
+	require.Len(t, c.Inputs.Artifacts, 1)
+	require.NotNil(t, c.Inputs.Artifacts[0].S3)
+	assert.Equal(t, "key-A", c.Inputs.Artifacts[0].S3.Key)
+}
