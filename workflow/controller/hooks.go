@@ -67,19 +67,19 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		// To check a node was triggered
 		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
-			return false, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
+			return false, &hookNodeError{hookNodeName, &hook, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)}
 		}
 		// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
 		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams())))
 		if err != nil {
-			return false, err
+			return false, &hookNodeError{hookNodeName, &hook, err}
 		}
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info(ctx, "Running hooks")
 			hookNode, err := woc.reconcileHookNode(ctx, hookNodeName, &hook, parentNode, false, boundaryID, tmplCtx, ref, name, scope)
 			if err != nil {
-				return false, err
+				return false, &hookNodeError{hookNodeName, &hook, err}
 			}
 			hookNodes = append(hookNodes, hookNode)
 		}

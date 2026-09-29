@@ -7580,3 +7580,350 @@ spec:
 	assert.Equal(t, "i2", r4HookInput(woc, "dag-items-exit.a(1:i2).onExit"))
 	assert.Equal(t, []string{"dag-items-exit.a(0:i1).onExit", "dag-items-exit.a(1:i2).onExit"}, r4HookNodes(woc))
 }
+
+// r4HookDenied rejects the creation of every hook pod whose node name
+// contains ".onExit", as an admission webhook denying the pod would.
+func r4HookDenied(controller *WorkflowController) {
+	r4RejectPodCreate(controller, func(pod *apiv1.Pod) bool {
+		return strings.Contains(pod.Annotations[common.AnnotationKeyNodeName], ".onExit")
+	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
+}
+
+// r4C33Run starts manifest with every exit hook pod denied, then succeeds
+// every pod and reconciles until the workflow completes (at most rounds),
+// then three more times.
+func r4C33Run(t *testing.T, manifest string, rounds int) (context.Context, *r4Run) {
+	t.Helper()
+	ctx, r := r4Start(t, manifest)
+	r4HookDenied(r.controller)
+	for i := 0; i < rounds+3; i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	return ctx, r
+}
+
+const r4C33Steps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c33-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: run
+        hooks:
+          exit:
+            template: cleanup
+    - - name: b
+        template: run
+  - name: run
+    container: {image: busybox, command: [echo, hi]}
+  - name: cleanup
+    container: {image: busybox, command: [echo, cleanup]}
+`
+
+// C33 (r1x58 _StepsHookDenied): a step's exit hook pod is denied after the
+// step Succeeded. As at base, the Steps template and the workflow end Error,
+// and the next group's step b is never created.
+func TestRegressionR4_C33_StepsHookDenied(t *testing.T) {
+	ctx, r := r4C33Run(t, r4C33Steps, 6)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "c33-steps[0].a.onExit"))
+	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	assert.Empty(t, r4Unfulfilled(r.woc))
+	assert.Equal(t, []string{"c33-steps[0].a"}, r4PodNodeNames(ctx, t, r.woc), "b's pod was created although the workflow errored in group [0]")
+}
+
+// C33 (r1x58 _StepsHookExprErrorNextGroup): the #14031 fixture with a second
+// group. The exit hook's expression fails after a Succeeded: the workflow
+// ends Error and b never starts.
+func TestRegressionR4_C33_StepsHookExprErrorNextGroup(t *testing.T) {
+	woc, pods := r4RunDecided(t, strings.Replace(r4C33Steps, "            template: cleanup", "            expression: steps[\"a\"].outputs !\n            template: cleanup", 1), 6, allSucceed)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase, woc.wf.Status.Message)
+	assert.Empty(t, r4Unfulfilled(woc))
+	assert.Equal(t, []string{"c33-steps[0].a"}, pods)
+}
+
+const r4C33DAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c33-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: run
+        hooks:
+          exit:
+            template: cleanup
+      - {name: b, template: run, depends: a}
+  - name: run
+    container: {image: busybox, command: [echo, hi]}
+  - name: cleanup
+    container: {image: busybox, command: [echo, cleanup]}
+`
+
+// C33, decided deviation (base DAG ignored the errored hook, ran b and
+// Succeeded; fails at base by design): a DAG task's exit hook pod is denied
+// after the task Succeeded. The DAG ends Error, as Steps does, and nothing
+// more is dispatched: b gets neither a node nor a pod.
+func TestRegressionR4_C33_DAGHookDeniedIsErrorWithoutStrayPod(t *testing.T) {
+	ctx, r := r4C33Run(t, r4C33DAG, 6)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "c33-dag.a.onExit"))
+	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	assert.Contains(t, r.woc.wf.Status.Message, "admission webhook denied the request")
+	assert.Empty(t, r4Unfulfilled(r.woc))
+	assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "c33-dag.b"), "b has a node")
+	assert.Equal(t, []string{"c33-dag.a"}, r4PodNodeNames(ctx, t, r.woc))
+}
+
+// C33 with P20, decided deviation (base DAG ignored the errored hook and
+// Succeeded; fails at base by design), from v1x58 H: a's exit hook pod is
+// denied while its sibling b still runs. The DAG waits for b, keeps b's pod
+// and dispatches nothing new (c, which depends on a, gets no node) on every
+// reconcile, then ends Error once b has finished.
+func TestRegressionR4_C33_DAGHookErrorWaitsForRunningSibling(t *testing.T) {
+	ctx, r := r4Start(t, strings.Replace(r4C33DAG, "depends: a}", "}\n      - {name: c, template: run, depends: a}", 1))
+	r4HookDenied(r.controller)
+	running := func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.HasSuffix(n.Name, ".b") {
+			return apiv1.PodRunning
+		}
+		return apiv1.PodSucceeded
+	}
+	for range 4 {
+		setPodPhases(ctx, r.woc, running)
+		r.op(ctx)
+		require.Equal(t, wfv1.WorkflowRunning, r.woc.wf.Status.Phase, "the workflow ended while b runs: %s", r.woc.wf.Status.Message)
+		assert.Equal(t, wfv1.NodeRunning, r4NodePhase(r.woc, "c33-dag"))
+		assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "c33-dag.c"), "c was dispatched after a's hook errored")
+	}
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "c33-dag.a.onExit"))
+	for range 3 {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.b"))
+	assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "c33-dag.c"))
+	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	assert.Contains(t, r.woc.wf.Status.Message, "admission webhook denied the request")
+	assert.Equal(t, []string{"c33-dag.a", "c33-dag.b"}, r4PodNodeNames(ctx, t, r.woc))
+}
+
+// C33, decided deviation (base DAG ignored the errored hook and Succeeded;
+// fails at base by design): continueOn.error does not cover an exit hook
+// that errors after its task Succeeded. The DAG ends Error rather than
+// Succeeded, and does not hang.
+func TestRegressionR4_C33_DAGHookErrorWithContinueOn(t *testing.T) {
+	manifest := strings.Replace(r4C33DAG, "depends: a}", "dependencies: [a]}", 1)
+	manifest = strings.Replace(manifest, "            template: cleanup", "            expression: tasks[\"a\"].outputs !\n            template: cleanup\n        continueOn: {error: true}", 1)
+	woc, _ := r4RunDecided(t, manifest, 6, allSucceed)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase, woc.wf.Status.Message)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "c33-dag.a.onExit"), "the hook error is recorded on the hook node")
+	assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(woc, "c33-dag.b"))
+	assert.Empty(t, r4Unfulfilled(woc))
+}
+
+// C33, decided deviation (base DAG ignored the errored hook, so the nested
+// DAG Succeeded and was memoized; fails at base by design): a nested DAG
+// whose task's exit hook errors ends Error, gets no outputs and is not
+// written to its memoization cache.
+func TestRegressionR4_C33_HookErroredBoundaryNotMemoized(t *testing.T) {
+	woc, _ := r4RunDecided(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c33-memo
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: inner, template: inner}
+  - name: inner
+    memoize:
+      key: c33
+      cache:
+        configMap: {name: r4-c33-cache}
+    outputs:
+      parameters:
+      - name: s
+        valueFrom: {parameter: "{{tasks.a.status}}"}
+    dag:
+      tasks:
+      - name: a
+        template: run
+        hooks:
+          exit:
+            expression: tasks["a"].outputs !
+            template: run
+  - name: run
+    container: {image: busybox, command: [echo, hi]}
+`, 6, allSucceed)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase, woc.wf.Status.Message)
+	inner, err := woc.wf.GetNodeByName("c33-memo.inner")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, inner.Phase)
+	assert.Nil(t, inner.Outputs, "a hook-errored boundary gets no outputs")
+	cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps("default").Get(logging.TestContext(t.Context()), "r4-c33-cache", metav1.GetOptions{})
+	if err == nil {
+		assert.Empty(t, cm.Data, "a hook-errored boundary is not memoized")
+	} else {
+		assert.True(t, apierr.IsNotFound(err), err)
+	}
+}
+
+// v1x58 D and E, controls: a hook pod that runs and Fails is still ignored,
+// in DAG and Steps, as at base.
+func TestRegressionR4_C33_FailedHookPodIgnored(t *testing.T) {
+	failHook := func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.HasSuffix(n.Name, ".onExit") {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	}
+	for _, manifest := range []string{r4C33DAG, r4C33Steps} {
+		woc, _ := r4RunDecided(t, manifest, 8, failHook)
+		assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+		assert.Empty(t, r4Unfulfilled(woc))
+	}
+}
+
+// r4C41Run runs a template (steps or dag) whose task a has an exit or
+// running hook with pendingTimeout: 1s, keeps the hook's pod Pending past
+// it, then lets a finish (as v3x7Run does), deletes the timed-out pod as the
+// pod controller would, and reconciles to the end.
+func r4C41Run(t *testing.T, kind, hookKind string) *wfv1.Workflow {
+	t.Helper()
+	ref, body := "steps", "    steps:\n    - - name: a\n        template: c\n        hooks:\n"
+	if kind == "dag" {
+		ref, body = "tasks", "    dag:\n      tasks:\n      - name: a\n        template: c\n        hooks:\n"
+	}
+	hookSuffix, mainPhase := ".onExit", apiv1.PodSucceeded
+	if hookKind == "running" {
+		body += "          running:\n            expression: " + ref + ".a.status == \"Running\"\n            template: hook\n"
+		hookSuffix, mainPhase = ".hooks.running", apiv1.PodRunning
+	} else {
+		body += "          exit:\n            template: hook\n"
+	}
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c41-`+kind+`-`+hookKind+`
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+`+body+`  - name: c
+    container: {image: busybox, command: [echo]}
+  - name: hook
+    pendingTimeout: 1s
+    container: {image: busybox, command: [echo]}
+`)
+	makePodsPhase(ctx, r.woc, mainPhase)
+	r.op(ctx)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodPending, r4PodForNodePrefix(r.woc.wf.Name+"[0].a"+hookSuffix))
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodPending, r4PodForNodePrefix(r.woc.wf.Name+".a"+hookSuffix))
+	r.op(ctx)
+	time.Sleep(1500 * time.Millisecond)
+	r.op(ctx)
+	if hookKind == "running" {
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, func(pod *apiv1.Pod) bool {
+			return strings.HasSuffix(pod.Annotations[common.AnnotationKeyNodeName], ".a")
+		})
+	}
+	for range 3 {
+		r.op(ctx)
+	}
+	for _, n := range r.woc.wf.Status.Nodes {
+		if n.Message == "timeout" && n.Type == wfv1.NodeTypePod {
+			pods, err := listPods(ctx, r.woc)
+			require.NoError(t, err)
+			for _, pod := range pods.Items {
+				if pod.Annotations[common.AnnotationKeyNodeName] == n.Name {
+					r4DeletePod(ctx, t, r.woc, n.Name)
+				}
+			}
+		}
+	}
+	for range 5 {
+		r.op(ctx)
+	}
+	dumpNodes(t, "final", r.woc.wf)
+	return r.woc.wf
+}
+
+// C41 (v3x7): a step's exit hook times out (pendingTimeout) after the step
+// Succeeded. As at base, the workflow ends Error "timeout".
+func TestRegressionR4_C41_StepsExitHookPendingTimeout(t *testing.T) {
+	wf := r4C41Run(t, "steps", "exit")
+	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase)
+	assert.Equal(t, "timeout", wf.Status.Message)
+}
+
+// C41 (v3x7): a step's running hook times out while the step runs. As at
+// base, the workflow ends Failed.
+func TestRegressionR4_C41_StepsLifecycleHookPendingTimeout(t *testing.T) {
+	wf := r4C41Run(t, "steps", "running")
+	assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase, wf.Status.Message)
+}
+
+// C41 (v3x7): a DAG task's running hook times out while the task runs. As at
+// base, the workflow ends Error.
+func TestRegressionR4_C41_DAGLifecycleHookPendingTimeout(t *testing.T) {
+	wf := r4C41Run(t, "dag", "running")
+	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase, wf.Status.Message)
+}
+
+// C41 with P21, decided deviation (base DAG ignored a timed-out exit hook and
+// Succeeded; fails at base by design): a DAG task's exit hook times out
+// after the task Succeeded. The DAG ends Error "timeout", as Steps does.
+func TestRegressionR4_C41_DAGExitHookPendingTimeoutIsError(t *testing.T) {
+	wf := r4C41Run(t, "dag", "exit")
+	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase)
+	assert.Equal(t, "timeout", wf.Status.Message)
+}
+
+// C33 with Review Focus 4: `argo retry` of a DAG that a denied exit hook
+// ended Error removes the Error hook node, so the retried DAG runs the hook
+// again and, once it is admitted, runs b and Succeeds. (Base DAG Succeeded
+// in the first place, so there was nothing to retry.)
+func TestRegressionR4_C33_DAGHookErrorRetried(t *testing.T) {
+	ctx, r := r4Start(t, r4C33DAG)
+	denied := 0
+	r4RejectPodCreate(r.controller, func(pod *apiv1.Pod) bool {
+		if strings.Contains(pod.Annotations[common.AnnotationKeyNodeName], ".onExit") && denied == 0 {
+			denied++
+			return true
+		}
+		return false
+	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
+	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+
+	r4RetryStored(t, ctx, r.controller, r.woc.wf)
+	r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
+	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.a.onExit"))
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.b"))
+}
