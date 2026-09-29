@@ -200,17 +200,6 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	var tasks []dag.Task
 	var prevStepNames []string
 	for i, stepGroup := range tmpl.Steps {
-		// Create StepGroup node. Only [0] is linked to the Steps root here; [i>0]
-		// is wired after engine.Execute once the previous group's children exist
-		// (see linkStepGroups below).
-		sgNodeName := stepGroupNodeName(nodeName, i)
-		if _, err := woc.wf.GetNodeByName(sgNodeName); err != nil {
-			_, _ = woc.initializeNode(ctx, sgNodeName, wfv1.NodeTypeStepGroup, tmplCtx.GetTemplateScope(), &wfv1.WorkflowStep{}, node.ID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
-			if i == 0 {
-				woc.addChildNode(ctx, nodeName, sgNodeName)
-			}
-		}
-
 		var currentStepNames []string
 		for _, step := range stepGroup.Steps {
 			task := &StepAdapter{
@@ -231,47 +220,5 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 
 	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, orgTmpl, node.ID, opts.onExitTemplate)
 	engine.Execute(ctx, tasks)
-
-	if err := woc.linkStepGroups(ctx, nodeName, tmpl); err != nil {
-		return nil, err
-	}
 	return woc.wf.GetNodeByName(nodeName)
-}
-
-// linkStepGroups wires each StepGroup [i>0] as a child of the outbound nodes of
-// every child of [i-1], mirroring legacy Steps graph semantics. If [i-1] has no
-// children yet (e.g. empty withParam expansion), [i] is linked directly under
-// [i-1]. addChildNode dedupes, so this is safe to call on every operate cycle.
-//
-// The linking is gated on [i-1] being fulfilled. Linking earlier would inject
-// [i] into the descendant chain of an in-flight node — when childrenFulfilled()
-// later recurses through that chain (e.g. during retry finalization), it would
-// see [i]'s subtree as unfulfilled and skip synchronization lock release /
-// retry completion.
-func (woc *wfOperationCtx) linkStepGroups(ctx context.Context, nodeName string, tmpl *wfv1.Template) error {
-	for i := 1; i < len(tmpl.Steps); i++ {
-		sgNodeName := stepGroupNodeName(nodeName, i)
-		prevSgNodeName := stepGroupNodeName(nodeName, i-1)
-		prevSgNode, err := woc.wf.GetNodeByName(prevSgNodeName)
-		if err != nil {
-			return err
-		}
-		if !prevSgNode.Fulfilled() {
-			continue
-		}
-		if len(prevSgNode.Children) == 0 {
-			woc.addChildNode(ctx, prevSgNodeName, sgNodeName)
-			continue
-		}
-		for _, childID := range prevSgNode.Children {
-			for _, outNodeID := range woc.getOutboundNodes(ctx, childID) {
-				outNodeName, nameErr := woc.wf.Status.Nodes.GetName(outNodeID)
-				if nameErr != nil {
-					return nameErr
-				}
-				woc.addChildNode(ctx, outNodeName, sgNodeName)
-			}
-		}
-	}
-	return nil
 }
