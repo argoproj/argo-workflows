@@ -7927,3 +7927,46 @@ func TestRegressionR4_C33_DAGHookErrorRetried(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.a.onExit"))
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.b"))
 }
+
+// C33, decided deviation (base marked a Error, continueOn let b run and the
+// workflow Succeeded; fails at base by design): a's running hook pod is
+// denied while a runs. The hook error ends the DAG Error, and b, made ready
+// in that same reconcile by a's Error under continueOn, gets no node.
+func TestRegressionR4_C33_DAGLifecycleHookErrorStopsDispatchInSamePass(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c33-lc
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: run
+        continueOn: {error: true}
+        hooks:
+          running:
+            expression: tasks.a.status == "Running"
+            template: run
+      - {name: b, template: run, dependencies: [a]}
+  - name: run
+    container: {image: busybox, command: [echo, hi]}
+`)
+	r4RejectPodCreate(r.controller, func(pod *apiv1.Pod) bool {
+		return strings.Contains(pod.Annotations[common.AnnotationKeyNodeName], ".hooks.running")
+	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
+	makePodsPhase(ctx, r.woc, apiv1.PodRunning)
+	r.op(ctx)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "c33-lc.a.hooks.running"))
+	assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "c33-lc.b"), "b was dispatched in the reconcile a's hook errored")
+	for range 3 {
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "c33-lc.b"))
+	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	assert.Equal(t, []string{"c33-lc.a"}, r4PodNodeNames(ctx, t, r.woc))
+}
