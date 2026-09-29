@@ -8365,3 +8365,1249 @@ func TestRegressionR4_C78_DaemonStopRetryNodePhase(t *testing.T) {
 	assert.Equal(t, attempt.Phase, server.Phase, "the Retry node takes its only attempt's phase")
 	assert.Equal(t, wfv1.NodeSucceeded, server.Phase, server.Message)
 }
+
+// r4StartLocked is r4Start with a real lock manager and the my-config
+// semaphore ConfigMap (workflow: 2, template: 1), so template locks are
+// taken and released as in production.
+func r4StartLocked(t *testing.T, manifest string, objects ...any) (context.Context, *r4Run) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, append([]any{wf}, objects...)...)
+	t.Cleanup(cancel)
+	var err error
+	controller.syncManager, err = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
+	require.NoError(t, err)
+	var cm apiv1.ConfigMap
+	wfv1.MustUnmarshal(configMap, &cm)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+	return ctx, &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
+}
+
+// r4SetPods sets the pods of the nodes named by display name to their phase
+// in phases, moves every other unfinished node's pod to Running, as a
+// kubelet would, and reconciles.
+func (r *r4Run) r4SetPods(ctx context.Context, phases map[string]apiv1.PodPhase) {
+	r.t.Helper()
+	setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if p, ok := phases[n.DisplayName]; ok {
+			return p
+		}
+		if !n.Fulfilled() {
+			return apiv1.PodRunning
+		}
+		return ""
+	})
+	r.op(ctx)
+}
+
+// r4Phase is the phase of the node with the given display name, or "".
+func (r *r4Run) r4Phase(display string) wfv1.NodePhase {
+	if n := r.woc.wf.Status.Nodes.FindByDisplayName(display); n != nil {
+		return n.Phase
+	}
+	return ""
+}
+
+// r4AgeNode moves the stored start of the node with the given display name d
+// into the past, as if that much time had passed since it started.
+func (r *r4Run) r4AgeNode(ctx context.Context, display string, d time.Duration) {
+	r.t.Helper()
+	wfs := r.controller.wfclientset.ArgoprojV1alpha1().Workflows(r.woc.wf.Namespace)
+	stored, err := wfs.Get(ctx, r.woc.wf.Name, metav1.GetOptions{})
+	require.NoError(r.t, err)
+	n := stored.Status.Nodes.FindByDisplayName(display)
+	require.NotNil(r.t, n, display)
+	n.StartedAt = metav1.NewTime(n.StartedAt.Add(-d))
+	stored.Status.Nodes[n.ID] = *n
+	_, err = wfs.Update(ctx, stored, metav1.UpdateOptions{})
+	require.NoError(r.t, err)
+}
+
+// r4Resume resumes every suspended node, as `argo resume` does, and
+// reconciles.
+func (r *r4Run) r4Resume(ctx context.Context) {
+	r.t.Helper()
+	wfs := r.controller.wfclientset.ArgoprojV1alpha1().Workflows(r.woc.wf.Namespace)
+	require.NoError(r.t, wfutil.ResumeWorkflow(ctx, wfs, r.controller.hydrator, r.woc.wf.Name, ""))
+	r.op(ctx)
+}
+
+const r4C24SuspendMutexSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c24-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: approve
+        template: gate
+    - - name: deploy
+        template: locked
+  - name: gate
+    synchronization:
+      mutexes:
+      - name: r4-c24-m
+    suspend: {}
+  - name: locked
+    synchronization:
+      mutexes:
+      - name: r4-c24-m
+    container:
+      image: busybox
+`
+
+const r4C24SuspendMutexDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c24-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: approve
+        template: gate
+      - name: deploy
+        template: locked
+        dependencies: [approve]
+  - name: gate
+    synchronization:
+      mutexes:
+      - name: r4-c24-m
+    suspend: {}
+  - name: locked
+    synchronization:
+      mutexes:
+      - name: r4-c24-m
+    container:
+      image: busybox
+`
+
+// r4C24ResumedSuspend resumes an approval gate holding a mutex that the next
+// task needs: the gate, finished outside the controller, must release it.
+func r4C24ResumedSuspend(t *testing.T, manifest string) {
+	ctx, r := r4StartLocked(t, manifest)
+	require.Equal(t, wfv1.NodeRunning, r.r4Phase("approve"))
+	r.r4Resume(ctx)
+	for range 4 {
+		r.r4SetPods(ctx, nil)
+	}
+	deploy := r.woc.wf.Status.Nodes.FindByDisplayName("deploy")
+	require.NotNil(t, deploy)
+	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), deploy.Name, "deploy takes the mutex once approve was resumed")
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{"deploy": apiv1.PodSucceeded})
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// C24: a resumed suspend step releases its mutex. Ports
+// TestProbe_v1x43_ResumedSuspendMutexSteps.
+func TestRegressionR4_C24_ResumedSuspendMutexSteps(t *testing.T) {
+	r4C24ResumedSuspend(t, r4C24SuspendMutexSteps)
+}
+
+// C24: a resumed suspend task releases its mutex. Ports
+// TestProbe_v1x43_ResumedSuspendMutexDAG.
+func TestRegressionR4_C24_ResumedSuspendMutexDAG(t *testing.T) {
+	r4C24ResumedSuspend(t, r4C24SuspendMutexDAG)
+}
+
+// C24: an HTTP task, completed by task-set reconciliation after the Engine
+// has run, releases its mutex so its dependant can take it. Ports
+// TestProbe_v1x43_HTTPTaskReleasesMutex.
+func TestRegressionR4_C24_HTTPTaskReleasesMutex(t *testing.T) {
+	ctx, r := r4StartLocked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c24-http
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: call
+        template: http
+      - name: after
+        template: locked
+        dependencies: [call]
+  - name: http
+    synchronization:
+      mutexes:
+      - name: r4-c24-http-m
+    http:
+      url: "http://localhost"
+  - name: locked
+    synchronization:
+      mutexes:
+      - name: r4-c24-http-m
+    container:
+      image: busybox
+`, defaultServiceAccount)
+	call := r.woc.wf.Status.Nodes.FindByDisplayName("call")
+	require.NotNil(t, call)
+	r4ReportTaskSet(ctx, t, r.woc, map[string]wfv1.NodeResult{call.ID: {Phase: wfv1.NodeSucceeded}})
+	for range 8 {
+		r.r4SetPods(ctx, nil)
+	}
+	after := r.woc.wf.Status.Nodes.FindByDisplayName("after")
+	require.NotNil(t, after)
+	assert.Nil(t, after.SynchronizationStatus, "after holds the mutex: %s", after.Message)
+	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), "r4-c24-http.after")
+}
+
+const r4C25FailFastInner = `
+  - name: locked-inner
+    synchronization:
+      mutexes:
+      - name: r4-c25-m
+    failFast: true
+    dag:
+      tasks:
+      - name: bad
+        template: bad
+  - name: uses-m
+    synchronization:
+      mutexes:
+      - name: r4-c25-m
+    container:
+      image: busybox
+      command: [sh, -c, "exit 0"]
+  - name: bad
+    container:
+      image: busybox
+      command: [sh, -c, "exit 1"]
+`
+
+// C25: a nested DAG holding a mutex that its own failFast check marks Failed
+// releases it, so a sibling waiting on the mutex runs. Ports
+// TestProbe_v2x8_FailFastSimpleMutexReleased.
+func TestRegressionR4_C25_FailFastSimpleMutexReleased(t *testing.T) {
+	ctx, r := r4StartLocked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c25-ffa
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: inner
+        template: locked-inner
+      - name: waiter
+        template: uses-m
+`+r4C25FailFastInner)
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{"bad": apiv1.PodFailed})
+	for range 10 {
+		r.r4SetPods(ctx, nil)
+	}
+	assert.Equal(t, wfv1.NodeFailed, r.r4Phase("inner"))
+	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), "r4-c25-ffa.waiter")
+	for range 3 {
+		r.r4SetPods(ctx, map[string]apiv1.PodPhase{"waiter": apiv1.PodSucceeded})
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// C25: the failFast nested DAG's dependant (depends: inner.Failed) takes the
+// mutex it released. Ports TestProbe_v2x8_FailFastDependantAcquiresMutex.
+func TestRegressionR4_C25_FailFastDependantAcquiresMutex(t *testing.T) {
+	ctx, r := r4StartLocked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c25-ffd
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: inner
+        template: locked-inner
+      - name: cleanup
+        template: uses-m
+        depends: inner.Failed
+`+r4C25FailFastInner)
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{"bad": apiv1.PodFailed})
+	for range 6 {
+		r.r4SetPods(ctx, nil)
+	}
+	assert.Equal(t, wfv1.NodeFailed, r.r4Phase("inner"))
+	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), "r4-c25-ffd.cleanup")
+}
+
+// C25: a pod holding a mutex whose pendingTimeout expires while it is
+// Pending releases the mutex, so its sibling runs and the workflow ends.
+// Ports TestProbe_r2syncmemo_PendingTimeoutHolderReleasesDAG.
+func TestRegressionR4_C25_PendingTimeoutHolderReleasesDAG(t *testing.T) {
+	ctx, r := r4StartLocked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c25-pth
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: uses-m-timeout
+      - name: b
+        template: uses-m
+  - name: uses-m
+    synchronization:
+      mutexes:
+      - name: r4-c25-pt-m
+    container:
+      image: busybox
+      command: [sh, -c, "exit 0"]
+  - name: uses-m-timeout
+    pendingTimeout: 30s
+    synchronization:
+      mutexes:
+      - name: r4-c25-pt-m
+    container:
+      image: busybox
+      command: [sh, -c, "exit 0"]
+`)
+	// a's pod stays Pending (unschedulable) until its pendingTimeout passes.
+	r.op(ctx)
+	r.r4AgeNode(ctx, "a", time.Hour)
+	r.op(ctx)
+	require.Equal(t, wfv1.NodeFailed, r.r4Phase("a"))
+	// The pod controller deletes the timed-out pod.
+	r4DeletePod(ctx, t, r.woc, "r4-c25-pth.a")
+	for range 3 {
+		r.op(ctx)
+	}
+	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), "r4-c25-pth.b")
+	for range 3 {
+		r.r4SetPods(ctx, nil)
+		r.r4SetPods(ctx, map[string]apiv1.PodPhase{"b": apiv1.PodSucceeded})
+	}
+	assert.True(t, r.woc.wf.Status.Phase.Completed(), "workflow phase %s, unfulfilled: %v", r.woc.wf.Status.Phase, r4Unfulfilled(r.woc))
+}
+
+// C25: a template that takes a mutex and then fails its memoization setup
+// (an invalid maxAge) releases the mutex. Ports
+// TestProbe_r2syncmemo_MemoizeErrorHolderReleases.
+func TestRegressionR4_C25_MemoizeErrorHolderReleases(t *testing.T) {
+	ctx, r := r4StartLocked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c25-mma
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: age
+      value: "one-hour"
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: memo-m
+      - name: b
+        template: uses-m
+  - name: uses-m
+    synchronization:
+      mutexes:
+      - name: r4-c25-mm
+    container:
+      image: busybox
+      command: [sh, -c, "exit 0"]
+  - name: memo-m
+    synchronization:
+      mutexes:
+      - name: r4-c25-mm
+    memoize:
+      key: "k"
+      maxAge: "{{workflow.parameters.age}}"
+      cache:
+        configMap:
+          name: r4-c25-cache
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: busybox
+      command: [sh, -c, "exit 0"]
+`)
+	for range 3 {
+		r.r4SetPods(ctx, nil)
+	}
+	assert.Equal(t, wfv1.NodeError, r.r4Phase("a"))
+	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), "r4-c25-mma.b")
+}
+
+// r4C64TDSync is a workflow whose only lock comes from
+// spec.templateDefaults.synchronization (my-config/workflow, limit 2).
+func r4C64TDSync(name, body string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+  namespace: default
+spec:
+  entrypoint: main
+  templateDefaults:
+    synchronization:
+      semaphores:
+        - configMapKeyRef:
+            name: my-config
+            key: workflow
+  templates:
+` + body
+}
+
+// C64 (section 7): items holding a semaphore from templateDefaults release
+// it, so the next item and the workflow finish. Ports
+// TestProbe_r3wfdefaults_TDSyncDAGItems.
+func TestRegressionR4_C64_TDSyncDAGItems(t *testing.T) {
+	ctx, r := r4StartLocked(t, r4C64TDSync("r4-c64-td-dag", `
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: work
+        withItems: [1, 2]
+  - name: work
+    container:
+      image: alpine
+      command: [echo]
+`))
+	r.woc = r4DriveToEnd(t, ctx, r.controller, r.woc, 6)
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// C64 (section 7): the Steps form. Ports
+// TestProbe_r3wfdefaults_TDSyncStepsItems.
+func TestRegressionR4_C64_TDSyncStepsItems(t *testing.T) {
+	ctx, r := r4StartLocked(t, r4C64TDSync("r4-c64-td-steps", `
+  - name: main
+    steps:
+    - - name: a
+        template: work
+        withItems: [1, 2]
+  - name: work
+    container:
+      image: alpine
+      command: [echo]
+`))
+	r.woc = r4DriveToEnd(t, ctx, r.controller, r.woc, 6)
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// C64 (section 7): two plain suspend tasks holding the templateDefaults
+// semaphore, resumed in turn, release it. Ports
+// TestProbe_r3wfdefaults_TDSyncSuspendPlainDAG.
+func TestRegressionR4_C64_TDSyncSuspendPlainDAG(t *testing.T) {
+	ctx, r := r4StartLocked(t, r4C64TDSync("r4-c64-td-suspend", `
+  - name: main
+    dag:
+      tasks:
+      - name: s1
+        template: approve
+      - name: s2
+        template: approve
+  - name: approve
+    suspend: {}
+`))
+	for i := 0; i < 4 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r.r4Resume(ctx)
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// r4MetricsRun drives manifest with every pod succeeding (with the outputs
+// of outputsFor, if it returns any) until the workflow completes, then
+// reconciles extra more times, so that a completion metric emitted twice
+// shows. setup runs on the controller before the first reconcile.
+func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.Context, *WorkflowController), outputsFor func(*wfv1.NodeStatus) *wfv1.Outputs) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	if setup != nil {
+		setup(ctx, controller)
+	}
+	woc := r4Operate(t, ctx, controller, wf)
+	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
+		for _, n := range woc.wf.Status.Nodes {
+			if outputsFor == nil || n.Type != wfv1.NodeTypePod || n.Fulfilled() {
+				continue
+			}
+			if out := outputsFor(&n); out != nil {
+				r4TaskResultOutputs(ctx, woc, n.Name, *out)
+			}
+		}
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	for range extra {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	return woc
+}
+
+// C62: the completion metric of a task whose argument comes from another
+// task's output is labelled with the resolved argument. Ports
+// TestProbe_v1x49_DAGOutputArgMetricLabel.
+func TestRegressionR4_C62_DAGOutputArgMetricLabel(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c62-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: use
+        depends: gen
+        template: use
+        arguments:
+          parameters:
+          - name: p
+            value: "{{tasks.gen.outputs.parameters.out}}"
+  - name: gen
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: busybox
+  - name: use
+    inputs:
+      parameters:
+      - name: p
+    metrics:
+      prometheus:
+      - name: r4_c62_dag_output_arg
+        help: "labelled by an input fed from another task's output"
+        labels:
+        - key: p
+          value: "{{inputs.parameters.p}}"
+        counter:
+          value: "1"
+    container:
+      image: busybox
+`, 0, nil, func(n *wfv1.NodeStatus) *wfv1.Outputs {
+		if n.TemplateName != "gen" {
+			return nil
+		}
+		return &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("val")}}}
+	})
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, c := range woc.wf.Status.Conditions {
+		assert.NotEqual(t, wfv1.ConditionTypeMetricsError, c.Type, c.Message)
+	}
+	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_c62_dag_output_arg", "p", "val"), 0.001)
+}
+
+// C62: the completion metric of an expanded step is labelled with its item.
+// Ports TestProbe_v1x49_StepsItemMetricInputLabel.
+func TestRegressionR4_C62_StepsItemMetricInputLabel(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c62-steps-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: echo
+        arguments:
+          parameters:
+          - name: tag
+            value: "{{item}}"
+        withItems: [s1, s2]
+  - name: echo
+    inputs:
+      parameters:
+      - name: tag
+    metrics:
+      prometheus:
+      - name: r4_c62_steps_items
+        help: "per item counter"
+        labels:
+        - key: tag
+          value: "{{inputs.parameters.tag}}"
+        counter:
+          value: "1"
+    container:
+      image: busybox
+`, 0, nil, nil)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, c := range woc.wf.Status.Conditions {
+		assert.NotEqual(t, wfv1.ConditionTypeMetricsError, c.Type, c.Message)
+	}
+	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_c62_steps_items", "tag", "s1"), 0.001)
+	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_c62_steps_items", "tag", "s2"), 0.001)
+}
+
+// C63: a retried item that completes inside its own dispatch counts once.
+// Ports TestProbe_v1x52_DAGItemsRetryCounter.
+func TestRegressionR4_C63_DAGItemsRetryCounter(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c63-retry
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: work
+        withItems: [x, y]
+  - name: work
+    retryStrategy:
+      limit: "1"
+    metrics:
+      prometheus:
+      - name: r4_c63_items_retry
+        help: count
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: alpine
+`, 2, nil, nil)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_items_retry", "status", "Succeeded"), 0.001)
+}
+
+// C63: a nested Steps item that completes inside its own dispatch counts
+// once. Ports TestProbe_v1x52_DAGItemsNestedStepsCounter.
+func TestRegressionR4_C63_DAGItemsNestedStepsCounter(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c63-nested
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: inner
+        withItems: [x, y]
+  - name: inner
+    metrics:
+      prometheus:
+      - name: r4_c63_items_nested
+        help: count
+        counter:
+          value: "1"
+    steps:
+    - - name: s
+        template: work
+  - name: work
+    container:
+      image: alpine
+`, 2, nil, nil)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_items_nested"), 0.001)
+}
+
+// r4MemoCache is a memoization cache ConfigMap holding a hit for key "hit"
+// with output p=value, exported as g (a cached output keeps its globalName,
+// as the node outputs it was saved from carry it).
+func r4MemoCache(name, value string) func(context.Context, *WorkflowController) {
+	return func(ctx context.Context, controller *WorkflowController) {
+		_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: "default",
+				Labels:    map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache},
+			},
+			Data: map[string]string{
+				"hit": `{"nodeID":"old","outputs":{"parameters":[{"name":"p","value":"` + value + `","globalName":"g"}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+// C63 and P22: a memoize cache hit emits its template's completion metrics
+// once, like an unmemoized run (a decided deviation, P22: main emitted
+// none for a hit, so this fails at base). Rewrites
+// TestProbe_v1x52_MemoCacheHitCounter, which expected 0.
+func TestRegressionR4_C63_MemoCacheHitCounter(t *testing.T) {
+	memoTmpl := func(name, metric string) string {
+		return `
+  - name: ` + name + `
+    memoize:
+      key: hit
+      cache:
+        configMap:
+          name: r4-c63-memo-cache
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: count
+        counter:
+          value: "1"
+    container:
+      image: alpine
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+`
+	}
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c63-memo
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: static-memo
+      - name: B
+        template: item-memo
+        withItems: [x, y]
+`+memoTmpl("static-memo", "r4_c63_memo_static")+memoTmpl("item-memo", "r4_c63_memo_item"), 2, r4MemoCache("r4-c63-memo-cache", "v"), nil)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_c63_memo_static"), 0.001, "static hit")
+	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_memo_item"), 0.001, "one per item hit")
+}
+
+// r4GlobalParam is the value of the workflow output parameter g.
+func r4GlobalParam(wf *wfv1.Workflow) string {
+	if wf.Status.Outputs != nil {
+		for _, p := range wf.Status.Outputs.Parameters {
+			if p.Name == "g" && p.Value != nil {
+				return p.Value.String()
+			}
+		}
+	}
+	return "<missing>"
+}
+
+// r4InputParam is the value of input parameter x of the node with the given
+// display name.
+func r4InputParam(wf *wfv1.Workflow, display string) string {
+	if n := wf.Status.Nodes.FindByDisplayName(display); n != nil && n.Inputs != nil {
+		for _, p := range n.Inputs.Parameters {
+			if p.Name == "x" && p.Value != nil {
+				return p.Value.String()
+			}
+		}
+	}
+	return "<missing>"
+}
+
+// r4GlobalOut is the output p, exported as the workflow output g.
+func r4GlobalOut(value string) *wfv1.Outputs {
+	return &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", GlobalName: "g", Value: wfv1.AnyStringPtr(value)}}}
+}
+
+const r4GlobalTemplates = `
+  - name: produce
+    container:
+      image: alpine
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          path: /tmp/p
+  - name: consume
+    inputs:
+      parameters:
+      - name: x
+    container:
+      image: alpine
+  - name: exit
+    steps:
+    - - name: e
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+`
+
+// C42: a newer value exported further down the tree (by a nested step)
+// wins over an earlier step's: the Steps boundary does not re-export its
+// steps' outputs when it completes. Ports TestProbe_v2x3_NestedStepsOverwrite.
+func TestRegressionR4_C42_NestedStepsOverwrite(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c42-nested
+  namespace: default
+spec:
+  entrypoint: entry
+  onExit: exit
+  templates:
+  - name: entry
+    steps:
+    - - name: mid
+        template: mid
+    - - name: d
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+  - name: mid
+    steps:
+    - - name: a
+        template: produce
+    - - name: b
+        template: nested
+  - name: nested
+    steps:
+    - - name: inner
+        template: produce
+`+r4GlobalTemplates, 0, nil, func(n *wfv1.NodeStatus) *wfv1.Outputs {
+		switch n.DisplayName {
+		case "a":
+			return r4GlobalOut("A")
+		case "inner":
+			return r4GlobalOut("B")
+		}
+		return nil
+	})
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, "B", r4InputParam(woc.wf, "d"), "step d")
+	assert.Equal(t, "B", r4InputParam(woc.wf, "e"), "onExit e")
+	assert.Equal(t, "B", r4GlobalParam(woc.wf), "wf.status.outputs g")
+}
+
+// C42: the value an expanded step's item exported last wins over an earlier
+// step's. Ports TestProbe_v2x3_ExpandedStepOverwrite.
+func TestRegressionR4_C42_ExpandedStepOverwrite(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c42-expanded
+  namespace: default
+spec:
+  entrypoint: entry
+  onExit: exit
+  templates:
+  - name: entry
+    steps:
+    - - name: a
+        template: produce
+    - - name: b
+        template: produce
+        withItems: [1]
+`+r4GlobalTemplates, 0, nil, func(n *wfv1.NodeStatus) *wfv1.Outputs {
+		if n.DisplayName == "a" {
+			return r4GlobalOut("A")
+		}
+		if n.TemplateName == "produce" {
+			return r4GlobalOut("B")
+		}
+		return nil
+	})
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, "B", r4InputParam(woc.wf, "e"), "onExit e")
+	assert.Equal(t, "B", r4GlobalParam(woc.wf), "wf.status.outputs g")
+}
+
+// P9: a memoize cache hit in a Steps template exports its globalName output
+// when it is fulfilled, so the next step reads it (a decided deviation:
+// main's Steps exported only pod outputs, so this fails at base).
+func TestRegressionR4_P9_MemoHitStepExportsGlobal(t *testing.T) {
+	woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p9-memo
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+    - - name: a
+        template: memo
+    - - name: c
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+  - name: memo
+    memoize:
+      key: hit
+      cache:
+        configMap:
+          name: r4-p9-memo-cache
+    container:
+      image: alpine
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          path: /tmp/p
+`+r4GlobalTemplates, 0, r4MemoCache("r4-p9-memo-cache", "M"), nil)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, "M", r4InputParam(woc.wf, "c"), "step c")
+	assert.Equal(t, "M", r4GlobalParam(woc.wf), "wf.status.outputs g")
+}
+
+// P9: an HTTP step exports its globalName output when task-set
+// reconciliation completes it, so the next step reads it (a decided
+// deviation: main's Steps exported only pod outputs, so this fails at base).
+func TestRegressionR4_P9_HTTPStepExportsGlobal(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p9-http
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+    - - name: h
+        template: http
+    - - name: c
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+  - name: http
+    http:
+      url: http://example.com
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          expression: "response.body"
+` + r4GlobalTemplates)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	h := woc.wf.Status.Nodes.FindByDisplayName("h")
+	require.NotNil(t, h)
+	podcs := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace)
+	agent, err := podcs.Get(ctx, woc.getAgentPodName(), metav1.GetOptions{})
+	require.NoError(t, err)
+	agent.Status.Phase = apiv1.PodRunning
+	agent, err = podcs.Update(ctx, agent, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	waitForInformer(ctx, controller.PodController.TestingPodInformer(), agent, func(obj any) bool {
+		return obj.(*apiv1.Pod).Status.Phase == apiv1.PodRunning
+	})
+	r4ReportTaskSet(ctx, t, woc, map[string]wfv1.NodeResult{h.ID: {Phase: wfv1.NodeSucceeded, Outputs: r4GlobalOut("H")}})
+	for i := 0; i < 6 && !woc.wf.Status.Phase.Completed(); i++ {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Type != wfv1.NodeTypePod || n.Fulfilled() {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		})
+	}
+	assert.Equal(t, "H", r4InputParam(woc.wf, "c"), "step c")
+	assert.Equal(t, "H", r4GlobalParam(woc.wf), "wf.status.outputs g")
+}
+
+// P9: two DAG tasks export the same globalName; the one that finished last
+// wins, also once the DAG completes (a decided deviation: main re-exported
+// every task's outputs in declaration order when the DAG completed, so b's
+// older value won at base).
+func TestRegressionR4_P9_DAGGlobalCompletionOrder(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p9-order
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    dag:
+      tasks:
+      - name: a
+        template: produce
+      - name: b
+        template: produce
+      - name: c
+        depends: a && b
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+`+r4GlobalTemplates)
+	// b finishes first, a after it.
+	finish := func(display, value string) {
+		n := r.woc.wf.Status.Nodes.FindByDisplayName(display)
+		require.NotNil(t, n, display)
+		r4TaskResultOutputs(ctx, r.woc, n.Name, *r4GlobalOut(value))
+		r.r4SetPods(ctx, map[string]apiv1.PodPhase{display: apiv1.PodSucceeded})
+	}
+	finish("b", "B")
+	require.Equal(t, "B", r4GlobalParam(r.woc.wf))
+	finish("a", "A")
+	for i := 0; i < 4 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r.r4SetPods(ctx, map[string]apiv1.PodPhase{"c": apiv1.PodSucceeded})
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+	assert.Equal(t, "A", r4InputParam(r.woc.wf, "c"), "task c")
+	assert.Equal(t, "A", r4GlobalParam(r.woc.wf), "wf.status.outputs g")
+}
+
+// r4C64DefaultsMetric is a workflow whose only metric comes from
+// spec.templateDefaults, labelled by node name and status.
+func r4C64DefaultsMetric(name, metric, body string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+  namespace: default
+spec:
+  entrypoint: main
+  templateDefaults:
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: "templateDefaults counter"
+        labels:
+        - key: node
+          value: "{{node.name}}"
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+  templates:
+` + body + `
+  - name: echo
+    container:
+      image: busybox
+`
+}
+
+// r4C64AssertItemsCounted checks that each pod node of woc was counted once.
+func r4C64AssertItemsCounted(t *testing.T, woc *wfOperationCtx, metric string) {
+	t.Helper()
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	var pods []string
+	for _, n := range woc.wf.Status.Nodes {
+		if n.Type == wfv1.NodeTypePod {
+			pods = append(pods, n.Name)
+		}
+	}
+	require.Len(t, pods, 2)
+	for _, n := range pods {
+		assert.InDelta(t, 1.0, r4C65Counter(t, metric, "node", n, "status", "Succeeded"), 0.001, n)
+	}
+}
+
+// C64: spec.templateDefaults metrics are emitted once per withItems item of a
+// DAG task. Ports TestProbe_v1x70_DAGItemsTemplateDefaultsMetric.
+func TestRegressionR4_C64_DAGItemsTemplateDefaultsMetric(t *testing.T) {
+	woc := r4MetricsRun(t, r4C64DefaultsMetric("r4-c64-dag-items", "r4_c64_dag_items", `
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        withItems: [d1, d2]
+`), 3, nil, nil)
+	r4C64AssertItemsCounted(t, woc, "r4_c64_dag_items")
+}
+
+// C64: the Steps form. Ports
+// TestProbe_v1x70_StepsItemsTemplateDefaultsMetric.
+func TestRegressionR4_C64_StepsItemsTemplateDefaultsMetric(t *testing.T) {
+	woc := r4MetricsRun(t, r4C64DefaultsMetric("r4-c64-steps-items", "r4_c64_steps_items", `
+  - name: main
+    steps:
+    - - name: A
+        template: echo
+        withItems: [s1, s2]
+`), 3, nil, nil)
+	r4C64AssertItemsCounted(t, woc, "r4_c64_steps_items")
+}
+
+// C87: a step exit hook whose optional artifact argument names an output the
+// step did not produce ends Error "missing location information", as the
+// hook requires its input, instead of running without it. Ports
+// TestProbe_v2x5_StepsExitHookOptionalArgMissing.
+func TestRegressionR4_C87_StepsExitHookOptionalArgMissing(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c87-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: gen
+        hooks:
+          exit:
+            template: consume
+            arguments:
+              artifacts:
+              - name: in
+                from: "{{steps.a.outputs.artifacts.out}}"
+                optional: true
+  - name: gen
+    container:
+      image: busybox
+    outputs:
+      artifacts:
+      - name: out
+        path: /tmp/out
+        optional: true
+  - name: consume
+    inputs:
+      artifacts:
+      - name: in
+        path: /tmp/in
+    container:
+      image: busybox
+`)
+	makePodsPhase(ctx, r.woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{}}))
+	for range 3 {
+		r.op(ctx)
+	}
+	makePodsPhase(ctx, r.woc, apiv1.PodSucceeded)
+	for range 3 {
+		r.op(ctx)
+	}
+	hook, err := r.woc.wf.GetNodeByName("r4-c87-steps[0].a.onExit")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, hook.Phase)
+	assert.Contains(t, hook.Message, "missing location information")
+	assert.Len(t, r4PodNodeNames(ctx, t, r.woc), 1, "no hook pod")
+	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase)
+}
+
+// C87: a workflow exit hook whose artifact argument is a raw
+// {{workflow.outputs.artifacts.g}} tag ends Error "missing location
+// information" instead of creating a pod with a location-less artifact.
+// Ports TestProbe_v2x5_WfExitHookGlobalArtifact.
+func TestRegressionR4_C87_WfExitHookGlobalArtifact(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c87-wf-exit
+  namespace: default
+spec:
+  entrypoint: main
+  hooks:
+    exit:
+      template: consume
+      arguments:
+        artifacts:
+        - name: in
+          from: "{{workflow.outputs.artifacts.g}}"
+  templates:
+  - name: main
+    container:
+      image: busybox
+    outputs:
+      artifacts:
+      - name: out
+        path: /tmp/out
+        globalName: g
+  - name: consume
+    inputs:
+      artifacts:
+      - name: in
+        path: /tmp/in
+    container:
+      image: busybox
+`)
+	makePodsPhase(ctx, r.woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Artifacts: []wfv1.Artifact{{Name: "out", GlobalName: "g", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "gen/out.tgz"}}}}}))
+	for range 3 {
+		r.op(ctx)
+	}
+	setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.Fulfilled() {
+			return ""
+		}
+		return apiv1.PodFailed
+	})
+	for range 3 {
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase)
+	assert.Contains(t, r.woc.wf.Status.Message, "missing location information")
+	assert.Len(t, r4PodNodeNames(ctx, t, r.woc), 1, "no hook pod")
+}

@@ -221,20 +221,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 			retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
 			woc.wf.Status.Nodes.Set(ctx, retryParentNode.ID, *retryParentNode)
 		}
-		if processedTmpl.Metrics != nil {
-			if prevNodeStatus, ok := woc.preExecutionNodeStatuses[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
-				localScope, realTimeScope := woc.prepareMetricScope(processedRetryParentNode)
-				woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-			}
-		}
-		if processedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(ctx, woc.wf, retryParentNode.ID, processedTmpl.Synchronization)
-		}
-		_, lastChildNode = getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
-		if lastChildNode != nil {
-			retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
-			woc.wf.Status.Nodes.Set(ctx, retryParentNode.ID, *retryParentNode)
-		}
+		woc.handleNodeFulfilled(ctx, retryParentNode, processedTmpl)
 		return retryParentNode, nil
 	} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
 		localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
@@ -368,10 +355,6 @@ func (woc *wfOperationCtx) postExecutionHandling(ctx context.Context, node *wfv1
 		}
 	}
 
-	if node.Fulfilled() {
-		woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
-	}
-
 	// Task-result placeholder nodes have empty Type AND empty Phase — they are
 	// pre-synced outputs whose real node was never initialized (e.g. a workflow
 	// labelled completed while still Running, #12615). This error is fatal by
@@ -400,10 +383,9 @@ func (woc *wfOperationCtx) postExecutionHandling(ctx context.Context, node *wfv1
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
-		if prevNodeStatus, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
-			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-		}
 	}
+	// A node this dispatch completed (a nested template, a suspend whose
+	// duration passed) is finished here.
+	woc.handleNodeFulfilled(ctx, node, processedTmpl)
 	return node, nil
 }

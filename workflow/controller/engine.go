@@ -76,19 +76,20 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 // visited once per reconcile, so it is dispatched at most once and its exit
 // handler is driven at most once (#14392).
 //
-// After the walk, tasks that completed outside it are reconciled, and the
-// boundary is assessed (a Steps template group by group) and finalized.
+// Before the walk, every task node that is already fulfilled is finished
+// (reconcileFulfilledTasks); after it, the boundary is assessed (a Steps
+// template group by group) and finalized.
 // Errors are handled internally by marking the boundary node with the
 // appropriate phase (Failed for Steps, Error for DAGs).
 func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	e.evaluator = dag.NewDAGEvaluatorFromTasks(e.woc.wf, tasks, e.tmpl, e.boundaryID, e.nodeName)
 
 	e.reconcileDaemonedTasks(ctx, tasks)
+	e.reconcileFulfilledTasks(ctx, tasks)
 
 	if hook := e.findTaskHook(ctx, tasks, func(n *wfv1.NodeStatus) bool { return n.Phase == wfv1.NodeError }); hook != nil {
 		e.hookErr = stderrors.New(cmp.Or(hook.Message, "hook "+hook.Name+" errored"))
 	}
-	dispatched := make(map[string]bool)
 	exitHooksDone, dispatching, group := true, true, 0
 	for _, task := range tasks {
 		name := task.GetName()
@@ -98,15 +99,13 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 		for i, ok := stepGroupIndexOf(name); ok && group < i; group++ {
 			e.assessStepGroup(ctx, group)
 		}
-		ran, stop := e.visit(ctx, task, e.evaluator.Evaluate(ctx, name), dispatching)
-		dispatched[name] = ran
+		stop := e.visit(ctx, task, e.evaluator.Evaluate(ctx, name), dispatching)
 		dispatching = dispatching && !stop
 		// The task's hooks are driven before any dependant is evaluated, so a
 		// dependant waits for a pending exit hook in this same walk.
 		exitHooksDone = e.processHooks(ctx, task) && exitHooksDone
 	}
 
-	e.reconcileExternalCompletions(ctx, tasks, dispatched)
 	if err := e.finalize(ctx, tasks, exitHooksDone); err != nil {
 		e.markBoundaryError(ctx, err)
 	}
@@ -116,9 +115,9 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 // task's node, creates the Omitted node of a task that can never run, or
 // dispatches a task the evaluator found runnable, unless dispatching has
 // stopped at the operation deadline, or the task has no node yet and a hook
-// error is ending the boundary (what already runs is still reconciled). ran
-// reports a dispatch; stop is dispatchOutcome's.
-func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching bool) (ran, stop bool) {
+// error is ending the boundary (what already runs is still reconciled). stop
+// is dispatchOutcome's.
+func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching bool) (stop bool) {
 	name := task.GetName()
 	e.logEvaluation(ctx, result)
 	node := e.getTaskNode(ctx, name)
@@ -131,7 +130,7 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 		if node == nil || !node.Fulfilled() {
 			e.initTerminalErrorNode(ctx, task, e.parentsFor(ctx, name), result.Error)
 		}
-		return false, false
+		return false
 	case result.Skipped && !result.ShouldRun:
 		// It can never run: record its Omitted node, so its dependants (later
 		// in the walk) and the boundary's assessment see it.
@@ -142,12 +141,12 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 			}
 			e.initTaskNode(ctx, task, e.parentsFor(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
 		}
-		return false, false
+		return false
 	case !dispatching || (node == nil && e.hookErr != nil) || !result.ShouldRun:
-		return false, false
+		return false
 	}
 	_, err := e.executeTask(ctx, task)
-	return true, e.dispatchOutcome(ctx, name, err)
+	return e.dispatchOutcome(ctx, name, err)
 }
 
 // markBoundaryError marks the boundary node with an appropriate error phase.
@@ -494,106 +493,86 @@ func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []str
 	return e.reconciler.Reconcile(ctx, []DesiredTask{*desired})
 }
 
-// reconcileExpandedChildren reconciles fulfilled children of a TaskGroup
-// (withItems/withParam/withSequence). The parent task can't be reconciled directly
-// because its arguments contain unresolved {{item.*}} tags. Instead, we walk each
-// child and run it through the reconciler so postExecutionHandling fires (which
-// releases sync locks and emits metrics), as the pre-Engine controller did by
-// calling executeTemplate for every expanded child on every cycle.
-func (e *Engine) reconcileExpandedChildren(ctx context.Context, task dag.Task) {
-	taskNode := e.getTaskNode(ctx, task.GetName())
-	if taskNode == nil || taskNode.Type != wfv1.NodeTypeTaskGroup {
-		return
-	}
-	newTmplCtx, resolvedTmpl, _, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
-	if err != nil {
-		// The items already ran; their outcome stands. Before the Engine this
-		// marked the fulfilled node Error (#13548), which was a side effect of
-		// avoiding a nil dereference rather than a decision, so only log it:
-		// the children's post-execution handling (sync release, metrics) is
-		// skipped this cycle.
-		e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to resolve template for completed task group; skipping its children")
-		return
-	}
-
-	for _, childID := range taskNode.Children {
-		child, err := e.woc.wf.Status.Nodes.Get(childID)
-		if err != nil || !child.Fulfilled() {
-			continue
-		}
-		if err := e.reconcileFulfilledNode(ctx, task, resolvedTmpl, newTmplCtx, child.Name); err != nil {
-			e.log.WithFields(logging.Fields{"child": child.Name}).WithError(err).Warn(ctx, "failed to reconcile expanded child")
-		}
-	}
-}
-
-// reconcileFulfilledNode re-runs an already-fulfilled node through the reconciler
-// so postExecutionHandling fires (sync lock release, metric emission). Local params
-// are built with global params so {{workflow.uid}} etc. in synchronization configs
-// resolve.
-func (e *Engine) reconcileFulfilledNode(ctx context.Context, task dag.Task, resolvedTmpl *wfv1.Template, newTmplCtx *templateresolution.TemplateContext, nodeName string) error {
-	localParams := make(common.Parameters)
-	localParams["node.name"] = nodeName
-	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		localParams["steps.name"] = task.GetDisplayName()
-	} else {
-		localParams["tasks.name"] = task.GetDisplayName()
-	}
-	args := task.GetArguments()
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
-	if err != nil {
-		return err
-	}
-	return e.reconciler.Reconcile(ctx, []DesiredTask{{
-		TaskName:      nodeName,
-		TemplateScope: e.tmplCtx.GetTemplateScope(),
-		TmplCtx:       newTmplCtx,
-		Template:      processedTmpl,
-		TemplateRef:   task.GetTemplateReferenceHolder(),
-		BoundaryID:    e.boundaryID,
-		IsOnExit:      e.onExitTemplate,
-	}})
-}
-
-// reconcileExternalCompletions handles tasks that completed between operate cycles
-// (e.g. pod controller marked a node Succeeded). We re-reconcile them so that
-// handleNodeFulfilled emits metrics and releases synchronization locks.
-func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.Task, dispatched map[string]bool) {
+// reconcileFulfilledTasks finishes every task node that is already
+// fulfilled (each item, for an expanded task) once per reconcile, before
+// anything is dispatched, as executeTemplate was run for every task on every
+// reconcile before the Engine: the reconciler's handleNodeFulfilled releases
+// its lock and, if it completed since the last reconcile, emits its
+// completion metrics and exports its globalName outputs. This is where a
+// node that finished outside a dispatch (a pod, a resumed suspend, an HTTP
+// task, a failFast or timeout mark) is finished. Each node is reconciled with
+// the template it was dispatched with: the task resolved against its scope,
+// items expanded, templateDefaults merged. A task whose template has no lock,
+// no metrics and no globalName output has nothing to finish.
+func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) {
 	for _, task := range tasks {
-		// For expanded tasks (withItems/withParam/withSequence), we can't reconcile
-		// the parent (unresolved {{item.*}} in arguments). Instead, reconcile each
-		// fulfilled child individually to release sync locks and emit metrics.
-		if dag.HasExpansion(task) {
-			e.reconcileExpandedChildren(ctx, task)
+		node := e.getTaskNode(ctx, task.GetName())
+		if node == nil || (node.Type != wfv1.NodeTypeTaskGroup && !ranToCompletion(node)) || !e.mayNeedFinishing(ctx, task) {
 			continue
 		}
-		// Skip tasks the walk dispatched to avoid double metric emission
-		// and redundant reconciliation.
-		if dispatched[task.GetName()] {
-			continue
+		log := e.log.WithField("task", task.GetName())
+		scope, err := e.buildLocalScopeFromTask(ctx, task)
+		if err == nil {
+			task, err = e.resolveTask(ctx, task, scope)
 		}
-		taskNode := e.getTaskNode(ctx, task.GetName())
-		if taskNode == nil || !taskNode.Fulfilled() {
-			continue
+		items := []dag.Task{task}
+		if err == nil && node.Type == wfv1.NodeTypeTaskGroup {
+			items, err = task.Expand(ctx, e.expansionScope(scope), e.woc)
 		}
-		if prev, ok := e.woc.preExecutionNodeStatuses[taskNode.ID]; ok && prev.Fulfilled() {
-			continue
-		}
-		newTmplCtx, resolvedTmpl, _, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
 		if err != nil {
-			e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to resolve template for completed task")
+			// A task that could not be resolved to be dispatched ended Error
+			// without running, and cannot be resolved now either.
+			log.WithError(err).Debug(ctx, "cannot finish a completed task")
 			continue
 		}
-		// See note in createDesiredTask: merge templateDefaults so per-task metric
-		// emission in postExecutionHandling fires (otherwise resolvedTmpl.Metrics is nil).
-		if err = e.woc.mergedTemplateDefaultsInto(resolvedTmpl); err != nil {
-			e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to merge template defaults for completed task")
-			continue
+		var desired []DesiredTask
+		for _, item := range items {
+			if !ranToCompletion(e.getTaskNode(ctx, item.GetName())) {
+				continue
+			}
+			dt, err := e.desiredTask(ctx, item)
+			if err != nil {
+				log.WithError(err).Debug(ctx, "cannot finish a completed task")
+				continue
+			}
+			desired = append(desired, dt)
 		}
-		if err := e.reconcileFulfilledNode(ctx, task, resolvedTmpl, newTmplCtx, e.taskNodeName(task.GetName())); err != nil {
-			e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to reconcile completed task (metrics/locks may be missed)")
+		if err := e.reconciler.Reconcile(ctx, desired); err != nil {
+			log.WithError(err).Warn(ctx, "failed to finish a completed task")
 		}
 	}
+}
+
+// ranToCompletion reports whether node is a task node that has finished and
+// ran: a Skipped or Omitted node holds no lock and owes no metrics.
+func ranToCompletion(node *wfv1.NodeStatus) bool {
+	return node != nil && node.Phase.Fulfilled(node.TaskResultSynced) && ran(node)
+}
+
+// mayNeedFinishing reports whether a fulfilled node of task can have
+// anything to finish: its template takes a lock, has metrics or exports a
+// globalName output. A template that resolves only with the task (a
+// templateRef built from outputs) is assumed to.
+func (e *Engine) mayNeedFinishing(ctx context.Context, task dag.Task) bool {
+	_, tmpl, stored, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
+	if err != nil || e.woc.mergedTemplateDefaultsInto(tmpl) != nil {
+		return true
+	}
+	e.woc.updated = e.woc.updated || stored
+	if tmpl.Synchronization != nil || tmpl.Metrics != nil {
+		return true
+	}
+	for _, p := range tmpl.Outputs.Parameters {
+		if p.GlobalName != "" {
+			return true
+		}
+	}
+	for _, a := range tmpl.Outputs.Artifacts {
+		if a.GlobalName != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // finalize assesses the overall phase and, if terminal, sets outputs,
@@ -914,25 +893,36 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 		}, nil
 	}
 
-	// Resolve Template and Arguments
-	newTmplCtx, resolvedTmpl, templateStored, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
+	dt, err := e.desiredTask(ctx, task)
 	if err != nil {
 		return failTask(err)
+	}
+	dt.ParentNodeNames = parents
+	return &dt, nil
+}
+
+// desiredTask resolves task's template, with the templateDefaults merged in,
+// and processes its arguments into the DesiredTask the reconciler executes.
+// task is resolved already (see resolveTask), so its arguments are resolved
+// in one place, and a node is reconciled with the template it was created
+// from, whether it is being dispatched or finished
+// (reconcileFulfilledTasks).
+func (e *Engine) desiredTask(ctx context.Context, task dag.Task) (DesiredTask, error) {
+	taskNodeName := e.taskNodeName(task.GetName())
+	newTmplCtx, resolvedTmpl, templateStored, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
+	if err != nil {
+		return DesiredTask{}, err
 	}
 	if templateStored {
 		e.woc.updated = true
 	}
 
-	// Merge templateDefaults (metrics, retryStrategy, etc.) into the resolved template.
-	// reconcileTemplate (the entry-template path) does this at operator.go; the Engine
-	// dispatch path bypasses reconcileTemplate, so without an explicit merge here, per-task
-	// templateDefaults — including the Prometheus metrics that drive
-	// argo_workflows_<name>_counter emissions on node completion — are silently dropped.
+	// Merge templateDefaults (metrics, retryStrategy, synchronization, etc.)
+	// into the resolved template, as reconcileTemplate does for the entry
+	// template: the Engine's dispatch bypasses reconcileTemplate.
 	if err = e.woc.mergedTemplateDefaultsInto(resolvedTmpl); err != nil {
-		return failTask(err)
+		return DesiredTask{}, err
 	}
-
-	args := task.GetArguments()
 
 	// Build minimal local params for ProcessArgs (matching reconcileTemplate behavior).
 	localParams := make(common.Parameters)
@@ -947,20 +937,20 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 		localParams[varkeys.PodName.Template()] = e.woc.getPodName(taskNodeName, resolvedTmpl.Name)
 	}
 
+	args := task.GetArguments()
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
-		return failTask(err)
+		return DesiredTask{}, err
 	}
 
-	return &DesiredTask{
-		TaskName:        taskNodeName,
-		TemplateScope:   e.tmplCtx.GetTemplateScope(),
-		TmplCtx:         newTmplCtx,
-		Template:        processedTmpl,
-		TemplateRef:     task.GetTemplateReferenceHolder(),
-		BoundaryID:      e.boundaryID,
-		IsOnExit:        e.onExitTemplate,
-		ParentNodeNames: parents,
+	return DesiredTask{
+		TaskName:      taskNodeName,
+		TemplateScope: e.tmplCtx.GetTemplateScope(),
+		TmplCtx:       newTmplCtx,
+		Template:      processedTmpl,
+		TemplateRef:   task.GetTemplateReferenceHolder(),
+		BoundaryID:    e.boundaryID,
+		IsOnExit:      e.onExitTemplate,
 	}, nil
 }
 
@@ -1371,7 +1361,6 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 			if err = e.addTaskNodeToScope(ctx, scope, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, task.Name, taskNode, includeArtifacts); err != nil {
 				return err
 			}
-			e.woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 		}
 	} else if e.tmpl.Steps != nil {
 		for i, stepGroup := range e.tmpl.Steps {
@@ -1385,7 +1374,6 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 				if err = e.addTaskNodeToScope(ctx, scope, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, taskName, taskNode, includeArtifacts); err != nil {
 					return err
 				}
-				e.woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 			}
 		}
 	}
@@ -1395,8 +1383,8 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 		return err
 	}
 	if outputs != nil {
+		// Exported when the node is fulfilled (handleNodeFulfilled).
 		node.Outputs = outputs
-		e.woc.addOutputsToGlobalScope(ctx, node.Outputs)
 		e.woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	}
 	return nil
