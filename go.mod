@@ -20,7 +20,7 @@ require (
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
-	github.com/dustin/go-humanize v1.0.1
+	github.com/dustin/go-humanize v1.1.0
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/evilmonkeyinc/jsonpath v0.8.1
 	github.com/expr-lang/expr v1.17.8
