@@ -384,6 +384,50 @@ func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.C
 	return woc
 }
 
+// r4RunResults validates manifest and reconciles it until the workflow
+// completes or rounds run out, then extra more times. After each reconcile
+// every unfinished pod is succeeded, a pod of a template named in results
+// with that script result. setup, if not nil, runs on the controller before
+// the first reconcile. It reconciles from the in-memory status, as the
+// probes it ports did.
+func r4RunResults(t *testing.T, manifest string, results map[string]string, rounds, extra int, setup func(*WorkflowController)) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	r4ValidateWithTemplates(ctx, t, controller, wf)
+	if setup != nil {
+		setup(controller)
+	}
+	withResult := func(pod *apiv1.Pod, w *wfOperationCtx) {
+		node := w.wf.Status.Nodes[w.nodeID(pod)]
+		if r, ok := results[node.TemplateName]; ok {
+			withOutputs(ctx, wfv1.Outputs{Result: &r})(pod, w)
+		}
+	}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range rounds {
+		woc.operate(ctx)
+		if woc.wf.Status.Phase.Completed() {
+			break
+		}
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Phase.Fulfilled(nil) {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		}, withResult)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	for range extra {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc
+}
+
 // r4MemoCache is a memoization cache ConfigMap holding a hit for key "hit"
 // with output p=value, exported as g (a cached output keeps its globalName,
 // as the node outputs it was saved from carry it).
