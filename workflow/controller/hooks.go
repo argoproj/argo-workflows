@@ -36,15 +36,15 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 			hookNode, err := woc.reconcileTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments,
 				&executeTemplateOpts{nodeFlag: &wfv1.NodeFlag{Hooked: true}},
 			)
+			// Linked whenever it exists, errored or not, as reconcileHookNode links.
+			if woc.wf.Status.Nodes.Has(woc.wf.ResolveNodeID(hookNodeName)) {
+				woc.addChildNode(ctx, woc.wf.Name, hookNodeName)
+			}
 			if err != nil {
 				return true, err
 			}
-			woc.addChildNode(ctx, woc.wf.Name, hookNodeName)
 			hookNodes = append(hookNodes, hookNode)
-			// If the hookNode node is HTTP template, it requires HTTP reconciliation, do it here
-			if hookNode != nil && woc.nodeRequiresTaskSetReconciliation(ctx, hookNode.Name) {
-				woc.taskSetReconciliation(ctx)
-			}
+			woc.reconcileTaskSetFor(ctx, hookNode)
 		}
 	}
 	for _, hookNode := range hookNodes {
@@ -76,28 +76,11 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		}
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
-			outputs := parentNode.Outputs
-			if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
-				outputs = lastChildNode.Outputs
-			}
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info(ctx, "Running hooks")
-			hookStep := &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}
-			resolvedArgs := hook.Arguments
-			var err error
-			if !resolvedArgs.IsEmpty() && outputs != nil {
-				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, hook.Arguments, ref, name, outputs, scope)
-				if err != nil {
-					return false, err
-				}
-			}
-			hookNode, err := woc.reconcileTemplate(ctx, hookNodeName, hookStep, tmplCtx, resolvedArgs, &executeTemplateOpts{
-				boundaryID: boundaryID,
-				nodeFlag:   &wfv1.NodeFlag{Hooked: true},
-			})
+			hookNode, err := woc.reconcileHookNode(ctx, hookNodeName, &hook, parentNode, false, boundaryID, tmplCtx, ref, name, scope)
 			if err != nil {
 				return false, err
 			}
-			woc.addChildNode(ctx, parentNode.Name, hookNodeName)
 			hookNodes = append(hookNodes, hookNode)
 		}
 	}
@@ -109,6 +92,44 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		}
 	}
 	return true, nil
+}
+
+// reconcileHookNode creates or advances nodeName, the node running hook (an
+// exit hook when onExit) for parentNode, and links it under parentNode
+// whenever it exists, also when it errored on creation, so retry and
+// resubmit find its parent. An exit hook's arguments are always resolved
+// against scope and the parent's outputs (they may name a sibling's absent
+// optional output); a lifecycle hook's only once the parent has outputs.
+func (woc *wfOperationCtx) reconcileHookNode(ctx context.Context, nodeName string, hook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, onExit bool, boundaryID string, tmplCtx *templateresolution.TemplateContext, ref varkeys.NodeRefKeys, name string, scope *wfScope) (*wfv1.NodeStatus, error) {
+	args := hook.Arguments
+	outputs := parentNode.Outputs
+	if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
+		outputs = lastChildNode.Outputs
+	}
+	if !args.IsEmpty() && (onExit || outputs != nil) {
+		var err error
+		if args, err = woc.resolveExitTmplArgument(ctx, hook.Arguments, ref, name, outputs, scope); err != nil {
+			return nil, err
+		}
+	}
+	hookNode, err := woc.reconcileTemplate(ctx, nodeName, toTemplateReferenceHolder(hook), tmplCtx, args, &executeTemplateOpts{
+		boundaryID:     boundaryID,
+		onExitTemplate: onExit,
+		nodeFlag:       &wfv1.NodeFlag{Hooked: true},
+	})
+	if woc.wf.Status.Nodes.Has(woc.wf.ResolveNodeID(nodeName)) {
+		woc.addChildNode(ctx, parentNode.Name, nodeName)
+	}
+	return hookNode, err
+}
+
+// reconcileTaskSetFor dispatches the HTTP/plugin nodes at or under node to
+// the agent now, for a hook node driven where operate's own task-set
+// reconciliation does not reach it.
+func (woc *wfOperationCtx) reconcileTaskSetFor(ctx context.Context, node *wfv1.NodeStatus) {
+	if node != nil && woc.nodeRequiresTaskSetReconciliation(ctx, node.Name) {
+		woc.taskSetReconciliation(ctx)
+	}
 }
 
 func generateLifeHookNodeName(parentNodeName string, hookName string) string {
