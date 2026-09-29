@@ -221,7 +221,12 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			tasks = append(tasks, task)
 			currentStepNames = append(currentStepNames, task.GetName())
 		}
-		prevStepNames = currentStepNames
+		// An empty group (`- []`) has no steps to wait for, so the group
+		// after it waits for the last group that had steps, as the groups
+		// ran in sequence before the Engine.
+		if len(currentStepNames) > 0 {
+			prevStepNames = currentStepNames
+		}
 	}
 
 	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, orgTmpl, node.ID, opts.onExitTemplate)
