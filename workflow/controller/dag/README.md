@@ -38,7 +38,7 @@ Task names are rewritten to hex-encoded identifiers (`my-task` → `t6d792d74617
 
 ### 3. Readiness evaluation
 
-A task **waits** while any dependency is still pending: not started, running, a retry node whose outcome the operator's retry handling has not recorded yet, or finished with lifecycle or exit hooks still running.
+A task **waits** while any dependency is still pending: not started, running, a retry node whose outcome the operator's retry handling has not recorded yet, or finished with lifecycle or exit hooks still running (for an expanded task, its items' hooks too).
 A running daemon counts as finished.
 Once every dependency has finished, `evaluateDependsReadiness` builds a scope of dependency states — a `taskResult` per dependency with the fields `Succeeded`, `Failed`, `Errored`, `Skipped`, `Omitted`, `Daemoned`, `AnySucceeded`, `AllFailed` (the same vocabulary as `common.TaskResult*`) — and evaluates the normalized expression with a cached, compiled `expr` program.
 The task is **ready** if the expression is true and is **omitted** if it is false.
@@ -56,7 +56,7 @@ Because the engine's walk evaluates a task after all of its dependencies, an omi
 The evaluator makes no retry decision. `evaluateRetryNode` reports a retry node by its own phase, which the controller's `processNodeRetries` records from the processed `retryStrategy`: until the node is fulfilled it asks for it to be dispatched (`ActionExecute`), so that `processNodeRetries` alone decides whether to start another attempt, wait out a backoff (it requeues the workflow), or finish the node; once it is fulfilled, a running daemon included, it is `FulfilledForDeps`.
 An expanded item's retry node is not assessed here: the engine re-enters the item on every dispatch of its TaskGroup, and `processNodeRetries` drives its retries.
 
-An expanded task has one result, for its TaskGroup node: `evaluateTaskGroupNode` asks for it to be dispatched until the node is fulfilled, and the engine's dispatch creates or re-enters each item and completes the group.
+An expanded task has one result, for its TaskGroup node: `evaluateTaskGroupNode` asks for it to be dispatched until the node is fulfilled, and the engine's dispatch creates or re-enters each item, drives each item's hooks, and completes the group once every item and its hooks have finished.
 `TaskGroupPhase` is the one rule for a group's phase, used by the engine to complete it and by `evaluateTaskGroupNode` to report a completed group whose daemoned item has since died: the worst item phase (Error over Failed over Succeeded), and not done while an item is missing or unfinished; a running daemon counts as finished.
 
 ### 6. Public API
