@@ -58,6 +58,7 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -4020,7 +4021,7 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 		metricTmpl.Labels = metricTmplSubstituted.Labels
 		metricTmpl.When = metricTmplSubstituted.When
 
-		proceed, err := shouldExecute(metricTmpl.When)
+		proceed, err := dag.ShouldExecute(metricTmpl.When)
 		if err != nil {
 			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to compute 'when' clause for metric '%s': %s", woc.wf.Name, err))
 			continue

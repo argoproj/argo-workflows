@@ -9,9 +9,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Knetic/govaluate"
-
-	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
@@ -1500,45 +1497,6 @@ func (e *Engine) updateOutboundNodesForTargetTasks(ctx context.Context, targetTa
 	return nil
 }
 
-// shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
-func shouldExecute(when string) (bool, error) {
-	if when == "" {
-		return true, nil
-	}
-	expression, err := govaluate.NewEvaluableExpression(when)
-	if err != nil {
-		if strings.Contains(err.Error(), "Invalid token") {
-			return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes)", when, err)
-		}
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
-	}
-	// The following loop converts govaluate variables (which we don't use), into strings. This
-	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
-	tokens := expression.Tokens()
-	for i, tok := range tokens {
-		switch tok.Kind {
-		case govaluate.VARIABLE:
-			tok.Kind = govaluate.STRING
-		default:
-			continue
-		}
-		tokens[i] = tok
-	}
-	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
-	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
-	}
-	result, err := expression.Evaluate(nil)
-	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
-	}
-	boolRes, ok := result.(bool)
-	if !ok {
-		return false, errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
-	}
-	return boolRes, nil
-}
-
 // evaluateWhenClause evaluates a task's when clause against the given scope.
 // Returns (true, nil) if the task should proceed, (false, nil) if it should be skipped,
 // or (false, err) if evaluation failed. Tasks with withItems/withParam/withSequence
@@ -1570,5 +1528,5 @@ func (e *Engine) evaluateWhenClause(ctx context.Context, task dag.Task, scope *w
 		}
 		return false, err
 	}
-	return shouldExecute(substituted)
+	return dag.ShouldExecute(substituted)
 }
