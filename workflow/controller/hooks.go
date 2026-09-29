@@ -15,6 +15,7 @@ import (
 
 func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.TemplateContext) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
+	entryNode, _ := woc.wf.GetNodeByName(woc.wf.Name)
 	for hookName, hook := range woc.execWf.Spec.Hooks {
 		// exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
@@ -24,11 +25,16 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		// To check a node was triggered.
 		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
-			return true, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
+			// No node exists yet for this hook (reconcileTemplate never ran),
+			// so record the error on its own hook node, as errorHookNode
+			// does for a template-level hook (C92): the entry node may
+			// already be Succeeded, and the strict node phase state machine
+			// refuses to flip it to Error.
+			return true, woc.errorHookNode(ctx, hookNodeName, &hook, entryNode, "", tmplCtx, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName))
 		}
 		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams())))
 		if err != nil {
-			return true, err
+			return true, woc.errorHookNode(ctx, hookNodeName, &hook, entryNode, "", tmplCtx, err)
 		}
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
