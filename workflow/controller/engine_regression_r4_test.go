@@ -5534,3 +5534,129 @@ spec:
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "nodes left non-terminal in a finished workflow")
 }
+
+// r4C81LoopWf is a single expanded step (withItems: [a, b]).
+const r4C81LoopWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c81-loop
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: print
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: [a, b]
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container: {image: alpine, command: [echo, "{{inputs.parameters.msg}}"]}
+`
+
+// TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem ports
+// TestProbe_v1x54_ExpandedStepFailureMessageNamesFailedItem (v1x54-1_test.go
+// / C81). When a withItems step fails, the StepGroup, Steps and workflow
+// message must name the failed item's own node (the one with the pod), as
+// executeStepGroup did, not the TaskGroup HEAD inserts between the StepGroup
+// and its items: the TaskGroup has no pod and an empty message, and the same
+// ID would appear whichever item failed.
+func TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C81LoopWf)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 3 && woc.wf.Status.Phase == wfv1.WorkflowRunning; i++ {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			if strings.Contains(n.DisplayName, "(0:a)") {
+				return apiv1.PodFailed
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	item := woc.wf.Status.Nodes.FindByDisplayName("print(0:a)")
+	require.NotNil(t, item)
+	assert.Equal(t, wfv1.NodeFailed, item.Phase)
+	want := fmt.Sprintf("child '%s' failed", item.ID)
+	sg, err := woc.wf.GetNodeByName("r4-c81-loop[0]")
+	require.NoError(t, err)
+	steps, err := woc.wf.GetNodeByName("r4-c81-loop")
+	require.NoError(t, err)
+	assert.Equal(t, want, sg.Message, "StepGroup message")
+	assert.Equal(t, want, steps.Message, "Steps message")
+	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
+}
+
+// TestRegressionR4_C81_ExpandedRetriedStepFailureMessage ports
+// TestProbe_v1x54_ExpandedRetriedStepFailureMessage (v1x54-1_test.go / C81).
+// With a retryStrategy on the expanded template, the message names the
+// failed item's Retry node, as base did, not the TaskGroup.
+func TestRegressionR4_C81_ExpandedRetriedStepFailureMessage(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c81-loop-retry
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: print
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: [a, b]
+  - name: echo
+    retryStrategy:
+      limit: 1
+    inputs:
+      parameters:
+      - name: msg
+    container: {image: alpine, command: [echo, "{{inputs.parameters.msg}}"]}
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 6 && woc.wf.Status.Phase == wfv1.WorkflowRunning; i++ {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			if strings.Contains(n.DisplayName, "(0:a)") {
+				return apiv1.PodFailed
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	item := woc.wf.Status.Nodes.FindByDisplayName("print(0:a)")
+	require.NotNil(t, item)
+	assert.Equal(t, wfv1.NodeTypeRetry, item.Type)
+	want := fmt.Sprintf("child '%s' failed", item.ID)
+	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
+}
