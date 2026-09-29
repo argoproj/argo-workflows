@@ -51,14 +51,10 @@ func (h *hookHandler) DriveTaskHooks(ctx context.Context, task dag.Task, refName
 	h.ref.Status.Set(scope.scope, string(node.Phase), refName)
 	done, err = h.woc.executeTmplLifeCycleHook(ctx, scope, task.GetHooks(), node, h.boundaryID, h.tmplCtx, h.ref, refName)
 	if err != nil || !done {
-		return false, ignoreThrottle(err)
-	}
-	// A TaskGroup has no outputs and gets no exit hook: its items do.
-	if node.Type == wfv1.NodeTypeTaskGroup {
-		return true, nil
+		return false, h.ignoreThrottle(ctx, node, err)
 	}
 	done, err = h.driveExitHook(ctx, task, refName, node, scope)
-	return done, ignoreThrottle(err)
+	return done, h.ignoreThrottle(ctx, node, err)
 }
 
 // driveExitHook creates or re-enters the exit hook node of node, once node has
@@ -93,20 +89,22 @@ func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName 
 	if err != nil {
 		return false, err
 	}
-	if h.woc.GetShutdownStrategy().Enabled() {
-		// operate skips task-set reconciliation while shutting down, but an
-		// exit hook still runs: hand its HTTP/plugin nodes to the agent here,
-		// as the workflow's onExit does.
+	if shutdown := h.woc.GetShutdownStrategy(); shutdown.Enabled() && shutdown.ShouldExecute(true) && !onExitNode.Fulfilled() {
+		// operate skips task-set reconciliation while shutting down, but
+		// under Stop an exit hook still runs: hand its HTTP/plugin nodes to
+		// the agent here, as the workflow's onExit does. Under Terminate
+		// nothing new is handed to the agent.
 		h.woc.reconcileTaskSetFor(ctx, onExitNode)
 	}
 	return onExitNode.Fulfilled(), nil
 }
 
 // ignoreThrottle drops deliberate back-pressure (parallelism, rate limit,
-// operation deadline): it is not the task's failure, and the hook is tried
-// again later.
-func ignoreThrottle(err error) error {
+// operation deadline) on node's hooks: it is not the task's failure, and the
+// hook is tried again later.
+func (h *hookHandler) ignoreThrottle(ctx context.Context, node *wfv1.NodeStatus, err error) error {
 	if isThrottleErr(err) {
+		h.log.WithError(err).WithField("node", node.Name).Debug(ctx, "task hook held back; will retry")
 		return nil
 	}
 	return err

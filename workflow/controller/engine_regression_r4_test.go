@@ -6475,10 +6475,14 @@ spec:
 `+r4C55HookMissingCM, "g5wf", "g5wf.hooks.running", true)
 }
 
-// C29: `argo terminate` while a task's Steps exit hook runs. Base re-entered
-// the running exit-hook node under Terminate, so its Steps node was assessed
-// and the workflow ended Failed; the branch stopped re-entering it and the
-// boundary waited on the pending hook forever.
+// C29: `argo terminate` while a task's Steps exit hook runs. Base did not
+// re-enter the exit-hook node under Terminate (runOnExitNode returned early,
+// exit_handler.go:23), but its DAG waited only on its target tasks' exit
+// hooks, and build is not a target: assessDAGPhase failed the DAG under the
+// shutdown and the workflow ended Failed. The branch waits on every task's
+// pending hook and did not re-enter the hook, so the boundary waited on it
+// forever; it now re-enters an existing exit-hook node under Terminate too,
+// so its Steps node is assessed and finishes.
 
 const r4C29DAGWithStepsHook = `
 apiVersion: argoproj.io/v1alpha1
@@ -7066,4 +7070,352 @@ spec:
 		r4ReportTaskSet(ctx, t, woc, results)
 	}
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "stopped workflow must finish; unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// r4HookRun validates manifest, then reconciles it from its stored status,
+// deciding each pod's phase with decide between reconciles, until it
+// completes or rounds run out, and reconciles twice more so that a hook that
+// fires late still shows.
+func r4HookRun(t *testing.T, manifest string, decide func(*wfv1.NodeStatus) apiv1.PodPhase, rounds int) (context.Context, *wfOperationCtx) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	woc := r4Operate(t, ctx, controller, wf)
+	extra := 2
+	for i := 0; i < rounds && extra > 0; i++ {
+		if woc.wf.Status.Phase.Completed() {
+			extra--
+		}
+		setPodPhases(ctx, woc, decide)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return ctx, woc
+}
+
+// r4HookInput is the value of the named node's first input parameter, or ""
+// when the node or the parameter does not exist.
+func r4HookInput(woc *wfOperationCtx, nodeName string) string {
+	n, err := woc.wf.GetNodeByName(nodeName)
+	if err != nil || n.Inputs == nil || len(n.Inputs.Parameters) == 0 || n.Inputs.Parameters[0].Value == nil {
+		return ""
+	}
+	return n.Inputs.Parameters[0].Value.String()
+}
+
+// r4HookNodes lists the workflow's hook nodes (lifecycle and exit), sorted.
+func r4HookNodes(woc *wfOperationCtx) []string {
+	var out []string
+	for _, n := range woc.wf.Status.Nodes {
+		if n.NodeFlag != nil && n.NodeFlag.Hooked {
+			out = append(out, n.Name)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// r4FailStepA fails the pod of the step or task named a.
+func r4FailStepA(n *wfv1.NodeStatus) apiv1.PodPhase {
+	if strings.HasSuffix(n.Name, ".a") {
+		return apiv1.PodFailed
+	}
+	return apiv1.PodSucceeded
+}
+
+// C15 (v1x4): an expanded step's exit hook is its item's, with {{item}}
+// substituted, as executeStepGroup drove it.
+func TestRegressionR4_C15_ExpandedStepExitHookItemArg(t *testing.T) {
+	_, woc := r4HookRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: items-exit
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        withItems: [i1, i2]
+        hooks:
+          exit:
+            template: hook
+            arguments:
+              parameters:
+              - name: v
+                value: "{{item}}"
+  - name: echo
+    container: {image: alpine, command: [echo]}
+  - name: hook
+    inputs: {parameters: [{name: v}]}
+    container: {image: alpine, command: [echo, "{{inputs.parameters.v}}"]}
+`, allSucceed, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, "i1", r4HookInput(woc, "items-exit[0].a(0:i1).onExit"))
+	assert.Equal(t, "i2", r4HookInput(woc, "items-exit[0].a(1:i2).onExit"))
+}
+
+// C15 (v1x4): an exit-hook expression that selects an item runs the hook for
+// that item only.
+func TestRegressionR4_C15_ExpandedStepExitHookItemExpression(t *testing.T) {
+	_, woc := r4HookRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: items-expr
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        withItems: [i1, i2]
+        hooks:
+          exit:
+            expression: "'{{item}}' == 'i1'"
+            template: echo
+  - name: echo
+    container: {image: alpine, command: [echo]}
+`, allSucceed, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, []string{"items-expr[0].a(0:i1).onExit"}, r4HookNodes(woc))
+}
+
+// C48 (v1x5): an expanded step's lifecycle hook runs once per item, on each
+// item node, as executeStepGroup ran it.
+func TestRegressionR4_C48_StepsExpandedRunningHookPerItem(t *testing.T) {
+	ctx, woc := r4HookRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: v1x5a
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        withItems: [i1, i2, i3]
+        hooks:
+          running:
+            expression: workflow.status == "Running"
+            template: hook
+  - name: echo
+    container: {image: alpine, command: [echo]}
+  - name: hook
+    container: {image: alpine, command: [echo, hook]}
+`, allSucceed, 12)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	hooks := []string{"v1x5a[0].a(0:i1).hooks.running", "v1x5a[0].a(1:i2).hooks.running", "v1x5a[0].a(2:i3).hooks.running"}
+	assert.Equal(t, hooks, r4HookNodes(woc))
+	var hookPods []string
+	for _, n := range r4PodNodeNames(ctx, t, woc) {
+		if strings.Contains(n, ".hooks.") {
+			hookPods = append(hookPods, n)
+		}
+	}
+	assert.Equal(t, hooks, hookPods, "one hook pod per item")
+	for _, hook := range hooks {
+		assert.Equal(t, []string{strings.TrimSuffix(hook, ".hooks.running")}, r4Parents(woc, hook), "hook %s hangs off its item", hook)
+	}
+}
+
+const r4C46Templates = `
+  - name: ok
+    container:
+      image: alpine
+      command: [sh, -c, "exit 0"]
+  - name: notify
+    inputs:
+      parameters:
+      - name: msg
+        value: "none"
+    container: {image: alpine, command: [echo, "{{inputs.parameters.msg}}"]}
+`
+
+// C46 (v3x4): a step's lifecycle hook sees the status of an earlier step in
+// its own group, as executeStepGroup's group scope gave it.
+func TestRegressionR4_C46_LifecycleExprSibling(t *testing.T) {
+	ctx, woc := r4HookRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: lhs
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: ok
+      - name: B
+        template: ok
+        hooks:
+          afterA:
+            expression: steps.A.status == "Succeeded"
+            template: notify
+`+r4C46Templates, allSucceed, 8)
+	assert.Contains(t, r4PodNodeNames(ctx, t, woc), "lhs[0].B.hooks.afterA")
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "lhs[0].B"))
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// C46 (v3x4): a step's exit hook argument can name an earlier step in its
+// own group.
+func TestRegressionR4_C46_ExitArgSibling(t *testing.T) {
+	_, woc := r4HookRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: eas
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: ok
+      - name: B
+        template: ok
+        hooks:
+          exit:
+            template: notify
+            arguments:
+              parameters:
+              - name: msg
+                value: "{{steps.A.status}}"
+`+r4C46Templates, allSucceed, 8)
+	assert.Equal(t, "Succeeded", r4HookInput(woc, "eas[0].B.onExit"))
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// C47 (v1x7): a step skipped by its when clause never ran, so its hooks do
+// not run.
+func TestRegressionR4_C47_StepsWhenSkippedStepHookNotRun(t *testing.T) {
+	ctx, woc := r4HookRun(t, `
+metadata:
+  name: v1x7-skip
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: run
+        when: "false"
+        hooks:
+          notify:
+            expression: workflow.status == "Running"
+            template: run
+    - - name: c
+        template: run
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+`, allSucceed, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Empty(t, r4HookNodes(woc), "no hook node for a when-skipped step")
+	assert.Equal(t, []string{"v1x7-skip[1].c"}, r4PodNodeNames(ctx, t, woc), "only c runs")
+}
+
+// C47 (v1x7): a step after a failed group never ran, so its hook, which
+// reads the failed step's missing output, is not evaluated.
+func TestRegressionR4_C47_StepsHookOnPrevOutputAfterFailure(t *testing.T) {
+	ctx, woc := r4HookRun(t, `
+metadata:
+  name: v1x7-prevout
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: produce
+    - - name: b
+        template: run
+        hooks:
+          notify:
+            expression: steps.a.outputs.parameters.p == "go"
+            template: run
+  - name: produce
+    container:
+      image: busybox
+      command: [echo]
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+`, r4FailStepA, 8)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.NotContains(t, woc.wf.Status.Message, "unable to evaluate expression")
+	assert.Empty(t, r4HookNodes(woc))
+	assert.Equal(t, []string{"v1x7-prevout[0].a"}, r4PodNodeNames(ctx, t, woc))
+}
+
+// C47 / lead 4 (lead4-1): a true-expression hook on a step after a failed
+// group, whose argument names the failed step's result, fires nothing and
+// leaves the workflow Failed, not Error.
+func TestRegressionR4_C47_TrueHookUnresolvedArgOnOmitted(t *testing.T) {
+	_, woc := r4HookRun(t, `
+metadata:
+  name: lead4-true
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: gen
+    - - name: b
+        template: run
+        hooks:
+          running:
+            expression: "true"
+            template: notify
+            arguments:
+              parameters:
+              - name: message
+                value: "{{steps.a.outputs.result}}"
+  - name: gen
+    script:
+      image: busybox
+      command: [sh]
+      source: echo hi
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+  - name: notify
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.message}}"]
+`, r4FailStepA, 8)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.NotContains(t, woc.wf.Status.Message, "failed to resolve")
+	assert.Empty(t, r4HookNodes(woc))
 }

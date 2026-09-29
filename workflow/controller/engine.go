@@ -33,10 +33,6 @@ type Engine struct {
 	log            logging.Logger
 	reconciler     TaskReconciler
 	hooks          *hookHandler
-	// expanded holds, per expanded task, the items its latest dispatch in
-	// this reconcile expanded it into, so what else reads the items this
-	// reconcile sees the list that dispatch drove.
-	expanded map[string][]dag.Task
 	// finished holds, per finished task, what the task adds to its
 	// dependants' scopes, built on first use: a finished node does not
 	// change within a reconcile, and rebuilding its part for every dependant
@@ -57,7 +53,6 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 		log:            woc.log,
 		reconciler:     NewK8sTaskReconciler(woc, tmplCtx, nodeName),
 		hooks:          newHookHandler(woc, tmplCtx, boundaryID, tmpl, woc.log),
-		expanded:       make(map[string][]dag.Task),
 	}
 }
 
@@ -248,39 +243,69 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 	}
 }
 
-// processHooks drives a task's hooks (hookHandler.DriveTaskHooks) and reports
-// whether they are done. An expanded task's exit hook runs once per item, on
-// the item node and with that item's outputs, as executeDAGTask and
-// executeStepGroup did before the Engine. A hook error is isolated to the
-// failing node (not the boundary), mirroring the legacy controller's
-// executeDAGTask behavior — a single bad hook on one task must not abort
-// sibling tasks or the DAG/Steps boundary.
+// processHooks drives the hooks of a task's node and reports whether they are
+// done. An expanded task's hooks are its items', which reconcileTaskGroup
+// drives with the items, so its TaskGroup node has none of its own.
 func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
-	node := e.getTaskNode(ctx, task.GetName())
-	if node == nil || !e.hooks.hasHooks(task) {
+	if node := e.getTaskNode(ctx, task.GetName()); node != nil && node.Type == wfv1.NodeTypeTaskGroup {
 		return true
 	}
-	scope, err := e.buildLocalScopeFromTask(ctx, task)
-	if err != nil {
-		e.markHookError(ctx, node, err)
-		return false
+	return e.driveHooks(ctx, task, []dag.Task{task})
+}
+
+// driveHooks drives, through hookHandler.DriveTaskHooks, the hooks of each
+// node of task that ran: task's own node, or, for an expanded task, each item
+// node, with that item's hooks ({{item}} substituted), as executeStepGroup
+// did. The hooks refer to the task by its own name and see its hookScope,
+// built only when there is a hook to drive. It reports whether every hook is
+// done; a hook that errored is done, its error recorded (markHookError), so
+// that an error does not hold its task back for good.
+func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.Task) bool {
+	if !e.hooks.hasHooks(task) {
+		return true
 	}
-	done, err := e.hooks.DriveTaskHooks(ctx, task, task.GetDisplayName(), node, scope)
-	e.markHookError(ctx, node, err)
-	if !done || node.Type != wfv1.NodeTypeTaskGroup {
-		return done
-	}
-	for _, childID := range node.Children {
-		item, err := e.woc.wf.Status.Nodes.Get(childID)
-		if err != nil || (item.NodeFlag != nil && item.NodeFlag.Hooked) {
+	var scope *wfScope
+	done := true
+	for _, nodeTask := range nodeTasks {
+		node := e.getTaskNode(ctx, nodeTask.GetName())
+		if node == nil || !ran(node) {
 			continue
 		}
-		e.hooks.ref.Status.Set(scope.scope, string(item.Phase), task.GetDisplayName())
-		itemDone, err := e.hooks.driveExitHook(ctx, task, task.GetDisplayName(), item, scope)
-		e.markHookError(ctx, item, ignoreThrottle(err))
-		done = done && itemDone
+		if scope == nil {
+			var err error
+			if scope, err = e.hookScope(ctx, task); err != nil {
+				e.markHookError(ctx, node, err)
+				return true
+			}
+		}
+		nodeDone, err := e.hooks.DriveTaskHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
+		e.markHookError(ctx, node, err)
+		done = done && (nodeDone || err != nil)
 	}
 	return done
+}
+
+// ran reports whether n's task ran: a task skipped by its when clause or
+// omitted by its dependencies never did, and has no hooks to run.
+func ran(n *wfv1.NodeStatus) bool {
+	return n.Phase != wfv1.NodeSkipped && n.Phase != wfv1.NodeOmitted
+}
+
+// hookScope is the scope a task's hooks see: the task's own scope and, for a
+// step, the status of the steps in its group, as executeStepGroup's group
+// scope gave them.
+func (e *Engine) hookScope(ctx context.Context, task dag.Task) (*wfScope, error) {
+	scope, err := e.buildLocalScopeFromTask(ctx, task)
+	if err != nil || e.tmpl.GetType() != wfv1.TemplateTypeSteps {
+		return scope, err
+	}
+	group, _ := stepGroupIndexOf(task.GetName())
+	for _, step := range e.tmpl.Steps[group].Steps {
+		if node := e.getTaskNode(ctx, stepTaskNameFor(group, step.Name)); node != nil {
+			varkeys.StepsNodeRef.Status.Set(scope.scope, string(node.Phase), step.Name)
+		}
+	}
+	return scope, nil
 }
 
 // markHookError records a hook error on node, the node whose hook failed. If
@@ -473,11 +498,13 @@ func (e *Engine) expansionScope(scope *wfScope) map[string]string {
 // item is created if it has no node yet (the rest of a fan-out held back by
 // parallelism or the operation deadline) or re-entered if it has not finished
 // (a deleted pod, a suspend with a duration, a nested template, a lock
-// waiter), one item's error staying with that item. The group is then
-// completed from its items once every one exists and has finished, with its
-// exit hooks. items are the resolved task's expansion. Only the operation
-// deadline stops the items early; its error is returned.
-func (e *Engine) reconcileTaskGroup(ctx context.Context, tgNode *wfv1.NodeStatus, items []dag.Task) error {
+// waiter), one item's error staying with that item. Each item's hooks are then
+// driven (driveHooks), and the group is completed from its items once every
+// one exists and has finished, with its hooks, so that it is never recorded
+// before an item's exit hook exists. items are the expansion of task,
+// resolved. Only the operation deadline stops the items early; its error is
+// returned.
+func (e *Engine) reconcileTaskGroup(ctx context.Context, task dag.Task, tgNode *wfv1.NodeStatus, items []dag.Task) error {
 	var stopErr error
 	for _, item := range items {
 		err := e.reconcileTask(ctx, item, []string{tgNode.Name})
@@ -486,13 +513,14 @@ func (e *Engine) reconcileTaskGroup(ctx context.Context, tgNode *wfv1.NodeStatus
 			break
 		}
 	}
+	hooksDone := e.driveHooks(ctx, task, items)
 	itemNodes := make([]*wfv1.NodeStatus, len(items))
 	for i, item := range items {
 		if n := e.getTaskNode(ctx, item.GetName()); n != nil && !e.hasPendingHooks(n) {
 			itemNodes[i] = n
 		}
 	}
-	if phase, done := dag.TaskGroupPhase(itemNodes); done {
+	if phase, done := dag.TaskGroupPhase(itemNodes); done && hooksDone {
 		e.woc.markNodePhase(ctx, tgNode.Name, phase)
 	}
 	return stopErr
@@ -648,7 +676,9 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 		return nil
 	}
 
-	if !onExitCompleted {
+	// A hook error on a finished task has already ended the boundary
+	// (markHookError): it gets no outputs and is not memoized.
+	if node, err := e.woc.wf.GetNodeByName(e.nodeName); !onExitCompleted || (err == nil && node.Fulfilled()) {
 		return nil
 	}
 
@@ -748,21 +778,6 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 	taskNodeName := e.taskNodeName(taskName)
 
 	taskNode := e.getTaskNode(ctx, taskName)
-	if taskNode != nil && (taskNode.Fulfilled() || taskNode.Phase == wfv1.NodeRunning) {
-		scope, err := e.buildLocalScopeFromTask(ctx, task)
-		if err != nil {
-			return e.woc.markNodeError(ctx, taskNodeName, err), err
-		}
-		e.hooks.ref.Status.Set(scope.scope, string(taskNode.Phase), task.GetDisplayName())
-		hookCompleted, err := e.woc.executeTmplLifeCycleHook(ctx, scope, task.GetHooks(), taskNode, e.boundaryID, e.tmplCtx, e.hooks.ref, task.GetDisplayName())
-		if err != nil && !isThrottleErr(err) {
-			e.woc.markNodeError(ctx, taskNodeName, err)
-		}
-		if !hookCompleted {
-			return taskNode, nil
-		}
-	}
-
 	if taskNode != nil && taskNode.Fulfilled() {
 		e.log.WithFields(logging.Fields{"task": taskName, "node": taskNodeName}).Debug(ctx, "task already fulfilled")
 		return taskNode, nil
@@ -802,8 +817,6 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 			return failTask(expandErr)
 		}
 
-		e.expanded[taskName] = expandedTasks
-
 		// Empty expansion (e.g., withParam resolves to []) → skip the task. A
 		// group that already exists and now expands to no items (after `argo
 		// retry --parameter`) is Skipped too where its phase allows it; a
@@ -825,7 +838,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 			tgNode = e.initTaskNode(ctx, resolved, parents, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
 			e.adoptItems(ctx, taskName, tgNode.Name, expandedTasks)
 		}
-		if err := e.reconcileTaskGroup(ctx, tgNode, expandedTasks); err != nil {
+		if err := e.reconcileTaskGroup(ctx, task, tgNode, expandedTasks); err != nil {
 			return nil, err
 		}
 		return tgNode, nil
