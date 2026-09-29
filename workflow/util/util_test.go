@@ -462,6 +462,146 @@ func TestFormulateRetryWorkflowNonPodFailure(t *testing.T) {
 	assert.True(t, newWf.Status.Nodes.Has("wf-gen"))
 }
 
+// C35 (DAG form; a bug present at base too, not only a HEAD regression): a
+// DAG task that could not be set up (here, a `when` that cannot be
+// evaluated) is recorded as a Skipped Error leaf, and its dependant, never
+// dispatched, hangs underneath it as Omitted. planReset's old leaf rule
+// ("execution node, or no children at all") missed it: the node has a
+// child, so it was never treated as the node that actually failed, and
+// `argo retry` reset nothing.
+const dagLeafWithOmittedChildFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+        when: "{{workflow.parameters.x}} == ok"
+      - name: after
+        template: run
+        dependencies: [gen]
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Skipped
+      boundaryID: wf
+      phase: Error
+      message: "when expression could not be evaluated"
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Skipped
+      boundaryID: wf
+      phase: Omitted
+      message: "omitted: depends condition not met"
+`
+
+func TestFormulateRetryWorkflowDAGLeafWithOmittedChild(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagLeafWithOmittedChildFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the failed node's only child is Omitted (it never ran), so it must be reset")
+	assert.False(t, newWf.Status.Nodes.Has("wf-gen"), "the failed node must be re-created")
+	assert.False(t, newWf.Status.Nodes.Has("wf-after"), "the omitted dependant must be re-created")
+}
+
+// D3: a ContainerSet pod whose containers all finished successfully is
+// deleted before its wait container reports (e.g. the pod is evicted). The
+// node-phase state machine refuses Succeeded->Error, so the pod node itself
+// goes Error "pod deleted" while its Container children keep their true
+// Succeeded phase. isDescendantNodeSucceeded must not count a Container
+// child's own Succeeded phase as a succeeded descendant (it is a sibling
+// execution inside the same pod, not a downstream node), or planReset never
+// resets the pod and `argo retry` silently does nothing.
+const podErrorWithSucceededContainersFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: run
+  - name: run
+    containerSet:
+      containers:
+      - name: first
+        image: alpine
+        command: [echo]
+      - name: main
+        image: alpine
+        command: [echo]
+        dependencies: [first]
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-A]
+    wf-A:
+      id: wf-A
+      name: wf.A
+      type: Pod
+      boundaryID: wf
+      phase: Error
+      message: "pod deleted"
+      children: [wf-A-first, wf-A-main]
+    wf-A-first:
+      id: wf-A-first
+      name: wf.A.first
+      displayName: first
+      type: Container
+      boundaryID: wf
+      phase: Succeeded
+    wf-A-main:
+      id: wf-A-main
+      name: wf.A.main
+      displayName: main
+      type: Container
+      boundaryID: wf
+      phase: Succeeded
+`
+
+func TestFormulateRetryWorkflowPodErrorWithSucceededContainers(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(podErrorWithSucceededContainersFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the pod's own Container children succeeding must not stop it being reset")
+	assert.False(t, newWf.Status.Nodes.Has("wf-A"), "the errored pod must be re-created")
+}
+
 // A pod that failed but was carried past with continueOn is memoized as a failed placeholder; it
 // must not be re-run, and it must not claim a pod under the new workflow.
 func TestFormulateResubmitWorkflowMemoizedContinueOn(t *testing.T) {
