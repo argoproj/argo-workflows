@@ -78,9 +78,8 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 //
 // Before the walk, every task node that is already fulfilled is finished
 // (reconcileFulfilledTasks); after it, the boundary is assessed (a Steps
-// template group by group) and finalized.
-// Errors are handled internally by marking the boundary node with the
-// appropriate phase (Failed for Steps, Error for DAGs).
+// template group by group) and finalized. An error of the template itself
+// ends the boundary Error (markBoundaryError).
 func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	e.evaluator = dag.NewDAGEvaluatorFromTasks(e.woc.wf, tasks, e.tmpl, e.boundaryID, e.nodeName)
 
@@ -149,22 +148,24 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 	return e.dispatchOutcome(ctx, name, err)
 }
 
-// markBoundaryError marks the boundary node with an appropriate error phase.
-// For Steps templates, uses Failed (not Error) to match legacy behavior; the
-// same convention is applied by finalize when it derives the phase from the
-// children. A boundary that is already fulfilled is left alone: terminal
-// phases have no valid transitions.
+// markBoundaryError records an error of the template itself (its outputs,
+// its memoization, the aggregation of a step's items; see templateError) as
+// an Error on the boundary node, for DAG and Steps alike, as executeTemplate
+// did with the error executeDAG or executeSteps returned. A boundary that is
+// already fulfilled is left alone: terminal phases have no valid transitions.
 func (e *Engine) markBoundaryError(ctx context.Context, err error) {
-	node, _ := e.woc.wf.GetNodeByName(e.nodeName)
-	if node != nil && node.Fulfilled() {
+	if node, _ := e.woc.wf.GetNodeByName(e.nodeName); node != nil && node.Fulfilled() {
 		return
 	}
-	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		e.woc.markNodePhase(ctx, e.nodeName, wfv1.NodeFailed, err.Error())
-	} else {
-		e.woc.markNodeError(ctx, e.nodeName, err)
-	}
+	e.woc.markNodeError(ctx, e.nodeName, err)
 }
+
+// templateError is an error of the enclosing template itself rather than of
+// the task being dispatched: the task gets no node, and the boundary ends
+// Error (markBoundaryError).
+type templateError struct{ error }
+
+func (e templateError) Unwrap() error { return e.error }
 
 // reconcileDaemonedTasks re-executes any tasks whose pods are running as daemons.
 func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
@@ -346,11 +347,14 @@ func (e *Engine) assessStepGroup(ctx context.Context, i int) (phase wfv1.NodePha
 // stepGroupOutcome derives group i's phase from its steps, as
 // executeStepGroup did. The group is done once every step has a node that
 // has finished (see outcome: a running daemon has, a step whose hooks still
-// run has not). It is then Failed if a step failed or errored without
-// continueOn, naming the first such step in the message that bubbles up to
-// the workflow status; Omitted if it never ran (every step omitted because an
-// earlier group failed, or an empty group after a group that did not
-// succeed); and Succeeded otherwise.
+// run has not). The first step that failed or errored without continueOn
+// then decides it, in the message that bubbles up to the workflow status: an
+// errored step makes it Error, "step group deemed errored due to child
+// <name> error: <reason>", whether the step errored before it ran (a setup
+// error main reported on the group) or while it ran; a failed one makes it
+// Failed, "child '<id>' failed". It is Omitted if it never ran (every step
+// omitted because an earlier group failed, or an empty group after a group
+// that did not succeed), and Succeeded otherwise.
 func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePhase, message string, done bool) {
 	steps := e.tmpl.Steps[i].Steps
 	phase = wfv1.NodeSucceeded
@@ -366,7 +370,11 @@ func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePh
 		}
 		allOmitted = allOmitted && stepPhase == wfv1.NodeOmitted
 		if stepPhase.FailedOrError() && !step.ContinuesOn(stepPhase) && message == "" {
-			phase, message = wfv1.NodeFailed, fmt.Sprintf("child '%s' failed", e.failedNodeID(node))
+			failed := e.failedNode(node)
+			phase, message = wfv1.NodeFailed, fmt.Sprintf("child '%s' failed", failed.ID)
+			if failed.Phase == wfv1.NodeError {
+				phase, message = wfv1.NodeError, fmt.Sprintf("step group deemed errored due to child %s error: %s", failed.Name, failed.Message)
+			}
 		}
 	}
 	if allOmitted {
@@ -375,19 +383,19 @@ func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePh
 	return phase, message, true
 }
 
-// failedNodeID is the node a "child '<id>' failed" message names for a
-// failed step: the step's own node, or, for an expanded step's TaskGroup,
-// its first failed item — the node with the pod, or the item's Retry node
-// under a retryStrategy — as when items hung directly off the StepGroup.
-func (e *Engine) failedNodeID(node *wfv1.NodeStatus) string {
+// failedNode is the node a failure message names for a failed step or task:
+// its own node, or, for an expanded one's TaskGroup, its first failed item —
+// the node with the pod, or the item's Retry node under a retryStrategy — as
+// when items hung directly off the StepGroup.
+func (e *Engine) failedNode(node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	if node.Type == wfv1.NodeTypeTaskGroup {
 		for _, childID := range node.Children {
 			if child, err := e.woc.wf.Status.Nodes.Get(childID); err == nil && child.FailedOrError() && (child.NodeFlag == nil || !child.NodeFlag.Hooked) {
-				return child.ID
+				return child
 			}
 		}
 	}
-	return node.ID
+	return node
 }
 
 // isThrottleErr reports whether err is a deliberate throttling signal from
@@ -633,14 +641,14 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 // boundaryFailureMessage names the first failed task of a DAG in
 // declaration order, "child '<task-id>' failed", as executeDAG did: the
 // message bubbles up to the workflow status. Task nodes are named, never
-// their retry attempts (failedNodeID is a no-op for those); an expanded
+// their retry attempts (failedNode is a no-op for those); an expanded
 // task's TaskGroup is resolved to its first failed item instead, as for
-// Steps (see failedNodeID). Walking the template rather than wf.Status.Nodes
+// Steps (see failedNode). Walking the template rather than wf.Status.Nodes
 // keeps the message stable between cycles. Returns "" if no task failed.
 func (e *Engine) boundaryFailureMessage(ctx context.Context) string {
 	for _, task := range e.tmpl.DAG.Tasks {
 		if node := e.getTaskNode(ctx, task.Name); node != nil && node.FailedOrError() {
-			return fmt.Sprintf("child '%s' failed", e.failedNodeID(node))
+			return fmt.Sprintf("child '%s' failed", e.failedNode(node).ID)
 		}
 	}
 	return ""
@@ -711,6 +719,18 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		return taskNode, nil
 	}
 
+	// The task's references are resolved once, from one scope, before
+	// anything is created for it: a reference not in scope yet leaves the
+	// task uncreated, so an expansion never leaves a childless TaskGroup. A
+	// scope the template itself cannot build (templateError) ends the
+	// boundary before the task's StepGroup is started, as executeSteps
+	// stopped before creating the next group.
+	scope, err := e.buildLocalScopeFromTask(ctx, task)
+	if stderrors.As(err, new(templateError)) {
+		e.markBoundaryError(ctx, err)
+		return nil, err
+	}
+
 	// A scope, resolution or expansion failure is this task's own terminal
 	// outcome: it is recorded on an Error node linked under the task's
 	// parents (as executeDAGTask did), so siblings keep running and the
@@ -720,11 +740,6 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		e.initTerminalErrorNode(ctx, task, parents, err)
 		return e.getTaskNode(ctx, taskName), err
 	}
-
-	// The task's references are resolved once, from one scope, before
-	// anything is created for it: a reference not in scope yet leaves the
-	// task uncreated, so an expansion never leaves a childless TaskGroup.
-	scope, err := e.buildLocalScopeFromTask(ctx, task)
 	if err != nil {
 		return failTask(err)
 	}
@@ -1232,6 +1247,11 @@ func (e *Engine) addTaskNodeToScope(ctx context.Context, scope *wfScope, ref var
 func (e *Engine) buildTaskNodeScope(ctx context.Context, scope *wfScope, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, refName, taskName string, node, scopeNode *wfv1.NodeStatus, includeArtifacts bool) error {
 	if node.Type == wfv1.NodeTypeTaskGroup {
 		if err := e.woc.processAggregateNodeOutputs(scope, agg, refName, e.getChildNodes(node)); err != nil {
+			if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
+				// executeSteps aggregated a finished group's items into the
+				// template's own scope, so this is the template's error.
+				return templateError{err}
+			}
 			return fmt.Errorf("failed to aggregate outputs for %s: %w", taskName, err)
 		}
 	}
