@@ -283,8 +283,6 @@ func r4LegacyStepsStatus(manifest string, groupIdx int, stepName, tmplName strin
 // r4NamespacedMutex builds a Synchronization holding a single mutex named
 // name, scoped to the workflow's own namespace (the default when Namespace
 // is left unset).
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4NamespacedMutex(name string) *wfv1.Synchronization {
 	return &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{{Name: name}}}
 }
