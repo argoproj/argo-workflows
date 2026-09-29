@@ -197,7 +197,7 @@ func substituteAndGetConfigMapValue(ctx context.Context, inParam *wfv1.Parameter
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly, allowUnresolved bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
+func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -256,7 +256,7 @@ func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsPr
 		}
 	}
 
-	return SubstituteParams(ctx, newTmpl, globalParams, localParams, allowUnresolved)
+	return SubstituteParams(ctx, newTmpl, globalParams, localParams)
 }
 
 // substituteConfigMapKeyRefParam performs template substitution for ConfigMapKeyRef
@@ -273,7 +273,7 @@ func substituteConfigMapKeyRefParam(ctx context.Context, in string, replaceMap m
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
-func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, localParams Parameters, allowUnresolved bool) (*wfv1.Template, error) {
+func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -319,7 +319,7 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		}
 	}
 
-	s, err := template.Replace(ctx, globalReplacedTmplStr, replaceMap, allowUnresolved)
+	s, err := template.Replace(ctx, globalReplacedTmplStr, replaceMap, true)
 	if err != nil {
 		return nil, err
 	}

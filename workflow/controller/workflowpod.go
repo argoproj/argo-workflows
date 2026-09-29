@@ -311,7 +311,7 @@ func (pb *podBuilder) processPodSpecPatch(ctx context.Context, tmpl *wfv1.Templa
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = patch
-		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, pb.in.globalParams, localParams, false, true, pb.in.namespace, pb.in.configMapIndexer)
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, pb.in.globalParams, localParams, false, pb.in.namespace, pb.in.configMapIndexer)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}

@@ -270,13 +270,13 @@ func TestOverridableDefaultInputArts(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, false, "", nil)
+	newTmpl, err := ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, "", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, rawArt.Data)
 
 	inputs.Artifacts = []wfv1.Artifact{inputArt}
-	newTmpl, err = ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, false, "", nil)
+	newTmpl, err = ProcessArgs(ctx, &tmpl, &inputs, globalParams, localParams, false, "", nil)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Artifacts[0].Raw.Data, inputRawArt.Data)
@@ -322,12 +322,12 @@ func TestOverridableTemplateInputParamsValue(t *testing.T) {
 	globalParams := make(map[string]string)
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
@@ -347,7 +347,7 @@ func TestProcessArgs_ArtifactWithFromOnly(t *testing.T) {
 		},
 	}
 	ctx := logging.TestContext(t.Context())
-	result, err := ProcessArgs(ctx, tmpl, args, nil, nil, false, true, "", nil)
+	result, err := ProcessArgs(ctx, tmpl, args, nil, nil, false, "", nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	// The unresolved `from` reference must survive ProcessArgs: the DAG/Steps
@@ -358,21 +358,8 @@ func TestProcessArgs_ArtifactWithFromOnly(t *testing.T) {
 
 	// With neither from, fromExpression nor a location, the artifact is still rejected.
 	noSource := &wfv1.Arguments{Artifacts: wfv1.Artifacts{{Name: "my-art"}}}
-	_, err = ProcessArgs(ctx, tmpl, noSource, nil, nil, false, true, "", nil)
+	_, err = ProcessArgs(ctx, tmpl, noSource, nil, nil, false, "", nil)
 	require.ErrorContains(t, err, "inputs.artifacts.my-art missing location information")
-}
-
-func TestSubstituteParamsAllowUnresolvedFalse(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	tmpl := &wfv1.Template{
-		Container: &corev1.Container{
-			Image: "alpine:3.23",
-			Args:  []string{"{{workflow.status}}"},
-		},
-	}
-	// No global or local params that resolve {{workflow.status}}
-	_, err := SubstituteParams(ctx, tmpl, Parameters{}, Parameters{}, false)
-	assert.Error(t, err, "should error on unresolved tags when allowUnresolved=false")
 }
 
 func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
@@ -423,12 +410,12 @@ func TestOverridableTemplateInputParamsValueFrom(t *testing.T) {
 	globalParams := map[string]string{paramName: "overrideValue"}
 	localParams := make(map[string]string)
 
-	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, false, "", configMapStore)
+	newTmpl, err := ProcessArgs(ctx, &tmpl, &valueArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), valueArgs.Parameters[0].Value.String())
 
-	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, false, "", configMapStore)
+	newTmpl, err = ProcessArgs(ctx, &tmpl, &valueFromArgs, globalParams, localParams, false, "", configMapStore)
 	require.NoError(t, err)
 	assert.NotNil(t, newTmpl)
 	assert.Equal(t, newTmpl.Inputs.Parameters[0].Value.String(), overrideConfigMapValue)
@@ -462,7 +449,7 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 	t.Run("input default applies", func(t *testing.T) {
 		tmpl := wfv1.Template{}
 		tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName, Default: wfv1.AnyStringPtr("fallback")}}
-		newTmpl, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, false, "", configMapStore)
+		newTmpl, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, "", configMapStore)
 		require.NoError(t, err)
 		require.NotNil(t, newTmpl)
 		assert.Equal(t, "fallback", newTmpl.Inputs.Parameters[0].Value.String())
@@ -476,7 +463,7 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 				Key:                  configMapKey,
 			},
 		}}}
-		newTmpl, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, false, "", configMapStore)
+		newTmpl, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, "", configMapStore)
 		require.NoError(t, err)
 		require.NotNil(t, newTmpl)
 		assert.Equal(t, configMapValue, newTmpl.Inputs.Parameters[0].Value.String())
@@ -485,7 +472,7 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 	t.Run("no default nor valueFrom fails terminally without requeue", func(t *testing.T) {
 		tmpl := wfv1.Template{}
 		tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: paramName}}
-		_, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, false, "", configMapStore)
+		_, err := ProcessArgs(ctx, &tmpl, &sentinelArgs, globalParams, localParams, false, "", configMapStore)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "absent optional")
 		// Must NOT match IsMissingVariableErr, which would requeue the node forever.
