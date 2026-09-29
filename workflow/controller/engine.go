@@ -579,7 +579,7 @@ func (e *Engine) reconcileFulfilledNode(ctx context.Context, task dag.Task, reso
 		localParams["tasks.name"] = task.GetDisplayName()
 	}
 	args := task.GetArguments()
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, true, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		return err
 	}
@@ -1027,9 +1027,7 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 		localParams[varkeys.PodName.Template()] = e.woc.getPodName(taskNodeName, resolvedTmpl.Name)
 	}
 
-	// Allow unresolved tags: templates may contain tags like {{pod.name}} that are
-	// resolved later by executeContainer, or task-scope tags for retry strategies.
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, true, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		return failTask(err)
 	}

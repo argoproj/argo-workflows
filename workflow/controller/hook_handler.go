@@ -93,7 +93,6 @@ func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.Lif
 			boundaryID:     h.boundaryID,
 			onExitTemplate: true,
 			nodeFlag:       &wfv1.NodeFlag{Hooked: true},
-			scope:          scope,
 		})
 		if err != nil {
 			return true, nil, err
