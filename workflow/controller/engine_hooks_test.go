@@ -976,9 +976,9 @@ spec:
 // #14392 ("do not re-run onExitNode"). The legacy fix (d81ac3f78) lived in the
 // executeDAG target-task loop that this engine refactor deleted.
 //
-// Mechanism: engine.Execute calls processHooks twice per operate cycle
-// (engine.go: first pass for tasks done in prior cycles, second pass for tasks
-// that just completed). ExecuteExitHandler re-enters reconcileTemplate on an
+// Mechanism: engine.Execute used to call processHooks twice per operate cycle
+// (a first pass for tasks done in prior cycles, a second for tasks that just
+// completed); the ordered walk now drives each task's hooks once. ExecuteExitHandler re-enters reconcileTemplate on an
 // existing-but-unfulfilled onExit node, which falls through to checkParallelism
 // (a Pending node does not short-circuit via handleNodeFulfilled). With
 // workflow parallelism:1, the pass that creates the onExit pod bumps activePods

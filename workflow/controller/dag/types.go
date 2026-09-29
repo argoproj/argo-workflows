@@ -14,7 +14,7 @@ import (
 type Action int
 
 const (
-	// ActionNone means there is nothing to dispatch this pass: the task is
+	// ActionNone means there is nothing to dispatch this reconcile: the task is
 	// waiting, already recorded, or backing off (see RequeueAfter).
 	ActionNone Action = iota
 	// ActionExecute means the task should be dispatched: its node created, or

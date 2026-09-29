@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -1780,19 +1781,13 @@ spec:
 
 // TestRegressionR4_C73_StepsFailFastValidateApply ports
 // TestProbe_r1x20_StepsFailFastValidateApply (r1x20-1_test.go / C73).
-// converge dispatches ready tasks in sorted-key order, so under template
+// HEAD's converge dispatched ready tasks in sorted-key order, so under template
 // parallelism 1 "apply" (sorts before "validate") could win the only slot
 // ahead of "validate", defeating failFast. Base dispatches Steps in
 // declaration order, so "validate" always runs first; once it fails,
-// failFast must stop "apply" from ever starting.
-//
-// This needs the T1.5 ordered walk, not just T1.6: Steps templates never
-// call dag.PullOrder (only executeDAG does), and converge's dispatch order
-// is `slices.Sorted(maps.Keys(results))` regardless of the order Execute
-// was given, so this stays red until the walk replaces that sort with a
-// walk over the ordered task list.
+// failFast must stop "apply" from ever starting. Fixed by the ordered walk
+// (T1.5), which dispatches Steps as written.
 func TestRegressionR4_C73_StepsFailFastValidateApply(t *testing.T) {
-	t.Skip("needs the ordered walk, T1.5")
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C73StepsFailFastValidateApply)
 	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
@@ -1834,16 +1829,12 @@ spec:
 // TestRegressionR4_C73_DAGTemplateParallelismOrder ports
 // TestProbe_v1x20_DAGTemplateParallelismOrder (v1x20-1_test.go / C73).
 // Under DAG template parallelism 1, base walked from the leaf (z's chain
-// first, dependency order, then the independent b): z, a, b. converge's
-// sorted-key dispatch instead starts whichever ready task sorts first by
+// first, dependency order, then the independent b): z, a, b. HEAD's
+// sorted-key dispatch instead started whichever ready task sorts first by
 // name, alphabetically: a and b tie for readiness before z finishes, but a
 // depends on z so only b and z are ready first, and b < z alphabetically.
-//
-// Stays red for the same reason as StepsFailFastValidateApply: converge's
-// dispatch order doesn't consult the tasks list PullOrder now orders; only
-// T1.5's walk does.
+// Fixed by the ordered walk (T1.5) over dag.PullOrder's order (T1.6).
 func TestRegressionR4_C73_DAGTemplateParallelismOrder(t *testing.T) {
-	t.Skip("needs the ordered walk, T1.5")
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C73DAGTemplateParallelismOrder)
 	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
@@ -1880,15 +1871,12 @@ spec:
 
 // TestRegressionR4_C73_StepGroupChildrenOrder ports
 // TestProbe_v1x20_StepGroupChildrenOrder (v1x20-1_test.go / C73). Without
-// parallelism every step in the group is ready in the same pass, but
-// converge still dispatches (and so links, via addChildNode) in
+// parallelism every step in the group is ready at once, but HEAD's
+// converge still dispatched (and so linked, via addChildNode) in
 // sorted-key order: alpha, mid, zeta instead of the declared zeta, mid,
 // alpha. The StepGroup's Children order drives the UI's collapsed-view
-// first/last step.
-//
-// Stays red for the same reason as the other two C73 tests above.
+// first/last step. Fixed by the ordered walk (T1.5).
 func TestRegressionR4_C73_StepGroupChildrenOrder(t *testing.T) {
-	t.Skip("needs the ordered walk, T1.5")
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C73StepGroupChildrenOrder)
 	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
@@ -1938,9 +1926,8 @@ spec:
 // fails, omitting B and then C in the same pass. createOmittedNodes walked
 // tasks in declaration order, so it tried to link C under B before B's own
 // node existed, leaving C permanently unlinked ("couldn't find parent
-// node" on retry; dropped from the UI graph). dag.PullOrder makes
-// createOmittedNodes (which iterates the tasks slice Execute was given, no
-// sorting) visit A, then B, then C: each Omitted node's dependency node
+// node" on retry; dropped from the UI graph). dag.PullOrder makes the
+// Engine visit A, then B, then C: each Omitted node's dependency node
 // already exists when it is created and linked.
 func TestRegressionR4_C54_ChainedOmittedReverseOrderLinked(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
@@ -2005,3 +1992,301 @@ func TestRegressionR4_C54_ChainedOmittedReverseOrderRetry(t *testing.T) {
 	woc = r4Operate(t, ctx, controller, woc.wf)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
 }
+
+// r4OneCreatePerPod runs manifest to completion under a 10ms pod-watch lag,
+// reconciling up to eight times, and fails if any pod gets more than one
+// Create call in one reconcile or any Create is answered AlreadyExists. The
+// lag keeps a pod created earlier in a reconcile out of the pod informer, so
+// a second dispatch of its still-Pending node in the same reconcile calls
+// the API server's pod Create again, as lead 5 (C90) describes.
+func r4OneCreatePerPod(t *testing.T, manifest string) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf, func(c *WorkflowController) { r4DelayPodWatch(c, 10*time.Millisecond) })
+	defer cancel()
+	calls := r4CountPodCalls(controller)
+
+	woc := r4Operate(t, ctx, controller, wf)
+	for round := 0; ; round++ {
+		calls.mu.Lock()
+		for name, n := range calls.creates {
+			assert.Equal(t, 1, n, "round %d: pod %s: Create calls in one reconcile", round, name)
+		}
+		assert.Zero(t, calls.alreadyExists, "round %d: AlreadyExists responses from pod Create", round)
+		calls.creates, calls.alreadyExists = map[string]int{}, 0
+		calls.mu.Unlock()
+		if woc.wf.Status.Phase.Completed() || round == 8 {
+			break
+		}
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// TestRegressionR4_C90_NestedOneCreatePerPod ports
+// TestProbe_lead5_NestedOneCreatePerPodPerReconcile (lead5-1_test.go /
+// C90): a pod three Steps/DAG levels down. The fixed-point loop re-enters
+// each running nested level on a later pass of the level above (C20), and
+// each re-entry dispatches the still-Pending pod node again. Base visits
+// each task once per reconcile.
+func TestRegressionR4_C90_NestedOneCreatePerPod(t *testing.T) {
+	r4OneCreatePerPod(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c90-nested
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - {name: l1, template: n1}
+  - name: n1
+    dag:
+      tasks:
+      - {name: l2, template: n2}
+  - name: n2
+    steps:
+    - - {name: l3, template: n3}
+  - name: n3
+    steps:
+    - - {name: leaf, template: c}
+  - name: c
+    container:
+      image: busybox
+      command: [sh, -c, "true"]
+`)
+}
+
+// TestRegressionR4_C90_ItemsOneCreatePerPod ports
+// TestProbe_lead5_ItemsOneCreatePerPodPerReconcile (lead5-1_test.go /
+// C90): a withItems fan-out whose TaskGroup is dispatched on every pass of
+// the fixed-point loop, re-entering its still-Pending items.
+func TestRegressionR4_C90_ItemsOneCreatePerPod(t *testing.T) {
+	r4OneCreatePerPod(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c90-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fan
+        template: c
+        withItems: [1, 2, 3]
+  - name: c
+    container:
+      image: busybox
+      command: [sh, -c, "true"]
+`)
+}
+
+// r4NestedChain is a workflow whose entrypoint descends through depth nested
+// Steps (kind "steps") or DAG (kind "dag") templates to a single pod.
+func r4NestedChain(name, kind string, depth int) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "apiVersion: argoproj.io/v1alpha1\nkind: Workflow\nmetadata:\n  name: %s\n  namespace: default\nspec:\n  entrypoint: l0\n  templates:\n", name)
+	for i := range depth {
+		next := fmt.Sprintf("l%d", i+1)
+		if i == depth-1 {
+			next = "leaf"
+		}
+		if kind == "steps" {
+			fmt.Fprintf(&b, "  - name: l%d\n    steps:\n    - - name: s\n        template: %s\n", i, next)
+		} else {
+			fmt.Fprintf(&b, "  - name: l%d\n    dag:\n      tasks:\n      - name: t\n        template: %s\n", i, next)
+		}
+	}
+	b.WriteString("  - name: leaf\n    container:\n      image: busybox\n      command: [sleep, \"10\"]\n")
+	return b.String()
+}
+
+// TestRegressionR4_C20_NestedReconcileLinearInDepth ports
+// TestProbe_tri9_NestedReconcileTimeLinearInDepth (tri9-1_test.go / C20),
+// at depth 8. Every level of the fixed-point loop dispatches a running
+// nested template once per pass, and it takes two passes to find nothing
+// new, so a reconcile of a running chain doubles with each level. Base
+// reconciles each level once: a few milliseconds at this depth.
+func TestRegressionR4_C20_NestedReconcileLinearInDepth(t *testing.T) {
+	for _, kind := range []string{"steps", "dag"} {
+		t.Run(kind, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(r4NestedChain("r4-c20-"+kind, kind, 8))
+			cancel, controller := newController(ctx, wf, func(c *WorkflowController) { c.maxOperationTime = time.Hour })
+			defer cancel()
+			woc := r4Operate(t, ctx, controller, wf)
+			makePodsPhase(ctx, woc, apiv1.PodRunning)
+			// The fastest of three reconciles of the same running state, so
+			// a scheduling hiccup does not decide the result.
+			took := time.Duration(1<<63 - 1)
+			for range 3 {
+				start := time.Now()
+				woc = r4Operate(t, ctx, controller, woc.wf)
+				took = min(took, time.Since(start))
+				require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, woc.wf.Status.Message)
+			}
+			t.Logf("depth 8 %s: reconcile took %v", kind, took)
+			assert.Less(t, took, r4C20Limit, "reconciling 8 nested %s levels with one running pod", kind)
+		})
+	}
+}
+
+const r4C6WhenStatusWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c6-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        withItems: [1, 2]
+    - - name: b
+        template: echo
+        when: "{{steps.a.status}} == Succeeded"
+  - name: echo
+    container:
+      image: alpine
+      command: [echo]
+`
+
+// TestRegressionR4_C6_WhenStatusWithItems ports
+// TestProbe_v1x23_WhenStatusWithItems (v1x23-1_test.go / C6). An expanded
+// step's {{steps.a.status}} is its StepGroup's phase (scopeNodeForTask), so
+// b's when clause must see group [0] recorded Succeeded before b is
+// evaluated. HEAD records StepGroup phases only after the dispatch loop, so
+// b sees "Running", is skipped, and the workflow reports Succeeded without
+// running b.
+func TestRegressionR4_C6_WhenStatusWithItems(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C6WhenStatusWithItems)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 6)
+	b, err := woc.wf.GetNodeByName("r4-c6-items[1].b")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypePod, b.Type, "b: phase=%s msg=%s", b.Phase, b.Message)
+	assert.Equal(t, wfv1.NodeSucceeded, b.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 3, "a(1), a(2) and b must each have run a pod")
+}
+
+const r4C6WhenStatusStaggered = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c6-stag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        withItems: [1, 2]
+      - name: c
+        template: echo
+    - - name: b
+        template: echo
+        when: "{{steps.a.status}} == Succeeded"
+  - name: echo
+    container:
+      image: alpine
+      command: [echo]
+`
+
+// TestRegressionR4_C6_WhenStatusStaggered ports
+// TestProbe_v1x23_WhenStatusStaggered (v1x23-1_test.go / C6): a's items
+// finish a reconcile before their sibling c does; b must still run once the
+// group has finished.
+func TestRegressionR4_C6_WhenStatusStaggered(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C6WhenStatusStaggered)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(n.Name, ".a(") {
+			return apiv1.PodSucceeded
+		}
+		return ""
+	})
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 6)
+	b, err := woc.wf.GetNodeByName("r4-c6-stag[1].b")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypePod, b.Type, "b: phase=%s msg=%s", b.Phase, b.Message)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// r4SkipChain is a Steps template of n sequential steps switched off by a
+// when clause, followed by one real step.
+func r4SkipChain(name string, n int) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "apiVersion: argoproj.io/v1alpha1\nkind: Workflow\nmetadata:\n  name: %s\n  namespace: default\nspec:\n  entrypoint: main\n  arguments:\n    parameters:\n    - name: run\n      value: \"false\"\n  templates:\n  - name: main\n    steps:\n", name)
+	for i := range n {
+		fmt.Fprintf(&b, "    - - name: s%d\n        template: pod\n        when: \"{{workflow.parameters.run}} == true\"\n", i)
+	}
+	b.WriteString("    - - name: last\n        template: pod\n  - name: pod\n    container:\n      image: busybox\n")
+	return b.String()
+}
+
+// TestRegressionR4_C67_SkipChainFirstReconcile ports
+// TestProbe_v3x10_SkipChainPodInFirstReconcile (v3x10-1_test.go / C67) with
+// n reduced to 100: base walks the whole when-false chain in one short
+// reconcile and creates the last step's pod straight away. The fixed-point
+// loop needs a pass per skipped step, each re-evaluating and rebuilding
+// scopes for every step before it, and runs out of operation time first.
+func TestRegressionR4_C67_SkipChainFirstReconcile(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4SkipChain("r4-c67-skip", 100))
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf, func(c *WorkflowController) {
+		c.maxOperationTime = r4C67OperationTime
+		// Drop Kubernetes events: the fake recorder's 64-event buffer blocks
+		// once more than 64 steps have been skipped.
+		c.eventRecorderManager = &testEventRecorderManager{eventRecorder: &record.FakeRecorder{}}
+	})
+	defer cancel()
+
+	start := time.Now()
+	woc := r4Operate(t, ctx, controller, wf)
+	t.Logf("first reconcile took %v", time.Since(start))
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1, "the last step's pod is created in the first reconcile")
+	_, err = woc.wf.GetNodeByName("r4-c67-skip[100].last")
+	assert.NoError(t, err)
+}
+
+// r4C20Limit bounds TestRegressionR4_C20_NestedReconcileLinearInDepth's
+// reconcile: base takes about 2ms, the fixed-point loop about 50ms.
+const r4C20Limit = 20 * time.Millisecond
+
+// r4C67OperationTime is TestRegressionR4_C67_SkipChainFirstReconcile's
+// operation deadline: base walks the chain in about 0.1s, the fixed-point
+// loop needs about 9s.
+const r4C67OperationTime = 5 * time.Second

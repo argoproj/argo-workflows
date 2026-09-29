@@ -62,14 +62,15 @@ func TestPullOrder(t *testing.T) {
 			want: []string{"a", "b", "c", "d"},
 		},
 		{
-			name: "an explicit target pulls only its own ancestry first",
+			name: "an explicit target pulls only its own ancestry",
 			tasks: []wfv1.DAGTask{
 				{Name: "z", Depends: "y"},
-				{Name: "y"},
+				{Name: "y", Depends: "w"},
 				{Name: "x"},
+				{Name: "w"},
 			},
 			targets: []string{"y"},
-			want:    []string{"y", "z", "x"},
+			want:    []string{"w", "y"},
 		},
 		{
 			name: "several targets are visited in the order given",
@@ -82,13 +83,13 @@ func TestPullOrder(t *testing.T) {
 			want:    []string{"c", "a", "b"},
 		},
 		{
-			name: "an unknown target name is skipped, not just its ancestry",
+			name: "an unknown target name pulls nothing",
 			tasks: []wfv1.DAGTask{
 				{Name: "a"},
 				{Name: "b"},
 			},
-			targets: []string{"nonexistent"},
-			want:    []string{"a", "b"},
+			targets: []string{"nonexistent", "b"},
+			want:    []string{"b"},
 		},
 		{
 			name:  "no tasks",
