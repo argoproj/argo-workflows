@@ -128,7 +128,7 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 		// node so the boundary can assess it; left unrecorded, the task
 		// would stay Pending and the boundary would never complete.
 		if node == nil || !node.Fulfilled() {
-			e.initTerminalErrorNode(ctx, task, e.parentNodeNames(ctx, name), result.Error)
+			e.initTerminalErrorNode(ctx, task, e.parentsFor(ctx, name), result.Error)
 		}
 		return false, false
 	case result.Skipped && !result.ShouldRun:
@@ -139,7 +139,7 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 			if reason == "" {
 				reason = "depends condition not met"
 			}
-			e.initTaskNode(ctx, task, e.parentNodeNames(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
+			e.initTaskNode(ctx, task, e.parentsFor(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
 		}
 		return false, false
 	case !dispatching || !e.needsDispatch(node, result):
@@ -296,9 +296,27 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 	if e.tmpl.GetType() != wfv1.TemplateTypeSteps {
 		return
 	}
-	for i := range e.tmpl.Steps {
+	for i, stepGroup := range e.tmpl.Steps {
+		if len(stepGroup.Steps) == 0 && e.previousStepGroupPhase(i).Fulfilled(nil) {
+			// An empty group has no step to start it: it starts, and ends,
+			// once the group before it has.
+			e.startStepGroup(ctx, i)
+		}
 		e.assessStepGroup(ctx, i)
 	}
+}
+
+// previousStepGroupPhase is the phase of the group before group i: Succeeded
+// for the first group, and "" when that group has not started.
+func (e *Engine) previousStepGroupPhase(i int) wfv1.NodePhase {
+	if i == 0 {
+		return wfv1.NodeSucceeded
+	}
+	prev, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i - 1))
+	if err != nil {
+		return ""
+	}
+	return prev.Phase
 }
 
 // assessStepGroup records group i's phase once every step in it has finished.
@@ -314,7 +332,9 @@ func (e *Engine) assessStepGroup(ctx context.Context, i int) {
 	isRunning := false
 	isFailed := false
 	isSucceeded := true
-	allOmitted := len(stepGroup.Steps) > 0
+	// A group that never ran because an earlier group failed is Omitted; an
+	// empty group has no steps of its own, so it follows the group before it.
+	allOmitted := len(stepGroup.Steps) > 0 || e.previousStepGroupPhase(i) != wfv1.NodeSucceeded
 	// Track first failing child ID to surface in the StepGroup's failure
 	// message, matching pre-refactor executeStepGroup semantics. The message
 	// `child '<id>' failed` bubbles up through the Steps node to the workflow
@@ -367,8 +387,7 @@ func (e *Engine) assessStepGroup(ctx context.Context, i int) {
 
 	// Default to Running; the StepGroup only leaves Running once every step
 	// has finished, as executeStepGroup did: a failed step does not fail
-	// the group while a sibling is still running. Marking it early would
-	// let linkStepGroups hang the next group off a step still in flight.
+	// the group while a sibling is still running.
 	newPhase := wfv1.NodeRunning
 	var newMessage string
 	if isPending || isRunning {
@@ -786,9 +805,9 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 	// outcome: it is recorded on an Error node linked under the task's
 	// parents (as executeDAGTask did), so siblings keep running and the
 	// boundary rolls up from its children.
-	parentNodeNames := e.parentNodeNames(ctx, taskName)
+	parents := e.parentsFor(ctx, taskName)
 	failTask := func(err error) (*wfv1.NodeStatus, error) {
-		e.initTerminalErrorNode(ctx, task, parentNodeNames, err)
+		e.initTerminalErrorNode(ctx, task, parents, err)
 		return e.getTaskNode(ctx, taskName), err
 	}
 
@@ -825,7 +844,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		// with the same message.
 		if len(expandedTasks) == 0 {
 			if taskNode == nil {
-				return e.initTaskNode(ctx, resolved, parentNodeNames, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
+				return e.initTaskNode(ctx, resolved, parents, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
 			}
 			phase := wfv1.NodeSkipped
 			if !isValidPhaseTransition(taskNode.Phase, phase) {
@@ -836,7 +855,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 
 		tgNode := taskNode
 		if tgNode == nil {
-			tgNode = e.initTaskNode(ctx, resolved, parentNodeNames, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
+			tgNode = e.initTaskNode(ctx, resolved, parents, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
 		}
 		if err := e.reconcileTaskGroup(ctx, tgNode, expandedTasks); err != nil {
 			return nil, err
@@ -845,7 +864,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 	}
 
 	// Use reconciler for leaf task
-	if err := e.reconcileTask(ctx, resolved, parentNodeNames); err != nil {
+	if err := e.reconcileTask(ctx, resolved, parents); err != nil {
 		// Throttling sentinels mean "didn't materialize, but it's deliberate".
 		// Propagate them up so callers can distinguish from real failures, but
 		// don't synthesize a fake "no materialization" error here.
@@ -1158,15 +1177,17 @@ func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string
 	return worst
 }
 
-// parentNodeNames returns the nodes a task's node hangs off in the graph.
-// Steps tasks are children of their StepGroup node. DAG tasks are children
-// of the outbound nodes of their dependencies, or of the boundary node when
-// they have none. The walk visits a task's dependencies before it, so each
-// has its node by then; a dependency with no node is skipped.
-func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string {
+// parentsFor returns the nodes a task's node hangs off in the graph. Steps
+// tasks are children of their StepGroup node, which is started here when the
+// group's first step is given a node (see startStepGroup): every path that
+// creates a step's node comes through here. DAG tasks are children of the
+// outbound nodes of their dependencies, or of the boundary node when they
+// have none. The walk visits a task's dependencies before it, so each has
+// its node by then; a dependency with no node is skipped.
+func (e *Engine) parentsFor(ctx context.Context, taskName string) []string {
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		if sgName := e.stepGroupNodeName(taskName); sgName != "" {
-			return []string{sgName}
+		if i, ok := stepGroupIndexOf(taskName); ok {
+			return []string{e.startStepGroup(ctx, i)}
 		}
 		return []string{e.nodeName}
 	}
@@ -1192,6 +1213,43 @@ func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string 
 		}
 	}
 	return parents
+}
+
+// startStepGroup returns the name of the StepGroup node for group i,
+// creating it when the group starts, as executeSteps did: when its first step
+// is given a node or, for an empty group, once the group before it has
+// finished. Group 0 hangs off the Steps node, and group i off the outbound
+// nodes of group i-1's children, or off group i-1 itself when it has none.
+// A step of group i only gets a node once every step of group i-1 has
+// finished (the walk has closed group i-1 by then; an empty group i-1 is
+// started here and closed with the other groups after the walk), so the link
+// is made once, complete. A group that never starts, after a Stop or a
+// deadline, never exists.
+func (e *Engine) startStepGroup(ctx context.Context, i int) string {
+	name := e.stepGroupNodeNameAt(i)
+	if _, err := e.woc.wf.GetNodeByName(name); err == nil {
+		return name
+	}
+	parents := []string{e.nodeName}
+	if i > 0 {
+		prevName := e.startStepGroup(ctx, i-1)
+		parents = []string{prevName}
+		if prev, err := e.woc.wf.GetNodeByName(prevName); err == nil && len(prev.Children) > 0 {
+			parents = nil
+			for _, childID := range prev.Children {
+				for _, outID := range e.woc.getOutboundNodes(ctx, childID) {
+					if outNode, err := e.woc.wf.Status.Nodes.Get(outID); err == nil {
+						parents = append(parents, outNode.Name)
+					}
+				}
+			}
+		}
+	}
+	e.woc.initializeNode(ctx, name, wfv1.NodeTypeStepGroup, e.tmplCtx.GetTemplateScope(), &wfv1.WorkflowStep{}, e.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	for _, parent := range parents {
+		e.woc.addChildNode(ctx, parent, name)
+	}
+	return name
 }
 
 // stepGroupNodeNameAt is the name of the StepGroup node for group index i.

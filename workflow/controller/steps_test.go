@@ -1049,10 +1049,11 @@ spec:
 // the Steps root, producing a graph where [0] and [1] were siblings — breaking
 // the sequential chain required for UI rendering and outbound-node traversal.
 //
-// The linking must not run while [i-1] is in-flight: injecting [i] into the
+// [1] must not be linked while [0] is in flight: injecting it into the
 // descendant chain of a running pod would poison childrenFulfilled() and break
-// retry finalization / sync-lock release for the prior group. So [1] only
-// appears in the graph once [0] has fulfilled.
+// retry finalization / sync-lock release for the prior group. Each StepGroup
+// is created when it starts, as executeSteps did, so [1] only appears in the
+// graph once [0] has fulfilled.
 func TestStepsGroupsChainedNotSiblings(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -1064,10 +1065,9 @@ func TestStepsGroupsChainedNotSiblings(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	// Cycle 1: step-a starts but is not fulfilled. [1] is initialized (the
-	// engine needs it to schedule step-b once dependencies resolve) but must
-	// NOT yet be wired into the graph — doing so would break retry/sync
-	// semantics for [0].
+	// Cycle 1: step-a starts but is not fulfilled. [1] has not started, so it
+	// does not exist yet — wiring it into the graph now would break
+	// retry/sync semantics for [0].
 	woc.operate(ctx)
 
 	rootID := woc.wf.NodeID(wf.Name)
@@ -1084,8 +1084,10 @@ func TestStepsGroupsChainedNotSiblings(t *testing.T) {
 	require.NotNil(t, stepA, "step-a pod node should exist")
 	assert.NotContains(t, stepA.Children, sg1ID,
 		"[1] must NOT be wired under step-a until step-a fulfills (timing invariant)")
+	_, err = woc.wf.Status.Nodes.Get(sg1ID)
+	require.Error(t, err, "[1] must not exist before it starts")
 
-	// Cycle 2: step-a completes. linkStepGroups now runs its wiring; step-b
+	// Cycle 2: step-a completes. [1] starts, linked under step-a; step-b
 	// gets scheduled under [1]; the full chain root → [0] → step-a → [1] →
 	// step-b must be coherent.
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
@@ -1105,8 +1107,7 @@ func TestStepsGroupsChainedNotSiblings(t *testing.T) {
 	assert.Contains(t, stepA.Children, sg1ID,
 		"[1] must be wired as a child of step-a (the outbound of [0]) once [0] fulfills")
 
-	// linkStepGroups must be idempotent: [1] appears exactly once under step-a
-	// even after repeated operate cycles.
+	// [1] is linked once: it appears exactly once under step-a.
 	count := 0
 	for _, c := range stepA.Children {
 		if c == sg1ID {
