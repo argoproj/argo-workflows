@@ -245,42 +245,49 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 
 // processHooks drives the hooks of a task's node and reports whether they are
 // done. An expanded task's hooks are its items', which reconcileTaskGroup
-// drives with the items, so its TaskGroup node has none of its own.
+// drives with the items, so this controller gives a TaskGroup node no hook
+// of its own. One started by an older controller can have some (main ran a
+// DAG task's lifecycle hooks on its TaskGroup): they are re-entered until
+// they finish, and none is created.
 func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
-	if node := e.getTaskNode(ctx, task.GetName()); node != nil && node.Type == wfv1.NodeTypeTaskGroup {
-		return true
-	}
-	return e.driveHooks(ctx, task, []dag.Task{task})
+	node := e.getTaskNode(ctx, task.GetName())
+	return e.driveHooks(ctx, task, []dag.Task{task}, node != nil && node.Type == wfv1.NodeTypeTaskGroup)
 }
 
 // driveHooks drives, through hookHandler.DriveTaskHooks, the hooks of each
 // node of task that ran: task's own node, or, for an expanded task, each item
 // node, with that item's hooks ({{item}} substituted), as executeStepGroup
-// did. The hooks refer to the task by its own name and see its hookScope,
-// built only when there is a hook to drive. It reports whether every hook is
-// done; a hook that errored is done, its error recorded (markHookError), so
-// that an error does not hold its task back for good.
-func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.Task) bool {
+// did. With existingOnly, or when the hooks' scope cannot be built, it only
+// re-enters the hook nodes that already exist (hookHandler.reenterHooks). The
+// hooks refer to the task by its own name and see its hookScope, built only
+// when there is a hook to drive. It reports whether every hook is done; a hook
+// that errored is done, its error recorded (markHookError), so that an error
+// does not hold its task back for good.
+func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.Task, existingOnly bool) bool {
 	if !e.hooks.hasHooks(task) {
 		return true
 	}
 	var scope *wfScope
+	var scopeErr error
 	done := true
 	for _, nodeTask := range nodeTasks {
 		node := e.getTaskNode(ctx, nodeTask.GetName())
-		if node == nil || !ran(node) {
+		if node == nil || !ran(node) || (existingOnly && len(e.hooks.hookNodesToReenter(node)) == 0) {
 			continue
 		}
-		if scope == nil {
-			var err error
-			if scope, err = e.hookScope(ctx, task); err != nil {
-				e.markHookError(ctx, node, err)
-				return true
-			}
+		if scope == nil && scopeErr == nil {
+			scope, scopeErr = e.hookScope(ctx, task)
 		}
-		nodeDone, err := e.hooks.DriveTaskHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
+		var nodeDone bool
+		var err error
+		if existingOnly || scopeErr != nil {
+			nodeDone, err = e.hooks.reenterHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
+			e.markHookError(ctx, node, scopeErr)
+		} else {
+			nodeDone, err = e.hooks.DriveTaskHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
+		}
 		e.markHookError(ctx, node, err)
-		done = done && (nodeDone || err != nil)
+		done = done && (nodeDone || err != nil || scopeErr != nil)
 	}
 	return done
 }
@@ -513,7 +520,7 @@ func (e *Engine) reconcileTaskGroup(ctx context.Context, task dag.Task, tgNode *
 			break
 		}
 	}
-	hooksDone := e.driveHooks(ctx, task, items)
+	hooksDone := e.driveHooks(ctx, task, items, false)
 	itemNodes := make([]*wfv1.NodeStatus, len(items))
 	for i, item := range items {
 		if n := e.getTaskNode(ctx, item.GetName()); n != nil && !e.hasPendingHooks(n) {

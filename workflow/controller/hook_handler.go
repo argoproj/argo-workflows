@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
@@ -97,6 +98,55 @@ func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName 
 		h.woc.reconcileTaskSetFor(ctx, onExitNode)
 	}
 	return onExitNode.Fulfilled(), nil
+}
+
+// reenterHooks advances the hook nodes of node that had not finished when this
+// reconcile started, lifecycle and exit alike, and creates none. It reports
+// whether they have all finished. It serves the hook nodes an older controller
+// created where this one creates none (main ran a DAG task's lifecycle hooks
+// on its TaskGroup), and those of a node whose hooks' scope cannot be built:
+// a hook node that is not a pod (a nested template, a suspend) only advances
+// when re-entered, and re-entry releases its lock and emits its metrics once
+// it has finished.
+func (h *hookHandler) reenterHooks(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (bool, error) {
+	if scope != nil {
+		h.ref.Status.Set(scope.scope, string(node.Phase), refName)
+	}
+	done := true
+	for _, child := range h.hookNodesToReenter(node) {
+		hook, onExit := task.GetExitHook(h.woc.execWf.Spec.Arguments), true
+		if child.Name != common.GenerateOnExitNodeName(node.Name) {
+			hook, onExit = nil, false
+			if lifecycleHook, ok := task.GetHooks()[wfv1.LifecycleEvent(strings.TrimPrefix(child.Name, node.Name+".hooks."))]; ok {
+				hook = &lifecycleHook
+			}
+		}
+		if hook == nil {
+			continue
+		}
+		hookNode, err := h.woc.reconcileHookNode(ctx, child.Name, hook, node, onExit, h.boundaryID, h.tmplCtx, h.ref, refName, scope)
+		if err != nil {
+			return false, h.ignoreThrottle(ctx, node, err)
+		}
+		done = done && hookNode.Fulfilled()
+	}
+	return done, nil
+}
+
+// hookNodesToReenter lists node's hook nodes that had not finished when this
+// reconcile started.
+func (h *hookHandler) hookNodesToReenter(node *wfv1.NodeStatus) []*wfv1.NodeStatus {
+	var out []*wfv1.NodeStatus
+	for _, childID := range node.Children {
+		child, err := h.woc.wf.Status.Nodes.Get(childID)
+		if err != nil || child.NodeFlag == nil || !child.NodeFlag.Hooked {
+			continue
+		}
+		if prev, ok := h.woc.preExecutionNodeStatuses[child.ID]; !ok || !prev.Fulfilled() {
+			out = append(out, child)
+		}
+	}
+	return out
 }
 
 // ignoreThrottle drops deliberate back-pressure (parallelism, rate limit,
