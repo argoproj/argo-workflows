@@ -260,8 +260,8 @@ schema = 3
     version = "v0.6.0"
     hash = "sha256-gr4tL+qz4jKyAtl8LINcxMSanztdt+pybj1T+2ulQv4="
   [mod."github.com/docker/cli"]
-    version = "v29.6.2+incompatible"
-    hash = "sha256-xEZJxyYudJL7Js7rt2DqzLXAxJIGX+CbmhEFe8PBgBo="
+    version = "v29.7.2+incompatible"
+    hash = "sha256-OMcAhxCt+LtgBU/UNkmXFJZP4aJx4vrL/UaoEc7TjBE="
   [mod."github.com/docker/docker-credential-helpers"]
     version = "v0.9.5"
     hash = "sha256-7fm66H8bvqjiEssTy/oiAMmQd7T15aVS+EANrw+4H4U="
@@ -437,8 +437,8 @@ schema = 3
     version = "v0.7.0"
     hash = "sha256-JbxZFBFGCh/Rj5XZ1vG94V2x7c18L8XKB0N9ZD5F2rM="
   [mod."github.com/google/go-containerregistry"]
-    version = "v0.21.9"
-    hash = "sha256-BY9E1Gd4eKSEZn256+MWbYvnYJQzDGijr0f6PECBi5I="
+    version = "v0.22.1"
+    hash = "sha256-uo7PstupArFJ7LVXRS9xrLV4c/TkQVQnIxSSZPaz2D4="
   [mod."github.com/google/go-containerregistry/pkg/authn/k8schain"]
     version = "v0.0.0-20260416183851-f80cb9a75083"
     hash = "sha256-B3OgLdfW6kXmcSYqdniUgLrSz8v5VgV8ccybyAIHs2c="
