@@ -55,16 +55,18 @@ Because a task is evaluated after all of its dependencies, an omission propagate
 
 `evaluateRetryNode` is the pure assessment counterpart of the controller's `processNodeRetries`: it inspects a retry node's attempts and reports whether to execute another attempt, wait (`RequeueAfter`, computed with `common.RetryBackoffWait` minus the time already elapsed), succeed, or fail.
 Whether the policy allows another attempt is decided by the engine-provided `RetryDecider`, so the evaluator and the operator cannot disagree.
-Retry strategies are registered under static task names; expanded children (`A(0:x)`) inherit their task's strategy.
+Retry strategies are registered under static task names.
+An expanded item's retry node is not assessed here: the engine re-enters the item on every dispatch of its TaskGroup, and `processNodeRetries` drives its retries.
 
-`EvaluateAll` also emits a result per expanded child of a task group (`ParentTaskName` set), and `evaluateTaskGroupNode` derives the group's phase from its children.
+An expanded task has one result, for its TaskGroup node: `evaluateTaskGroupNode` asks for it to be dispatched until the node is fulfilled, and the engine's dispatch creates or re-enters each item and completes the group.
+`TaskGroupPhase` is the one rule for a group's phase, used by the engine to complete it and by `evaluateTaskGroupNode` to report a completed group whose daemoned item has since died: the worst item phase (Error over Failed over Succeeded), and not done while an item is missing or unfinished; a running daemon counts as finished.
 
 ### 6. Public API
 
 What the `Engine` uses:
 
 ```go
-evaluator.EvaluateAll(ctx)              // map of task name → EvaluationResult (incl. expanded children)
+evaluator.EvaluateAll(ctx)              // map of task name → EvaluationResult
 evaluator.GetTargetTasks(ctx)           // explicit dag.target tasks, or the leaves
 evaluator.FindLeafTaskNames(ctx)        // tasks nothing depends on
 evaluator.GetAncestors(ctx, task)       // transitive dependencies (unordered)
@@ -72,17 +74,17 @@ evaluator.GetDependencies(ctx, task)    // direct dependencies
 evaluator.GetTask(name)                 // the Task by name
 dag.ExpandTask / dag.HasExpansion       // withItems/withParam/withSequence expansion
 dag.TaskNodeName / dag.TaskNameFromNodeName // task ↔ node name convention
+dag.TaskGroupPhase                      // a TaskGroup's phase from its items
 ```
 
 Fields of `EvaluationResult` the engine acts on:
 
 - `Action` — the evaluator's decision for a retry or task-group node (`ActionExecute`, `ActionSucceed`, `ActionFail`, `ActionNone`); `ShouldRun` — the task's dependencies allow it to run.
-  The engine dispatches the task for Execute, Succeed and Fail alike: for Succeed and Fail the operator's retry handling or the TaskGroup assessment records the outcome.
+  The engine dispatches the task for Execute, Succeed and Fail alike: for Succeed and Fail the operator's retry handling records the outcome, and an unfinished TaskGroup is always Execute.
 - `CurrentPhase` and `FulfilledForDeps` — for boundary phase assessment and dependency gating (a running daemon is fulfilled for its dependants).
 - `RequeueAfter` — retry backoff still to wait.
 - `Skipped` / `SkipReason` — the task will never run; the engine creates the Omitted node with this reason.
 - `Error` — the task could not be assessed; the engine records a terminal Error node.
-- `ParentTaskName` — set on expanded-child results so the engine can dispatch them without parsing the name.
 
 `ActionReason`, `Suspended` and `WaitingOn` are diagnostic: the engine logs them at debug level and does not act on them.
 

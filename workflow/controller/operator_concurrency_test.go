@@ -963,7 +963,7 @@ spec:
 `
 
 // TestSynchronizationWithDAGWithItems mirrors TestSynchronizationWithDAGWithSequence
-// but uses withItems instead. Same per-child reconciliation path; different expansion source.
+// but uses withItems instead. Same per-item reconciliation path; different expansion source.
 func TestSynchronizationWithDAGWithItems(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -1134,7 +1134,7 @@ spec:
 
 // TestSynchronizationWithDAGWithParam covers the third expansion mechanism
 // (withParam, where the item set comes from an upstream task's output rather
-// than a literal list or count). The per-child path must work the same way.
+// than a literal list or count). The per-item path must work the same way.
 func TestSynchronizationWithDAGWithParam(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -1197,9 +1197,9 @@ spec:
       command: [echo, hi]
 `
 
-// TestSynchronizationWithStepsWithSequence verifies the per-child path also
+// TestSynchronizationWithStepsWithSequence verifies the per-item path also
 // works under a Steps template (different boundary naming: "[0].client" vs
-// the DAG "client"), exercising the Steps-shaped branch of taskNameFromNodeName.
+// the DAG "client").
 func TestSynchronizationWithStepsWithSequence(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -1255,8 +1255,8 @@ spec:
 
 // TestSynchronizationFailedFirstChildReleasesLock guards against a regression
 // where a Failed child wouldn't release the mutex (the lock is released in
-// assessNodeStatus regardless of phase, but the per-child evaluator must not
-// re-dispatch the failed child while still letting siblings progress).
+// assessNodeStatus regardless of phase, but the TaskGroup dispatch must not
+// re-run the failed item while still letting its siblings progress).
 func TestSynchronizationFailedFirstChildReleasesLock(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()

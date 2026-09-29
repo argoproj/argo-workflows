@@ -19,11 +19,10 @@ import (
 // check the source instead.
 func TestEnginePassValuesAreBuiltByTheirStep(t *testing.T) {
 	builtBy := map[string][]string{
-		"hooksRun":           {"processHooks"},
-		"evaluation":         {"evaluateAll"},
-		"omissionsRecorded":  {"createOmittedNodes"},
-		"dispatched":         {"converge"},
-		"taskGroupsAssessed": {"assessTaskGroups", "taskGroupsFromEarlierCycles"},
+		"hooksRun":          {"processHooks"},
+		"evaluation":        {"evaluateAll"},
+		"omissionsRecorded": {"createOmittedNodes"},
+		"dispatched":        {"converge", "dispatchedInEarlierCycles"},
 	}
 
 	entries, err := os.ReadDir(".")

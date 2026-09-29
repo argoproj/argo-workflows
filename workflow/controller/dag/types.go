@@ -105,9 +105,4 @@ type EvaluationResult struct {
 	// task is not yet terminal. For example, a running daemon node is fulfilled
 	// for its dependants but the overall retry group is not yet done.
 	FulfilledForDeps bool
-	// ParentTaskName is set when this result represents an expanded TaskGroup
-	// child (e.g. TaskName="client(0:0)", ParentTaskName="client"); empty for
-	// regular static-DAG tasks. Lets the engine dispatch per-child without
-	// reverse-parsing the name.
-	ParentTaskName string
 }

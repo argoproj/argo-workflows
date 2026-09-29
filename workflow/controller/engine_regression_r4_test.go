@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	kwait "k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -905,4 +907,817 @@ func TestRegressionR4_C22_NestedDependantOfDeadDaemon(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeSucceeded, bn.Phase)
 	assert.True(t, woc.wf.Status.Phase.Completed(), "workflow phase %s", woc.wf.Status.Phase)
+}
+
+// r4PodNodeNames lists the node names of the workflow's pods, sorted.
+func r4PodNodeNames(ctx context.Context, t *testing.T, woc *wfOperationCtx) []string {
+	t.Helper()
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	var names []string
+	for _, p := range pods.Items {
+		names = append(names, p.Annotations[common.AnnotationKeyNodeName])
+	}
+	sort.Strings(names)
+	return names
+}
+
+// r4DeletePod deletes the pod of the named node, as a node loss or a force
+// delete would, and waits for the pod informer to drop it.
+func r4DeletePod(ctx context.Context, t *testing.T, woc *wfOperationCtx, nodeName string) {
+	t.Helper()
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	found := false
+	for _, pod := range pods.Items {
+		if pod.Annotations[common.AnnotationKeyNodeName] != nodeName {
+			continue
+		}
+		found = true
+		require.NoError(t, woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}))
+		key := pod.Namespace + "/" + pod.Name
+		require.NoError(t, kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
+			_, exists, err := woc.controller.PodController.TestingPodInformer().GetStore().GetByKey(key)
+			return !exists, err
+		}))
+	}
+	require.True(t, found, "no pod for %s", nodeName)
+}
+
+// r4Cycle reports a node that is its own descendant through Children, or "".
+func r4Cycle(wf *wfv1.Workflow) string {
+	state := map[string]int{}
+	var visit func(id string) string
+	visit = func(id string) string {
+		switch state[id] {
+		case 1:
+			return id
+		case 2:
+			return ""
+		}
+		state[id] = 1
+		for _, c := range wf.Status.Nodes[id].Children {
+			if found := visit(c); found != "" {
+				return found
+			}
+		}
+		state[id] = 2
+		return ""
+	}
+	for id := range wf.Status.Nodes {
+		if found := visit(id); found != "" {
+			return wf.Status.Nodes[found].Name
+		}
+	}
+	return ""
+}
+
+const r4C4StepsFanOut = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c4-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 1
+    steps:
+    - - name: a
+        template: gen
+      - name: fan
+        template: gen
+        withItems: [p, q]
+    - - name: use
+        template: consume
+        arguments:
+          parameters:
+          - name: in
+            value: "{{steps.fan.outputs.parameters.out}}"
+  - name: gen
+    container:
+      image: busybox
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+    container:
+      image: busybox
+      args: ["{{inputs.parameters.in}}"]
+`
+
+// TestRegressionR4_C4_StepsFanOutThrottledConsumer ports
+// TestProbe_v1x42_OwnStepsFanOutThrottledConsumer (v1x42-1_test.go / C4).
+// Template parallelism 1 is taken by step a when the fan-out is first
+// dispatched, so its TaskGroup is created with no item. Nothing expanded it
+// again: the empty group was assessed Succeeded, its items never ran, and
+// the consumer of its aggregated outputs waited forever. Base creates the
+// held-back items on later reconciles.
+func TestRegressionR4_C4_StepsFanOutThrottledConsumer(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C4StepsFanOut)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	out := withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("v")}}})
+
+	woc := r4Operate(t, ctx, controller, wf)
+	for i := 0; i < 12 && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded, out)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+
+	assert.Equal(t, []string{"r4-c4-steps[0].a", "r4-c4-steps[0].fan(0:p)", "r4-c4-steps[0].fan(1:q)", "r4-c4-steps[1].use"}, r4PodNodeNames(ctx, t, woc))
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+	use, err := woc.wf.GetNodeByName("r4-c4-steps[1].use")
+	if assert.NoError(t, err) && assert.NotNil(t, use.Inputs) {
+		assert.Equal(t, `["v","v"]`, use.Inputs.Parameters[0].Value.String())
+	}
+}
+
+const r4C18ParallelismLimitDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c18-plimit
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 2
+    dag:
+      tasks:
+      - name: sleep
+        template: sleep
+        withItems: [a, b, c, d, e, f]
+  - name: sleep
+    container:
+      image: busybox
+      command: [sh, -c, sleep 10]
+`
+
+// TestRegressionR4_C18_LongItemHoldsBackWindowDAG ports
+// TestProbe_v1x72_LongItemHoldsBackWindowDAG (v1x72-1_test.go / C18). Item
+// b runs long under template parallelism 2 while every other item finishes
+// as soon as it has a pod. The missing items were only created when the
+// whole group was dispatched, which needed every created item to be
+// finished, so b held back the rest of the fan-out. Base fills each freed
+// slot on the next reconcile (a sliding window).
+func TestRegressionR4_C18_LongItemHoldsBackWindowDAG(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C18ParallelismLimitDAG)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	for range 8 {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if strings.Contains(n.Name, "(1:b)") {
+				return apiv1.PodRunning
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	assert.Len(t, r4PodNodeNames(ctx, t, woc), 6, "every item should have had a pod while the long item b still runs")
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	woc = r4DriveToEnd(t, ctx, controller, woc, 4)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+const r4C1RetryOmittedRetryTask = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c1-retry-omitted
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+        withItems: [p]
+      - name: b
+        template: retried
+        depends: a
+  - name: echo
+    container:
+      image: alpine
+      command: [echo, hi]
+  - name: retried
+    retryStrategy:
+      limit: 1
+    container:
+      image: alpine
+      command: [echo, hi]
+`
+
+// TestRegressionR4_C1_RetryWorkflowWithOmittedRetryTask ports
+// TestProbe_v3x13_RetryWorkflowWithOmittedRetryTask (v3x13-1_test.go / C1).
+// The fan-out's only item fails, which omits its dependant b, and `argo
+// retry` deletes the item node. The now childless TaskGroup was assessed
+// Succeeded without re-running the item, b was linked under it, and on the
+// next pass b was linked under its own attempt: b -> b(0) -> b, a cycle the
+// next reconcile recursed on until the controller died. Base re-runs the
+// item and b, keeps the graph acyclic and Succeeds.
+func TestRegressionR4_C1_RetryWorkflowWithOmittedRetryTask(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C1RetryOmittedRetryTask)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	op := func(woc *wfOperationCtx) *wfOperationCtx {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+		r4MoveNewPodsPending(ctx, woc)
+		return woc
+	}
+
+	woc := r4Operate(t, ctx, controller, wf)
+	r4MoveNewPodsPending(ctx, woc)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	for range 2 {
+		woc = op(woc)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	b := woc.wf.Status.Nodes.FindByDisplayName("b")
+	require.NotNil(t, b)
+	require.Equal(t, wfv1.NodeOmitted, b.Phase)
+
+	// argo retry
+	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), false, "", nil)
+	require.NoError(t, err)
+	require.Empty(t, r4Cycle(retried), "node graph after argo retry has a cycle")
+	for _, p := range podsToDelete {
+		require.NoError(t, controller.kubeclientset.CoreV1().Pods(wf.Namespace).Delete(ctx, p, metav1.DeleteOptions{}))
+	}
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	woc.wf = retried
+	for i := range 4 {
+		woc = op(woc)
+		// A cycle here makes the next reconcile's childrenFulfilled call
+		// recurse until the controller dies; stop before that.
+		require.Empty(t, r4Cycle(woc.wf), "after reconcile %d the node graph has a cycle", i)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+	for _, name := range []string{"r4-c1-retry-omitted.a(0:p)", "r4-c1-retry-omitted.b"} {
+		n, err := woc.wf.GetNodeByName(name)
+		if assert.NoError(t, err, name) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase, name)
+		}
+	}
+}
+
+const r4C11DAGItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c11-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: work
+        arguments:
+          parameters:
+          - name: v
+            value: "{{item}}"
+        withItems: [p, q]
+      - name: B
+        template: ok
+        depends: A
+  - name: ok
+    container:
+      image: alpine
+      command: [sh, -c, "exit 0"]
+  - name: work
+    inputs:
+      parameters:
+      - name: v
+        value: "x"
+    container:
+      image: alpine
+      command: [sh, -c, "echo {{inputs.parameters.v}}"]
+`
+
+// r4IncompleteTaskResult is what the wait container writes as soon as its
+// pod starts: an incomplete WorkflowTaskResult for the pod's node.
+func r4IncompleteTaskResult(ctx context.Context) with {
+	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
+		nodeID := woc.nodeID(pod)
+		trs := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace)
+		if _, err := trs.Get(ctx, nodeID, metav1.GetOptions{}); err == nil {
+			return
+		}
+		created, err := trs.Create(ctx, &wfv1.WorkflowTaskResult{ObjectMeta: metav1.ObjectMeta{
+			Name: nodeID,
+			Labels: map[string]string{
+				common.LabelKeyWorkflow:               woc.wf.Name,
+				common.LabelKeyReportOutputsCompleted: "false",
+			},
+		}}, metav1.CreateOptions{})
+		if err != nil {
+			panic(err)
+		}
+		waitForInformer(ctx, woc.controller.taskResultInformer, created, func(any) bool { return true })
+	}
+}
+
+// r4CompleteTaskResult marks the named node's WorkflowTaskResult complete,
+// as the wait container does once it has reported the outputs.
+func r4CompleteTaskResult(ctx context.Context, t *testing.T, woc *wfOperationCtx, nodeName string) {
+	t.Helper()
+	trs := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace)
+	tr, err := trs.Get(ctx, woc.wf.NodeID(nodeName), metav1.GetOptions{})
+	require.NoError(t, err)
+	tr.Labels[common.LabelKeyReportOutputsCompleted] = "true"
+	updated, err := trs.Update(ctx, tr, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	waitForInformer(ctx, woc.controller.taskResultInformer, updated, func(obj any) bool {
+		return obj.(*wfv1.WorkflowTaskResult).Labels[common.LabelKeyReportOutputsCompleted] == "true"
+	})
+}
+
+// TestRegressionR4_C11_ItemPodDeleted ports TestProbe_v3x6_DAGItemPodDeleted
+// (v3x6-1_test.go / C11). The running pod of item A(0:p) is deleted. Only
+// Pending items and running nested DAG/Steps items were dispatched again,
+// so the item's pod was never recreated: A(0:p) ended Error "pod deleted",
+// B was Omitted and the workflow ended Error. Base re-enters every
+// unfinished item on each reconcile, recreates the pod and Succeeds.
+func TestRegressionR4_C11_ItemPodDeleted(t *testing.T) {
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C11DAGItems)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	const lost, other, b = "r4-c11-dag.A(0:p)", "r4-c11-dag.A(1:q)", "r4-c11-dag.B"
+
+	woc := r4Operate(t, ctx, controller, wf)
+	op := func() {
+		r4MoveNewPodsPending(ctx, woc)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true }, r4IncompleteTaskResult(ctx))
+	op()
+	r4DeletePod(ctx, t, woc, lost)
+	for range 3 {
+		op()
+	}
+	require.Contains(t, r4PodNodeNames(ctx, t, woc), lost, "the deleted item's pod was not recreated")
+
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(lost))
+	op()
+	for _, name := range []string{lost, other} {
+		r4CompleteTaskResult(ctx, t, woc, name)
+		r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(name), withExitCode(0))
+	}
+	for range 2 {
+		op()
+	}
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(b))
+	for range 2 {
+		op()
+	}
+
+	for _, name := range []string{lost, b} {
+		n, err := woc.wf.GetNodeByName(name)
+		if assert.NoError(t, err, name) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase, name)
+		}
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+const r4C26ItemsSuspendSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c26-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: wait
+        withItems: [p, q]
+  - name: wait
+    suspend:
+      duration: "30"
+`
+
+// TestRegressionR4_C26_ItemsSuspendDurationSteps ports
+// TestProbe_v1x44_ItemsSuspendDurationSteps (v1x44-1_test.go / C26),
+// backdating the items' start instead of sleeping. A suspend item with a
+// duration was never dispatched again, so it never saw its duration pass
+// and the workflow hung. Base re-enters every unfinished item on each
+// reconcile and resumes them.
+func TestRegressionR4_C26_ItemsSuspendDurationSteps(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C26ItemsSuspendSteps)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	wfcs := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+	stored, err := wfcs.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	suspends := 0
+	for id, n := range stored.Status.Nodes {
+		if n.Type == wfv1.NodeTypeSuspend {
+			n.StartedAt = metav1.NewTime(time.Now().Add(-time.Minute))
+			stored.Status.Nodes[id] = n
+			suspends++
+		}
+	}
+	require.Equal(t, 2, suspends, "both suspend items should exist")
+	_, err = wfcs.Update(ctx, stored, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	for i := 0; i < 5 && !woc.wf.Status.Phase.Completed(); i++ {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	for _, n := range woc.wf.Status.Nodes {
+		if n.Type == wfv1.NodeTypeSuspend {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase, n.Name)
+		}
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+const r4C21ExpandedDaemonsDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c21
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: srv
+        template: server
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withItems: [a, b]
+      - name: client
+        depends: srv
+        template: work
+  - name: server
+    daemon: true
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: busybox
+  - name: work
+    container:
+      image: busybox
+`
+
+const r4C21ExpandedDaemonsSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c21
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: srv
+        template: server
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withItems: [a, b]
+    - - name: client
+        template: work
+  - name: server
+    daemon: true
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: busybox
+  - name: work
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C21_C77_ExpandedDaemons ports
+// TestProbe_v1x41_ExpandedSameOperate (v1x41-1_test.go / C77) and
+// TestProbe_r1x13_DAGWithParamDaemons (r1x13-1_test.go / C21) into one
+// scenario per template type. The items of an expanded task are daemons.
+// Each item was reported Running and not fulfilled for dependants, so the
+// dependant started one reconcile late (C77) and, once it finished, the
+// DAG/Steps stayed Running forever with the daemons alive (C21). Base
+// starts the dependant in the reconcile the daemons become ready, then
+// Succeeds and kills the daemons.
+func TestRegressionR4_C21_C77_ExpandedDaemons(t *testing.T) {
+	for _, tc := range []struct{ kind, manifest, client string }{
+		{"dag", r4C21ExpandedDaemonsDAG, "r4-c21.client"},
+		{"steps", r4C21ExpandedDaemonsSteps, "r4-c21[1].client"},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(tc.manifest)
+			require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+
+			woc := r4Operate(t, ctx, controller, wf)
+			require.Len(t, r4PodNodeNames(ctx, t, woc), 2)
+			// Both daemons come up ready: the client starts in this reconcile.
+			r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true }, r4WithReady)
+			woc = r4Operate(t, ctx, controller, woc.wf)
+			_, err := woc.wf.GetNodeByName(tc.client)
+			require.NoError(t, err, "client should start in the reconcile its daemons became ready (C77)")
+
+			// The client finishes: the template completes and the daemons are killed.
+			r4MoveNewPodsPending(ctx, woc)
+			r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(tc.client))
+			for i := 0; i < 5 && !woc.wf.Status.Phase.Completed(); i++ {
+				woc = r4Operate(t, ctx, controller, woc.wf)
+			}
+			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+			for _, n := range woc.wf.Status.Nodes {
+				if n.TemplateName == "server" {
+					assert.False(t, n.IsDaemoned(), "%s should have been killed", n.Name)
+				}
+			}
+		})
+	}
+}
+
+const r4C5MissingOutputFromFailedStep = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c5-miss-out
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: gen
+        continueOn:
+          failed: true
+    - - name: consume
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}-{{steps.gen.outputs.parameters.p}}"
+        withItems: [a, b]
+  - name: gen
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["exit 1"]
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+// TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep ports
+// TestProbe_v3x9_ExpandedStepMissingOutputFromFailedStep (v3x9-1_test.go /
+// C5, lead 3). The items of an expanded step reference an output that the
+// failed (continueOn) step never produced, so no item can be created. The
+// childless TaskGroup was then assessed Succeeded and the workflow
+// Succeeded without running any item. Base waits for the reference (the
+// workflow stays Running); either way it must not Succeed without them.
+func TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C5MissingOutputFromFailedStep)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(1))
+	for range 3 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	hasConsume := slices.ContainsFunc(r4PodNodeNames(ctx, t, woc), func(n string) bool { return strings.Contains(n, "consume") })
+	if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
+		assert.True(t, hasConsume, "workflow Succeeded but no consume item ran")
+	}
+}
+
+const r4C17FanOutNestedDAGs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c17-fanout
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 2
+    dag:
+      tasks:
+      - name: prepare
+        template: pipeline
+      - name: notify
+        template: work
+        depends: prepare
+      - name: process
+        template: pipeline
+        withItems: [x, y, z]
+  - name: pipeline
+    dag:
+      tasks:
+      - name: step
+        template: work
+  - name: work
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C17_FanOutNestedDAGs ports TestProbe_r1x16_FanOutNestedDAGs
+// (r1x16-1_test.go), a guard that passes before and after the TaskGroup
+// dispatch change: under template parallelism 2, a task held back by
+// parallelism (notify) must not stop the fan-out's nested DAG items from
+// being re-entered, or the workflow deadlocks.
+func TestRegressionR4_C17_FanOutNestedDAGs(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C17FanOutNestedDAGs)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 14)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+const r4Lead8FanOutTimeouts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-l8-fan
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    failFast: false
+    dag:
+      tasks:
+      - {name: fan, template: slow, withItems: [0, 1, 2, 3, 4]}
+      - {name: x, template: c}
+      - {name: yy, template: c, depends: x}
+  - name: c
+    container: {image: busybox, command: [echo]}
+  - name: slow
+    inputs: {parameters: [{name: item, value: "{{item}}"}]}
+    pendingTimeout: 1s
+    container: {image: busybox, command: [echo, "{{inputs.parameters.item}}"]}
+`
+
+// TestRegressionR4_Lead8_DAGFanOutTimeoutsHeadBetter ports
+// TestProbe_lead8_DAGFanOutTimeoutsHeadBetter (lead8-1_test.go), a guard
+// for behaviour the branch does better than base (base fails it: it times
+// out one item per reconcile). Five items hit their pendingTimeout in the
+// same reconcile: each timeout stays on its own item, every item ends
+// Failed "timeout", and yy is still created in that reconcile.
+func TestRegressionR4_Lead8_DAGFanOutTimeoutsHeadBetter(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4Lead8FanOutTimeouts)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.HasSuffix(n.Name, ".x") {
+			return apiv1.PodSucceeded
+		}
+		return apiv1.PodPending
+	})
+	time.Sleep(1500 * time.Millisecond)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	failed := 0
+	for _, n := range woc.wf.Status.Nodes {
+		if strings.Contains(n.Name, ".fan(") && n.Type == wfv1.NodeTypePod {
+			assert.Equal(t, wfv1.NodeFailed, n.Phase, n.Name)
+			assert.Equal(t, "timeout", n.Message, n.Name)
+			failed++
+		}
+	}
+	assert.Equal(t, 5, failed)
+	require.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("yy"), "yy created in the same reconcile")
+
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode("r4-l8-fan.yy"))
+	for range 3 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	yy := woc.wf.Status.Nodes.FindByDisplayName("yy")
+	require.NotNil(t, yy)
+	assert.Equal(t, wfv1.NodeSucceeded, yy.Phase)
+}
+
+const r4P3RetryEmptiesFanOut = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p3-retry-empty
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: list
+      value: '["a","b"]'
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fan
+        template: echo
+        withParam: "{{workflow.parameters.list}}"
+  - name: echo
+    container:
+      image: alpine
+      command: [echo, hi]
+`
+
+// TestRegressionR4_P3_RetryParameterEmptiesFanOut encodes decision P3, not
+// a base behaviour (base could panic here). One item of the fan-out fails,
+// and `argo retry --parameter list=[]` resets its TaskGroup to Running with
+// only the succeeded item left and no items to expand into. The branch
+// marked the group Succeeded with no message, by the same empty-group
+// assessment as C4; once the group is dispatched until it finishes, its
+// dispatch would create the "Skipped, empty params" node over the existing
+// group and panic. It is now completed as an empty expansion would be:
+// Skipped where its phase allows it, otherwise (a Running group) Succeeded,
+// with the same message; the workflow Succeeds.
+func TestRegressionR4_P3_RetryParameterEmptiesFanOut(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4P3RetryEmptiesFanOut)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode("r4-p3-retry-empty.fan(0:a)"))
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode("r4-p3-retry-empty.fan(1:b)"))
+	for range 2 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), false, "", []string{"list=[]"})
+	require.NoError(t, err)
+	for _, p := range podsToDelete {
+		require.NoError(t, controller.kubeclientset.CoreV1().Pods(wf.Namespace).Delete(ctx, p, metav1.DeleteOptions{}))
+	}
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	for range 2 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	fan, err := woc.wf.GetNodeByName("r4-p3-retry-empty.fan")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeTaskGroup, fan.Type)
+	assert.Equal(t, wfv1.NodeSucceeded, fan.Phase)
+	assert.Equal(t, "Skipped, empty params", fan.Message)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
 }

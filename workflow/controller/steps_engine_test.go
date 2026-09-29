@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"sort"
 	"testing"
 	"time"
 
@@ -79,32 +78,6 @@ func stepsEngineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, 
 	engine.reconciler = fake
 	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, tasks, tmpl, mainNode.ID, mainNode.Name)
 	return engine, fake, woc, tasks
-}
-
-// Per-child dispatch: every Pending expanded child of a Steps step is emitted
-// by the evaluator with its parent linkage and dispatched through the reconciler.
-func TestStepsEngine_PerChildDispatch(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	engine, fake, woc, tasks := stepsEngineWithFakeReconciler(ctx, t)
-
-	results := engine.evaluator.EvaluateAll(ctx)
-	for _, n := range []string{"[0].client(0:0)", "[0].client(1:1)", "[0].client(2:2)"} {
-		r, ok := results[n]
-		require.True(t, ok, "evaluator must emit a result for %q", n)
-		assert.Equal(t, dag.ActionExecute, r.Action, "%q action", n)
-		assert.Equal(t, "[0].client", r.ParentTaskName, "%q ParentTaskName", n)
-	}
-
-	fake.calls = nil
-	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	got := fake.allDesiredTaskNames()
-	sort.Strings(got)
-	want := []string{
-		woc.wf.Name + "[0].client(0:0)",
-		woc.wf.Name + "[0].client(1:1)",
-		woc.wf.Name + "[0].client(2:2)",
-	}
-	assert.Equal(t, want, got)
 }
 
 // An evaluator error for a step is recorded as a terminal Error node, as for

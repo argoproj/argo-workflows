@@ -24,7 +24,7 @@ import (
 //
 // Branches covered:
 //   - converge:                      task-a, task-b, task-c, task-e scheduled across cycles
-//   - assessTaskGroups:              task-b's TaskGroup assessed after children complete
+//   - reconcileTaskGroup:            task-b's TaskGroup completed after its items complete
 //   - processHooks (1st pass):       task-c's exit hook fires after task-c completes
 //   - processHooks (2nd pass):       exit hook completion detected in same cycle
 //   - reconcileExternalCompletions:  pods that succeed between cycles are re-reconciled
@@ -369,22 +369,22 @@ spec:
 	}
 }
 
-// A TaskGroup's phase is the worst of its children's: Error outranks Failed
-// regardless of child order.
-func TestAssessTaskGroupPhase_WorstPhaseWins(t *testing.T) {
+// Dispatching an expanded task completes its TaskGroup once every item has
+// finished, with the worst of their phases: Error outranks Failed regardless
+// of item order.
+func TestReconcileTaskGroup_WorstPhaseWins(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	engine, _, woc, _ := engineWithFakeReconciler(ctx, t)
-	markChildPhase(t, woc, "client(0:0)", wfv1.NodeError)
-	markChildPhase(t, woc, "client(1:1)", wfv1.NodeFailed)
+	engine, fake, woc, tasks := engineWithFakeReconciler(ctx, t)
+	markChildPhase(t, woc, "client(0:0)", wfv1.NodeFailed)
+	markChildPhase(t, woc, "client(1:1)", wfv1.NodeError)
 	markChildPhase(t, woc, "client(2:2)", wfv1.NodeSucceeded)
 
+	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, engine.evaluateAll(ctx, hooksRun{})))
+
+	assert.Empty(t, fake.calls, "finished items are not reconciled again")
 	tgNode, err := woc.wf.GetNodeByName(engine.taskNodeName("client"))
 	require.NoError(t, err)
 	require.Equal(t, wfv1.NodeTypeTaskGroup, tgNode.Type)
-	engine.assessTaskGroupPhase(ctx, tgNode)
-
-	tgNode, err = woc.wf.GetNodeByName(engine.taskNodeName("client"))
-	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeError, tgNode.Phase)
 }
 

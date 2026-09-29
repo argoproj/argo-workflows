@@ -70,10 +70,6 @@ func (s *workflowStore) taskNodeName(taskName string) string {
 	return TaskNodeName(s.boundaryName, taskName)
 }
 
-func (s *workflowStore) taskNameFromNodeName(nodeName string) string {
-	return TaskNameFromNodeName(s.boundaryName, nodeName)
-}
-
 // taskNodeID computes the node ID for a task.
 func (s *workflowStore) taskNodeID(taskName string) string {
 	return s.workflow.ResolveNodeID(s.taskNodeName(taskName))

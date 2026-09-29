@@ -330,7 +330,7 @@ func (e *DAGEvaluator) evaluateTaskResult(ctx context.Context, taskName string) 
 
 	// TaskGroup node — delegate to specialized assessment
 	if node != nil && node.Type == wfv1.NodeTypeTaskGroup {
-		return e.evaluateTaskGroupNode(ctx, taskName, node)
+		return e.evaluateTaskGroupNode(taskName, node)
 	}
 
 	if phase == wfv1.NodeOmitted && node == nil {
@@ -436,12 +436,8 @@ func (e *DAGEvaluator) GetTargetTasks(ctx context.Context) []string {
 }
 
 // EvaluateAll evaluates all tasks in the DAG and returns a map of results.
-//
-// For TaskGroup parents (withItems/withParam/withSequence) that have already been
-// expanded into per-item children, an additional EvaluationResult is emitted for
-// each non-hook child (e.g. "client(0:0)", "client(1:1)"). This lets the engine
-// dispatch execution per-child — for example, retrying a synchronization
-// TryAcquire that was queued because a sibling held the lock.
+// An expanded task has one result, for its TaskGroup: the Engine drives its
+// items when it dispatches the group (see evaluateTaskGroupNode).
 func (e *DAGEvaluator) EvaluateAll(ctx context.Context) map[string]EvaluationResult {
 	// Run evaluateAllStates to handle cascading omission
 	e.evaluateAllStates(ctx)
@@ -449,69 +445,8 @@ func (e *DAGEvaluator) EvaluateAll(ctx context.Context) map[string]EvaluationRes
 	results := make(map[string]EvaluationResult)
 	for _, taskName := range e.tasks.TaskNames() {
 		results[taskName] = e.evaluateTaskResult(ctx, taskName)
-		if e.isTaskGroupParent(taskName) {
-			e.appendTaskGroupChildResults(ctx, taskName, results)
-		}
 	}
 	return results
-}
-
-// isTaskGroupParent reports whether the static task uses withItems/withParam/withSequence.
-func (e *DAGEvaluator) isTaskGroupParent(taskName string) bool {
-	task := e.tasks.GetTask(taskName)
-	return task != nil && HasExpansion(task)
-}
-
-// appendTaskGroupChildResults emits an EvaluationResult for each schedulable
-// expanded child of a TaskGroup parent, keyed by the child's bare task name
-// (e.g. "client(0:0)"). ParentTaskName carries the static parent so the engine
-// can dispatch without reverse-parsing the child name.
-func (e *DAGEvaluator) appendTaskGroupChildResults(ctx context.Context, parentName string, results map[string]EvaluationResult) {
-	for _, childNode := range e.store.getTaskGroupChildren(parentName) {
-		childTaskName := e.store.taskNameFromNodeName(childNode.Name)
-		var r EvaluationResult
-		// Retry-typed children carry their own state machine; defer to evaluateRetryNode
-		// so retry-limit/policy handling stays centralized.
-		if childNode.Type == wfv1.NodeTypeRetry {
-			r = e.evaluateRetryNode(ctx, childTaskName, childNode)
-		} else {
-			r = e.evaluateTaskGroupChild(childTaskName, childNode)
-		}
-		r.ParentTaskName = parentName
-		results[childTaskName] = r
-	}
-}
-
-// evaluateTaskGroupChild returns ActionExecute for children that need the
-// engine to re-dispatch them. Pending children (e.g. a sync-gated task whose
-// sibling just released the lock) are always re-dispatched.
-//
-// Running children are re-dispatched only when they are DAG or Steps boundary
-// nodes: those only progress when their engine is re-entered, so the outer
-// engine must keep visiting them each operate cycle until they reach a
-// terminal phase. Running Pods/scripts are driven externally by the kube
-// reconciler and must not be re-dispatched here.
-func (e *DAGEvaluator) evaluateTaskGroupChild(taskName string, node *wfv1.NodeStatus) EvaluationResult {
-	result := EvaluationResult{
-		TaskName:     taskName,
-		CurrentPhase: node.Phase,
-	}
-	if node.Fulfilled() {
-		return result
-	}
-	switch node.Phase {
-	case wfv1.NodePending:
-		result.Action = ActionExecute
-		result.ShouldRun = true
-		result.ActionReason = "pending child re-dispatched"
-	case wfv1.NodeRunning:
-		if (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeSteps) && !node.IsDaemoned() {
-			result.Action = ActionExecute
-			result.ShouldRun = true
-			result.ActionReason = "running DAG/Steps child re-dispatched"
-		}
-	}
-	return result
 }
 
 // SetRetryStrategy registers a retry strategy for a task.
@@ -713,103 +648,48 @@ func (e *DAGEvaluator) evaluateRetryNode(ctx context.Context, taskName string, n
 	return result
 }
 
-// evaluateTaskGroupNode assesses a TaskGroup node (from withItems/withParam/withSequence)
-// by checking if all children have completed.
-func (e *DAGEvaluator) evaluateTaskGroupNode(ctx context.Context, taskName string, node *wfv1.NodeStatus) EvaluationResult {
+// evaluateTaskGroupNode assesses a TaskGroup node (from withItems/withParam/withSequence).
+// Until the group is fulfilled it is dispatched on every pass: the Engine
+// expands the task, creates or re-enters each item, and completes the group
+// with TaskGroupPhase once every item exists and has finished, as
+// executeDAGTask and executeStepGroup did before the Engine. A completed
+// group whose daemoned item has since died reports that failure without
+// changing the node.
+func (e *DAGEvaluator) evaluateTaskGroupNode(taskName string, node *wfv1.NodeStatus) EvaluationResult {
 	result := EvaluationResult{
 		TaskName:     taskName,
 		CurrentPhase: node.Phase,
 	}
-
-	if node.Fulfilled() {
-		// Don't blindly trust a stale Succeeded phase — a daemon child may have
-		// failed after the TaskGroup was marked Succeeded. For non-Succeeded terminal
-		// phases (Failed, Error, etc.) the phase is truly final.
-		if node.Phase != wfv1.NodeSucceeded {
-			result.FulfilledForDeps = true
-			return result
-		}
-		// For Succeeded nodes, fall through to re-verify children.
-	}
-
-	// Items only: hook and retry-attempt nodes under the group are assessed
-	// elsewhere (areHooksFulfilled, evaluateRetryNode), and the Engine's
-	// assessTaskGroupPhase skips them too, so both sides see the same set.
-	children, missingChildren := e.store.taskGroupChildren(taskName)
-	if len(children) == 0 {
-		if node.Phase == wfv1.NodeSucceeded {
-			// Children pruned/GC'd — trust the authoritative Succeeded phase.
-			result.FulfilledForDeps = true
-			return result
-		}
-		return result // still being expanded
-	}
-
-	if missingChildren {
-		if node.Phase == wfv1.NodeSucceeded {
-			result.FulfilledForDeps = true
-			return result
-		}
-		return result // still waiting for children to be created
-	}
-
-	allFulfilled := true
-	anyFailed := false
-	worstPhase := wfv1.NodeSucceeded
-	for _, child := range children {
-		// Daemoned running children haven't actually completed.
-		if child.IsDaemoned() && !child.Phase.Fulfilled(child.TaskResultSynced) {
-			allFulfilled = false
-			continue
-		}
-		// Retry children: use evaluateRetryNode to detect exhausted retries.
-		if child.Type == wfv1.NodeTypeRetry && !child.Fulfilled() {
-			// Strip boundary prefix: retryStrategies is keyed by the
-			// boundary-stripped task name, but child.Name is the full
-			// prefixed node name (e.g. "dag.A-retry"). Matches the
-			// sibling site in appendTaskGroupChildResults.
-			retryTaskName := e.store.taskNameFromNodeName(child.Name)
-			retryResult := e.evaluateRetryNode(ctx, retryTaskName, child)
-			if retryResult.Action == ActionFail {
-				anyFailed = true
-				if retryResult.CurrentPhase == wfv1.NodeError {
-					worstPhase = wfv1.NodeError
-				} else if worstPhase != wfv1.NodeError {
-					worstPhase = wfv1.NodeFailed
-				}
-			} else if !retryResult.FulfilledForDeps {
-				allFulfilled = false
-			}
-			continue
-		}
-		if !child.Fulfilled() {
-			allFulfilled = false
-		}
-		if child.Phase == wfv1.NodeFailed || child.Phase == wfv1.NodeError {
-			anyFailed = true
-			if child.Phase == wfv1.NodeError {
-				worstPhase = wfv1.NodeError
-			} else if worstPhase != wfv1.NodeError {
-				worstPhase = wfv1.NodeFailed
-			}
-		}
-	}
-
-	if !allFulfilled {
-		return result // children still running
-	}
-
-	if anyFailed {
-		result.Action = ActionFail
-		result.ActionReason = "child task failed"
-		result.CurrentPhase = worstPhase
-	} else {
-		result.Action = ActionSucceed
-		result.ActionReason = "all children completed"
-		result.CurrentPhase = wfv1.NodeSucceeded
+	if !node.Fulfilled() {
+		result.Action = ActionExecute
+		result.ShouldRun = true
+		result.ActionReason = "task group items in progress"
+		return result
 	}
 	result.FulfilledForDeps = true
+	if node.Phase == wfv1.NodeSucceeded {
+		if phase, done := TaskGroupPhase(e.store.getTaskGroupChildren(taskName)); done && phase.FailedOrError() {
+			result.CurrentPhase = phase
+		}
+	}
 	return result
+}
+
+// TaskGroupPhase is the phase a TaskGroup takes from its item nodes: the
+// worst of them, Error outranking Failed outranking Succeeded, whatever their
+// order. done is false while an item is missing (nil) or unfinished; a running
+// daemon counts as finished, as it does for the group's dependants.
+func TaskGroupPhase(items []*wfv1.NodeStatus) (phase wfv1.NodePhase, done bool) {
+	phase = wfv1.NodeSucceeded
+	for _, item := range items {
+		if item == nil || !item.Fulfilled() {
+			return "", false
+		}
+		if item.Phase == wfv1.NodeError || (item.Phase == wfv1.NodeFailed && phase != wfv1.NodeError) {
+			phase = item.Phase
+		}
+	}
+	return phase, true
 }
 
 // shouldRetry determines if the retry policy allows retrying for the given
