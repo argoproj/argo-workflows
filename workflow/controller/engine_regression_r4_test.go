@@ -5478,3 +5478,59 @@ func TestRegressionR4_C74_SpecRetryStepsHookedFail(t *testing.T) {
 	assert.Len(t, slices.DeleteFunc(pods, func(name string) bool { return !isA(name) }), 4, "2 workflow attempts x 2 attempts of a")
 	assert.Empty(t, r4Unfulfilled(woc), "nodes left unfulfilled")
 }
+
+// TestRegressionR4_C53_StepsFailFastItems ports TestProbe_v1x46_StepsFailFastItems
+// (v1x46-1_test.go / C53). A single-group Steps template with an expanded
+// step (withItems) and failFast+parallelism ends the workflow Failed while
+// one item is still running. The TaskGroup node between the StepGroup and
+// its items is never assessed by the failFast branch (it only walked to a
+// StepGroup leaf), so it is left Running forever inside a Failed workflow.
+func TestRegressionR4_C53_StepsFailFastItems(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c53-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 2
+    failFast: true
+    steps:
+    - - name: s
+        template: work
+        withItems: [p1, p2, p3, p4, p5]
+  - name: work
+    container: {image: alpine, command: [echo]}
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	first := true
+	setPodPhases(ctx, woc, func(*wfv1.NodeStatus) apiv1.PodPhase {
+		if first {
+			first = false
+			return apiv1.PodFailed
+		}
+		return apiv1.PodRunning
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.Fulfilled() {
+			return ""
+		}
+		return apiv1.PodSucceeded
+	})
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "nodes left non-terminal in a finished workflow")
+}
