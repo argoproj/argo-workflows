@@ -26,6 +26,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -6172,4 +6173,146 @@ func TestRegressionR4_D3_CtrSetAllDoneDeletedThenRetry(t *testing.T) {
 	t.Logf("pods after retry: %d", len(pods.Items))
 	assert.Len(t, pods.Items, 1, "retry should create a new pod for A")
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+const r4C28DAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c28-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [sh, -c, "exit 1"]
+`
+
+// TestRegressionR4_C28_PodDeletedWhileFailedUnsynced ports
+// TestProbe_v1x51_DAG (v1x51-1_test.go / C28). A's pod fails before its
+// WorkflowTaskResult is complete, so A is Failed but unsynced (not
+// fulfilled). The pod is then deleted, and pod reconciliation marks A
+// Error "pod deleted". The branch's state machine refused Failed -> Error
+// and returned before storing the node, which also dropped the synced
+// fix-up, so A never became fulfilled and the workflow stayed Running for
+// good. Base moved A to Error, synced, and the workflow ended.
+func TestRegressionR4_C28_PodDeletedWhileFailedUnsynced(t *testing.T) {
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0s")
+	t.Setenv("RECENTLY_DELETED_POD_DURATION", "0s")
+	t.Setenv("TASK_RESULT_TIMEOUT_DURATION", "0s")
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C28DAG)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodRunning, r4IncompleteTaskResult(ctx))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	a := woc.wf.Status.Nodes.FindByDisplayName("A")
+	require.NotNil(t, a)
+	require.Equal(t, wfv1.NodeFailed, a.Phase)
+	require.False(t, a.Fulfilled(), "A must be unsynced: its task result is incomplete")
+
+	deletePods(ctx, woc)
+	for range 3 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "after pod deleted", woc.wf)
+	a = woc.wf.Status.Nodes.FindByDisplayName("A")
+	require.NotNil(t, a)
+	assert.Equal(t, wfv1.NodeError, a.Phase)
+	assert.Equal(t, "pod deleted", a.Message)
+	assert.True(t, woc.wf.Status.Phase.Completed(), "workflow must complete, got %s", woc.wf.Status.Phase)
+}
+
+const r4C58CsAutoRestart = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c58-cs-restart
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: cs
+        template: cs
+  - name: cs
+    containerSet:
+      containers:
+      - name: a
+        image: argoproj/argosay:v2
+      - name: b
+        image: argoproj/argosay:v2
+        dependencies: [a]
+`
+
+// TestRegressionR4_C58_CsAutoRestartOriginal ports
+// TestProbe_v2x11_CsAutoRestartOriginal (v2x11-1_test.go / C58). With
+// failedPodRestart enabled, a containerSet pod evicted before its
+// containers start is recreated (the pod node goes back to Pending). The
+// branch marked each container node Failed "Pod Failed whilst container
+// running" on the evicted pod, and the state machine then refused every
+// transition out of Failed, so the container nodes stayed Failed inside a
+// Succeeded pod node and workflow. Base's container nodes ended Succeeded.
+func TestRegressionR4_C58_CsAutoRestartOriginal(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C58CsAutoRestart)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	controller.Config.FailedPodRestart = &config.FailedPodRestartConfig{Enabled: true}
+
+	woc := r4Operate(t, ctx, controller, wf)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	// Evicted before any container started: every container is waiting.
+	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		pod.UID = "r4-c58-evicted-pod-uid"
+		pod.Status.Reason = "Evicted"
+		pod.Status.Message = "The node was low on resource: memory."
+		pod.Status.ContainerStatuses = nil
+		for _, c := range pod.Spec.Containers {
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name:  c.Name,
+				State: apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{Reason: "ContainerCreating"}},
+			})
+		}
+	})
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	dumpNodes(t, "after eviction", woc.wf)
+	podNode, err := woc.wf.GetNodeByName("r4-c58-cs-restart[0].cs")
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodePending, podNode.Phase, "pod node auto-restarting")
+
+	deletePods(ctx, woc)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	pods, err = listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1, "pod recreated")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withExitCode(0))
+	for range 4 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "after success", woc.wf)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, name := range []string{"r4-c58-cs-restart[0].cs.a", "r4-c58-cs-restart[0].cs.b"} {
+		n, err := woc.wf.GetNodeByName(name)
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeSucceeded, n.Phase, "container node %s", name)
+	}
 }
