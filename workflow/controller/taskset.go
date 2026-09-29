@@ -156,6 +156,10 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.FinishedAt = metav1.Now()
 
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			// The node is finished with the template it was dispatched with
+			// (the task set holds it), as the Engine has already run.
+			tmpl := workflowTaskSet.Spec.Tasks[nodeID]
+			woc.handleNodeFulfilled(ctx, node, &tmpl)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
