@@ -4310,3 +4310,74 @@ spec:
 	require.NotNil(t, c.Inputs.Artifacts[0].S3)
 	assert.Equal(t, "key-A", c.Inputs.Artifacts[0].S3.Key)
 }
+
+const r4C30EmptyGroup = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c30-empty
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: first
+        template: ok
+    - []
+    - - name: second
+        template: ok
+  - name: ok
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C30_EmptyStepGroupKeepsOrder ports
+// TestProbe_v1x65_EmptyStepGroupKeepsOrderTop (v1x65-1_test.go / C30). An
+// empty group (`- []`, the shape of test/e2e/smoke/empty-template-steps.yaml)
+// must not reset the order: the group after it waits for the last group that
+// had steps, so only first runs in round 0 and while it runs, and the Steps
+// node's outbound node is second alone.
+func TestRegressionR4_C30_EmptyStepGroupKeepsOrder(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	assert.Equal(t, []string{"r4-c30-empty[0].first"}, r4PodNodeNames(ctx, t, woc), "round 0: only the first group's step may run")
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	assert.Equal(t, []string{"r4-c30-empty[0].first"}, r4PodNodeNames(ctx, t, woc), "second must wait while first is running")
+
+	woc = r4DriveToEnd(t, ctx, controller, woc, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	root, err := woc.wf.GetNodeByName("r4-c30-empty")
+	require.NoError(t, err)
+	second, err := woc.wf.GetNodeByName("r4-c30-empty[2].second")
+	require.NoError(t, err)
+	assert.Equal(t, []string{second.ID}, root.OutboundNodes)
+}
+
+// TestRegressionR4_C30_FailedFirstStepDoesNotRunLater ports
+// TestProbe_r1x65_EmptyGroupFailedFirstStepDoesNotRunLater (r1x65-1_test.go
+// / C30): when first fails, the step after the empty group never runs. It
+// may have an Omitted node (the decided R4/R10 shape), but no pod.
+func TestRegressionR4_C30_FailedFirstStepDoesNotRunLater(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	for i := 0; i < 8 && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Equal(t, []string{"r4-c30-empty[0].first"}, r4PodNodeNames(ctx, t, woc), "second must never run after first failed")
+	if second, err := woc.wf.GetNodeByName("r4-c30-empty[2].second"); err == nil {
+		assert.Equal(t, wfv1.NodeOmitted, second.Phase)
+	}
+}
