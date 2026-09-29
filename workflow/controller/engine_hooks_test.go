@@ -10,7 +10,67 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
+
+// TestRegressionR4_C67_NoScopeBuildWithoutHooks: driving the hooks of a task
+// without any builds no scope (C67). Building one walks every ancestor, and
+// the walk drives every task's hooks on every reconcile. A scope build over a
+// finished ancestor records the ancestor in engine.finished, so an empty
+// engine.finished shows no scope was built; the hooked task is the control.
+func TestRegressionR4_C67_NoScopeBuildWithoutHooks(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: no-scope
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: A, template: echo, when: "false"}
+      - {name: B, template: echo, depends: A}
+      - name: C
+        template: echo
+        depends: A
+        hooks:
+          never:
+            expression: "false"
+            template: echo
+  - name: echo
+    container:
+      image: busybox
+      command: [echo]
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	tmpl := woc.execWf.GetTemplateByName("main")
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+	root, err := woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	engine := NewEngine(woc, root.Name, tmplCtx, tmpl, root, root.ID, false)
+	var tasks []dag.Task
+	for i := range tmpl.DAG.Tasks {
+		tasks = append(tasks, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[i]})
+	}
+	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, tasks, tmpl, root.ID, root.Name)
+	require.NotNil(t, engine.getTaskNode(ctx, "B"), "B ran")
+
+	assert.True(t, engine.processHooks(ctx, tasks[0]))
+	assert.True(t, engine.processHooks(ctx, tasks[1]))
+	assert.Empty(t, engine.finished, "no scope is built for a task without hooks")
+
+	assert.True(t, engine.processHooks(ctx, tasks[2]))
+	assert.Contains(t, engine.finished, "A", "the hooked task's scope is built")
+}
 
 // --- DAG exit hook tests ---
 

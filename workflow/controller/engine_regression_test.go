@@ -752,10 +752,11 @@ func TestRegression_MissingDependencyOutputRequeues(t *testing.T) {
 	assert.False(t, nodeExists(woc, "reg-requeue.b"), "b must not run with an unresolved dependency reference")
 }
 
-// 14. A lifecycle hook node hanging off a TaskGroup is not an item: it must
-// not make the group AnySucceeded when every item failed. Unlike the other
-// tests here this also fails at base: main counted every child of the
-// TaskGroup too. It is fixed as a bug, not as a regression.
+// 14. A lifecycle hook is not an item: it must not make the group
+// AnySucceeded when every item failed. An expanded task's lifecycle hook runs
+// once per item, on the item node (P18), so the group has no hook child;
+// main ran a DAG task's on the TaskGroup and counted it as an item, a bug
+// fixed here, not a regression.
 var regHookNotAnItem = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -801,9 +802,12 @@ func TestRegression_HookChildIsNotAnItem(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc = operateUntilFulfilled(t, woc, apiv1.PodFailed, 6)
 
-	hook, err := woc.wf.GetNodeByName("reg-hookitem.a.hooks.running")
-	require.NoError(t, err, "the running hook fires on the group")
-	assert.Equal(t, wfv1.NodeSucceeded, hook.Phase)
+	for _, item := range []string{"reg-hookitem.a(0:alpha)", "reg-hookitem.a(1:beta)"} {
+		hook, err := woc.wf.GetNodeByName(item + ".hooks.running")
+		require.NoError(t, err, "the running hook fires on each item")
+		assert.Equal(t, wfv1.NodeSucceeded, hook.Phase)
+	}
+	assert.False(t, nodeExists(woc, "reg-hookitem.a.hooks.running"), "the group has no hook of its own")
 	b, err := woc.wf.GetNodeByName("reg-hookitem.b")
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeOmitted, b.Phase, "no item succeeded")
