@@ -71,10 +71,10 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 // visited once per reconcile, so it is dispatched at most once and its exit
 // handler is driven at most once (#14392).
 //
-// After the walk, externally completed tasks are settled, the StepGroups and
-// the boundary are assessed, and the boundary is finalized. Errors are
-// handled internally by marking the boundary node with the appropriate
-// phase (Failed for Steps, Error for DAGs).
+// After the walk, tasks that completed outside it are reconciled, and the
+// boundary is assessed (a Steps template group by group) and finalized.
+// Errors are handled internally by marking the boundary node with the
+// appropriate phase (Failed for Steps, Error for DAGs).
 func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	e.evaluator = dag.NewDAGEvaluatorFromTasks(e.woc.wf, tasks, e.tmpl, e.boundaryID, e.nodeName)
 
@@ -101,9 +101,8 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 		exitHooksDone = e.processHooks(ctx, task) && exitHooksDone
 	}
 
-	results := e.settle(ctx, tasks, dispatched)
-	e.assessStepGroups(ctx)
-	if err := e.finalize(ctx, tasks, results, exitHooksDone); err != nil {
+	e.reconcileExternalCompletions(ctx, tasks, dispatched)
+	if err := e.finalize(ctx, tasks, exitHooksDone); err != nil {
 		e.markBoundaryError(ctx, err)
 	}
 }
@@ -248,15 +247,6 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 	}
 }
 
-// settle brings the evaluation up to date after the walk: tasks that
-// completed outside it (e.g. a pod the pod controller marked Succeeded) are
-// re-reconciled for metrics and lock release, then everything is evaluated
-// again for StepGroup and boundary assessment.
-func (e *Engine) settle(ctx context.Context, tasks []dag.Task, dispatched map[string]bool) map[string]dag.EvaluationResult {
-	e.reconcileExternalCompletions(ctx, tasks, dispatched)
-	return e.evaluator.EvaluateAll(ctx)
-}
-
 // processHooks runs a task's lifecycle hooks and exit handlers and reports
 // whether its exit handlers have completed. A hook error is isolated to the
 // failing task node (not the boundary), mirroring the legacy controller's
@@ -286,24 +276,32 @@ func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
 }
 
 // assessStepGroups starts each empty StepGroup once the group before it has
-// finished, and transitions StepGroup nodes to a terminal phase once all their
-// step tasks have completed. Unlike dag.TaskGroupPhase, this handles per-step
-// continueOn semantics — each step in a group can have its own continueOn setting.
-// Step child nodes are looked up by constructing names from the template definition
-// (not from node.Children) because not all steps may have nodes yet if parallelism
-// limits prevented scheduling.
-func (e *Engine) assessStepGroups(ctx context.Context) {
-	if e.tmpl.GetType() != wfv1.TemplateTypeSteps {
-		return
-	}
+// finished, records each group's phase once it is done (assessStepGroup),
+// and returns the Steps template's phase with the message that explains a
+// failure. Groups run in sequence, so, as executeSteps walked them, the
+// template is Running at the first group that has not finished and Failed at
+// the first group that failed. Every group is derived again from its steps
+// on each call: a running daemon finishes its group, and if it dies later
+// the template fails, although the group, already recorded, keeps its phase.
+func (e *Engine) assessStepGroups(ctx context.Context) (wfv1.NodePhase, string) {
+	phase, message := wfv1.NodeSucceeded, ""
 	for i, stepGroup := range e.tmpl.Steps {
 		if len(stepGroup.Steps) == 0 && e.previousStepGroupPhase(i).Fulfilled(nil) {
 			// An empty group has no step to start it: it starts, and ends,
 			// once the group before it has.
 			e.startStepGroup(ctx, i)
 		}
-		e.assessStepGroup(ctx, i)
+		groupPhase, groupMessage, done := e.assessStepGroup(ctx, i)
+		switch {
+		case phase != wfv1.NodeSucceeded:
+			// An earlier group has decided; this one is still recorded.
+		case !done:
+			phase = wfv1.NodeRunning
+		case groupPhase.FailedOrError():
+			phase, message = wfv1.NodeFailed, groupMessage
+		}
 	}
+	return phase, message
 }
 
 // previousStepGroupPhase is the phase of the group before group i: Succeeded
@@ -319,101 +317,55 @@ func (e *Engine) previousStepGroupPhase(i int) wfv1.NodePhase {
 	return prev.Phase
 }
 
-// assessStepGroup records group i's phase once every step in it has finished.
-func (e *Engine) assessStepGroup(ctx context.Context, i int) {
-	stepGroup := e.tmpl.Steps[i]
-	sgNodeName := e.stepGroupNodeNameAt(i)
-	sgNode, err := e.woc.wf.GetNodeByName(sgNodeName)
-	if err != nil || sgNode.Fulfilled() {
-		return
+// assessStepGroup derives group i's phase from its steps (stepGroupOutcome)
+// and records it once the group is done. A group that has not started is
+// not done; one already recorded Failed or Error by something other than its
+// steps (a deadline, an error recorded on the group) keeps that.
+func (e *Engine) assessStepGroup(ctx context.Context, i int) (phase wfv1.NodePhase, message string, done bool) {
+	sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i))
+	if err != nil {
+		return wfv1.NodeRunning, "", false
 	}
+	if sgNode.FailedOrError() {
+		return sgNode.Phase, sgNode.Message, true
+	}
+	phase, message, done = e.stepGroupOutcome(ctx, i)
+	if done && !sgNode.Fulfilled() {
+		e.woc.markNodePhase(ctx, sgNode.Name, phase, message)
+	}
+	return phase, message, done
+}
 
-	isPending := false
-	isRunning := false
-	isFailed := false
-	isSucceeded := true
-	// A group that never ran because an earlier group failed is Omitted; an
-	// empty group has no steps of its own, so it follows the group before it.
-	allOmitted := len(stepGroup.Steps) > 0 || e.previousStepGroupPhase(i) != wfv1.NodeSucceeded
-	// Track first failing child ID to surface in the StepGroup's failure
-	// message, matching pre-refactor executeStepGroup semantics. The message
-	// `child '<id>' failed` bubbles up through the Steps node to the workflow
-	// status and is what callers / tests (e.g. TestNodeSuspendResume) inspect
-	// to identify which leaf failed.
-	failingChildID := ""
-
-	for _, step := range stepGroup.Steps {
-		childNodeName := e.taskNodeName(stepTaskNameFor(i, step.Name))
-		childNode, err := e.woc.wf.GetNodeByName(childNodeName)
-		if err != nil {
-			isPending = true
-			isSucceeded = false
-			allOmitted = false
-			continue
+// stepGroupOutcome derives group i's phase from its steps, as
+// executeStepGroup did. The group is done once every step has a node that
+// has finished (see outcome: a running daemon has, a step whose hooks still
+// run has not). It is then Failed if a step failed or errored without
+// continueOn, naming the first such step in the message that bubbles up to
+// the workflow status; Omitted if it never ran (every step omitted because an
+// earlier group failed, or an empty group after a group that did not
+// succeed); and Succeeded otherwise.
+func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePhase, message string, done bool) {
+	steps := e.tmpl.Steps[i].Steps
+	phase = wfv1.NodeSucceeded
+	allOmitted := len(steps) > 0 || e.previousStepGroupPhase(i) != wfv1.NodeSucceeded
+	for _, step := range steps {
+		node := e.getTaskNode(ctx, stepTaskNameFor(i, step.Name))
+		if node == nil {
+			return wfv1.NodeRunning, "", false
 		}
-		if childNode.Phase != wfv1.NodeOmitted {
-			allOmitted = false
+		stepPhase, stepDone := e.outcome(node)
+		if !stepDone {
+			return wfv1.NodeRunning, "", false
 		}
-
-		switch childNode.Phase {
-		case wfv1.NodeFailed:
-			if step.ContinueOn == nil || !step.ContinueOn.Failed {
-				isFailed = true
-				isSucceeded = false
-				if failingChildID == "" {
-					failingChildID = childNode.ID
-				}
-			}
-		case wfv1.NodeError:
-			if step.ContinueOn == nil || !step.ContinueOn.Error {
-				isFailed = true
-				isSucceeded = false
-				if failingChildID == "" {
-					failingChildID = childNode.ID
-				}
-			}
-		case wfv1.NodePending:
-			isPending = true
-			isSucceeded = false
-		case wfv1.NodeRunning:
-			isRunning = true
-			isSucceeded = false
-		case wfv1.NodeSucceeded, wfv1.NodeSkipped, wfv1.NodeOmitted:
-			// Succeeded or equivalent
-		default:
-			isSucceeded = false
+		allOmitted = allOmitted && stepPhase == wfv1.NodeOmitted
+		if stepPhase.FailedOrError() && !step.ContinuesOn(stepPhase) && message == "" {
+			phase, message = wfv1.NodeFailed, fmt.Sprintf("child '%s' failed", node.ID)
 		}
 	}
-
-	// Default to Running; the StepGroup only leaves Running once every step
-	// has finished, as executeStepGroup did: a failed step does not fail
-	// the group while a sibling is still running.
-	newPhase := wfv1.NodeRunning
-	var newMessage string
-	if isPending || isRunning {
-		return
+	if allOmitted {
+		phase = wfv1.NodeOmitted
 	}
-	if isFailed {
-		// Always use Failed for FailedOrError children, matching old executeStepGroup behavior.
-		newPhase = wfv1.NodeFailed
-		if failingChildID != "" {
-			newMessage = fmt.Sprintf("child '%s' failed", failingChildID)
-		}
-	} else if isSucceeded {
-		newPhase = wfv1.NodeSucceeded
-		if allOmitted {
-			// A group whose every step was omitted because an earlier group
-			// failed never ran, so it is Omitted rather than Succeeded. Retry
-			// and memoized resubmit rely on this: they refuse to reset a
-			// failed node with a Succeeded descendant, and this group hangs
-			// off the failed group's outbound nodes.
-			newPhase = wfv1.NodeOmitted
-		}
-	}
-
-	if sgNode.Phase != newPhase {
-		e.woc.markNodePhase(ctx, sgNodeName, newPhase, newMessage)
-	}
+	return phase, message, true
 }
 
 // isThrottleErr reports whether err is a deliberate throttling signal from
@@ -621,15 +573,15 @@ func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.T
 
 // finalize assesses the overall phase and, if terminal, sets outputs,
 // saves memoization cache, and marks the node Succeeded/Failed/Error.
-func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult, onExitCompleted bool) error {
+func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted bool) error {
 	targetTasks := e.evaluator.GetTargetTasks(ctx)
 
 	// Under a Stop shutdown the boundary is failed once its exit handlers are
 	// done — unless this boundary IS an onExit handler, which must be allowed
 	// to complete (#16488).
-	dagPhase, message := e.assessDAGPhase(ctx, tasks, results, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
+	phase, message := e.assessDAGPhase(ctx, tasks, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
 
-	switch dagPhase {
+	switch phase {
 	case wfv1.NodeRunning:
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
@@ -647,12 +599,6 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 		}
 		if err := e.updateOutboundNodesForTargetTasks(ctx, targetTasks); err != nil {
 			return err
-		}
-		// For Steps templates, always use Failed (matching old executeSteps behavior).
-		// DAG templates preserve the exact phase (Error vs Failed).
-		phase := dagPhase
-		if e.tmpl.GetType() == wfv1.TemplateTypeSteps && dagPhase == wfv1.NodeError {
-			phase = wfv1.NodeFailed
 		}
 		// Surface a "child '<id>' failed" message on the boundary, matching the
 		// pre-refactor executeSteps/executeDAG semantics. This message bubbles up
@@ -685,32 +631,12 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 	return nil
 }
 
-// boundaryFailureMessage returns the failure message to propagate to the
-// boundary node when it is marked Failed/Error:
-//   - Steps: the message of the last failed StepGroup in declaration order,
-//     which is the group that stopped execution (executeSteps marked the
-//     boundary with that group's message).
-//   - DAG: "child '<task-id>' failed" naming the first failed task in
-//     declaration order. Task nodes are named, never their retry attempts.
-//
-// Walking the template rather than wf.Status.Nodes keeps the message stable
-// between operate cycles; the map order would make it vary. Returns "" if
-// no failing task or group is found.
+// boundaryFailureMessage names the first failed task of a DAG in
+// declaration order, "child '<task-id>' failed", as executeDAG did: the
+// message bubbles up to the workflow status. Task nodes are named, never
+// their retry attempts; walking the template rather than wf.Status.Nodes
+// keeps the message stable between cycles. Returns "" if no task failed.
 func (e *Engine) boundaryFailureMessage(ctx context.Context) string {
-	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		var message string
-		for i := range e.tmpl.Steps {
-			sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i))
-			if err != nil || !sgNode.FailedOrError() || sgNode.Message == "" {
-				continue
-			}
-			message = sgNode.Message
-		}
-		return message
-	}
-	if e.tmpl.DAG == nil {
-		return ""
-	}
 	for _, task := range e.tmpl.DAG.Tasks {
 		if node := e.getTaskNode(ctx, task.Name); node != nil && node.FailedOrError() {
 			return fmt.Sprintf("child '%s' failed", node.ID)
@@ -1027,32 +953,23 @@ func (e *Engine) getTaskNode(ctx context.Context, taskName string) *wfv1.NodeSta
 }
 
 // assessDAGPhase assesses the boundary's phase, and the message that explains
-// a failure. A DAG is Running while any node it has created has not finished
+// a failure. A Steps template is assessed group by group (assessStepGroups).
+// A DAG is Running while any node it has created has not finished
 // (see outcome); then its targets (dag.target in the order written, else the
 // leaf tasks) decide, as main's assessDAGPhase did: a target whose branch
 // failed without continueOn fails the DAG, the first such target when
 // failFast; a target with no node keeps it Running unless failFast and
 // another target failed.
-func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult, isShutdown bool) (wfv1.NodePhase, string) {
+func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, isShutdown bool) (wfv1.NodePhase, string) {
+	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
+		phase, message := e.assessStepGroups(ctx)
+		if isShutdown {
+			phase = wfv1.NodeFailed
+		}
+		return phase, message
+	}
 	if isShutdown {
 		return wfv1.NodeFailed, e.boundaryFailureMessage(ctx)
-	}
-
-	// Steps templates: a step's continueOn is applied when its StepGroup is
-	// assessed, and groups run in sequence, so the template fails as soon as
-	// any group has failed (matching the pre-Engine executeSteps).
-	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		for _, result := range results {
-			if (result.CurrentPhase == wfv1.NodeRunning || result.CurrentPhase == wfv1.NodePending) && !result.FulfilledForDeps {
-				return wfv1.NodeRunning, ""
-			}
-		}
-		for i := range e.tmpl.Steps {
-			if sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i)); err == nil && sgNode.FailedOrError() {
-				return wfv1.NodeFailed, e.boundaryFailureMessage(ctx)
-			}
-		}
-		return wfv1.NodeSucceeded, ""
 	}
 
 	for _, task := range tasks {
