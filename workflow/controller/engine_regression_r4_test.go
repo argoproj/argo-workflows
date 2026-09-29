@@ -5660,3 +5660,68 @@ spec:
 	want := fmt.Sprintf("child '%s' failed", item.ID)
 	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
 }
+
+// TestRegressionR4_C81_DAGExpandedTaskFailureMessageNamesFailedItem is the
+// DAG counterpart of TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem
+// (round 1 fix, controller ruling): boundaryFailureMessage named the
+// TaskGroup HEAD inserts between a DAG task and its items, using the same
+// bare node.ID that stepGroupOutcome used before failedNodeID. Base DAG
+// never produced a "child '<id>' failed" message in the first place (it had
+// no such format for a withItems task), so this is a decided extension that
+// shares failedNodeID's rule with Steps rather than a base behaviour: it
+// need not pass at base, only fail on the branch before the fix.
+func TestRegressionR4_C81_DAGExpandedTaskFailureMessageNamesFailedItem(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c81-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: print
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: [a, b]
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container: {image: alpine, command: [echo, "{{inputs.parameters.msg}}"]}
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 3 && woc.wf.Status.Phase == wfv1.WorkflowRunning; i++ {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			if strings.Contains(n.DisplayName, "(0:a)") {
+				return apiv1.PodFailed
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	item := woc.wf.Status.Nodes.FindByDisplayName("print(0:a)")
+	require.NotNil(t, item)
+	assert.Equal(t, wfv1.NodeFailed, item.Phase)
+	want := fmt.Sprintf("child '%s' failed", item.ID)
+	dagNode, err := woc.wf.GetNodeByName("r4-c81-dag")
+	require.NoError(t, err)
+	assert.Equal(t, want, dagNode.Message, "DAG message")
+	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
+}
