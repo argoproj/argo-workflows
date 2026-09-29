@@ -135,6 +135,53 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, "", node, getArgs)
 }
 
+// TestConvertToRenderTrees_ExpandedItemsUnderStepGroup ports the shape of
+// TestProbe_v1x31 (v1x31-1_test.go / C60) as a unit test on hand-built
+// status, instead of a real workflow run with sleeps between reconciles.
+//
+// In the Engine an expanded step's items hang off a TaskGroup node between
+// its StepGroup and the items. convertToRenderTrees only treats StepGroup
+// and Retry as non-boundary parents (isNonBoundaryParentNode), so a
+// TaskGroup's items were not recognized as belonging to their StepGroup and
+// fell back to the Steps boundary instead: they rendered outside their
+// group, after every later step.
+func TestConvertToRenderTrees_ExpandedItemsUnderStepGroup(t *testing.T) {
+	base := metav1.NewTime(time.Now())
+	sec := func(n int) metav1.Time { return metav1.NewTime(base.Add(time.Duration(n) * time.Second)) }
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "root"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: wfv1.Nodes{
+				"root": {ID: "root", Name: "root", Type: wfv1.NodeTypeSteps, StartedAt: base, Children: []string{"sg0", "sg1", "sg2"}},
+				"sg0":  {ID: "sg0", Name: "root[0]", BoundaryID: "root", Type: wfv1.NodeTypeStepGroup, StartedAt: sec(0), Children: []string{"gen"}},
+				"gen":  {ID: "gen", Name: "root[0].gen", DisplayName: "gen", BoundaryID: "root", Type: wfv1.NodeTypePod, StartedAt: sec(0)},
+				"sg1":  {ID: "sg1", Name: "root[1]", BoundaryID: "root", Type: wfv1.NodeTypeStepGroup, StartedAt: sec(1), Children: []string{"tg"}},
+				"tg":   {ID: "tg", Name: "root[1].fan", BoundaryID: "root", Type: wfv1.NodeTypeTaskGroup, StartedAt: sec(1), Children: []string{"itemA", "itemB"}},
+				"itemA": {
+					ID: "itemA", Name: "root[1].fan(0:a)", DisplayName: "fan(0:a)", BoundaryID: "root", Type: wfv1.NodeTypePod, StartedAt: sec(1),
+				},
+				"itemB": {
+					ID: "itemB", Name: "root[1].fan(1:b)", DisplayName: "fan(1:b)", BoundaryID: "root", Type: wfv1.NodeTypePod, StartedAt: sec(1),
+				},
+				"sg2":  {ID: "sg2", Name: "root[2]", BoundaryID: "root", Type: wfv1.NodeTypeStepGroup, StartedAt: sec(2), Children: []string{"last"}},
+				"last": {ID: "last", Name: "root[2].last", DisplayName: "last", BoundaryID: "root", Type: wfv1.NodeTypePod, StartedAt: sec(2)},
+			},
+		},
+	}
+
+	roots := convertToRenderTrees(wf)
+	root, ok := roots["root"].(*boundaryNode)
+	require.True(t, ok, "root is a boundary node")
+	require.Len(t, root.boundaryContained, 3, "root's direct children are its 3 StepGroups, not the fan items")
+
+	sg1, ok := root.boundaryContained[1].(*nonBoundaryParentNode)
+	require.True(t, ok, "root.boundaryContained[1] is a StepGroup")
+	assert.Equal(t, "sg1", sg1.getID())
+	require.Len(t, sg1.children, 2, "the TaskGroup's items print under their StepGroup, in order")
+	assert.Equal(t, "itemA", sg1.children[0].getID())
+	assert.Equal(t, "itemB", sg1.children[1].getID())
+}
+
 func TestStatusToNodeFieldSelector(t *testing.T) {
 	one := statusToNodeFieldSelector("Running")
 	assert.Equal(t, "phase=Running", one)
