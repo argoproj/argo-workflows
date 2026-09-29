@@ -3284,3 +3284,861 @@ spec:
 		})
 	}
 }
+
+// r4ValidateWithTemplates validates wf against the controller's workflow
+// templates, so a dynamic templateRef validates as it would on submit.
+func r4ValidateWithTemplates(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow) {
+	t.Helper()
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(wf.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	require.NoError(t, validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf.DeepCopy(), nil, validate.Opts{}))
+}
+
+// r4RunGen validates manifest, operates once, succeeds the pods of template
+// "gen" with genOut (other pods are left alone), then operates rounds more
+// times, reconciling from the in-memory status as the probes did.
+func r4RunGen(t *testing.T, manifest string, genOut wfv1.Outputs, rounds int, objs ...any) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	cancel, controller := newController(ctx, append([]any{wf}, objs...)...)
+	t.Cleanup(cancel)
+	r4ValidateWithTemplates(ctx, t, controller, wf)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	out := withOutputs(ctx, genOut)
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.TemplateName == "gen" {
+			return apiv1.PodSucceeded
+		}
+		return ""
+	}, out)
+	for range rounds {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "after gen", woc.wf)
+	return woc
+}
+
+// r4CommandsMatching lists the main-container command lines of the pods
+// whose node name contains sub, sorted.
+func r4CommandsMatching(ctx context.Context, t *testing.T, woc *wfOperationCtx, sub string) []string {
+	t.Helper()
+	var got []string
+	for name, cmd := range r4MainCommands(ctx, t, woc) {
+		if strings.Contains(name, sub) {
+			got = append(got, cmd)
+		}
+	}
+	sort.Strings(got)
+	return got
+}
+
+const r4C5ItemTagTemplates = `
+  - name: gen
+    script:
+      image: alpine
+      command: [sh]
+      source: echo hi
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+// TestRegressionR4_C5_StepsWithParamGitHubActionsExpr ports
+// TestProbe_v3x9_StepsWithParamGitHubActionsExpr (v3x9-1_test.go / C5, lead
+// 3). A withParam list whose items carry GitHub Actions `${{ steps.x }}` text
+// runs both item pods with the literal text, as base did. HEAD re-parses the
+// substituted item arguments with steps/tasks strict, requeues the whole
+// batch and never creates an item.
+func TestRegressionR4_C5_StepsWithParamGitHubActionsExpr(t *testing.T) {
+	woc := r4RunGen(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c5-gha
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: gen
+    - - name: consume
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{steps.gen.outputs.result}}"
+`+r4C5ItemTagTemplates, wfv1.Outputs{Result: new(`["plain", "ref=${{ steps.checkout.outputs.ref }}"]`)}, 5)
+	ctx := logging.TestContext(t.Context())
+	assert.Equal(t, []string{"sh -c echo plain", "sh -c echo ref=${{ steps.checkout.outputs.ref }}"}, r4CommandsMatching(ctx, t, woc, "consume"))
+	assert.NotEqual(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_C5_DAGItemTagNotSilentSuccess ports
+// TestProbe_v3x9_DAGItemTagNotSilentSuccess (v3x9-1_test.go / C5, lead 3):
+// a DAG withParam item with `${{ tasks.x }}` text must not leave a childless
+// TaskGroup that ends the workflow Succeeded without any item running.
+func TestRegressionR4_C5_DAGItemTagNotSilentSuccess(t *testing.T) {
+	woc := r4RunGen(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c5-dag-item-tag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: consume
+        depends: gen
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{tasks.gen.outputs.result}}"
+`+r4C5ItemTagTemplates, wfv1.Outputs{Result: new(`["plain", "ref=${{ tasks.x.outputs.result }}"]`)}, 5)
+	ctx := logging.TestContext(t.Context())
+	if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
+		assert.NotEmpty(t, r4CommandsMatching(ctx, t, woc, "consume"), "workflow Succeeded but no consume item ran")
+	}
+}
+
+// r4C7Drive runs the workflow to completion (or maxRounds), succeeding every
+// pod. Pods of template "gen" report result and parameter out = genOut.
+func r4C7Drive(t *testing.T, manifest, genOut string, maxRounds int) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range maxRounds {
+		woc.operate(ctx)
+		if woc.wf.Status.Phase.Completed() {
+			break
+		}
+		setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+			if node.Fulfilled() {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		}, func(pod *apiv1.Pod, woc *wfOperationCtx) {
+			node := woc.wf.Status.Nodes[woc.nodeID(pod)]
+			out, res := genOut, genOut
+			if node.TemplateName != "gen" {
+				out = node.Name
+				res = fmt.Sprintf("%q", node.Name)
+			}
+			withOutputs(ctx, wfv1.Outputs{Result: &res, Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr(out)}}})(pod, woc)
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc
+}
+
+func r4C7Workflow(name, body string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+` + body + `
+  - name: gen
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: busybox
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: busybox
+      args: ["{{inputs.parameters.msg}}"]
+`
+}
+
+// TestRegressionR4_C7_WhenGuardedExpansion ports
+// TestProbe_v1x24_WhenGuardedExpansion (v1x24-1_test.go / C7). A when that
+// reads the same output as the withParam/withSequence guards the expansion:
+// base resolved and evaluated the when first and skipped the task without
+// parsing the list. HEAD evaluates the unresolved when during expansion and
+// errors the task on the unparseable list.
+func TestRegressionR4_C7_WhenGuardedExpansion(t *testing.T) {
+	for _, tc := range []struct{ name, body, genOut, fanNode, afterNode string }{
+		{"dag-withparam-empty-quoted-when", `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: fan
+        depends: gen
+        template: echo
+        when: "'{{tasks.gen.outputs.parameters.out}}' != ''"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withParam: "{{tasks.gen.outputs.parameters.out}}"
+      - name: after
+        depends: fan
+        template: echo
+        arguments: {parameters: [{name: msg, value: "after"}]}
+`, "", "wa.fan", "wa.after"},
+		{"dag-withparam-none-unquoted-when", `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: fan
+        depends: gen
+        template: echo
+        when: "{{tasks.gen.outputs.result}} != none"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withParam: "{{tasks.gen.outputs.result}}"
+      - name: after
+        depends: fan
+        template: echo
+        arguments: {parameters: [{name: msg, value: "after"}]}
+`, "none", "wa.fan", "wa.after"},
+		{"steps-withparam-empty-quoted-when", `
+    steps:
+    - - name: gen
+        template: gen
+    - - name: fan
+        template: echo
+        when: "'{{steps.gen.outputs.parameters.out}}' != ''"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withParam: "{{steps.gen.outputs.parameters.out}}"
+    - - name: after
+        template: echo
+        arguments: {parameters: [{name: msg, value: "after"}]}
+`, "", "wa[1].fan", "wa[2].after"},
+		{"steps-withparam-none-unquoted-when", `
+    steps:
+    - - name: gen
+        template: gen
+    - - name: fan
+        template: echo
+        when: "{{steps.gen.outputs.result}} != none"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withParam: "{{steps.gen.outputs.result}}"
+    - - name: after
+        template: echo
+        arguments: {parameters: [{name: msg, value: "after"}]}
+`, "none", "wa[1].fan", "wa[2].after"},
+		{"dag-withsequence-none", `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: fan
+        depends: gen
+        template: echo
+        when: "{{tasks.gen.outputs.result}} != none"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withSequence: {count: "{{tasks.gen.outputs.result}}"}
+      - name: after
+        depends: fan
+        template: echo
+        arguments: {parameters: [{name: msg, value: "after"}]}
+`, "none", "wa.fan", "wa.after"},
+		{"steps-withsequence-none", `
+    steps:
+    - - name: gen
+        template: gen
+    - - name: fan
+        template: echo
+        when: "{{steps.gen.outputs.result}} != none"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withSequence: {count: "{{steps.gen.outputs.result}}"}
+    - - name: after
+        template: echo
+        arguments: {parameters: [{name: msg, value: "after"}]}
+`, "none", "wa[1].fan", "wa[2].after"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			woc := r4C7Drive(t, r4C7Workflow("wa", tc.body), tc.genOut, 12)
+			fan, err := woc.wf.GetNodeByName(tc.fanNode)
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeSkipped, fan.Phase, "fan: %s", fan.Message)
+			after, err := woc.wf.GetNodeByName(tc.afterNode)
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeSucceeded, after.Phase, "after: %s", after.Message)
+			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+		})
+	}
+}
+
+// TestRegressionR4_C7_WhenFalseValidListSkipped ports
+// TestProbe_v1x24_WhenFalseValidListSkipped (v1x24-1_test.go / C7, P7). A
+// when-false task with a dynamic list (withParam) is one Skipped node, as on
+// main, which left withParam unresolved on the when-false early return; so
+// fan.Skipped dependants run and fan.Succeeded ones are Omitted. HEAD made
+// a Succeeded TaskGroup of Skipped items.
+func TestRegressionR4_C7_WhenFalseValidListSkipped(t *testing.T) {
+	woc := r4C7Drive(t, r4C7Workflow("wv", `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: fan
+        depends: gen
+        template: echo
+        when: "{{tasks.gen.outputs.parameters.out}} == nope"
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withParam: "{{tasks.gen.outputs.result}}"
+      - name: onskip
+        depends: fan.Skipped
+        template: echo
+        arguments: {parameters: [{name: msg, value: "onskip"}]}
+      - name: onsucc
+        depends: fan.Succeeded
+        template: echo
+        arguments: {parameters: [{name: msg, value: "onsucc"}]}
+`), `["a","b"]`, 12)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	fan, err := woc.wf.GetNodeByName("wv.fan")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSkipped, fan.Phase, "fan type=%s msg=%s", fan.Type, fan.Message)
+	onskip, err := woc.wf.GetNodeByName("wv.onskip")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, onskip.Phase)
+	onsucc, err := woc.wf.GetNodeByName("wv.onsucc")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeOmitted, onsucc.Phase)
+}
+
+// r4C8Run runs the workflow: the first pod succeeds with result, every
+// later pod succeeds with no outputs. It returns the final woc and the pods'
+// node names.
+func r4C8Run(t *testing.T, manifest, result string) (*wfOperationCtx, []string) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Result: &result}))
+	for i := 0; i < 6 && !woc.wf.Status.Fulfilled(); i++ {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc, r4PodNodeNames(ctx, t, woc)
+}
+
+// TestRegressionR4_C8_StepsExprWhenDoubleQuotes ports
+// TestProbe_r1x25_StepsExprWhenDoubleQuotes (r1x25-1_test.go / C8). An
+// expression when with double quotes (the bracket form a dashed step name
+// needs) is substituted in its JSON form, as on base; HEAD substitutes the
+// raw string and fails to unmarshal the expression.
+func TestRegressionR4_C8_StepsExprWhenDoubleQuotes(t *testing.T) {
+	woc, pods := r4C8Run(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c8-expr
+  namespace: default
+spec:
+  entrypoint: coinflip
+  templates:
+  - name: coinflip
+    steps:
+    - - name: flip-coin
+        template: flip-coin
+    - - name: heads
+        template: say
+        when: '{{= steps["flip-coin"].outputs.result == "heads" }}'
+      - name: tails
+        template: say
+        when: '{{= steps["flip-coin"].outputs.result == "tails" }}'
+  - name: flip-coin
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        print("heads")
+  - name: say
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "echo hi"]
+`, "heads")
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Contains(t, pods, "r4-c8-expr[1].heads")
+	tails := woc.wf.Status.Nodes.FindByDisplayName("tails")
+	require.NotNil(t, tails)
+	assert.Equal(t, wfv1.NodeSkipped, tails.Phase)
+}
+
+// TestRegressionR4_C8_DAGSimpleTagBackslashResult ports
+// TestProbe_r1x25_DAGSimpleTagBackslashResult (r1x25-1_test.go / C8). A
+// result with a backslash substituted into a simple when compares equal, as
+// on base; HEAD leaves the JSON escape in the expression, compares unequal
+// and silently skips the task.
+func TestRegressionR4_C8_DAGSimpleTagBackslashResult(t *testing.T) {
+	woc, pods := r4C8Run(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c8-bs
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: work
+        depends: gen
+        template: say
+        when: "'{{tasks.gen.outputs.result}}' == 'C:\\temp'"
+  - name: gen
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        print(r"C:\temp")
+  - name: say
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "echo hi"]
+`, `C:\temp`)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Contains(t, pods, "r4-c8-bs.work")
+}
+
+// r4PodInputArtifact returns the named input artifact baked into the pod of
+// the node nodeName.
+func r4PodInputArtifact(ctx context.Context, t *testing.T, woc *wfOperationCtx, nodeName, artName string) *wfv1.Artifact {
+	t.Helper()
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	for i := range pods.Items {
+		p := &pods.Items[i]
+		if p.Annotations[common.AnnotationKeyNodeName] != nodeName {
+			continue
+		}
+		tmpl, err := getPodTemplate(p)
+		require.NoError(t, err)
+		return tmpl.Inputs.Artifacts.GetArtifactByName(artName)
+	}
+	require.Failf(t, "pod not created", "no pod for %s", nodeName)
+	return nil
+}
+
+// TestRegressionR4_C13_RawAndHTTPArtDAG ports
+// TestProbe_v1x26_RawAndHTTPArtDAG (v1x26-1_test.go / C13). An artifact
+// argument's location fields (raw.data, http.url) that reference a task's
+// output reach the pod substituted, as on base, which substituted the whole
+// task; HEAD substitutes only the parameters.
+func TestRegressionR4_C13_RawAndHTTPArtDAG(t *testing.T) {
+	woc := r4RunGen(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c13-raw-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: use
+        depends: gen
+        template: use
+        arguments:
+          artifacts:
+          - name: data
+            raw:
+              data: "{{tasks.gen.outputs.result}}"
+          - name: web
+            http:
+              url: "https://example.com/{{tasks.gen.outputs.result}}.txt"
+  - name: gen
+    script:
+      image: alpine
+      command: [sh]
+      source: echo hello
+  - name: use
+    inputs:
+      artifacts:
+      - name: data
+        path: /tmp/data
+      - name: web
+        path: /tmp/web
+    container:
+      image: alpine
+      command: [cat, /tmp/data]
+`, wfv1.Outputs{Result: new("hello")}, 3)
+	ctx := logging.TestContext(t.Context())
+	data := r4PodInputArtifact(ctx, t, woc, "r4-c13-raw-dag.use", "data")
+	require.NotNil(t, data)
+	require.NotNil(t, data.Raw)
+	assert.Equal(t, "hello", data.Raw.Data)
+	web := r4PodInputArtifact(ctx, t, woc, "r4-c13-raw-dag.use", "web")
+	require.NotNil(t, web)
+	require.NotNil(t, web.HTTP)
+	assert.Equal(t, "https://example.com/hello.txt", web.HTTP.URL)
+}
+
+// TestRegressionR4_C13_S3KeyArtSteps ports TestProbe_v1x26_S3KeyArtSteps
+// (v1x26-1_test.go / C13): an S3 key built from a step's output parameter.
+func TestRegressionR4_C13_S3KeyArtSteps(t *testing.T) {
+	woc := r4RunGen(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c13-s3-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: gen
+    - - name: use
+        template: use
+        arguments:
+          artifacts:
+          - name: remote
+            s3:
+              key: "prefix/{{steps.gen.outputs.parameters.p}}.txt"
+  - name: gen
+    container:
+      image: alpine
+      command: [sh, -c, "echo hi > /tmp/p"]
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+  - name: use
+    inputs:
+      artifacts:
+      - name: remote
+        path: /tmp/remote
+    container:
+      image: alpine
+      command: [cat, /tmp/remote]
+`, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr("my-key")}}}, 3)
+	ctx := logging.TestContext(t.Context())
+	remote := r4PodInputArtifact(ctx, t, woc, "r4-c13-s3-steps[1].use", "remote")
+	require.NotNil(t, remote)
+	require.NotNil(t, remote.S3)
+	assert.Equal(t, "prefix/my-key.txt", remote.S3.Key)
+}
+
+const r4C44WFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: r4-c44-wft
+  namespace: default
+spec:
+  templates:
+  - name: say
+    container:
+      image: busybox
+      command: [echo, from-wft]
+`
+
+// TestRegressionR4_C44_DynTRefStepsParam ports
+// TestProbe_v1x27_DynTRefStepsParam (v1x27-1_test.go / C44). A templateRef
+// whose name comes from an earlier step's output is resolved after
+// substitution, as on base; HEAD resolves the raw holder and fails
+// "workflow template {{steps.pick.outputs.parameters.wft}} not found".
+func TestRegressionR4_C44_DynTRefStepsParam(t *testing.T) {
+	woc := r4RunGen(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c44-steps-param
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: pick
+        template: gen
+    - - name: run
+        templateRef:
+          name: "{{steps.pick.outputs.parameters.wft}}"
+          template: say
+  - name: gen
+    container:
+      image: busybox
+      command: [echo]
+    outputs:
+      parameters:
+      - name: wft
+        valueFrom:
+          path: /tmp/wft
+`, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "wft", Value: wfv1.AnyStringPtr("r4-c44-wft")}}}, 1,
+		wfv1.MustUnmarshalWorkflowTemplate(r4C44WFT))
+	ctx := logging.TestContext(t.Context())
+	assert.Equal(t, "echo from-wft", r4MainCommands(ctx, t, woc)["r4-c44-steps-param[1].run"])
+	for i := 0; i < 4 && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+		woc.operate(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+const r4C45Templates = `
+  - name: gen
+    script:
+      image: busybox
+      command: [sh]
+      source: echo hello
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: busybox
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// r4C45Commands runs a withItems workflow whose gen step reports "hello"
+// and returns the command line of every pod but gen's, by node name.
+func r4C45Commands(t *testing.T, name, body string) (*wfOperationCtx, map[string]string) {
+	t.Helper()
+	woc := r4RunGen(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: `+name+`
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+`+body+r4C45Templates, wfv1.Outputs{Result: new("hello")}, 1)
+	ctx := logging.TestContext(t.Context())
+	cmds := r4MainCommands(ctx, t, woc)
+	for n := range cmds {
+		if strings.HasSuffix(n, ".gen") {
+			delete(cmds, n)
+		}
+	}
+	return woc, cmds
+}
+
+// TestRegressionR4_C45_PlainItemNames ports TestProbe_v1x38_PlainItemNames
+// (v1x38-1_test.go / C45). withItems values that reference an earlier
+// output are resolved before expansion, as base substituted the whole task:
+// the item's node name and its pod carry "hello". HEAD expands the raw tag
+// text.
+func TestRegressionR4_C45_PlainItemNames(t *testing.T) {
+	for _, tc := range []struct{ kind, body, prefix string }{
+		{"dag", `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: fan
+        depends: gen
+        template: echo
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withItems: ["{{tasks.gen.outputs.result}}", "static"]
+`, "p.fan"},
+		{"steps", `
+    steps:
+    - - name: gen
+        template: gen
+    - - name: fan
+        template: echo
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withItems: ["{{steps.gen.outputs.result}}", "static"]
+`, "p[1].fan"},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			woc, cmds := r4C45Commands(t, "p", tc.body)
+			assert.Equal(t, map[string]string{
+				tc.prefix + "(0:hello)":  "echo hello",
+				tc.prefix + "(1:static)": "echo static",
+			}, cmds)
+			assert.NotNil(t, woc.wf.Status.Nodes.FindByDisplayName("fan(0:hello)"), "display name fan(0:hello) missing")
+		})
+	}
+}
+
+// TestRegressionR4_C45_ExprItem ports TestProbe_v1x38_ExprItem
+// (v1x38-1_test.go / C45): an expression when and argument over an item
+// that references an earlier output see the resolved value.
+func TestRegressionR4_C45_ExprItem(t *testing.T) {
+	for _, tc := range []struct{ kind, body, prefix string }{
+		{"dag", `
+    dag:
+      tasks:
+      - name: gen
+        template: gen
+      - name: fan
+        depends: gen
+        template: echo
+        when: "{{=item == 'hello'}}"
+        arguments: {parameters: [{name: msg, value: "{{=sprig.upper(item)}}"}]}
+        withItems: ["{{tasks.gen.outputs.result}}"]
+`, "e.fan"},
+		{"steps", `
+    steps:
+    - - name: gen
+        template: gen
+    - - name: fan
+        template: echo
+        when: "{{=item == 'hello'}}"
+        arguments: {parameters: [{name: msg, value: "{{=sprig.upper(item)}}"}]}
+        withItems: ["{{steps.gen.outputs.result}}"]
+`, "e[1].fan"},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			_, cmds := r4C45Commands(t, "e", tc.body)
+			assert.Equal(t, map[string]string{tc.prefix + "(0:hello)": "echo HELLO"}, cmds)
+		})
+	}
+}
+
+// r4C82Run drives a flip-coin workflow whose gen pod reports "heads" to
+// completion and returns the final workflow.
+func r4C82Run(t *testing.T, manifest string) *wfv1.Workflow {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 8 && !woc.wf.Status.Phase.Completed(); i++ {
+		out := withOutputs(ctx, wfv1.Outputs{Result: new("heads")})
+		onlyGen := func(pod *apiv1.Pod, woc *wfOperationCtx) {
+			if n, ok := woc.wf.Status.Nodes[woc.nodeID(pod)]; ok && n.TemplateName == "gen" {
+				out(pod, woc)
+			}
+		}
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded, onlyGen)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc.wf
+}
+
+const r4C82Templates = `
+  - name: gen
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: print("heads")
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, hi]
+`
+
+// TestRegressionR4_C82_StepsWhenSkipMessage ports
+// TestProbe_v1x55_StepsWhenSkipMessage (v1x55-1_test.go / C82). A step
+// skipped by its when reports the substituted expression, as on base, not
+// the raw template text.
+func TestRegressionR4_C82_StepsWhenSkipMessage(t *testing.T) {
+	wf := r4C82Run(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c82-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: flip-coin
+        template: gen
+    - - name: heads
+        template: echo
+        when: "{{steps.flip-coin.outputs.result}} == heads"
+      - name: tails
+        template: echo
+        when: "{{steps.flip-coin.outputs.result}} == tails"
+`+r4C82Templates)
+	assert.Equal(t, wfv1.WorkflowSucceeded, wf.Status.Phase)
+	h := wf.Status.Nodes.FindByDisplayName("heads")
+	require.NotNil(t, h)
+	assert.Equal(t, wfv1.NodeSucceeded, h.Phase)
+	n := wf.Status.Nodes.FindByDisplayName("tails")
+	require.NotNil(t, n)
+	assert.Equal(t, wfv1.NodeSkipped, n.Phase)
+	assert.Equal(t, "when 'heads == tails' evaluated false", n.Message)
+}
+
+// TestRegressionR4_C82_DAGWhenSkipMessage ports
+// TestProbe_v1x55_DAGWhenSkipMessage (v1x55-1_test.go / C82): the DAG shape.
+func TestRegressionR4_C82_DAGWhenSkipMessage(t *testing.T) {
+	wf := r4C82Run(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c82-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: flip-coin
+        template: gen
+      - name: heads
+        depends: flip-coin
+        template: echo
+        when: "{{tasks.flip-coin.outputs.result}} == heads"
+      - name: tails
+        depends: flip-coin
+        template: echo
+        when: "{{tasks.flip-coin.outputs.result}} == tails"
+`+r4C82Templates)
+	assert.Equal(t, wfv1.WorkflowSucceeded, wf.Status.Phase)
+	n := wf.Status.Nodes.FindByDisplayName("tails")
+	require.NotNil(t, n)
+	assert.Equal(t, wfv1.NodeSkipped, n.Phase)
+	assert.Equal(t, "when 'heads == tails' evaluated false", n.Message)
+}

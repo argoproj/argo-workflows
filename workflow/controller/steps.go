@@ -94,12 +94,12 @@ func (s *StepAdapter) GetExitHook(args wfv1.Arguments) *wfv1.LifecycleHook {
 	return s.step.GetExitHook(args)
 }
 
-func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, substitutor dag.Substitutor) ([]dag.Task, error) {
-	// Construct a temporary DAGTask to reuse the DAG expansion logic. Every
-	// WorkflowStep field that DAGTask also has must be carried over: the
-	// expanded task is what the reconciler resolves the template from.
-	dt := &dag.DAGTask{DAGTask: &wfv1.DAGTask{
-		Name:         s.GetName(),
+// body is the step as a wfv1.DAGTask named name. Every WorkflowStep field
+// that DAGTask also has is carried over: it is what the Engine resolves and
+// expands, and what the reconciler resolves the template from.
+func (s *StepAdapter) body(name string) wfv1.DAGTask {
+	return wfv1.DAGTask{
+		Name:         name,
 		Template:     s.step.Template,
 		Inline:       s.step.Inline,
 		Arguments:    s.step.Arguments,
@@ -112,7 +112,38 @@ func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, subst
 		TemplateRef:  s.step.TemplateRef,
 		Hooks:        s.step.Hooks,
 		Dependencies: s.dependencies,
-	}}
+	}
+}
+
+// Resolve rewrites the step through its DAGTask body and returns it as a
+// step again, named by the step name, so a resolved step keeps the node
+// name and inline stored-template key of the step it came from.
+func (s *StepAdapter) Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, error)) (dag.Task, error) {
+	b, err := resolve(s.body(s.step.Name))
+	if err != nil {
+		return nil, err
+	}
+	return &StepAdapter{step: &wfv1.WorkflowStep{
+		Name:         b.Name,
+		Template:     b.Template,
+		Inline:       b.Inline,
+		Arguments:    b.Arguments,
+		WithItems:    b.WithItems,
+		WithParam:    b.WithParam,
+		WithSequence: b.WithSequence,
+		When:         b.When,
+		ContinueOn:   b.ContinueOn,
+		OnExit:       b.OnExit, //nolint:staticcheck // OnExit is deprecated but still honored for backward compatibility
+		TemplateRef:  b.TemplateRef,
+		Hooks:        b.Hooks,
+	}, dependencies: s.dependencies, groupIndex: s.groupIndex}, nil
+}
+
+func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, substitutor dag.Substitutor) ([]dag.Task, error) {
+	// The items are DAG tasks named by the step's task name, so they keep
+	// the "[i]." group prefix the Engine schedules by.
+	body := s.body(s.GetName())
+	dt := &dag.DAGTask{DAGTask: &body}
 	expanded, err := dt.Expand(ctx, scope, substitutor)
 	if err != nil {
 		return nil, err
