@@ -4711,3 +4711,304 @@ func TestRegressionR4_C85_EmptyGroupClosedBeforeNext(t *testing.T) {
 	require.False(t, sg1.FinishedAt.IsZero(), "[1] must have finished")
 	assert.False(t, sg2.StartedAt.Before(&sg1.FinishedAt), "StepGroup [2] started %s, before StepGroup [1] finished %s", sg2.StartedAt, sg1.FinishedAt)
 }
+
+// r4C3SkippedHandler is a DAG with a failing task A and a when-false notify handler
+// that runs on A.Failed: the notify-on-failure pattern (C3).
+const r4C3SkippedHandler = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c3-notify
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: notify
+      value: "no"
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: bad
+      - name: notify
+        template: ok
+        depends: A.Failed
+        when: "{{workflow.parameters.notify}} == yes"
+  - name: ok
+    container: {image: alpine, command: [sh, -c, "exit 0"]}
+  - name: bad
+    container: {image: alpine, command: [sh, -c, "exit 1"]}
+`
+
+// TestRegressionR4_C3_SkippedOnFailureHandler ports
+// TestProbe_v1x11_SkippedOnFailureHandler (v1x11-1_test.go / C3). A leaf
+// that did not run takes the phase of the branch above it, as main's
+// assessDAGPhase did: the Skipped notify leaf inherits A's failure, so the
+// DAG fails. HEAD let only an Omitted leaf inherit, so the workflow ended
+// Succeeded although nothing handled the failure.
+func TestRegressionR4_C3_SkippedOnFailureHandler(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C3SkippedHandler)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode("r4-c3-notify.A"))
+	for range 2 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	notify, err := woc.wf.GetNodeByName("r4-c3-notify.notify")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSkipped, notify.Phase)
+	dagNode, err := woc.wf.GetNodeByName("r4-c3-notify")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, dagNode.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_C3_DaemonLeafAfterContinueOn ports
+// TestProbe_v1x11_DaemonLeafAfterContinueOn (v1x11-1_test.go / C3). A
+// running daemon leaf has not completed, so it takes the phase of the branch
+// above it: A failed (continueOn only lets D start), so the DAG fails. HEAD
+// read the daemon as Succeeded and the workflow Succeeded.
+func TestRegressionR4_C3_DaemonLeafAfterContinueOn(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c3-daemon
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: bad
+        continueOn:
+          failed: true
+      - name: D
+        template: daemon
+        dependencies: [A]
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sleep, "1000"]}
+  - name: bad
+    container: {image: alpine, command: [sh, -c, "exit 1"]}
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode("r4-c3-daemon.A"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode("r4-c3-daemon.D"), r4WithReady)
+	for range 2 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_C10_LeafAfterDependencyPodLost ports
+// TestProbe_v3x5_LeafAfterDependencyPodLost (v3x5-1_test.go / C10). The
+// running pod of leaf a is deleted: its node goes Error "pod deleted" with
+// its task result unsynced, so it has not finished, and the pod is
+// recreated. The DAG waits for it, as main's did. HEAD read the transient
+// Error as final and ended the workflow Error while a's new pod ran and
+// Succeeded.
+func TestRegressionR4_C10_LeafAfterDependencyPodLost(t *testing.T) {
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c10-chain
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: ok
+      - name: a
+        template: ok
+        depends: gen
+  - name: ok
+    container: {image: alpine, command: [sh, -c, "exit 0"]}
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	const gen, a = "r4-c10-chain.gen", "r4-c10-chain.a"
+	woc := r4Operate(t, ctx, controller, wf)
+	op := func() {
+		r4MoveNewPodsPending(ctx, woc)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(gen), withExitCode(0))
+	op()
+	op()
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	op()
+	r4DeletePod(ctx, t, woc, a)
+	for range 3 {
+		op()
+		dagNode, err := woc.wf.GetNodeByName("r4-c10-chain")
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeRunning, dagNode.Phase, "the DAG while a's pod is recreated")
+	}
+	require.Contains(t, r4PodNodeNames(ctx, t, woc), a, "the deleted pod was not recreated")
+
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(a))
+	op()
+	r4CompleteTaskResult(ctx, t, woc, a)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(a), withExitCode(0))
+	for range 3 {
+		op()
+	}
+	n, err := woc.wf.GetNodeByName(a)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "message %q", woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C71_ContinueOnMissingOutputWithFailedSibling ports
+// TestProbe_v1x15_ContinueOnMissingOutputWithFailedSibling (v1x15-1_test.go
+// / C71). B references an output its continueOn-failed dependency A never
+// wrote, so B can never be created. With failFast (the default) main's
+// target loop passed over a target with no node and ended the DAG Failed on
+// its failed sibling C; HEAD read B as Pending and hung Running.
+func TestRegressionR4_C71_ContinueOnMissingOutputWithFailedSibling(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c71
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: producer
+        continueOn:
+          failed: true
+      - name: B
+        template: consumer
+        dependencies: [A]
+        arguments:
+          parameters:
+          - name: p
+            value: "{{tasks.A.outputs.parameters.p}}"
+      - name: C
+        template: bad
+  - name: producer
+    container: {image: alpine, command: [sh, -c, "exit 3"]}
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+  - name: consumer
+    inputs:
+      parameters:
+      - name: p
+    container: {image: alpine, command: [echo, "{{inputs.parameters.p}}"]}
+  - name: bad
+    container: {image: alpine, command: [sh, -c, "exit 1"]}
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod) bool { return true })
+	for range 6 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	_, err := woc.wf.GetNodeByName("r4-c71.B")
+	require.Error(t, err, "B can never be created")
+	c, err := woc.wf.GetNodeByName("r4-c71.C")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, c.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// r4C72Run runs a DAG with dag.target "C A" (and failFast as given, "" for
+// the default) where A ends Error (its pod is Unknown) and C Failed, and
+// returns the DAG node.
+func r4C72Run(t *testing.T, failFast string) (*wfOperationCtx, *wfv1.NodeStatus) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	ff := ""
+	if failFast != "" {
+		ff = "\n      failFast: " + failFast
+	}
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c72
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      target: "C A"` + ff + `
+      tasks:
+      - name: A
+        template: ok
+      - name: C
+        template: ok
+  - name: ok
+    container: {image: alpine, command: [sh, -c, "exit 0"]}
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodUnknown, r4PodForNode("r4-c72.A"))
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode("r4-c72.C"))
+	for range 4 {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	for name, want := range map[string]wfv1.NodePhase{"r4-c72.A": wfv1.NodeError, "r4-c72.C": wfv1.NodeFailed} {
+		n, err := woc.wf.GetNodeByName(name)
+		require.NoError(t, err)
+		require.Equal(t, want, n.Phase, name)
+	}
+	dagNode, err := woc.wf.GetNodeByName("r4-c72")
+	require.NoError(t, err)
+	return woc, dagNode
+}
+
+// TestRegressionR4_C72_TargetOrderFailFast ports
+// TestProbe_v1x19_TargetOrderFailFast (v1x19-1_test.go / C72). With
+// failFast, the first failed target in the order dag.target is written
+// decides the DAG's phase, as on main: C (Failed) before A (Error). HEAD
+// sorted the targets, so A decided and the workflow ended Error.
+func TestRegressionR4_C72_TargetOrderFailFast(t *testing.T) {
+	woc, dagNode := r4C72Run(t, "")
+	assert.Equal(t, wfv1.NodeFailed, dagNode.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_C72_TargetOrderNoFailFast ports
+// TestProbe_v1x19_TargetOrderNoFailFast (v1x19-1_test.go / C72). Without
+// failFast every target is looked at in written order and the last failed
+// one decides, as on main: A (Error). HEAD's sort made it C (Failed).
+func TestRegressionR4_C72_TargetOrderNoFailFast(t *testing.T) {
+	woc, dagNode := r4C72Run(t, "false")
+	assert.Equal(t, wfv1.NodeError, dagNode.Phase)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+}
