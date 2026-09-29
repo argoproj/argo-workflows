@@ -805,3 +805,104 @@ func TestRegressionR4_C61_OmittedAndTaskGroupTemplateName(t *testing.T) {
 		assert.Equal(t, "echo", b.TemplateName)
 	})
 }
+
+const r4C22DAGNestedDependantOfDeadDaemon = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c22-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: daemon
+      - name: B
+        template: inner
+        dependencies: [A]
+  - name: daemon
+    daemon: true
+    container:
+      image: busybox
+      command: [sleep, "999999"]
+  - name: inner
+    dag:
+      tasks:
+      - name: i1
+        template: ok
+      - name: i2
+        template: ok
+        depends: i1
+  - name: ok
+    container:
+      image: busybox
+      command: [echo, ok]
+`
+
+// TestRegressionR4_C22_NestedDependantOfDeadDaemon ports
+// TestProbe_v1x14_DAGNestedDependantOfDeadDaemon (v1x14-1_test.go / C22). B
+// (a nested DAG) depends on A (a daemon). Once A daemons, B starts and its
+// inner task i1 runs. evaluateTaskResult/isReady re-evaluate the depends
+// expression of every task whose node exists but is not yet fulfilled,
+// including B, on every pass; once A's pod fails, "A.Succeeded ||
+// A.Skipped || A.Daemoned" turns false and B, though already Running, gets
+// ShouldRun=false and is never dispatched again, so its inner i2 (which
+// depends on i1) is never created and the workflow hangs. Base keeps
+// dispatching a task once its node exists, whatever its dependencies do
+// next.
+func TestRegressionR4_C22_NestedDependantOfDeadDaemon(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C22DAGNestedDependantOfDeadDaemon)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	// op mirrors the probe's v14Run.op(): a real kubelet reports Pending as
+	// soon as it accepts a pod, but the fake clientset leaves a freshly
+	// created pod's phase empty, which the pod assessor treats as
+	// "Unexpected pod phase" (a harness artefact, see r4MoveNewPodsPending).
+	op := func() {
+		r4MoveNewPodsPending(ctx, woc)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+
+	const a, b, i1, i2 = "r4-c22-dag.A", "r4-c22-dag.B", "r4-c22-dag.B.i1", "r4-c22-dag.B.i2"
+
+	// A comes up daemoned, which starts B and its first inner task i1.
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(a), r4WithReady)
+	op()
+	an, err := woc.wf.GetNodeByName(a)
+	require.NoError(t, err)
+	require.True(t, an.IsDaemoned(), "A should be daemoned")
+	_, err = woc.wf.GetNodeByName(i1)
+	require.NoError(t, err, "i1 should have been created once A daemoned")
+
+	// i1 starts running, then A's pod dies while i1 is still in flight.
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(i1))
+	op()
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode(a))
+	op()
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(i1))
+	for range 3 {
+		op()
+	}
+
+	// i2 depends only on i1, which has Succeeded; B (i2's boundary) must
+	// still be reconciled to create it, even though A (which B itself
+	// depends on) died in the meantime.
+	_, err = woc.wf.GetNodeByName(i2)
+	require.NoError(t, err, "i2 should have been created after i1 Succeeded, even though B's own dependency A died")
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(i2))
+	for range 3 {
+		op()
+	}
+
+	bn, err := woc.wf.GetNodeByName(b)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, bn.Phase)
+	assert.True(t, woc.wf.Status.Phase.Completed(), "workflow phase %s", woc.wf.Status.Phase)
+}

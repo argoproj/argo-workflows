@@ -81,8 +81,6 @@ func r4SetPodsPhase(t *testing.T, ctx context.Context, woc *wfOperationCtx, phas
 // Kubernetes would report Pending as soon as the kubelet accepts it); an
 // empty phase reaching the Engine is a harness artefact, not a real pod
 // state (see the regressions document section 6.4).
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4MoveNewPodsPending(ctx context.Context, woc *wfOperationCtx) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
