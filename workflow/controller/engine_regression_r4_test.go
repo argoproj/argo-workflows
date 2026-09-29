@@ -5012,3 +5012,469 @@ func TestRegressionR4_C72_TargetOrderNoFailFast(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, dagNode.Phase)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
+
+// r4Run is a workflow under test, from r4Start.
+type r4Run struct {
+	t          *testing.T
+	controller *WorkflowController
+	woc        *wfOperationCtx
+}
+
+// r4Start validates manifest, creates a controller for it and operates once.
+func r4Start(t *testing.T, manifest string) (context.Context, *r4Run) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	return ctx, &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
+}
+
+// op moves newly created pods to Pending, as a kubelet would, and reconciles
+// again from the stored status.
+func (r *r4Run) op(ctx context.Context) {
+	r.t.Helper()
+	r4MoveNewPodsPending(ctx, r.woc)
+	r.woc = r4Operate(r.t, ctx, r.controller, r.woc.wf)
+}
+
+// r4PodForNodePrefix matches the pods of the named node and of its items.
+func r4PodForNodePrefix(prefix string) func(*apiv1.Pod) bool {
+	return func(pod *apiv1.Pod) bool {
+		return strings.HasPrefix(pod.Annotations[common.AnnotationKeyNodeName], prefix)
+	}
+}
+
+// r4NodePhase is the phase of the named node, or "" if it does not exist.
+func r4NodePhase(woc *wfOperationCtx, name string) wfv1.NodePhase {
+	if n, err := woc.wf.GetNodeByName(name); err == nil {
+		return n.Phase
+	}
+	return ""
+}
+
+// TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds ports
+// TestProbe_v2x9_SingleStepForceDeletedRerunSucceeds (v2x9-1_test.go / C9).
+// a's running pod vanishes before its task result is complete: a is Error
+// "pod deleted" but has not finished, and its pod is recreated. Its
+// StepGroup waits for the re-run, as main's did; HEAD recorded the group
+// Failed on the transient Error and the workflow ended Failed although the
+// re-run Succeeded.
+func TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds(t *testing.T) {
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c9-single
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: work
+    - - name: b
+        template: work
+  - name: work
+    container: {image: alpine, command: [sh, -c, "exit 0"]}
+`)
+	const a, b, sg0 = "r4-c9-single[0].a", "r4-c9-single[1].b", "r4-c9-single[0]"
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r.op(ctx)
+	r4DeletePod(ctx, t, r.woc, a)
+	for range 2 {
+		r.op(ctx)
+		assert.Equal(t, wfv1.NodeRunning, r4NodePhase(r.woc, sg0), "step group [0] while a's pod is recreated")
+	}
+	require.Contains(t, r4PodNodeNames(ctx, t, r.woc), a, "the deleted pod was not recreated")
+
+	r4CompleteTaskResult(ctx, t, r.woc, a)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(a), withExitCode(0))
+	for range 2 {
+		r.op(ctx)
+	}
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(b), withExitCode(0))
+	for range 3 {
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, sg0), "step group [0]")
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "message %q", r.woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails ports
+// TestProbe_v2x9_ForceDeletedPodContinueOnErrorRerunFails (v2x9-1_test.go /
+// C9). As above, with continueOn.error on a, whose re-run then Fails, which
+// continueOn.error does not cover. HEAD recorded the group Succeeded on the
+// transient Error and the workflow Succeeded although a Failed.
+func TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails(t *testing.T) {
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c9-coe
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: work
+        continueOn:
+          error: true
+    - - name: b
+        template: work
+  - name: work
+    container: {image: alpine, command: [sh, -c, "exit 0"]}
+`)
+	const a, sg0 = "r4-c9-coe[0].a", "r4-c9-coe[0]"
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r.op(ctx)
+	r4DeletePod(ctx, t, r.woc, a)
+	for range 3 {
+		r.op(ctx)
+	}
+	require.Contains(t, r4PodNodeNames(ctx, t, r.woc), a, "the deleted pod was not recreated")
+
+	r4CompleteTaskResult(ctx, t, r.woc, a)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, r4PodForNode(a), withExitCode(1))
+	for range 4 {
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.NodeFailed, r4NodePhase(r.woc, a))
+	assert.Equal(t, wfv1.NodeFailed, r4NodePhase(r.woc, sg0), "step group [0]")
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
+}
+
+const r4C23DaemonSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c23
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: server
+        template: daemon
+    - - name: client
+        template: ok
+        arguments:
+          parameters:
+          - name: ip
+            value: "{{steps.server.ip}}"
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sh, -c, "sleep 9999"]}
+  - name: ok
+    inputs:
+      parameters:
+      - name: ip
+    container: {image: alpine, command: [sh, -c, "echo {{inputs.parameters.ip}}"]}
+`
+
+// r4C23Drive brings server up as a ready daemon at 10.0.0.7 and ends client
+// with clientPhase, until the workflow completes. It checks what C23 broke:
+// every StepGroup has finished and every node hangs off the root.
+func r4C23Drive(t *testing.T, clientPhase apiv1.PodPhase) *wfOperationCtx {
+	t.Helper()
+	ctx, r := r4Start(t, r4C23DaemonSteps)
+	withIP := func(pod *apiv1.Pod, _ *wfOperationCtx) { pod.Status.PodIP = "10.0.0.7" }
+	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode("r4-c23[0].server"), r4WithReady, withIP)
+		r4SetPodsPhase(t, ctx, r.woc, clientPhase, r4PodForNode("r4-c23[1].client"))
+		r.op(ctx)
+	}
+	for _, n := range r.woc.wf.Status.Nodes {
+		if n.Type == wfv1.NodeTypeStepGroup {
+			assert.True(t, n.Fulfilled(), "StepGroup %s left %s after the workflow %s", n.Name, n.Phase, r.woc.wf.Status.Phase)
+		}
+		assert.True(t, r4Reachable(r.woc, n.Name), "%s is not reachable from the root", n.Name)
+	}
+	return r.woc
+}
+
+// TestRegressionR4_C23_DaemonStepsSucceeded ports
+// TestProbe_v1x1_DaemonStepsSucceeded (v1x1-1_test.go / C23). A StepGroup
+// whose daemon step is up has finished, as a running daemon has for its
+// dependants: main recorded [0] Succeeded and hung [1] off the daemon. HEAD
+// kept [0] Running for the daemon's life, so [1] was never linked and [0]
+// stayed Running in the finished workflow.
+func TestRegressionR4_C23_DaemonStepsSucceeded(t *testing.T) {
+	woc := r4C23Drive(t, apiv1.PodSucceeded)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	client, err := woc.wf.GetNodeByName("r4-c23[1].client")
+	require.NoError(t, err)
+	assert.Equal(t, "10.0.0.7", client.Inputs.Parameters[0].Value.String())
+}
+
+// TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry ports
+// TestProbe_v1x1_DaemonStepsClientFailedArgoRetry (v1x1-1_test.go / C23).
+// With [1] unlinked, `argo retry` of the failed workflow could not find
+// [1]'s parent.
+func TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry(t *testing.T) {
+	woc := r4C23Drive(t, apiv1.PodFailed)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	_, _, err := wfutil.FormulateRetryWorkflow(logging.TestContext(t.Context()), woc.wf, false, "", nil)
+	require.NoError(t, err, "argo retry of the failed workflow")
+}
+
+// TestRegressionR4_C50_StepsDaemonDiesTrajectory ports
+// TestProbe_v1x67_StepsDaemonDiesTrajectory (v1x67-1_test.go / C49, the
+// fresh-run form of C50's mechanism). db's StepGroup was recorded
+// Succeeded once db was up; db then dies while test runs. Each group's
+// phase is derived from its steps on every reconcile, as main re-assessed
+// it, so the Steps node fails straight away, naming db, and report never
+// starts. [0] itself keeps the Succeeded it was recorded with (P16). HEAD
+// never looked at a finished group again: report ran and the workflow
+// failed only afterwards, or not at all.
+func TestRegressionR4_C50_StepsDaemonDiesTrajectory(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c50
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: db
+        template: daemon
+    - - name: test
+        template: work
+    - - name: report
+        template: work
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sleep, infinity]}
+  - name: work
+    container: {image: alpine, command: [echo]}
+`)
+	const db, test, report = "r4-c50[0].db", "r4-c50[1].test", "r4-c50[2].report"
+	reportStarted := false
+	stage := func(phase apiv1.PodPhase, name string, rounds int, with ...with) {
+		r4SetPodsPhase(t, ctx, r.woc, phase, r4PodForNode(name), with...)
+		for range rounds {
+			r.op(ctx)
+			reportStarted = reportStarted || r4NodePhase(r.woc, report) != ""
+		}
+	}
+	stage(apiv1.PodRunning, db, 2, r4WithReady)
+	stage(apiv1.PodRunning, test, 2)
+	stage(apiv1.PodFailed, db, 3)
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase, "the workflow once db has died")
+	dbNode, err := r.woc.wf.GetNodeByName(db)
+	require.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("child '%s' failed", dbNode.ID), r.woc.wf.Status.Message)
+	stage(apiv1.PodSucceeded, test, 3)
+	stage(apiv1.PodSucceeded, report, 3)
+	assert.False(t, reportStarted, "report must never start")
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
+}
+
+// r4C89Crash runs [[A (daemon)]], [[B]], where A is expanded or not: A comes
+// up, B starts, A's pods crash while B runs, then B succeeds.
+func r4C89Crash(t *testing.T, name, a string) *wfOperationCtx {
+	t.Helper()
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: `+name+`
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: daemon`+a+`
+    - - name: B
+        template: ok
+  - name: ok
+    container: {image: alpine, command: [sh, -c, "exit 0"]}
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sleep, "1000"]}
+`)
+	aPods, b := r4PodForNodePrefix(name+"[0].A"), name+"[1].B"
+	r.op(ctx)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, aPods, r4WithReady)
+	r.op(ctx)
+	r.op(ctx)
+	require.NotEmpty(t, r4NodePhase(r.woc, b), "B must start once A is up")
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(b))
+	r.op(ctx)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, aPods)
+	r.op(ctx)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(b))
+	for range 3 {
+		r.op(ctx)
+	}
+	return r.woc
+}
+
+// TestRegressionR4_C89_StepsExpandedDaemonCrashNextGroup ports
+// TestProbe_lead1_StepsExpandedDaemonCrashNextGroup (lead1-1_test.go /
+// C89). A's daemon items crash after [0] was recorded Succeeded: the
+// TaskGroup's outcome fails with them, so [0]'s derived phase does, and so
+// does the workflow, as on main. HEAD never looked at [0] again and the
+// workflow Succeeded.
+func TestRegressionR4_C89_StepsExpandedDaemonCrashNextGroup(t *testing.T) {
+	woc := r4C89Crash(t, "r4-c89", "\n        withItems: [p, q]")
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "daemon items crashed; the workflow must not succeed")
+}
+
+// TestRegressionR4_C89_StepsPlainDaemonCrashControl ports
+// TestProbe_lead1_StepsPlainDaemonCrashControl (lead1-1_test.go). Control:
+// the same crash of a plain daemon step fails the workflow at base and
+// HEAD. Fixing C23 without deriving a recorded group's phase again would
+// break it: [0] would be Succeeded for good once the daemon was up.
+func TestRegressionR4_C89_StepsPlainDaemonCrashControl(t *testing.T) {
+	woc := r4C89Crash(t, "r4-c89c", "")
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_C74_StepGroupWaitsForOnExit ports
+// TestProbe_v1x6_StepGroupWaitsForOnExit (v1x6-1_test.go / C74). A's step
+// group waits for A's exit handler, as main's did: it stays Running, with
+// no FinishedAt, while the handler runs, and does not finish before it.
+// HEAD recorded the group Succeeded as soon as A's pod did.
+func TestRegressionR4_C74_StepGroupWaitsForOnExit(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c74
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: work
+        onExit: exit-handler
+    - - name: B
+        template: work
+  - name: work
+    container: {image: alpine, command: [echo, hi]}
+  - name: exit-handler
+    container: {image: alpine, command: [echo, bye]}
+`)
+	const a, exit, sg0, b = "r4-c74[0].A", "r4-c74[0].A.onExit", "r4-c74[0]", "r4-c74[1].B"
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(a))
+	r.op(ctx)
+	for _, phase := range []apiv1.PodPhase{apiv1.PodRunning, apiv1.PodSucceeded} {
+		exitNode, err := r.woc.wf.GetNodeByName(exit)
+		require.NoError(t, err)
+		require.False(t, exitNode.Fulfilled(), "precondition: the exit handler runs")
+		sg, err := r.woc.wf.GetNodeByName(sg0)
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeRunning, sg.Phase, "step group [0] while A's exit handler runs")
+		assert.True(t, sg.FinishedAt.IsZero(), "step group [0] FinishedAt while A's exit handler runs")
+		assert.Empty(t, r4NodePhase(r.woc, b), "B must not start while A's exit handler runs")
+		time.Sleep(20 * time.Millisecond)
+		r4SetPodsPhase(t, ctx, r.woc, phase, r4PodForNode(exit))
+		r.op(ctx)
+	}
+	for i := 0; i < 4 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(b))
+		r.op(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+	sg, err := r.woc.wf.GetNodeByName(sg0)
+	require.NoError(t, err)
+	exitNode, err := r.woc.wf.GetNodeByName(exit)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, sg.Phase)
+	assert.False(t, sg.FinishedAt.Before(&exitNode.FinishedAt), "step group [0] finished before A's exit handler")
+}
+
+// r4RunDecided reconciles manifest, deciding each pod's phase from its node,
+// until the workflow completes (at most rounds), then three more times.
+// It returns the node names of the workflow's pods.
+func r4RunDecided(t *testing.T, manifest string, rounds int, decide func(*wfv1.NodeStatus) apiv1.PodPhase) (*wfOperationCtx, []string) {
+	t.Helper()
+	ctx, r := r4Start(t, manifest)
+	for i := 0; i < rounds && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, decide)
+		r.op(ctx)
+	}
+	for range 3 {
+		setPodPhases(ctx, r.woc, decide)
+		r.op(ctx)
+	}
+	return r.woc, r4PodNodeNames(ctx, t, r.woc)
+}
+
+const r4C74SpecRetryHooked = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c74-sr
+  namespace: default
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 1
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: work
+        hooks:
+          exit:
+            template: hook
+    - - name: b
+        template: work
+  - name: work
+    container: {image: alpine, command: [echo]}
+  - name: hook
+    container: {image: alpine, command: [echo]}
+`
+
+// TestRegressionR4_C74_HooksExitAllSucceed ports
+// TestProbe_lead10_StepsHooksExitAllSucceed (lead10-1_test.go / C74, lead
+// 10). Under spec.retryStrategy a's exit hook runs once. HEAD recorded [0]
+// before the hook finished and linked [1] under the hook's Retry node,
+// which then started a second hook attempt.
+func TestRegressionR4_C74_HooksExitAllSucceed(t *testing.T) {
+	woc, pods := r4RunDecided(t, r4C74SpecRetryHooked, 20, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	hooks := slices.DeleteFunc(pods, func(name string) bool { return !strings.Contains(name, "onExit") })
+	assert.Len(t, hooks, 1, "exit hook pods %v", hooks)
+}
+
+// TestRegressionR4_C74_SpecRetryStepsHookedFail ports
+// TestProbe_lead7_SpecRetryStepsHookedFail (lead7-1_test.go / C74, lead 7).
+// a always fails: the workflow makes exactly spec.retryStrategy's two
+// attempts, each running a twice, and leaves nothing running. HEAD's early
+// link started an attempt beyond the limit and left nodes Running in the
+// completed workflow.
+func TestRegressionR4_C74_SpecRetryStepsHookedFail(t *testing.T) {
+	isA := func(name string) bool {
+		return strings.Contains(name, ".a(") && !strings.Contains(name, "onExit") && !strings.Contains(name, "hooks")
+	}
+	woc, pods := r4RunDecided(t, r4C74SpecRetryHooked, 16, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if isA(n.Name) || strings.HasSuffix(n.Name, ".a") {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	})
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	for i := range 2 {
+		assert.NotEmpty(t, r4NodePhase(woc, fmt.Sprintf("r4-c74-sr(%d)", i)), "attempt %d", i)
+	}
+	assert.Empty(t, r4NodePhase(woc, "r4-c74-sr(2)"), "no attempt beyond the limit")
+	assert.Len(t, slices.DeleteFunc(pods, func(name string) bool { return !isA(name) }), 4, "2 workflow attempts x 2 attempts of a")
+	assert.Empty(t, r4Unfulfilled(woc), "nodes left unfulfilled")
+}
