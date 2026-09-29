@@ -216,8 +216,6 @@ func r4TaskResultOutputs(ctx context.Context, woc *wfOperationCtx, nodeName stri
 // r4LegacyStepItem is one item of an expanded step in a legacy (pre-Engine)
 // in-flight Steps status: its item name (as it appears in "step(item)") and
 // the phase the base controller had recorded for it.
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 type r4LegacyStepItem struct {
 	Name  string
 	Phase wfv1.NodePhase
@@ -231,8 +229,6 @@ type r4LegacyStepItem struct {
 // must adopt these legacy items into a TaskGroup it creates for them,
 // rather than creating a fresh, empty TaskGroup that ignores items which
 // already finished or failed under the old controller.
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4LegacyStepsStatus(manifest string, groupIdx int, stepName, tmplName string, items []r4LegacyStepItem) *wfv1.Workflow {
 	wf := wfv1.MustUnmarshalWorkflow(manifest)
 	now := metav1.NewTime(time.Now().Add(-time.Minute))
