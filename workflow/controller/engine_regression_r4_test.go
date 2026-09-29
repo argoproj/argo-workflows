@@ -3242,3 +3242,45 @@ func TestRegressionR4_C83_StepsInvalidWhenHint(t *testing.T) {
 	}
 	assert.Contains(t, all, `(hint: try wrapping the affected expression in quotes ("))`)
 }
+
+// TestRegressionR4_C86_SeqNoCountNoEnd ports TestProbe_v1x40_DagSeqNoCountNoEnd
+// (v1x40-1_test.go / C86). A withSequence with neither count nor end
+// (validation accepts it) must error, as base's expandSequence did with
+// "neither end nor count was specified in withSequence", instead of HEAD's
+// silent zero-item "Skipped, empty params".
+func TestRegressionR4_C86_SeqNoCountNoEnd(t *testing.T) {
+	for _, rounds := range []int{1, 3} {
+		t.Run(fmt.Sprintf("rounds=%d", rounds), func(t *testing.T) {
+			woc := r4RunRounds(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c86-seq
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fan
+        template: echo
+        arguments: {parameters: [{name: msg, value: "{{item}}"}]}
+        withSequence: {start: "5"}
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: busybox
+      args: ["{{inputs.parameters.msg}}"]
+`, rounds)
+			dumpNodes(t, "final", woc.wf)
+			fan, err := woc.wf.GetNodeByName("r4-c86-seq.fan")
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeError, fan.Phase, fan.Message)
+			assert.Contains(t, fan.Message, "neither end nor count")
+			assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		})
+	}
+}
