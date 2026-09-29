@@ -72,215 +72,39 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 const invalidErr = "is invalid"
 
-var dupTemplateNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-`
-
-var dupInputNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: dup
-        value: "value"
-      - name: dup
-        value: "value"
-    container:
-      image: docker/whalesay:latest
-`
-
-var emptyName = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: ""
-        value: "value"
-    container:
-      image: docker/whalesay:latest
-`
-
 func TestDuplicateOrEmptyNames(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, dupTemplateNames)
+	err := validate(ctx, "@testdata/basic/dup-template-names.yaml")
 	require.ErrorContains(t, err, "not unique")
 
-	err = validate(ctx, dupInputNames)
+	err = validate(ctx, "@testdata/basic/dup-input-names.yaml")
 	require.ErrorContains(t, err, "not unique")
 
-	err = validate(ctx, emptyName)
+	err = validate(ctx, "@testdata/basic/empty-name.yaml")
 	require.ErrorContains(t, err, "name is required")
 }
 
-var unresolvedInput = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:{{inputs.parameters.unresolved}}
-`
-
-var unresolvedStepInput = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: entry-step
-  arguments:
-    parameters: []
-  templates:
-    - steps:
-        - - name: a
-            arguments:
-              parameters:
-                - name: message
-                  value: "{{inputs.parameters.message}}"
-            template: whalesay
-      name: entry-step
-      inputs:
-        parameters:
-          - name: message
-            value: hello world
-    - name: whalesay
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-`
-
-var unresolvedOutput = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: unresolved-output-steps
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-  - name: unresolved-output-steps
-    steps:
-    - - name: whalesay
-        template: whalesay
-    outputs:
-      parameters:
-      - name: unresolved
-        valueFrom:
-          parameter: "{{steps.whalesay.outputs.parameters.unresolved}}"
-`
-
 func TestUnresolved(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, unresolvedInput)
+	err := validate(ctx, "@testdata/basic/unresolved-input.yaml")
 	require.ErrorContains(t, err, "failed to resolve")
 
-	err = validate(ctx, unresolvedStepInput)
+	err = validate(ctx, "@testdata/basic/unresolved-step-input.yaml")
 	require.ErrorContains(t, err, "failed to resolve")
 
-	err = validate(ctx, unresolvedOutput)
+	err = validate(ctx, "@testdata/basic/unresolved-output.yaml")
 	require.ErrorContains(t, err, "failed to resolve")
 }
-
-var ioArtifactPaths = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: artifact-path-placeholders-
-spec:
-  entrypoint: head-lines
-  arguments:
-    parameters:
-    - name: lines-count
-      value: 3
-    artifacts:
-    - name: text
-      raw:
-        data: |
-          1
-          2
-          3
-          4
-          5
-  templates:
-  - name: head-lines
-    inputs:
-      parameters:
-      - name: lines-count
-      artifacts:
-      - name: text
-        path: /inputs/text/data
-    outputs:
-      parameters:
-      - name: actual-lines-count
-        valueFrom:
-          path: /outputs/actual-lines-count/data
-      artifacts:
-      - name: text
-        path: /outputs/text/data
-    container:
-      image: busybox
-      command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
-`
 
 func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, ioArtifactPaths)
+	err := validate(ctx, "@testdata/basic/io-artifact-paths.yaml")
 	require.NoError(t, err)
 }
 
-var outputParameterPath = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: get-current-date-
-spec:
-  entrypoint: get-current-date
-  templates:
-  - name: get-current-date
-    outputs:
-      parameters:
-      - name: current-date
-        valueFrom:
-          path: /tmp/current-date
-    container:
-      image: busybox
-      command: [sh, -c, 'date > {{outputs.parameters.current-date.path}}']
-`
-
 func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, outputParameterPath)
+	err := validate(ctx, "@testdata/basic/output-parameter-path.yaml")
 	require.NoError(t, err)
 }
 
@@ -392,222 +216,37 @@ spec:
 	}
 }
 
-var stepOutputReferences = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: step-output-ref-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        value: "value"
-    container:
-      image: docker/whalesay:latest
-    outputs:
-      parameters:
-      - name: outparam
-        valueFrom:
-          path: /etc/hosts
-  - name: stepref
-    steps:
-    - - name: one
-        template: whalesay
-    - - name: two
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.outputs.parameters.outparam}}"
-`
-
 func TestStepOutputReference(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, stepOutputReferences)
+	err := validate(ctx, "@testdata/basic/step-output-references.yaml")
 	require.NoError(t, err)
 }
-
-var stepStatusReferences = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: status-ref-
-spec:
-  entrypoint: statusref
-  templates:
-  - name: statusref
-    steps:
-    - - name: one
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "Hello, world"
-    - - name: two
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.status}}"
-  - name: say
-    inputs:
-      parameters:
-      - name: message
-        value: "value"
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo {{inputs.parameters.message}}"]
-`
 
 func TestStepStatusReference(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, stepStatusReferences)
+	err := validate(ctx, "@testdata/basic/step-status-references.yaml")
 	require.NoError(t, err)
 }
 
-var stepStatusReferencesNoFutureReference = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: status-ref-
-spec:
-  entrypoint: statusref
-  templates:
-  - name: statusref
-    steps:
-    - - name: one
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.two.status}}"
-    - - name: two
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.status}}"
-  - name: say
-    inputs:
-      parameters:
-      - name: message
-        value: "value"
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo {{inputs.parameters.message}}"]
-`
-
 func TestStepStatusReferenceNoFutureReference(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, stepStatusReferencesNoFutureReference)
+	err := validate(ctx, "@testdata/basic/step-status-references-no-future-reference.yaml")
 	// Can't reference the status of steps that have not run yet
 	require.ErrorContains(t, err, "failed to resolve {{steps.two.status}}")
 }
 
-var stepArtReferences = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: step-art-ref-
-spec:
-  entrypoint: stepref
-  templates:
-  - name: generate
-    container:
-      image: alpine:3.23
-      command: [echo, generate]
-    outputs:
-      artifacts:
-      - name: generated_hosts
-        path: /etc/hosts
-
-  - name: echo
-    inputs:
-      parameters:
-      - name: message
-      artifacts:
-      - name: passthrough
-        path: /tmp/passthrough
-    container:
-      image: alpine:3.23
-      command: [echo, "{{inputs.parameters.message}}"]
-    outputs:
-      parameters:
-      - name: hosts
-        valueFrom:
-          path: /etc/hosts
-      artifacts:
-      - name: someoutput
-        path: /tmp/passthrough
-
-  - name: stepref
-    steps:
-    - - name: one
-        template: generate
-    - - name: two
-        template: echo
-        arguments:
-          parameters:
-          - name: message
-            value: val
-          artifacts:
-          - name: passthrough
-            from: "{{steps.one.outputs.artifacts.generated_hosts}}"
-`
-
 func TestStepArtReference(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), stepArtReferences)
+	err := validate(logging.TestContext(t.Context()), "@testdata/basic/step-art-references.yaml")
 	require.NoError(t, err)
 }
-
-var paramWithValueFromConfigMapRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: simple-config
-            key: msg
-    container:
-      image: docker/whalesay:latest
-`
 
 func TestParamWithValueFromConfigMapRef(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), paramWithValueFromConfigMapRef)
+	err := validate(logging.TestContext(t.Context()), "@testdata/basic/param-with-value-from-config-map-ref.yaml")
 	require.NoError(t, err)
 }
 
-var paramWithoutValue = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-`
-
 func TestParamWithoutValue(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), paramWithoutValue)
+	err := validate(logging.TestContext(t.Context()), "@testdata/basic/param-without-value.yaml")
 	require.ErrorContains(t, err, "not supplied")
 }
 
