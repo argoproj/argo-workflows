@@ -42,8 +42,8 @@ type Engine struct {
 	// hookErr is the hook error that ends the boundary Error: that of a hook
 	// node found Error when the reconcile starts (one that could not be
 	// created, timed out, errored while it ran, or had its error recorded on
-	// it; a hook that ran and Failed is not an error, as on main), or one on
-	// a finished node in this reconcile (markHookError). While it is set no
+	// it; a hook that ran and Failed is not an error, as on main), or one
+	// raised in this reconcile (markHookError). While it is set no
 	// new task node is created, and finalize ends the boundary Error once
 	// nothing in it is running (C33, P20, P21).
 	hookErr error
@@ -329,11 +329,10 @@ func (e *Engine) hookScope(ctx context.Context, task dag.Task) (*wfScope, error)
 	return scope, nil
 }
 
-// markHookError records a hook error of node, the node whose hook failed. A
-// node that has not finished takes it as its own error, as main's lifecycle
-// hooks did. A finished node cannot (e.g. an exit hook errored after its task
-// Succeeded, #14031): the error goes on the hook node, as Error, and ends the
-// boundary Error (see hookErr).
+// markHookError records a hook error of node, the node whose hook failed: it
+// ends the boundary Error (see hookErr), and a node that has not finished
+// also takes it as its own error, as main's lifecycle hooks did. The hook's
+// own node is already Error (errorHookNode, or it failed to run).
 func (e *Engine) markHookError(ctx context.Context, node *wfv1.NodeStatus, err error) {
 	if err == nil {
 		return
@@ -341,9 +340,7 @@ func (e *Engine) markHookError(ctx context.Context, node *wfv1.NodeStatus, err e
 	e.log.WithError(err).WithField("node", node.Name).Error(ctx, "task hook errored")
 	if n, getErr := e.woc.wf.GetNodeByName(node.Name); getErr == nil && !n.Fulfilled() {
 		e.woc.markNodeError(ctx, node.Name, err)
-		return
 	}
-	e.hooks.recordError(ctx, node, err)
 	e.hookErr = cmp.Or(e.hookErr, err)
 }
 
