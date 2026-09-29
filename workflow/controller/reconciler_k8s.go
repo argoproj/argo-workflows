@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
@@ -37,9 +36,9 @@ func NewK8sTaskReconciler(woc *wfOperationCtx, tmplCtx *templateresolution.Templ
 //   - any other error is the task's own outcome: recordTaskError records it as
 //     an Error on the task's node (created and linked if the dispatch left
 //     none), the rest of the batch is still reconciled, and the first such
-//     error is returned (ErrTimeout / ErrMaxDepthExceeded bare, others as
-//     "task X errored: ..."). The boundary is not touched, so sibling tasks
-//     can still be scheduled.
+//     error is returned unwrapped, as main did for entry/onExit/hook errors
+//     and DAG task node messages alike. The boundary is not touched, so
+//     sibling tasks can still be scheduled.
 func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask) error {
 	var taskErr error
 	for _, dt := range desired {
@@ -86,14 +85,8 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 		}
 		r.woc.log.WithError(err).WithField("task", dt.TaskName).Error(ctx, "task errored")
 		r.recordTaskError(ctx, dt, err)
-		switch {
-		case taskErr != nil:
-		case errors.Is(err, ErrTimeout), errors.Is(err, ErrMaxDepthExceeded):
-			// Already recorded on the node by the dispatch; keep the bare
-			// sentinel, as the entrypoint's error message shows it.
+		if taskErr == nil {
 			taskErr = err
-		default:
-			taskErr = fmt.Errorf("task %s errored: %w", dt.OriginalTaskName, err)
 		}
 	}
 	return taskErr

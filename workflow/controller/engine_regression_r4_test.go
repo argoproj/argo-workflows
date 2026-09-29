@@ -2980,3 +2980,159 @@ spec:
 	}
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
+
+// r4RunRounds unmarshals manifest, validates it, operates once, then
+// succeeds every pod and operates again for each of the remaining rounds.
+// Shared by the C80/C84 message tests.
+func r4RunRounds(t *testing.T, manifest string, rounds int) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 1; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	return woc
+}
+
+// TestRegressionR4_C80_EntryPodSpecPatchMessage ports
+// TestProbe_v1x2_EntryPodSpecPatchMessage (v1x2-1_test.go / C80). An
+// entrypoint whose podSpecPatch fails to apply must report the cause alone,
+// not wrapped as if the workflow itself were a task ("task <wf> errored:").
+func TestRegressionR4_C80_EntryPodSpecPatchMessage(t *testing.T) {
+	woc := r4RunRounds(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c80-entry-psp
+  namespace: default
+spec:
+  entrypoint: work
+  arguments:
+    parameters:
+    - name: patch
+      value: not-a-pod-spec
+  templates:
+  - name: work
+    podSpecPatch: "{{workflow.parameters.patch}}"
+    container:
+      image: alpine
+      command: [echo, hi]
+`, 2)
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, "error in entry template execution: Error applying PodSpecPatch", woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C80_WfOnExitPodSpecPatchMessage ports
+// TestProbe_v1x2_WfOnExitPodSpecPatchMessage (v1x2-1_test.go / C80). Same
+// for a workflow-level onExit template.
+func TestRegressionR4_C80_WfOnExitPodSpecPatchMessage(t *testing.T) {
+	woc := r4RunRounds(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c80-onexit-psp
+  namespace: default
+spec:
+  entrypoint: ok
+  onExit: bad
+  templates:
+  - name: ok
+    container:
+      image: alpine
+      command: [echo, hi]
+  - name: bad
+    podSpecPatch: "this is not a patch"
+    container:
+      image: alpine
+      command: [echo, hi]
+`, 3)
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, "error in exit template execution : Error applying PodSpecPatch", woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C80_StepsOnExitPodSpecPatchMessage ports
+// TestProbe_v1x2_StepsOnExitPodSpecPatchMessage (v1x2-1_test.go / C80). A
+// step-level exit hook whose pod cannot be built must not gain the "task
+// ... errored:" prefix on the workflow message either.
+func TestRegressionR4_C80_StepsOnExitPodSpecPatchMessage(t *testing.T) {
+	woc := r4RunRounds(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c80-steps-onexit-psp
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: ok
+        onExit: bad
+  - name: ok
+    container:
+      image: alpine
+      command: [echo, hi]
+  - name: bad
+    podSpecPatch: "this is not a patch"
+    container:
+      image: alpine
+      command: [echo, hi]
+`, 4)
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, "Error applying PodSpecPatch", woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C84_PodRetryExprErrorMessage ports
+// TestProbe_v3x2_PodRetryExprErrorMessage (v3x2-1_test.go / C84). A pod
+// entry template whose retryStrategy.expression fails to evaluate must not
+// gain the "task <wf> errored:" prefix on the workflow message.
+func TestRegressionR4_C84_PodRetryExprErrorMessage(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c84-pod-retry
+  namespace: default
+spec:
+  entrypoint: work
+  templates:
+  - name: work
+    retryStrategy:
+      limit: 2
+      expression: 'asInt(lastRetry.message) >= 0'
+    container:
+      image: alpine
+      command: [echo]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
+		for id, n := range woc.wf.Status.Nodes {
+			if (n.Type == wfv1.NodeTypeSteps || n.Type == wfv1.NodeTypeDAG) && !n.StartedAt.IsZero() {
+				n.StartedAt = metav1.NewTime(n.StartedAt.Add(time.Duration(-1500) * time.Millisecond))
+				woc.wf.Status.Nodes[id] = n
+			}
+		}
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.NotContains(t, woc.wf.Status.Message, "task r4-c84-pod-retry errored")
+}
