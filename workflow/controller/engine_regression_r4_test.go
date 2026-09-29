@@ -4381,3 +4381,309 @@ func TestRegressionR4_C30_FailedFirstStepDoesNotRunLater(t *testing.T) {
 		assert.Equal(t, wfv1.NodeOmitted, second.Phase)
 	}
 }
+
+// r4RetryStored applies `argo retry` (FormulateRetryWorkflow) to wf, stores
+// the retried workflow and deletes the pods retry asks to delete, as the
+// server does.
+//
+//nolint:revive // matches the r4 harness convention (t before ctx)
+func r4RetryStored(t *testing.T, ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow) *wfv1.Workflow {
+	t.Helper()
+	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, wf.DeepCopy(), false, "", nil)
+	require.NoError(t, err, "argo retry")
+	for _, p := range podsToDelete {
+		_ = controller.kubeclientset.CoreV1().Pods(wf.Namespace).Delete(ctx, p, metav1.DeleteOptions{})
+	}
+	retried, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	return retried
+}
+
+// r4BackdateNodes moves the StartedAt of every node of the stored workflow d
+// into the past, so a later node's start time is told apart from the Steps
+// node's without sleeping between reconciles.
+//
+//nolint:revive // matches the r4 harness convention (t before ctx)
+func r4BackdateNodes(t *testing.T, ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow, d time.Duration) {
+	t.Helper()
+	wfs := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+	stored, err := wfs.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	for id, n := range stored.Status.Nodes {
+		n.StartedAt = metav1.NewTime(n.StartedAt.Add(-d))
+		stored.Status.Nodes[id] = n
+	}
+	_, err = wfs.Update(ctx, stored, metav1.UpdateOptions{})
+	require.NoError(t, err)
+}
+
+// r4UnfulfilledTyped lists the nodes that are not fulfilled, as
+// "name(type)=phase".
+func r4UnfulfilledTyped(wf *wfv1.Workflow) []string {
+	var out []string
+	for _, n := range wf.Status.Nodes {
+		if !n.Fulfilled() {
+			out = append(out, fmt.Sprintf("%s(%s)=%s", n.Name, n.Type, n.Phase))
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+const r4C52FailFastGroups = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c52-ff
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    failFast: true
+    steps:
+    - - name: a
+        template: work
+    - - name: b
+        template: work
+    - - name: c
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [sh, -c, "exit 0"]
+`
+
+// TestRegressionR4_C52_TwoGroupsRetryCompletes ports
+// TestProbe_r3x0_TwoGroupsRetryCompletes (r3x0-1_test.go / C52). A failFast
+// Steps template whose first step fails ends with every node fulfilled, and
+// `argo retry` then runs it to Succeeded. HEAD created every StepGroup up
+// front; the failFast branch closed only one, so the later groups stayed
+// Running and unlinked and retry failed with "couldn't find parent node".
+func TestRegressionR4_C52_TwoGroupsRetryCompletes(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C52FailFastGroups)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	for i := 0; i < 15 && !woc.wf.Status.Fulfilled(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "nodes left non-terminal in a finished workflow")
+
+	retried := r4RetryStored(t, ctx, controller, woc.wf)
+	woc = r4Operate(t, ctx, controller, retried)
+	for i := 0; i < 15 && !woc.wf.Status.Fulfilled(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "nodes left non-terminal in a finished workflow")
+}
+
+// TestRegressionR4_C75_StepsDeadlineMessage ports
+// TestProbe_v1x8_StepsDeadlineMessage (v1x8-1_test.go / C75).
+// activeDeadlineSeconds expires while the first step of a two-group Steps
+// template runs, and the killed step's pod lingers. The workflow message
+// names the failed step, and group [1], which never ran, is not marked with
+// the deadline message. HEAD pre-created [1] and linked it under the killed
+// step, so execution control failed it "Step exceeded its deadline" and that
+// replaced the Steps and workflow message.
+func TestRegressionR4_C75_StepsDeadlineMessage(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c75-deadline
+  namespace: default
+spec:
+  entrypoint: main
+  activeDeadlineSeconds: 30
+  onExit: echo
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        hooks:
+          exit:
+            template: echo
+    - - name: b
+        template: echo
+  - name: echo
+    container: {image: alpine, command: [echo]}
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for round := 1; round <= 4; round++ {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			switch {
+			case round == 1:
+				return apiv1.PodRunning
+			case n.DisplayName == "a", n.Phase.Fulfilled(nil):
+				return "" // the killed pod has not gone away yet
+			}
+			return apiv1.PodSucceeded
+		})
+		next := woc.wf
+		if round == 1 {
+			next.Status.StartedAt = metav1.NewTime(time.Now().Add(-time.Hour))
+		}
+		woc = newWorkflowOperationCtx(ctx, next, controller)
+		woc.operate(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	a, err := woc.wf.GetNodeByName("r4-c75-deadline[0].a")
+	require.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("child '%s' failed", a.ID), woc.wf.Status.Message)
+	steps, err := woc.wf.GetNodeByName("r4-c75-deadline")
+	require.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("child '%s' failed", a.ID), steps.Message)
+	if sg1, err := woc.wf.GetNodeByName("r4-c75-deadline[1]"); err == nil {
+		assert.NotEqual(t, "Step exceeded its deadline", sg1.Message, "a StepGroup that never ran is not a deadline-killed step")
+	}
+}
+
+// TestRegressionR4_C85_StepGroupStartedAt ports
+// TestProbe_v1x35_StepGroupStartedAt (v1x35-1_test.go / C85), keeping only
+// its "[1] not before [0].FinishedAt" check. The nodes are back-dated after
+// the first reconcile instead of sleeping. A StepGroup starts when the group
+// before it has finished; HEAD created every group with the Steps node, so
+// [1]'s StartedAt (and its UI duration) included group [0]'s run.
+func TestRegressionR4_C85_StepGroupStartedAt(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c85-sg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: work
+    - - name: B
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [echo, hi]
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	r4BackdateNodes(t, ctx, controller, woc.wf, time.Hour)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	sg0, err := woc.wf.GetNodeByName("r4-c85-sg[0]")
+	require.NoError(t, err)
+	sg1, err := woc.wf.GetNodeByName("r4-c85-sg[1]")
+	require.NoError(t, err)
+	assert.False(t, sg1.StartedAt.Before(&sg0.FinishedAt), "mid: StepGroup [1] started %s, before StepGroup [0] finished %s", sg1.StartedAt, sg0.FinishedAt)
+
+	woc = r4DriveToEnd(t, ctx, controller, woc, 4)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	sg0, err = woc.wf.GetNodeByName("r4-c85-sg[0]")
+	require.NoError(t, err)
+	sg1, err = woc.wf.GetNodeByName("r4-c85-sg[1]")
+	require.NoError(t, err)
+	assert.False(t, sg1.StartedAt.Before(&sg0.FinishedAt), "end: StepGroup [1] started %s, before StepGroup [0] finished %s", sg1.StartedAt, sg0.FinishedAt)
+}
+
+// TestRegressionR4_C85_ExpandedStartedAtNoSleep is the back-dated variant of
+// TestProbe_v1x35_ExpandedStartedAt (wp7.md §4.2 / C85). {{steps.a.startedAt}}
+// of an expanded step reads its StepGroup, so it is when group [1] started,
+// like its non-expanded sibling plain; HEAD created the group with the Steps
+// node, an hour earlier once back-dated.
+func TestRegressionR4_C85_ExpandedStartedAtNoSleep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c85-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: first
+        template: echo
+    - - name: a
+        template: echo
+        withItems: [one, two]
+      - name: plain
+        template: echo
+    - - name: b
+        template: echo-p
+        arguments:
+          parameters:
+          - name: p
+            value: "{{steps.a.startedAt}}"
+          - name: q
+            value: "{{steps.plain.startedAt}}"
+  - name: echo
+    container:
+      image: alpine
+      command: [echo]
+  - name: echo-p
+    inputs:
+      parameters:
+      - name: p
+      - name: q
+    container:
+      image: alpine
+      command: [echo]
+      args: ["{{inputs.parameters.p}}", "{{inputs.parameters.q}}"]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	r4BackdateNodes(t, ctx, controller, woc.wf, time.Hour)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 6)
+	b, err := woc.wf.GetNodeByName("r4-c85-items[2].b")
+	require.NoError(t, err)
+	require.NotNil(t, b.Inputs)
+	params := map[string]time.Time{}
+	for _, prm := range b.Inputs.Parameters {
+		at, err := time.Parse(time.RFC3339, prm.Value.String())
+		require.NoError(t, err, prm.Name)
+		params[prm.Name] = at
+	}
+	require.Len(t, params, 2)
+	assert.WithinDuration(t, params["q"], params["p"], time.Minute, "steps.a.startedAt must be when group [1] started, as steps.plain.startedAt is")
+}
+
+// TestRegressionR4_C30_EmptyGroupRetry ports
+// TestProbe_wp7_EmptyGroupRetryAfterFailure
+// (plan-inputs/wp7-empty-group-retry_test.go / C30, P12). An empty group
+// after a failed group ends Omitted: HEAD marked it Succeeded in the first
+// reconcile, so the failed first step had a Succeeded descendant and `argo
+// retry` would not reset it; the retried workflow then never completed.
+func TestRegressionR4_C30_EmptyGroupRetry(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	retried := r4RetryStored(t, ctx, controller, woc.wf)
+	woc = r4Operate(t, ctx, controller, retried)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 6)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Empty(t, r4UnfulfilledTyped(woc.wf))
+}
