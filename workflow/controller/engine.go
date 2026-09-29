@@ -248,32 +248,55 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 	}
 }
 
-// processHooks runs a task's lifecycle hooks and exit handlers and reports
-// whether its exit handlers have completed. A hook error is isolated to the
-// failing task node (not the boundary), mirroring the legacy controller's
+// processHooks drives a task's hooks (hookHandler.DriveTaskHooks) and reports
+// whether they are done. An expanded task's exit hook runs once per item, on
+// the item node and with that item's outputs, as executeDAGTask and
+// executeStepGroup did before the Engine. A hook error is isolated to the
+// failing node (not the boundary), mirroring the legacy controller's
 // executeDAGTask behavior — a single bad hook on one task must not abort
 // sibling tasks or the DAG/Steps boundary.
 func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
-	// ProcessAllTaskHooks isolates per-task errors on the task (via the
-	// callback below) and never returns one.
-	done, _ := e.hooks.ProcessAllTaskHooks(ctx, []dag.Task{task},
-		e.getTaskNode,
-		e.buildLocalScopeFromTask,
-		func(ctx context.Context, taskNode *wfv1.NodeStatus, err error) {
-			// Mark the offending task node Errored, not the boundary. Siblings
-			// continue to be processed in the same operate cycle.
-			e.woc.markNodeError(ctx, taskNode.Name, err)
-			// If the task node is already fulfilled (e.g. an exit hook errored
-			// after the task Succeeded), the phase state machine refuses the
-			// Error mark and the failure would be recorded nowhere: finalize
-			// gates on onExitCompleted and the boundary stays Running forever
-			// (#14031). Surface the error on the boundary instead.
-			if n, getErr := e.woc.wf.GetNodeByName(taskNode.Name); getErr == nil && n.Fulfilled() && n.Phase != wfv1.NodeError {
-				e.woc.markNodeError(ctx, e.nodeName, err)
-			}
-		},
-	)
+	node := e.getTaskNode(ctx, task.GetName())
+	if node == nil || !e.hooks.hasHooks(task) {
+		return true
+	}
+	scope, err := e.buildLocalScopeFromTask(ctx, task)
+	if err != nil {
+		e.markHookError(ctx, node, err)
+		return false
+	}
+	done, err := e.hooks.DriveTaskHooks(ctx, task, task.GetDisplayName(), node, scope)
+	e.markHookError(ctx, node, err)
+	if !done || node.Type != wfv1.NodeTypeTaskGroup {
+		return done
+	}
+	for _, childID := range node.Children {
+		item, err := e.woc.wf.Status.Nodes.Get(childID)
+		if err != nil || (item.NodeFlag != nil && item.NodeFlag.Hooked) {
+			continue
+		}
+		e.hooks.ref.Status.Set(scope.scope, string(item.Phase), task.GetDisplayName())
+		itemDone, err := e.hooks.driveExitHook(ctx, task, task.GetDisplayName(), item, scope)
+		e.markHookError(ctx, item, ignoreThrottle(err))
+		done = done && itemDone
+	}
 	return done
+}
+
+// markHookError records a hook error on node, the node whose hook failed. If
+// node is already fulfilled (e.g. an exit hook errored after the task
+// Succeeded), the phase state machine refuses the Error mark and the failure
+// would be recorded nowhere: finalize waits on the hooks and the boundary
+// stays Running forever (#14031). The error goes on the boundary instead.
+func (e *Engine) markHookError(ctx context.Context, node *wfv1.NodeStatus, err error) {
+	if err == nil {
+		return
+	}
+	e.log.WithError(err).WithField("node", node.Name).Error(ctx, "task hook errored; isolating to this task")
+	e.woc.markNodeError(ctx, node.Name, err)
+	if n, getErr := e.woc.wf.GetNodeByName(node.Name); getErr == nil && n.Fulfilled() && n.Phase != wfv1.NodeError {
+		e.woc.markNodeError(ctx, e.nodeName, err)
+	}
 }
 
 // assessStepGroups starts each empty StepGroup once the group before it has
@@ -731,7 +754,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 			return e.woc.markNodeError(ctx, taskNodeName, err), err
 		}
 		e.hooks.ref.Status.Set(scope.scope, string(taskNode.Phase), task.GetDisplayName())
-		hookCompleted, err := e.hooks.ExecuteLifecycleHooks(ctx, scope, task.GetHooks(), taskNode, task.GetDisplayName())
+		hookCompleted, err := e.woc.executeTmplLifeCycleHook(ctx, scope, task.GetHooks(), taskNode, e.boundaryID, e.tmplCtx, e.hooks.ref, task.GetDisplayName())
 		if err != nil && !isThrottleErr(err) {
 			e.woc.markNodeError(ctx, taskNodeName, err)
 		}

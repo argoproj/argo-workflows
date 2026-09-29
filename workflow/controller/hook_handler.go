@@ -14,159 +14,22 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
-// hookHandler encapsulates all lifecycle hook and exit handler logic for the Engine.
-// It keeps hook orchestration in one place rather than scattered across Execute and executeTask.
+// hookHandler drives the lifecycle hooks and exit hooks of a DAG's tasks or
+// a Steps template's steps for the Engine.
 type hookHandler struct {
 	woc        *wfOperationCtx
 	tmplCtx    *templateresolution.TemplateContext
 	boundaryID string
-	prefix     string              // "tasks" or "steps"
-	ref        varkeys.NodeRefKeys // sibling-node variable keys matching prefix
+	ref        varkeys.NodeRefKeys // sibling-node variable keys ("tasks" or "steps")
 	log        logging.Logger
 }
 
 func newHookHandler(woc *wfOperationCtx, tmplCtx *templateresolution.TemplateContext, boundaryID string, tmpl *wfv1.Template, log logging.Logger) *hookHandler {
-	prefix, ref := "tasks", varkeys.TasksNodeRef
+	ref := varkeys.TasksNodeRef
 	if tmpl.GetType() == wfv1.TemplateTypeSteps {
-		prefix, ref = "steps", varkeys.StepsNodeRef
+		ref = varkeys.StepsNodeRef
 	}
-	return &hookHandler{
-		woc:        woc,
-		tmplCtx:    tmplCtx,
-		boundaryID: boundaryID,
-		prefix:     prefix,
-		ref:        ref,
-		log:        log,
-	}
-}
-
-// ExecuteLifecycleHooks runs non-exit lifecycle hooks for a task node.
-// It delegates to woc.executeTmplLifeCycleHook and returns whether all hooks have completed.
-func (h *hookHandler) ExecuteLifecycleHooks(ctx context.Context, scope *wfScope, hooks wfv1.LifecycleHooks, taskNode *wfv1.NodeStatus, displayName string) (bool, error) {
-	return h.woc.executeTmplLifeCycleHook(ctx, scope, hooks, taskNode, h.boundaryID, h.tmplCtx, h.ref, displayName)
-}
-
-// ExecuteExitHandler evaluates and runs the exit handler for a completed task.
-// Returns (hasExitNode, exitNode, error). If exitHook is nil, returns (false, nil, nil).
-func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.LifecycleHook, taskNode *wfv1.NodeStatus, displayName string, scope *wfScope) (bool, *wfv1.NodeStatus, error) {
-	if exitHook == nil {
-		return false, nil, nil
-	}
-
-	if !h.woc.GetShutdownStrategy().ShouldExecute(true) {
-		return false, nil, nil
-	}
-
-	if exitHook.Expression != "" {
-		// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
-		execute, err := argoexpr.EvalBool(exitHook.Expression,
-			env.GetFuncMap(scope.getParametersAny(h.woc.globalParams())))
-		if err != nil {
-			return true, nil, err
-		}
-		if !execute {
-			return false, nil, nil
-		}
-	}
-
-	onExitNodeName := common.GenerateOnExitNodeName(taskNode.Name)
-	onExitNode, err := h.woc.wf.GetNodeByName(onExitNodeName)
-	creating := err != nil
-	// Create the exit handler node, or re-enter reconcileTemplate to advance an
-	// unfulfilled one (e.g., process pod completions in a nested Steps template).
-	if creating || !onExitNode.Fulfilled() {
-		if creating {
-			h.log.Info(ctx, fmt.Sprintf("Running OnExit node for %s", taskNode.Name))
-		}
-		onExitNode, err = h.woc.reconcileHookNode(ctx, onExitNodeName, exitHook, taskNode, true, h.boundaryID, h.tmplCtx, h.ref, displayName, scope)
-		if err != nil {
-			return true, nil, err
-		}
-	}
-	return true, onExitNode, nil
-}
-
-// ProcessAllTaskHooks runs lifecycle hooks and exit handlers for all tasks
-// that have nodes. Per-task errors are isolated: the failing task's hook
-// error is forwarded to onError (which marks the offending task node Errored),
-// and iteration continues so unrelated siblings' hooks and the engine's
-// walk are not blocked. Returns onExitCompleted=false if any
-// exit handler is still pending OR any hook errored, and always returns
-// a nil error: callers must NOT treat per-task hook errors as boundary-fatal.
-//
-// This mirrors the legacy controller's executeDAGTask behavior, where a hook
-// error on one task did not prevent sibling tasks from running their hooks.
-//
-// The Engine's walk calls it once per task per operate cycle, so a task's exit
-// handler is driven (reconcileTemplate) at most once per cycle. Re-running it
-// would re-run checkParallelism against a pod count this cycle just bumped,
-// spuriously failing the handler (#14392 / PR #16088).
-func (h *hookHandler) ProcessAllTaskHooks(ctx context.Context, tasks []dag.Task, getTaskNode func(ctx context.Context, taskName string) *wfv1.NodeStatus, buildScope func(ctx context.Context, task dag.Task) (*wfScope, error), onError func(ctx context.Context, taskNode *wfv1.NodeStatus, err error)) (onExitCompleted bool, err error) {
-	onExitCompleted = true
-	for _, task := range tasks {
-		taskName := task.GetName()
-		taskNode := getTaskNode(ctx, taskName)
-		if taskNode == nil || !h.hasHooks(task) {
-			continue
-		}
-
-		scope, scopeErr := buildScope(ctx, task)
-		if scopeErr != nil {
-			h.log.WithError(scopeErr).WithField("task", taskName).Error(ctx, "failed to build scope for task hooks; isolating to this task")
-			onError(ctx, taskNode, scopeErr)
-			onExitCompleted = false
-			continue
-		}
-		h.ref.Status.Set(scope.scope, string(taskNode.Phase), task.GetDisplayName())
-
-		hookCompleted, hookErr := h.ExecuteLifecycleHooks(ctx, scope, task.GetHooks(), taskNode, task.GetDisplayName())
-		if hookErr != nil {
-			if isThrottleErr(hookErr) {
-				// Deliberate back-pressure (parallelism, rate limit, deadline):
-				// not the task's failure. Leave the hook incomplete; it is tried
-				// again once a slot is free, as before the Engine.
-				h.log.WithError(hookErr).WithField("task", taskName).Info(ctx, "task lifecycle hook throttled")
-				onExitCompleted = false
-				continue
-			}
-			h.log.WithError(hookErr).WithField("task", taskName).Error(ctx, "task lifecycle hook errored; isolating to this task")
-			onError(ctx, taskNode, hookErr)
-			onExitCompleted = false
-			continue
-		}
-		if !hookCompleted {
-			onExitCompleted = false
-			continue
-		}
-
-		if dag.HasExpansion(task) && taskNode.Type == wfv1.NodeTypeTaskGroup {
-			// An expanded task's exit hook runs once per item, on the item node
-			// and with that item's outputs, as executeDAGTask and executeStepGroup
-			// did before the Engine. The TaskGroup node itself has no outputs and
-			// gets no hook.
-			for _, childID := range taskNode.Children {
-				child, err := h.woc.wf.Status.Nodes.Get(childID)
-				if err != nil || (child.NodeFlag != nil && child.NodeFlag.Hooked) {
-					continue
-				}
-				if !child.Fulfilled() || !child.Completed() {
-					continue
-				}
-				h.ref.Status.Set(scope.scope, string(child.Phase), task.GetDisplayName())
-				if !h.driveExitHandler(ctx, task, child, scope, onError) {
-					onExitCompleted = false
-				}
-			}
-			continue
-		}
-
-		if taskNode.Fulfilled() && taskNode.Completed() {
-			if !h.driveExitHandler(ctx, task, taskNode, scope, onError) {
-				onExitCompleted = false
-			}
-		}
-	}
-	return onExitCompleted, nil
+	return &hookHandler{woc: woc, tmplCtx: tmplCtx, boundaryID: boundaryID, ref: ref, log: log}
 }
 
 // hasHooks reports whether the task has any lifecycle or exit hook to drive.
@@ -175,24 +38,78 @@ func (h *hookHandler) hasHooks(task dag.Task) bool {
 	return len(task.GetHooks()) > 0 || task.GetExitHook(h.woc.execWf.Spec.Arguments) != nil
 }
 
-// driveExitHandler runs the task's exit handler for node (the task node, or
-// one item node of an expanded task) and reports whether the handler is
-// complete. Errors are forwarded to onError.
-func (h *hookHandler) driveExitHandler(ctx context.Context, task dag.Task, node *wfv1.NodeStatus, scope *wfScope, onError func(ctx context.Context, taskNode *wfv1.NodeStatus, err error)) bool {
-	hasOnExitNode, onExitNode, exitErr := h.ExecuteExitHandler(ctx, task.GetExitHook(h.woc.execWf.Spec.Arguments), node, task.GetDisplayName(), scope)
-	if exitErr != nil {
-		if isThrottleErr(exitErr) {
-			// Deliberate back-pressure (parallelism, rate limit, deadline): not
-			// the task's failure and not the boundary's. Leave the handler
-			// incomplete; it is tried again next cycle, as before the Engine.
-			h.log.WithError(exitErr).WithField("task", task.GetName()).WithField("node", node.Name).Info(ctx, "task exit handler throttled")
-			return false
-		}
-		h.log.WithError(exitErr).WithField("task", task.GetName()).WithField("node", node.Name).Error(ctx, "task exit handler errored; isolating to this task")
-		onError(ctx, node, exitErr)
-		return false
+// DriveTaskHooks drives the hooks of node, task's node: its lifecycle hooks
+// and, once they are done and node has completed, its exit hook (see
+// driveExitHook). refName is the name the hooks refer to the task by
+// ({{tasks.<refName>.status}}). It reports whether every hook is done. A hook
+// error is returned, except back-pressure (parallelism, rate limit, operation
+// deadline), which is not the task's failure: the hook stays not done and is
+// tried again. The Engine's walk calls it once per task per reconcile, so an
+// exit hook is driven at most once per reconcile: driving it again would run
+// checkParallelism against a pod count this reconcile just bumped (#14392).
+func (h *hookHandler) DriveTaskHooks(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (done bool, err error) {
+	h.ref.Status.Set(scope.scope, string(node.Phase), refName)
+	done, err = h.woc.executeTmplLifeCycleHook(ctx, scope, task.GetHooks(), node, h.boundaryID, h.tmplCtx, h.ref, refName)
+	if err != nil || !done {
+		return false, ignoreThrottle(err)
 	}
-	return !hasOnExitNode || (onExitNode != nil && onExitNode.Fulfilled())
+	// A TaskGroup has no outputs and gets no exit hook: its items do.
+	if node.Type == wfv1.NodeTypeTaskGroup {
+		return true, nil
+	}
+	done, err = h.driveExitHook(ctx, task, refName, node, scope)
+	return done, ignoreThrottle(err)
+}
+
+// driveExitHook creates or re-enters the exit hook node of node, once node has
+// completed, and reports whether that hook is done. It follows the workflow
+// onExit's rule: an existing hook node is always re-entered, to advance it
+// (also under Terminate) and, once it has finished, to release its lock and
+// emit its metrics (handleNodeFulfilled). A new one is created only when the
+// shutdown strategy lets exit handlers run and the hook's expression is true.
+func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (bool, error) {
+	exitHook := task.GetExitHook(h.woc.execWf.Spec.Arguments)
+	if exitHook == nil || !node.Fulfilled() || !node.Completed() {
+		return true, nil
+	}
+	onExitNodeName := common.GenerateOnExitNodeName(node.Name)
+	if onExitNode, _ := h.woc.wf.GetNodeByName(onExitNodeName); onExitNode == nil {
+		if !h.woc.GetShutdownStrategy().ShouldExecute(true) {
+			return true, nil
+		}
+		if exitHook.Expression != "" {
+			// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
+			execute, err := argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(scope.getParametersAny(h.woc.globalParams())))
+			if err != nil {
+				return false, err
+			}
+			if !execute {
+				return true, nil
+			}
+		}
+		h.log.Info(ctx, fmt.Sprintf("Running OnExit node for %s", node.Name))
+	}
+	onExitNode, err := h.woc.reconcileHookNode(ctx, onExitNodeName, exitHook, node, true, h.boundaryID, h.tmplCtx, h.ref, refName, scope)
+	if err != nil {
+		return false, err
+	}
+	if h.woc.GetShutdownStrategy().Enabled() {
+		// operate skips task-set reconciliation while shutting down, but an
+		// exit hook still runs: hand its HTTP/plugin nodes to the agent here,
+		// as the workflow's onExit does.
+		h.woc.reconcileTaskSetFor(ctx, onExitNode)
+	}
+	return onExitNode.Fulfilled(), nil
+}
+
+// ignoreThrottle drops deliberate back-pressure (parallelism, rate limit,
+// operation deadline): it is not the task's failure, and the hook is tried
+// again later.
+func ignoreThrottle(err error) error {
+	if isThrottleErr(err) {
+		return nil
+	}
+	return err
 }
 
 func toTemplateReferenceHolder(lifecycleHook *wfv1.LifecycleHook) wfv1.TemplateReferenceHolder {

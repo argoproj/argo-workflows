@@ -7,6 +7,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
@@ -16,11 +17,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -6470,4 +6473,597 @@ spec:
       image: busybox
       command: [echo]
 `+r4C55HookMissingCM, "g5wf", "g5wf.hooks.running", true)
+}
+
+// C29: `argo terminate` while a task's Steps exit hook runs. Base re-entered
+// the running exit-hook node under Terminate, so its Steps node was assessed
+// and the workflow ended Failed; the branch stopped re-entering it and the
+// boundary waited on the pending hook forever.
+
+const r4C29DAGWithStepsHook = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-steps-hook
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: build
+        template: work
+        hooks:
+          exit:
+            template: notify
+      - name: deploy
+        depends: build
+        template: work
+  - name: notify
+    steps:
+    - - name: slack
+        template: work
+    - - name: email
+        template: work
+  - name: work
+    container: {image: alpine, command: [echo]}
+`
+
+// r4C29KillActivePods fails every pod that has not finished, as the pod
+// controller's container termination would.
+func r4C29KillActivePods(ctx context.Context, t *testing.T, woc *wfOperationCtx) {
+	t.Helper()
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod) bool {
+		return pod.Status.Phase != apiv1.PodSucceeded && pod.Status.Phase != apiv1.PodFailed
+	})
+}
+
+// r4C29StartHook runs the DAG until build's exit hook is Running.
+func r4C29StartHook(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow) *wfOperationCtx {
+	t.Helper()
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	hook, err := woc.wf.GetNodeByName("dag-steps-hook.build.onExit")
+	require.NoError(t, err, "exit hook node should exist")
+	require.Equal(t, wfv1.NodeRunning, hook.Phase)
+	return woc
+}
+
+// The hook's pods are killed after terminate.
+func TestRegressionR4_C29_TerminateDAGStepsHook(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C29DAGWithStepsHook)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4C29StartHook(ctx, t, controller, wf)
+
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	for range 8 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		r4C29KillActivePods(ctx, t, woc)
+	}
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// The hook's pod is really Pending (not the fake clientset's empty phase)
+// and never changes phase: terminate's execution control fails its node.
+func TestRegressionR4_C29_TerminateDAGStepsHookPendingPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C29DAGWithStepsHook)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4C29StartHook(ctx, t, controller, wf)
+	r4MoveNewPodsPending(ctx, woc)
+
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	for range 6 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		r4MoveNewPodsPending(ctx, woc)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// `argo stop` while the task runs (its exit hook starts, as Stop allows),
+// then `argo terminate` because the hook is slow.
+func TestRegressionR4_C29_StopThenTerminateDAG(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C29DAGWithStepsHook)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	r4C29KillActivePods(ctx, t, woc)
+	for range 2 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	hook, err := woc.wf.GetNodeByName("dag-steps-hook.build.onExit")
+	require.NoError(t, err, "exit hook should have started under Stop")
+	require.False(t, hook.Fulfilled())
+
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	for range 8 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		r4C29KillActivePods(ctx, t, woc)
+	}
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// C65: a task or step exit hook that finishes between reconciles (its pod
+// completed, an HTTP call answered, a suspend resumed) must still be
+// re-entered once, so its template metrics are emitted and its lock is
+// released. The branch re-entered it only while it was unfulfilled.
+
+// r4C65Counter reads a counter metric by name and labels; -1 when it was
+// never emitted.
+func r4C65Counter(t *testing.T, name string, kv ...string) float64 {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	var attrs []attribute.KeyValue
+	for i := 0; i+1 < len(kv); i += 2 {
+		attrs = append(attrs, attribute.String(kv[i], kv[i+1]))
+	}
+	set := attribute.NewSet(attrs...)
+	v, err := testExporter.GetFloat64CounterValue(ctx, name, &set)
+	if err != nil {
+		t.Logf("counter %s %v: %v", name, kv, err)
+		return -1
+	}
+	return v
+}
+
+// r4C65HookTemplate is a pod hook template with a completion counter.
+func r4C65HookTemplate(metric string) string {
+	return `
+  - name: hook
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: "hook counter"
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: busybox
+      command: [echo, hook]
+`
+}
+
+func TestRegressionR4_C65_HookTemplateMetrics(t *testing.T) {
+	const work = `
+  - name: work
+    container:
+      image: busybox
+      command: [echo, work]
+`
+	cases := []struct {
+		name, metric, body string
+		hooks              int
+	}{
+		{"dag-task-exit-hook", "r4_c65_dag_task_exit_hook", `
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: work
+        hooks:
+          exit:
+            template: hook
+      - name: B
+        depends: A
+        template: work
+`, 1},
+		{"steps-step-exit-hook", "r4_c65_steps_step_exit_hook", `
+  - name: main
+    steps:
+    - - name: A
+        template: work
+        hooks:
+          exit:
+            template: hook
+    - - name: B
+        template: work
+`, 1},
+		{"dag-item-exit-hook", "r4_c65_dag_item_exit_hook", `
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: work
+        withItems: [a, b]
+        hooks:
+          exit:
+            template: hook
+`, 2},
+		// Control: the workflow's own onExit was always re-entered.
+		{"wf-onexit", "r4_c65_wf_onexit", `
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: work
+`, 1},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			onExit := ""
+			if c.name == "wf-onexit" {
+				onExit = "\n  onExit: hook"
+			}
+			wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c65-` + c.name + `
+  namespace: default
+spec:
+  entrypoint: main` + onExit + `
+  templates:` + c.body + work + r4C65HookTemplate(c.metric))
+			require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			for i := 0; i < 8 && !woc.wf.Status.Phase.Completed(); i++ {
+				makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+			}
+			require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+			hooks := 0
+			for _, n := range woc.wf.Status.Nodes {
+				if n.TemplateName == "hook" {
+					hooks++
+					assert.Equal(t, wfv1.NodeSucceeded, n.Phase, n.Name)
+				}
+			}
+			assert.Equal(t, c.hooks, hooks, "hook nodes")
+			assert.InDelta(t, float64(c.hooks), r4C65Counter(t, c.metric, "status", "Succeeded"), 0.001)
+			// Further reconciles re-enter the finished hooks but emit nothing more.
+			for range 3 {
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+			}
+			assert.InDelta(t, float64(c.hooks), r4C65Counter(t, c.metric, "status", "Succeeded"), 0.001, "after extra reconciles")
+		})
+	}
+}
+
+// r4C65RunHTTP drives wf: pods succeed, the agent pod stays Running, and
+// every task the task set hands to the agent is reported Succeeded.
+func r4C65RunHTTP(t *testing.T, manifest string, rounds int) *wfOperationCtx {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	t.Cleanup(cancel)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Type != wfv1.NodeTypePod {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		})
+		podcs := controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace)
+		if agent, err := podcs.Get(ctx, woc.getAgentPodName(), metav1.GetOptions{}); err == nil && agent.Status.Phase != apiv1.PodRunning {
+			agent.Status.Phase = apiv1.PodRunning
+			updated, err := podcs.Update(ctx, agent, metav1.UpdateOptions{})
+			require.NoError(t, err)
+			waitForInformer(ctx, controller.PodController.TestingPodInformer(), updated, func(obj any) bool {
+				return obj.(*apiv1.Pod).Status.Phase == apiv1.PodRunning
+			})
+		}
+		results := map[string]wfv1.NodeResult{}
+		if ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{}); err == nil {
+			for id := range ts.Spec.Tasks {
+				if _, done := ts.Status.Nodes[id]; !done {
+					results[id] = wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: &wfv1.Outputs{}}
+				}
+			}
+		}
+		r4ReportTaskSet(ctx, t, woc, results)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	return woc
+}
+
+// r4ReportTaskSet writes results into the WorkflowTaskSet status, as the
+// agent would, and waits for the task set informer to see them.
+func r4ReportTaskSet(ctx context.Context, t *testing.T, woc *wfOperationCtx, results map[string]wfv1.NodeResult) {
+	t.Helper()
+	if len(results) == 0 {
+		return
+	}
+	patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: results}})
+	require.NoError(t, err)
+	_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Patch(ctx, woc.wf.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+	require.NoError(t, err)
+	require.NoError(t, kwait.PollUntilContextTimeout(ctx, 20*time.Millisecond, 5*time.Second, true, func(context.Context) (bool, error) {
+		obj, exists, err := woc.controller.wfTaskSetInformer.Informer().GetIndexer().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+		if err != nil || !exists {
+			return false, err
+		}
+		ts := obj.(*wfv1.WorkflowTaskSet)
+		for id, r := range results {
+			if got, found := ts.Status.Nodes[id]; !found || got.Phase != r.Phase {
+				return false, nil
+			}
+		}
+		return true, nil
+	}), "task set informer never saw the results")
+}
+
+// Two step exit hooks, each an HTTP call holding the same mutex: the first
+// must release it when it completes, so the second can take it.
+func TestRegressionR4_C65_HTTPExitHookMutexReleased(t *testing.T) {
+	woc := r4C65RunHTTP(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-mutex-hooks
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: A
+            template: work
+            hooks:
+              exit:
+                template: notify
+        - - name: B
+            template: work
+            hooks:
+              exit:
+                template: notify
+    - name: work
+      container:
+        image: busybox
+        command: [echo, work]
+    - name: notify
+      synchronization:
+        mutexes:
+          - name: r4-c65-notify
+      http:
+        url: http://example.com/notify
+`, 10)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
+	hooks := 0
+	for _, n := range woc.wf.Status.Nodes {
+		if n.TemplateName == "notify" && n.Phase == wfv1.NodeSucceeded {
+			hooks++
+		}
+	}
+	assert.Equal(t, 2, hooks, "Succeeded notify hooks")
+}
+
+// A step's exit hook is a suspend holding a mutex that the next step also
+// needs. Resuming the hook finishes it outside the controller; its mutex
+// must still be released so the next step can run.
+func TestRegressionR4_C65_ExitHookSuspendMutexReleasedSteps(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: susp-mutex-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: work
+        hooks:
+          exit:
+            template: approve
+    - - name: B
+        template: locked
+  - name: approve
+    suspend: {}
+  - name: locked
+    container: {image: alpine, command: [echo]}
+  - name: work
+    container: {image: alpine, command: [echo]}
+`)
+	for i := range wf.Spec.Templates {
+		if name := wf.Spec.Templates[i].Name; name == "approve" || name == "locked" {
+			wf.Spec.Templates[i].Synchronization = r4NamespacedMutex("r4-c65-m1")
+		}
+	}
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	advance := func(woc *wfOperationCtx, phase apiv1.PodPhase) *wfOperationCtx {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			return phase
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		return woc
+	}
+	const hookName, bName = "susp-mutex-steps[0].A.onExit", "susp-mutex-steps[1].B"
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	woc = advance(woc, apiv1.PodSucceeded) // A succeeds; its exit hook suspends holding the mutex
+	require.Equal(t, wfv1.NodeRunning, r4NodePhase(woc, hookName))
+
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+	require.NoError(t, wfutil.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "displayName=A.onExit"))
+	stored, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	woc = newWorkflowOperationCtx(ctx, stored, controller)
+	woc.operate(ctx)
+	woc = advance(woc, apiv1.PodPending)
+	woc = advance(woc, apiv1.PodPending)
+
+	require.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, hookName))
+	b, err := woc.wf.GetNodeByName(bName)
+	require.NoError(t, err)
+	require.Nil(t, b.SynchronizationStatus, "B still waiting for the lock: %q", b.Message)
+
+	woc = advance(woc, apiv1.PodSucceeded)
+	woc = advance(woc, apiv1.PodSucceeded)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// A task's exit hook takes the workflow's templateDefaults semaphore (limit
+// 1); it must release it when it finishes, or the next task waits forever.
+func TestRegressionR4_C65_TDSyncHookDAG(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: tdsync-hook-dag
+  namespace: default
+spec:
+  entrypoint: main
+  onExit: cleanup
+  templateDefaults:
+    synchronization:
+      semaphores:
+        - configMapKeyRef:
+            name: my-config
+            key: workflow
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: work
+        hooks:
+          exit:
+            template: hook
+      - name: b
+        depends: a
+        template: work
+      - name: c
+        depends: b
+        template: work
+  - name: work
+    container: {image: alpine, command: [echo]}
+  - name: hook
+    container: {image: alpine, command: [echo]}
+  - name: cleanup
+    container: {image: alpine, command: [echo]}
+`)
+	cancel, controller := newController(ctx)
+	defer cancel()
+	var err error
+	controller.syncManager, err = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
+	require.NoError(t, err)
+	var cm apiv1.ConfigMap
+	wfv1.MustUnmarshal(configMap, &cm)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 12 && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
+}
+
+// C51: `argo stop` while a non-target DAG task with an HTTP exit hook runs.
+// Operate skips task-set reconciliation while shutting down, so the exit
+// driver must hand the hook to the agent itself, as the workflow's onExit
+// does; otherwise the hook stays Pending and the workflow Running.
+func TestRegressionR4_C51_StopCtrTaskHTTPExitHook(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: stop-hook
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        hooks:
+          exit:
+            template: http
+      - name: B
+        depends: A
+        template: echo
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+  - name: http
+    http:
+      url: http://example.com
+`)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	// setPods gives every workflow pod phase and keeps the agent pod Running.
+	setPods := func(woc *wfOperationCtx, phase apiv1.PodPhase) {
+		agent := woc.getAgentPodName()
+		r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(pod *apiv1.Pod) bool { return pod.Name == agent })
+		r4SetPodsPhase(t, ctx, woc, phase, func(pod *apiv1.Pod) bool { return pod.Name != agent })
+	}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	setPods(woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	for range 8 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		setPods(woc, apiv1.PodFailed)
+		if woc.wf.Status.Phase.Completed() {
+			break
+		}
+		// The agent completes whatever it was handed.
+		results := map[string]wfv1.NodeResult{}
+		if ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{}); err == nil {
+			for id := range ts.Spec.Tasks {
+				if n, err := woc.wf.Status.Nodes.Get(id); err == nil && !n.Fulfilled() {
+					results[id] = wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: &wfv1.Outputs{}}
+				}
+			}
+		}
+		r4ReportTaskSet(ctx, t, woc, results)
+	}
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "stopped workflow must finish; unfulfilled: %v", r4Unfulfilled(woc))
 }

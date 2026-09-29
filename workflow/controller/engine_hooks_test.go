@@ -830,7 +830,7 @@ func TestDAGExitHookWithOutputArgs(t *testing.T) {
 // exit hook references a non-existent template: tasks B and C must still
 // be scheduled and have their hooks/exit-handlers processed.
 //
-// Bug: ProcessAllTaskHooks short-circuited on the first per-task error, and
+// Bug: the Engine's hook pass short-circuited on the first per-task error, and
 // engine.Execute called markBoundaryError, killing the DAG boundary. With
 // the fix, A's error is isolated to A; B's exit handler still fires.
 func TestBug_HookFailureDoesNotKillSiblings(t *testing.T) {
@@ -978,7 +978,7 @@ spec:
 //
 // Mechanism: engine.Execute used to call processHooks twice per operate cycle
 // (a first pass for tasks done in prior cycles, a second for tasks that just
-// completed); the ordered walk now drives each task's hooks once. ExecuteExitHandler re-enters reconcileTemplate on an
+// completed); the ordered walk now drives each task's hooks once. The exit hook driver re-enters reconcileTemplate on an
 // existing-but-unfulfilled onExit node, which falls through to checkParallelism
 // (a Pending node does not short-circuit via handleNodeFulfilled). With
 // workflow parallelism:1, the pass that creates the onExit pod bumps activePods
@@ -990,8 +990,8 @@ spec:
 // The task-corruption symptom is independently blocked by node_phase_sm.go
 // (which refuses terminal->Error), so node state alone cannot distinguish the
 // bug. This test therefore parses the captured logs: the fix swallows
-// ErrParallelismReached in ProcessAllTaskHooks (mirroring operator.go's
-// workflow-level onExit handling), so the "task exit handler errored" Error
+// ErrParallelismReached in hookHandler.DriveTaskHooks (mirroring operator.go's
+// workflow-level onExit handling), so the "task hook errored" Error
 // entry must NOT appear. It also asserts the user-visible outcome.
 func TestBug_ExitHookNotReRunUnderParallelism(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -1037,7 +1037,7 @@ spec:
 	// Load-bearing: the exit handler must not be reported as errored. With the
 	// bug, the second invocation logs this at Error with "Max parallelism reached".
 	for _, e := range hook.AllEntries() {
-		if e.Level == logging.Error && strings.Contains(e.Msg, "task exit handler errored") {
+		if e.Level == logging.Error && strings.Contains(e.Msg, "task hook errored") {
 			t.Errorf("exit handler errored spuriously (re-run #14392): %s fields=%v", e.Msg, e.Fields)
 		}
 	}
