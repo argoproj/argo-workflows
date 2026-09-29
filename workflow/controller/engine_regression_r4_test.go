@@ -7419,3 +7419,164 @@ spec:
 	assert.NotContains(t, woc.wf.Status.Message, "failed to resolve")
 	assert.Empty(t, r4HookNodes(woc))
 }
+
+// Lead 11: a TaskGroup is completed only once its items' exit hooks have
+// finished, as executeDAGTask returned before marking the group while an
+// item's onExit was unfinished. The branch recorded the group Succeeded in
+// the reconcile that created the item hooks.
+func TestRegressionR4_Lead11_GroupWaitsForItemExitHooks(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: lead11
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: work
+        withItems: [p, q]
+        hooks:
+          exit:
+            template: notify
+      - name: b
+        depends: a
+        template: work
+  - name: work
+    container: {image: alpine, command: [echo]}
+  - name: notify
+    container: {image: alpine, command: [echo, hook]}
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	hook, err := woc.wf.GetNodeByName("lead11.a(0:p).onExit")
+	require.NoError(t, err, "the first item's exit hook exists")
+	require.False(t, hook.Fulfilled())
+	assert.Equal(t, wfv1.NodeRunning, r4NodePhase(woc, "lead11.a"), "the group waits for its items' exit hooks")
+	assert.Empty(t, r4NodePhase(woc, "lead11.b"))
+
+	woc = r4DriveToEnd(t, ctx, controller, woc, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "lead11.a"))
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "lead11.a(0:p).onExit"))
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "lead11.a(1:q).onExit"))
+}
+
+// Review Focus 1 (upgrade): main ran a DAG task's lifecycle hooks on its
+// TaskGroup node. A workflow it started can hold such a hook node, and when
+// that node is not a pod (here a suspend with a duration) it only advances
+// when re-entered. The group, its dependant and the workflow wait for it.
+func TestRegressionR4_Lead11_UpgradedGroupHookReentered(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: upgroup
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: work
+        withItems: [p, q]
+        hooks:
+          running:
+            expression: "false"
+            template: wait
+      - name: b
+        depends: a
+        template: work
+  - name: work
+    container: {image: alpine, command: [echo]}
+  - name: wait
+    suspend: {duration: "1s"}
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4Operate(t, ctx, controller, wf)
+
+	// The hook node main created under the TaskGroup, running since long
+	// before the upgrade.
+	stored, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	group, err := stored.GetNodeByName("upgroup.a")
+	require.NoError(t, err)
+	root, err := stored.GetNodeByName("upgroup")
+	require.NoError(t, err)
+	hookName := "upgroup.a.hooks.running"
+	hookID := stored.NodeID(hookName)
+	stored.Status.Nodes[hookID] = wfv1.NodeStatus{
+		ID:            hookID,
+		Name:          hookName,
+		DisplayName:   "a.hooks.running",
+		Type:          wfv1.NodeTypeSuspend,
+		TemplateName:  "wait",
+		TemplateScope: group.TemplateScope,
+		BoundaryID:    root.ID,
+		Phase:         wfv1.NodeRunning,
+		StartedAt:     metav1.NewTime(time.Now().Add(-time.Hour)),
+		NodeFlag:      &wfv1.NodeFlag{Hooked: true},
+	}
+	group.Children = append(group.Children, hookID)
+	stored.Status.Nodes[group.ID] = *group
+	stored, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, stored, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	woc.wf = stored
+
+	woc = r4DriveToEnd(t, ctx, controller, woc, 8)
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, hookName), "unfulfilled: %v", r4Unfulfilled(woc))
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "upgroup.b"))
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// P18, decided behaviour (fails at base, which passed the DAG item exit hook
+// the literal {{item}}): an expanded DAG task's exit hook is each item's own,
+// with {{item}} substituted, as for Steps.
+func TestRegressionR4_P18_ExpandedDAGTaskExitHookItemArg(t *testing.T) {
+	_, woc := r4HookRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-items-exit
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+        withItems: [i1, i2]
+        hooks:
+          exit:
+            template: hook
+            arguments:
+              parameters:
+              - name: v
+                value: "{{item}}"
+  - name: echo
+    container: {image: alpine, command: [echo]}
+  - name: hook
+    inputs: {parameters: [{name: v}]}
+    container: {image: alpine, command: [echo, "{{inputs.parameters.v}}"]}
+`, allSucceed, 8)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, "i1", r4HookInput(woc, "dag-items-exit.a(0:i1).onExit"))
+	assert.Equal(t, "i2", r4HookInput(woc, "dag-items-exit.a(1:i2).onExit"))
+	assert.Equal(t, []string{"dag-items-exit.a(0:i1).onExit", "dag-items-exit.a(1:i2).onExit"}, r4HookNodes(woc))
+}
