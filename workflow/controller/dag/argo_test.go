@@ -1279,6 +1279,42 @@ func TestEval_DaemonedRunningNodeNotReEvaluated(t *testing.T) {
 			"node.Phase.Fulfilled()=false but node.Fulfilled()=true for daemoned+Running")
 }
 
+// TestEval_PendingNodeDependsBecameFalseStillShouldRun covers C22 (task
+// 1.3): once a task's node exists and is unfinished, it keeps being
+// dispatched (ShouldRun) even if its depends expression has since turned
+// false, whatever its Phase — not only Running (main's evaluateDependsLogic
+// rule; a re-evaluation regression would only re-check depends for a
+// Pending node like this one, not for a Running one).
+func TestEval_PendingNodeDependsBecameFalseStillShouldRun(t *testing.T) {
+	wf := newTestWorkflow("test")
+	ctx := testCtx(t)
+
+	aID := wf.NodeID("dag.A")
+	bID := wf.NodeID("dag.B")
+
+	// A has since failed, so B's default depends expression
+	// ("A.Succeeded || A.Skipped || A.Daemoned") is now false.
+	wf.Status.Nodes.Set(ctx, aID, wfv1.NodeStatus{
+		ID: aID, Name: "dag.A", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod,
+	})
+	// B's own node already exists and is unfinished (Pending).
+	wf.Status.Nodes.Set(ctx, bID, wfv1.NodeStatus{
+		ID: bID, Name: "dag.B", Phase: wfv1.NodePending, Type: wfv1.NodeTypePod,
+	})
+
+	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
+		Tasks: []wfv1.DAGTask{
+			{Name: "A", Template: "t"},
+			{Name: "B", Template: "t", Dependencies: []string{"A"}},
+		},
+	}}
+	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
+
+	result := eval.EvaluateTask(ctx, "B")
+	assert.True(t, result.ShouldRun,
+		"B's node already exists and is unfinished (Pending); it must keep being dispatched even though A failed and B's depends expression is now false")
+}
+
 // ============================================================
 // Retry edge cases — TestEval_Retry_*
 // ============================================================
