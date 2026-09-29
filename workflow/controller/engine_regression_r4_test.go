@@ -5725,3 +5725,206 @@ spec:
 	assert.Equal(t, want, dagNode.Message, "DAG message")
 	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
 }
+
+// r4C12Fanout is v1x29-1's workflow: a withItems step A in group [0] and a
+// plain step B in group [1], started by a pre-Engine controller.
+const r4C12Fanout = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c12-fanout
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: c
+        withItems: [x, z]
+    - - name: B
+        template: c
+  - name: c
+    container: {image: busybox, command: [echo]}
+`
+
+// r4C12CreatePod creates the pod an older controller made for the legacy
+// item node nodeName (template tmplName), in phase, as it would be found by
+// the new controller on its first reconcile after the upgrade.
+func r4C12CreatePod(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow, nodeName, tmplName string, phase apiv1.PodPhase) {
+	t.Helper()
+	nodeID := wf.NodeID(nodeName)
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        wfutil.GeneratePodName(wf.Name, nodeName, tmplName, nodeID, wfutil.GetWorkflowPodNameVersion(wf)),
+			Namespace:   wf.Namespace,
+			Labels:      map[string]string{common.LabelKeyWorkflow: wf.Name, common.LabelKeyCompleted: "false"},
+			Annotations: map[string]string{common.AnnotationKeyNodeID: nodeID, common.AnnotationKeyNodeName: nodeName},
+		},
+		Spec:   apiv1.PodSpec{Containers: []apiv1.Container{{Name: "main", Image: "busybox"}}},
+		Status: apiv1.PodStatus{Phase: phase},
+	}
+	created, err := controller.kubeclientset.CoreV1().Pods(wf.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	require.NoError(t, err)
+	waitForInformer(ctx, controller.PodController.TestingPodInformer(), created, func(any) bool { return true })
+}
+
+// r4C12Drive operates the upgraded workflow until it completes, finishing
+// every pod that has not finished yet with Succeeded (and with) after each
+// reconcile. It returns the last operation context.
+func r4C12Drive(ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow, with ...with) *wfOperationCtx {
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range 10 {
+		woc.operate(ctx)
+		if woc.wf.Status.Phase.Completed() {
+			break
+		}
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		}, with...)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	return woc
+}
+
+// r4C12AssertItemsUnderOneParent checks that every legacy item of step A
+// hangs off exactly one node: the TaskGroup [0].A when there is one (the
+// new controller adopted the items, moving their StepGroup edge to it,
+// P14), else the StepGroup [0] (base, which had no TaskGroup). A TaskGroup
+// that exists next to the items, rather than above them, fails this.
+func r4C12AssertItemsUnderOneParent(t *testing.T, woc *wfOperationCtx, items ...string) {
+	t.Helper()
+	parent := woc.wf.Name + "[0]"
+	if _, err := woc.wf.GetNodeByName(parent + ".A"); err == nil {
+		parent += ".A"
+	}
+	for _, item := range items {
+		assert.Equal(t, []string{parent}, r4Parents(woc, woc.wf.Name+"[0]."+item), "parents of %s", item)
+	}
+}
+
+// r4C12AssertFailedBeforeB checks the outcome both C12 fan-out cases share:
+// the failed legacy item fails the workflow, B never runs (it has no pod,
+// and is Omitted if it has a node at all, R4/R10), and both legacy items
+// hang off one parent (r4C12AssertItemsUnderOneParent).
+func r4C12AssertFailedBeforeB(ctx context.Context, t *testing.T, woc *wfOperationCtx) {
+	t.Helper()
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	b := woc.wf.Name + "[1].B"
+	if node, err := woc.wf.GetNodeByName(b); err == nil {
+		assert.Equal(t, wfv1.NodeOmitted, node.Phase, "B must not run after a failed step group")
+	}
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	for _, p := range pods.Items {
+		assert.NotEqual(t, b, p.Annotations[common.AnnotationKeyNodeName], "B must have no pod")
+	}
+	r4C12AssertItemsUnderOneParent(t, woc, "A(0:x)", "A(1:z)")
+}
+
+// TestRegressionR4_C12_LegacyItemFailedSiblingRunning ports
+// TestProbe_v1x29_LegacyShapeItemFailedSiblingRunning (v1x29-1_test.go /
+// C12), with "B absent" relaxed to "B has no pod / is Omitted" (R4/R10).
+// An older controller left A's items directly under StepGroup [0]: A(0:x)
+// had Failed and A(1:z) was still Running. The new controller must adopt
+// both items under the TaskGroup it creates, so the failure fails the step
+// group, instead of assessing an empty TaskGroup that holds only the items
+// it dispatches itself.
+func TestRegressionR4_C12_LegacyItemFailedSiblingRunning(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := r4LegacyStepsStatus(r4C12Fanout, 0, "A", "c", []r4LegacyStepItem{{Name: "0:x", Phase: wfv1.NodeFailed}, {Name: "1:z", Phase: wfv1.NodeRunning}})
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "c", apiv1.PodRunning)
+
+	woc := r4C12Drive(ctx, controller, wf)
+	r4C12AssertFailedBeforeB(ctx, t, woc)
+}
+
+// TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed ports
+// TestProbe_v1x29_LegacyShapeBothDoneWhileDownOneFailed (v1x29-1_test.go /
+// C12), with "B absent" relaxed to "B has no pod / is Omitted" (R4/R10).
+// Both legacy items were Running in the old controller's status and both
+// pods finished while the controller was being upgraded, A(0:x) Failed.
+func TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := r4LegacyStepsStatus(r4C12Fanout, 0, "A", "c", []r4LegacyStepItem{{Name: "0:x", Phase: wfv1.NodeRunning}, {Name: "1:z", Phase: wfv1.NodeRunning}})
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(0:x)", "c", apiv1.PodFailed)
+	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "c", apiv1.PodSucceeded)
+	wf.Status.MarkTaskResultComplete(ctx, wf.NodeID(wf.Name+"[0].A(1:z)"))
+
+	woc := r4C12Drive(ctx, controller, wf)
+	r4C12AssertFailedBeforeB(ctx, t, woc)
+}
+
+// TestRegressionR4_C12_LegacyAggregateMidFanout is the self-contained
+// equivalent of TestProbe_r1x29_ParamAggUpgradeMidFanout (r1x29-1_test.go /
+// C12). An older controller left A's items directly under StepGroup [0]:
+// A(0:x) had Succeeded with its output, A(1:z) was still Running. After the
+// upgrade A(1:z) finishes; the aggregate {{steps.A.outputs.parameters.out}}
+// that C receives must hold both items' outputs, not only the one the new
+// controller saw finish.
+func TestRegressionR4_C12_LegacyAggregateMidFanout(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := r4LegacyStepsStatus(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c12-agg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: gen
+        withItems: [x, z]
+    - - name: C
+        template: use
+        arguments:
+          parameters:
+          - name: res
+            value: "{{steps.A.outputs.parameters.out}}"
+  - name: gen
+    outputs:
+      parameters:
+      - name: out
+        valueFrom: {path: /tmp/out}
+    container: {image: busybox, command: [echo]}
+  - name: use
+    inputs:
+      parameters:
+      - name: res
+    container: {image: busybox, command: [echo, "{{inputs.parameters.res}}"]}
+`, 0, "A", "gen", []r4LegacyStepItem{{Name: "0:x", Phase: wfv1.NodeSucceeded}, {Name: "1:z", Phase: wfv1.NodeRunning}})
+	a0 := wf.NodeID(wf.Name + "[0].A(0:x)")
+	done := wf.Status.Nodes[a0]
+	done.Outputs = &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("v-x")}}}
+	wf.Status.Nodes[a0] = done
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "gen", apiv1.PodRunning)
+
+	woc := r4C12Drive(ctx, controller, wf, withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("v-z")}}}))
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	c, err := woc.wf.GetNodeByName(woc.wf.Name + "[1].C")
+	require.NoError(t, err)
+	require.NotNil(t, c.Inputs)
+	res := c.Inputs.GetParameterByName("res")
+	require.NotNil(t, res)
+	assert.Contains(t, res.Value.String(), "v-x", "res holds the item that finished under the old controller")
+	assert.Contains(t, res.Value.String(), "v-z", "res holds the item that finished after the upgrade")
+	r4C12AssertItemsUnderOneParent(t, woc, "A(0:x)", "A(1:z)")
+}

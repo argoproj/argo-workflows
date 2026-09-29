@@ -6,6 +6,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -799,6 +800,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		tgNode := taskNode
 		if tgNode == nil {
 			tgNode = e.initTaskNode(ctx, resolved, parents, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
+			e.adoptItems(ctx, taskName, tgNode.Name, expandedTasks)
 		}
 		if err := e.reconcileTaskGroup(ctx, tgNode, expandedTasks); err != nil {
 			return nil, err
@@ -823,6 +825,33 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		return nil, fmt.Errorf("task %s: %w", taskName, ErrReconcilerNoMaterialize)
 	}
 	return node, nil
+}
+
+// adoptItems moves the items of an expanded task that already have a node
+// under its new TaskGroup node tgNodeName. Before the Engine a Steps template
+// had no TaskGroup: the items hung directly off their StepGroup, and a
+// workflow started by an older controller still has them there. The
+// TaskGroup is assessed, aggregates its outputs and is reconciled over its
+// children, so it must hold every item, including those that finished before
+// the upgrade. Each adopted item's edge from the task's parents is removed,
+// so it keeps a single parent, as retry's graph walk expects.
+func (e *Engine) adoptItems(ctx context.Context, taskName, tgNodeName string, expanded []dag.Task) {
+	adopted := make(map[string]bool)
+	for _, item := range expanded {
+		if node := e.getTaskNode(ctx, item.GetName()); node != nil {
+			adopted[node.ID] = true
+			e.woc.addChildNode(ctx, tgNodeName, node.Name)
+		}
+	}
+	if len(adopted) == 0 {
+		return
+	}
+	for _, parentName := range e.parentsFor(ctx, taskName) {
+		if parent, err := e.woc.wf.GetNodeByName(parentName); err == nil {
+			parent.Children = slices.DeleteFunc(parent.Children, func(id string) bool { return adopted[id] })
+			e.woc.wf.Status.Nodes.Set(ctx, parent.ID, *parent)
+		}
+	}
 }
 
 // initTaskNode creates a node the Engine records itself for task (Omitted,
