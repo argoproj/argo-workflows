@@ -118,6 +118,26 @@ func (w *WorkflowTasks) TopologicalOrder() []Key {
 	return w.topology.topoOrder
 }
 
+// LeafTaskNames returns the names of tasks that no other task depends on,
+// sorted. Used both as the implicit dag.target (DAGEvaluator.FindLeafTaskNames,
+// via assessDAGPhase) and as PullOrder's default targets when the template sets
+// no explicit dag.target.
+func (w *WorkflowTasks) LeafTaskNames() []string {
+	dependedOn := make(map[string]bool, len(w.topology.dependencies))
+	for _, deps := range w.topology.dependencies {
+		for _, dep := range deps {
+			dependedOn[dep] = true
+		}
+	}
+	var leaves []string
+	for _, name := range w.TaskNames() {
+		if !dependedOn[name] {
+			leaves = append(leaves, name)
+		}
+	}
+	return leaves
+}
+
 // topologicalSort returns task names in dependency order using Kahn's algorithm.
 // If the graph has a cycle, falls back to the input order (cycles are caught by validation).
 func topologicalSort(dependencies map[string][]string) []string {
@@ -253,17 +273,7 @@ func getBaseTaskName(name string) string {
 func PullOrder(tasks []Task, targets []string) []Task {
 	w := newWorkflowTasks(tasks)
 	if len(targets) == 0 {
-		dependedOn := make(map[string]bool)
-		for _, deps := range w.topology.dependencies {
-			for _, d := range deps {
-				dependedOn[d] = true
-			}
-		}
-		for _, name := range w.TaskNames() {
-			if !dependedOn[name] {
-				targets = append(targets, name)
-			}
-		}
+		targets = w.LeafTaskNames()
 	}
 	order := make([]Task, 0, len(tasks))
 	seen := make(map[string]bool, len(tasks))
