@@ -38,7 +38,7 @@ import (
 // regression here, simulating a controller restart between reconciles
 // (Review Focus item 5).
 //
-//nolint:revive,unused // task-0-brief.md mandates this exact signature (t before ctx); helper for later round-4 red tests built on this harness (Task 0)
+//nolint:revive // task-0-brief.md mandates this exact signature (t before ctx)
 func r4Operate(t *testing.T, ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow) *wfOperationCtx {
 	t.Helper()
 	stored, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
@@ -51,7 +51,7 @@ func r4Operate(t *testing.T, ctx context.Context, controller *WorkflowController
 // r4SetPodsPhase acts like makePodsPhase, but only touches pods for which
 // filter returns true, leaving the rest alone.
 //
-//nolint:revive,unused // task-0-brief.md mandates this exact signature (t before ctx); helper for later round-4 red tests built on this harness (Task 0)
+//nolint:revive // task-0-brief.md mandates this exact signature (t before ctx)
 func r4SetPodsPhase(t *testing.T, ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, filter func(*apiv1.Pod) bool, with ...with) {
 	t.Helper()
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -107,8 +107,6 @@ func r4MoveNewPodsPending(ctx context.Context, woc *wfOperationCtx) {
 // r4RejectPodCreate prepends a fake-clientset reactor that fails pod Create
 // calls matching match with err, e.g. to simulate an admission webhook
 // denial or a transient quota error.
-//
-//nolint:unused // helper for later round-4 red tests built on this harness (Task 0)
 func r4RejectPodCreate(controller *WorkflowController, match func(*apiv1.Pod) bool, err error) {
 	controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		pod := action.(k8stesting.CreateAction).GetObject().(*apiv1.Pod)

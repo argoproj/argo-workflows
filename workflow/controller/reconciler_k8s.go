@@ -41,10 +41,12 @@ func NewK8sTaskReconciler(woc *wfOperationCtx, tmplCtx *templateresolution.Templ
 //     sibling tasks can still be scheduled.
 func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask) error {
 	for _, dt := range desired {
+		_, lookupErr := r.woc.wf.GetNodeByName(dt.TaskName)
+		isNew := lookupErr != nil
 		// If Skipped
 		if dt.Skipped {
 			// Check if node exists, if not create as skipped
-			if _, err := r.woc.wf.GetNodeByName(dt.TaskName); err != nil {
+			if isNew {
 				r.woc.initializeNode(ctx, dt.TaskName, wfv1.NodeTypeSkipped, dt.TemplateScope, dt.TemplateRef, dt.BoundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, dt.SkipReason)
 				r.linkTasks(ctx, dt)
 			}
@@ -64,6 +66,16 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 			nodeFlag:       dt.NodeFlag,
 			templateScope:  dt.TemplateScope,
 		})
+		// Link a node this call created, once it exists, and only then, as
+		// executeDAGTask did: creation can be deferred (parallelism) and an
+		// edge to a node never created can later be claimed by a colliding
+		// name (#16376). A node that already existed is not linked again: its
+		// dependencies' outbound nodes may have moved on since (a daemon's next
+		// retry attempt) or, for a dependency that had no children, now lead
+		// back through the task itself.
+		if _, getErr := r.woc.wf.GetNodeByName(dt.TaskName); isNew && getErr == nil {
+			r.linkTasks(ctx, dt)
+		}
 		if err != nil {
 			switch {
 			case errors.Is(err, ErrParallelismReached),
@@ -87,9 +99,6 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 			r.woc.log.WithError(err).WithField("task", dt.TaskName).Error(ctx, "task errored")
 			return fmt.Errorf("task %s errored: %w", dt.OriginalTaskName, err)
 		}
-
-		// Linkage
-		r.linkTasks(ctx, dt)
 	}
 	return nil
 }
