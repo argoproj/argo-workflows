@@ -5928,3 +5928,248 @@ spec:
 	assert.Contains(t, res.Value.String(), "v-z", "res holds the item that finished after the upgrade")
 	r4C12AssertItemsUnderOneParent(t, woc, "A(0:x)", "A(1:z)")
 }
+
+// C35: `argo retry` of a Steps workflow whose failing step is a non-execution
+// node (Skipped/Error from an unevaluatable `when` or a malformed withParam,
+// or a Suspend node failed by `argo stop --node-field-selector`) followed by
+// a later StepGroup. planReset's leaf rule counted a failure only on an
+// execution node or a node with no children at all; the on-demand next
+// StepGroup, created Omitted under the failed step, gave it a child, so it
+// was never treated as the actually-failed node and retry reset nothing.
+// Ported from _pr-16290-round4/probes/v2x2-1_test.go.
+
+const r4C35WhenErr = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c35-whenerr
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - {name: x, value: "("}
+  templates:
+  - name: main
+    steps:
+    - - {name: a, template: run}
+    - - {name: b, template: run, when: "{{workflow.parameters.x}} == ok"}
+    - - {name: c, template: run}
+  - name: run
+    container:
+      image: busybox
+`
+
+const r4C35WithParamErr = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c35-paramerr
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - {name: list, value: "[a, b"}
+  templates:
+  - name: main
+    steps:
+    - - {name: a, template: run}
+    - - {name: fan, template: run, withParam: "{{workflow.parameters.list}}"}
+    - - {name: c, template: run}
+  - name: run
+    container:
+      image: busybox
+`
+
+const r4C35Suspend = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c35-approval
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - {name: a, template: run}
+    - - {name: approve, template: wait}
+    - - {name: c, template: run}
+  - name: wait
+    suspend: {}
+  - name: run
+    container:
+      image: busybox
+`
+
+func r4C35Run(t *testing.T, yaml string, param string, wantPods int) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(yaml)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	woc := runToCompletion(ctx, t, controller, wf, allSucceed)
+	cancel()
+	dumpNodes(t, "original run finished", woc.wf)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	retried, _, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), false, "", []string{param})
+	require.NoError(t, err)
+	dumpNodes(t, "after FormulateRetryWorkflow", retried)
+	root, err := retried.GetNodeByName(retried.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "retry must reset the failed Steps node")
+
+	cancel2, controller2 := newController(ctx, retried)
+	defer cancel2()
+	woc = runToCompletion(ctx, t, controller2, retried, allSucceed)
+	dumpNodes(t, "retried run finished", woc.wf)
+	assert.Len(t, podNames(ctx, woc), wantPods, "the failed step and the steps after it must run once the retry fixed the parameter")
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestRegressionR4_C35_RetryAfterStepWhenError(t *testing.T) {
+	r4C35Run(t, r4C35WhenErr, "x=ok", 2) // b, c
+}
+
+func TestRegressionR4_C35_RetryAfterStepWithParamError(t *testing.T) {
+	r4C35Run(t, r4C35WithParamErr, `list=["a","b"]`, 3) // fan(0:a), fan(1:b), c
+}
+
+// A suspended approval step rejected with `argo stop
+// --node-field-selector displayName=approve` (which marks the suspend node
+// Failed), then `argo retry`.
+func TestRegressionR4_C35_RetryAfterRejectedSuspendStep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C35Suspend)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range 4 {
+		woc.operate(ctx)
+		setPodPhases(ctx, woc, allSucceed)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	dumpNodes(t, "suspended", woc.wf)
+	// Emulate util.updateSuspendedNode for `argo stop --node-field-selector`.
+	found := false
+	for id, n := range woc.wf.Status.Nodes {
+		if n.IsActiveSuspendNode() && n.DisplayName == "approve" {
+			n.Phase = wfv1.NodeFailed
+			n.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			n.Message = "rejected"
+			woc.wf.Status.Nodes[id] = n
+			found = true
+		}
+	}
+	require.True(t, found, "approve must be suspended")
+	for i := 0; i < 4 && !woc.wf.Status.Phase.Completed(); i++ {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	cancel()
+	dumpNodes(t, "rejected run finished", woc.wf)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	retried, _, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), false, "", nil)
+	require.NoError(t, err)
+	dumpNodes(t, "after FormulateRetryWorkflow", retried)
+	root, err := retried.GetNodeByName(retried.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "retry must reset the failed Steps node")
+
+	cancel2, controller2 := newController(ctx, retried)
+	defer cancel2()
+	woc = newWorkflowOperationCtx(ctx, retried, controller2)
+	for i := 0; i < 4 && !woc.wf.Status.Phase.Completed(); i++ {
+		woc.operate(ctx)
+		setPodPhases(ctx, woc, allSucceed)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller2)
+	}
+	dumpNodes(t, "retried run", woc.wf)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "the retried workflow must be waiting on approval again")
+	approve, err := woc.wf.GetNodeByName("r4-c35-approval[1].approve")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, approve.Phase, "approve must be suspended again")
+}
+
+// D3: a ContainerSet pod whose containers all finished successfully (exit 0)
+// but whose pod is deleted before the wait container finishes uploading ends
+// Error "pod deleted", while its Container children keep their true
+// Succeeded phase (the node-phase state machine refuses Succeeded->Error, by
+// design: D3 decision). isDescendantNodeSucceeded counted those Succeeded
+// Container children as a succeeded descendant, so planReset never reset the
+// pod node and `argo retry` silently did nothing. Ported from
+// _pr-16290-round4/probes/v1x68-1_test.go
+// TestProbe_v1x68_CtrSetAllDoneDeletedThenRetry.
+const r4D3CtrSetAllDone = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-d3-ctrset-alldone
+spec:
+  entrypoint: init
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      containerSet:
+        containers:
+          - name: first
+            image: alpine:3.23
+            command: [echo]
+          - name: main
+            image: alpine:3.23
+            command: [echo]
+            dependencies: [first]
+`
+
+func TestRegressionR4_D3_CtrSetAllDoneDeletedThenRetry(t *testing.T) {
+	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow(r4D3CtrSetAllDone)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf, nil, validate.Opts{}))
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{
+			{Name: "first", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}}},
+			{Name: "main", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}}},
+			{Name: "wait", State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}},
+		}
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	dumpNodes(t, "before delete", woc.wf)
+	deletePods(ctx, woc)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	dumpNodes(t, "after delete", woc.wf)
+	require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+
+	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), false, "", nil)
+	require.NoError(t, err)
+	t.Logf("podsToDelete=%v", podsToDelete)
+	dumpNodes(t, "after retry formulate", retried)
+	podNode := retried.Status.Nodes.FindByDisplayName("A")
+	assert.Nil(t, podNode, "pod node A should have been deleted by retry so it re-runs")
+
+	retried, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("").Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	woc = newWorkflowOperationCtx(ctx, retried, controller)
+	woc.operate(ctx)
+	dumpNodes(t, "after retry operate", woc.wf)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	t.Logf("pods after retry: %d", len(pods.Items))
+	assert.Len(t, pods.Items, 1, "retry should create a new pod for A")
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
