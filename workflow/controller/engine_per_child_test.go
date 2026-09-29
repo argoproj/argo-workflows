@@ -135,8 +135,7 @@ func TestIntegration_EvaluatorPerChild_AllPending_DispatchesEachChild(t *testing
 
 	// Reset the fake reconciler so we only count dispatches caused by converge.
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 
 	// Each per-child result should have triggered one dispatch through
 	// dispatchTaskGroupChild → reconcileExpanded → fakeReconciler.Reconcile.
@@ -167,8 +166,7 @@ func TestIntegration_EvaluatorPerChild_OnlyPendingDispatched(t *testing.T) {
 	assert.Equal(t, dag.ActionNone, results["client(2:2)"].Action)
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 
 	gotNames := fake.allDesiredTaskNames()
 	assert.Equal(t, []string{mainNodeName(woc) + ".client(1:1)"}, gotNames,
@@ -189,8 +187,7 @@ func TestIntegration_EvaluatorPerChild_AllSucceeded_NoDispatches(t *testing.T) {
 	}
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	assert.Empty(t, fake.calls,
 		"all-Succeeded children should not produce per-child dispatches")
 }
@@ -231,20 +228,22 @@ func TestIntegration_DispatchTaskGroupChild_ChildAlreadyFulfilled_NoReconcile(t 
 		"fulfilled child should not produce any reconcile calls")
 }
 
-func TestIntegration_DispatchTaskGroupChild_ParentLinkageNotSet(t *testing.T) {
-	// dispatchTaskGroupChild must NOT stamp ParentNodeNames on the desired
-	// task — the TaskGroup parent already exists from initial expansion and
-	// the child is already linked. Re-stamping would create duplicate edges.
+func TestIntegration_DispatchTaskGroupChild_ParentIsTaskGroup(t *testing.T) {
+	// dispatchTaskGroupChild names the TaskGroup node as the child's parent
+	// on every dispatch, so a child whose node this dispatch creates (or whose
+	// setup error node it records) hangs off its TaskGroup. The reconciler
+	// only links a node when it creates it, so an existing child is not
+	// linked twice.
 	ctx := logging.TestContext(t.Context())
-	engine, fake, _, tasks := engineWithFakeReconciler(ctx, t)
+	engine, fake, woc, tasks := engineWithFakeReconciler(ctx, t)
 
 	fake.calls = nil
 	err := engine.dispatchTaskGroupChild(ctx, tasks, "client", "client(0:0)")
 	require.NoError(t, err)
 	require.Len(t, fake.calls, 1, "expected exactly one reconcile batch")
 	require.Len(t, fake.calls[0], 1, "expected exactly one DesiredTask")
-	assert.Empty(t, fake.calls[0][0].ParentNodeNames,
-		"per-child dispatch must not duplicate parent linkage that already exists")
+	assert.Equal(t, []string{mainNodeName(woc) + ".client"}, fake.calls[0][0].ParentNodeNames,
+		"per-child dispatch must name the TaskGroup as the child's parent")
 }
 
 func TestIntegration_Converge_RouteByParentTaskName_StaticVsChild(t *testing.T) {
@@ -275,8 +274,7 @@ func TestIntegration_Converge_RouteByParentTaskName_StaticVsChild(t *testing.T) 
 	}
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 
 	// Exactly one reconcile, for the per-child result.
 	require.Len(t, fake.calls, 1)

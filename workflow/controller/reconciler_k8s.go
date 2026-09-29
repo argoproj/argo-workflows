@@ -31,15 +31,17 @@ func NewK8sTaskReconciler(woc *wfOperationCtx, tmplCtx *templateresolution.Templ
 // Return contract:
 //   - nil: every desired task either materialized a node or was a no-op
 //     (e.g. Skipped re-entry where the node already exists).
-//   - ErrParallelismReached / ErrResourceRateLimitReached: throttling — caller
-//     should stop dispatching further tasks this pass but NOT treat as fatal.
-//   - ErrDeadlineExceeded / ErrTimeout: deadline/timeout — propagate without
-//     marking the boundary (the node itself was already marked by checkConstraints).
-//   - ErrMaxDepthExceeded: recursion guard — propagate without double-marking.
-//   - any other error: a real per-task failure. postExecutionHandling already
-//     marked the failing task node Errored; the boundary is NOT touched so
-//     sibling tasks can still be scheduled.
+//   - ErrParallelismReached / ErrResourceRateLimitReached / ErrDeadlineExceeded:
+//     returned at once, nothing recorded; the caller decides whether to keep
+//     dispatching this pass.
+//   - any other error is the task's own outcome: recordTaskError records it as
+//     an Error on the task's node (created and linked if the dispatch left
+//     none), the rest of the batch is still reconciled, and the first such
+//     error is returned (ErrTimeout / ErrMaxDepthExceeded bare, others as
+//     "task X errored: ..."). The boundary is not touched, so sibling tasks
+//     can still be scheduled.
 func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask) error {
+	var taskErr error
 	for _, dt := range desired {
 		_, lookupErr := r.woc.wf.GetNodeByName(dt.TaskName)
 		isNew := lookupErr != nil
@@ -76,31 +78,41 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 		if _, getErr := r.woc.wf.GetNodeByName(dt.TaskName); isNew && getErr == nil {
 			r.linkTasks(ctx, dt)
 		}
-		if err != nil {
-			switch {
-			case errors.Is(err, ErrParallelismReached),
-				errors.Is(err, ErrResourceRateLimitReached):
-				// Throttling: surface the sentinel so the caller can tell
-				// "deliberate throttle" apart from "reconciler claimed success".
-				return err
-			case errors.Is(err, ErrDeadlineExceeded),
-				errors.Is(err, ErrTimeout):
-				// Deadline/timeout: propagate without marking parent as Error
-				// (the node itself was already marked by checkConstraints).
-				return err
-			case errors.Is(err, ErrMaxDepthExceeded):
-				// Max recursion depth: propagate without double-marking.
-				return err
-			}
-			// Per-task error: postExecutionHandling already marked the failing
-			// task node Errored. Do NOT mark the boundary — sibling tasks must
-			// still get a chance to schedule. Log and return so the engine
-			// can stop this Reconcile batch but continue overall execution.
-			r.woc.log.WithError(err).WithField("task", dt.TaskName).Error(ctx, "task errored")
-			return fmt.Errorf("task %s errored: %w", dt.OriginalTaskName, err)
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, ErrParallelismReached) || errors.Is(err, ErrResourceRateLimitReached) || errors.Is(err, ErrDeadlineExceeded) {
+			return err
+		}
+		r.woc.log.WithError(err).WithField("task", dt.TaskName).Error(ctx, "task errored")
+		r.recordTaskError(ctx, dt, err)
+		switch {
+		case taskErr != nil:
+		case errors.Is(err, ErrTimeout), errors.Is(err, ErrMaxDepthExceeded):
+			// Already recorded on the node by the dispatch; keep the bare
+			// sentinel, as the entrypoint's error message shows it.
+			taskErr = err
+		default:
+			taskErr = fmt.Errorf("task %s errored: %w", dt.OriginalTaskName, err)
 		}
 	}
-	return nil
+	return taskErr
+}
+
+// recordTaskError records a task's own dispatch error as an Error on its
+// node, as executeDAGTask did, creating and linking the node when the
+// dispatch failed before creating it. A node that already reached a terminal
+// phase (a timed-out node marked Failed, a max-depth Error) keeps it.
+func (r *K8sTaskReconciler) recordTaskError(ctx context.Context, dt DesiredTask, err error) {
+	node, getErr := r.woc.wf.GetNodeByName(dt.TaskName)
+	if getErr != nil {
+		r.woc.initializeNode(ctx, dt.TaskName, wfv1.NodeTypeSkipped, dt.TemplateScope, dt.TemplateRef, dt.BoundaryID, wfv1.NodeError, dt.NodeFlag, true, err.Error())
+		r.linkTasks(ctx, dt)
+		return
+	}
+	if !node.Fulfilled() {
+		r.woc.markNodeError(ctx, dt.TaskName, err)
+	}
 }
 
 func (r *K8sTaskReconciler) linkTasks(ctx context.Context, dt DesiredTask) {

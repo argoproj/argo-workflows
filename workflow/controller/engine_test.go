@@ -314,8 +314,7 @@ func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 		},
 	}
 	fake.calls = nil
-	executed, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	executed := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
 	assert.True(t, executed.executed["client"])
 
@@ -325,8 +324,7 @@ func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	assert.Equal(t, "depends expression failed to evaluate", node.Message)
 
 	// Idempotent: a second pass neither re-creates nor re-dispatches.
-	executed, err = engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	executed = engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	assert.Empty(t, fake.calls)
 	assert.Empty(t, executed.executed)
 }
