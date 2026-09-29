@@ -37,7 +37,7 @@ A step that fails before it runs now fails only itself.
 This covers a step whose arguments, `when` clause, `withParam` or items cannot be resolved, whose pod is rejected, or whose `podSpecPatch` cannot be applied.
 The step's node ends `Error` and the other steps in its group still run; then the step group ends `Error` and the workflow fails, with a message that names the step and the cause.
 `continueOn.error` on such a step now lets the template carry on, as it already did for a DAG task.
-Previously a Steps template failed the step group before its other steps started, whatever the step's `continueOn` said.
+Previously a Steps template failed the step group before the steps listed after it started, whatever the step's `continueOn` said.
 
 An expanded task or step whose items include both `Error` and `Failed` items now always ends `Error`.
 Previously it took the phase of the last failing item, so the result depended on the order of the items.
@@ -56,11 +56,12 @@ Previously the error was only logged and the template succeeded.
 A task's or step's exit or lifecycle hook that ends `Error` now ends the DAG or Steps template it belongs to with `Error`.
 This covers a hook that could not be started (for example its pod was denied by an admission webhook, or its expression could not be evaluated), a hook that timed out, and a hook that errored while it ran, such as one whose pod was deleted.
 Once a hook has errored, no new task or step of that template starts; tasks that are already running finish, and then the template ends `Error` with the hook's message.
+If another task has already failed, or a step's lifecycle hook errors while the step is still running (the step itself is then marked `Error`), the template ends `Failed` with that failure's message instead.
 A hook that runs and ends `Failed` is still ignored, as before.
 Previously a DAG ignored an exit hook that errored and went on to run the task's dependants.
 `continueOn.error` on a task does not cover an error from its hooks: previously a DAG could still succeed when a lifecycle hook of a task with `continueOn.error` errored.
 
-A hook whose pod is still `Pending` when its template's `timeout` or `pendingTimeout` passes is now recorded as `Error` rather than `Failed`, so it counts as a hook error in both template types.
+A hook whose pod is still `Pending` when the hook template's `timeout` or `pendingTimeout` passes is now recorded as `Error` rather than `Failed`, so it counts as a hook error in both template types.
 Previously a DAG ignored a timed-out exit hook.
 A timed-out workflow-level hook (`spec.hooks`) or workflow `onExit` node is also shown as `Error` now; the workflow's own outcome does not change.
 
@@ -81,7 +82,7 @@ Its exit hook, and so its dependants, now wait for the lifecycle hooks; the fina
 `{{workflow.failures}}` no longer lists `TaskGroup` nodes, for DAG or Steps templates; it lists the failed items themselves.
 Previously a failed expanded DAG task added an extra entry for its `TaskGroup`, with no message.
 
-After the upgrade, the `TaskGroup` node of an expanded step shows no estimated duration until a run of that workflow succeeds under the new controller.
+After the upgrade, the `TaskGroup` node of an expanded step shows no estimated duration until the next successful run from the same WorkflowTemplate or CronWorkflow under the new controller.
 The workflow's own estimate is not affected.
 
 A `withSequence` with a negative `count` now expands to no items.
@@ -102,15 +103,18 @@ Previously a step that errored while it ran, for example because its pod was del
 The Steps template and the workflow still end `Failed`, with the group's message.
 
 A daemon step that dies after its step group has finished now leaves that group `Succeeded`.
-The daemon's node, the Steps template and the workflow fail with `child '<node ID>' failed`, and no further group starts.
+The daemon's node fails, the Steps template and the workflow fail with `child '<node ID>' failed`, and no further group starts.
 Previously the step group was changed to `Failed` as well.
 In a DAG, expanded daemon items that die after their `TaskGroup` has finished now fail the DAG, as a daemon task without items already did.
 
 #### Outputs, metrics and messages
 
 `globalName` outputs are now exported when the node that produces them finishes, so the workflow's global outputs hold the value from the node that finished last.
-Memoized steps served from the cache, and HTTP and plugin steps, now export them too.
+Memoized steps served from the cache, HTTP and plugin steps, and suspend steps resumed with `argo resume` now export them too (in a DAG, as soon as they finish rather than when the DAG finishes).
 Previously a DAG exported its tasks' outputs again when it finished, in the order the tasks were declared, so an older value could overwrite a newer one.
+
+An entrypoint DAG template's own `globalName` outputs are now exported to `workflow.status.outputs`, as a Steps template's already were ([#14767](https://github.com/argoproj/argo-workflows/issues/14767)).
+If a task in the DAG sets a global with the same name, the DAG's own output now overwrites it when the DAG finishes.
 
 The outputs of a DAG template can now refer to `workflow.outputs`, for example `valueFrom.expression: workflow.outputs.parameters.g` or `from: "{{workflow.outputs.artifacts.a}}"`, as the outputs of a Steps template already could.
 
@@ -124,8 +128,7 @@ A DAG task node whose task fails before it runs (for example because its pod is 
 
 When the entrypoint DAG or Steps template ends `Error` because of its own error (for example its outputs cannot be resolved), the workflow message is now that error, without the `error in entry template execution:` prefix.
 
-A node whose pod is deleted before it reports its outputs still ends `Error`, as before.
-In a `containerSet`, containers that had already finished now keep their phase instead of becoming `Error` with the message `container deleted`; the pod's node is `Error`, and `argo retry` re-runs the pod.
+When a `containerSet` pod is deleted, containers that had already finished now keep their phase instead of becoming `Error` with the message `container deleted`; the pod's node is `Error`, and `argo retry` re-runs the pod.
 
 #### Retry and rollback
 
@@ -133,7 +136,7 @@ In a `containerSet`, containers that had already finished now keep their phase i
 Previously the retry did not reset such a task.
 
 If you roll the controller back to an earlier version while Steps workflows with an expanded step are running, those workflows stay `Running`, and `argo retry` does not recover them.
-Let them finish before rolling back, or resubmit them afterwards.
+Let them finish before rolling back, or delete (or terminate) them and resubmit them afterwards.
 
 ## Upgrading to v4.1.2
 
