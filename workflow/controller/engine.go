@@ -445,38 +445,6 @@ func (e *Engine) logEvaluation(ctx context.Context, result dag.EvaluationResult)
 	}).Debug(ctx, "task evaluation")
 }
 
-// gateExpansionAbsentOptional reproduces main's resolveReferences nil semantics for the
-// withParam/withSequence expansion fields. The dag.Substitutor path flattens scope to a string map
-// (getParameters), which DROPS the nil markers for skipped/omitted outputs with no default — so a
-// withParam referencing such an absent optional would survive substitution as a literal "{{...}}" and
-// fail later with a misleading "could not be parsed as a JSON list" error instead of the terminal
-// "absent optional" error main raises. Here we substitute those fields against the nil-preserving
-// scope with steps/tasks strict (exactly as main's ReplaceStrictAny over the step body): a reference
-// to an absent optional (present-but-nil) is a terminal error. A genuinely missing variable
-// (IsMissingVariableErr) is left to the existing expansion path — dependency ordering means a real
-// producer output is already present by expansion time.
-//
-// This is a validation gate only — the resolved text is discarded; for non-nil refs the existing
-// Expand re-resolves identically (those keys are present in both scope views). withItems values are
-// not covered (no test, unusual shape); add the field here if that ever needs the same treatment.
-func (e *Engine) gateExpansionAbsentOptional(ctx context.Context, task dag.Task, scope *wfScope) error {
-	if task.GetWithParam() == "" && task.GetWithSequence() == nil {
-		return nil
-	}
-	fields := struct {
-		WithParam    string         `json:"withParam,omitempty"`
-		WithSequence *wfv1.Sequence `json:"withSequence,omitempty"`
-	}{task.GetWithParam(), task.GetWithSequence()}
-	b, err := json.Marshal(fields)
-	if err != nil {
-		return err
-	}
-	if _, err := template.ReplaceStrictAny(ctx, string(b), scope.getParametersAny(e.woc.globalParams()), []string{"steps", "tasks"}); err != nil && !template.IsMissingVariableErr(err) {
-		return err
-	}
-	return nil
-}
-
 // expansionScope is the string scope items are substituted against: the
 // workflow globals under the task's own scope, as expandTask and expandStep
 // passed before the Engine. Globals are needed here because an expression tag
@@ -497,12 +465,12 @@ func (e *Engine) expansionScope(scope *wfScope) map[string]string {
 // (a deleted pod, a suspend with a duration, a nested template, a lock
 // waiter), one item's error staying with that item. The group is then
 // completed from its items once every one exists and has finished, with its
-// exit hooks. scope is the group's scope, which is each item's. Only the
-// operation deadline stops the items early; its error is returned.
-func (e *Engine) reconcileTaskGroup(ctx context.Context, tgNode *wfv1.NodeStatus, items []dag.Task, scope *wfScope) error {
+// exit hooks. items are the resolved task's expansion. Only the operation
+// deadline stops the items early; its error is returned.
+func (e *Engine) reconcileTaskGroup(ctx context.Context, tgNode *wfv1.NodeStatus, items []dag.Task) error {
 	var stopErr error
 	for _, item := range items {
-		err := e.reconcileTask(ctx, item, []string{tgNode.Name}, scope)
+		err := e.reconcileTask(ctx, item, []string{tgNode.Name})
 		if e.dispatchOutcome(ctx, item.GetName(), err) {
 			stopErr = err
 			break
@@ -520,10 +488,10 @@ func (e *Engine) reconcileTaskGroup(ctx context.Context, tgNode *wfv1.NodeStatus
 	return stopErr
 }
 
-// reconcileTask hands one task to the reconciler, linking a node it creates
-// under parents. scope is the task's scope (for an item, its group's).
-func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []string, scope *wfScope) error {
-	desired, err := e.createDesiredTask(ctx, task, parents, scope)
+// reconcileTask hands one resolved task (see resolveTask) to the
+// reconciler, linking a node it creates under parents.
+func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []string) error {
+	desired, err := e.createDesiredTask(ctx, task, parents)
 	if err != nil || desired == nil {
 		return err
 	}
@@ -814,34 +782,36 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		return taskNode, nil
 	}
 
-	// A scope or expansion failure is this task's own terminal outcome: it is
-	// recorded on an Error node linked under the task's parents (as
-	// executeDAGTask did), so siblings keep running and the boundary rolls up
-	// from its children.
+	// A scope, resolution or expansion failure is this task's own terminal
+	// outcome: it is recorded on an Error node linked under the task's
+	// parents (as executeDAGTask did), so siblings keep running and the
+	// boundary rolls up from its children.
 	parentNodeNames := e.parentNodeNames(ctx, taskName)
 	failTask := func(err error) (*wfv1.NodeStatus, error) {
 		e.initTerminalErrorNode(ctx, task, parentNodeNames, err)
 		return e.getTaskNode(ctx, taskName), err
 	}
 
-	// build a local scope for the task
+	// The task's references are resolved once, from one scope, before
+	// anything is created for it: a reference not in scope yet leaves the
+	// task uncreated, so an expansion never leaves a childless TaskGroup.
 	scope, err := e.buildLocalScopeFromTask(ctx, task)
 	if err != nil {
 		return failTask(err)
 	}
-
-	// The task's when clause is evaluated once, in createDesiredTask (which
-	// also handles expanded children, whose {{item}} references only resolve
-	// after expansion).
-
-	// Expand withItems if necessary
-	if dag.HasExpansion(task) {
-		// A withParam/withSequence reference to an absent optional (skipped/omitted output, no
-		// default) is terminal here, matching main; the string-map Substitutor below can't see it.
-		if err = e.gateExpansionAbsentOptional(ctx, task, scope); err != nil {
-			return failTask(err)
+	resolved, err := e.resolveTask(ctx, task, scope)
+	if err != nil {
+		if stderrors.Is(err, ErrRequeue) {
+			// Not this task's failure: a dependency output is not in scope yet.
+			e.log.WithField("task", taskName).WithError(err).Debug(ctx, "was unable to find variable")
+			e.woc.requeue()
+			return nil, err
 		}
-		expandedTasks, expandErr := task.Expand(ctx, e.expansionScope(scope), e.woc)
+		return failTask(err)
+	}
+
+	if dag.HasExpansion(resolved) {
+		expandedTasks, expandErr := resolved.Expand(ctx, e.expansionScope(scope), e.woc)
 		if expandErr != nil {
 			return failTask(expandErr)
 		}
@@ -855,7 +825,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		// with the same message.
 		if len(expandedTasks) == 0 {
 			if taskNode == nil {
-				return e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
+				return e.initTaskNode(ctx, resolved, parentNodeNames, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
 			}
 			phase := wfv1.NodeSkipped
 			if !isValidPhaseTransition(taskNode.Phase, phase) {
@@ -866,16 +836,16 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 
 		tgNode := taskNode
 		if tgNode == nil {
-			tgNode = e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
+			tgNode = e.initTaskNode(ctx, resolved, parentNodeNames, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
 		}
-		if err := e.reconcileTaskGroup(ctx, tgNode, expandedTasks, scope); err != nil {
+		if err := e.reconcileTaskGroup(ctx, tgNode, expandedTasks); err != nil {
 			return nil, err
 		}
 		return tgNode, nil
 	}
 
 	// Use reconciler for leaf task
-	if err := e.reconcileTask(ctx, task, parentNodeNames, scope); err != nil {
+	if err := e.reconcileTask(ctx, resolved, parentNodeNames); err != nil {
 		// Throttling sentinels mean "didn't materialize, but it's deliberate".
 		// Propagate them up so callers can distinguish from real failures, but
 		// don't synthesize a fake "no materialization" error here.
@@ -919,11 +889,10 @@ func (e *Engine) initTerminalErrorNode(ctx context.Context, task dag.Task, paren
 }
 
 // createDesiredTask builds the DesiredTask the reconciler executes for task,
-// from scope, the task's scope, to be linked under parents when its node is
-// created. It returns nil for a task that is already fulfilled. A setup error
-// is recorded on the task's node; ErrRequeue (a dependency output not in
-// scope yet) is not.
-func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents []string, scope *wfScope) (*DesiredTask, error) {
+// already resolved (see resolveTask), to be linked under parents when its
+// node is created. It returns nil for a task that is already fulfilled. A
+// setup error is recorded on the task's node.
+func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents []string) (*DesiredTask, error) {
 	taskName := task.GetName()
 	taskNodeName := e.taskNodeName(taskName)
 
@@ -937,37 +906,23 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 		return nil, err
 	}
 
-	// spec.volumes may reference the outputs of earlier tasks or steps
-	// (docs/variables.md), so substitute them from this task's scope before
-	// its pod is built, as resolveDependencyReferences and resolveReferences
-	// did before the Engine. Globals were substituted once at operate start.
-	if err := e.woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil)); err != nil {
-		return failTask(err)
-	}
-
-	// Evaluate 'When' clause
-	proceed, err := e.evaluateWhenClause(ctx, task, scope)
+	// The when is resolved, so it is evaluated as is (an item's with its
+	// {{item}} substituted by the expansion).
+	proceed, err := dag.ShouldExecute(task.GetWhen())
 	if err != nil {
-		if stderrors.Is(err, ErrRequeue) {
-			e.log.WithField("task", taskName).WithError(err).Debug(ctx, "was unable to find variable")
-			e.woc.requeue()
-			return nil, err
-		}
 		return failTask(err)
 	}
 
 	if !proceed {
-		skipReason := fmt.Sprintf("when '%s' evaluated false", task.GetWhen())
 		return &DesiredTask{
-			TaskName:         taskNodeName,
-			OriginalTaskName: taskName,
-			TemplateScope:    e.tmplCtx.GetTemplateScope(),
-			TemplateRef:      task.GetTemplateReferenceHolder(),
-			BoundaryID:       e.boundaryID,
-			IsOnExit:         e.onExitTemplate,
-			Skipped:          true,
-			SkipReason:       skipReason,
-			ParentNodeNames:  parents,
+			TaskName:        taskNodeName,
+			TemplateScope:   e.tmplCtx.GetTemplateScope(),
+			TemplateRef:     task.GetTemplateReferenceHolder(),
+			BoundaryID:      e.boundaryID,
+			IsOnExit:        e.onExitTemplate,
+			Skipped:         true,
+			SkipReason:      fmt.Sprintf("when '%s' evaluated false", task.GetWhen()),
+			ParentNodeNames: parents,
 		}, nil
 	}
 
@@ -989,27 +944,7 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 		return failTask(err)
 	}
 
-	// Process Arguments
 	args := task.GetArguments()
-
-	// Resolve argument parameter and artifact references against the scope.
-	// This substitutes {{steps.X.outputs.*}} / {{tasks.X.outputs.*}} in argument values
-	// and resolves artifact from/fromExpression to concrete storage locations.
-	// Arguments are resolved here (not via ProcessArgs localParams) so that scope-level
-	// references don't leak into the child template body via SubstituteParams — which
-	// would cause bugs like parent step outputs being substituted into recursive
-	// template when-clauses.
-	args, err = scope.resolveArguments(ctx, args, e.woc.globalParams())
-	if err != nil {
-		if stderrors.Is(err, ErrRequeue) {
-			// Not this task's failure: a dependency output is not in scope yet.
-			// Leave the task uncreated and come back to it.
-			e.log.WithField("task", taskName).WithError(err).Debug(ctx, "was unable to find variable")
-			e.woc.requeue()
-			return nil, err
-		}
-		return failTask(err)
-	}
 
 	// Build minimal local params for ProcessArgs (matching reconcileTemplate behavior).
 	localParams := make(common.Parameters)
@@ -1030,15 +965,14 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 	}
 
 	return &DesiredTask{
-		TaskName:         taskNodeName,
-		OriginalTaskName: taskName,
-		TemplateScope:    e.tmplCtx.GetTemplateScope(),
-		TmplCtx:          newTmplCtx,
-		Template:         processedTmpl,
-		TemplateRef:      task.GetTemplateReferenceHolder(),
-		BoundaryID:       e.boundaryID,
-		IsOnExit:         e.onExitTemplate,
-		ParentNodeNames:  parents,
+		TaskName:        taskNodeName,
+		TemplateScope:   e.tmplCtx.GetTemplateScope(),
+		TmplCtx:         newTmplCtx,
+		Template:        processedTmpl,
+		TemplateRef:     task.GetTemplateReferenceHolder(),
+		BoundaryID:      e.boundaryID,
+		IsOnExit:        e.onExitTemplate,
+		ParentNodeNames: parents,
 	}, nil
 }
 
@@ -1375,7 +1309,7 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 		}
 
 		// Steps keeps skipped-node artifact placeholders resolvable (includeArtifacts); DAG
-		// leaves them to resolveArguments' optional-drop / required-error handling.
+		// leaves them to resolveArtifactArguments' optional-drop / required-error handling.
 		if err := e.addTaskNodeToScope(ctx, scope, ref, agg, refName, depName, depNode, e.tmpl.GetType() == wfv1.TemplateTypeSteps); err != nil {
 			return nil, err
 		}
@@ -1497,36 +1431,82 @@ func (e *Engine) updateOutboundNodesForTargetTasks(ctx context.Context, targetTa
 	return nil
 }
 
-// evaluateWhenClause evaluates a task's when clause against the given scope.
-// Returns (true, nil) if the task should proceed, (false, nil) if it should be skipped,
-// or (false, err) if evaluation failed. Tasks with withItems/withParam/withSequence
-// always proceed (their when clause references {{item.*}} resolved during expansion).
+// resolveTask substitutes the task's references to other tasks' and steps'
+// outputs across its whole body except its hooks (arguments, including
+// artifact locations, templateRef, withItems/withParam/withSequence and
+// when), and resolves its artifact arguments' from/fromExpression, as
+// resolveDependencyReferences and resolveReferences did before the Engine.
+// spec.volumes, which may reference them too (docs/variables.md), are
+// substituted from the same scope.
 //
-// We substitute template variables first, then use shouldExecute which converts
-// govaluate VARIABLE tokens to STRING tokens. This is critical because after
-// substitution, bare words like "odd" and "even" in "odd == even" must be treated
-// as string literals, not as nil-valued variables (which would make nil == nil → true).
-func (e *Engine) evaluateWhenClause(ctx context.Context, task dag.Task, scope *wfScope) (bool, error) {
-	when := task.GetWhen()
-	if when == "" || dag.HasExpansion(task) {
-		return true, nil
+// The when is resolved and evaluated first. A task whose when is false is
+// returned with only its when resolved, so its other references need not
+// resolve: it is skipped, or expanded leniently (a dynamic list that does not
+// parse gives no items, a literal list gives Skipped items). An expanded
+// task's when that cannot be evaluated yet (it needs {{item}}) is evaluated
+// per item instead. A reference that is not in scope yet is ErrRequeue.
+func (e *Engine) resolveTask(ctx context.Context, task dag.Task, scope *wfScope) (dag.Task, error) {
+	// Globals were substituted into the volumes once at operate start.
+	if err := e.woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil)); err != nil {
+		return nil, err
 	}
+	// nil-preserving view so expression tags can apply `??` fallbacks to skipped/omitted outputs
+	params := scope.getParametersAny(e.woc.globalParams())
+	if when := task.GetWhen(); when != "" {
+		resolvedWhen, err := substituteJSON(ctx, when, params)
+		if err != nil {
+			return nil, err
+		}
+		proceed, err := dag.ShouldExecute(resolvedWhen)
+		if err != nil && !dag.HasExpansion(task) {
+			return nil, err
+		}
+		if err == nil && !proceed {
+			return task.Resolve(func(body wfv1.DAGTask) (wfv1.DAGTask, error) {
+				body.When = resolvedWhen
+				return body, nil
+			})
+		}
+	}
+	return task.Resolve(func(body wfv1.DAGTask) (wfv1.DAGTask, error) {
+		// Hooks are resolved when they run: an exit hook may reference this
+		// task's own outputs.
+		hooks := body.Hooks
+		body.Hooks = nil
+		// A pure reference to an absent optional becomes a sentinel that
+		// ProcessArgs reads as "unsupplied" (see markAbsentOptionalArgs).
+		scope.markAbsentOptionalArgs(&body.Arguments)
+		body, err := substituteJSON(ctx, body, params)
+		if err != nil {
+			return body, err
+		}
+		if body.Arguments.Artifacts, err = scope.resolveArtifactArguments(ctx, body.Arguments.Artifacts); err != nil {
+			return body, err
+		}
+		body.Hooks = hooks
+		return body, nil
+	})
+}
 
-	// nil-preserving view so `??` expression fallbacks can resolve skipped/omitted outputs; a simple
-	// tag resolving to an absent optional (nil) is a terminal error, matching argument substitution.
-	merged := scope.getParametersAny(e.woc.globalParams())
-	tmpl, err := template.NewTemplate(when)
+// substituteJSON substitutes the tags params resolves in v's JSON form:
+// values are escaped for the JSON context and the unmarshal reverses it, so
+// values containing quotes or backslashes arrive intact. References to tasks
+// and steps must resolve: a missing one means the producer's output is not
+// in scope yet, reported as ErrRequeue so the caller waits rather than run
+// with the literal tag (#15513). Other tags stay for later passes.
+func substituteJSON[T any](ctx context.Context, v T, params map[string]any) (T, error) {
+	var out T
+	b, err := json.Marshal(v)
 	if err != nil {
-		return false, err
+		return out, err
 	}
-	// Task and step references must resolve (see resolveArguments): a miss is
-	// reported as ErrRequeue rather than evaluated as a literal.
-	substituted, err := tmpl.ReplaceStrict(ctx, merged, []string{"tasks", "steps"})
+	resolved, err := template.ReplaceStrictAny(ctx, string(b), params, []string{"tasks", "steps"})
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
-			return false, fmt.Errorf("%w: %w", ErrRequeue, err)
+			return out, fmt.Errorf("%w: %w", ErrRequeue, err)
 		}
-		return false, err
+		return out, err
 	}
-	return dag.ShouldExecute(substituted)
+	err = json.Unmarshal([]byte(resolved), &out)
+	return out, err
 }

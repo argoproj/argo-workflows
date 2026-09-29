@@ -17,10 +17,10 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util"
 )
 
-// ExpandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
-// We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
-// expansion to work with the ShouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
-// check ShouldExecute, if ShouldExecute returns false, we continue on as normal else error out
+// ExpandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks.
+// The task's references to other tasks and steps are already resolved (the Engine's resolveTask), or, for a task
+// whose when is false, only its when is: such a task never runs, so an expansion that cannot be parsed gives no
+// items rather than an error, as on main.
 func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string, substitutor Substitutor) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
@@ -28,45 +28,12 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 	case len(task.WithItems) > 0:
 		items = task.WithItems
 	case task.WithParam != "":
-		resolvedParam, resolveErr := resolveWithParam(task.WithParam, scope, substitutor)
-		if resolveErr != nil {
-			return nil, resolveErr
-		}
-		if err = json.Unmarshal([]byte(resolvedParam), &items); err != nil {
-			mustExec, mustExecErr := ShouldExecute(task.When)
-			if mustExecErr != nil || mustExec {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(resolvedParam), err)
-			}
+		if err = json.Unmarshal([]byte(task.WithParam), &items); err != nil && mustExecute(task.When) {
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 		}
 	case task.WithSequence != nil:
-		seq := task.WithSequence.DeepCopy()
-		if substitutor != nil {
-			resolveIntOrString := func(val *intstr.IntOrString) (*intstr.IntOrString, error) {
-				if val == nil || val.Type == intstr.Int {
-					return val, nil
-				}
-				resolved, subErr := substitutor.Substitute(val.String(), scope, nil)
-				if subErr != nil {
-					return val, subErr
-				}
-				return &intstr.IntOrString{Type: intstr.String, StrVal: resolved}, nil
-			}
-			if seq.Count, err = resolveIntOrString(seq.Count); err != nil {
-				return nil, err
-			}
-			if seq.Start, err = resolveIntOrString(seq.Start); err != nil {
-				return nil, err
-			}
-			if seq.End, err = resolveIntOrString(seq.End); err != nil {
-				return nil, err
-			}
-		}
-		items, err = expandSequence(seq)
-		if err != nil {
-			mustExec, mustExecErr := ShouldExecute(task.When)
-			if mustExecErr != nil || mustExec {
-				return nil, err
-			}
+		if items, err = expandSequence(task.WithSequence); err != nil && mustExecute(task.When) {
+			return nil, err
 		}
 	default:
 		return []wfv1.DAGTask{task}, nil
@@ -85,12 +52,10 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 
 	// An item reference must resolve at expansion: {{item.name}} against a
 	// plain-string item is an error here, not a literal that reaches the pod.
-	// The one exception is a task whose when clause is already known to be
-	// false, which never runs, so its body may stay unresolved, as processItem
-	// did before the Engine. A when clause that itself needs {{item}} cannot be
-	// evaluated yet and gets the strict treatment.
+	// A task whose when is already known to be false never runs, so its body
+	// may stay unresolved, as processItem did before the Engine.
 	itemStrict := []string{"item"}
-	if proceed, whenErr := ShouldExecute(task.When); whenErr == nil && !proceed {
+	if !mustExecute(task.When) {
 		itemStrict = nil
 	}
 
@@ -111,43 +76,22 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 	return expandedTasks, nil
 }
 
-// resolveWithParam resolves template references in a withParam value.
-// The substitutor's Substitute method escapes replacement values for safe JSON embedding
-// (via strconv.Quote). When withParam is a raw template like "{{steps.X.outputs.result}}",
-// direct substitution would produce escaped JSON (e.g., [{\"key\":\"val\"}]).
-// To get the raw value, we wrap the withParam in a JSON string context, substitute
-// (where escaping is correct), then extract via JSON unmarshal (which reverses the escaping).
-// This matches the pre-Engine controller, which marshalled the entire task to JSON before
-// substitution.
-func resolveWithParam(withParam string, scope map[string]string, substitutor Substitutor) (string, error) {
-	if substitutor == nil {
-		return withParam, nil
-	}
-	// Wrap in a JSON object: {"v":"<withParam>"} so the substitutor's escaping
-	// is appropriate for the JSON string context.
-	jsonWrapped := `{"v":` + strconv.Quote(withParam) + `}`
-	resolved, err := substitutor.Substitute(jsonWrapped, scope, nil)
-	if err != nil {
-		return "", err
-	}
-	var wrapper struct {
-		V string `json:"v"`
-	}
-	if err := json.Unmarshal([]byte(resolved), &wrapper); err != nil {
-		return "", fmt.Errorf("failed to resolve withParam template %q: %w", withParam, err)
-	}
-	return wrapper.V, nil
-}
-
 func (e *DAGEvaluator) ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string, substitutor Substitutor) ([]wfv1.DAGTask, error) {
 	return ExpandTask(ctx, task, scope, substitutor)
 }
 
-// ShouldExecute evaluates a when expression (substituted, or, at expansion
-// time, a task's raw when where {{item}}/{{tasks.*}}/{{steps.*}} have not
-// been resolved yet) to decide whether a task or step should execute. The
-// single evaluator for the Engine, ExpandTask's mustExecute check, and the
-// metrics "when" clause (operator.go).
+// mustExecute reports whether a task with this resolved when may run: true
+// unless the when evaluates to false. A when that needs {{item}} cannot be
+// evaluated yet, so its task may run.
+func mustExecute(when string) bool {
+	proceed, err := ShouldExecute(when)
+	return err != nil || proceed
+}
+
+// ShouldExecute evaluates a substituted when expression to decide whether a
+// task or step should execute. The single evaluator for the Engine,
+// ExpandTask's mustExecute check, and the metrics "when" clause
+// (operator.go).
 func ShouldExecute(when string) (bool, error) {
 	if when == "" {
 		return true, nil
@@ -356,9 +300,8 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 		}
 	}
 
-	// The 'when' clause (now substituted with item values) is preserved on the expanded task.
-	// Evaluation is deferred to the engine's createDesiredTask, which uses the legacy govaluate
-	// evaluator that correctly handles unquoted string comparisons (e.g., "odd == even").
+	// The 'when' clause (now substituted with item values) is preserved on the expanded task and
+	// evaluated by the engine's createDesiredTask (ShouldExecute).
 
 	return newTaskName, nil
 }
