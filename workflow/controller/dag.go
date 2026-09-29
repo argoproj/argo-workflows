@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
@@ -38,6 +39,6 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		tasks = append(tasks, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[i]})
 	}
 
-	engine.Execute(ctx, tasks)
+	engine.Execute(ctx, dag.PullOrder(tasks, strings.Fields(tmpl.DAG.Target)))
 	return woc.wf.GetNodeByName(nodeName)
 }
