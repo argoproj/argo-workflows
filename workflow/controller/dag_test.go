@@ -331,7 +331,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	wf.Status.Nodes[nodeID] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeRunning}
 
 	// Task B should not proceed, task A is still running
-	result := evaluator.EvaluateAll(ctx)["B"]
+	result := evaluator.Evaluate(ctx, "B")
 	require.NoError(t, result.Error)
 	assert.True(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
@@ -340,16 +340,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	wf.Status.Nodes[nodeID] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeSucceeded}
 
 	// Task B and C should proceed and execute
-	result = evaluator.EvaluateAll(ctx)["B"]
+	result = evaluator.Evaluate(ctx, "B")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
-	result = evaluator.EvaluateAll(ctx)["C"]
+	result = evaluator.Evaluate(ctx, "C")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
 	// Other tasks should not
-	result = evaluator.EvaluateAll(ctx)["should-execute-1"]
+	result = evaluator.Evaluate(ctx, "should-execute-1")
 	require.NoError(t, result.Error)
 	assert.True(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
@@ -359,16 +359,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Name: "test.C", Phase: wfv1.NodeFailed}
 
 	// Tasks should-execute-1 and should-execute-2 should proceed and execute
-	result = evaluator.EvaluateAll(ctx)["should-execute-1"]
+	result = evaluator.Evaluate(ctx, "should-execute-1")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
-	result = evaluator.EvaluateAll(ctx)["should-execute-2"]
+	result = evaluator.Evaluate(ctx, "should-execute-2")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
 	// Task should-not-execute should proceed, but not execute
-	result = evaluator.EvaluateAll(ctx)["should-not-execute"]
+	result = evaluator.Evaluate(ctx, "should-not-execute")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
@@ -379,7 +379,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.should-not-execute")] = wfv1.NodeStatus{Name: "test.should-not-execute", Phase: wfv1.NodeSkipped}
 
 	// Tasks should-execute-3 should proceed and execute
-	result = evaluator.EvaluateAll(ctx)["should-execute-3"]
+	result = evaluator.Evaluate(ctx, "should-execute-3")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
@@ -436,7 +436,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Name: "test.A-2", Phase: wfv1.NodeRunning}
 
 	// Task B should not proceed as task A is still running
-	result := evaluator.EvaluateAll(ctx)["B"]
+	result := evaluator.Evaluate(ctx, "B")
 	require.NoError(t, result.Error)
 	assert.True(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
@@ -449,7 +449,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	}
 
 	// Task B should proceed, but not execute as none of the children have succeeded yet
-	result = evaluator.EvaluateAll(ctx)["B"]
+	result = evaluator.Evaluate(ctx, "B")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
@@ -458,7 +458,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Name: "test.A-2", Phase: wfv1.NodeSucceeded}
 
 	// Task B should now proceed and execute
-	result = evaluator.EvaluateAll(ctx)["B"]
+	result = evaluator.Evaluate(ctx, "B")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
@@ -472,7 +472,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.B-1")] = wfv1.NodeStatus{Name: "test.B-1", Phase: wfv1.NodeFailed}
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
-	result = evaluator.EvaluateAll(ctx)["C"]
+	result = evaluator.Evaluate(ctx, "C")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
@@ -480,7 +480,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.B-2")] = wfv1.NodeStatus{Name: "test.B-2", Phase: wfv1.NodeFailed}
 
 	// Task C should now proceed and execute as all of B's children have failed
-	result = evaluator.EvaluateAll(ctx)["C"]
+	result = evaluator.Evaluate(ctx, "C")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
@@ -515,7 +515,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeOmitted}
 
 	// Task B should proceed and execute
-	result := evaluator.EvaluateAll(ctx)["B"]
+	result := evaluator.Evaluate(ctx, "B")
 	require.NoError(t, result.Error)
 	assert.False(t, result.Suspended)
 	assert.True(t, result.ShouldRun)
@@ -560,11 +560,11 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 		// Task A is running
 		wf.Status.Nodes[wf.NodeID("test.same")] = wfv1.NodeStatus{Name: "test.same", Phase: statusMap[status]}
 
-		result := evaluator.EvaluateAll(ctx)["Run"]
+		result := evaluator.Evaluate(ctx, "Run")
 		require.NoError(t, result.Error)
 		assert.False(t, result.Suspended)
 		assert.True(t, result.ShouldRun)
-		result = evaluator.EvaluateAll(ctx)["NotRun"]
+		result = evaluator.Evaluate(ctx, "NotRun")
 		require.NoError(t, result.Error)
 		assert.False(t, result.Suspended)
 		assert.False(t, result.ShouldRun)
@@ -618,24 +618,24 @@ func TestDAGEnhancedDependsWithFailureIntegration(t *testing.T) {
 	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
 	// D: "A && (C.Succeeded || C.Failed)" — A succeeded, C failed → C.Failed is true → should run
-	result := evaluator.EvaluateAll(ctx)["D"]
+	result := evaluator.Evaluate(ctx, "D")
 	require.NoError(t, result.Error)
 	assert.True(t, result.ShouldRun, "D should run: A succeeded and C.Failed is true")
 
 	// E: "B || C" — expanded to "(B.Succeeded||B.Skipped||B.Daemoned) || (C.Succeeded||C.Skipped||C.Daemoned)"
 	// B.Succeeded is true → should run
-	result = evaluator.EvaluateAll(ctx)["E"]
+	result = evaluator.Evaluate(ctx, "E")
 	require.NoError(t, result.Error)
 	assert.True(t, result.ShouldRun, "E should run: B succeeded")
 
 	// F: "B && C" — expanded: B.Succeeded is true but C.Succeeded is false → skipped
-	result = evaluator.EvaluateAll(ctx)["F"]
+	result = evaluator.Evaluate(ctx, "F")
 	require.NoError(t, result.Error)
 	assert.False(t, result.ShouldRun, "F should not run: C did not succeed")
 	assert.True(t, result.Skipped, "F should be skipped")
 
 	// G: "E || F" — E has no workflow node yet, F has no workflow node yet → suspended
-	result = evaluator.EvaluateAll(ctx)["G"]
+	result = evaluator.Evaluate(ctx, "G")
 	require.NoError(t, result.Error)
 	assert.True(t, result.Suspended, "G is suspended waiting for E or F")
 	assert.False(t, result.ShouldRun, "G should not run yet")
@@ -668,21 +668,13 @@ func TestDAGAssessPhaseWithPendingTasks(t *testing.T) {
 	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
 	// D should be ready to run (C.Failed is true)
-	result := evaluator.EvaluateAll(ctx)["D"]
+	result := evaluator.Evaluate(ctx, "D")
 	require.NoError(t, result.Error)
 	assert.True(t, result.ShouldRun, "D should run because C.Failed is true")
 
-	// The DAG should still have pending tasks, so assessDAGPhase should return Running
-	// (D is Pending - no workflow node yet)
-	results := evaluator.EvaluateAll(ctx)
-	hasPendingOrRunning := false
-	for _, r := range results {
-		if r.CurrentPhase == wfv1.NodePending || r.CurrentPhase == wfv1.NodeRunning {
-			hasPendingOrRunning = true
-			break
-		}
-	}
-	assert.True(t, hasPendingOrRunning, "DAG should have pending/running tasks (D), so it should be Running not Failed")
+	// D has no workflow node yet, so the DAG still has a pending task and
+	// assessDAGPhase keeps it Running rather than prematurely Failed.
+	assert.Equal(t, wfv1.NodePending, result.CurrentPhase, "D is still pending")
 }
 
 // Restored integration tests from the old DAG engine test suite, adapted
@@ -4631,9 +4623,9 @@ func TestRound2I_DaemonedFailedDepExplicitQualifier(t *testing.T) {
 			"causing 'A.Failed' to evaluate false and B to stay Suspended forever")
 }
 
-// testRound2IConvergeActionFailDAG is a DAG with task A (retry, limit=0) and task B
+// testRound2IRetryFailedDAG is a DAG with task A (retry, limit=0) and task B
 // (depends: "A.Failed"). When A fails, B should be scheduled in the same operate cycle.
-var testRound2IConvergeActionFailDAG = `
+var testRound2IRetryFailedDAG = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -4661,23 +4653,21 @@ spec:
       command: [echo, hello]
 `
 
-// TestRound2I_ConvergeActionFailRunningRetryNode verifies that converge() correctly
-// handles the ActionFail case for a retry node that is still NodeRunning.
+// TestRound2I_RunningRetryNodeFailsInSamePass verifies that a retry node that
+// is still NodeRunning after its last attempt failed (limit exhausted) is
+// dispatched, so that in the same reconcile:
+//  1. executeTask(A) marks A NodeFailed via processNodeRetries
+//  2. executeTask(B) runs because A.Failed is satisfied (B.ShouldRun=true)
 //
-// When evaluateRetryNode returns ActionFail for A (last child failed, limit exhausted,
-// A still NodeRunning), converge must:
-//  1. Call executeTask(A) to mark A as NodeFailed via processNodeRetries
-//  2. Call executeTask(B) because A.Failed is satisfied (B.ShouldRun=true)
-//
-// If the ActionFail path in converge is broken (e.g., needsExecution is not set),
-// A stays Running and B is never scheduled, leaving the DAG stuck at Running.
-func TestRound2I_ConvergeActionFailRunningRetryNode(t *testing.T) {
+// If an unfulfilled retry node were not dispatched, A would stay Running and
+// B would never be scheduled, leaving the DAG stuck at Running.
+func TestRound2I_RunningRetryNodeFailsInSamePass(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := wfv1.MustUnmarshalWorkflow(testRound2IConvergeActionFailDAG)
+	wf := wfv1.MustUnmarshalWorkflow(testRound2IRetryFailedDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -4693,8 +4683,8 @@ func TestRound2I_ConvergeActionFailRunningRetryNode(t *testing.T) {
 	// B should not exist yet (A hasn't failed)
 	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("B"), "B should not be scheduled yet")
 
-	// Cycle 2: A(0) fails → evaluateRetryNode returns ActionFail (limit=0, no retries)
-	// converge should: (a) call executeTask(A) to mark A as Failed, (b) schedule B
+	// Cycle 2: A(0) fails (limit=0, no retries): the walk should (a) call
+	// executeTask(A) to mark A as Failed, (b) schedule B
 	makePodsPhase(ctx, woc, v1.PodFailed)
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
@@ -4703,14 +4693,14 @@ func TestRound2I_ConvergeActionFailRunningRetryNode(t *testing.T) {
 	retryNode = woc.wf.Status.Nodes.FindByDisplayName("A")
 	require.NotNil(t, retryNode)
 	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase,
-		"retry node A must be Failed: converge should call executeTask(A) for ActionFail")
+		"retry node A must be Failed: the walk should call executeTask(A)")
 
 	// B should be scheduled because A.Failed is true
-	// Bug: if converge doesn't handle ActionFail correctly for running retry nodes,
-	// B is never scheduled and the DAG hangs at Running.
+	// Bug: if the running retry node is not dispatched, B is never
+	// scheduled and the DAG hangs at Running.
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
 	assert.NotNil(t, bNode,
-		"task B must be scheduled: A.Failed is satisfied, converge should call executeTask(B)")
+		"task B must be scheduled: A.Failed is satisfied, the walk should call executeTask(B)")
 }
 
 // ---------------------------------------------------------------------------

@@ -28,7 +28,7 @@ func taskGroupWorkflow(t *testing.T, groupPhase wfv1.NodePhase, items ...wfv1.No
 
 func evaluateTaskGroup(t *testing.T, wf *wfv1.Workflow) EvaluationResult {
 	tmpl := createDAGTemplate([]wfv1.DAGTask{{Name: "A", Template: "t", WithItems: []wfv1.Item{{Value: []byte(`"x"`)}}}})
-	return NewDAGEvaluator(wf, tmpl, "", "dag").EvaluateTask(testCtx(t), "A")
+	return NewDAGEvaluator(wf, tmpl, "", "dag").Evaluate(testCtx(t), "A")
 }
 
 // An unfinished TaskGroup is dispatched on every pass, whatever its items'

@@ -2,33 +2,21 @@ package dag
 
 import (
 	"fmt"
-	"time"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-// Action is the evaluator's decision for a retry or task-group node. The
-// Engine dispatches the task through executeTask for Execute, Succeed and
-// Fail alike; the distinction records what the evaluator concluded, and is
-// what the evaluator's tests check.
+// Action is the evaluator's decision for a retry or task-group node, which
+// the Engine logs; ShouldRun, set with ActionExecute, is what it acts on.
 type Action int
 
 const (
-	// ActionNone means there is nothing to dispatch this reconcile: the task is
-	// waiting, already recorded, or backing off (see RequeueAfter).
+	// ActionNone means there is nothing to dispatch this reconcile: the node
+	// is fulfilled.
 	ActionNone Action = iota
-	// ActionExecute means the task should be dispatched: its node created, or
-	// the next retry attempt scheduled.
+	// ActionExecute means the unfulfilled node is dispatched, so the
+	// operator's retry handling or the TaskGroup's items can progress.
 	ActionExecute
-	// ActionSucceed means the evaluator judges the node Succeeded. The Engine
-	// does not mark it; dispatching it lets the operator's retry handling or
-	// the TaskGroup assessment record the outcome, and post-execution handling
-	// (lock release, metrics) run.
-	ActionSucceed
-	// ActionFail means the evaluator judges the node Failed or Errored
-	// (CurrentPhase says which). As for ActionSucceed, the Engine dispatches it
-	// and the operator records the outcome.
-	ActionFail
 )
 
 func (a Action) String() string {
@@ -37,10 +25,6 @@ func (a Action) String() string {
 		return "None"
 	case ActionExecute:
 		return "Execute"
-	case ActionSucceed:
-		return "Succeed"
-	case ActionFail:
-		return "Fail"
 	default:
 		return fmt.Sprintf("Action(%d)", int(a))
 	}
@@ -98,11 +82,7 @@ type EvaluationResult struct {
 	// ActionReason explains the chosen Action. The Engine logs it at debug
 	// level with the task's other diagnostics.
 	ActionReason string
-	// RequeueAfter is the retry backoff duration the engine should wait before
-	// re-evaluating this task. A zero value means no requeue is needed.
-	RequeueAfter time.Duration
-	// FulfilledForDeps is true when downstream tasks may proceed even if this
-	// task is not yet terminal. For example, a running daemon node is fulfilled
-	// for its dependants but the overall retry group is not yet done.
+	// FulfilledForDeps is set once a retry or task-group node is fulfilled (a
+	// running daemon counts), so its dependants may proceed.
 	FulfilledForDeps bool
 }
