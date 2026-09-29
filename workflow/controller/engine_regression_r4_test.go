@@ -10213,3 +10213,74 @@ spec:
 		assert.Contains(t, names, "print(0:a)")
 	})
 }
+
+// TestRegressionR4_C57_CsNoMainExpandedSteps ports
+// TestProbe_v2x10_CsNoMainExpandedSteps (v2x10-1_test.go / C57). A
+// containerSet with no container named "main" has no result for the
+// executor to ever report; validation still puts the aggregated
+// {{steps.cs.outputs.result}} in scope for a later step, since it doesn't
+// know which container(s) exist at runtime. assessNodeStatus's gate case 2
+// held the pod node at its old (non-terminal) phase forever waiting for that
+// result, so the items never finished, print was never created, and the
+// workflow hung with no message.
+func TestRegressionR4_C57_CsNoMainExpandedSteps(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c57-cs-nomain
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: cs
+        template: cs
+        withItems: ["1", "2"]
+    - - name: print
+        template: echo
+        arguments:
+          parameters:
+          - name: x
+            value: "{{steps.cs.outputs.result}}"
+  - name: cs
+    containerSet:
+      containers:
+      - name: a
+        image: argoproj/argosay:v2
+      - name: b
+        image: argoproj/argosay:v2
+        dependencies: [a]
+  - name: echo
+    inputs:
+      parameters:
+      - name: x
+    container:
+      image: argoproj/argosay:v2
+`)
+	pods, err := listPods(ctx, r.woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 2, "the two containerSet item pods should be created")
+
+	all := func(*apiv1.Pod) bool { return true }
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, all, withExitCode(0), withOutputs(ctx, wfv1.Outputs{}))
+	for range 3 {
+		r.op(ctx)
+	}
+
+	for _, n := range r.woc.wf.Status.Nodes {
+		if n.Type == wfv1.NodeTypePod && strings.Contains(n.Name, ".cs") {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase, "containerSet pod node %s should not be stuck waiting for a result", n.Name)
+		}
+	}
+	pods, err = listPods(ctx, r.woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 3, "print's pod should be created once the containerSet items finish")
+
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, all, withExitCode(0), withOutputs(ctx, wfv1.Outputs{}))
+	for range 3 {
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+}
