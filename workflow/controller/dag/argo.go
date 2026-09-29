@@ -99,11 +99,12 @@ func (e *DAGEvaluator) isReady(ctx context.Context, key Key) (readinessResult, e
 		if node.Fulfilled() {
 			return omit, nil
 		}
-		if node.Phase == wfv1.NodeRunning {
-			return ready, nil
-		}
+		// Once its node exists a task keeps being reconciled, whatever its
+		// dependencies do next (a daemon it depends on may die), as
+		// evaluateDependsLogic did before the Engine.
+		return ready, nil
 	}
-	// No node or node is Pending — evaluate depends logic
+	// No node yet — evaluate depends logic
 	return e.evaluateDependsReadiness(ctx, key)
 }
 
@@ -344,15 +345,10 @@ func (e *DAGEvaluator) evaluateTaskResult(ctx context.Context, taskName string) 
 			result.SkipReason = node.Message
 			return result
 		}
-		if !node.Fulfilled() {
-			readiness, exprErr := e.evaluateDependsReadiness(ctx, taskName)
-			if readiness == ready {
-				result.ShouldRun = true
-			}
-			if exprErr != nil {
-				result.Error = exprErr
-			}
-		}
+		// See isReady: a started task is dispatched until it is fulfilled,
+		// without re-evaluating its depends expression against dependencies
+		// that may since have changed (e.g. a dead daemon).
+		result.ShouldRun = !node.Fulfilled()
 		return result
 	}
 
