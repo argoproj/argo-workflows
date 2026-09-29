@@ -9572,3 +9572,178 @@ spec:
 	assert.Equal(t, "F", r4GlobalParam(r.woc.wf), "wf.status.outputs g")
 	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_p9_late_sync", "status", "Failed"), 0.001)
 }
+
+// C66 and lead 2: a retried template's metrics belong to its Retry node.
+//
+// A realtime gauge must be registered once, for the Retry node
+// (status=Running, duration covering the whole retry), not once per attempt
+// (status=Pending, duration resetting each attempt). A completion counter
+// must count each fulfilled attempt once, not twice.
+
+// r4GaugeStatuses reads name's realtime gauge value for each of a fixed set
+// of {{status}} label values, returning only the ones actually registered.
+func r4GaugeStatuses(ctx context.Context, name string) map[string]float64 {
+	out := map[string]float64{}
+	for _, status := range []string{"Running", "Pending", "Succeeded", "Failed"} {
+		attribs := attribute.NewSet(attribute.String("status", status))
+		if v, err := testExporter.GetFloat64GaugeValue(ctx, name, &attribs); err == nil {
+			out[status] = v
+		}
+	}
+	return out
+}
+
+// C66: ports TestProbe_v1x53_RealtimeMetricRetriedTemplate.
+func TestRegressionR4_C66_RealtimeMetricRetriedTemplate(t *testing.T) {
+	for _, kind := range []string{"root", "dag", "steps"} {
+		t.Run(kind, func(t *testing.T) {
+			entry := "work"
+			switch kind {
+			case "dag":
+				entry = "maindag"
+			case "steps":
+				entry = "mainsteps"
+			}
+			metric := "r4_c66_rt_retry_" + kind
+			wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c66-rt-retry-` + kind + `
+  namespace: default
+spec:
+  entrypoint: ` + entry + `
+  templates:
+  - name: maindag
+    dag:
+      tasks:
+      - name: A
+        template: work
+  - name: mainsteps
+    steps:
+    - - name: A
+        template: work
+  - name: work
+    retryStrategy:
+      limit: "2"
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: g
+        labels:
+        - key: status
+          value: "{{status}}"
+        gauge:
+          realtime: true
+          value: "{{duration}}"
+    container:
+      image: alpine
+      command: [echo, hi]
+`)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			s1 := r4GaugeStatuses(ctx, metric)
+
+			// Fail the first attempt and drive a second attempt into being.
+			makePodsPhase(ctx, woc, apiv1.PodFailed)
+			for range 3 {
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+			}
+
+			_, running := s1["Running"]
+			_, pending := s1["Pending"]
+			assert.True(t, running, "status=Running series from the Retry node")
+			assert.False(t, pending, "no status=Pending series from an attempt node")
+		})
+	}
+}
+
+// lead2, folded into C66: a Steps/DAG template with retryStrategy and a
+// {{status}} counter counts each failed non-final attempt once, not twice.
+// Ports TestProbe_lead2_RetriedNestedFailOnceThenSucceed.
+func TestRegressionR4_C66_RetriedNestedCounterCountsOnce(t *testing.T) {
+	for _, parent := range []string{"steps", "dag"} {
+		for _, inner := range []string{"steps", "dag"} {
+			t.Run(parent+"/"+inner, func(t *testing.T) {
+				metric := "r4_c66_once_" + parent + "_" + inner
+				parentBody := `
+    steps:
+    - - name: s
+        template: inner`
+				if parent == "dag" {
+					parentBody = `
+    dag:
+      tasks:
+      - name: s
+        template: inner`
+				}
+				innerBody := `
+    steps:
+    - - name: w
+        template: work`
+				if inner == "dag" {
+					innerBody = `
+    dag:
+      tasks:
+      - name: w
+        template: work`
+				}
+				wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c66-once-` + parent + `-` + inner + `
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main` + parentBody + `
+  - name: inner
+    retryStrategy:
+      limit: "1"
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: "inner completions by status"
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"` + innerBody + `
+  - name: work
+    container:
+      image: alpine
+      command: [sh, -c, "exit 1"]
+`)
+				require.NoError(t, validate.Workflow(logging.TestContext(t.Context()), nil, nil, wf, nil, validate.Opts{}))
+
+				ctx := logging.TestContext(t.Context())
+				cancel, controller := newController(ctx, wf)
+				defer cancel()
+				woc := newWorkflowOperationCtx(ctx, wf, controller)
+				woc.operate(ctx)
+				for _, ph := range []apiv1.PodPhase{apiv1.PodFailed, apiv1.PodSucceeded, apiv1.PodSucceeded} {
+					if woc.wf.Status.Phase.Completed() {
+						break
+					}
+					code := int32(0)
+					if ph == apiv1.PodFailed {
+						code = 1
+					}
+					makePodsPhase(ctx, woc, ph, withExitCode(code))
+					woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+					woc.operate(ctx)
+				}
+
+				failed := r4C65Counter(t, metric, "status", "Failed")
+				t.Logf("wf=%s Failed=%.0f", woc.wf.Status.Phase, failed)
+				require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+				require.InDelta(t, 1.0, failed, 0.001, "one failed attempt should count once")
+			})
+		}
+	}
+}

@@ -223,10 +223,16 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		}
 		woc.handleNodeFulfilled(ctx, retryParentNode, processedTmpl)
 		return retryParentNode, nil
-	} else if lastChildNode != nil && lastChildNode.Fulfilled() && processedTmpl.Metrics != nil {
-		localScope, realTimeScope := woc.prepareMetricScope(lastChildNode)
-		woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
+	// No separate metric here for a fulfilled-but-not-final lastChildNode
+	// (a failed attempt the retry will follow with another): its own
+	// dispatch already finished it through handleNodeFulfilled, either
+	// synchronously (postExecutionHandling, for an attempt that completes
+	// inside its own dispatch, e.g. a nested Steps/DAG boundary reacting to
+	// an already-failed child) or on re-entry here after that dispatch
+	// (childNode.Phase.Fulfilled below re-enters handleRetries, which
+	// revisits this same lastChildNode). Emitting again here double-counted
+	// every such attempt (C66, lead 2).
 
 	var retryNum int
 	if lastChildNode != nil && !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
@@ -378,14 +384,11 @@ func (woc *wfOperationCtx) postExecutionHandling(ctx context.Context, node *wfv1
 	}
 	node = retrieveNode
 
-	if processedTmpl.Metrics != nil {
-		if _, ok := woc.preExecutionNodeStatuses[node.ID]; !ok {
-			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
-		}
-	}
 	// A node this dispatch completed (a nested template, a suspend whose
-	// duration passed) is finished here.
+	// duration passed) is finished here. Realtime metric registration moved
+	// out of here to emitNodeMetrics, on the node executeProcessedTemplate
+	// finally returns: for a retried template that is always the Retry
+	// node, not each attempt this dispatch may be handling (C66).
 	woc.handleNodeFulfilled(ctx, node, processedTmpl)
 	return node, nil
 }

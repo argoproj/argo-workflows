@@ -2444,12 +2444,14 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 		return woc.postExecutionHandling(ctx, dispatchNode, nodeName, tmpl, dispatchErr)
 	}
 
-	retryNode, err := woc.handleRetries(ctx, node, nodeName, processedTmpl, nodeScope, orgTmpl, opts, dispatch)
-	if err != nil || retryNode != nil {
-		return retryNode, err
+	// The node returned is the one whose realtime metric matters: the Retry
+	// node when the template is retried (handleRetries always returns it,
+	// never an attempt), the template's own node otherwise (C66).
+	node, err = woc.handleRetries(ctx, node, nodeName, processedTmpl, nodeScope, orgTmpl, opts, dispatch)
+	if err == nil && node != nil {
+		woc.emitNodeMetrics(ctx, node, processedTmpl)
 	}
-
-	return dispatch(ctx, nodeName, processedTmpl, orgTmpl, opts)
+	return node, err
 }
 
 // handleNodeFulfilled finishes node, run from tmpl, once it is fulfilled (a
@@ -2480,6 +2482,26 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.N
 		woc.log.WithField("nodeName", node.Name).Debug(ctx, "Node already completed")
 	}
 	return completed
+}
+
+// emitNodeMetrics registers tmpl's realtime metrics for node, once, in the
+// operate that created node. A retried template's realtime series therefore
+// belongs to its Retry node (handleRetries always returns it to
+// executeProcessedTemplate, never an attempt) rather than resetting on
+// every attempt (C66). Completion metrics are not emitted here:
+// handleNodeFulfilled already emits them, once per node, wherever a node is
+// found fulfilled (a dispatch that finishes synchronously, a retry's own
+// completion, memoization, or a node already fulfilled when reconciled) —
+// duplicating that here for the returned node double-counted a retried
+// template's completion (lead 2).
+func (woc *wfOperationCtx) emitNodeMetrics(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) {
+	if node == nil || tmpl.Metrics == nil {
+		return
+	}
+	if _, ok := woc.preExecutionNodeStatuses[node.ID]; !ok {
+		localScope, realTimeScope := woc.prepareMetricScope(node)
+		woc.computeMetrics(ctx, tmpl.Metrics.Prometheus, localScope, realTimeScope, true)
+	}
 }
 
 // exportCompletedNodes exports the globalName outputs of the nodes found
