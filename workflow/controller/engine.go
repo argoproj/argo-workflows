@@ -6,7 +6,6 @@ import (
 	stderrors "errors"
 	"fmt"
 	"maps"
-	"sort"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -628,7 +627,7 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 	// Under a Stop shutdown the boundary is failed once its exit handlers are
 	// done — unless this boundary IS an onExit handler, which must be allowed
 	// to complete (#16488).
-	dagPhase := e.assessDAGPhase(ctx, tasks, results, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
+	dagPhase, message := e.assessDAGPhase(ctx, tasks, results, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
 
 	switch dagPhase {
 	case wfv1.NodeRunning:
@@ -660,7 +659,7 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 		// to the workflow status (operator.go uses entry node.Message for
 		// workflow.status.Message), and callers / tests rely on it to identify
 		// which child triggered the failure (e.g. TestNodeSuspendResume).
-		_ = e.woc.markNodePhase(ctx, e.nodeName, phase, e.boundaryFailureMessage(ctx))
+		_ = e.woc.markNodePhase(ctx, e.nodeName, phase, message)
 		return nil
 	}
 
@@ -1027,155 +1026,121 @@ func (e *Engine) getTaskNode(ctx context.Context, taskName string) *wfv1.NodeSta
 	return node
 }
 
-// assessDAGPhase assesses the overall DAG status.
-// Only leaf tasks (tasks with no dependents) are considered when determining the overall phase.
-// This matches the old engine behavior: intermediate task failures are "absorbed" when their
-// downstream leaf tasks succeed via enhanced depends logic (e.g. depends: "C.Failed").
-func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult, isShutdown bool) wfv1.NodePhase {
+// assessDAGPhase assesses the boundary's phase, and the message that explains
+// a failure. A DAG is Running while any node it has created has not finished
+// (see outcome); then its targets (dag.target in the order written, else the
+// leaf tasks) decide, as main's assessDAGPhase did: a target whose branch
+// failed without continueOn fails the DAG, the first such target when
+// failFast; a target with no node keeps it Running unless failFast and
+// another target failed.
+func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult, isShutdown bool) (wfv1.NodePhase, string) {
 	if isShutdown {
-		return wfv1.NodeFailed
-	}
-
-	// First pass: if ANY task is still Running or Pending AND not fulfilled for deps,
-	// the DAG is not yet terminal. Tasks that are Running but FulfilledForDeps (e.g.,
-	// a retry node whose daemon child is running) don't block the DAG.
-	for _, result := range results {
-		if (result.CurrentPhase == wfv1.NodeRunning || result.CurrentPhase == wfv1.NodePending) && !result.FulfilledForDeps {
-			return wfv1.NodeRunning
-		}
+		return wfv1.NodeFailed, e.boundaryFailureMessage(ctx)
 	}
 
 	// Steps templates: a step's continueOn is applied when its StepGroup is
 	// assessed, and groups run in sequence, so the template fails as soon as
-	// any group has failed (matching the pre-Engine executeSteps). The DAG leaf
-	// rule below must not be used here: a later step omitted because an earlier
-	// group failed would otherwise excuse that failure with its own continueOn.
+	// any group has failed (matching the pre-Engine executeSteps).
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
+		for _, result := range results {
+			if (result.CurrentPhase == wfv1.NodeRunning || result.CurrentPhase == wfv1.NodePending) && !result.FulfilledForDeps {
+				return wfv1.NodeRunning, ""
+			}
+		}
 		for i := range e.tmpl.Steps {
 			if sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeNameAt(i)); err == nil && sgNode.FailedOrError() {
-				return wfv1.NodeFailed
+				return wfv1.NodeFailed, e.boundaryFailureMessage(ctx)
 			}
 		}
-		return wfv1.NodeSucceeded
+		return wfv1.NodeSucceeded, ""
 	}
 
-	// Build set of leaf tasks (tasks that no other task depends on).
-	leafTasks := e.findLeafTasks(ctx, tasks)
-
-	// When the DAG declares explicit targets, only the target tasks decide the
-	// phase: "we only succeed if all the target tasks have been considered"
-	// (#693, #3035). The graph leaves may have been pruned out of results
-	// entirely when a non-leaf target is declared.
-	if e.tmpl.DAG != nil && e.tmpl.DAG.Target != "" {
-		leafTasks = make(map[string]bool)
-		for _, name := range e.evaluator.GetTargetTasks(ctx) {
-			leafTasks[name] = true
+	for _, task := range tasks {
+		if node := e.getTaskNode(ctx, task.GetName()); node != nil {
+			if _, done := e.outcome(node); !done {
+				return wfv1.NodeRunning, ""
+			}
 		}
 	}
-
-	// Build a map for quick result lookup
-	resultMap := make(map[string]wfv1.NodePhase, len(results))
-	for _, result := range results {
-		resultMap[result.TaskName] = result.CurrentPhase
-	}
-
-	// All tasks are in terminal states — check for unhandled failures in leaf tasks only.
-	// For omitted leaf tasks, inherit the worst phase from their dependencies (matching old engine's
-	// branchPhase BFS behavior). This ensures that if a task is omitted because its dependency failed,
-	// the failure propagates to the DAG phase.
-	// FailFast only applies to DAG templates (Steps templates don't have this concept).
-	// For DAGs, failFast defaults to true unless explicitly set to false.
-	failFast := e.tmpl.DAG != nil && (e.tmpl.DAG.FailFast == nil || *e.tmpl.DAG.FailFast)
-	// Collect and sort leaf task names for deterministic phase assignment
-	var leafTaskNames []string
-	for _, result := range results {
-		if leafTasks[result.TaskName] {
-			leafTaskNames = append(leafTaskNames, result.TaskName)
-		}
-	}
-	sort.Strings(leafTaskNames)
-
-	// Build result lookup by task name
-	resultByName := make(map[string]dag.EvaluationResult, len(results))
-	for _, result := range results {
-		resultByName[result.TaskName] = result
-	}
-
+	failFast := e.tmpl.DAG.FailFast == nil || *e.tmpl.DAG.FailFast
 	phase := wfv1.NodeSucceeded
-	for _, name := range leafTaskNames {
-		result := resultByName[name]
-		effectiveState := result.CurrentPhase
-		if effectiveState == wfv1.NodeOmitted {
-			effectiveState = e.inheritedBranchPhase(ctx, name, resultMap)
+	memo := make(map[string]wfv1.NodePhase)
+	for _, name := range e.evaluator.GetTargetTasks(ctx) {
+		if e.getTaskNode(ctx, name) == nil {
+			phase = wfv1.NodeRunning
+			if !failFast {
+				break
+			}
+			continue
 		}
-		if effectiveState == wfv1.NodeFailed || effectiveState == wfv1.NodeError {
-			task := e.getTaskByName(tasks, name)
-			if !task.ContinuesOn(effectiveState) {
-				phase = effectiveState
-				if failFast {
-					break
-				}
+		if branch := e.branchPhase(ctx, name, memo); branch.FailedOrError() && !e.getTaskByName(tasks, name).ContinuesOn(branch) {
+			phase = branch
+			if failFast {
+				break
 			}
 		}
 	}
+	if phase.FailedOrError() {
+		return phase, e.boundaryFailureMessage(ctx)
+	}
+	return phase, ""
+}
 
+// branchPhase is the phase a DAG task passes down its branch, as main's
+// assessDAGPhase walked it: its own phase once it has completed (Succeeded,
+// Failed or Error), otherwise (Skipped, Omitted, a running daemon) the worst
+// phase of the branches it hangs off.
+func (e *Engine) branchPhase(ctx context.Context, name string, memo map[string]wfv1.NodePhase) wfv1.NodePhase {
+	if phase, ok := memo[name]; ok {
+		return phase
+	}
+	memo[name] = wfv1.NodeSucceeded // ends a cycle, which validation rejects
+	phase := wfv1.NodeSucceeded
+	if node := e.getTaskNode(ctx, name); node != nil {
+		phase, _ = e.outcome(node)
+	}
+	if !phase.Completed() {
+		phase = wfv1.NodeSucceeded
+		deps, _ := e.evaluator.GetDependencies(ctx, name)
+		for _, dep := range deps {
+			phase = worsePhase(phase, e.branchPhase(ctx, dep, memo))
+		}
+	}
+	memo[name] = phase
 	return phase
 }
 
-// findLeafTasks returns a set of task names that have no dependents (i.e., no other task depends on them).
-// It delegates to the evaluator's FindLeafTaskNames which handles both legacy Dependencies and enhanced Depends fields.
-func (e *Engine) findLeafTasks(ctx context.Context, tasks []dag.Task) map[string]bool {
-	leaves := e.evaluator.FindLeafTaskNames(ctx)
-	leafSet := make(map[string]bool, len(tasks))
-	for _, task := range tasks {
-		leafSet[task.GetName()] = false
+// outcome reports the phase a task's node has finished with, and whether it
+// has finished: the node is fulfilled (a running daemon counts, as it does
+// for dependants) and none of its hooks is still running. A TaskGroup has
+// finished once reconcileTaskGroup has recorded it, which it does only when
+// every item exists and has finished; an item can still fail after that (a
+// daemon that dies) and fails the group with it, and an item's hook can
+// still be running.
+func (e *Engine) outcome(node *wfv1.NodeStatus) (wfv1.NodePhase, bool) {
+	if node.Type != wfv1.NodeTypeTaskGroup || !node.Phase.Fulfilled(nil) {
+		return node.Phase, node.Fulfilled() && !e.hasPendingHooks(node)
 	}
-	for _, name := range leaves {
-		leafSet[name] = true
+	phase := node.Phase
+	for _, item := range e.getChildNodes(node) {
+		if !strings.HasPrefix(item.Name, node.Name+"(") {
+			continue // a hook, or the next step group hung off an empty group
+		}
+		if e.hasPendingHooks(&item) {
+			return phase, false
+		}
+		phase = worsePhase(phase, item.Phase)
 	}
-	return leafSet
+	return phase, !e.hasPendingHooks(node)
 }
 
-// inheritedBranchPhase returns the worst phase from a task's dependencies.
-// Used for omitted leaf tasks so they inherit the phase of the branch that
-// caused them to be omitted (matching old engine BFS behavior).
-func (e *Engine) inheritedBranchPhase(ctx context.Context, taskName string, resultMap map[string]wfv1.NodePhase) wfv1.NodePhase {
-	memo := make(map[string]wfv1.NodePhase)
-	return e.inheritedBranchPhaseHelper(ctx, taskName, resultMap, memo, make(map[string]bool))
-}
-
-func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string, resultMap map[string]wfv1.NodePhase, memo map[string]wfv1.NodePhase, onPath map[string]bool) wfv1.NodePhase {
-	if phase, ok := memo[taskName]; ok {
-		return phase
+// worsePhase is the worse of two phases for an outcome: Error outranks
+// Failed, and both outrank every other phase.
+func worsePhase(a, b wfv1.NodePhase) wfv1.NodePhase {
+	if b == wfv1.NodeError || (b == wfv1.NodeFailed && a != wfv1.NodeError) {
+		return b
 	}
-	if onPath[taskName] {
-		// Cycle (shouldn't happen for valid DAGs; defensive) — treat as Succeeded
-		// so the recursion terminates without poisoning the worst-phase result.
-		return wfv1.NodeSucceeded
-	}
-	onPath[taskName] = true
-	defer delete(onPath, taskName)
-
-	deps, err := e.evaluator.GetDependencies(ctx, taskName)
-	if err != nil || len(deps) == 0 {
-		memo[taskName] = wfv1.NodeSucceeded
-		return wfv1.NodeSucceeded
-	}
-	worst := wfv1.NodeSucceeded
-	for _, dep := range deps {
-		depState, ok := resultMap[dep]
-		if !ok {
-			continue
-		}
-		if depState == wfv1.NodeOmitted {
-			depState = e.inheritedBranchPhaseHelper(ctx, dep, resultMap, memo, onPath)
-		}
-		if depState == wfv1.NodeError || (depState == wfv1.NodeFailed && worst != wfv1.NodeError) {
-			worst = depState
-		}
-	}
-	memo[taskName] = worst
-	return worst
+	return a
 }
 
 // parentsFor returns the nodes a task's node hangs off in the graph. Steps
