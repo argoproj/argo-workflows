@@ -233,3 +233,57 @@ func getBaseTaskName(name string) string {
 	}
 	return name
 }
+
+// PullOrder returns tasks in the order main's executeDAG visited them: from
+// each target in turn (the given targets, as written on dag.target, or else
+// the leaves by name when none is set), every task right after its
+// dependencies, depth first. Tasks outside a target's ancestry are never
+// dispatched, but the Engine still needs to iterate them for omissions and
+// hooks, so they follow at the end, in their original order.
+//
+// executeDAG passes this order to Execute as its tasks argument, which every
+// per-reconcile task-list walk (createOmittedNodes, ProcessAllTaskHooks, and,
+// once the fixed-point loop is replaced by one ordered walk, dispatch itself)
+// iterates directly. That already makes a same-pass chain of omissions
+// created dependency-first, so each Omitted node's dependency node exists to
+// link it under (fixes a Steps/DAG orphaned-omission bug, C54); dispatch
+// order itself still comes from converge's own iteration until the ordered
+// walk lands. Steps templates already walk in declaration order and never
+// call PullOrder.
+func PullOrder(tasks []Task, targets []string) []Task {
+	w := newWorkflowTasks(tasks)
+	if len(targets) == 0 {
+		dependedOn := make(map[string]bool)
+		for _, deps := range w.topology.dependencies {
+			for _, d := range deps {
+				dependedOn[d] = true
+			}
+		}
+		for _, name := range w.TaskNames() {
+			if !dependedOn[name] {
+				targets = append(targets, name)
+			}
+		}
+	}
+	order := make([]Task, 0, len(tasks))
+	seen := make(map[string]bool, len(tasks))
+	var visit func(name string)
+	visit = func(name string) {
+		task := w.GetTask(name)
+		if task == nil || seen[name] {
+			return
+		}
+		seen[name] = true
+		for _, dep := range w.topology.dependencies[name] {
+			visit(dep)
+		}
+		order = append(order, task)
+	}
+	for _, name := range targets {
+		visit(name)
+	}
+	for _, task := range tasks {
+		visit(task.GetName())
+	}
+	return order
+}

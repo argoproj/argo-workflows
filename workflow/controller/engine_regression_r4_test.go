@@ -1721,3 +1721,287 @@ func TestRegressionR4_P3_RetryParameterEmptiesFanOut(t *testing.T) {
 	assert.Equal(t, "Skipped, empty params", fan.Message)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
 }
+
+// r4PodStartOrder drives the workflow to completion, one round at a time,
+// rebuilding the wfOperationCtx from stored status every round (r4Operate).
+// Each round it records the display names of pods created that round
+// (sorted within the round, since they started together), then sets pods
+// named in failing to Failed and everything else to Succeeded before
+// re-operating. Matches v1x20RunOrder / probeR1x20Run (v1x20-1_test.go,
+// r1x20-1_test.go).
+//
+//nolint:revive // matches the r4 harness convention (t before ctx)
+func r4PodStartOrder(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx, rounds int, failing map[string]bool) ([]string, *wfOperationCtx) {
+	t.Helper()
+	seen := map[string]bool{}
+	var order []string
+	for i := 0; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
+		var round []string
+		for _, n := range woc.wf.Status.Nodes {
+			if n.Type == wfv1.NodeTypePod && !seen[n.ID] {
+				seen[n.ID] = true
+				round = append(round, n.DisplayName)
+			}
+		}
+		sort.Strings(round)
+		order = append(order, round...)
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if failing[n.DisplayName] {
+				return apiv1.PodFailed
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	return order, woc
+}
+
+const r4C73StepsFailFastValidateApply = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c73-steps-ff
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 1
+    failFast: true
+    steps:
+    - - name: validate
+        template: work
+      - name: apply
+        template: work
+  - name: work
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C73_StepsFailFastValidateApply ports
+// TestProbe_r1x20_StepsFailFastValidateApply (r1x20-1_test.go / C73).
+// converge dispatches ready tasks in sorted-key order, so under template
+// parallelism 1 "apply" (sorts before "validate") could win the only slot
+// ahead of "validate", defeating failFast. Base dispatches Steps in
+// declaration order, so "validate" always runs first; once it fails,
+// failFast must stop "apply" from ever starting.
+//
+// This needs the T1.5 ordered walk, not just T1.6: Steps templates never
+// call dag.PullOrder (only executeDAG does), and converge's dispatch order
+// is `slices.Sorted(maps.Keys(results))` regardless of the order Execute
+// was given, so this stays red until the walk replaces that sort with a
+// walk over the ordered task list.
+func TestRegressionR4_C73_StepsFailFastValidateApply(t *testing.T) {
+	t.Skip("needs the ordered walk, T1.5")
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C73StepsFailFastValidateApply)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	order, woc := r4PodStartOrder(t, ctx, controller, woc, 8, map[string]bool{"validate": true})
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("apply"), "apply must not start after validate failed")
+	assert.Equal(t, []string{"validate"}, order)
+}
+
+const r4C73DAGTemplateParallelismOrder = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c73-dag-order
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 1
+    dag:
+      tasks:
+      - name: b
+        template: work
+      - name: a
+        template: work
+        dependencies: [z]
+      - name: z
+        template: work
+  - name: work
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C73_DAGTemplateParallelismOrder ports
+// TestProbe_v1x20_DAGTemplateParallelismOrder (v1x20-1_test.go / C73).
+// Under DAG template parallelism 1, base walked from the leaf (z's chain
+// first, dependency order, then the independent b): z, a, b. converge's
+// sorted-key dispatch instead starts whichever ready task sorts first by
+// name, alphabetically: a and b tie for readiness before z finishes, but a
+// depends on z so only b and z are ready first, and b < z alphabetically.
+//
+// Stays red for the same reason as StepsFailFastValidateApply: converge's
+// dispatch order doesn't consult the tasks list PullOrder now orders; only
+// T1.5's walk does.
+func TestRegressionR4_C73_DAGTemplateParallelismOrder(t *testing.T) {
+	t.Skip("needs the ordered walk, T1.5")
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C73DAGTemplateParallelismOrder)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	order, woc := r4PodStartOrder(t, ctx, controller, woc, 8, nil)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, []string{"z", "a", "b"}, order)
+}
+
+const r4C73StepGroupChildrenOrder = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c73-sg-children
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: zeta
+        template: work
+      - name: mid
+        template: work
+      - name: alpha
+        template: work
+  - name: work
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C73_StepGroupChildrenOrder ports
+// TestProbe_v1x20_StepGroupChildrenOrder (v1x20-1_test.go / C73). Without
+// parallelism every step in the group is ready in the same pass, but
+// converge still dispatches (and so links, via addChildNode) in
+// sorted-key order: alpha, mid, zeta instead of the declared zeta, mid,
+// alpha. The StepGroup's Children order drives the UI's collapsed-view
+// first/last step.
+//
+// Stays red for the same reason as the other two C73 tests above.
+func TestRegressionR4_C73_StepGroupChildrenOrder(t *testing.T) {
+	t.Skip("needs the ordered walk, T1.5")
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C73StepGroupChildrenOrder)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	sg, err := woc.wf.GetNodeByName("r4-c73-sg-children[0]")
+	require.NoError(t, err)
+	var names []string
+	for _, id := range sg.Children {
+		n, err := woc.wf.Status.Nodes.Get(id)
+		require.NoError(t, err)
+		names = append(names, n.DisplayName)
+	}
+	assert.Equal(t, []string{"zeta", "mid", "alpha"}, names)
+}
+
+const r4C54ChainedOmittedReverseOrder = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c54-chain
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: C
+        template: work
+        depends: B.Succeeded
+      - name: B
+        template: work
+        depends: A.Succeeded
+      - name: A
+        template: work
+  - name: work
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C54_ChainedOmittedReverseOrderLinked ports
+// TestProbe_v1x17_ChainedOmittedReverseOrderLinked (v1x17-1_test.go / C54).
+// C depends on B depends on A, declared in that (dependant-first) order; A
+// fails, omitting B and then C in the same pass. createOmittedNodes walked
+// tasks in declaration order, so it tried to link C under B before B's own
+// node existed, leaving C permanently unlinked ("couldn't find parent
+// node" on retry; dropped from the UI graph). dag.PullOrder makes
+// createOmittedNodes (which iterates the tasks slice Execute was given, no
+// sorting) visit A, then B, then C: each Omitted node's dependency node
+// already exists when it is created and linked.
+func TestRegressionR4_C54_ChainedOmittedReverseOrderLinked(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C54ChainedOmittedReverseOrder)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode("r4-c54-chain.A"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+
+	b, err := woc.wf.GetNodeByName("r4-c54-chain.B")
+	require.NoError(t, err)
+	c, err := woc.wf.GetNodeByName("r4-c54-chain.C")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeOmitted, b.Phase)
+	assert.Equal(t, wfv1.NodeOmitted, c.Phase)
+	assert.Equal(t, []string{"r4-c54-chain.A"}, r4Parents(woc, "r4-c54-chain.B"))
+	assert.Equal(t, []string{"r4-c54-chain.B"}, r4Parents(woc, "r4-c54-chain.C"), "C must hang off B, not be left unlinked")
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// TestRegressionR4_C54_ChainedOmittedReverseOrderRetry ports
+// TestProbe_v1x17_ChainedOmittedReverseOrderRetry (v1x17-1_test.go / C54).
+// Same chain as Linked; after `argo retry`, once A and then B succeed, C
+// must run (not stay Omitted). At HEAD FormulateRetryWorkflow's graph walk
+// hits C's missing parent link and the fix must make retry proceed to a
+// fresh C.
+func TestRegressionR4_C54_ChainedOmittedReverseOrderRetry(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C54ChainedOmittedReverseOrder)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodFailed, r4PodForNode("r4-c54-chain.A"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf.DeepCopy(), false, "", nil)
+	require.NoError(t, err, "argo retry")
+	for _, p := range podsToDelete {
+		require.NoError(t, controller.kubeclientset.CoreV1().Pods(wf.Namespace).Delete(ctx, p, metav1.DeleteOptions{}))
+	}
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode("r4-c54-chain.A"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode("r4-c54-chain.B"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+
+	c, err := woc.wf.GetNodeByName("r4-c54-chain.C")
+	require.NoError(t, err)
+	assert.NotEqual(t, wfv1.NodeOmitted, c.Phase, "C must run once B succeeds, not stay Omitted")
+
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode("r4-c54-chain.C"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+}
