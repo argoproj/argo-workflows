@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -115,6 +116,12 @@ type wfOperationCtx struct {
 	// preExecutionNodeStatuses contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodeStatuses map[string]wfv1.NodeStatus
+	// finishedNodes holds the nodes handleNodeFulfilled has finished in this
+	// operation, so that a node is finished once, whichever path reaches it.
+	finishedNodes map[string]bool
+	// exportedNodes holds the nodes whose globalName outputs this operation
+	// has exported (exportNodeOutputs).
+	exportedNodes map[string]bool
 	// execWf holds the Workflow for use in execution.
 	// In Normal workflow scenario: It holds copy of workflow object
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
@@ -180,6 +187,8 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		volumes:                  wf.Spec.DeepCopy().Volumes,
 		deadline:                 time.Now().UTC().Add(wfc.maxOperationTime),
 		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
+		finishedNodes:            make(map[string]bool),
+		exportedNodes:            make(map[string]bool),
 		taskSet:                  make(map[string]wfv1.Template),
 		currentStackDepth:        0,
 	}
@@ -365,6 +374,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
 			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(reconcileCtx)
 		}
+		woc.exportCompletedNodes(ctx)
 
 		if podReconcErr != nil {
 			woc.log.WithError(podReconcErr).WithField("workflow", woc.wf.ObjectMeta.Name).Error(reconcileCtx, "workflow timeout")
@@ -1269,7 +1279,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 					taskResultIncomplete = true
 					return
 				}
-				woc.addOutputsToGlobalScope(ctx, newState.Outputs)
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
 						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, newState.MemoizationStatus.CacheName)
@@ -1761,35 +1770,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	if updated.Fulfilled() && updated.FinishedAt.IsZero() {
 		updated.FinishedAt = getLatestFinishedAt(pod)
 		updated.ResourcesDuration = resource.DurationForPod(pod)
-	}
-
-	if updated.Fulfilled() && tmpl != nil && tmpl.Synchronization != nil {
-		// Substitute synchronization parameters using node inputs
-		tmplCopy := tmpl.DeepCopy()
-		localParams := make(map[string]string)
-		if updated.Inputs != nil {
-			for _, p := range updated.Inputs.Parameters {
-				if p.Value != nil {
-					localParams["inputs.parameters."+p.Name] = p.Value.String()
-					// Also update the template input value so SubstituteParams doesn't complain
-					for i, inParam := range tmplCopy.Inputs.Parameters {
-						if inParam.Name == p.Name {
-							tmplCopy.Inputs.Parameters[i].Value = p.Value
-						}
-					}
-				}
-			}
-		}
-
-		tmplSubstituted, err := common.SubstituteParams(ctx, tmplCopy, woc.globalParams(), localParams)
-		if err != nil {
-			// Substitution failed although unresolved tags pass through: the key cannot
-			// be reconstructed reliably. Skip release rather than release a
-			// different key than was acquired (which would leak the lock).
-			woc.log.WithError(err).WithField("nodeID", updated.ID).Error(ctx, "skipping synchronization release: cannot reconstruct lock key")
-		} else {
-			woc.controller.syncManager.Release(ctx, woc.wf, updated.ID, tmplSubstituted.Synchronization)
-		}
 	}
 
 	if !reflect.DeepEqual(old, updated) {
@@ -2384,18 +2364,8 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 		return node, err
 	}
 
-	if fulfilledNode := woc.handleNodeFulfilled(ctx, nodeName, node); fulfilledNode != nil {
-		// Emit metrics for nodes that transitioned to fulfilled externally (e.g. pod controller)
-		if processedTmpl.Metrics != nil {
-			if prevNodeStatus, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
-				localScope, realTimeScope := woc.prepareMetricScope(node)
-				woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-			}
-		}
-		if processedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
-		}
-		return fulfilledNode, nil
+	if woc.handleNodeFulfilled(ctx, node, processedTmpl) {
+		return node, nil
 	}
 
 	if err = woc.checkConstraints(ctx, nodeName, node, processedTmpl, opts.boundaryID); err != nil {
@@ -2426,19 +2396,9 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 		}
 	}
 
-	// After memoization, check if the newly-created node is already fulfilled (cache hit).
-	// This must be checked here (not before handleMemoization) because handleMemoization
-	// may have just created a Succeeded node from a cache hit.
-	if node != nil && node.Fulfilled() {
-		if processedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
-		}
-		if processedTmpl.Metrics != nil {
-			if prevNodeStatus, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
-				localScope, realTimeScope := woc.prepareMetricScope(node)
-				woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
-			}
-		}
+	// A cache hit has just completed the node (initializeCacheHitNode or,
+	// for a node that waited for a lock, updateAsCacheHitNode).
+	if woc.handleNodeFulfilled(ctx, node, processedTmpl) {
 		return node, nil
 	}
 
@@ -2490,14 +2450,66 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 	return dispatch(ctx, nodeName, processedTmpl, orgTmpl, opts)
 }
 
-func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName string, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	if node == nil || !node.Phase.Fulfilled(node.TaskResultSynced) {
-		return nil
+// handleNodeFulfilled finishes node, run from tmpl, once it is fulfilled (a
+// running daemon is), and reports whether it has completed, so there is
+// nothing left to run. It is the one place a node is finished, whatever
+// fulfilled it: a pod, a memoize cache hit, an HTTP or plugin result, a
+// suspend resumed, a template's own outputs. Its lock is released every time,
+// as executeTemplate did (Release is idempotent), so a node fulfilled outside
+// the controller (a resumed suspend) still frees it. Once per completion, in
+// the operation that sees it fulfilled first, its completion metrics are
+// emitted (a cache hit included, P22) and its globalName outputs are
+// exported, so the workflow's globals follow completion order (P9).
+func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) bool {
+	if node == nil || !node.Fulfilled() {
+		return false
 	}
+	woc.controller.syncManager.Release(ctx, woc.wf, node.ID, tmpl.Synchronization)
+	if prev, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prev.Fulfilled()) && !woc.finishedNodes[node.ID] {
+		woc.finishedNodes[node.ID] = true
+		if tmpl.Metrics != nil {
+			localScope, realTimeScope := woc.prepareMetricScope(node)
+			woc.computeMetrics(ctx, tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+		}
+		woc.exportNodeOutputs(ctx, node)
+	}
+	completed := node.Phase.Fulfilled(node.TaskResultSynced)
+	if completed {
+		woc.log.WithField("nodeName", node.Name).Debug(ctx, "Node already completed")
+	}
+	return completed
+}
 
-	woc.log.WithField("nodeName", nodeName).Debug(ctx, "Node already completed")
-	// Metric emission and sync release are handled at the call site in executeProcessedTemplate
-	return node
+// exportCompletedNodes exports the globalName outputs of the nodes found
+// fulfilled since the last operation (pods, by pod reconciliation), in the
+// order they finished, before any template of this operation is processed:
+// a template substitutes the workflow's globals when it is processed, so a
+// task it dispatches in this operation must see them. handleNodeFulfilled
+// finishes these nodes later, without exporting them again.
+func (woc *wfOperationCtx) exportCompletedNodes(ctx context.Context) {
+	var completed []wfv1.NodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		if prev, ok := woc.preExecutionNodeStatuses[node.ID]; ok && !prev.Phase.Fulfilled(prev.TaskResultSynced) && node.Phase.Fulfilled(node.TaskResultSynced) {
+			completed = append(completed, node)
+		}
+	}
+	slices.SortFunc(completed, func(a, b wfv1.NodeStatus) int {
+		return cmp.Or(a.FinishedAt.Compare(b.FinishedAt.Time), strings.Compare(a.Name, b.Name))
+	})
+	for i := range completed {
+		woc.exportNodeOutputs(ctx, &completed[i])
+	}
+}
+
+// exportNodeOutputs exports node's globalName outputs to the workflow, once
+// per operation. A Retry node is not exported: its outputs are a copy of its
+// last attempt's, which was exported when it finished.
+func (woc *wfOperationCtx) exportNodeOutputs(ctx context.Context, node *wfv1.NodeStatus) {
+	if node.Type == wfv1.NodeTypeRetry || woc.exportedNodes[node.ID] {
+		return
+	}
+	woc.exportedNodes[node.ID] = true
+	woc.addOutputsToGlobalScope(ctx, node.Outputs)
 }
 
 func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, error) {

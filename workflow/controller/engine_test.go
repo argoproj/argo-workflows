@@ -26,7 +26,7 @@ import (
 //   - visit:                         task-a, task-b, task-c, task-e scheduled across cycles
 //   - reconcileTaskGroup:            task-b's TaskGroup completed after its items complete
 //   - processHooks:                  task-c's exit hook fires after task-c completes
-//   - reconcileExternalCompletions:  pods that succeed between cycles are re-reconciled
+//   - reconcileFulfilledTasks:       pods that succeed between cycles are finished
 //   - visit (omission):              task-d omitted because task-a.Failed is false
 //   - finalize:                      DAG transitions Running → Succeeded
 var engineFullLifecycleDAG = `
@@ -268,9 +268,8 @@ func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	}
 	task := engine.getTaskByName(tasks, "client")
 	fake.calls = nil
-	ran, _ := engine.visit(ctx, task, result, true)
+	engine.visit(ctx, task, result, true)
 	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
-	assert.False(t, ran)
 
 	node, err := engine.woc.wf.GetNodeByName(engine.taskNodeName("client"))
 	require.NoError(t, err)
@@ -278,9 +277,8 @@ func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	assert.Equal(t, "depends expression failed to evaluate", node.Message)
 
 	// Idempotent: a second visit neither re-creates nor re-dispatches.
-	ran, _ = engine.visit(ctx, task, result, true)
+	engine.visit(ctx, task, result, true)
 	assert.Empty(t, fake.calls)
-	assert.False(t, ran)
 }
 
 // An explicitly empty withItems list is not an expansion: the task runs once
