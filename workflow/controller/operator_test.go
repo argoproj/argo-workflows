@@ -3018,7 +3018,7 @@ func suspendedShutdownWorkflow() *wfv1.Workflow {
 func TestTerminateOnSuspendedWorkflow(t *testing.T) {
 	t.Run("StartedSuspended", func(t *testing.T) {
 		wf := suspendedShutdownWorkflow()
-		wf.Spec.Suspend = new(true)
+		wf.Spec.Suspend = ptr.To(true)
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -3066,7 +3066,7 @@ func TestTerminateOnSuspendedWorkflow(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 
 		wf = woc.wf.DeepCopy()
-		wf.Spec.Suspend = new(true)
+		wf.Spec.Suspend = ptr.To(true)
 		woc = newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -3093,7 +3093,7 @@ func TestTerminateOnSuspendedWorkflow(t *testing.T) {
 func TestStopOnSuspendedWorkflow(t *testing.T) {
 	t.Run("StartedSuspended", func(t *testing.T) {
 		wf := suspendedShutdownWorkflow()
-		wf.Spec.Suspend = new(true)
+		wf.Spec.Suspend = ptr.To(true)
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -3147,7 +3147,7 @@ func TestStopOnSuspendedWorkflow(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 
 		wf = woc.wf.DeepCopy()
-		wf.Spec.Suspend = new(true)
+		wf.Spec.Suspend = ptr.To(true)
 		woc = newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)

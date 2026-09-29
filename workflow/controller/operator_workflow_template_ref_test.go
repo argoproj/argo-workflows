@@ -495,7 +495,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	t.Run("WorkflowTemplateRefWithSuspendWithShutdownTerminate", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 		wf1 := wf.DeepCopy()
-		wf1.Spec.Suspend = new(true)
+		wf1.Spec.Suspend = ptr.To(true)
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, wf1, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 		defer cancel()
@@ -525,7 +525,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	t.Run("WorkflowTemplateRefWithSuspendWithShutdownStop", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 		wf1 := wf.DeepCopy()
-		wf1.Spec.Suspend = new(true)
+		wf1.Spec.Suspend = ptr.To(true)
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, wf1, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 		defer cancel()
