@@ -330,25 +330,14 @@ spec:
 }
 
 // TestBug_Retry_AllowsUnresolvedTags pins the contract of the retry-path
-// SubstituteParams call (operator_template_execution.go ~line 259).
+// SubstituteParams call (operator_template_execution.go, handleRetries).
 //
-// Bug: that call site passed opts.onExitTemplate as the allowUnresolved
-// flag. opts.onExitTemplate is a bool meaning "this call is for an onExit
-// handler" — semantically unrelated to "allow unresolved tags". For normal
-// (non-exit) retries it evaluates to false, making template.Replace strict
-// and erroring on any late-resolved tag (e.g. {{pod.name}} in a non-pod
+// Bug: that call site once passed opts.onExitTemplate as an allowUnresolved
+// flag, making template.Replace strict for normal (non-exit) retries and
+// erroring on any late-resolved tag (e.g. {{pod.name}} in a non-pod
 // retry-decorated template, {{tasks.X.outputs.*}} carried into the inner
-// template body) inside the retry-decorated template.
-//
-// Origin/main hardcoded allowUnresolved=true at this call site. The fix
-// on v4 hardcodes true too.
-//
-// This is a contract-pinning test: it verifies (a) SubstituteParams with
-// allowUnresolved=true passes through late tags, mirroring the post-fix
-// retry-path behavior, and (b) SubstituteParams with allowUnresolved=false
-// errors on the same input — i.e. the bug's failure mode. The call site
-// MUST pass true. If a future refactor reintroduces the boolean confusion,
-// this test still documents the expected semantics.
+// template body) inside the retry-decorated template. SubstituteParams now
+// always lets unresolved tags through, as on origin/main.
 func TestBug_Retry_AllowsUnresolvedTags(t *testing.T) {
 	tmpl := &wfv1.Template{
 		Name: "main",
@@ -375,19 +364,9 @@ func TestBug_Retry_AllowsUnresolvedTags(t *testing.T) {
 
 	ctx := logging.TestContext(t.Context())
 
-	// allowUnresolved=true (origin/main, post-fix v4): must succeed.
-	_, errAllow := common.SubstituteParams(ctx, tmpl, globalParams, localParams, true)
-	require.NoError(t, errAllow,
-		"SubstituteParams(allowUnresolved=true) must pass through unresolved late tags — this is the contract the retry path relies on")
-
-	// allowUnresolved=false (the value the buggy v4 call site forwards when
-	// opts.onExitTemplate=false): must error. This documents the failure
-	// mode the retry path inadvertently triggered.
-	_, errDeny := common.SubstituteParams(ctx, tmpl, globalParams, localParams, false)
-	require.Error(t, errDeny,
-		"SubstituteParams(allowUnresolved=false) must error on unresolved late tags — demonstrates the failure mode the retry path triggered when it forwarded opts.onExitTemplate (false) as allowUnresolved")
-	assert.Contains(t, errDeny.Error(), "failed to resolve",
-		"the strict-path error must report the unresolved tag")
+	_, err := common.SubstituteParams(ctx, tmpl, globalParams, localParams)
+	require.NoError(t, err,
+		"SubstituteParams must pass through unresolved late tags — this is the contract the retry path relies on")
 }
 
 // TestBug_MarkNodePhase_RefusesPostTerminalTransition verifies that markNodePhase

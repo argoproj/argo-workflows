@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strconv"
 	"time"
 
@@ -249,9 +248,6 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	}
 
 	localParams := make(map[string]string)
-	if opts.scope != nil {
-		maps.Copy(localParams, opts.scope.getParameters())
-	}
 	if processedTmpl.IsPodType() {
 		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, processedTmpl.Name)
 	}
@@ -287,15 +283,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	// Always substitute retry params (matching main branch behavior).
 	// This is needed even when re-executing an existing Pending child (e.g. exceeded quota)
 	// because {{retries}} and {{pod.name}} must be resolved before pod creation.
-	//
-	// allowUnresolved=true: late-resolved tags like {{pod.name}} (for non-pod
-	// retry-decorated templates) and {{tasks.X.outputs.*}} are substituted by
-	// later passes, as before the Engine; the previous opts.onExitTemplate
-	// value was a bool meaning "is this an onExit handler call?" and was
-	// semantically unrelated to allowUnresolved — for normal (non-exit) retries
-	// it evaluated to false and broke any retry-decorated template body with
-	// late-resolved tags.
-	processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams(), localParams, true)
+	processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams(), localParams)
 	if errorsutil.IsTransientErr(ctx, err) {
 		return node, err
 	}

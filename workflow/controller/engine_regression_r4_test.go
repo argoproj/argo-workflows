@@ -2290,3 +2290,556 @@ const r4C20Limit = 20 * time.Millisecond
 // operation deadline: base walks the chain in about 0.1s, the fixed-point
 // loop needs about 9s.
 const r4C67OperationTime = 5 * time.Second
+
+// r4MainCommands maps each pod's node name to its main container's command
+// line (command and args joined by spaces, without the emissary prefix).
+func r4MainCommands(ctx context.Context, t *testing.T, woc *wfOperationCtx) map[string]string {
+	t.Helper()
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	out := map[string]string{}
+	for i := range pods.Items {
+		p := &pods.Items[i]
+		for _, c := range p.Spec.Containers {
+			if c.Name != common.MainContainerName {
+				continue
+			}
+			full := strings.Join(append(append([]string{}, c.Command...), c.Args...), " ")
+			if _, after, ok := strings.Cut(full, " -- "); ok {
+				full = after
+			}
+			out[p.Annotations[common.AnnotationKeyNodeName]] = full
+		}
+	}
+	return out
+}
+
+// r4ErrorNodes lists the nodes in phase Error, as "name: message".
+func r4ErrorNodes(woc *wfOperationCtx) []string {
+	var out []string
+	for _, n := range woc.wf.Status.Nodes {
+		if n.Phase == wfv1.NodeError {
+			out = append(out, n.Name+": "+n.Message)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// r4SucceedPodsWith marks every unfinished pod Succeeded, giving the pod of
+// a node whose display name is in outs those outputs.
+func r4SucceedPodsWith(ctx context.Context, woc *wfOperationCtx, outs map[string]*wfv1.Outputs) {
+	pods, err := listPods(ctx, woc)
+	if err != nil {
+		panic(err)
+	}
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed {
+			continue
+		}
+		nodeID := woc.nodeID(&pod)
+		var w []with
+		if o := outs[woc.wf.Status.Nodes[nodeID].DisplayName]; o != nil {
+			w = append(w, withOutputs(ctx, *o))
+		}
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.ID == nodeID {
+				return apiv1.PodSucceeded
+			}
+			return ""
+		}, w...)
+	}
+}
+
+// r4GoTemplateScript is a leaf script template whose source holds kubectl
+// go-template text, which is not Argo's to substitute.
+const r4GoTemplateScript = `
+  - name: list-pods
+    script:
+      image: bitnami/kubectl
+      command: [sh]
+      source: |
+        kubectl get pods -o go-template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'
+`
+
+// TestRegressionR4_C16_LeafEntrypointGoTemplate ports
+// TestProbe_v1x48_GoTemplateLeafEntrypoint (v1x48-1_test.go / C16). Main's
+// SubstituteParams always lets unresolved tags through, so a leaf
+// entrypoint whose script holds kubectl go-template text runs its pod.
+// HEAD's reconcileTemplate substitutes a plain leaf template strictly and
+// ends the workflow Error "failed to resolve {{range .items}}".
+func TestRegressionR4_C16_LeafEntrypointGoTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c16-gotmpl-entry
+  namespace: default
+spec:
+  entrypoint: list-pods
+  templates:` + r4GoTemplateScript)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, woc.wf.Status.Message)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 3)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C16_ScheduledTimeLeafEntrypoint ports
+// TestProbe_v1x48_ScheduledTimeLeafEntrypoint (v1x48-1_test.go / C16):
+// {{workflow.scheduledTime}} is only set for CronWorkflow runs, and main
+// passes it through unresolved otherwise.
+func TestRegressionR4_C16_ScheduledTimeLeafEntrypoint(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c16-sched-entry
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine
+      command: [echo, "scheduled at {{workflow.scheduledTime}}"]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C16_DAGRunningHookGoTemplate ports
+// TestProbe_v1x48_GoTemplateDAGRunningHook (v1x48-1_test.go / C16): a DAG
+// task's running hook whose template holds go-template text runs its pod,
+// instead of the hook node and task going Error.
+func TestRegressionR4_C16_DAGRunningHookGoTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c16-dag-hook
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: work
+        hooks:
+          running:
+            expression: tasks.a.status == "Running"
+            template: list-pods
+  - name: work
+    container:
+      image: busybox
+      command: [echo, hi]` + r4GoTemplateScript)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	dumpNodes(t, "hook", woc.wf)
+	_, ok := r4MainCommands(ctx, t, woc)["r4-c16-dag-hook.a.hooks.running"]
+	assert.True(t, ok, "running hook pod not created")
+	assert.Empty(t, r4ErrorNodes(woc))
+	woc = r4DriveToEnd(t, ctx, controller, woc, 4)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C16_DAGHookUnresolvedArgOnOmitted ports
+// TestProbe_lead4_DAGTrueHookUnresolvedArgOnOmitted (lead4-1_test.go, lead
+// 4 / C16). b depends on a, a fails and b is Omitted; b's running hook
+// (expression "true") passes {{tasks.a.outputs.result}}, which never
+// resolves. Main let the unresolved Argo tag through and the workflow ended
+// Failed; HEAD's strict substitution of the hook makes it Error with
+// "failed to resolve".
+func TestRegressionR4_C16_DAGHookUnresolvedArgOnOmitted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c16-lead4-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: gen
+      - name: b
+        depends: a
+        template: run
+        hooks:
+          running:
+            expression: "true"
+            template: notify
+            arguments:
+              parameters:
+              - name: message
+                value: "{{tasks.a.outputs.result}}"
+  - name: gen
+    script:
+      image: busybox
+      command: [sh]
+      source: echo hi
+  - name: run
+    container:
+      image: busybox
+      command: [echo]
+  - name: notify
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.message}}"]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{Submit: true}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	decide := func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.HasSuffix(n.Name, ".a") {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	}
+	woc := r4Operate(t, ctx, controller, wf)
+	for i := 0; i < 12 && !woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, woc, decide)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, woc.wf.Status.Message)
+	assert.NotContains(t, woc.wf.Status.Message, "failed to resolve")
+}
+
+// TestRegressionR4_C14_DAGExitHookInputShadow ports
+// TestProbe_v1x47_DAGExitHookInputShadow (v1x47-1_test.go / C14). A task's
+// exit hook template has an input named like an input of the enclosing DAG
+// template. Main substitutes the hook with its own arguments only, so the
+// hook pod runs "echo hook-value"; HEAD copies the task's scope into the
+// hook's local parameters, which win, and the pod runs "echo parent-value".
+func TestRegressionR4_C14_DAGExitHookInputShadow(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c14-dag
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: message
+      value: parent-value
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: message
+    dag:
+      tasks:
+      - name: a
+        template: work
+        hooks:
+          exit:
+            template: notify
+            arguments:
+              parameters:
+              - name: message
+                value: hook-value
+  - name: work
+    container:
+      image: busybox
+      command: [echo, hi]
+  - name: notify
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: busybox
+      command: [echo, "{{inputs.parameters.message}}"]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 3)
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, "echo hook-value", r4MainCommands(ctx, t, woc)["r4-c14-dag.a.onExit"])
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+}
+
+// TestRegressionR4_C14_ExitHookInnerStepsShadow ports
+// TestProbe_v1x47_ExitHookInnerStepsShadow (v1x47-1_test.go / C14). The
+// exit hook of step a is a Steps template with its own step named gen,
+// like an outer step. Its inner {{steps.gen.outputs.parameters.p}} must
+// read the inner gen ("inner"), not the outer one ("outer") that HEAD
+// copies into the hook's local parameters.
+func TestRegressionR4_C14_ExitHookInnerStepsShadow(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c14-inner
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: gen
+        template: gen
+    - - name: a
+        template: work
+        hooks:
+          exit:
+            template: cleanup
+  - name: cleanup
+    steps:
+    - - name: gen
+        template: gen
+    - - name: use
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{steps.gen.outputs.parameters.p}}"
+  - name: gen
+    container:
+      image: busybox
+      command: [echo]
+    outputs:
+      parameters:
+      - name: p
+        valueFrom:
+          path: /tmp/p
+  - name: work
+    container:
+      image: busybox
+      command: [echo, hi]
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: busybox
+      command: [echo, "{{inputs.parameters.msg}}"]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	out := func(v string) map[string]*wfv1.Outputs {
+		return map[string]*wfv1.Outputs{"gen": {Parameters: []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr(v)}}}}
+	}
+	woc := r4Operate(t, ctx, controller, wf)
+	r4SucceedPodsWith(ctx, woc, out("outer"))
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	// a succeeds, so its exit hook (the cleanup steps) starts its inner gen.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	for range 3 {
+		r4SucceedPodsWith(ctx, woc, out("inner"))
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "final", woc.wf)
+	assert.Equal(t, "echo inner", r4MainCommands(ctx, t, woc)["r4-c14-inner[1].a.onExit[1].use"])
+}
+
+// TestRegressionR4_C14_DAGExitHookRetryInputShadow ports
+// TestProbe_v1x47_DAGExitHookRetryInputShadow (v1x47-1_test.go / C14): the
+// C14 shadow with a retried hook template; every hook attempt must run
+// "echo hook-value".
+func TestRegressionR4_C14_DAGExitHookRetryInputShadow(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c14-retry
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: message
+        value: parent-value
+    dag:
+      tasks:
+      - name: a
+        template: work
+        hooks:
+          exit:
+            template: notify
+            arguments:
+              parameters:
+              - name: message
+                value: hook-value
+  - name: work
+    container:
+      image: busybox
+      command: [echo, hi]
+  - name: notify
+    retryStrategy:
+      limit: 2
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: busybox
+      command: [echo, "{{inputs.parameters.message}}"]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := r4Operate(t, ctx, controller, wf)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 3)
+	dumpNodes(t, "final", woc.wf)
+	var got []string
+	for node, cmd := range r4MainCommands(ctx, t, woc) {
+		if strings.Contains(node, "onExit") {
+			got = append(got, node+"="+cmd)
+		}
+	}
+	sort.Strings(got)
+	require.NotEmpty(t, got)
+	for _, g := range got {
+		assert.Contains(t, g, "=echo hook-value")
+	}
+}
+
+const r4C88WFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hooklib
+  namespace: default
+spec:
+  templates:
+  - name: exit-steps
+    steps:
+    - - name: e
+        template: ok
+  - name: ok
+    container:
+      image: busybox
+  - name: flaky
+    retryStrategy:
+      limit: "1"
+    container:
+      image: busybox
+`
+
+const r4C88Wf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c88
+  namespace: default
+spec:
+  entrypoint: main
+  hooks:
+    exit:
+      templateRef:
+        name: hooklib
+        template: exit-steps
+  templates:
+  - name: main
+    steps:
+    - - name: s
+        template: inner
+    - - name: last
+        template: ok
+        hooks:
+          exit:
+            templateRef:
+              name: hooklib
+              template: flaky
+  - name: inner
+    dag:
+      tasks:
+      - name: a
+        template: ok
+        hooks:
+          exit:
+            templateRef:
+              name: hooklib
+              template: exit-steps
+  - name: ok
+    container:
+      image: busybox
+`
+
+// TestRegressionR4_C88_HookTemplateRefScope ports
+// TestProbe_v1x66_HookTemplateRefScope (v1x66-1_test.go / C88). A hook or
+// onExit node that uses templateRef records its caller's templateScope, as
+// the task it hooks does (main: the tmplCtx the hook is called from). HEAD
+// records the referenced WorkflowTemplate's scope, "namespaced/hooklib".
+func TestRegressionR4_C88_HookTemplateRefScope(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C88Wf)
+	wft := wfv1.MustUnmarshalWorkflowTemplate(r4C88WFT)
+	cancel, controller := newController(ctx, wf, wft, func(c *WorkflowController) {
+		c.eventRecorderManager = &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(1000000)}
+	})
+	defer cancel()
+	require.NoError(t, validate.Workflow(ctx,
+		templateresolution.WrapWorkflowTemplateInterface(controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(wf.Namespace)),
+		templateresolution.WrapClusterWorkflowTemplateInterface(controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()),
+		wf.DeepCopy(), nil, validate.Opts{}))
+
+	decide := func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.HasSuffix(n.Name, ".last.onExit(0)") {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	}
+	woc := r4Operate(t, ctx, controller, wf)
+	for i := 0; i < 16 && !woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, woc, decide)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "final", woc.wf)
+	require.True(t, woc.wf.Status.Phase.Completed())
+	scope := func(name string) string {
+		t.Helper()
+		n, err := woc.wf.GetNodeByName(name)
+		require.NoError(t, err)
+		return n.TemplateScope
+	}
+	assert.Equal(t, scope("r4-c88[0].s.a"), scope("r4-c88[0].s.a.onExit"), "task exit hook scope")
+	assert.Equal(t, scope("r4-c88"), scope("r4-c88.onExit"), "workflow exit hook scope")
+	assert.Equal(t, scope("r4-c88"), scope("r4-c88[1].last.onExit"), "step exit hook (retry) scope")
+}

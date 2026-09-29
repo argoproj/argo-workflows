@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"reflect"
 	"regexp"
@@ -1770,9 +1769,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			}
 		}
 
-		tmplSubstituted, err := common.SubstituteParams(ctx, tmplCopy, woc.globalParams(), localParams, true)
+		tmplSubstituted, err := common.SubstituteParams(ctx, tmplCopy, woc.globalParams(), localParams)
 		if err != nil {
-			// Substitution failed even with allowUnresolved=true: the key cannot
+			// Substitution failed although unresolved tags pass through: the key cannot
 			// be reconstructed reliably. Skip release rather than release a
 			// different key than was acquired (which would leak the lock).
 			woc.log.WithError(err).WithField("nodeID", updated.ID).Error(ctx, "skipping synchronization release: cannot reconstruct lock key")
@@ -2271,8 +2270,6 @@ type executeTemplateOpts struct {
 	nodeFlag *wfv1.NodeFlag
 	// executionDeadline is the deadline for the execution of the template
 	executionDeadline time.Time
-	// scope holds the scope of the template
-	scope *wfScope
 	// templateScope overrides tmplCtx.GetTemplateScope() for node creation.
 	// When set, this represents the parent scope (where the template reference was made from),
 	// while tmplCtx may be the resolved context (for child template resolution).
@@ -2319,15 +2316,8 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 		localParams[varkeys.StepsName.Template()] = orgTmpl.GetName()
 	}
 	localParams[varkeys.NodeName.Template()] = nodeName
-	if opts.scope != nil {
-		maps.Copy(localParams, opts.scope.getParameters())
-	}
 
-	// DAG/Steps templates contain task-level tags ({{item}}, {{tasks.X.outputs.Y}}) that
-	// cannot be resolved at the parent template level — they are resolved later during
-	// individual task execution. Allow unresolved tags for these template types.
-	allowUnresolved := opts.onExitTemplate || resolvedTmpl.GetType() == wfv1.TemplateTypeDAG || resolvedTmpl.GetType() == wfv1.TemplateTypeSteps || woc.retryStrategy(resolvedTmpl) != nil || resolvedTmpl.Metrics != nil
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, allowUnresolved, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		return woc.initializeNodeOrMarkError(ctx, nil, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
@@ -2336,7 +2326,7 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 	err = reconciler.Reconcile(ctx, []DesiredTask{{
 		TaskName:         nodeName,
 		OriginalTaskName: nodeName,
-		TemplateScope:    newTmplCtx.GetTemplateScope(),
+		TemplateScope:    tmplCtx.GetTemplateScope(),
 		Template:         processedTmpl,
 		TemplateRef:      orgTmpl,
 		NodeFlag:         opts.nodeFlag,
