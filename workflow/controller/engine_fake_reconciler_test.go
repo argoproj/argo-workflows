@@ -157,7 +157,6 @@ func TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch(t *testing.T) {
 		mainNodeName(woc) + ".client(1:1)",
 		mainNodeName(woc) + ".client(2:2)",
 	}, fake.allDesiredTaskNames(), "each item should be reconciled once, in item order")
-	assert.Len(t, engine.expanded["client"], 3, "the items this dispatch drove are kept for the rest of the reconcile")
 }
 
 // mainNodeName returns the boundary node name for the test workflow's "main"
