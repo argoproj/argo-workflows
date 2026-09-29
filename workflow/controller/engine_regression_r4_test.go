@@ -196,6 +196,7 @@ spec:
   - name: echo
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // r4HasParent reports whether any node lists childName's node as a child.
@@ -350,6 +351,7 @@ spec:
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C17_CIParallelism1NestedDAG ports
@@ -402,9 +404,11 @@ spec:
   - name: locked
     container:
       image: busybox
+      command: [echo, hi]
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C17_ApprovalMutexWaiter ports
@@ -463,6 +467,7 @@ spec:
   - name: echo
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C31_FanOutItemPodRejected ports
@@ -528,9 +533,11 @@ spec:
             key: template
     container:
       image: busybox
+      command: [echo, hi]
   - name: echo
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C31_FanOutMissingSemaphoreConfigMap ports
@@ -569,6 +576,7 @@ spec:
   - name: t
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 const r4C56DAG = `
@@ -596,6 +604,7 @@ spec:
   - name: echo
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // r4WaitForWFT waits until the WorkflowTemplate informer has (or no longer
@@ -1008,6 +1017,7 @@ spec:
   - name: gen
     container:
       image: busybox
+      command: [echo, hi]
     outputs:
       parameters:
       - name: out
@@ -1019,6 +1029,7 @@ spec:
       - name: in
     container:
       image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.in}}"]
 `
 
@@ -1402,9 +1413,11 @@ spec:
       - name: msg
     container:
       image: busybox
+      command: [echo, hi]
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 const r4C21ExpandedDaemonsSteps = `
@@ -1431,9 +1444,11 @@ spec:
       - name: msg
     container:
       image: busybox
+      command: [echo, hi]
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C21_C77_ExpandedDaemons ports
@@ -1577,6 +1592,7 @@ spec:
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C17_FanOutNestedDAGs ports TestProbe_r1x16_FanOutNestedDAGs
@@ -1786,6 +1802,7 @@ spec:
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C73_StepsFailFastValidateApply ports
@@ -1833,6 +1850,7 @@ spec:
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C73_DAGTemplateParallelismOrder ports
@@ -1876,6 +1894,7 @@ spec:
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C73_StepGroupChildrenOrder ports
@@ -1927,6 +1946,7 @@ spec:
   - name: work
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C54_ChainedOmittedReverseOrderLinked ports
@@ -2764,11 +2784,13 @@ spec:
   - name: ok
     container:
       image: busybox
+      command: [echo, hi]
   - name: flaky
     retryStrategy:
       limit: "1"
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 const r4C88Wf = `
@@ -2809,6 +2831,7 @@ spec:
   - name: ok
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C88_HookTemplateRefScope ports
@@ -3279,6 +3302,7 @@ spec:
       - name: msg
     container:
       image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.msg}}"]
 `, rounds)
 			dumpNodes(t, "final", woc.wf)
@@ -3479,6 +3503,7 @@ spec:
           path: /tmp/out
     container:
       image: busybox
+      command: [echo, hi]
   - name: echo
     inputs:
       parameters:
@@ -3490,6 +3515,7 @@ spec:
           path: /tmp/out
     container:
       image: busybox
+      command: [echo]
       args: ["{{inputs.parameters.msg}}"]
 `
 }
@@ -4336,6 +4362,7 @@ spec:
   - name: ok
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // TestRegressionR4_C30_EmptyStepGroupKeepsOrder ports
@@ -5964,6 +5991,7 @@ spec:
   - name: run
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 const r4C35WithParamErr = `
@@ -5986,6 +6014,7 @@ spec:
   - name: run
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 const r4C35Suspend = `
@@ -6007,6 +6036,7 @@ spec:
   - name: run
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 func r4C35Run(t *testing.T, yaml string, param string, wantPods int) {
@@ -6258,8 +6288,10 @@ spec:
       containers:
       - name: a
         image: argoproj/argosay:v2
+        command: [echo]
       - name: b
         image: argoproj/argosay:v2
+        command: [echo]
         dependencies: [a]
 `
 
@@ -6370,8 +6402,8 @@ const r4C55HookMissingCM = `
       command: [echo, "{{inputs.parameters.msg}}"]
 `
 
-// The exit hook's image has no command, so the controller cannot look up
-// its entrypoint and the hook node errors on creation.
+// The exit hook's argument comes from a missing ConfigMap, so the hook
+// node errors on creation, with no pod.
 func TestRegressionR4_C55_RetryAfterExitHookNodeErrorDag(t *testing.T) {
 	r4C55HookLinked(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -6396,10 +6428,8 @@ spec:
   - name: run
     container:
       image: busybox
-  - name: hook
-    container:
-      image: hookimg
-`, "g2dag.b", "g2dag.b.onExit", true)
+      command: [echo, hi]
+`+r4C55HookMissingCM, "g2dag.b", "g2dag.b.onExit", true)
 }
 
 func TestRegressionR4_C55_RetryAfterExitHookArgError(t *testing.T) {
@@ -7034,6 +7064,7 @@ spec:
   - name: echo
     container:
       image: argoproj/argosay:v2
+      command: [echo, hi]
   - name: http
     http:
       url: http://example.com
@@ -8237,6 +8268,7 @@ spec:
     retryStrategy: {limit: 1}
     container:
       image: busybox
+      command: [echo, hi]
 `)
 	cancel, controller, newWf := memoizedResubmit(ctx, t, wf, func(node *wfv1.NodeStatus) apiv1.PodPhase {
 		if strings.Contains(node.Name, ".A(") {
@@ -8275,6 +8307,7 @@ spec:
     retryStrategy: {limit: 1}
     container:
       image: busybox
+      command: [echo, hi]
 `)
 	cancel, controller, newWf := memoizedResubmit(ctx, t, wf, func(node *wfv1.NodeStatus) apiv1.PodPhase {
 		if strings.Contains(node.Name, "].A(") {
@@ -8394,6 +8427,7 @@ spec:
       - name: r4-c24-m
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 const r4C24SuspendMutexDAG = `
@@ -8424,6 +8458,7 @@ spec:
       - name: r4-c24-m
     container:
       image: busybox
+      command: [echo, hi]
 `
 
 // r4C24ResumedSuspend resumes an approval gate holding a mutex that the next
@@ -8487,6 +8522,7 @@ spec:
       - name: r4-c24-http-m
     container:
       image: busybox
+      command: [echo, hi]
 `, defaultServiceAccount)
 	call := r.woc.wf.Status.Nodes.FindByDisplayName("call")
 	require.NotNil(t, call)
@@ -8810,6 +8846,7 @@ spec:
           path: /tmp/out
     container:
       image: busybox
+      command: [echo, hi]
   - name: use
     inputs:
       parameters:
@@ -8825,6 +8862,7 @@ spec:
           value: "1"
     container:
       image: busybox
+      command: [echo, hi]
 `, 0, nil, func(n *wfv1.NodeStatus) *wfv1.Outputs {
 		if n.TemplateName != "gen" {
 			return nil
@@ -8874,6 +8912,7 @@ spec:
           value: "1"
     container:
       image: busybox
+      command: [echo, hi]
 `, 0, nil, nil)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	for _, c := range woc.wf.Status.Conditions {
@@ -8915,6 +8954,7 @@ spec:
           value: "1"
     container:
       image: alpine
+      command: [echo, hi]
 `, 2, nil, nil)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_items_retry", "status", "Succeeded"), 0.001)
@@ -8951,6 +8991,7 @@ spec:
   - name: work
     container:
       image: alpine
+      command: [echo, hi]
 `, 2, nil, nil)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_items_nested"), 0.001)
@@ -8977,6 +9018,7 @@ func TestRegressionR4_C63_MemoCacheHitCounter(t *testing.T) {
           value: "1"
     container:
       image: alpine
+      command: [echo, hi]
     outputs:
       parameters:
       - name: p
@@ -9121,6 +9163,7 @@ spec:
           name: r4-p9-memo-cache
     container:
       image: alpine
+      command: [echo, hi]
     outputs:
       parameters:
       - name: p
@@ -9271,6 +9314,7 @@ spec:
   - name: echo
     container:
       image: busybox
+      command: [echo, hi]
 `
 }
 
@@ -9346,6 +9390,7 @@ spec:
   - name: gen
     container:
       image: busybox
+      command: [echo, hi]
     outputs:
       artifacts:
       - name: out
@@ -9358,6 +9403,7 @@ spec:
         path: /tmp/in
     container:
       image: busybox
+      command: [echo, hi]
 `)
 	makePodsPhase(ctx, r.woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{}}))
 	for range 3 {
@@ -9399,6 +9445,7 @@ spec:
   - name: main
     container:
       image: busybox
+      command: [echo, hi]
     outputs:
       artifacts:
       - name: out
@@ -9411,6 +9458,7 @@ spec:
         path: /tmp/in
     container:
       image: busybox
+      command: [echo, hi]
 `)
 	makePodsPhase(ctx, r.woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Artifacts: []wfv1.Artifact{{Name: "out", GlobalName: "g", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "gen/out.tgz"}}}}}))
 	for range 3 {
@@ -9539,6 +9587,7 @@ spec:
           value: "1"
     container:
       image: alpine
+      command: [echo, hi]
     outputs:
       parameters:
       - name: p
@@ -9878,10 +9927,12 @@ spec:
   - name: badpod
     container:
       image: alpine
+      command: [echo]
       args: [reject-me]
   - name: work
     container:
       image: alpine
+      command: [echo, hi]
 `, nil, 8, 2, func(controller *WorkflowController) {
 		r4RejectPodCreate(controller, func(pod *apiv1.Pod) bool {
 			return slices.Contains(pod.Spec.Containers[len(pod.Spec.Containers)-1].Args, "reject-me")
@@ -9930,6 +9981,7 @@ spec:
       - name: msg
     container:
       image: alpine
+      command: [echo]
       args: ["{{inputs.parameters.msg}}"]
 `, map[string]string{"gen": "not json"}, 8, 2, nil)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -10205,8 +10257,10 @@ spec:
       containers:
       - name: a
         image: argoproj/argosay:v2
+        command: [echo]
       - name: b
         image: argoproj/argosay:v2
+        command: [echo]
         dependencies: [a]
   - name: echo
     inputs:
@@ -10214,6 +10268,7 @@ spec:
       - name: x
     container:
       image: argoproj/argosay:v2
+      command: [echo, hi]
 `)
 	pods, err := listPods(ctx, r.woc)
 	require.NoError(t, err)
@@ -10275,6 +10330,7 @@ spec:
   - name: echo
     container:
       image: alpine
+      command: [echo, hi]
 `)
 	now := metav1.NewTime(time.Now().Add(-time.Minute))
 	root, sg := wf.Name, wf.Name+"[0]"
