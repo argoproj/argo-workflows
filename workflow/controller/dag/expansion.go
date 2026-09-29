@@ -229,7 +229,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	case seq.Count != nil:
 		end = start + count - 1
 	default:
-		return nil, nil
+		return nil, errors.InternalError("neither end nor count was specified in withSequence")
 	}
 
 	// Determine step direction: forward (start <= end) or backward (start > end)
