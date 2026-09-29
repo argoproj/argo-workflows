@@ -1726,7 +1726,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	//      even before updated.Outputs has been touched.
 	if tmpl != nil && updated.Phase == wfv1.NodeSucceeded {
 		expectResult := tmpl.Outputs.Result != nil
-		if !expectResult && tmpl.GetType() == wfv1.TemplateTypeContainerSet {
+		// The executor captures a containerSet's result from its "main"
+		// container only; without one no result ever arrives.
+		if !expectResult && tmpl.GetType() == wfv1.TemplateTypeContainerSet && tmpl.ContainerSet.HasContainerNamed(common.MainContainerName) {
 			var err error
 			expectResult, err = woc.includeScriptOutput(ctx, updated.Name, updated.BoundaryID)
 			if err != nil {
