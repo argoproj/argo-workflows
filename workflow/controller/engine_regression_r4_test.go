@@ -8366,75 +8366,6 @@ func TestRegressionR4_C78_DaemonStopRetryNodePhase(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, server.Phase, server.Message)
 }
 
-// r4StartLocked is r4Start with a real lock manager and the my-config
-// semaphore ConfigMap (workflow: 2, template: 1), so template locks are
-// taken and released as in production.
-func r4StartLocked(t *testing.T, manifest string, objects ...any) (context.Context, *r4Run) {
-	t.Helper()
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(manifest)
-	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
-	cancel, controller := newController(ctx, append([]any{wf}, objects...)...)
-	t.Cleanup(cancel)
-	var err error
-	controller.syncManager, err = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
-	require.NoError(t, err)
-	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal(configMap, &cm)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
-	require.NoError(t, err)
-	return ctx, &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
-}
-
-// r4SetPods sets the pods of the nodes named by display name to their phase
-// in phases, moves every other unfinished node's pod to Running, as a
-// kubelet would, and reconciles.
-func (r *r4Run) r4SetPods(ctx context.Context, phases map[string]apiv1.PodPhase) {
-	r.t.Helper()
-	setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
-		if p, ok := phases[n.DisplayName]; ok {
-			return p
-		}
-		if !n.Fulfilled() {
-			return apiv1.PodRunning
-		}
-		return ""
-	})
-	r.op(ctx)
-}
-
-// r4Phase is the phase of the node with the given display name, or "".
-func (r *r4Run) r4Phase(display string) wfv1.NodePhase {
-	if n := r.woc.wf.Status.Nodes.FindByDisplayName(display); n != nil {
-		return n.Phase
-	}
-	return ""
-}
-
-// r4AgeNode moves the stored start of the node with the given display name d
-// into the past, as if that much time had passed since it started.
-func (r *r4Run) r4AgeNode(ctx context.Context, display string, d time.Duration) {
-	r.t.Helper()
-	wfs := r.controller.wfclientset.ArgoprojV1alpha1().Workflows(r.woc.wf.Namespace)
-	stored, err := wfs.Get(ctx, r.woc.wf.Name, metav1.GetOptions{})
-	require.NoError(r.t, err)
-	n := stored.Status.Nodes.FindByDisplayName(display)
-	require.NotNil(r.t, n, display)
-	n.StartedAt = metav1.NewTime(n.StartedAt.Add(-d))
-	stored.Status.Nodes[n.ID] = *n
-	_, err = wfs.Update(ctx, stored, metav1.UpdateOptions{})
-	require.NoError(r.t, err)
-}
-
-// r4Resume resumes every suspended node, as `argo resume` does, and
-// reconciles.
-func (r *r4Run) r4Resume(ctx context.Context) {
-	r.t.Helper()
-	wfs := r.controller.wfclientset.ArgoprojV1alpha1().Workflows(r.woc.wf.Namespace)
-	require.NoError(r.t, wfutil.ResumeWorkflow(ctx, wfs, r.controller.hydrator, r.woc.wf.Name, ""))
-	r.op(ctx)
-}
-
 const r4C24SuspendMutexSteps = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -8844,44 +8775,6 @@ func TestRegressionR4_C64_TDSyncSuspendPlainDAG(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
 }
 
-// r4MetricsRun drives manifest with every pod succeeding (with the outputs
-// of outputsFor, if it returns any) until the workflow completes, then
-// reconciles extra more times, so that a completion metric emitted twice
-// shows. setup runs on the controller before the first reconcile.
-func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.Context, *WorkflowController), outputsFor func(*wfv1.NodeStatus) *wfv1.Outputs) *wfOperationCtx {
-	t.Helper()
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(manifest)
-	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
-	cancel, controller := newController(ctx, wf)
-	t.Cleanup(cancel)
-	if setup != nil {
-		setup(ctx, controller)
-	}
-	woc := r4Operate(t, ctx, controller, wf)
-	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
-		for _, n := range woc.wf.Status.Nodes {
-			if outputsFor == nil || n.Type != wfv1.NodeTypePod || n.Fulfilled() {
-				continue
-			}
-			if out := outputsFor(&n); out != nil {
-				r4TaskResultOutputs(ctx, woc, n.Name, *out)
-			}
-		}
-		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
-			if n.Fulfilled() {
-				return ""
-			}
-			return apiv1.PodSucceeded
-		})
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
-	for range extra {
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
-	return woc
-}
-
 // C62: the completion metric of a task whose argument comes from another
 // task's output is labelled with the resolved argument. Ports
 // TestProbe_v1x49_DAGOutputArgMetricLabel.
@@ -9061,27 +8954,6 @@ spec:
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_items_nested"), 0.001)
 }
 
-// r4MemoCache is a memoization cache ConfigMap holding a hit for key "hit"
-// with output p=value, exported as g (a cached output keeps its globalName,
-// as the node outputs it was saved from carry it).
-func r4MemoCache(name, value string) func(context.Context, *WorkflowController) {
-	return func(ctx context.Context, controller *WorkflowController) {
-		_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: "default",
-				Labels:    map[string]string{common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache},
-			},
-			Data: map[string]string{
-				"hit": `{"nodeID":"old","outputs":{"parameters":[{"name":"p","value":"` + value + `","globalName":"g"}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`,
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
 // C63 and P22: a memoize cache hit emits its template's completion metrics
 // once, like an unmemoized run (a decided deviation, P22: main emitted
 // none for a hit, so this fails at base). Rewrites
@@ -9132,62 +9004,6 @@ spec:
 	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_c63_memo_static"), 0.001, "static hit")
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_memo_item"), 0.001, "one per item hit")
 }
-
-// r4GlobalParam is the value of the workflow output parameter g.
-func r4GlobalParam(wf *wfv1.Workflow) string {
-	if wf.Status.Outputs != nil {
-		for _, p := range wf.Status.Outputs.Parameters {
-			if p.Name == "g" && p.Value != nil {
-				return p.Value.String()
-			}
-		}
-	}
-	return "<missing>"
-}
-
-// r4InputParam is the value of input parameter x of the node with the given
-// display name.
-func r4InputParam(wf *wfv1.Workflow, display string) string {
-	if n := wf.Status.Nodes.FindByDisplayName(display); n != nil && n.Inputs != nil {
-		for _, p := range n.Inputs.Parameters {
-			if p.Name == "x" && p.Value != nil {
-				return p.Value.String()
-			}
-		}
-	}
-	return "<missing>"
-}
-
-// r4GlobalOut is the output p, exported as the workflow output g.
-func r4GlobalOut(value string) *wfv1.Outputs {
-	return &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", GlobalName: "g", Value: wfv1.AnyStringPtr(value)}}}
-}
-
-const r4GlobalTemplates = `
-  - name: produce
-    container:
-      image: alpine
-    outputs:
-      parameters:
-      - name: p
-        globalName: g
-        valueFrom:
-          path: /tmp/p
-  - name: consume
-    inputs:
-      parameters:
-      - name: x
-    container:
-      image: alpine
-  - name: exit
-    steps:
-    - - name: e
-        template: consume
-        arguments:
-          parameters:
-          - name: x
-            value: "{{workflow.outputs.parameters.g}}"
-`
 
 // C42: a newer value exported further down the tree (by a nested step)
 // wins over an earlier step's: the Steps boundary does not re-export its
@@ -9610,4 +9426,149 @@ spec:
 	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase)
 	assert.Contains(t, r.woc.wf.Status.Message, "missing location information")
 	assert.Len(t, r4PodNodeNames(ctx, t, r.woc), 1, "no hook pod")
+}
+
+// P9: a suspend resumed with `argo resume` takes its supplied output's
+// default, and that value is exported as its globalName when the node is
+// fulfilled (by ResumeWorkflow, outside the controller), so the consumer and
+// wf.status.outputs see it. A decided deviation (P9) that fails at base in
+// both forms: main's DAG exported g only in its completion sweep, so
+// wf.status.outputs ended right but c, dispatched before, got the raw tag;
+// main's Steps never exported it.
+func TestRegressionR4_P9_ResumedSuspendDefaultExportsGlobal(t *testing.T) {
+	const approve = `
+  - name: approve
+    suspend: {}
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          supplied: {}
+          default: D
+`
+	for name, entry := range map[string]string{
+		"DAG": `
+  - name: entry
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: c
+        depends: approve
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+`,
+		"Steps": `
+  - name: entry
+    steps:
+    - - name: approve
+        template: approve
+    - - name: c
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p9-resume-default
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+`+entry+approve+r4GlobalTemplates)
+			require.Equal(t, wfv1.NodeRunning, r.r4Phase("approve"))
+			r.r4Resume(ctx)
+			r.woc = r4DriveToEnd(t, ctx, r.controller, r.woc, 6)
+			assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+			assert.Equal(t, "D", r4InputParam(r.woc.wf, "c"), "task c")
+			assert.Equal(t, "D", r4GlobalParam(r.woc.wf), "wf.status.outputs g")
+		})
+	}
+}
+
+// P9: a pod that ends Failed before its task result is complete is stored
+// Failed but not fulfilled. When its task result syncs in a later reconcile,
+// that is its completion: its globalName output is exported (the consumer
+// dispatched in that reconcile sees it) and its completion metric is emitted
+// once. Main exported g but missed the metric (it took its "before" snapshot
+// after merging task results, so the node already looked fulfilled): the
+// metric assertion is a fix of main, so this fails at base.
+func TestRegressionR4_P9_LateSyncedFailedPodExportsGlobal(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-p9-late-sync
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    dag:
+      tasks:
+      - name: a
+        template: produce-fail
+      - name: c
+        depends: a.Failed
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{workflow.outputs.parameters.g}}"
+  - name: produce-fail
+    metrics:
+      prometheus:
+      - name: r4_p9_late_sync
+        help: count
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: alpine
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          path: /tmp/p
+`+r4GlobalTemplates)
+	const a = "r4-p9-late-sync.a"
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r.op(ctx)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, r4PodForNode(a), withExitCode(1))
+	r.op(ctx)
+	node, err := r.woc.wf.GetNodeByName(a)
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeFailed, node.Phase)
+	require.False(t, node.Fulfilled(), "a waits for its task result")
+
+	// The wait container reports the outputs and completes the task result.
+	trs := r.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(r.woc.wf.Namespace)
+	tr, err := trs.Get(ctx, node.ID, metav1.GetOptions{})
+	require.NoError(t, err)
+	tr.Outputs = r4GlobalOut("F")
+	tr.Labels[common.LabelKeyReportOutputsCompleted] = "true"
+	tr, err = trs.Update(ctx, tr, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	waitForInformer(ctx, r.controller.taskResultInformer, tr, func(obj any) bool {
+		return obj.(*wfv1.WorkflowTaskResult).Labels[common.LabelKeyReportOutputsCompleted] == "true"
+	})
+	r.op(ctx)
+	assert.Equal(t, "F", r4InputParam(r.woc.wf, "c"), "task c, dispatched when a completed")
+
+	r.woc = r4DriveToEnd(t, ctx, r.controller, r.woc, 6)
+	assert.Equal(t, "F", r4GlobalParam(r.woc.wf), "wf.status.outputs g")
+	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_p9_late_sync", "status", "Failed"), 0.001)
 }

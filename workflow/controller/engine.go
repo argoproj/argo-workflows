@@ -502,8 +502,8 @@ func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []str
 // node that finished outside a dispatch (a pod, a resumed suspend, an HTTP
 // task, a failFast or timeout mark) is finished. Each node is reconciled with
 // the template it was dispatched with: the task resolved against its scope,
-// items expanded, templateDefaults merged. A task whose template has no lock,
-// no metrics and no globalName output has nothing to finish.
+// items expanded, templateDefaults merged. A task whose template has no lock
+// and no metrics has nothing to finish (mayNeedFinishing).
 func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) {
 	for _, task := range tasks {
 		node := e.getTaskNode(ctx, task.GetName())
@@ -550,29 +550,17 @@ func ranToCompletion(node *wfv1.NodeStatus) bool {
 }
 
 // mayNeedFinishing reports whether a fulfilled node of task can have
-// anything to finish: its template takes a lock, has metrics or exports a
-// globalName output. A template that resolves only with the task (a
-// templateRef built from outputs) is assumed to.
+// anything to finish: its template takes a lock or has metrics. A template
+// that resolves only with the task (a templateRef built from outputs) is
+// assumed to. Its globalName outputs need no re-entry: every path that
+// fulfils a node exports them (exportCompletedNodes, handleNodeFulfilled).
 func (e *Engine) mayNeedFinishing(ctx context.Context, task dag.Task) bool {
 	_, tmpl, stored, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
 	if err != nil || e.woc.mergedTemplateDefaultsInto(tmpl) != nil {
 		return true
 	}
 	e.woc.updated = e.woc.updated || stored
-	if tmpl.Synchronization != nil || tmpl.Metrics != nil {
-		return true
-	}
-	for _, p := range tmpl.Outputs.Parameters {
-		if p.GlobalName != "" {
-			return true
-		}
-	}
-	for _, a := range tmpl.Outputs.Artifacts {
-		if a.GlobalName != "" {
-			return true
-		}
-	}
-	return false
+	return tmpl.Synchronization != nil || tmpl.Metrics != nil
 }
 
 // finalize assesses the overall phase and, if terminal, sets outputs,

@@ -550,6 +550,13 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 				if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
 					return false, err
 				}
+				// The node is fulfilled here, outside the controller, so its
+				// globalName outputs are exported here, as `argo node set` does.
+				if node.Outputs != nil {
+					for _, param := range node.Outputs.Parameters {
+						AddParamToGlobalScope(ctx, wf, param)
+					}
+				}
 				node.Phase = wfv1.NodeSucceeded
 				if node.Message != "" {
 					uiMsg = node.Message + "; " + uiMsg
