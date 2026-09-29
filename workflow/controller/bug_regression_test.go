@@ -407,6 +407,35 @@ spec:
 		"terminal node phase must not flip; got %s", node.Phase)
 }
 
+// TestBug_MarkNodePhase_UnsyncedNodeMayOnlyError pins decision P15 (C28): a
+// terminal node whose task result has not arrived may still go to Error,
+// but every other change out of its terminal phase is refused.
+func TestBug_MarkNodePhase_UnsyncedNodeMayOnlyError(t *testing.T) {
+	for _, tc := range []struct {
+		from, to, want wfv1.NodePhase
+	}{
+		{wfv1.NodeFailed, wfv1.NodeError, wfv1.NodeError},
+		{wfv1.NodeSucceeded, wfv1.NodeError, wfv1.NodeError},
+		{wfv1.NodeFailed, wfv1.NodeSucceeded, wfv1.NodeFailed},
+		{wfv1.NodeFailed, wfv1.NodePending, wfv1.NodeFailed},
+		{wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeSucceeded},
+		{wfv1.NodeError, wfv1.NodeRunning, wfv1.NodeError},
+	} {
+		t.Run(string(tc.from)+"-"+string(tc.to), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(`{"metadata":{"name":"t","namespace":"argo"},"spec":{"entrypoint":"e","templates":[{"name":"e","container":{"image":"alpine"}}]}}`)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			_, node := woc.initializeNode(ctx, "t.A", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", tc.from, &wfv1.NodeFlag{}, true)
+			node.TaskResultSynced = new(false)
+			woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+
+			assert.Equal(t, tc.want, woc.markNodePhase(ctx, "t.A", tc.to).Phase)
+		})
+	}
+}
+
 var dagRetryConsumerAbsentOptional = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

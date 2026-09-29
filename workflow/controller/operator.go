@@ -1608,6 +1608,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			// the children untouched.
 			continue
 		}
+		if pod.Status.Phase == apiv1.PodFailed && updated.Phase == wfv1.NodePending {
+			// The pod is being restarted (failedPodRestart): its containers run
+			// again in the new pod, so this pod's outcome is not theirs.
+			continue
+		}
 		switch {
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
@@ -2965,6 +2970,9 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 		woc.log.WithFields(logging.Fields{"workflowName": woc.wf.Name, "nodeName": nodeName, "phase": phase, "message": message}).Warn(ctx, "workflow node uninitialized when marking new phase")
 		node = &wfv1.NodeStatus{}
 	}
+	// A node whose task result has not arrived is not final yet: it may still
+	// go to Error (e.g. its pod was deleted before reporting its outputs).
+	final := node.Fulfilled()
 	// if we not in a running state (not expecting task results)
 	// and transition into a state that ensures we will never run mark the task results synced
 	if node.Phase != wfv1.NodeRunning && phase.FailedOrError() && node.TaskResultSynced != nil {
@@ -2972,7 +2980,7 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 		node.TaskResultSynced = &tmp
 	}
 	if node.Phase != phase {
-		if !isValidPhaseTransition(node.Phase, phase) {
+		if !isValidPhaseTransition(node.Phase, phase) && (final || phase != wfv1.NodeError) {
 			woc.log.WithFields(logging.Fields{
 				"nodeName":  node.Name,
 				"fromPhase": node.Phase,
