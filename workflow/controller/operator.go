@@ -1077,11 +1077,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 			return node, true, nil
 		}
 		// last child node is still running.
-		node = woc.markNodePhase(ctx, node.Name, lastChildNode.Phase)
-		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
-			node.Daemoned = new(true)
-		}
-		return node, true, nil
+		return woc.markRetryNodeDaemoned(ctx, node.Name, lastChildNode.Phase), true, nil
 	}
 
 	if !lastChildNode.FailedOrError() {
@@ -1172,7 +1168,8 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 	}
 
 	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
-		shouldContinue, err := woc.retryExpressionAllows(node, retryStrategy)
+		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
+		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, env.GetFuncMap(localScope))
 		if err != nil {
 			return nil, false, err
 		}
@@ -1183,6 +1180,20 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 
 	woc.log.WithFields(logging.Fields{"count": len(childNodeIds), "nodeName": node.Name}).Info(ctx, "child nodes failed, trying again")
 	return node, true, nil
+}
+
+// markRetryNodeDaemoned records that a retry node's running attempt is a
+// daemon: the node takes the attempt's phase and is saved Daemoned, so it
+// counts as fulfilled for its dependants and its boundary (markNodePhase does
+// not carry the Daemoned field).
+func (woc *wfOperationCtx) markRetryNodeDaemoned(ctx context.Context, name string, phase wfv1.NodePhase) *wfv1.NodeStatus {
+	node := woc.markNodePhase(ctx, name, phase)
+	if !node.IsDaemoned() {
+		node.Daemoned = new(true)
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
+	}
+	return node
 }
 
 // retryPolicyAllows reports whether the retry policy permits retrying a child
@@ -1204,13 +1215,6 @@ func retryPolicyAllows(ctx context.Context, lastChild *wfv1.NodeStatus, retryStr
 	default:
 		return false, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
 	}
-}
-
-// retryExpressionAllows evaluates retryStrategy.expression in the retry node's
-// scope (lastRetry.*, retries) and reports whether another attempt is allowed.
-func (woc *wfOperationCtx) retryExpressionAllows(retryNode *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (bool, error) {
-	localScope := buildRetryStrategyLocalScope(retryNode, woc.wf.Status.Nodes)
-	return argoexpr.EvalBool(retryStrategy.Expression, env.GetFuncMap(localScope))
 }
 
 // podReconciliation is the process by which a workflow will examine all its related
