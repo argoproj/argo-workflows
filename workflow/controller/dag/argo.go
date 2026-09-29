@@ -3,7 +3,6 @@ package dag
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -284,26 +283,8 @@ func (e *DAGEvaluator) evaluateAllStates(ctx context.Context) {
 }
 
 // FindLeafTaskNames returns tasks that no other task depends on.
-func (e *DAGEvaluator) FindLeafTaskNames(ctx context.Context) []Key {
-	isLeaf := make(map[Key]bool)
-	for _, key := range e.tasks.TaskNames() {
-		if _, ok := isLeaf[key]; !ok {
-			isLeaf[key] = true
-		}
-		deps, _ := e.tasks.GetDependencies(ctx, key)
-		for _, dep := range deps {
-			isLeaf[dep] = false
-		}
-	}
-
-	var leaves []Key
-	for key, leaf := range isLeaf {
-		if leaf {
-			leaves = append(leaves, key)
-		}
-	}
-	sort.Strings(leaves)
-	return leaves
+func (e *DAGEvaluator) FindLeafTaskNames(_ context.Context) []Key {
+	return e.tasks.LeafTaskNames()
 }
 
 // evaluateTaskResult builds an EvaluationResult for a single task.
