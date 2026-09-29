@@ -483,6 +483,7 @@ const r4GlobalTemplates = `
   - name: produce
     container:
       image: alpine
+      command: [echo, hi]
     outputs:
       parameters:
       - name: p
@@ -495,6 +496,7 @@ const r4GlobalTemplates = `
       - name: x
     container:
       image: alpine
+      command: [echo, hi]
   - name: exit
     steps:
     - - name: e
