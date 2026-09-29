@@ -7970,3 +7970,67 @@ spec:
 	assert.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	assert.Equal(t, []string{"c33-lc.a"}, r4PodNodeNames(ctx, t, r.woc))
 }
+
+const r4C92WorkflowHookExprErr = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: c92-wfhook
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: threshold
+      value: "abc"
+  hooks:
+    notify:
+      expression: workflow.status == "Succeeded" && workflow.parameters.threshold > 5
+      template: notify
+  templates:
+  - name: main
+    container: {image: busybox, command: [echo, hi]}
+  - name: notify
+    container: {image: busybox, command: [echo, notify]}
+`
+
+// TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode (C92, P17) is a
+// decided deviation: it encodes the chosen fix, not main's behaviour, so it
+// is expected to fail both at base (4389bbf96, where markNodeError flips
+// the entry node Succeeded -> Error with the hook error instead) and on
+// this branch before the fix (where the strict node-phase state machine
+// refuses that transition and the error is dropped entirely, logging
+// "refusing invalid node phase transition" every reconcile). See C92 in
+// pr-16290-round4-regressions.md and P17's answer.
+//
+// The workflow-level hook (spec.hooks) here has an expression that only
+// errors once the workflow has Succeeded: comparing the string parameter
+// "abc" against 5 is a runtime type error, mirroring lead9's
+// lead9ExprSteps probe. The fix records that error on its own Error hook
+// node "<wf>.hooks.notify" instead, leaving the entry node and the
+// workflow itself Succeeded.
+func TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C92WorkflowHookExprErr)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+
+	woc := r4Operate(t, ctx, controller, wf)
+	for range 3 {
+		makePodsPhase(ctx, woc, apiv1.PodRunning)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	for i := 0; i < 6 && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	require.True(t, woc.wf.Status.Phase.Completed(), "workflow did not complete: phase=%s", woc.wf.Status.Phase)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "c92-wfhook"), "entry node")
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "c92-wfhook.hooks.notify"), "hook node")
+	hookNode, err := woc.wf.GetNodeByName("c92-wfhook.hooks.notify")
+	require.NoError(t, err)
+	assert.NotEmpty(t, hookNode.Message, "hook node message")
+}
