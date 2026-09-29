@@ -67,19 +67,19 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		// To check a node was triggered
 		hookedNode, _ := woc.wf.GetNodeByName(hookNodeName)
 		if hook.Expression == "" {
-			return false, &hookNodeError{hookNodeName, &hook, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)}
+			return false, woc.errorHookNode(ctx, hookNodeName, &hook, parentNode, boundaryID, tmplCtx, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName))
 		}
 		// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
 		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams())))
 		if err != nil {
-			return false, &hookNodeError{hookNodeName, &hook, err}
+			return false, woc.errorHookNode(ctx, hookNodeName, &hook, parentNode, boundaryID, tmplCtx, err)
 		}
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info(ctx, "Running hooks")
 			hookNode, err := woc.reconcileHookNode(ctx, hookNodeName, &hook, parentNode, false, boundaryID, tmplCtx, ref, name, scope)
 			if err != nil {
-				return false, &hookNodeError{hookNodeName, &hook, err}
+				return false, err
 			}
 			hookNodes = append(hookNodes, hookNode)
 		}
@@ -109,7 +109,7 @@ func (woc *wfOperationCtx) reconcileHookNode(ctx context.Context, nodeName strin
 	if !args.IsEmpty() && (onExit || outputs != nil) {
 		var err error
 		if args, err = woc.resolveExitTmplArgument(ctx, hook.Arguments, ref, name, outputs, scope); err != nil {
-			return nil, err
+			return nil, woc.errorHookNode(ctx, nodeName, hook, parentNode, boundaryID, tmplCtx, err)
 		}
 	}
 	hookNode, err := woc.reconcileTemplate(ctx, nodeName, toTemplateReferenceHolder(hook), tmplCtx, args, &executeTemplateOpts{
@@ -121,6 +121,17 @@ func (woc *wfOperationCtx) reconcileHookNode(ctx context.Context, nodeName strin
 		woc.addChildNode(ctx, parentNode.Name, nodeName)
 	}
 	return hookNode, err
+}
+
+// errorHookNode records err, a hook's error, on its node nodeName as Error,
+// creating the node, linked under parentNode, if the hook never got one; a
+// finished hook node keeps its phase. It returns err.
+func (woc *wfOperationCtx) errorHookNode(ctx context.Context, nodeName string, hook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, err error) error {
+	if node, _ := woc.wf.GetNodeByName(nodeName); node == nil || !node.Fulfilled() {
+		woc.initializeNodeOrMarkError(ctx, node, nodeName, tmplCtx.GetTemplateScope(), toTemplateReferenceHolder(hook), boundaryID, &wfv1.NodeFlag{Hooked: true}, err)
+		woc.addChildNode(ctx, parentNode.Name, nodeName)
+	}
+	return err
 }
 
 // reconcileTaskSetFor dispatches the HTTP/plugin nodes at or under node to
