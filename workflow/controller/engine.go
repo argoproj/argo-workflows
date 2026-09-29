@@ -359,13 +359,28 @@ func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePh
 		}
 		allOmitted = allOmitted && stepPhase == wfv1.NodeOmitted
 		if stepPhase.FailedOrError() && !step.ContinuesOn(stepPhase) && message == "" {
-			phase, message = wfv1.NodeFailed, fmt.Sprintf("child '%s' failed", node.ID)
+			phase, message = wfv1.NodeFailed, fmt.Sprintf("child '%s' failed", e.failedNodeID(node))
 		}
 	}
 	if allOmitted {
 		phase = wfv1.NodeOmitted
 	}
 	return phase, message, true
+}
+
+// failedNodeID is the node a "child '<id>' failed" message names for a
+// failed step: the step's own node, or, for an expanded step's TaskGroup,
+// its first failed item — the node with the pod, or the item's Retry node
+// under a retryStrategy — as when items hung directly off the StepGroup.
+func (e *Engine) failedNodeID(node *wfv1.NodeStatus) string {
+	if node.Type == wfv1.NodeTypeTaskGroup {
+		for _, childID := range node.Children {
+			if child, err := e.woc.wf.Status.Nodes.Get(childID); err == nil && child.FailedOrError() && (child.NodeFlag == nil || !child.NodeFlag.Hooked) {
+				return child.ID
+			}
+		}
+	}
+	return node.ID
 }
 
 // isThrottleErr reports whether err is a deliberate throttling signal from
