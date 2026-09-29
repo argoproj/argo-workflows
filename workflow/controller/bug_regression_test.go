@@ -203,7 +203,7 @@ spec:
 		&dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]},
 	}, tmpl, mainNode.ID, mainNode.Name)
 
-	node, err := engine.executeTask(ctx, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]}, true)
+	node, err := engine.executeTask(ctx, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]})
 
 	require.Error(t, err,
 		"engine must surface a reconciler materialization failure when Reconcile returns nil but no task node exists")

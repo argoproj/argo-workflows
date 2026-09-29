@@ -384,10 +384,10 @@ func (woc *wfOperationCtx) postExecutionHandling(ctx context.Context, node *wfv1
 	// Task-result placeholder nodes have empty Type AND empty Phase — they are
 	// pre-synced outputs whose real node was never initialized (e.g. a workflow
 	// labelled completed while still Running, #12615). This error is fatal by
-	// design: the Engine records it on the DAG/Steps boundary and the workflow
-	// ends in Error rather than reconciling an uninitializable node forever
-	// (see TestWorkflowRunningButLabelCompleted). We only return the error —
-	// the callers, not this function, mark the boundary and workflow phase.
+	// design: the reconciler's recordTaskError records it as an Error node in
+	// the placeholder's slot, so the task fails rather than reconciling an
+	// uninitializable node forever (see TestWorkflowRunningButLabelCompleted).
+	// We only return the error — the callers, not this function, record it.
 	// Note: we check both Type=="" and Phase=="" to distinguish placeholders from
 	// legitimately initialized nodes that happen to have empty Type (e.g., nodes
 	// from FormulateResubmitWorkflow where the YAML didn't specify Type).

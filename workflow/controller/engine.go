@@ -97,11 +97,7 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	executedTasks := make(map[string]bool)
 	for {
 		omitted := e.createOmittedNodes(ctx, tasks, e.evaluateAll(ctx, hooks))
-		dispatch, err := e.converge(ctx, tasks, omitted)
-		if err != nil {
-			e.markBoundaryError(ctx, err)
-			return
-		}
+		dispatch := e.converge(ctx, tasks, omitted)
 		hooks = e.processHooks(ctx, tasks, e.assessTaskGroups(ctx, tasks, dispatch))
 		exitHooksDone = exitHooksDone && hooks.done
 		anyNew := false
@@ -200,7 +196,7 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 		}
 
 		e.log.Info(ctx, fmt.Sprintf("reconciling daemoned task %s", task.GetName()))
-		if _, err := e.executeTask(ctx, task, true); err != nil {
+		if _, err := e.executeTask(ctx, task); err != nil {
 			e.log.WithError(err).Error(ctx, "failed to reconcile daemoned task")
 		}
 	}
@@ -475,10 +471,9 @@ func (e *Engine) executableTaskSet(ctx context.Context) map[string]bool {
 // instance can be re-reconciled independently — needed when, say, a sync
 // lock is released and a queued sibling needs another TryAcquire.
 // The evaluator decides WHAT should happen; this layer just dispatches.
-func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissionsRecorded) (dispatched, error) {
+func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissionsRecorded) dispatched {
 	results := omitted.results
 	executedTasks := make(map[string]bool)
-	var firstErr error
 	// Sort result keys for deterministic dispatch order. Map iteration would
 	// otherwise vary per cycle and, under parallelism limits, the winner of a
 	// limited slot becomes random — breaking reproducibility.
@@ -489,14 +484,11 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissio
 			// expression failed to evaluate). Record that as a terminal Error
 			// node so the boundary can assess it; left unrecorded, the task
 			// would stay Pending and the boundary would never complete.
-			taskNodeName := e.taskNodeName(result.TaskName)
-			if node, getErr := e.woc.wf.GetNodeByName(taskNodeName); getErr != nil {
-				e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, result.Error.Error())
-				e.addChildNode(ctx, result.TaskName, taskNodeName)
-				executedTasks[result.TaskName] = true
-			} else if !node.Fulfilled() {
-				e.woc.markNodeError(ctx, taskNodeName, result.Error)
-				executedTasks[result.TaskName] = true
+			if task := e.getTaskByName(tasks, result.TaskName); task != nil {
+				if node := e.getTaskNode(ctx, result.TaskName); node == nil || !node.Fulfilled() {
+					e.initTerminalErrorNode(ctx, task, e.parentNodeNames(ctx, result.TaskName), result.Error)
+					executedTasks[result.TaskName] = true
+				}
 			}
 			continue
 		}
@@ -518,41 +510,17 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissio
 
 		if needsExecution {
 			executedTasks[result.TaskName] = true
+			var err error
 			if result.ParentTaskName != "" {
-				if err := e.dispatchTaskGroupChild(ctx, tasks, result.ParentTaskName, result.TaskName); err != nil {
-					if isThrottleErr(err) {
-						// Deliberate throttling — don't fail, just stop dispatching this pass.
-						return dispatched{executed: executedTasks}, nil
-					}
-					if stderrors.Is(err, ErrRequeue) {
-						// A dependency output is not in scope yet; the workflow has
-						// been requeued and the child is retried next cycle.
-						continue
-					}
-					// A per-task error that is already recorded as a terminal phase
-					// on the child's node is that child's outcome and rolls up
-					// through phase assessment; only an error that left no node
-					// behind is escalated to the boundary after this pass.
-					if firstErr == nil && !e.errRecordedOnNode(ctx, result.TaskName) {
-						firstErr = err
-					}
-					e.log.WithError(err).WithField("task", result.TaskName).Warn(ctx, "task group child dispatch failed; continuing to allow sibling tasks")
-					continue
-				}
+				err = e.dispatchTaskGroupChild(ctx, tasks, result.ParentTaskName, result.TaskName)
 			} else if task := e.getTaskByName(tasks, result.TaskName); task != nil {
-				if _, err := e.executeTask(ctx, task, true); err != nil {
-					if isThrottleErr(err) {
-						return dispatched{executed: executedTasks}, nil
-					}
-					if stderrors.Is(err, ErrRequeue) {
-						continue
-					}
-					if firstErr == nil && !e.errRecordedOnNode(ctx, result.TaskName) {
-						firstErr = err
-					}
-					e.log.WithError(err).WithField("task", result.TaskName).Warn(ctx, "task execution failed; continuing to allow sibling tasks")
-					continue
-				}
+				_, err = e.executeTask(ctx, task)
+			}
+			if e.dispatchOutcome(ctx, result.TaskName, err) {
+				return dispatched{executed: executedTasks}
+			}
+			if err != nil {
+				continue
 			}
 		}
 
@@ -560,7 +528,27 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, omitted omissio
 			e.woc.requeueAfter(result.RequeueAfter)
 		}
 	}
-	return dispatched{executed: executedTasks}, firstErr
+	return dispatched{executed: executedTasks}
+}
+
+// dispatchOutcome applies the per-task dispatch error policy, main's, and
+// reports whether to stop dispatching this pass: only the operate deadline
+// does. A task held back by parallelism or a rate limit waits for a free
+// slot while the others, which may be the ones to free it, are still
+// dispatched; a missing reference requeues the task. Any other error is the
+// task's own outcome, already recorded as an Error on its node (by
+// initTerminalErrorNode or the reconciler's recordTaskError), and rolls up
+// through phase assessment while its siblings keep running.
+func (e *Engine) dispatchOutcome(ctx context.Context, taskName string, err error) (stop bool) {
+	switch {
+	case err == nil, stderrors.Is(err, ErrRequeue),
+		stderrors.Is(err, ErrParallelismReached), stderrors.Is(err, ErrResourceRateLimitReached):
+		return false
+	case stderrors.Is(err, ErrDeadlineExceeded):
+		return true
+	}
+	e.log.WithError(err).WithField("task", taskName).Warn(ctx, "task dispatch failed; continuing to allow sibling tasks")
+	return false
 }
 
 // logEvaluation records the evaluator's diagnostics for a task at debug
@@ -581,23 +569,10 @@ func (e *Engine) logEvaluation(ctx context.Context, result dag.EvaluationResult)
 	}).Debug(ctx, "task evaluation")
 }
 
-// errRecordedOnNode reports whether a dispatch error has already been recorded
-// as a terminal phase on the task's node (argument resolution, template
-// resolution, an invalid when clause, a failed pod creation, ...). Such an
-// error is the task's own outcome: its siblings keep running and the boundary
-// is assessed from its children once they are done, as the pre-Engine
-// executeDAGTask did. Escalating it would end a failFast: false DAG while
-// other branches are still in flight, and for Steps would skip the group
-// assessment and leave StepGroup nodes Running forever.
-func (e *Engine) errRecordedOnNode(ctx context.Context, taskName string) bool {
-	node := e.getTaskNode(ctx, taskName)
-	return node != nil && node.FailedOrError()
-}
-
 // dispatchTaskGroupChild reconciles a single expanded TaskGroup child by
 // re-expanding the static parent against the current scope and forwarding the
-// matching expanded entry to the reconciler. The TaskGroup parent node already
-// exists from initial expansion, so no parent linkage is needed.
+// matching expanded entry to the reconciler. A re-expansion error is the
+// task's own and ends its TaskGroup node Error, as executeDAGTask did.
 func (e *Engine) dispatchTaskGroupChild(ctx context.Context, tasks []dag.Task, parentTaskName, childTaskName string) error {
 	parentTask := e.getTaskByName(tasks, parentTaskName)
 	if parentTask == nil {
@@ -605,9 +580,10 @@ func (e *Engine) dispatchTaskGroupChild(ctx context.Context, tasks []dag.Task, p
 	}
 	expanded, err := e.expandTask(ctx, parentTask)
 	if err != nil {
+		e.initTerminalErrorNode(ctx, parentTask, nil, err)
 		return err
 	}
-	err = e.reconcileExpanded(ctx, expanded, "", func(t dag.Task) bool {
+	err = e.reconcileExpanded(ctx, expanded, e.taskNodeName(parentTaskName), func(t dag.Task) bool {
 		return t.GetName() == childTaskName
 	})
 	e.noteExpansionProgress(ctx, e.taskNodeName(parentTaskName), expanded)
@@ -681,27 +657,20 @@ func (e *Engine) expansionScope(scope *wfScope) map[string]string {
 	return params
 }
 
-// reconcileExpanded turns each accepted expansion into a DesiredTask and hands
-// the batch to the reconciler. parentNodeName, when non-empty, is stamped on
-// fresh desired tasks so they're linked to the TaskGroup node during initial
-// creation; subsequent dispatches leave it empty (children already linked).
-// A nil accept admits every expanded task.
-func (e *Engine) reconcileExpanded(ctx context.Context, expanded []dag.Task, parentNodeName string, accept func(dag.Task) bool) error {
+// reconcileExpanded turns each accepted expansion into a DesiredTask, linked
+// under the TaskGroup node tgNodeName when its node is created, and hands the
+// batch to the reconciler. An item whose setup fails is recorded on its own
+// Error node and the other items are still reconciled. A nil accept admits
+// every expanded task.
+func (e *Engine) reconcileExpanded(ctx context.Context, expanded []dag.Task, tgNodeName string, accept func(dag.Task) bool) error {
 	var desired []DesiredTask
 	for _, et := range expanded {
 		if accept != nil && !accept(et) {
 			continue
 		}
-		dts, err := e.createDesiredTask(ctx, et, false)
-		if err != nil {
-			return err
+		if dt, _ := e.createDesiredTask(ctx, et, []string{tgNodeName}); dt != nil {
+			desired = append(desired, *dt)
 		}
-		if parentNodeName != "" {
-			for i := range dts {
-				dts[i].ParentNodeNames = []string{parentNodeName}
-			}
-		}
-		desired = append(desired, dts...)
 	}
 	if len(desired) == 0 {
 		return nil
@@ -818,8 +787,7 @@ func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task, eval 
 	results := eval.results
 	for _, task := range tasks {
 		taskName := task.GetName()
-		taskNodeName := e.taskNodeName(taskName)
-		if _, err := e.woc.wf.GetNodeByName(taskNodeName); err == nil {
+		if e.getTaskNode(ctx, taskName) != nil {
 			continue
 		}
 		if result, ok := results[taskName]; ok && result.Skipped && !result.ShouldRun {
@@ -827,8 +795,7 @@ func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task, eval 
 			if reason == "" {
 				reason = "depends condition not met"
 			}
-			e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: "+reason)
-			e.addChildNode(ctx, task.GetName(), taskNodeName)
+			e.initTaskNode(ctx, task, e.parentNodeNames(ctx, taskName), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
 		}
 	}
 	return omissionsRecorded{results: results}
@@ -992,7 +959,7 @@ func (e *Engine) saveMemoizationCache(ctx context.Context) error {
 	return nil
 }
 
-func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) (*wfv1.NodeStatus, error) {
+func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStatus, error) {
 	taskName := task.GetName()
 	taskNodeName := e.taskNodeName(taskName)
 
@@ -1020,14 +987,10 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 	// A scope or expansion failure is this task's own terminal outcome: it is
 	// recorded on an Error node linked under the task's parents (as
 	// executeDAGTask did), so siblings keep running and the boundary rolls up
-	// from its children. Marking a node that does not exist yet would record
-	// nothing and escalate the error to the boundary instead.
-	var parentNodeNames []string
-	if addChild {
-		parentNodeNames = e.parentNodeNames(ctx, taskName)
-	}
+	// from its children.
+	parentNodeNames := e.parentNodeNames(ctx, taskName)
 	failTask := func(err error) (*wfv1.NodeStatus, error) {
-		e.initTerminalErrorNode(ctx, taskNodeName, parentNodeNames, err)
+		e.initTerminalErrorNode(ctx, task, parentNodeNames, err)
 		return e.getTaskNode(ctx, taskName), err
 	}
 
@@ -1055,21 +1018,12 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 
 		// Empty expansion (e.g., withParam resolves to []) → skip the task
 		if len(expandedTasks) == 0 {
-			_, skipNode := e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, "Skipped, empty params")
-			if addChild {
-				e.addChildNode(ctx, taskName, skipNode.Name)
-			}
-			return skipNode, nil
+			return e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, "Skipped, empty params"), nil
 		}
 
-		var tgNode *wfv1.NodeStatus
-		if existingNode, lookupErr := e.woc.wf.GetNodeByName(taskNodeName); lookupErr == nil {
-			tgNode = existingNode
-		} else {
-			_, tgNode = e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeTaskGroup, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
-			if addChild {
-				e.addChildNode(ctx, taskName, tgNode.Name)
-			}
+		tgNode := taskNode
+		if tgNode == nil {
+			tgNode = e.initTaskNode(ctx, task, parentNodeNames, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
 		}
 
 		err = e.reconcileExpanded(ctx, expandedTasks, tgNode.Name, nil)
@@ -1081,11 +1035,11 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 	}
 
 	// Use reconciler for leaf task
-	desired, err := e.createDesiredTask(ctx, task, addChild)
-	if err != nil {
-		return nil, err
+	desired, err := e.createDesiredTask(ctx, task, parentNodeNames)
+	if err != nil || desired == nil {
+		return e.getTaskNode(ctx, taskName), err
 	}
-	err = e.reconciler.Reconcile(ctx, desired)
+	err = e.reconciler.Reconcile(ctx, []DesiredTask{*desired})
 	if err != nil {
 		// Throttling sentinels mean "didn't materialize, but it's deliberate".
 		// Propagate them up so callers can distinguish from real failures, but
@@ -1098,33 +1052,42 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 	// silent failure — surface it via ErrReconcilerNoMaterialize so callers
 	// don't conflate it with deliberate throttling.
 	node := e.getTaskNode(ctx, taskName)
-	if node == nil && len(desired) > 0 {
+	if node == nil {
 		return nil, fmt.Errorf("task %s: %w", taskName, ErrReconcilerNoMaterialize)
 	}
 	return node, nil
 }
 
-// initTerminalErrorNode persists a task node in a terminal Error state when task setup fails before
-// the node would normally be materialized (argument resolution / ProcessArgs / template resolution).
-// The node must exist for markNodeError and converge's boundary handling to take effect; otherwise a
-// setup failure — e.g. an unhandled absent optional (#16223) — silently vanishes and the workflow
-// requeues forever instead of failing terminally. Mirrors the when-clause error path.
-func (e *Engine) initTerminalErrorNode(ctx context.Context, taskNodeName string, parentNodeNames []string, err error) {
-	// Only materialize the node when it doesn't already exist. In the omitted-dependency flow the
-	// task node is created earlier in the cycle, and initializeNode panics ("already initialized")
-	// on a second init — so re-initializing here would turn a terminal arg error into a recurring
-	// "Workflow operation error" requeue loop. When it already exists, fall through to markNodeError.
-	if node, getErr := e.woc.wf.GetNodeByName(taskNodeName); getErr != nil || node == nil {
-		e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
-		for _, parent := range parentNodeNames {
-			e.woc.addChildNode(ctx, parent, taskNodeName)
-		}
+// initTaskNode creates a node the Engine records itself for task (Omitted,
+// Skipped, TaskGroup or a terminal Error), under the task's own template, and
+// links it under parents in the same step, so it is never left unreachable.
+func (e *Engine) initTaskNode(ctx context.Context, task dag.Task, parents []string, nodeType wfv1.NodeType, phase wfv1.NodePhase, msg ...string) *wfv1.NodeStatus {
+	nodeName := e.taskNodeName(task.GetName())
+	_, node := e.woc.initializeNode(ctx, nodeName, nodeType, e.tmplCtx.GetTemplateScope(), task.GetTemplateReferenceHolder(), e.boundaryID, phase, &wfv1.NodeFlag{}, true, msg...)
+	for _, parent := range parents {
+		e.woc.addChildNode(ctx, parent, nodeName)
 	}
-	e.woc.markNodeError(ctx, taskNodeName, err)
+	return node
 }
 
-// createDesiredTask helper to construct the struct from a dag.Task
-func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild bool) ([]DesiredTask, error) {
+// initTerminalErrorNode records err as the task's own terminal outcome: an
+// Error node, linked under parents, created if the task has none yet (a
+// setup failure such as an unresolvable templateRef or an unhandled absent
+// optional, #16223). Its siblings keep running and the boundary rolls up from
+// its children.
+func (e *Engine) initTerminalErrorNode(ctx context.Context, task dag.Task, parents []string, err error) {
+	if e.getTaskNode(ctx, task.GetName()) == nil {
+		e.initTaskNode(ctx, task, parents, wfv1.NodeTypeSkipped, wfv1.NodeError, err.Error())
+		return
+	}
+	e.woc.markNodeError(ctx, e.taskNodeName(task.GetName()), err)
+}
+
+// createDesiredTask builds the DesiredTask the reconciler executes for task,
+// to be linked under parents when its node is created. It returns nil for a
+// task that is already fulfilled. A setup error is recorded on the task's
+// node; ErrRequeue (a dependency output not in scope yet) is not.
+func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents []string) (*DesiredTask, error) {
 	taskName := task.GetName()
 	taskNodeName := e.taskNodeName(taskName)
 
@@ -1133,16 +1096,15 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 		return nil, nil
 	}
 
-	var parentNodeNames []string
-	if addChild {
-		parentNodeNames = e.parentNodeNames(ctx, taskName)
+	failTask := func(err error) (*DesiredTask, error) {
+		e.initTerminalErrorNode(ctx, task, parents, err)
+		return nil, err
 	}
 
 	// Build scope
 	scope, err := e.buildLocalScopeFromTask(ctx, task)
 	if err != nil {
-		e.woc.markNodeError(ctx, taskNodeName, err)
-		return nil, err
+		return failTask(err)
 	}
 
 	// spec.volumes may reference the outputs of earlier tasks or steps
@@ -1150,8 +1112,7 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 	// its pod is built, as resolveDependencyReferences and resolveReferences
 	// did before the Engine. Globals were substituted once at operate start.
 	if err = e.woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil)); err != nil {
-		e.woc.markNodeError(ctx, taskNodeName, err)
-		return nil, err
+		return failTask(err)
 	}
 
 	// Evaluate 'When' clause
@@ -1162,20 +1123,12 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 			e.woc.requeue()
 			return nil, err
 		}
-		e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
-		for _, parent := range parentNodeNames {
-			e.woc.addChildNode(ctx, parent, taskNodeName)
-		}
-		// Mark only the failing task node; the boundary is assessed by the
-		// dispatch loop after every sibling has had its chance, so it rolls up
-		// to Failed rather than being clobbered to a terminal Error.
-		e.woc.markNodeError(ctx, taskNodeName, err)
-		return nil, err
+		return failTask(err)
 	}
 
 	if !proceed {
 		skipReason := fmt.Sprintf("when '%s' evaluated false", task.GetWhen())
-		return []DesiredTask{{
+		return &DesiredTask{
 			TaskName:         taskNodeName,
 			OriginalTaskName: taskName,
 			TemplateScope:    e.tmplCtx.GetTemplateScope(),
@@ -1184,15 +1137,14 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 			IsOnExit:         e.onExitTemplate,
 			Skipped:          true,
 			SkipReason:       skipReason,
-			ParentNodeNames:  parentNodeNames,
-		}}, nil
+			ParentNodeNames:  parents,
+		}, nil
 	}
 
 	// Resolve Template and Arguments
 	newTmplCtx, resolvedTmpl, templateStored, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
 	if err != nil {
-		e.woc.markNodeError(ctx, taskNodeName, err)
-		return nil, err
+		return failTask(err)
 	}
 	if templateStored {
 		e.woc.updated = true
@@ -1204,8 +1156,7 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 	// templateDefaults — including the Prometheus metrics that drive
 	// argo_workflows_<name>_counter emissions on node completion — are silently dropped.
 	if err = e.woc.mergedTemplateDefaultsInto(resolvedTmpl); err != nil {
-		e.woc.markNodeError(ctx, taskNodeName, err)
-		return nil, err
+		return failTask(err)
 	}
 
 	// Process Arguments
@@ -1227,8 +1178,7 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 			e.woc.requeue()
 			return nil, err
 		}
-		e.initTerminalErrorNode(ctx, taskNodeName, parentNodeNames, err)
-		return nil, err
+		return failTask(err)
 	}
 
 	// Build minimal local params for ProcessArgs (matching reconcileTemplate behavior).
@@ -1248,11 +1198,10 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 	// resolved later by executeContainer, or task-scope tags for retry strategies.
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, true, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
-		e.initTerminalErrorNode(ctx, taskNodeName, parentNodeNames, err)
-		return nil, err
+		return failTask(err)
 	}
 
-	return []DesiredTask{{
+	return &DesiredTask{
 		TaskName:         taskNodeName,
 		OriginalTaskName: taskName,
 		TemplateScope:    e.tmplCtx.GetTemplateScope(),
@@ -1261,8 +1210,8 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 		TemplateRef:      task.GetTemplateReferenceHolder(),
 		BoundaryID:       e.boundaryID,
 		IsOnExit:         e.onExitTemplate,
-		ParentNodeNames:  parentNodeNames,
-	}}, nil
+		ParentNodeNames:  parents,
+	}, nil
 }
 
 func (e *Engine) getTaskByName(tasks []dag.Task, name string) dag.Task {
@@ -1445,15 +1394,6 @@ func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string
 	}
 	memo[taskName] = worst
 	return worst
-}
-
-// addChildNode adds a child node to the appropriate parent.
-// For Steps templates, step tasks are linked to their StepGroup node.
-// For DAG templates, tasks are linked to their dependencies' outbound nodes or the DAG root.
-func (e *Engine) addChildNode(ctx context.Context, taskName string, childNodeName string) {
-	for _, parent := range e.parentNodeNames(ctx, taskName) {
-		e.woc.addChildNode(ctx, parent, childNodeName)
-	}
 }
 
 // parentNodeNames returns the nodes a task's node hangs off in the graph.

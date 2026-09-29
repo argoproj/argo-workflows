@@ -96,8 +96,7 @@ func TestStepsEngine_PerChildDispatch(t *testing.T) {
 	}
 
 	fake.calls = nil
-	_, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	got := fake.allDesiredTaskNames()
 	sort.Strings(got)
 	want := []string{
@@ -118,8 +117,7 @@ func TestStepsEngine_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 		"[0].client": {TaskName: "[0].client", CurrentPhase: wfv1.NodeRunning, Error: errors.New("depends expression failed to evaluate")},
 	}
 	fake.calls = nil
-	executed, err := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
-	require.NoError(t, err)
+	executed := engine.converge(ctx, tasks, engine.createOmittedNodes(ctx, tasks, evaluation{results: results}))
 	assert.Empty(t, fake.calls)
 	assert.True(t, executed.executed["[0].client"])
 
