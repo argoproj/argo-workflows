@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -78,7 +79,7 @@ func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName 
 			// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
 			execute, err := argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(scope.getParametersAny(h.woc.globalParams())))
 			if err != nil {
-				return false, err
+				return false, &hookNodeError{onExitNodeName, exitHook, err}
 			}
 			if !execute {
 				return true, nil
@@ -88,7 +89,7 @@ func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName 
 	}
 	onExitNode, err := h.woc.reconcileHookNode(ctx, onExitNodeName, exitHook, node, true, h.boundaryID, h.tmplCtx, h.ref, refName, scope)
 	if err != nil {
-		return false, err
+		return false, &hookNodeError{onExitNodeName, exitHook, err}
 	}
 	if shutdown := h.woc.GetShutdownStrategy(); shutdown.Enabled() && shutdown.ShouldExecute(true) && !onExitNode.Fulfilled() {
 		// operate skips task-set reconciliation while shutting down, but
@@ -126,7 +127,7 @@ func (h *hookHandler) reenterHooks(ctx context.Context, task dag.Task, refName s
 		}
 		hookNode, err := h.woc.reconcileHookNode(ctx, child.Name, hook, node, onExit, h.boundaryID, h.tmplCtx, h.ref, refName, scope)
 		if err != nil {
-			return false, h.ignoreThrottle(ctx, node, err)
+			return false, h.ignoreThrottle(ctx, node, &hookNodeError{child.Name, hook, err})
 		}
 		done = done && hookNode.Fulfilled()
 	}
@@ -147,6 +148,29 @@ func (h *hookHandler) hookNodesToReenter(node *wfv1.NodeStatus) []*wfv1.NodeStat
 		}
 	}
 	return out
+}
+
+// hookNodeError is a hook's error, with the hook node it belongs to.
+type hookNodeError struct {
+	nodeName string
+	hook     *wfv1.LifecycleHook
+	err      error
+}
+
+func (e *hookNodeError) Error() string { return e.err.Error() }
+func (e *hookNodeError) Unwrap() error { return e.err }
+
+// recordError records err, an error of one of node's hooks, on that hook's
+// node as Error: a hook that never got a node (its expression or arguments
+// failed) gets one, linked under node. A hook node that already exists keeps
+// its phase.
+func (h *hookHandler) recordError(ctx context.Context, node *wfv1.NodeStatus, err error) {
+	var hookErr *hookNodeError
+	if !errors.As(err, &hookErr) || h.woc.wf.Status.Nodes.Has(h.woc.wf.ResolveNodeID(hookErr.nodeName)) {
+		return
+	}
+	h.woc.initializeNode(ctx, hookErr.nodeName, wfv1.NodeTypeSkipped, h.tmplCtx.GetTemplateScope(), toTemplateReferenceHolder(hookErr.hook), h.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{Hooked: true}, true, err.Error())
+	h.woc.addChildNode(ctx, node.Name, hookErr.nodeName)
 }
 
 // ignoreThrottle drops deliberate back-pressure (parallelism, rate limit,

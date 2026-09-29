@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	stderrors "errors"
@@ -38,6 +39,14 @@ type Engine struct {
 	// change within a reconcile, and rebuilding its part for every dependant
 	// makes a chain of n tasks cost n² template resolutions (C67).
 	finished map[string]*variables.Scope
+	// hookErr is the hook error that ends the boundary Error: that of a hook
+	// node found Error when the reconcile starts (one that could not be
+	// created, timed out, errored while it ran, or had its error recorded on
+	// it; a hook that ran and Failed is not an error, as on main), or one on
+	// a finished node in this reconcile (markHookError). While it is set no
+	// new task node is created, and finalize ends the boundary Error once
+	// nothing in it is running (C33, P20, P21).
+	hookErr error
 }
 
 // NewEngine creates a new Engine.
@@ -79,6 +88,9 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 
 	e.reconcileDaemonedTasks(ctx, tasks)
 
+	if hook := e.findTaskHook(ctx, tasks, func(n *wfv1.NodeStatus) bool { return n.Phase == wfv1.NodeError }); hook != nil {
+		e.hookErr = stderrors.New(cmp.Or(hook.Message, "hook "+hook.Name+" errored"))
+	}
 	dispatched := make(map[string]bool)
 	exitHooksDone, dispatching, group := true, true, 0
 	for _, task := range tasks {
@@ -106,8 +118,9 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 // visit acts on one task's evaluation: it records an evaluation error on the
 // task's node, creates the Omitted node of a task that can never run, or
 // dispatches a task the evaluator found runnable, unless dispatching has
-// stopped at the operation deadline. ran reports a dispatch; stop is
-// dispatchOutcome's.
+// stopped at the operation deadline, or the task has no node yet and a hook
+// error is ending the boundary (what already runs is still reconciled). ran
+// reports a dispatch; stop is dispatchOutcome's.
 func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching bool) (ran, stop bool) {
 	name := task.GetName()
 	e.logEvaluation(ctx, result)
@@ -136,7 +149,7 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 			e.initTaskNode(ctx, task, e.parentsFor(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
 		}
 		return false, false
-	case !dispatching || !e.needsDispatch(node, result):
+	case !dispatching || (node == nil && e.hookErr != nil) || !e.needsDispatch(node, result):
 		return false, false
 	}
 	_, err := e.executeTask(ctx, task)
@@ -260,8 +273,9 @@ func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
 // did. With existingOnly, or when the hooks' scope cannot be built, it only
 // re-enters the hook nodes that already exist (hookHandler.reenterHooks). The
 // hooks refer to the task by its own name and see its hookScope, built only
-// when there is a hook to drive. It reports whether every hook is done; a hook
-// that errored is done, its error recorded (markHookError), so that an error
+// when there is a hook to drive. It reports whether every hook is done; a
+// node whose hooks errored is done once none of its hook nodes is still
+// running, its error recorded (markHookError), so that an error that recurs
 // does not hold its task back for good.
 func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.Task, existingOnly bool) bool {
 	if !e.hooks.hasHooks(task) {
@@ -287,7 +301,7 @@ func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.
 			nodeDone, err = e.hooks.DriveTaskHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
 		}
 		e.markHookError(ctx, node, err)
-		done = done && (nodeDone || err != nil || scopeErr != nil)
+		done = done && (nodeDone || ((err != nil || scopeErr != nil) && !e.hasPendingHooks(node)))
 	}
 	return done
 }
@@ -315,20 +329,22 @@ func (e *Engine) hookScope(ctx context.Context, task dag.Task) (*wfScope, error)
 	return scope, nil
 }
 
-// markHookError records a hook error on node, the node whose hook failed. If
-// node is already fulfilled (e.g. an exit hook errored after the task
-// Succeeded), the phase state machine refuses the Error mark and the failure
-// would be recorded nowhere: finalize waits on the hooks and the boundary
-// stays Running forever (#14031). The error goes on the boundary instead.
+// markHookError records a hook error of node, the node whose hook failed. A
+// node that has not finished takes it as its own error, as main's lifecycle
+// hooks did. A finished node cannot (e.g. an exit hook errored after its task
+// Succeeded, #14031): the error goes on the hook node, as Error, and ends the
+// boundary Error (see hookErr).
 func (e *Engine) markHookError(ctx context.Context, node *wfv1.NodeStatus, err error) {
 	if err == nil {
 		return
 	}
-	e.log.WithError(err).WithField("node", node.Name).Error(ctx, "task hook errored; isolating to this task")
-	e.woc.markNodeError(ctx, node.Name, err)
-	if n, getErr := e.woc.wf.GetNodeByName(node.Name); getErr == nil && n.Fulfilled() && n.Phase != wfv1.NodeError {
-		e.woc.markNodeError(ctx, e.nodeName, err)
+	e.log.WithError(err).WithField("node", node.Name).Error(ctx, "task hook errored")
+	if n, getErr := e.woc.wf.GetNodeByName(node.Name); getErr == nil && !n.Fulfilled() {
+		e.woc.markNodeError(ctx, node.Name, err)
+		return
 	}
+	e.hooks.recordError(ctx, node, err)
+	e.hookErr = cmp.Or(e.hookErr, err)
 }
 
 // assessStepGroups starts each empty StepGroup once the group before it has
@@ -445,8 +461,7 @@ func (e *Engine) failedNodeID(node *wfv1.NodeStatus) string {
 func isThrottleErr(err error) bool {
 	return stderrors.Is(err, ErrParallelismReached) ||
 		stderrors.Is(err, ErrResourceRateLimitReached) ||
-		stderrors.Is(err, ErrDeadlineExceeded) ||
-		stderrors.Is(err, ErrTimeout)
+		stderrors.Is(err, ErrDeadlineExceeded)
 }
 
 // dispatchOutcome applies the per-task dispatch error policy, main's, and
@@ -654,21 +669,28 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 	// done — unless this boundary IS an onExit handler, which must be allowed
 	// to complete (#16488).
 	phase, message := e.assessDAGPhase(ctx, tasks, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
+	if e.hookErr != nil && !phase.FailedOrError() {
+		// A hook error ends the boundary Error, without outputs or
+		// memoization, once nothing it has started is still running (P20).
+		if e.running(ctx, tasks) {
+			return nil
+		}
+		phase, message = wfv1.NodeError, e.hookErr.Error()
+	}
 
 	switch phase {
 	case wfv1.NodeRunning:
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
 		// Wait for any in-flight (non-fulfilled) hook child nodes before
-		// transitioning the boundary terminal. Errored hooks ARE fulfilled
-		// and don't block — per-task hook isolation: a single failed hook
-		// must not abort siblings. Only Running/Pending hook
-		// nodes gate the boundary. This is required because markWorkflowFailed
+		// transitioning the boundary terminal. Errored hooks are fulfilled
+		// and don't block; only Running/Pending hook nodes gate the
+		// boundary. This is required because markWorkflowFailed
 		// sets the `completed=true` label, after which the controller's
 		// reconciliationNeeded filter (controller.go) skips future workqueue
 		// events for the workflow — including the pod-completion events that
 		// would otherwise advance the hook nodes.
-		if e.hasPendingTaskHooks(ctx, tasks) {
+		if e.findTaskHook(ctx, tasks, func(n *wfv1.NodeStatus) bool { return !n.Fulfilled() }) != nil {
 			return nil
 		}
 		if err := e.updateOutboundNodesForTargetTasks(ctx, targetTasks); err != nil {
@@ -683,9 +705,7 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 		return nil
 	}
 
-	// A hook error on a finished task has already ended the boundary
-	// (markHookError): it gets no outputs and is not memoized.
-	if node, err := e.woc.wf.GetNodeByName(e.nodeName); !onExitCompleted || (err == nil && node.Fulfilled()) {
+	if !onExitCompleted {
 		return nil
 	}
 
@@ -723,29 +743,27 @@ func (e *Engine) boundaryFailureMessage(ctx context.Context) string {
 	return ""
 }
 
-// hasPendingTaskHooks returns true if any task in tasks has a Hooked child
-// node that is not yet fulfilled. Used by finalize to gate boundary
-// termination on in-flight hook completion (see comment in finalize).
-func (e *Engine) hasPendingTaskHooks(ctx context.Context, tasks []dag.Task) bool {
+// findTaskHook returns the first hook node of tasks that matches: a hook of
+// a task's node or, for an expanded task, of one of its items.
+func (e *Engine) findTaskHook(ctx context.Context, tasks []dag.Task, match func(*wfv1.NodeStatus) bool) *wfv1.NodeStatus {
 	for _, task := range tasks {
 		taskNode := e.getTaskNode(ctx, task.GetName())
 		if taskNode == nil {
 			continue
 		}
-		if e.hasPendingHooks(taskNode) {
-			return true
+		owners := []wfv1.NodeStatus{*taskNode}
+		if taskNode.Type == wfv1.NodeTypeTaskGroup {
+			owners = append(owners, e.getChildNodes(taskNode)...)
 		}
-		if taskNode.Type != wfv1.NodeTypeTaskGroup {
-			continue
-		}
-		// An expanded task's exit hooks hang off its item nodes.
-		for _, childID := range taskNode.Children {
-			if childNode, err := e.woc.wf.Status.Nodes.Get(childID); err == nil && e.hasPendingHooks(childNode) {
-				return true
+		for _, owner := range owners {
+			for _, child := range e.getChildNodes(&owner) {
+				if child.NodeFlag != nil && child.NodeFlag.Hooked && match(&child) {
+					return &child
+				}
 			}
 		}
 	}
-	return false
+	return nil
 }
 
 // hasPendingHooks reports whether node has a hook child that is not fulfilled.
@@ -1061,12 +1079,8 @@ func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, isShutdow
 		return wfv1.NodeFailed, e.boundaryFailureMessage(ctx)
 	}
 
-	for _, task := range tasks {
-		if node := e.getTaskNode(ctx, task.GetName()); node != nil {
-			if _, done := e.outcome(node); !done {
-				return wfv1.NodeRunning, ""
-			}
-		}
+	if e.running(ctx, tasks) {
+		return wfv1.NodeRunning, ""
 	}
 	failFast := e.tmpl.DAG.FailFast == nil || *e.tmpl.DAG.FailFast
 	phase := wfv1.NodeSucceeded
@@ -1090,6 +1104,18 @@ func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, isShutdow
 		return phase, e.boundaryFailureMessage(ctx)
 	}
 	return phase, ""
+}
+
+// running reports whether a node of tasks has not finished (see outcome).
+func (e *Engine) running(ctx context.Context, tasks []dag.Task) bool {
+	for _, task := range tasks {
+		if node := e.getTaskNode(ctx, task.GetName()); node != nil {
+			if _, done := e.outcome(node); !done {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // branchPhase is the phase a DAG task passes down its branch, as main's

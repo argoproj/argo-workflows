@@ -58,7 +58,13 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 				woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
 			}
 		}
-		_ = woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error())
+		phase := wfv1.NodeFailed
+		if node != nil && node.NodeFlag != nil && node.NodeFlag.Hooked {
+			// A timed-out hook errored rather than failed (P21): like a
+			// hook that could not run, it ends its task's boundary Error.
+			phase = wfv1.NodeError
+		}
+		_ = woc.markNodePhase(ctx, nodeName, phase, err.Error())
 		return err
 	}
 	// Ensure that we will check again soon after the earliest deadline
