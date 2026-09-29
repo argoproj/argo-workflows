@@ -19,8 +19,11 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -2842,4 +2845,138 @@ func TestRegressionR4_C88_HookTemplateRefScope(t *testing.T) {
 	assert.Equal(t, scope("r4-c88[0].s.a"), scope("r4-c88[0].s.a.onExit"), "task exit hook scope")
 	assert.Equal(t, scope("r4-c88"), scope("r4-c88.onExit"), "workflow exit hook scope")
 	assert.Equal(t, scope("r4-c88"), scope("r4-c88[1].last.onExit"), "step exit hook (retry) scope")
+}
+
+// r4ArmDeadlineOnPodCreate makes the operate that creates a pod run past its
+// per-operate deadline (as happens when a large fan-out is throttled by the
+// client QPS limit), deterministically: the first pod create after arming
+// moves the current woc's deadline into the past. Ported from r1x56-1_test.go
+// armDeadlineOnPodCreate (C69), used only by
+// TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline.
+func r4ArmDeadlineOnPodCreate(controller *WorkflowController, cur **wfOperationCtx, armed *bool) {
+	controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if *armed && *cur != nil {
+			(*cur).deadline = time.Now().Add(-time.Minute)
+		}
+		return false, nil, nil
+	})
+}
+
+// TestRegressionR4_C69_DeadlineBeforeEntryFulfilledRoot ports
+// TestProbe_r1x56_DeadlineBeforeEntryFulfilledRoot (r1x56-1_test.go / C69).
+// reconcileTemplate's early deadline gate returned ErrDeadlineExceeded before
+// template resolution even for a node that is already fulfilled. Main
+// checked the deadline only in checkConstraints, reached after
+// handleNodeFulfilled, so a fulfilled entry node still completed the
+// workflow in the same operate that ran past its deadline. HEAD leaves the
+// workflow Running for one extra operate.
+func TestRegressionR4_C69_DeadlineBeforeEntryFulfilledRoot(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c69-deadline
+  namespace: default
+spec:
+  entrypoint: work
+  templates:
+  - name: work
+    container:
+      image: alpine
+      command: [echo, hi]
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.deadline = time.Now().Add(-time.Minute)
+	woc.operate(ctx)
+	firstPhase := woc.wf.Status.Phase
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "converges")
+	assert.Equal(t, wfv1.WorkflowSucceeded, firstPhase, "same operate as the fulfilled entry node")
+}
+
+// TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline ports
+// TestProbe_r1x56_WfLevelRunningHookFulfilledThenDeadline (r1x56-1_test.go /
+// C69). A workflow-level "running" lifecycle hook (documented in
+// examples/life-cycle-hooks-wf-level.yaml) re-enters its already-fulfilled
+// hook node through reconcileTemplate on every operate. When a later operate
+// runs past MAX_OPERATION_TIME while creating fan-out pods, the early
+// deadline gate turned that re-entry into ErrDeadlineExceeded, which
+// bubbled up and marked the root node Error "Deadline exceeded" -- ending
+// the workflow Error with the fan-out unfinished, instead of just leaving it
+// Running for one more operate.
+func TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c69-hook-deadline
+  namespace: default
+spec:
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: notify
+  templates:
+  - name: main
+    steps:
+    - - name: first
+        template: work
+    - - name: fanout
+        template: work
+        withItems: [1, 2, 3, 4]
+  - name: work
+    container:
+      image: alpine
+      command: [echo, hi]
+  - name: notify
+    container:
+      image: alpine
+      command: [echo, running]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	var cur *wfOperationCtx
+	armed := false
+	r4ArmDeadlineOnPodCreate(controller, &cur, &armed)
+
+	// operate 1: first step pod + running hook pod
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	cur = woc
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// operate 2: hook + first fulfilled; fan-out starts and this operate runs past its deadline
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	cur = woc
+	armed = true
+	woc.operate(ctx)
+	armed = false
+	root := woc.wf.Status.Nodes.FindByDisplayName("r4-c69-hook-deadline")
+	require.NotNil(t, root)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "root node after deadline-exceeded operate")
+
+	// operate 3: normal operate, the workflow must still be running
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	cur = woc
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// run to completion
+	for i := 0; i < 4 && !woc.wf.Status.Phase.Completed(); i++ {
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		cur = woc
+		woc.operate(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }

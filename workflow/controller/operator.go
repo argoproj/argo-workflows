@@ -2282,15 +2282,14 @@ type executeTemplateOpts struct {
 func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	// Note: maxStackDepth is checked in executeProcessedTemplate (called via the reconciler)
 	// so that both the reconcileTemplate path and the Engine path get the check.
-
-	// Early deadline gate: bail out before expensive template resolution when
-	// the per-operate deadline has already been exceeded; without this, deeply
-	// nested template chains can blow past the deadline mid-resolution.
-	if woc.deadlineExceeded() {
-		woc.log.Warn(ctx, "Deadline exceeded")
-		woc.requeue()
-		return nil, ErrDeadlineExceeded
-	}
+	//
+	// The deadline itself is checked in checkConstraints, reached (via the
+	// reconciler and executeProcessedTemplate) only after handleNodeFulfilled:
+	// an already-fulfilled node -- for example the entry node on the operate
+	// that finally sees its pod succeed, or a workflow-level hook node
+	// re-entered on every operate -- completes even on an operate that has
+	// run past its deadline, as main did. A gate here, before template
+	// resolution, would bail out before that fulfilled check ever runs.
 
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(ctx, orgTmpl)
 	if err != nil {
