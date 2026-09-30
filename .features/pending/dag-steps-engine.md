@@ -36,7 +36,8 @@ A daemon task or step without items that dies this way also runs its exit hook a
 An entrypoint DAG template's own `globalName` outputs are now exported to `workflow.status.outputs`, as for Steps.
 The outputs of a DAG template can refer to `workflow.outputs`.
 Template metrics are emitted for memoize cache hits.
-A DAG task's mutex or semaphore lock, its completion metrics and its `globalName` export happen when the task finishes, even while its lifecycle hook still runs; dependants and the template still wait for the hook.
+A DAG task's completion metrics and its `globalName` export happen when the task finishes, even while its lifecycle hook still runs; dependants and the template still wait for the hook.
+A task's or step's mutex or semaphore lock is held while its lifecycle hooks run, in DAG and Steps, and released before its exit hook runs; previously a step released it when it finished.
 A failed DAG template's node names its failed task (`child '<node ID>' failed`), which `lastRetry.message` sees.
 A DAG task node's error message no longer starts with `task '<node name>' errored:`, and the workflow message for an entry template's own error no longer starts with `error in entry template execution:`.
 In a `containerSet` whose pod is deleted, containers that had finished keep their phase.

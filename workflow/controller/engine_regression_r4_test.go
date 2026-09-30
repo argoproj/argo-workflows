@@ -10591,6 +10591,13 @@ func TestRegressionR4_RestartBetweenReconciles(t *testing.T) {
 		// hook errors: its remaining items are not created.
 		{"HookErrorFanOutSteps", strings.Replace(r4HookErrFanOut("steps"), "exit:\n", "exit:\n            expression: steps[\"a\"].outputs !\n", 1), never, wfv1.WorkflowError},
 		{"HookErrorFanOutDAG", strings.Replace(r4HookErrFanOut("dag"), "exit:\n", "exit:\n            expression: tasks[\"a\"].outputs !\n", 1), never, wfv1.WorkflowError},
+		// Two retried tasks sharing a mutex, one with a running hook that
+		// holds the mutex from the other until it finishes.
+		{"HookLock", r4HookLockManifest("r4-restart-hooklock", false, true, `
+        hooks:
+          running:
+            expression: 'tasks.a.status == "Running"'
+            template: hook`), never, wfv1.WorkflowSucceeded},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			want := r4RestartDrive(t, tc.manifest, tc.fail, false)
@@ -11796,5 +11803,281 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	for _, item := range []string{"fan(0:0)", "fan(1:1)", "fan(2:2)", "fan(3:3)"} {
 		assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-param."+item), item)
+	}
+}
+
+// r4HookLockManifest is a DAG or Steps template running tasks a and b in
+// parallel, both on a template that takes the same mutex, emits a
+// completion counter named metric and exports its output as the global g;
+// a has hooks (a `hooks:` block body, empty for none), each running the
+// pod template hook. With retried the locked template has a retryStrategy,
+// so a's lock is held by its Retry node.
+func r4HookLockManifest(name string, steps, retried bool, hooks string) string {
+	ref, main := "tasks", `
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: locked`+hooks+`
+      - name: b
+        template: locked`
+	if steps {
+		ref, main = "steps", `
+  - name: main
+    steps:
+    - - name: a
+        template: locked`+hooks+`
+      - name: b
+        template: locked`
+	}
+	retry := ""
+	if retried {
+		retry = `
+    retryStrategy:
+      limit: 1`
+	}
+	return strings.ReplaceAll(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: `+name+`
+  namespace: default
+spec:
+  entrypoint: main
+  templates:`+main+`
+  - name: locked
+    synchronization:
+      mutexes:
+      - name: `+name+`
+    metrics:
+      prometheus:
+      - name: `+strings.ReplaceAll(name, "-", "_")+`
+        help: "locked template counter"
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"`+retry+`
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          path: /tmp/p
+    container:
+      image: busybox
+      command: [echo, hi]
+  - name: hook
+    container:
+      image: busybox
+      command: [echo, hook]
+`, "{{ref}}", ref)
+}
+
+// r4HookLockHolders lists the holders of the workflow's mutexes.
+func r4HookLockHolders(wf *wfv1.Workflow) []string {
+	var out []string
+	if wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil {
+		for _, h := range wf.Status.Synchronization.Mutex.Holding {
+			out = append(out, h.Holder)
+		}
+	}
+	return out
+}
+
+// r4HookLockHookNode is a's hook node, or nil.
+func r4HookLockHookNode(woc *wfOperationCtx) *wfv1.NodeStatus {
+	for _, n := range woc.wf.Status.Nodes {
+		if n.NodeFlag != nil && n.NodeFlag.Hooked {
+			return &n
+		}
+	}
+	return nil
+}
+
+// r4HookLockRun runs a (see r4HookLockManifest) to completion, while its
+// hook, if it has one that runs, is still running.
+func r4HookLockRun(t *testing.T, manifest string, retried bool) (context.Context, *r4Run) {
+	t.Helper()
+	ctx, r := r4StartLocked(t, manifest)
+	aPod := "a"
+	if retried {
+		aPod = "a(0)"
+	}
+	for range 2 {
+		r.r4SetPods(ctx, nil)
+	}
+	require.NotNil(t, r.woc.wf.Status.Nodes.FindByDisplayName(aPod), "a runs first")
+	b := r.woc.wf.Status.Nodes.FindByDisplayName("b")
+	require.NotNil(t, b)
+	require.NotNil(t, b.SynchronizationStatus, "b waits for the mutex a holds")
+	a := r.woc.wf.Status.Nodes.FindByDisplayName(aPod)
+	r4TaskResultOutputs(ctx, r.woc, a.Name, *r4GlobalOut("A"))
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{aPod: apiv1.PodSucceeded})
+	for range 2 {
+		r.r4SetPods(ctx, nil)
+	}
+	require.Equal(t, wfv1.NodeSucceeded, r.r4Phase("a"))
+	return ctx, r
+}
+
+// r4HookLockAssertWaits checks that a has finished (its completion counted
+// and its global exported) but that its running hook keeps its mutex from
+// b; then it finishes the hook and checks that b takes the mutex, and runs
+// the workflow to completion.
+func r4HookLockAssertWaits(t *testing.T, name string, steps, retried bool, hooks string) {
+	t.Helper()
+	ctx, r := r4HookLockRun(t, r4HookLockManifest(name, steps, retried, hooks), retried)
+	hook := r4HookLockHookNode(r.woc)
+	require.NotNil(t, hook, "a's hook runs")
+	require.Equal(t, wfv1.NodeRunning, hook.Phase, "a's hook")
+	assert.InDelta(t, 1.0, r4C65Counter(t, strings.ReplaceAll(name, "-", "_"), "status", "Succeeded"), 0.001, "a's completion is counted when a finishes")
+	assert.Equal(t, "A", r4GlobalParam(r.woc.wf), "a's global is exported when a finishes")
+	a := r.woc.wf.Status.Nodes.FindByDisplayName("a")
+	assert.Equal(t, []string{"default/" + name + "/" + a.ID}, r4HookLockHolders(r.woc.wf), "a holds the mutex while its hook runs")
+	assert.NotNil(t, r.woc.wf.Status.Nodes.FindByDisplayName("b").SynchronizationStatus, "b waits for the mutex until a's hook finishes")
+
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{hook.DisplayName: apiv1.PodSucceeded})
+	r.r4SetPods(ctx, nil)
+	b := r.woc.wf.Status.Nodes.FindByDisplayName("b")
+	require.NotNil(t, b)
+	assert.Nil(t, b.SynchronizationStatus, "b takes the mutex once a's hook finished: %s", b.Message)
+	assert.NotContains(t, r4HookLockHolders(r.woc.wf), "default/"+name+"/"+a.ID, "a released the mutex")
+	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r.r4SetPods(ctx, map[string]apiv1.PodPhase{"b": apiv1.PodSucceeded, "b(0)": apiv1.PodSucceeded})
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// r4HookLockCases are the four shapes a task's lock is held in.
+var r4HookLockCases = []struct {
+	name           string
+	steps, retried bool
+}{
+	{"dag", false, false},
+	{"steps", true, false},
+	{"dag-retried", false, true},
+	{"steps-retried", true, true},
+}
+
+// A task's lock is held while its lifecycle hooks run, in DAG and Steps,
+// retried or not: b, needing the same mutex, starts only once a's running
+// hook has finished. a's completion metric and global are still emitted
+// when a itself finishes. The plain DAG case is main's rule; the others are
+// decided behaviour: before the Engine, Steps released a step's lock when
+// the step finished, and a retried DAG task's when its Retry node did.
+func TestRegressionR4_HookLock_LifecycleHook(t *testing.T) {
+	for _, c := range r4HookLockCases {
+		t.Run(c.name, func(t *testing.T) {
+			r4HookLockAssertWaits(t, "r4-hooklock-lc-"+c.name, c.steps, c.retried, `
+        hooks:
+          running:
+            expression: '{{ref}}.a.status == "Running"'
+            template: hook`)
+		})
+	}
+}
+
+// A task's lock is released before its exit hook runs, in DAG and Steps,
+// retried or not, as before the Engine: b, needing the same mutex, takes it
+// while a's exit hook still runs.
+func TestRegressionR4_HookLock_ExitHook(t *testing.T) {
+	for _, c := range r4HookLockCases {
+		t.Run(c.name, func(t *testing.T) {
+			r4HookLockAssertReleased(t, "r4-hooklock-exit-"+c.name, c.steps, c.retried, r4HookLockExitHook, true)
+		})
+	}
+}
+
+// An exit hook whose template takes the mutex its task held gets it once the
+// task has finished: the task released it before its exit hook ran.
+func TestRegressionR4_HookLock_ExitHookSameMutex(t *testing.T) {
+	for _, c := range r4HookLockCases {
+		t.Run(c.name, func(t *testing.T) {
+			name := "r4-hooklock-same-" + c.name
+			manifest := strings.Replace(r4HookLockManifest(name, c.steps, c.retried, r4HookLockExitHook), `
+  - name: hook
+`, `
+  - name: hook
+    synchronization:
+      mutexes:
+      - name: `+name+`
+`, 1)
+			ctx, r := r4StartLocked(t, manifest)
+			for i := 0; i < 12 && !r.woc.wf.Status.Phase.Completed(); i++ {
+				setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+					if n.Fulfilled() {
+						return ""
+					}
+					return apiv1.PodSucceeded
+				})
+				r.op(ctx)
+			}
+			assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+			hook := r4HookLockHookNode(r.woc)
+			require.NotNil(t, hook, "a's exit hook ran")
+			assert.Equal(t, wfv1.NodeSucceeded, hook.Phase)
+		})
+	}
+}
+
+// r4HookLockExitHook gives a an exit hook.
+const r4HookLockExitHook = `
+        hooks:
+          exit:
+            template: hook`
+
+// r4HookLockAssertReleased checks that a's mutex passes to b as soon as a
+// finishes, while a's exit hook, if hookRuns, still runs; a's completion is
+// counted and its global exported. It then runs the workflow to completion.
+func r4HookLockAssertReleased(t *testing.T, name string, steps, retried bool, hooks string, hookRuns bool) {
+	t.Helper()
+	ctx, r := r4HookLockRun(t, r4HookLockManifest(name, steps, retried, hooks), retried)
+	hook := r4HookLockHookNode(r.woc)
+	if hookRuns {
+		require.NotNil(t, hook, "a's exit hook runs")
+		require.Equal(t, wfv1.NodeRunning, hook.Phase, "a's exit hook")
+	} else {
+		require.Nil(t, hook, "a has no hook node")
+	}
+	assert.InDelta(t, 1.0, r4C65Counter(t, strings.ReplaceAll(name, "-", "_"), "status", "Succeeded"), 0.001, "a's completion is counted when a finishes")
+	assert.Equal(t, "A", r4GlobalParam(r.woc.wf), "a's global is exported when a finishes")
+	b := r.woc.wf.Status.Nodes.FindByDisplayName("b")
+	require.NotNil(t, b)
+	assert.Nil(t, b.SynchronizationStatus, "b takes the mutex once a finished: %s", b.Message)
+	a := r.woc.wf.Status.Nodes.FindByDisplayName("a")
+	assert.NotContains(t, r4HookLockHolders(r.woc.wf), "default/"+name+"/"+a.ID, "a released the mutex")
+	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		})
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
+}
+
+// A task without hooks releases its lock when it finishes.
+func TestRegressionR4_HookLock_NoHook(t *testing.T) {
+	for _, c := range r4HookLockCases[:2] {
+		t.Run(c.name, func(t *testing.T) {
+			r4HookLockAssertReleased(t, "r4-hooklock-none-"+c.name, c.steps, false, "", false)
+		})
+	}
+}
+
+// A task whose exit hook's expression is false, so that the hook never
+// runs, releases its lock when it finishes.
+func TestRegressionR4_HookLock_ExitHookNotRun(t *testing.T) {
+	for _, c := range r4HookLockCases[:2] {
+		t.Run(c.name, func(t *testing.T) {
+			r4HookLockAssertReleased(t, "r4-hooklock-noexit-"+c.name, c.steps, false, `
+        hooks:
+          exit:
+            expression: '{{ref}}.a.status == "Failed"'
+            template: hook`, false)
+		})
 	}
 }
