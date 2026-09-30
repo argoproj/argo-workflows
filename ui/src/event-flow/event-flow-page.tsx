@@ -37,6 +37,9 @@ import {ID} from './id';
 
 import './event-flow-page.scss';
 
+// The list includes archived workflows, so an unbounded list can be huge and very expensive for the database.
+const workflowsLimit = 500;
+
 export function EventFlowPage({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation} = useContext(Context);
@@ -118,7 +121,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
         }
         const listWatch = new ListWatch<Workflow>(
             () =>
-                services.workflows.list(namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], null, [
+                services.workflows.list(namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], {limit: workflowsLimit}, [
                     'metadata',
                     'items.metadata.name',
                     'items.metadata.namespace',
@@ -304,6 +307,14 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                             <Footnote>
                                 <InfoIcon /> Event-flow is proxy for events. It is based on the pod logs of the event sources and sensors, so should be treated only as indicative
                                 of activity.
+                            </Footnote>
+                        </div>
+                    )}
+                    {showWorkflows && (
+                        <div className='argo-container'>
+                            <Footnote>
+                                <InfoIcon /> Only the {workflowsLimit} most recent workflows across all triggers are loaded, plus any created while this page is open. Triggers that
+                                have not run recently may show no workflows.
                             </Footnote>
                         </div>
                     )}
