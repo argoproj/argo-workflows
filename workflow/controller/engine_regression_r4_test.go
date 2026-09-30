@@ -10555,3 +10555,318 @@ spec:
 		"an empty child message must not leave the group message trailing off")
 	assert.Equal(t, fmt.Sprintf("step group deemed errored due to child %s error: %s", step, wfv1.NodeError), sgNode.Message)
 }
+
+const r4RestartStepsParallelism = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-restart-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 2
+    steps:
+    - - name: a
+        template: work
+        withItems: [1, 2, 3, 4, 5]
+        continueOn:
+          failed: true
+      - name: b
+        template: work
+    - - name: c
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [echo, hi]
+`
+
+const r4RestartNestedDAGHooks = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-restart-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: outer
+        template: inner
+        hooks:
+          exit:
+            template: hook
+      - name: after
+        template: work
+        depends: outer
+  - name: inner
+    dag:
+      tasks:
+      - name: first
+        template: work
+        hooks:
+          running:
+            expression: tasks.first.status == "Running"
+            template: hook
+          exit:
+            template: hook
+      - name: second
+        template: work
+        depends: first
+        withItems: [p, q]
+        hooks:
+          exit:
+            template: hook
+  - name: work
+    container:
+      image: alpine
+      command: [echo, hi]
+  - name: hook
+    container:
+      image: alpine
+      command: [echo, hook]
+`
+
+const r4RestartRetriedMemoized = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-restart-memo
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: m
+        template: memo
+    - - name: again
+        template: memo
+  - name: memo
+    retryStrategy:
+      limit: 2
+    memoize:
+      key: r4-restart
+      maxAge: 1h
+      cache:
+        configMap:
+          name: r4-restart-cache
+    container:
+      image: alpine
+      command: [echo, hi]
+`
+
+// r4RestartDrive runs manifest to its end: a pod goes Running on the
+// reconcile after its node is created and finishes on the next one, Failed
+// if fail says so. With restart, every reconcile runs on a new controller
+// built from the previous one's cluster state (r4Restart). It returns the
+// workflow's final state: its phase and message, every node (type, phase,
+// message, flags and children, by name) and the nodes that got a pod.
+func r4RestartDrive(t *testing.T, manifest string, fail func(*wfv1.NodeStatus) bool, restart bool) []string {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer func() { cancel() }()
+	decide := func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		switch {
+		case n.Phase == wfv1.NodePending:
+			return apiv1.PodRunning
+		case n.Phase == wfv1.NodeRunning && fail(n):
+			return apiv1.PodFailed
+		case n.Phase == wfv1.NodeRunning:
+			return apiv1.PodSucceeded
+		}
+		return ""
+	}
+	woc := r4Operate(t, ctx, controller, wf)
+	extra := 2 // reconciles after the workflow completes, to catch late changes
+	for i := 0; i < 40 && extra > 0; i++ {
+		if woc.wf.Status.Phase.Completed() {
+			extra--
+		}
+		r4MoveNewPodsPending(ctx, woc)
+		setPodPhases(ctx, woc, decide)
+		if restart {
+			controller, cancel = r4Restart(t, ctx, controller, cancel, wf.Namespace, wf.Name)
+		}
+		woc = r4Operate(t, ctx, controller, wf)
+	}
+	require.True(t, woc.wf.Status.Phase.Completed(), "restart=%v: workflow still %s", restart, woc.wf.Status.Phase)
+	id := func(ids []string) []string {
+		var names []string
+		for _, id := range ids {
+			if n, err := woc.wf.Status.Nodes.Get(id); err == nil {
+				names = append(names, n.Name)
+			} else {
+				names = append(names, "missing:"+id)
+			}
+		}
+		sort.Strings(names)
+		return names
+	}
+	state := []string{fmt.Sprintf("workflow %s %q", woc.wf.Status.Phase, woc.wf.Status.Message)}
+	for _, n := range woc.wf.Status.Nodes {
+		hit := n.MemoizationStatus != nil && n.MemoizationStatus.Hit
+		state = append(state, fmt.Sprintf("node %s %s %s %q flag=%+v memoHit=%v children=%v outbound=%v",
+			n.Name, n.Type, n.Phase, n.Message, n.NodeFlag, hit, id(n.Children), id(n.OutboundNodes)))
+	}
+	for _, p := range r4PodNodeNames(ctx, t, woc) {
+		state = append(state, "pod "+p)
+	}
+	sort.Strings(state)
+	return state
+}
+
+// TestRegressionR4_RestartBetweenReconciles checks Review Focus 5 of the round
+// 4 plan: everything the Engine needs between reconciles (visited tasks,
+// StepGroups created on demand, TaskGroup completion, hook progress, retry
+// attempts, memoized results) must come from the stored status and the
+// cluster, never from controller memory. Each shape runs twice: once on one
+// controller (each reconcile already starts from the stored workflow, see
+// r4Operate), and once with the controller rebuilt from the stored workflow,
+// pods, task results and ConfigMaps before every reconcile. Both runs must
+// end in the same state. Not a red test: it passes at base too.
+func TestRegressionR4_RestartBetweenReconciles(t *testing.T) {
+	never := func(*wfv1.NodeStatus) bool { return false }
+	for _, tc := range []struct {
+		name, manifest string
+		fail           func(*wfv1.NodeStatus) bool
+		phase          wfv1.WorkflowPhase
+	}{
+		// An expanded step held back by template parallelism, one item
+		// failing under continueOn, then a later group.
+		{"StepsExpandedParallelism", r4RestartStepsParallelism, func(n *wfv1.NodeStatus) bool { return strings.HasSuffix(n.Name, ".a(2:3)") }, wfv1.WorkflowSucceeded},
+		// A nested DAG with an exit hook on the outer task, running and exit
+		// hooks on an inner task and per-item exit hooks on an expanded task.
+		{"NestedDAGHooks", r4RestartNestedDAGHooks, never, wfv1.WorkflowSucceeded},
+		// A retried memoized step whose first attempt fails, then a step that
+		// hits the cache the retry saved.
+		{"RetriedMemoized", r4RestartRetriedMemoized, func(n *wfv1.NodeStatus) bool { return strings.HasSuffix(n.Name, ".m(0)") }, wfv1.WorkflowSucceeded},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			want := r4RestartDrive(t, tc.manifest, tc.fail, false)
+			got := r4RestartDrive(t, tc.manifest, tc.fail, true)
+			require.Contains(t, want[len(want)-1], "workflow "+string(tc.phase), "run without restarts")
+			assert.Equal(t, want, got, "final state with a controller restart before every reconcile")
+		})
+	}
+}
+
+// r4ScaleHookedFanOut is a DAG fan-out of n items, each with an exit hook,
+// and a consumer of the whole fan-out.
+func r4ScaleHookedFanOut(n int) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-scale-hooked
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fan
+        template: work
+        withSequence:
+          count: "%d"
+        hooks:
+          exit:
+            template: hook
+      - name: consumer
+        template: work
+        depends: fan
+  - name: work
+    container:
+      image: alpine
+      command: [echo, hi]
+  - name: hook
+    container:
+      image: alpine
+      command: [echo, hook]
+`, n)
+}
+
+// r4ScaleHookedLimit bounds one reconcile of TestRegressionR4_Scale_HookedFanOut.
+const r4ScaleHookedLimit = time.Second
+
+// TestRegressionR4_Scale_HookedFanOut checks Review Focus 3 of the round 4
+// plan: hook re-entry must not make a wide fan-out expensive. A 1,000-item
+// DAG fan-out whose items have exit hooks (one hook per item, P18) is
+// reconciled while every item runs, and again while every item's exit hook
+// runs; each reconcile must stay under a second. The consumer of the
+// fan-out must then run. Not a red test. Base meets the time bars (about
+// 0.17 s with the items running) but creates the items' exit hooks one per
+// reconcile, so it fails the "one exit hook per item" check here, which
+// allows five reconciles.
+func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
+	const n = 1000
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4ScaleHookedFanOut(n))
+	cancel, controller := newController(ctx, wf, func(c *WorkflowController) {
+		c.maxOperationTime = time.Hour
+		// Drop events: thousands of node events would fill NewFakeRecorder's
+		// buffer and block the reconcile.
+		c.eventRecorderManager = &testEventRecorderManager{eventRecorder: &record.FakeRecorder{}}
+	})
+	defer cancel()
+	isHook := func(pod *apiv1.Pod) bool {
+		return strings.Contains(pod.Annotations[common.AnnotationKeyNodeName], ".onExit")
+	}
+	countPods := func(woc *wfOperationCtx, match func(*apiv1.Pod) bool) int {
+		pods, err := listPods(ctx, woc)
+		require.NoError(t, err)
+		count := 0
+		for i := range pods.Items {
+			if match(&pods.Items[i]) {
+				count++
+			}
+		}
+		return count
+	}
+	// fastest reconciles the stored state three times and returns the
+	// fastest, so a scheduling hiccup does not decide the result.
+	fastest := func(woc *wfOperationCtx) (*wfOperationCtx, time.Duration) {
+		took := time.Duration(1<<63 - 1)
+		for range 3 {
+			start := time.Now()
+			woc = r4Operate(t, ctx, controller, woc.wf)
+			took = min(took, time.Since(start))
+		}
+		return woc, took
+	}
+
+	woc := r4Operate(t, ctx, controller, wf)
+	require.Equal(t, n, countPods(woc, func(pod *apiv1.Pod) bool { return !isHook(pod) }), "one pod per item")
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true })
+	woc, took := fastest(woc)
+	t.Logf("%d running items: reconcile took %v", n, took)
+	assert.Less(t, took, r4ScaleHookedLimit, "reconciling %d running items", n)
+
+	// Every item succeeds: each gets its exit hook.
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, func(*apiv1.Pod) bool { return true })
+	for i := 0; i < 5 && countPods(woc, isHook) < n; i++ {
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	require.Equal(t, n, countPods(woc, isHook), "one exit hook per item")
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, isHook)
+	woc, took = fastest(woc)
+	t.Logf("%d running item exit hooks: reconcile took %v", n, took)
+	assert.Less(t, took, r4ScaleHookedLimit, "reconciling %d running exit hooks", n)
+	_, err := woc.wf.GetNodeByName(wf.Name + ".consumer")
+	require.Error(t, err, "the consumer must wait for the items' exit hooks")
+
+	// The hooks finish: the consumer runs and the workflow succeeds.
+	woc = r4DriveToEnd(t, ctx, controller, woc, 10)
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	consumer, err := woc.wf.GetNodeByName(wf.Name + ".consumer")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+}
