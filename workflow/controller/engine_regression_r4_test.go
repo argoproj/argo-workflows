@@ -3341,8 +3341,6 @@ spec:
     steps:
     - - name: inner
         template: inner
-      - name: slow
-        template: work
   - name: inner
     retryStrategy:
       limit: 2
@@ -11044,15 +11042,12 @@ func TestRegressionR4_C95_DAGInDAG(t *testing.T) {
 	r4C95Run(t, "r4-c95-dag-dag", "dag", "dag")
 }
 
-// TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied (acceptance-fuzz
-// f700718, F4). In inner, s2's one daemon item comes up, so its TaskGroup is
-// recorded Succeeded, and then dies while s0 still runs. When s0 finishes,
-// group [0] has failed with the item: executeSteps stopped there, so s4
-// never started and the workflow ended Failed once slow did. The branch read
-// s2's recorded Succeeded for s4's dependency and started s4 in the
-// reconcile in which inner failed. Nothing stopped that daemon (inner had
-// already finished), so the workflow stayed Running.
-func TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied(t *testing.T) {
+// r4C96Run runs acceptance-fuzz f700718 (F4). In inner, s2's one daemon
+// item comes up, so its TaskGroup is recorded Succeeded, and then dies while
+// s0 still runs. s0 then succeeds, s4 (if it was started) comes up, and slow
+// succeeds. It reports whether s4 ever had a node other than Omitted.
+func r4C96Run(t *testing.T) (*wfOperationCtx, bool) {
+	t.Helper()
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -11083,21 +11078,51 @@ spec:
     daemon: true
     container: {image: alpine, command: [sleep, infinity]}
 `)
-	const s0, s4 = "r4-c96[0].inner[0].s0", "r4-c96[0].inner[1].s4"
 	items := r4PodForNodePrefix("r4-c96[0].inner[0].s2(")
 	s4Started := false
 	stage := func(phase apiv1.PodPhase, match func(*apiv1.Pod) bool, with ...with) {
 		r4SetPodsPhase(t, ctx, r.woc, phase, match, with...)
 		for range 2 {
 			r.op(ctx)
-			s4Started = s4Started || r4NodePhase(r.woc, s4) != ""
+			p := r4NodePhase(r.woc, r4C96S4)
+			s4Started = s4Started || (p != "" && p != wfv1.NodeOmitted)
 		}
 	}
 	stage(apiv1.PodRunning, items, r4WithReady)
 	stage(apiv1.PodFailed, items)
-	stage(apiv1.PodSucceeded, r4PodForNode(s0))
-	stage(apiv1.PodRunning, r4PodForNode(s4), r4WithReady)
+	stage(apiv1.PodSucceeded, r4PodForNode("r4-c96[0].inner[0].s0"))
+	stage(apiv1.PodRunning, r4PodForNode(r4C96S4), r4WithReady)
 	stage(apiv1.PodSucceeded, r4PodForNode("r4-c96[0].slow"))
+	return r.woc, s4Started
+}
+
+const r4C96S4 = "r4-c96[0].inner[1].s4"
+
+// TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied (acceptance-fuzz
+// f700718, F4). When s0 finishes, inner's group [0] has failed with s2's
+// dead item: executeSteps stopped there, so s4 never started and the
+// workflow ended Failed once slow did. The branch read s2's recorded
+// Succeeded for s4's dependency and started s4 in the reconcile in which
+// inner failed. Nothing stopped that daemon (inner had already finished), so
+// the workflow stayed Running. Base never creates [1] or s4; here they may
+// only be Omitted (the decided shape is pinned by _LaterGroupOmitted).
+func TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied(t *testing.T) {
+	woc, s4Started := r4C96Run(t)
 	assert.False(t, s4Started, "s4 must never start once group [0] has failed")
-	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase, "left: %v", r4Unfulfilled(r.woc))
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "left: %v", r4Unfulfilled(woc))
+	for _, name := range []string{"r4-c96[0].inner[1]", r4C96S4} {
+		assert.Contains(t, []wfv1.NodePhase{"", wfv1.NodeOmitted}, r4NodePhase(woc, name), name)
+	}
+}
+
+// TestRegressionR4_C96_LaterGroupOmitted is a decided shape (R10/P12), not
+// base's: base never created the groups after a failed one. A step the walk
+// stops after a failed group is recorded Omitted, as the steps after an
+// ordinary failed group are, so its group exists and ends Omitted, linked
+// after the failed group.
+func TestRegressionR4_C96_LaterGroupOmitted(t *testing.T) {
+	woc, _ := r4C96Run(t)
+	assert.Equal(t, wfv1.NodeOmitted, r4NodePhase(woc, "r4-c96[0].inner[1]"), "group [1]")
+	assert.Equal(t, wfv1.NodeOmitted, r4NodePhase(woc, r4C96S4), "s4")
+	assert.True(t, r4Reachable(woc, r4C96S4), "s4 hangs off the graph")
 }

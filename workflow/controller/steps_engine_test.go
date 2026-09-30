@@ -88,7 +88,7 @@ func TestStepsEngine_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 
 	result := dag.EvaluationResult{TaskName: "[0].client", CurrentPhase: wfv1.NodeRunning, Error: errors.New("depends expression failed to evaluate")}
 	fake.calls = nil
-	engine.visit(ctx, engine.getTaskByName(tasks, "[0].client"), result, true, true)
+	engine.visit(ctx, engine.getTaskByName(tasks, "[0].client"), result, true)
 	assert.Empty(t, fake.calls)
 
 	node, err := woc.wf.GetNodeByName(engine.taskNodeName("[0].client"))
