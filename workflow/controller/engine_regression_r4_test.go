@@ -11415,3 +11415,72 @@ spec:
 	assert.Equal(t, "dn-xx", names["r4-c94-dag.b(0:xx)"])
 	assert.Equal(t, "dn-yy", names["r4-c94-dag.b(1:yy)"])
 }
+
+// TestRegressionR4_C99_StepsNoAttemptAfterRetriesExhausted (acceptance-fuzz
+// f702249, F7): a Steps template with retryStrategy limit 1 runs a daemon
+// beside a when-false step, and its next group's `when` reads the skipped
+// step's output, so every attempt fails. `argo retry` then revives attempt
+// 0 (a retry-planning quirk base shares, not asserted here) under the
+// Retry node, which processNodeRetries finds out of retries again. Base
+// started no other attempt. On the branch the Retry node's revived attempt 0
+// kept childrenFulfilled false, so handleRetries went on past "No more
+// retries left" and started attempt 2 and its daemon pod: since T3.2 attempt
+// 0 has an on-demand group [1] recorded Error with no children, a leaf that
+// retry revives to Running (at base attempt 0 had no such leaf). T8.3's
+// "done once its last attempt is" rule in handleRetries fixed it; this
+// pins it.
+func TestRegressionR4_C99_StepsNoAttemptAfterRetriesExhausted(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c99
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy: {limit: 1}
+    steps:
+    - - name: s0
+        template: daemon
+      - name: s1
+        template: out
+        when: "false"
+    - - name: s4
+        template: work
+        when: "{{steps.s1.outputs.parameters.out}} == b"
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sh, -c, serve]}
+  - name: out
+    container: {image: alpine, command: [echo]}
+    outputs:
+      parameters:
+      - name: out
+        valueFrom: {path: /tmp/out}
+  - name: work
+    container: {image: alpine, command: [echo]}
+`)
+	drive := func() {
+		for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
+			r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true }, r4WithReady)
+			r.op(ctx)
+		}
+	}
+	drive()
+	require.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
+	retryNode, err := r.woc.wf.GetNodeByName("r4-c99")
+	require.NoError(t, err)
+	require.Equal(t, "No more retries left", retryNode.Message)
+
+	r.woc = r4Operate(t, ctx, r.controller, r4RetryStored(t, ctx, r.controller, r.woc.wf))
+	drive()
+	for range 3 {
+		r.op(ctx)
+	}
+
+	_, err = r.woc.wf.GetNodeByName("r4-c99(2)")
+	require.Error(t, err, "no attempt after the Retry node ran out of retries")
+	assert.Equal(t, []string{"r4-c99(0)[0].s0", "r4-c99(1)[0].s0"}, r4PodNodeNames(ctx, t, r.woc))
+}
