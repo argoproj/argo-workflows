@@ -494,7 +494,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil && !node.Fulfilled() {
-		// A hook error after the entry node is already fulfilled (C92) has
+		// A hook error after the entry node is already fulfilled has
 		// its own Error hook node (see errorHookNode in hooks.go); marking
 		// the entry node here would just be refused by the strict node
 		// phase state machine and log "refusing invalid node phase
@@ -2370,7 +2370,7 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 	if node == nil {
 		// A node this call creates is named as soon as it exists, as an
 		// existing one is above: one that finishes before the next reconcile
-		// (a quick pod, a memoize hit) is not re-entered (C94).
+		// (a quick pod, a memoize hit) is not re-entered unnamed.
 		defer func() {
 			named, nameErr := woc.prepareNode(ctx, nodeName, tmplCtx, processedTmpl, orgTmpl, opts.boundaryID, opts.nodeFlag)
 			if named != nil && node != nil && node.ID == named.ID {
@@ -2460,7 +2460,7 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 
 	// The node returned is the one whose realtime metric matters: the Retry
 	// node when the template is retried (handleRetries always returns it,
-	// never an attempt), the template's own node otherwise (C66).
+	// never an attempt), the template's own node otherwise.
 	node, err = woc.handleRetries(ctx, node, nodeName, processedTmpl, nodeScope, orgTmpl, opts, dispatch)
 	if err == nil && node != nil {
 		woc.emitNodeMetrics(ctx, node, processedTmpl)
@@ -2476,8 +2476,8 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 // as executeTemplate did (Release is idempotent), so a node fulfilled outside
 // the controller (a resumed suspend) still frees it. Once per completion, in
 // the operation that sees it fulfilled first, its completion metrics are
-// emitted (a cache hit included, P22) and its globalName outputs are
-// exported, so the workflow's globals follow completion order (P9).
+// emitted (a memoize cache hit included) and its globalName outputs are
+// exported, so the workflow's globals follow completion order.
 func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) bool {
 	if node == nil || !node.Fulfilled() {
 		return false
@@ -2502,12 +2502,12 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.N
 // operate that created node. A retried template's realtime series therefore
 // belongs to its Retry node (handleRetries always returns it to
 // executeProcessedTemplate, never an attempt) rather than resetting on
-// every attempt (C66). Completion metrics are not emitted here:
+// every attempt. Completion metrics are not emitted here:
 // handleNodeFulfilled already emits them, once per node, wherever a node is
 // found fulfilled (a dispatch that finishes synchronously, a retry's own
 // completion, memoization, or a node already fulfilled when reconciled) —
 // duplicating that here for the returned node double-counted a retried
-// template's completion (lead 2).
+// template's completion.
 func (woc *wfOperationCtx) emitNodeMetrics(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) {
 	if node == nil || tmpl.Metrics == nil {
 		return
