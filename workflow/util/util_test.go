@@ -528,9 +528,11 @@ func TestFormulateRetryWorkflowDAGLeafWithOmittedChild(t *testing.T) {
 }
 
 // A's exit hook errored while fan ran, so fan created no more items and
-// completed from the one that ran; pre had completed before the hook
-// errored. Retry must reset fan, keeping its item, so the retried DAG creates
-// its remaining items, and must leave pre alone.
+// completed from the one that ran, with the message that says so; pre had
+// completed. Retry must reset fan, keeping its item, so the retried DAG
+// creates its remaining items, and must leave pre alone. The message alone
+// decides it, not the times: fan's finishedAt (from the controller's clock)
+// is earlier than the hook's (from the kubelet's), and pre's later.
 const hookErrorStoppedFanOutFixture = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -562,7 +564,7 @@ status:
       type: TaskGroup
       boundaryID: wf
       phase: Succeeded
-      finishedAt: "2026-01-01T10:00:00Z"
+      finishedAt: "2026-01-01T10:02:00Z"
       children: [wf-pre0]
     wf-pre0:
       id: wf-pre0
@@ -591,7 +593,8 @@ status:
       type: TaskGroup
       boundaryID: wf
       phase: Succeeded
-      finishedAt: "2026-01-01T10:02:00Z"
+      message: "items not started because a hook errored: 1"
+      finishedAt: "2026-01-01T10:00:00Z"
       children: [wf-fan0]
     wf-fan0:
       id: wf-fan0
@@ -614,8 +617,9 @@ func TestFormulateRetryWorkflowHookErrorStoppedFanOut(t *testing.T) {
 	}
 	assert.Equal(t, wfv1.NodeRunning, phase("wf"))
 	assert.Equal(t, wfv1.NodeRunning, phase("wf-fan"), "the TaskGroup the hook error stopped")
+	assert.Empty(t, newWf.Status.Nodes["wf-fan"].Message, "the reset TaskGroup")
 	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-fan0"), "the item that ran")
-	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-pre"), "the TaskGroup that completed before the hook errored")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-pre"), "the TaskGroup that completed")
 	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-A"))
 	assert.Equal(t, wfv1.NodePhase(""), phase("wf-A-exit"), "the errored hook is re-created")
 }

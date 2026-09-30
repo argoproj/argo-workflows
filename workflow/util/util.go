@@ -1464,21 +1464,14 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 		toDelete = setUnion(toDelete, pathToDelete)
 	}
 
-	// A hook that errored stopped the fan-outs of its template from creating
-	// their remaining items, and each completed from the items that ran. Every
-	// TaskGroup it could have stopped (one of that template that finished no
-	// earlier than the hook) is reset with its enclosing groups, so that the
-	// retried template creates the rest.
-	for _, hook := range wf.Status.Nodes {
-		if hook.NodeFlag == nil || !hook.NodeFlag.Hooked || hook.Phase != wfv1.NodeError || hook.BoundaryID == "" {
-			continue
-		}
-		for _, n := range nodes {
-			if n.n.Type == wfv1.NodeTypeTaskGroup && n.n.BoundaryID == hook.BoundaryID && n.n.Fulfilled() && !n.n.FinishedAt.Before(&hook.FinishedAt) {
-				toReset[n.n.ID] = true
-				if _, err := resetBoundaries(n, func(id string) { toReset[id] = true }); err != nil {
-					return resetPlan{}, err
-				}
+	// A TaskGroup that a hook error completed before every item had started
+	// is reset, with its enclosing groups, so the retried template creates
+	// the rest.
+	for _, n := range nodes {
+		if n.n.Type == wfv1.NodeTypeTaskGroup && n.n.Fulfilled() && strings.HasPrefix(n.n.Message, common.TaskGroupHookStoppedMessage) {
+			toReset[n.n.ID] = true
+			if _, err := resetBoundaries(n, func(id string) { toReset[id] = true }); err != nil {
+				return resetPlan{}, err
 			}
 		}
 	}

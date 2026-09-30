@@ -56,7 +56,8 @@ Previously the error was only logged and the template succeeded.
 A task's or step's exit or lifecycle hook that ends `Error` now ends the DAG or Steps template it belongs to with `Error`.
 This covers a hook that could not be started (for example its pod was denied by an admission webhook, or its expression could not be evaluated), a hook that timed out, and a hook that errored while it ran, such as one whose pod was deleted.
 Once a hook has errored, no task or step that has not yet started begins; one that has not started gets no node, so `argo retry` runs it.
-A fan-out (`withItems`, `withParam` or `withSequence`) that has already started creates no more of the items that `parallelism` held back: it completes from the items it has created, and `argo retry` creates the rest.
+A fan-out (`withItems`, `withParam` or `withSequence`) that has already started creates no more of the items that `parallelism` held back.
+Its `TaskGroup` node completes from the items it has created, or ends `Omitted` if it has created none, with the message `items not started because a hook errored: <count>`, and `argo retry` creates the remaining items.
 A task or step that is already being retried keeps making attempts.
 Tasks and steps that are already running finish, and then the template ends `Error` with the hook's message.
 The exception is a task or step whose lifecycle hook errors while it is still running: it is marked `Error` at once, and its pod is not waited for.
