@@ -574,8 +574,6 @@ func (e *Engine) mayNeedFinishing(ctx context.Context, task dag.Task) bool {
 // finalize assesses the overall phase and, if terminal, sets outputs,
 // saves memoization cache, and marks the node Succeeded/Failed/Error.
 func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted bool) error {
-	targetTasks := e.evaluator.GetTargetTasks(ctx)
-
 	// Under a Stop shutdown the boundary is failed once its exit handlers are
 	// done — unless this boundary IS an onExit handler, which must be allowed
 	// to complete (#16488).
@@ -604,9 +602,19 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 		if e.findTaskHook(ctx, tasks, func(n *wfv1.NodeStatus) bool { return !n.Fulfilled() }) != nil {
 			return nil
 		}
-		if err := e.updateOutboundNodesForTargetTasks(ctx, targetTasks); err != nil {
-			return err
+	default:
+		if !onExitCompleted {
+			return nil
 		}
+	}
+
+	// Outbound nodes before outputs, as executeSteps did: a boundary that
+	// ends Error because its own outputs cannot resolve still links its
+	// dependants.
+	if err := e.updateOutboundNodesForTargetTasks(ctx, e.evaluator.GetTargetTasks(ctx)); err != nil {
+		return err
+	}
+	if phase.FailedOrError() {
 		// Surface the failure message on the boundary, matching the pre-refactor
 		// executeSteps/executeDAG semantics. This message bubbles up to the
 		// workflow status (operator.go uses entry node.Message for
@@ -615,11 +623,6 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 		_ = e.woc.markNodePhase(ctx, e.nodeName, phase, message)
 		return nil
 	}
-
-	if !onExitCompleted {
-		return nil
-	}
-
 	if err := e.setDAGOutputs(ctx); err != nil {
 		return err
 	}
@@ -628,10 +631,6 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 	// sibling tasks in the parent template can hit the cache in the same
 	// reconcile cycle.
 	if err := e.saveMemoizationCache(ctx); err != nil {
-		return err
-	}
-
-	if err := e.updateOutboundNodesForTargetTasks(ctx, targetTasks); err != nil {
 		return err
 	}
 	_ = e.woc.markNodePhase(ctx, e.nodeName, wfv1.NodeSucceeded)
