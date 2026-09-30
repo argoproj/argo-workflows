@@ -10589,7 +10589,8 @@ func TestRegressionR4_RestartBetweenReconciles(t *testing.T) {
 		{"RetriedMemoized", r4RestartRetriedMemoized, func(n *wfv1.NodeStatus) bool { return strings.HasSuffix(n.Name, ".m(0)") }, wfv1.WorkflowSucceeded},
 		// A fan-out held back by template parallelism when a sibling's exit
 		// hook errors: its remaining items are not created.
-		{"HookErrorFanOut", strings.Replace(r4HookErrFanOut("steps"), "exit:\n", "exit:\n            expression: steps[\"a\"].outputs !\n", 1), never, wfv1.WorkflowError},
+		{"HookErrorFanOutSteps", strings.Replace(r4HookErrFanOut("steps"), "exit:\n", "exit:\n            expression: steps[\"a\"].outputs !\n", 1), never, wfv1.WorkflowError},
+		{"HookErrorFanOutDAG", strings.Replace(r4HookErrFanOut("dag"), "exit:\n", "exit:\n            expression: tasks[\"a\"].outputs !\n", 1), never, wfv1.WorkflowError},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			want := r4RestartDrive(t, tc.manifest, tc.fail, false)
@@ -11616,7 +11617,10 @@ func r4AssertHookErrFanOut(t *testing.T, ctx context.Context, r *r4Run, prefix s
 	require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	assert.Contains(t, r.woc.wf.Status.Message, "admission webhook denied the request")
 	assert.Empty(t, r4Unfulfilled(r.woc), "a node is left running in a completed workflow")
-	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, prefix+"fan"), "the TaskGroup")
+	if tg, err := r.woc.wf.GetNodeByName(prefix + "fan"); assert.NoError(t, err) {
+		assert.Equal(t, wfv1.NodeSucceeded, tg.Phase, "the TaskGroup")
+		assert.Equal(t, "items not started because a hook errored: 3", tg.Message, "the TaskGroup")
+	}
 	assert.Equal(t, []string{prefix + "a", prefix + "fan(0:0)"}, r4PodNodeNames(ctx, t, r.woc))
 	for _, item := range []string{"fan(1:1)", "fan(2:2)", "fan(3:3)"} {
 		assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, prefix+item), item)
@@ -11652,4 +11656,145 @@ func TestRegressionR4_HookErrorFanOut_Steps(t *testing.T) {
 func TestRegressionR4_HookErrorFanOut_DAG(t *testing.T) {
 	ctx, r, prefix := r4HookErrFanOutRun(t, "dag")
 	r4AssertHookErrFanOut(t, ctx, r, prefix)
+}
+
+// r4DenyExitHookOnce denies the first exit hook pod, as an admission webhook
+// would, and admits the rest.
+func r4DenyExitHookOnce(controller *WorkflowController) {
+	denied := 0
+	r4RejectPodCreate(controller, func(pod *apiv1.Pod) bool {
+		if strings.Contains(pod.Annotations[common.AnnotationKeyNodeName], ".onExit") && denied == 0 {
+			denied++
+			return true
+		}
+		return false
+	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
+}
+
+// A hook error before a fan-out has created any item. Decided shape (user
+// review, item 4), fails on the branch before the fix: under parallelism 1,
+// fan's TaskGroup is created while a holds the only slot, so it has no item
+// when a's exit hook pod is denied. It creates none: it ends Omitted, with a
+// message saying how many items did not start, and the template ends Error
+// with the hook's message. `argo retry` creates its items.
+func TestRegressionR4_HookErrorFanOut_NoItemStarted(t *testing.T) {
+	for _, kind := range []string{"steps", "dag"} {
+		t.Run(kind, func(t *testing.T) {
+			ctx, r := r4Start(t, strings.Replace(r4HookErrFanOut(kind), "parallelism: 2", "parallelism: 1", 1))
+			prefix := "r4-hookerr-fan-" + kind + "."
+			if kind == "steps" {
+				prefix = "r4-hookerr-fan-steps[0]."
+			}
+			r4DenyExitHookOnce(r.controller)
+			require.Equal(t, wfv1.NodeRunning, r4NodePhase(r.woc, prefix+"fan"), "the TaskGroup")
+			require.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, prefix+"fan(0:0)"), "the first item")
+			for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
+				setPodPhases(ctx, r.woc, allSucceed)
+				r.op(ctx)
+			}
+			require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+			assert.Contains(t, r.woc.wf.Status.Message, "admission webhook denied the request")
+			assert.Empty(t, r4Unfulfilled(r.woc))
+			if tg, err := r.woc.wf.GetNodeByName(prefix + "fan"); assert.NoError(t, err) {
+				assert.Equal(t, wfv1.NodeOmitted, tg.Phase, "the TaskGroup")
+				assert.Equal(t, "items not started because a hook errored: 4", tg.Message, "the TaskGroup")
+			}
+			assert.Equal(t, []string{prefix + "a"}, r4PodNodeNames(ctx, t, r.woc))
+
+			r4RetryStored(t, ctx, r.controller, r.woc.wf)
+			r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
+			for i := 0; i < 16 && !r.woc.wf.Status.Phase.Completed(); i++ {
+				setPodPhases(ctx, r.woc, allSucceed)
+				r.op(ctx)
+			}
+			assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+			for _, item := range []string{"fan", "fan(0:0)", "fan(1:1)", "fan(2:2)", "fan(3:3)"} {
+				assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, prefix+item), item)
+			}
+		})
+	}
+}
+
+// `argo retry --parameter` after a hook error stopped a fan-out. Decided
+// shape (user review, item 4): pre, a fan-out that completed and that
+// nothing on the hook's path depends on, is left as it is, with its items
+// kept, so they do not run again; only fan, which the hook error stopped
+// with two items running, is reset (and, with parameters overridden,
+// expanded again), and the retried workflow Succeeds.
+func TestRegressionR4_HookErrorFanOut_RetryParameterKeepsCompleteFanOut(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-hookerr-param
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - {name: p, value: "1"}
+  templates:
+  - name: main
+    parallelism: 3
+    dag:
+      tasks:
+      - {name: pre, template: c, withItems: ["x", "y"]}
+      - {name: b, template: c}
+      - name: a
+        template: c
+        depends: b
+        hooks:
+          exit:
+            template: c
+      - {name: fan, template: c, depends: b, withItems: ["0", "1", "2", "3"]}
+  - name: c
+    container: {image: busybox, command: [echo]}
+`)
+	r4DenyExitHookOnce(r.controller)
+	for range 3 {
+		setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if strings.HasSuffix(n.Name, ".fan(0:0)") || strings.HasSuffix(n.Name, ".fan(1:1)") {
+				return apiv1.PodRunning
+			}
+			return apiv1.PodSucceeded
+		})
+		r.op(ctx)
+	}
+	require.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "r4-hookerr-param.a.onExit"))
+	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	require.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "r4-hookerr-param.fan(2:2)"))
+
+	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, r.woc.wf.DeepCopy(), false, "", []string{"p=2"})
+	require.NoError(t, err, "argo retry --parameter")
+	for _, name := range []string{"r4-hookerr-param.pre", "r4-hookerr-param.pre(0:x)", "r4-hookerr-param.pre(1:y)"} {
+		n, getErr := retried.GetNodeByName(name)
+		if assert.NoError(t, getErr, "%s was removed", name) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase, name)
+		}
+	}
+	for _, pod := range podsToDelete {
+		assert.NotContains(t, pod, "-pre-", "a pod of the completed fan-out is deleted")
+	}
+	fan, err := retried.GetNodeByName("r4-hookerr-param.fan")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, fan.Phase, "the stopped TaskGroup")
+
+	for _, pod := range podsToDelete {
+		_ = r.controller.kubeclientset.CoreV1().Pods(retried.Namespace).Delete(ctx, pod, metav1.DeleteOptions{})
+	}
+	retried, err = r.controller.wfclientset.ArgoprojV1alpha1().Workflows(retried.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	r.woc = r4Operate(t, ctx, r.controller, retried)
+	for i := 0; i < 12 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	for _, item := range []string{"fan(0:0)", "fan(1:1)", "fan(2:2)", "fan(3:3)"} {
+		assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-param."+item), item)
+	}
 }
