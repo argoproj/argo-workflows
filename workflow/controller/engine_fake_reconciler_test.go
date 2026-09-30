@@ -137,7 +137,7 @@ func (c expandCountingTask) Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, er
 
 // TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch: one visit of a
 // fan-out whose three items are Pending expands the task once
-// and hands each item to the reconciler once, in item order (C19). Each
+// and hands each item to the reconciler once, in item order. Each
 // Pending item used to be dispatched on its own, re-expanding the whole
 // task every time: O(n²) per reconcile for an n-item fan-out.
 func TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch(t *testing.T) {

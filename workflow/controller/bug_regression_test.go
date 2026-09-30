@@ -407,7 +407,7 @@ spec:
 		"terminal node phase must not flip; got %s", node.Phase)
 }
 
-// TestBug_MarkNodePhase_UnsyncedNodeMayOnlyError pins decision P15 (C28): a
+// TestBug_MarkNodePhase_UnsyncedNodeMayOnlyError pins the rule for unsynced nodes: a
 // terminal node whose task result has not arrived may still go to Error,
 // but every other change out of its terminal phase is refused.
 func TestBug_MarkNodePhase_UnsyncedNodeMayOnlyError(t *testing.T) {

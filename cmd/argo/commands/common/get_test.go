@@ -135,9 +135,8 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, "", node, getArgs)
 }
 
-// TestConvertToRenderTrees_ExpandedItemsUnderStepGroup ports the shape of
-// TestProbe_v1x31 (v1x31-1_test.go / C60) as a unit test on hand-built
-// status, instead of a real workflow run with sleeps between reconciles.
+// TestConvertToRenderTrees_ExpandedItemsUnderStepGroup checks, on hand-built
+// status, how `argo get` renders an expanded step's items.
 //
 // In the Engine an expanded step's items hang off a TaskGroup node between
 // its StepGroup and the items. convertToRenderTrees only treats StepGroup

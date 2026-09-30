@@ -77,7 +77,7 @@ spec:
 }
 
 // TestEngine_C67_NoScopeBuildWithoutHooks: driving the hooks of a task
-// without any builds no scope (C67). Building one walks every ancestor, and
+// without any builds no scope. Building one walks every ancestor, and
 // the walk drives every task's hooks on every reconcile. A scope build over a
 // finished ancestor records the ancestor in engine.finished, so an empty
 // engine.finished shows no scope was built; the hooked task is the control.

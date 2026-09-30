@@ -1,9 +1,14 @@
 package controller
 
-// Round 4 regression red tests, per pr-16290-round4-fix-plan/task-*.md.
-// Shared helpers live in engine_regression_r4_helpers_test.go. These files
-// must compile against wt-base (4389bbf96) too, so `basecheck` can overlay
-// them there: use only functions/types present in both trees.
+// Regression tests for the DAG/Steps Engine refactor. Each
+// TestRegressionR4_<Item>_<Case> test is named after the internal ID of the
+// regression it covers (C1, C2, ...) and the case it exercises. Most assert
+// the behaviour of the controller before the refactor; a test that pins a
+// deliberate change of behaviour instead says so in its comment ("decided
+// deviation" or "decided shape"). Shared helpers live in
+// engine_regression_r4_helpers_test.go. Both files must also compile against
+// the controller from before the refactor (4389bbf96), so the tests can be
+// run there to compare: use only functions and types present in both.
 
 import (
 	"context"
@@ -114,15 +119,14 @@ spec:
       command: [echo]
 `
 
-// TestRegressionR4_C79_DaemonRetryDependantParents ports
-// TestProbe_v2x13_DAGDaemonRetryDependantParents (v2x13-1_test.go / C79).
+// TestRegressionR4_C79_DaemonRetryDependantParents:
 // K8sTaskReconciler.Reconcile links every desired task on every Reconcile
-// pass, not only the pass that creates its node. A running dependant
-// (client) is therefore re-linked under its dependency's (server) current
-// outbound nodes on every later pass: when the daemon dies and its retry
-// creates server(1), client picks up server(1) as a second parent even
-// though it started running under server(0). Base links a node only once,
-// when it is first created.
+// pass, not only the pass that creates its node. A running dependant (client)
+// is therefore re-linked under its dependency's (server) current outbound
+// nodes on every later pass: when the daemon dies and its retry creates
+// server(1), client picks up server(1) as a second parent even though it
+// started running under server(0). Base links a node only once, when it is
+// first created.
 func TestRegressionR4_C79_DaemonRetryDependantParents(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C79DAGDaemonRetry)
@@ -237,15 +241,13 @@ func r4Reachable(woc *wfOperationCtx, childName string) bool {
 	return false
 }
 
-// TestRegressionR4_C32_AdmissionDeniedLinkedAndRetryable ports
-// TestProbe_v1x33_DAGAdmissionDeniedLinkedAndRetryable (v1x33-1_test.go /
-// C32). When executeProcessedTemplate creates a task's node and then
-// returns a non-throttle error (here, a pod-create rejection simulating an
-// admission webhook denial), K8sTaskReconciler.Reconcile used to return
-// before linkTasks, leaving the Error node unlinked from the DAG: the UI
-// graph drops it and its dependants, and `argo retry` fails with "couldn't
-// find parent node". Base links the node before handling any error from
-// executing it.
+// TestRegressionR4_C32_AdmissionDeniedLinkedAndRetryable: when
+// executeProcessedTemplate creates a task's node and then returns a
+// non-throttle error (here, a pod-create rejection simulating an admission
+// webhook denial), K8sTaskReconciler.Reconcile used to return before
+// linkTasks, leaving the Error node unlinked from the DAG: the UI graph drops
+// it and its dependants, and `argo retry` fails with "couldn't find parent
+// node". Base links the node before handling any error from executing it.
 func TestRegressionR4_C32_AdmissionDeniedLinkedAndRetryable(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C32DAG)
@@ -354,13 +356,12 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C17_CIParallelism1NestedDAG ports
-// TestProbe_r1x16_CIParallelism1NestedDAG (r1x16-1_test.go / C17). With
-// template parallelism 1, the dispatch pass stopped at the first task held
-// back by parallelism (deploy, sorting before test), so the Running nested
-// DAG test, which holds the only slot, was never dispatched again: its pod
-// succeeded but test stayed Running and deploy was never created. Base
-// continued past ErrParallelismReached.
+// TestRegressionR4_C17_CIParallelism1NestedDAG: with template parallelism 1,
+// the dispatch pass stopped at the first task held back by parallelism
+// (deploy, sorting before test), so the Running nested DAG test, which holds
+// the only slot, was never dispatched again: its pod succeeded but test
+// stayed Running and deploy was never created. Base continued past
+// ErrParallelismReached.
 func TestRegressionR4_C17_CIParallelism1NestedDAG(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C17CIParallelism1)
@@ -411,14 +412,12 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C17_ApprovalMutexWaiter ports
-// TestProbe_v1x16_ApprovalMutexWaiter (v1x16-1_test.go / C17). migrate
-// waits for a mutex held by a-holder and so holds the gated DAG's only
-// parallelism slot while Pending. Once approve is resumed, deploy (sorting
-// first) is held back by parallelism on every pass, and the pass stopped
-// there, so migrate was never dispatched again to take the mutex once
-// a-holder released it: the workflow hung. Base continued past
-// ErrParallelismReached.
+// TestRegressionR4_C17_ApprovalMutexWaiter: migrate waits for a mutex held by
+// a-holder and so holds the gated DAG's only parallelism slot while Pending.
+// Once approve is resumed, deploy (sorting first) is held back by parallelism
+// on every pass, and the pass stopped there, so migrate was never dispatched
+// again to take the mutex once a-holder released it: the workflow hung. Base
+// continued past ErrParallelismReached.
 func TestRegressionR4_C17_ApprovalMutexWaiter(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C17ApprovalMutex)
@@ -470,15 +469,13 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C31_FanOutItemPodRejected ports
-// TestProbe_v1x32_DAGFanOutItemPodRejected (v1x32-1_test.go / C31). One
-// item's pod is rejected by an admission webhook. The item's error was
-// checked against the Running TaskGroup rather than the item, so it
-// escalated to the boundary: the DAG ended Error in the first reconcile
-// with the sibling's pod Pending, the later item was never created, and the
-// rejected item's node was not linked under its TaskGroup. Base records the
-// error on the item, lets the other items and the sibling run, and only
-// then ends the DAG Error.
+// TestRegressionR4_C31_FanOutItemPodRejected: one item's pod is rejected by
+// an admission webhook. The item's error was checked against the Running
+// TaskGroup rather than the item, so it escalated to the boundary: the DAG
+// ended Error in the first reconcile with the sibling's pod Pending, the
+// later item was never created, and the rejected item's node was not linked
+// under its TaskGroup. Base records the error on the item, lets the other
+// items and the sibling run, and only then ends the DAG Error.
 func TestRegressionR4_C31_FanOutItemPodRejected(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C31FanOut)
@@ -540,13 +537,12 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C31_FanOutMissingSemaphoreConfigMap ports
-// TestProbe_v1x32_DAGFanOutMissingSemaphoreConfigMap (v1x32-1_test.go /
-// C31). The items of an expanded task take a semaphore from a ConfigMap
-// that does not exist. The first item's lock error escalated to the
-// boundary, so the DAG ended Error in the first reconcile with the
-// sibling's pod still Pending, and it stayed Pending in the finished
-// workflow. Base records the error on each item and waits for the sibling.
+// TestRegressionR4_C31_FanOutMissingSemaphoreConfigMap: the items of an
+// expanded task take a semaphore from a ConfigMap that does not exist. The
+// first item's lock error escalated to the boundary, so the DAG ended Error
+// in the first reconcile with the sibling's pod still Pending, and it stayed
+// Pending in the finished workflow. Base records the error on each item and
+// waits for the sibling.
 func TestRegressionR4_C31_FanOutMissingSemaphoreConfigMap(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C31Semaphore)
@@ -620,14 +616,13 @@ func r4WaitForWFT(t *testing.T, controller *WorkflowController, name string, exi
 	t.Fatalf("WorkflowTemplate %s: informer never reached exists=%v", name, exists)
 }
 
-// TestRegressionR4_C56_TemplateRefDeleted ports
-// TestProbe_v1x34_DAGTemplateRefDeleted (v1x34-1_test.go / C56). The
-// WorkflowTemplate behind task A's templateRef is deleted before A is
-// dispatched. createDesiredTask marked a node that did not exist yet, so
-// markNodePhase wrote an empty NodeStatus under key "", A got no node, and
-// the error escalated: the DAG ended Error while B's pod was Pending, and
-// `argo retry` failed even after the template was restored. Base records A
-// as an Error node linked under first, lets B finish, and retry works.
+// TestRegressionR4_C56_TemplateRefDeleted: the WorkflowTemplate behind task
+// A's templateRef is deleted before A is dispatched. createDesiredTask marked
+// a node that did not exist yet, so markNodePhase wrote an empty NodeStatus
+// under key "", A got no node, and the error escalated: the DAG ended Error
+// while B's pod was Pending, and `argo retry` failed even after the template
+// was restored. Base records A as an Error node linked under first, lets B
+// finish, and retry works.
 func TestRegressionR4_C56_TemplateRefDeleted(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C56DAG)
@@ -771,14 +766,12 @@ spec:
           template: inner
 `
 
-// TestRegressionR4_C61_OmittedAndTaskGroupTemplateName ports
-// TestProbe_v1x21_OmittedNodeTemplateName, _TaskGroupTemplateName and
-// _TemplateRefOmittedNode (v1x21-1_test.go / C61). The nodes the Engine
+// TestRegressionR4_C61_OmittedAndTaskGroupTemplateName: the nodes the Engine
 // creates itself (Omitted, TaskGroup, "Skipped, empty params", terminal
-// Error) recorded the enclosing DAG/Steps template instead of the task's
-// own: templateName main, or, under a DAG reached through templateRef, the
-// boundary's templateRef and no templateName. Base gives each node its
-// task's template.
+// Error) recorded the enclosing DAG/Steps template instead of the task's own:
+// templateName main, or, under a DAG reached through templateRef, the
+// boundary's templateRef and no templateName. Base gives each node its task's
+// template.
 func TestRegressionR4_C61_OmittedAndTaskGroupTemplateName(t *testing.T) {
 	run := func(t *testing.T, manifest string, podPhase apiv1.PodPhase, rounds int, objects ...any) *wfOperationCtx {
 		t.Helper()
@@ -863,17 +856,15 @@ spec:
       command: [echo, ok]
 `
 
-// TestRegressionR4_C22_NestedDependantOfDeadDaemon ports
-// TestProbe_v1x14_DAGNestedDependantOfDeadDaemon (v1x14-1_test.go / C22). B
-// (a nested DAG) depends on A (a daemon). Once A daemons, B starts and its
-// inner task i1 runs. evaluateTaskResult/isReady re-evaluate the depends
-// expression of every task whose node exists but is not yet fulfilled,
-// including B, on every pass; once A's pod fails, "A.Succeeded ||
-// A.Skipped || A.Daemoned" turns false and B, though already Running, gets
-// ShouldRun=false and is never dispatched again, so its inner i2 (which
-// depends on i1) is never created and the workflow hangs. Base keeps
-// dispatching a task once its node exists, whatever its dependencies do
-// next.
+// TestRegressionR4_C22_NestedDependantOfDeadDaemon: B (a nested DAG) depends
+// on A (a daemon). Once A daemons, B starts and its inner task i1 runs.
+// evaluateTaskResult/isReady re-evaluate the depends expression of every task
+// whose node exists but is not yet fulfilled, including B, on every pass;
+// once A's pod fails, "A.Succeeded || A.Skipped || A.Daemoned" turns false
+// and B, though already Running, gets ShouldRun=false and is never dispatched
+// again, so its inner i2 (which depends on i1) is never created and the
+// workflow hangs. Base keeps dispatching a task once its node exists,
+// whatever its dependencies do next.
 func TestRegressionR4_C22_NestedDependantOfDeadDaemon(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C22DAGNestedDependantOfDeadDaemon)
@@ -1033,13 +1024,12 @@ spec:
       args: ["{{inputs.parameters.in}}"]
 `
 
-// TestRegressionR4_C4_StepsFanOutThrottledConsumer ports
-// TestProbe_v1x42_OwnStepsFanOutThrottledConsumer (v1x42-1_test.go / C4).
-// Template parallelism 1 is taken by step a when the fan-out is first
-// dispatched, so its TaskGroup is created with no item. Nothing expanded it
-// again: the empty group was assessed Succeeded, its items never ran, and
-// the consumer of its aggregated outputs waited forever. Base creates the
-// held-back items on later reconciles.
+// TestRegressionR4_C4_StepsFanOutThrottledConsumer: Template parallelism 1 is
+// taken by step a when the fan-out is first dispatched, so its TaskGroup is
+// created with no item. Nothing expanded it again: the empty group was
+// assessed Succeeded, its items never ran, and the consumer of its aggregated
+// outputs waited forever. Base creates the held-back items on later
+// reconciles.
 func TestRegressionR4_C4_StepsFanOutThrottledConsumer(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C4StepsFanOut)
@@ -1084,13 +1074,12 @@ spec:
       command: [sh, -c, sleep 10]
 `
 
-// TestRegressionR4_C18_LongItemHoldsBackWindowDAG ports
-// TestProbe_v1x72_LongItemHoldsBackWindowDAG (v1x72-1_test.go / C18). Item
-// b runs long under template parallelism 2 while every other item finishes
-// as soon as it has a pod. The missing items were only created when the
-// whole group was dispatched, which needed every created item to be
-// finished, so b held back the rest of the fan-out. Base fills each freed
-// slot on the next reconcile (a sliding window).
+// TestRegressionR4_C18_LongItemHoldsBackWindowDAG: item b runs long under
+// template parallelism 2 while every other item finishes as soon as it has a
+// pod. The missing items were only created when the whole group was
+// dispatched, which needed every created item to be finished, so b held back
+// the rest of the fan-out. Base fills each freed slot on the next reconcile
+// (a sliding window).
 func TestRegressionR4_C18_LongItemHoldsBackWindowDAG(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C18ParallelismLimitDAG)
@@ -1145,14 +1134,13 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C1_RetryWorkflowWithOmittedRetryTask ports
-// TestProbe_v3x13_RetryWorkflowWithOmittedRetryTask (v3x13-1_test.go / C1).
-// The fan-out's only item fails, which omits its dependant b, and `argo
-// retry` deletes the item node. The now childless TaskGroup was assessed
-// Succeeded without re-running the item, b was linked under it, and on the
-// next pass b was linked under its own attempt: b -> b(0) -> b, a cycle the
-// next reconcile recursed on until the controller died. Base re-runs the
-// item and b, keeps the graph acyclic and Succeeds.
+// TestRegressionR4_C1_RetryWorkflowWithOmittedRetryTask: the fan-out's only
+// item fails, which omits its dependant b, and `argo retry` deletes the item
+// node. The now childless TaskGroup was assessed Succeeded without re-running
+// the item, b was linked under it, and on the next pass b was linked under
+// its own attempt: b -> b(0) -> b, a cycle the next reconcile recursed on
+// until the controller died. Base re-runs the item and b, keeps the graph
+// acyclic and Succeeds.
 func TestRegressionR4_C1_RetryWorkflowWithOmittedRetryTask(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C1RetryOmittedRetryTask)
@@ -1277,12 +1265,11 @@ func r4CompleteTaskResult(ctx context.Context, t *testing.T, woc *wfOperationCtx
 	})
 }
 
-// TestRegressionR4_C11_ItemPodDeleted ports TestProbe_v3x6_DAGItemPodDeleted
-// (v3x6-1_test.go / C11). The running pod of item A(0:p) is deleted. Only
-// Pending items and running nested DAG/Steps items were dispatched again,
-// so the item's pod was never recreated: A(0:p) ended Error "pod deleted",
-// B was Omitted and the workflow ended Error. Base re-enters every
-// unfinished item on each reconcile, recreates the pod and Succeeds.
+// TestRegressionR4_C11_ItemPodDeleted: the running pod of item A(0:p) is
+// deleted. Only Pending items and running nested DAG/Steps items were
+// dispatched again, so the item's pod was never recreated: A(0:p) ended Error
+// "pod deleted", B was Omitted and the workflow ended Error. Base re-enters
+// every unfinished item on each reconcile, recreates the pod and Succeeds.
 func TestRegressionR4_C11_ItemPodDeleted(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx := logging.TestContext(t.Context())
@@ -1347,12 +1334,10 @@ spec:
       duration: "30"
 `
 
-// TestRegressionR4_C26_ItemsSuspendDurationSteps ports
-// TestProbe_v1x44_ItemsSuspendDurationSteps (v1x44-1_test.go / C26),
-// backdating the items' start instead of sleeping. A suspend item with a
-// duration was never dispatched again, so it never saw its duration pass
-// and the workflow hung. Base re-enters every unfinished item on each
-// reconcile and resumes them.
+// TestRegressionR4_C26_ItemsSuspendDurationSteps: backdating the items' start
+// instead of sleeping. A suspend item with a duration was never dispatched
+// again, so it never saw its duration pass and the workflow hung. Base
+// re-enters every unfinished item on each reconcile and resumes them.
 func TestRegressionR4_C26_ItemsSuspendDurationSteps(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C26ItemsSuspendSteps)
@@ -1451,15 +1436,12 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C21_C77_ExpandedDaemons ports
-// TestProbe_v1x41_ExpandedSameOperate (v1x41-1_test.go / C77) and
-// TestProbe_r1x13_DAGWithParamDaemons (r1x13-1_test.go / C21) into one
-// scenario per template type. The items of an expanded task are daemons.
-// Each item was reported Running and not fulfilled for dependants, so the
-// dependant started one reconcile late (C77) and, once it finished, the
-// DAG/Steps stayed Running forever with the daemons alive (C21). Base
-// starts the dependant in the reconcile the daemons become ready, then
-// Succeeds and kills the daemons.
+// TestRegressionR4_C21_C77_ExpandedDaemons runs one scenario per template
+// type. The items of an expanded task are daemons. Each item was reported Running
+// and not fulfilled for dependants, so the dependant started one reconcile
+// late (C77) and, once it finished, the DAG/Steps stayed Running forever with
+// the daemons alive (C21). Base starts the dependant in the reconcile the
+// daemons become ready, then Succeeds and kills the daemons.
 func TestRegressionR4_C21_C77_ExpandedDaemons(t *testing.T) {
 	for _, tc := range []struct{ kind, manifest, client string }{
 		{"dag", r4C21ExpandedDaemonsDAG, "r4-c21.client"},
@@ -1538,13 +1520,12 @@ spec:
       args: ["echo {{inputs.parameters.message}}"]
 `
 
-// TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep ports
-// TestProbe_v3x9_ExpandedStepMissingOutputFromFailedStep (v3x9-1_test.go /
-// C5, lead 3). The items of an expanded step reference an output that the
-// failed (continueOn) step never produced, so no item can be created. The
-// childless TaskGroup was then assessed Succeeded and the workflow
-// Succeeded without running any item. Base waits for the reference (the
-// workflow stays Running); either way it must not Succeed without them.
+// TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep: the items of
+// an expanded step reference an output that the failed (continueOn) step
+// never produced, so no item can be created. The childless TaskGroup was then
+// assessed Succeeded and the workflow Succeeded without running any item.
+// Base waits for the reference (the workflow stays Running); either way it
+// must not Succeed without them.
 func TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C5MissingOutputFromFailedStep)
@@ -1595,11 +1576,10 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C17_FanOutNestedDAGs ports TestProbe_r1x16_FanOutNestedDAGs
-// (r1x16-1_test.go), a guard that passes before and after the TaskGroup
-// dispatch change: under template parallelism 2, a task held back by
-// parallelism (notify) must not stop the fan-out's nested DAG items from
-// being re-entered, or the workflow deadlocks.
+// TestRegressionR4_C17_FanOutNestedDAGs: a guard that passes before and after
+// the TaskGroup dispatch change: under template parallelism 2, a task held
+// back by parallelism (notify) must not stop the fan-out's nested DAG items
+// from being re-entered, or the workflow deadlocks.
 func TestRegressionR4_C17_FanOutNestedDAGs(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C17FanOutNestedDAGs)
@@ -1636,12 +1616,11 @@ spec:
     container: {image: busybox, command: [echo, "{{inputs.parameters.item}}"]}
 `
 
-// TestRegressionR4_Lead8_DAGFanOutTimeoutsHeadBetter ports
-// TestProbe_lead8_DAGFanOutTimeoutsHeadBetter (lead8-1_test.go), a guard
-// for behaviour the branch does better than base (base fails it: it times
-// out one item per reconcile). Five items hit their pendingTimeout in the
-// same reconcile: each timeout stays on its own item, every item ends
-// Failed "timeout", and yy is still created in that reconcile.
+// TestRegressionR4_Lead8_DAGFanOutTimeoutsHeadBetter: a guard for behaviour
+// the branch does better than base (base fails it: it times out one item per
+// reconcile). Five items hit their pendingTimeout in the same reconcile: each
+// timeout stays on its own item, every item ends Failed "timeout", and yy is
+// still created in that reconcile.
 func TestRegressionR4_Lead8_DAGFanOutTimeoutsHeadBetter(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4Lead8FanOutTimeouts)
@@ -1750,11 +1729,10 @@ func TestRegressionR4_P3_RetryParameterEmptiesFanOut(t *testing.T) {
 
 // r4PodStartOrder drives the workflow to completion, one round at a time,
 // rebuilding the wfOperationCtx from stored status every round (r4Operate).
-// Each round it records the display names of pods created that round
-// (sorted within the round, since they started together), then sets pods
-// named in failing to Failed and everything else to Succeeded before
-// re-operating. Matches v1x20RunOrder / probeR1x20Run (v1x20-1_test.go,
-// r1x20-1_test.go).
+// Each round it records the display names of pods created that round (sorted
+// within the round, since they started together), then sets pods named in
+// failing to Failed and everything else to Succeeded before re-operating.
+// Matches v1x20RunOrder / probeR1x20Run.
 //
 //nolint:revive // matches the r4 harness convention (t before ctx)
 func r4PodStartOrder(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx, rounds int, failing map[string]bool) ([]string, *wfOperationCtx) {
@@ -1805,14 +1783,12 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C73_StepsFailFastValidateApply ports
-// TestProbe_r1x20_StepsFailFastValidateApply (r1x20-1_test.go / C73).
-// HEAD's converge dispatched ready tasks in sorted-key order, so under template
-// parallelism 1 "apply" (sorts before "validate") could win the only slot
-// ahead of "validate", defeating failFast. Base dispatches Steps in
-// declaration order, so "validate" always runs first; once it fails,
-// failFast must stop "apply" from ever starting. Fixed by the ordered walk
-// (T1.5), which dispatches Steps as written.
+// TestRegressionR4_C73_StepsFailFastValidateApply: HEAD's converge dispatched
+// ready tasks in sorted-key order, so under template parallelism 1 "apply"
+// (sorts before "validate") could win the only slot ahead of "validate",
+// defeating failFast. Base dispatches Steps in declaration order, so "validate"
+// always runs first; once it fails, failFast must stop "apply" from ever
+// starting. Fixed by the ordered walk, which dispatches Steps as written.
 func TestRegressionR4_C73_StepsFailFastValidateApply(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C73StepsFailFastValidateApply)
@@ -1853,14 +1829,13 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C73_DAGTemplateParallelismOrder ports
-// TestProbe_v1x20_DAGTemplateParallelismOrder (v1x20-1_test.go / C73).
-// Under DAG template parallelism 1, base walked from the leaf (z's chain
-// first, dependency order, then the independent b): z, a, b. HEAD's
-// sorted-key dispatch instead started whichever ready task sorts first by
-// name, alphabetically: a and b tie for readiness before z finishes, but a
-// depends on z so only b and z are ready first, and b < z alphabetically.
-// Fixed by the ordered walk (T1.5) over dag.PullOrder's order (T1.6).
+// TestRegressionR4_C73_DAGTemplateParallelismOrder: under DAG template
+// parallelism 1, base walked from the leaf (z's chain first, dependency
+// order, then the independent b): z, a, b. HEAD's sorted-key dispatch instead
+// started whichever ready task sorts first by name, alphabetically: a and b
+// tie for readiness before z finishes, but a depends on z so only b and z are
+// ready first, and b < z alphabetically. Fixed by the ordered walk over
+// dag.PullOrder's order.
 func TestRegressionR4_C73_DAGTemplateParallelismOrder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C73DAGTemplateParallelismOrder)
@@ -1897,13 +1872,11 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C73_StepGroupChildrenOrder ports
-// TestProbe_v1x20_StepGroupChildrenOrder (v1x20-1_test.go / C73). Without
-// parallelism every step in the group is ready at once, but HEAD's
-// converge still dispatched (and so linked, via addChildNode) in
-// sorted-key order: alpha, mid, zeta instead of the declared zeta, mid,
-// alpha. The StepGroup's Children order drives the UI's collapsed-view
-// first/last step. Fixed by the ordered walk (T1.5).
+// TestRegressionR4_C73_StepGroupChildrenOrder: Without parallelism every step
+// in the group is ready at once, but HEAD's converge still dispatched (and so
+// linked, via addChildNode) in sorted-key order: alpha, mid, zeta instead of
+// the declared zeta, mid, alpha. The StepGroup's Children order drives the
+// UI's collapsed-view first/last step. Fixed by the ordered walk.
 func TestRegressionR4_C73_StepGroupChildrenOrder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C73StepGroupChildrenOrder)
@@ -1949,15 +1922,14 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C54_ChainedOmittedReverseOrderLinked ports
-// TestProbe_v1x17_ChainedOmittedReverseOrderLinked (v1x17-1_test.go / C54).
-// C depends on B depends on A, declared in that (dependant-first) order; A
-// fails, omitting B and then C in the same pass. createOmittedNodes walked
-// tasks in declaration order, so it tried to link C under B before B's own
-// node existed, leaving C permanently unlinked ("couldn't find parent
-// node" on retry; dropped from the UI graph). dag.PullOrder makes the
-// Engine visit A, then B, then C: each Omitted node's dependency node
-// already exists when it is created and linked.
+// TestRegressionR4_C54_ChainedOmittedReverseOrderLinked: C depends on B
+// depends on A, declared in that (dependant-first) order; A fails, omitting B
+// and then C in the same pass. createOmittedNodes walked tasks in declaration
+// order, so it tried to link C under B before B's own node existed, leaving C
+// permanently unlinked ("couldn't find parent node" on retry; dropped from
+// the UI graph). dag.PullOrder makes the Engine visit A, then B, then C: each
+// Omitted node's dependency node already exists when it is created and
+// linked.
 func TestRegressionR4_C54_ChainedOmittedReverseOrderLinked(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C54ChainedOmittedReverseOrder)
@@ -1981,12 +1953,10 @@ func TestRegressionR4_C54_ChainedOmittedReverseOrderLinked(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C54_ChainedOmittedReverseOrderRetry ports
-// TestProbe_v1x17_ChainedOmittedReverseOrderRetry (v1x17-1_test.go / C54).
-// Same chain as Linked; after `argo retry`, once A and then B succeed, C
-// must run (not stay Omitted). At HEAD FormulateRetryWorkflow's graph walk
-// hits C's missing parent link and the fix must make retry proceed to a
-// fresh C.
+// TestRegressionR4_C54_ChainedOmittedReverseOrderRetry: same chain as Linked;
+// after `argo retry`, once A and then B succeed, C must run (not stay
+// Omitted). At HEAD FormulateRetryWorkflow's graph walk hits C's missing
+// parent link and the fix must make retry proceed to a fresh C.
 func TestRegressionR4_C54_ChainedOmittedReverseOrderRetry(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C54ChainedOmittedReverseOrder)
@@ -2026,8 +1996,8 @@ func TestRegressionR4_C54_ChainedOmittedReverseOrderRetry(t *testing.T) {
 // reconciling up to eight times, and fails if any pod gets more than one
 // Create call in one reconcile or any Create is answered AlreadyExists. The
 // lag keeps a pod created earlier in a reconcile out of the pod informer, so
-// a second dispatch of its still-Pending node in the same reconcile calls
-// the API server's pod Create again, as lead 5 (C90) describes.
+// a second dispatch of its still-Pending node in the same reconcile calls the
+// API server's pod Create again (C90).
 func r4OneCreatePerPod(t *testing.T, manifest string) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -2055,12 +2025,10 @@ func r4OneCreatePerPod(t *testing.T, manifest string) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
 }
 
-// TestRegressionR4_C90_NestedOneCreatePerPod ports
-// TestProbe_lead5_NestedOneCreatePerPodPerReconcile (lead5-1_test.go /
-// C90): a pod three Steps/DAG levels down. The fixed-point loop re-enters
-// each running nested level on a later pass of the level above (C20), and
-// each re-entry dispatches the still-Pending pod node again. Base visits
-// each task once per reconcile.
+// TestRegressionR4_C90_NestedOneCreatePerPod: a pod three Steps/DAG levels
+// down. The fixed-point loop re-enters each running nested level on a later
+// pass of the level above (C20), and each re-entry dispatches the
+// still-Pending pod node again. Base visits each task once per reconcile.
 func TestRegressionR4_C90_NestedOneCreatePerPod(t *testing.T) {
 	r4OneCreatePerPod(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -2091,10 +2059,9 @@ spec:
 `)
 }
 
-// TestRegressionR4_C90_ItemsOneCreatePerPod ports
-// TestProbe_lead5_ItemsOneCreatePerPodPerReconcile (lead5-1_test.go /
-// C90): a withItems fan-out whose TaskGroup is dispatched on every pass of
-// the fixed-point loop, re-entering its still-Pending items.
+// TestRegressionR4_C90_ItemsOneCreatePerPod: a withItems fan-out whose
+// TaskGroup is dispatched on every pass of the fixed-point loop, re-entering
+// its still-Pending items.
 func TestRegressionR4_C90_ItemsOneCreatePerPod(t *testing.T) {
 	r4OneCreatePerPod(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -2138,12 +2105,11 @@ func r4NestedChain(name, kind string, depth int) string {
 	return b.String()
 }
 
-// TestRegressionR4_C20_NestedReconcileLinearInDepth ports
-// TestProbe_tri9_NestedReconcileTimeLinearInDepth (tri9-1_test.go / C20),
-// at depth 8. Every level of the fixed-point loop dispatches a running
-// nested template once per pass, and it takes two passes to find nothing
-// new, so a reconcile of a running chain doubles with each level. Base
-// reconciles each level once: a few milliseconds at this depth.
+// TestRegressionR4_C20_NestedReconcileLinearInDepth: at depth 8. Every level
+// of the fixed-point loop dispatches a running nested template once per pass,
+// and it takes two passes to find nothing new, so a reconcile of a running
+// chain doubles with each level. Base reconciles each level once: a few
+// milliseconds at this depth.
 func TestRegressionR4_C20_NestedReconcileLinearInDepth(t *testing.T) {
 	for _, kind := range []string{"steps", "dag"} {
 		t.Run(kind, func(t *testing.T) {
@@ -2191,13 +2157,11 @@ spec:
       command: [echo]
 `
 
-// TestRegressionR4_C6_WhenStatusWithItems ports
-// TestProbe_v1x23_WhenStatusWithItems (v1x23-1_test.go / C6). An expanded
-// step's {{steps.a.status}} is its StepGroup's phase (scopeNodeForTask), so
-// b's when clause must see group [0] recorded Succeeded before b is
-// evaluated. HEAD records StepGroup phases only after the dispatch loop, so
-// b sees "Running", is skipped, and the workflow reports Succeeded without
-// running b.
+// TestRegressionR4_C6_WhenStatusWithItems: an expanded step's
+// {{steps.a.status}} is its StepGroup's phase (scopeNodeForTask), so b's when
+// clause must see group [0] recorded Succeeded before b is evaluated. HEAD
+// records StepGroup phases only after the dispatch loop, so b sees "Running",
+// is skipped, and the workflow reports Succeeded without running b.
 func TestRegressionR4_C6_WhenStatusWithItems(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C6WhenStatusWithItems)
@@ -2242,10 +2206,8 @@ spec:
       command: [echo]
 `
 
-// TestRegressionR4_C6_WhenStatusStaggered ports
-// TestProbe_v1x23_WhenStatusStaggered (v1x23-1_test.go / C6): a's items
-// finish a reconcile before their sibling c does; b must still run once the
-// group has finished.
+// TestRegressionR4_C6_WhenStatusStaggered: a's items finish a reconcile
+// before their sibling c does; b must still run once the group has finished.
 func TestRegressionR4_C6_WhenStatusStaggered(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C6WhenStatusStaggered)
@@ -2283,12 +2245,11 @@ func r4SkipChain(name string, n int) string {
 	return b.String()
 }
 
-// TestRegressionR4_C67_SkipChainFirstReconcile ports
-// TestProbe_v3x10_SkipChainPodInFirstReconcile (v3x10-1_test.go / C67) with
-// n reduced to 100: base walks the whole when-false chain in one short
-// reconcile and creates the last step's pod straight away. The fixed-point
-// loop needs a pass per skipped step, each re-evaluating and rebuilding
-// scopes for every step before it, and runs out of operation time first.
+// TestRegressionR4_C67_SkipChainFirstReconcile with n reduced to 100: base
+// walks the whole when-false chain in one short reconcile and creates the
+// last step's pod straight away. The fixed-point loop needs a pass per
+// skipped step, each re-evaluating and rebuilding scopes for every step
+// before it, and runs out of operation time first.
 func TestRegressionR4_C67_SkipChainFirstReconcile(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4SkipChain("r4-c67-skip", 100))
@@ -2391,12 +2352,11 @@ const r4GoTemplateScript = `
         kubectl get pods -o go-template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'
 `
 
-// TestRegressionR4_C16_LeafEntrypointGoTemplate ports
-// TestProbe_v1x48_GoTemplateLeafEntrypoint (v1x48-1_test.go / C16). Main's
-// SubstituteParams always lets unresolved tags through, so a leaf
-// entrypoint whose script holds kubectl go-template text runs its pod.
-// HEAD's reconcileTemplate substitutes a plain leaf template strictly and
-// ends the workflow Error "failed to resolve {{range .items}}".
+// TestRegressionR4_C16_LeafEntrypointGoTemplate: main's SubstituteParams
+// always lets unresolved tags through, so a leaf entrypoint whose script
+// holds kubectl go-template text runs its pod. HEAD's reconcileTemplate
+// substitutes a plain leaf template strictly and ends the workflow Error
+// "failed to resolve {{range .items}}".
 func TestRegressionR4_C16_LeafEntrypointGoTemplate(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2421,8 +2381,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C16_ScheduledTimeLeafEntrypoint ports
-// TestProbe_v1x48_ScheduledTimeLeafEntrypoint (v1x48-1_test.go / C16):
+// TestRegressionR4_C16_ScheduledTimeLeafEntrypoint:
 // {{workflow.scheduledTime}} is only set for CronWorkflow runs, and main
 // passes it through unresolved otherwise.
 func TestRegressionR4_C16_ScheduledTimeLeafEntrypoint(t *testing.T) {
@@ -2452,10 +2411,9 @@ spec:
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C16_DAGRunningHookGoTemplate ports
-// TestProbe_v1x48_GoTemplateDAGRunningHook (v1x48-1_test.go / C16): a DAG
-// task's running hook whose template holds go-template text runs its pod,
-// instead of the hook node and task going Error.
+// TestRegressionR4_C16_DAGRunningHookGoTemplate: a DAG task's running hook
+// whose template holds go-template text runs its pod, instead of the hook
+// node and task going Error.
 func TestRegressionR4_C16_DAGRunningHookGoTemplate(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2495,13 +2453,11 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C16_DAGHookUnresolvedArgOnOmitted ports
-// TestProbe_lead4_DAGTrueHookUnresolvedArgOnOmitted (lead4-1_test.go, lead
-// 4 / C16). b depends on a, a fails and b is Omitted; b's running hook
-// (expression "true") passes {{tasks.a.outputs.result}}, which never
-// resolves. Main let the unresolved Argo tag through and the workflow ended
-// Failed; HEAD's strict substitution of the hook makes it Error with
-// "failed to resolve".
+// TestRegressionR4_C16_DAGHookUnresolvedArgOnOmitted: b depends on a, a fails
+// and b is Omitted; b's running hook (expression "true") passes
+// {{tasks.a.outputs.result}}, which never resolves. Main let the unresolved
+// Argo tag through and the workflow ended Failed; HEAD's strict substitution
+// of the hook makes it Error with "failed to resolve".
 func TestRegressionR4_C16_DAGHookUnresolvedArgOnOmitted(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2567,12 +2523,11 @@ spec:
 	assert.NotContains(t, woc.wf.Status.Message, "failed to resolve")
 }
 
-// TestRegressionR4_C14_DAGExitHookInputShadow ports
-// TestProbe_v1x47_DAGExitHookInputShadow (v1x47-1_test.go / C14). A task's
-// exit hook template has an input named like an input of the enclosing DAG
-// template. Main substitutes the hook with its own arguments only, so the
-// hook pod runs "echo hook-value"; HEAD copies the task's scope into the
-// hook's local parameters, which win, and the pod runs "echo parent-value".
+// TestRegressionR4_C14_DAGExitHookInputShadow: a task's exit hook template
+// has an input named like an input of the enclosing DAG template. Main
+// substitutes the hook with its own arguments only, so the hook pod runs
+// "echo hook-value"; HEAD copies the task's scope into the hook's local
+// parameters, which win, and the pod runs "echo parent-value".
 func TestRegressionR4_C14_DAGExitHookInputShadow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2626,12 +2581,10 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C14_ExitHookInnerStepsShadow ports
-// TestProbe_v1x47_ExitHookInnerStepsShadow (v1x47-1_test.go / C14). The
-// exit hook of step a is a Steps template with its own step named gen,
-// like an outer step. Its inner {{steps.gen.outputs.parameters.p}} must
-// read the inner gen ("inner"), not the outer one ("outer") that HEAD
-// copies into the hook's local parameters.
+// TestRegressionR4_C14_ExitHookInnerStepsShadow: the exit hook of step a is a
+// Steps template with its own step named gen, like an outer step. Its inner
+// {{steps.gen.outputs.parameters.p}} must read the inner gen ("inner"), not
+// the outer one ("outer") that HEAD copies into the hook's local parameters.
 func TestRegressionR4_C14_ExitHookInnerStepsShadow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2704,10 +2657,8 @@ spec:
 	assert.Equal(t, "echo inner", r4MainCommands(ctx, t, woc)["r4-c14-inner[1].a.onExit[1].use"])
 }
 
-// TestRegressionR4_C14_DAGExitHookRetryInputShadow ports
-// TestProbe_v1x47_DAGExitHookRetryInputShadow (v1x47-1_test.go / C14): the
-// C14 shadow with a retried hook template; every hook attempt must run
-// "echo hook-value".
+// TestRegressionR4_C14_DAGExitHookRetryInputShadow: the C14 shadow with a
+// retried hook template; every hook attempt must run "echo hook-value".
 func TestRegressionR4_C14_DAGExitHookRetryInputShadow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2834,11 +2785,10 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C88_HookTemplateRefScope ports
-// TestProbe_v1x66_HookTemplateRefScope (v1x66-1_test.go / C88). A hook or
-// onExit node that uses templateRef records its caller's templateScope, as
-// the task it hooks does (main: the tmplCtx the hook is called from). HEAD
-// records the referenced WorkflowTemplate's scope, "namespaced/hooklib".
+// TestRegressionR4_C88_HookTemplateRefScope: a hook or onExit node that uses
+// templateRef records its caller's templateScope, as the task it hooks does
+// (main: the tmplCtx the hook is called from). HEAD records the referenced
+// WorkflowTemplate's scope, "namespaced/hooklib".
 func TestRegressionR4_C88_HookTemplateRefScope(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C88Wf)
@@ -2879,8 +2829,8 @@ func TestRegressionR4_C88_HookTemplateRefScope(t *testing.T) {
 // r4ArmDeadlineOnPodCreate makes the operate that creates a pod run past its
 // per-operate deadline (as happens when a large fan-out is throttled by the
 // client QPS limit), deterministically: the first pod create after arming
-// moves the current woc's deadline into the past. Ported from r1x56-1_test.go
-// armDeadlineOnPodCreate (C69), used only by
+// moves the current woc's deadline into the past. armDeadlineOnPodCreate
+// (C69), used only by
 // TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline.
 func r4ArmDeadlineOnPodCreate(controller *WorkflowController, cur **wfOperationCtx, armed *bool) {
 	controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
@@ -2891,14 +2841,12 @@ func r4ArmDeadlineOnPodCreate(controller *WorkflowController, cur **wfOperationC
 	})
 }
 
-// TestRegressionR4_C69_DeadlineBeforeEntryFulfilledRoot ports
-// TestProbe_r1x56_DeadlineBeforeEntryFulfilledRoot (r1x56-1_test.go / C69).
-// reconcileTemplate's early deadline gate returned ErrDeadlineExceeded before
-// template resolution even for a node that is already fulfilled. Main
-// checked the deadline only in checkConstraints, reached after
-// handleNodeFulfilled, so a fulfilled entry node still completed the
-// workflow in the same operate that ran past its deadline. HEAD leaves the
-// workflow Running for one extra operate.
+// TestRegressionR4_C69_DeadlineBeforeEntryFulfilledRoot: reconcileTemplate's
+// early deadline gate returned ErrDeadlineExceeded before template resolution
+// even for a node that is already fulfilled. Main checked the deadline only
+// in checkConstraints, reached after handleNodeFulfilled, so a fulfilled
+// entry node still completed the workflow in the same operate that ran past
+// its deadline. HEAD leaves the workflow Running for one extra operate.
 func TestRegressionR4_C69_DeadlineBeforeEntryFulfilledRoot(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -2930,15 +2878,14 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, firstPhase, "same operate as the fulfilled entry node")
 }
 
-// TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline ports
-// TestProbe_r1x56_WfLevelRunningHookFulfilledThenDeadline (r1x56-1_test.go /
-// C69). A workflow-level "running" lifecycle hook (documented in
+// TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline: a
+// workflow-level "running" lifecycle hook (documented in
 // examples/life-cycle-hooks-wf-level.yaml) re-enters its already-fulfilled
 // hook node through reconcileTemplate on every operate. When a later operate
 // runs past MAX_OPERATION_TIME while creating fan-out pods, the early
-// deadline gate turned that re-entry into ErrDeadlineExceeded, which
-// bubbled up and marked the root node Error "Deadline exceeded" -- ending
-// the workflow Error with the fan-out unfinished, instead of just leaving it
+// deadline gate turned that re-entry into ErrDeadlineExceeded, which bubbled
+// up and marked the root node Error "Deadline exceeded" -- ending the
+// workflow Error with the fan-out unfinished, instead of just leaving it
 // Running for one more operate.
 func TestRegressionR4_C69_WfLevelRunningHookFulfilledThenDeadline(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
@@ -3030,10 +2977,9 @@ func r4RunRounds(t *testing.T, manifest string, rounds int) *wfOperationCtx {
 	return woc
 }
 
-// TestRegressionR4_C80_EntryPodSpecPatchMessage ports
-// TestProbe_v1x2_EntryPodSpecPatchMessage (v1x2-1_test.go / C80). An
-// entrypoint whose podSpecPatch fails to apply must report the cause alone,
-// not wrapped as if the workflow itself were a task ("task <wf> errored:").
+// TestRegressionR4_C80_EntryPodSpecPatchMessage: an entrypoint whose
+// podSpecPatch fails to apply must report the cause alone, not wrapped as if
+// the workflow itself were a task ("task <wf> errored:").
 func TestRegressionR4_C80_EntryPodSpecPatchMessage(t *testing.T) {
 	woc := r4RunRounds(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3059,9 +3005,8 @@ spec:
 	assert.Equal(t, "error in entry template execution: Error applying PodSpecPatch", woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C80_WfOnExitPodSpecPatchMessage ports
-// TestProbe_v1x2_WfOnExitPodSpecPatchMessage (v1x2-1_test.go / C80). Same
-// for a workflow-level onExit template.
+// TestRegressionR4_C80_WfOnExitPodSpecPatchMessage: same for a workflow-level
+// onExit template.
 func TestRegressionR4_C80_WfOnExitPodSpecPatchMessage(t *testing.T) {
 	woc := r4RunRounds(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3088,10 +3033,9 @@ spec:
 	assert.Equal(t, "error in exit template execution : Error applying PodSpecPatch", woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C80_StepsOnExitPodSpecPatchMessage ports
-// TestProbe_v1x2_StepsOnExitPodSpecPatchMessage (v1x2-1_test.go / C80). A
-// step-level exit hook whose pod cannot be built must not gain the "task
-// ... errored:" prefix on the workflow message either.
+// TestRegressionR4_C80_StepsOnExitPodSpecPatchMessage: a step-level exit hook
+// whose pod cannot be built must not gain the "task ... errored:" prefix on
+// the workflow message either.
 func TestRegressionR4_C80_StepsOnExitPodSpecPatchMessage(t *testing.T) {
 	woc := r4RunRounds(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3122,10 +3066,9 @@ spec:
 	assert.Equal(t, "Error applying PodSpecPatch", woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C84_PodRetryExprErrorMessage ports
-// TestProbe_v3x2_PodRetryExprErrorMessage (v3x2-1_test.go / C84). A pod
-// entry template whose retryStrategy.expression fails to evaluate must not
-// gain the "task <wf> errored:" prefix on the workflow message.
+// TestRegressionR4_C84_PodRetryExprErrorMessage: a pod entry template whose
+// retryStrategy.expression fails to evaluate must not gain the "task <wf>
+// errored:" prefix on the workflow message.
 func TestRegressionR4_C84_PodRetryExprErrorMessage(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3170,7 +3113,7 @@ spec:
 // evaluate (asInt on a fractional duration, the case docs/retries.md warns
 // about) through failing pod attempts until the boundary's Retry re-entry
 // sees the expression error. Shared by the TestRegressionR4_C84_*AttemptError
-// tests below (ported from v3x2-1_test.go's v3x2runExprErr).
+// tests below
 func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow, extraRounds int) *wfOperationCtx {
 	t.Helper()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3194,15 +3137,12 @@ func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowCo
 	return woc
 }
 
-// TestRegressionR4_C84_SpecRetryStepsAttemptError ports
-// TestProbe_v3x2_SpecRetryExprErrorBoundary (v3x2-1_test.go / C84). A
-// spec-level retryStrategy wraps a Steps entrypoint; once the last attempt's
-// StepGroup rolls up Failed, handleRetries' re-entry finds the expression
-// error.
+// TestRegressionR4_C84_SpecRetryStepsAttemptError: a spec-level retryStrategy
+// wraps a Steps entrypoint; once the last attempt's StepGroup rolls up
+// Failed, handleRetries' re-entry finds the expression error.
 //
-// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
-// which the strict state machine (D3/P15) refuses. The workflow outcome
-// matches base.
+// Decided: the attempt keeps Failed; base marked it Error, which the strict
+// state machine (D3/P15) refuses. The workflow outcome matches base.
 func TestRegressionR4_C84_SpecRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3236,14 +3176,11 @@ spec:
 	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
-// TestRegressionR4_C84_SpecRetryDAGAttemptError ports
-// TestProbe_v3x2_SpecRetryExprErrorBoundaryDAG (v3x2-1_test.go / C84). Same
-// as the Steps case above but the entrypoint is a DAG: one shared rule, no
-// DAG/Steps special case.
+// TestRegressionR4_C84_SpecRetryDAGAttemptError: same as the Steps case above
+// but the entrypoint is a DAG: one shared rule, no DAG/Steps special case.
 //
-// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
-// which the strict state machine (D3/P15) refuses. The workflow outcome
-// matches base.
+// Decided: the attempt keeps Failed; base marked it Error, which the strict
+// state machine (D3/P15) refuses. The workflow outcome matches base.
 func TestRegressionR4_C84_SpecRetryDAGAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3278,13 +3215,11 @@ spec:
 	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
-// TestRegressionR4_C84_TmplRetryStepsAttemptError ports
-// TestProbe_v3x2_TmplRetryExprErrorBoundary (v3x2-1_test.go / C84). The
-// retryStrategy is on the entry template itself, not spec-level.
+// TestRegressionR4_C84_TmplRetryStepsAttemptError: the retryStrategy is on
+// the entry template itself, not spec-level.
 //
-// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
-// which the strict state machine (D3/P15) refuses. The workflow outcome
-// matches base.
+// Decided: the attempt keeps Failed; base marked it Error, which the strict
+// state machine (D3/P15) refuses. The workflow outcome matches base.
 func TestRegressionR4_C84_TmplRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3318,14 +3253,13 @@ spec:
 	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
-// TestRegressionR4_C84_NestedRetryStepsAttemptError ports
-// TestProbe_v3x2_NestedRetryExprErrorBoundary (v3x2-1_test.go / C84). The
-// retried Steps template is nested one level inside the entry template.
+// TestRegressionR4_C84_NestedRetryStepsAttemptError: the retried Steps
+// template is nested one level inside the entry template.
 //
-// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
-// which the strict state machine (D3/P15) refuses. The workflow outcome
-// matches base. The Retry node itself is unaffected by this decision: it
-// already ended Error, matching base.
+// Decided: the attempt keeps Failed; base marked it Error, which the strict
+// state machine (D3/P15) refuses. The workflow outcome matches base. The
+// Retry node itself is unaffected by this decision: it already ended Error,
+// matching base.
 func TestRegressionR4_C84_NestedRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3408,12 +3342,11 @@ spec:
 `
 }
 
-// TestRegressionR4_C83_DAGInvalidWhenHint ports
-// TestProbe_v1x69_DAGInvalidWhenHint (v1x69-1_test.go / C83). An invalid
-// `when` expression's error message lost the closing quote-hint text when
-// shouldExecute moved into engine.go: base's hint ends
-// `(hint: try wrapping the affected expression in quotes ("))`, HEAD's ends
-// `(hint: try wrapping the affected expression in quotes)`.
+// TestRegressionR4_C83_DAGInvalidWhenHint: an invalid `when` expression's
+// error message lost the closing quote-hint text when shouldExecute moved
+// into engine.go: base's hint ends `(hint: try wrapping the affected
+// expression in quotes ("))`, HEAD's ends `(hint: try wrapping the affected
+// expression in quotes)`.
 func TestRegressionR4_C83_DAGInvalidWhenHint(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4WhenBadWfWithGen("r4-c83-dag-badwhen", true))
@@ -3440,10 +3373,9 @@ func TestRegressionR4_C83_DAGInvalidWhenHint(t *testing.T) {
 	assert.Equal(t, `Invalid 'when' expression 'heads == @tails': Invalid token: '@' (hint: try wrapping the affected expression in quotes ("))`, n.Message)
 }
 
-// TestRegressionR4_C83_StepsInvalidWhenHint ports
-// TestProbe_v1x69_StepsInvalidWhenHint (v1x69-1_test.go / C83). Same hint,
-// Steps shape; the node carrying the message differs by tree, so this only
-// requires the full hint to appear somewhere.
+// TestRegressionR4_C83_StepsInvalidWhenHint: same hint, Steps shape; the node
+// carrying the message differs by tree, so this only requires the full hint
+// to appear somewhere.
 func TestRegressionR4_C83_StepsInvalidWhenHint(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4WhenBadWfWithGen("r4-c83-steps-badwhen", false))
@@ -3471,9 +3403,8 @@ func TestRegressionR4_C83_StepsInvalidWhenHint(t *testing.T) {
 	assert.Contains(t, all, `(hint: try wrapping the affected expression in quotes ("))`)
 }
 
-// TestRegressionR4_C86_SeqNoCountNoEnd ports TestProbe_v1x40_DagSeqNoCountNoEnd
-// (v1x40-1_test.go / C86). A withSequence with neither count nor end
-// (validation accepts it) must error, as base's expandSequence did with
+// TestRegressionR4_C86_SeqNoCountNoEnd: a withSequence with neither count nor
+// end (validation accepts it) must error, as base's expandSequence did with
 // "neither end nor count was specified in withSequence", instead of HEAD's
 // silent zero-item "Skipped, empty params".
 func TestRegressionR4_C86_SeqNoCountNoEnd(t *testing.T) {
@@ -3580,12 +3511,11 @@ const r4C5ItemTagTemplates = `
       args: ["echo {{inputs.parameters.message}}"]
 `
 
-// TestRegressionR4_C5_StepsWithParamGitHubActionsExpr ports
-// TestProbe_v3x9_StepsWithParamGitHubActionsExpr (v3x9-1_test.go / C5, lead
-// 3). A withParam list whose items carry GitHub Actions `${{ steps.x }}` text
-// runs both item pods with the literal text, as base did. HEAD re-parses the
-// substituted item arguments with steps/tasks strict, requeues the whole
-// batch and never creates an item.
+// TestRegressionR4_C5_StepsWithParamGitHubActionsExpr: a withParam list whose
+// items carry GitHub Actions `${{ steps.x }}` text runs both item pods with
+// the literal text, as base did. HEAD re-parses the substituted item
+// arguments with steps/tasks strict, requeues the whole batch and never
+// creates an item.
 func TestRegressionR4_C5_StepsWithParamGitHubActionsExpr(t *testing.T) {
 	woc := r4RunGen(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3613,10 +3543,9 @@ spec:
 	assert.NotEqual(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C5_DAGItemTagNotSilentSuccess ports
-// TestProbe_v3x9_DAGItemTagNotSilentSuccess (v3x9-1_test.go / C5, lead 3):
-// a DAG withParam item with `${{ tasks.x }}` text must not leave a childless
-// TaskGroup that ends the workflow Succeeded without any item running.
+// TestRegressionR4_C5_DAGItemTagNotSilentSuccess: a DAG withParam item with
+// `${{ tasks.x }}` text must not leave a childless TaskGroup that ends the
+// workflow Succeeded without any item running.
 func TestRegressionR4_C5_DAGItemTagNotSilentSuccess(t *testing.T) {
 	woc := r4RunGen(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3719,12 +3648,11 @@ spec:
 `
 }
 
-// TestRegressionR4_C7_WhenGuardedExpansion ports
-// TestProbe_v1x24_WhenGuardedExpansion (v1x24-1_test.go / C7). A when that
-// reads the same output as the withParam/withSequence guards the expansion:
-// base resolved and evaluated the when first and skipped the task without
-// parsing the list. HEAD evaluates the unresolved when during expansion and
-// errors the task on the unparseable list.
+// TestRegressionR4_C7_WhenGuardedExpansion: a when that reads the same output
+// as the withParam/withSequence guards the expansion: base resolved and
+// evaluated the when first and skipped the task without parsing the list.
+// HEAD evaluates the unresolved when during expansion and errors the task on
+// the unparseable list.
 func TestRegressionR4_C7_WhenGuardedExpansion(t *testing.T) {
 	for _, tc := range []struct{ name, body, genOut, fanNode, afterNode string }{
 		{"dag-withparam-empty-quoted-when", `
@@ -3828,12 +3756,11 @@ func TestRegressionR4_C7_WhenGuardedExpansion(t *testing.T) {
 	}
 }
 
-// TestRegressionR4_C7_WhenFalseValidListSkipped ports
-// TestProbe_v1x24_WhenFalseValidListSkipped (v1x24-1_test.go / C7, P7). A
-// when-false task with a dynamic list (withParam) is one Skipped node, as on
-// main, which left withParam unresolved on the when-false early return; so
-// fan.Skipped dependants run and fan.Succeeded ones are Omitted. HEAD made
-// a Succeeded TaskGroup of Skipped items.
+// TestRegressionR4_C7_WhenFalseValidListSkipped: a when-false task with a
+// dynamic list (withParam) is one Skipped node, as on main, which left
+// withParam unresolved on the when-false early return; so fan.Skipped
+// dependants run and fan.Succeeded ones are Omitted. HEAD made a Succeeded
+// TaskGroup of Skipped items.
 func TestRegressionR4_C7_WhenFalseValidListSkipped(t *testing.T) {
 	woc := r4C7Drive(t, r4C7Workflow("wv", `
     dag:
@@ -3889,11 +3816,10 @@ func r4C8Run(t *testing.T, manifest, result string) (*wfOperationCtx, []string) 
 	return woc, r4PodNodeNames(ctx, t, woc)
 }
 
-// TestRegressionR4_C8_StepsExprWhenDoubleQuotes ports
-// TestProbe_r1x25_StepsExprWhenDoubleQuotes (r1x25-1_test.go / C8). An
-// expression when with double quotes (the bracket form a dashed step name
-// needs) is substituted in its JSON form, as on base; HEAD substitutes the
-// raw string and fails to unmarshal the expression.
+// TestRegressionR4_C8_StepsExprWhenDoubleQuotes: an expression when with
+// double quotes (the bracket form a dashed step name needs) is substituted in
+// its JSON form, as on base; HEAD substitutes the raw string and fails to
+// unmarshal the expression.
 func TestRegressionR4_C8_StepsExprWhenDoubleQuotes(t *testing.T) {
 	woc, pods := r4C8Run(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3932,11 +3858,10 @@ spec:
 	assert.Equal(t, wfv1.NodeSkipped, tails.Phase)
 }
 
-// TestRegressionR4_C8_DAGSimpleTagBackslashResult ports
-// TestProbe_r1x25_DAGSimpleTagBackslashResult (r1x25-1_test.go / C8). A
-// result with a backslash substituted into a simple when compares equal, as
-// on base; HEAD leaves the JSON escape in the expression, compares unequal
-// and silently skips the task.
+// TestRegressionR4_C8_DAGSimpleTagBackslashResult: a result with a backslash
+// substituted into a simple when compares equal, as on base; HEAD leaves the
+// JSON escape in the expression, compares unequal and silently skips the
+// task.
 func TestRegressionR4_C8_DAGSimpleTagBackslashResult(t *testing.T) {
 	woc, pods := r4C8Run(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3990,11 +3915,10 @@ func r4PodInputArtifact(ctx context.Context, t *testing.T, woc *wfOperationCtx, 
 	return nil
 }
 
-// TestRegressionR4_C13_RawAndHTTPArtDAG ports
-// TestProbe_v1x26_RawAndHTTPArtDAG (v1x26-1_test.go / C13). An artifact
-// argument's location fields (raw.data, http.url) that reference a task's
-// output reach the pod substituted, as on base, which substituted the whole
-// task; HEAD substitutes only the parameters.
+// TestRegressionR4_C13_RawAndHTTPArtDAG: an artifact argument's location
+// fields (raw.data, http.url) that reference a task's output reach the pod
+// substituted, as on base, which substituted the whole task; HEAD substitutes
+// only the parameters.
 func TestRegressionR4_C13_RawAndHTTPArtDAG(t *testing.T) {
 	woc := r4RunGen(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -4048,8 +3972,8 @@ spec:
 	assert.Equal(t, "https://example.com/hello.txt", web.HTTP.URL)
 }
 
-// TestRegressionR4_C13_S3KeyArtSteps ports TestProbe_v1x26_S3KeyArtSteps
-// (v1x26-1_test.go / C13): an S3 key built from a step's output parameter.
+// TestRegressionR4_C13_S3KeyArtSteps: an S3 key built from a step's output
+// parameter.
 func TestRegressionR4_C13_S3KeyArtSteps(t *testing.T) {
 	woc := r4RunGen(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -4110,11 +4034,10 @@ spec:
       command: [echo, from-wft]
 `
 
-// TestRegressionR4_C44_DynTRefStepsParam ports
-// TestProbe_v1x27_DynTRefStepsParam (v1x27-1_test.go / C44). A templateRef
-// whose name comes from an earlier step's output is resolved after
-// substitution, as on base; HEAD resolves the raw holder and fails
-// "workflow template {{steps.pick.outputs.parameters.wft}} not found".
+// TestRegressionR4_C44_DynTRefStepsParam: a templateRef whose name comes from
+// an earlier step's output is resolved after substitution, as on base; HEAD
+// resolves the raw holder and fails "workflow template
+// {{steps.pick.outputs.parameters.wft}} not found".
 func TestRegressionR4_C44_DynTRefStepsParam(t *testing.T) {
 	woc := r4RunGen(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -4194,11 +4117,10 @@ spec:
 	return woc, cmds
 }
 
-// TestRegressionR4_C45_PlainItemNames ports TestProbe_v1x38_PlainItemNames
-// (v1x38-1_test.go / C45). withItems values that reference an earlier
-// output are resolved before expansion, as base substituted the whole task:
-// the item's node name and its pod carry "hello". HEAD expands the raw tag
-// text.
+// TestRegressionR4_C45_PlainItemNames: withItems values that reference an
+// earlier output are resolved before expansion, as base substituted the whole
+// task: the item's node name and its pod carry "hello". HEAD expands the raw
+// tag text.
 func TestRegressionR4_C45_PlainItemNames(t *testing.T) {
 	for _, tc := range []struct{ kind, body, prefix string }{
 		{"dag", `
@@ -4233,8 +4155,7 @@ func TestRegressionR4_C45_PlainItemNames(t *testing.T) {
 	}
 }
 
-// TestRegressionR4_C45_ExprItem ports TestProbe_v1x38_ExprItem
-// (v1x38-1_test.go / C45): an expression when and argument over an item
+// TestRegressionR4_C45_ExprItem: an expression when and argument over an item
 // that references an earlier output see the resolved value.
 func TestRegressionR4_C45_ExprItem(t *testing.T) {
 	for _, tc := range []struct{ kind, body, prefix string }{
@@ -4306,10 +4227,8 @@ const r4C82Templates = `
       command: [echo, hi]
 `
 
-// TestRegressionR4_C82_StepsWhenSkipMessage ports
-// TestProbe_v1x55_StepsWhenSkipMessage (v1x55-1_test.go / C82). A step
-// skipped by its when reports the substituted expression, as on base, not
-// the raw template text.
+// TestRegressionR4_C82_StepsWhenSkipMessage: a step skipped by its when
+// reports the substituted expression, as on base, not the raw template text.
 func TestRegressionR4_C82_StepsWhenSkipMessage(t *testing.T) {
 	wf := r4C82Run(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -4341,8 +4260,7 @@ spec:
 	assert.Equal(t, "when 'heads == tails' evaluated false", n.Message)
 }
 
-// TestRegressionR4_C82_DAGWhenSkipMessage ports
-// TestProbe_v1x55_DAGWhenSkipMessage (v1x55-1_test.go / C82): the DAG shape.
+// TestRegressionR4_C82_DAGWhenSkipMessage: the DAG shape.
 func TestRegressionR4_C82_DAGWhenSkipMessage(t *testing.T) {
 	wf := r4C82Run(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -4397,14 +4315,13 @@ func r4C43RunUntilDone(ctx context.Context, t *testing.T, controller *WorkflowCo
 	return woc
 }
 
-// TestRegressionR4_C43_StepsOutputsExprWorkflowOutputs ports
-// TestProbe_v2x4_StepsOutputsExprWorkflowOutputs (v2x4-1_test.go / C43). The
-// "mid" Steps template's own output param is declared as
-// valueFrom.expression: "workflow.outputs.parameters.g", read from the
-// workflow-level global that "a" exported. Base seeded executeSteps' scope
-// with wf.Status.Outputs, so this resolves; HEAD's setDAGOutputs never adds
-// workflow outputs to its scope, so "mid" fails ("unknown name workflow"),
-// "c" is Omitted and the workflow Fails.
+// TestRegressionR4_C43_StepsOutputsExprWorkflowOutputs: the "mid" Steps
+// template's own output param is declared as valueFrom.expression:
+// "workflow.outputs.parameters.g", read from the workflow-level global that
+// "a" exported. Base seeded executeSteps' scope with wf.Status.Outputs, so
+// this resolves; HEAD's setDAGOutputs never adds workflow outputs to its
+// scope, so "mid" fails ("unknown name workflow"), "c" is Omitted and the
+// workflow Fails.
 func TestRegressionR4_C43_StepsOutputsExprWorkflowOutputs(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -4471,12 +4388,11 @@ spec:
 	assert.Equal(t, "A", c.Inputs.Parameters[0].Value.String())
 }
 
-// TestRegressionR4_C43_StepsOutputsArtFromWorkflowOutputs ports
-// TestProbe_v2x4_StepsOutputsArtFromWorkflowOutputs (v2x4-1_test.go / C43).
-// Artifacts have no global-params fallback, so
-// outputs.artifacts[].from: "{{workflow.outputs.artifacts.ga}}" is the only
-// way for a Steps template to hand out a global artifact as its own output;
-// it needs the same workflow-outputs scope seed as the expression form.
+// TestRegressionR4_C43_StepsOutputsArtFromWorkflowOutputs: Artifacts have no
+// global-params fallback, so outputs.artifacts[].from:
+// "{{workflow.outputs.artifacts.ga}}" is the only way for a Steps template to
+// hand out a global artifact as its own output; it needs the same
+// workflow-outputs scope seed as the expression form.
 func TestRegressionR4_C43_StepsOutputsArtFromWorkflowOutputs(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -4564,12 +4480,11 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_C30_EmptyStepGroupKeepsOrder ports
-// TestProbe_v1x65_EmptyStepGroupKeepsOrderTop (v1x65-1_test.go / C30). An
-// empty group (`- []`, the shape of test/e2e/smoke/empty-template-steps.yaml)
-// must not reset the order: the group after it waits for the last group that
-// had steps, so only first runs in round 0 and while it runs, and the Steps
-// node's outbound node is second alone.
+// TestRegressionR4_C30_EmptyStepGroupKeepsOrder: an empty group (`- []`, the
+// shape of test/e2e/smoke/empty-template-steps.yaml) must not reset the
+// order: the group after it waits for the last group that had steps, so only
+// first runs in round 0 and while it runs, and the Steps node's outbound node
+// is second alone.
 func TestRegressionR4_C30_EmptyStepGroupKeepsOrder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
@@ -4592,10 +4507,9 @@ func TestRegressionR4_C30_EmptyStepGroupKeepsOrder(t *testing.T) {
 	assert.Equal(t, []string{second.ID}, root.OutboundNodes)
 }
 
-// TestRegressionR4_C30_FailedFirstStepDoesNotRunLater ports
-// TestProbe_r1x65_EmptyGroupFailedFirstStepDoesNotRunLater (r1x65-1_test.go
-// / C30): when first fails, the step after the empty group never runs. It
-// may have an Omitted node (the decided R4/R10 shape), but no pod.
+// TestRegressionR4_C30_FailedFirstStepDoesNotRunLater: when first fails, the
+// step after the empty group never runs. It may have an Omitted node (the
+// decided R4/R10 shape), but no pod.
 func TestRegressionR4_C30_FailedFirstStepDoesNotRunLater(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
@@ -4686,12 +4600,11 @@ spec:
       command: [sh, -c, "exit 0"]
 `
 
-// TestRegressionR4_C52_TwoGroupsRetryCompletes ports
-// TestProbe_r3x0_TwoGroupsRetryCompletes (r3x0-1_test.go / C52). A failFast
-// Steps template whose first step fails ends with every node fulfilled, and
-// `argo retry` then runs it to Succeeded. HEAD created every StepGroup up
-// front; the failFast branch closed only one, so the later groups stayed
-// Running and unlinked and retry failed with "couldn't find parent node".
+// TestRegressionR4_C52_TwoGroupsRetryCompletes: a failFast Steps template
+// whose first step fails ends with every node fulfilled, and `argo retry`
+// then runs it to Succeeded. HEAD created every StepGroup up front; the
+// failFast branch closed only one, so the later groups stayed Running and
+// unlinked and retry failed with "couldn't find parent node".
 func TestRegressionR4_C52_TwoGroupsRetryCompletes(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C52FailFastGroups)
@@ -4716,14 +4629,13 @@ func TestRegressionR4_C52_TwoGroupsRetryCompletes(t *testing.T) {
 	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "nodes left non-terminal in a finished workflow")
 }
 
-// TestRegressionR4_C75_StepsDeadlineMessage ports
-// TestProbe_v1x8_StepsDeadlineMessage (v1x8-1_test.go / C75).
-// activeDeadlineSeconds expires while the first step of a two-group Steps
-// template runs, and the killed step's pod lingers. The workflow message
-// names the failed step, and group [1], which never ran, is not marked with
-// the deadline message. HEAD pre-created [1] and linked it under the killed
-// step, so execution control failed it "Step exceeded its deadline" and that
-// replaced the Steps and workflow message.
+// TestRegressionR4_C75_StepsDeadlineMessage: activeDeadlineSeconds expires
+// while the first step of a two-group Steps template runs, and the killed
+// step's pod lingers. The workflow message names the failed step, and group
+// [1], which never ran, is not marked with the deadline message. HEAD
+// pre-created [1] and linked it under the killed step, so execution control
+// failed it "Step exceeded its deadline" and that replaced the Steps and
+// workflow message.
 func TestRegressionR4_C75_StepsDeadlineMessage(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -4785,12 +4697,11 @@ spec:
 	}
 }
 
-// TestRegressionR4_C85_StepGroupStartedAt ports
-// TestProbe_v1x35_StepGroupStartedAt (v1x35-1_test.go / C85), keeping only
-// its "[1] not before [0].FinishedAt" check. The nodes are back-dated after
-// the first reconcile instead of sleeping. A StepGroup starts when the group
-// before it has finished; HEAD created every group with the Steps node, so
-// [1]'s StartedAt (and its UI duration) included group [0]'s run.
+// TestRegressionR4_C85_StepGroupStartedAt: keeping only its "[1] not before
+// [0].FinishedAt" check. The nodes are back-dated after the first reconcile
+// instead of sleeping. A StepGroup starts when the group before it has
+// finished; HEAD created every group with the Steps node, so [1]'s StartedAt
+// (and its UI duration) included group [0]'s run.
 func TestRegressionR4_C85_StepGroupStartedAt(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -4834,11 +4745,11 @@ spec:
 	assert.False(t, sg1.StartedAt.Before(&sg0.FinishedAt), "end: StepGroup [1] started %s, before StepGroup [0] finished %s", sg1.StartedAt, sg0.FinishedAt)
 }
 
-// TestRegressionR4_C85_ExpandedStartedAtNoSleep is the back-dated variant of
-// TestProbe_v1x35_ExpandedStartedAt (wp7.md §4.2 / C85). {{steps.a.startedAt}}
-// of an expanded step reads its StepGroup, so it is when group [1] started,
-// like its non-expanded sibling plain; HEAD created the group with the Steps
-// node, an hour earlier once back-dated.
+// TestRegressionR4_C85_ExpandedStartedAtNoSleep back-dates the nodes instead
+// of sleeping between reconciles. {{steps.a.startedAt}} of an expanded step
+// reads its StepGroup, so it is when group [1] started, like its non-expanded
+// sibling plain; HEAD created the group with the Steps node, an hour earlier
+// once back-dated.
 func TestRegressionR4_C85_ExpandedStartedAtNoSleep(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -4900,12 +4811,10 @@ spec:
 	assert.WithinDuration(t, params["q"], params["p"], time.Minute, "steps.a.startedAt must be when group [1] started, as steps.plain.startedAt is")
 }
 
-// TestRegressionR4_C30_EmptyGroupRetry ports
-// TestProbe_wp7_EmptyGroupRetryAfterFailure
-// (plan-inputs/wp7-empty-group-retry_test.go / C30, P12). An empty group
-// after a failed group ends Omitted: HEAD marked it Succeeded in the first
-// reconcile, so the failed first step had a Succeeded descendant and `argo
-// retry` would not reset it; the retried workflow then never completed.
+// TestRegressionR4_C30_EmptyGroupRetry: an empty group after a failed group
+// ends Omitted: HEAD marked it Succeeded in the first reconcile, so the
+// failed first step had a Succeeded descendant and `argo retry` would not
+// reset it; the retried workflow then never completed.
 func TestRegressionR4_C30_EmptyGroupRetry(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
@@ -4974,12 +4883,11 @@ spec:
     container: {image: alpine, command: [sh, -c, "exit 1"]}
 `
 
-// TestRegressionR4_C3_SkippedOnFailureHandler ports
-// TestProbe_v1x11_SkippedOnFailureHandler (v1x11-1_test.go / C3). A leaf
-// that did not run takes the phase of the branch above it, as main's
-// assessDAGPhase did: the Skipped notify leaf inherits A's failure, so the
-// DAG fails. HEAD let only an Omitted leaf inherit, so the workflow ended
-// Succeeded although nothing handled the failure.
+// TestRegressionR4_C3_SkippedOnFailureHandler: a leaf that did not run takes
+// the phase of the branch above it, as main's assessDAGPhase did: the Skipped
+// notify leaf inherits A's failure, so the DAG fails. HEAD let only an
+// Omitted leaf inherit, so the workflow ended Succeeded although nothing
+// handled the failure.
 func TestRegressionR4_C3_SkippedOnFailureHandler(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C3SkippedHandler)
@@ -5000,11 +4908,10 @@ func TestRegressionR4_C3_SkippedOnFailureHandler(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C3_DaemonLeafAfterContinueOn ports
-// TestProbe_v1x11_DaemonLeafAfterContinueOn (v1x11-1_test.go / C3). A
-// running daemon leaf has not completed, so it takes the phase of the branch
-// above it: A failed (continueOn only lets D start), so the DAG fails. HEAD
-// read the daemon as Succeeded and the workflow Succeeded.
+// TestRegressionR4_C3_DaemonLeafAfterContinueOn: a running daemon leaf has
+// not completed, so it takes the phase of the branch above it: A failed
+// (continueOn only lets D start), so the DAG fails. HEAD read the daemon as
+// Succeeded and the workflow Succeeded.
 func TestRegressionR4_C3_DaemonLeafAfterContinueOn(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -5045,13 +4952,11 @@ spec:
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C10_LeafAfterDependencyPodLost ports
-// TestProbe_v3x5_LeafAfterDependencyPodLost (v3x5-1_test.go / C10). The
-// running pod of leaf a is deleted: its node goes Error "pod deleted" with
-// its task result unsynced, so it has not finished, and the pod is
-// recreated. The DAG waits for it, as main's did. HEAD read the transient
-// Error as final and ended the workflow Error while a's new pod ran and
-// Succeeded.
+// TestRegressionR4_C10_LeafAfterDependencyPodLost: the running pod of leaf a
+// is deleted: its node goes Error "pod deleted" with its task result
+// unsynced, so it has not finished, and the pod is recreated. The DAG waits
+// for it, as main's did. HEAD read the transient Error as final and ended the
+// workflow Error while a's new pod ran and Succeeded.
 func TestRegressionR4_C10_LeafAfterDependencyPodLost(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx := logging.TestContext(t.Context())
@@ -5111,12 +5016,11 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "message %q", woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C71_ContinueOnMissingOutputWithFailedSibling ports
-// TestProbe_v1x15_ContinueOnMissingOutputWithFailedSibling (v1x15-1_test.go
-// / C71). B references an output its continueOn-failed dependency A never
-// wrote, so B can never be created. With failFast (the default) main's
-// target loop passed over a target with no node and ended the DAG Failed on
-// its failed sibling C; HEAD read B as Pending and hung Running.
+// TestRegressionR4_C71_ContinueOnMissingOutputWithFailedSibling: B references
+// an output its continueOn-failed dependency A never wrote, so B can never be
+// created. With failFast (the default) main's target loop passed over a
+// target with no node and ended the DAG Failed on its failed sibling C; HEAD
+// read B as Pending and hung Running.
 func TestRegressionR4_C71_ContinueOnMissingOutputWithFailedSibling(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -5224,21 +5128,19 @@ spec:
 	return woc, dagNode
 }
 
-// TestRegressionR4_C72_TargetOrderFailFast ports
-// TestProbe_v1x19_TargetOrderFailFast (v1x19-1_test.go / C72). With
-// failFast, the first failed target in the order dag.target is written
-// decides the DAG's phase, as on main: C (Failed) before A (Error). HEAD
-// sorted the targets, so A decided and the workflow ended Error.
+// TestRegressionR4_C72_TargetOrderFailFast: with failFast, the first failed
+// target in the order dag.target is written decides the DAG's phase, as on
+// main: C (Failed) before A (Error). HEAD sorted the targets, so A decided
+// and the workflow ended Error.
 func TestRegressionR4_C72_TargetOrderFailFast(t *testing.T) {
 	woc, dagNode := r4C72Run(t, "")
 	assert.Equal(t, wfv1.NodeFailed, dagNode.Phase)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C72_TargetOrderNoFailFast ports
-// TestProbe_v1x19_TargetOrderNoFailFast (v1x19-1_test.go / C72). Without
-// failFast every target is looked at in written order and the last failed
-// one decides, as on main: A (Error). HEAD's sort made it C (Failed).
+// TestRegressionR4_C72_TargetOrderNoFailFast: Without failFast every target
+// is looked at in written order and the last failed one decides, as on main:
+// A (Error). HEAD's sort made it C (Failed).
 func TestRegressionR4_C72_TargetOrderNoFailFast(t *testing.T) {
 	woc, dagNode := r4C72Run(t, "false")
 	assert.Equal(t, wfv1.NodeError, dagNode.Phase)
@@ -5286,13 +5188,11 @@ func r4NodePhase(woc *wfOperationCtx, name string) wfv1.NodePhase {
 	return ""
 }
 
-// TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds ports
-// TestProbe_v2x9_SingleStepForceDeletedRerunSucceeds (v2x9-1_test.go / C9).
-// a's running pod vanishes before its task result is complete: a is Error
-// "pod deleted" but has not finished, and its pod is recreated. Its
-// StepGroup waits for the re-run, as main's did; HEAD recorded the group
-// Failed on the transient Error and the workflow ended Failed although the
-// re-run Succeeded.
+// TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds: a's running pod
+// vanishes before its task result is complete: a is Error "pod deleted" but
+// has not finished, and its pod is recreated. Its StepGroup waits for the
+// re-run, as main's did; HEAD recorded the group Failed on the transient
+// Error and the workflow ended Failed although the re-run Succeeded.
 func TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx, r := r4Start(t, `
@@ -5336,11 +5236,10 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "message %q", r.woc.wf.Status.Message)
 }
 
-// TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails ports
-// TestProbe_v2x9_ForceDeletedPodContinueOnErrorRerunFails (v2x9-1_test.go /
-// C9). As above, with continueOn.error on a, whose re-run then Fails, which
-// continueOn.error does not cover. HEAD recorded the group Succeeded on the
-// transient Error and the workflow Succeeded although a Failed.
+// TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails: as above,
+// with continueOn.error on a, whose re-run then Fails, which continueOn.error
+// does not cover. HEAD recorded the group Succeeded on the transient Error
+// and the workflow Succeeded although a Failed.
 func TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx, r := r4Start(t, `
@@ -5432,12 +5331,11 @@ func r4C23Drive(t *testing.T, clientPhase apiv1.PodPhase) *wfOperationCtx {
 	return r.woc
 }
 
-// TestRegressionR4_C23_DaemonStepsSucceeded ports
-// TestProbe_v1x1_DaemonStepsSucceeded (v1x1-1_test.go / C23). A StepGroup
-// whose daemon step is up has finished, as a running daemon has for its
-// dependants: main recorded [0] Succeeded and hung [1] off the daemon. HEAD
-// kept [0] Running for the daemon's life, so [1] was never linked and [0]
-// stayed Running in the finished workflow.
+// TestRegressionR4_C23_DaemonStepsSucceeded: a StepGroup whose daemon step is
+// up has finished, as a running daemon has for its dependants: main recorded
+// [0] Succeeded and hung [1] off the daemon. HEAD kept [0] Running for the
+// daemon's life, so [1] was never linked and [0] stayed Running in the
+// finished workflow.
 func TestRegressionR4_C23_DaemonStepsSucceeded(t *testing.T) {
 	woc := r4C23Drive(t, apiv1.PodSucceeded)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -5446,10 +5344,8 @@ func TestRegressionR4_C23_DaemonStepsSucceeded(t *testing.T) {
 	assert.Equal(t, "10.0.0.7", client.Inputs.Parameters[0].Value.String())
 }
 
-// TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry ports
-// TestProbe_v1x1_DaemonStepsClientFailedArgoRetry (v1x1-1_test.go / C23).
-// With [1] unlinked, `argo retry` of the failed workflow could not find
-// [1]'s parent.
+// TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry: with [1] unlinked,
+// `argo retry` of the failed workflow could not find [1]'s parent.
 func TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry(t *testing.T) {
 	woc := r4C23Drive(t, apiv1.PodFailed)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -5457,15 +5353,13 @@ func TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry(t *testing.T) {
 	require.NoError(t, err, "argo retry of the failed workflow")
 }
 
-// TestRegressionR4_C50_StepsDaemonDiesTrajectory ports
-// TestProbe_v1x67_StepsDaemonDiesTrajectory (v1x67-1_test.go / C49, the
-// fresh-run form of C50's mechanism). db's StepGroup was recorded
-// Succeeded once db was up; db then dies while test runs. Each group's
-// phase is derived from its steps on every reconcile, as main re-assessed
-// it, so the Steps node fails straight away, naming db, and report never
-// starts. [0] itself keeps the Succeeded it was recorded with (P16). HEAD
-// never looked at a finished group again: report ran and the workflow
-// failed only afterwards, or not at all.
+// TestRegressionR4_C50_StepsDaemonDiesTrajectory: db's StepGroup was recorded
+// Succeeded once db was up; db then dies while test runs. Each group's phase
+// is derived from its steps on every reconcile, as main re-assessed it, so
+// the Steps node fails straight away, naming db, and report never starts. [0]
+// itself keeps the Succeeded it was recorded with (P16). HEAD never looked at
+// a finished group again: report ran and the workflow failed only afterwards,
+// or not at all.
 func TestRegressionR4_C50_StepsDaemonDiesTrajectory(t *testing.T) {
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -5554,32 +5448,28 @@ spec:
 	return r.woc
 }
 
-// TestRegressionR4_C89_StepsExpandedDaemonCrashNextGroup ports
-// TestProbe_lead1_StepsExpandedDaemonCrashNextGroup (lead1-1_test.go /
-// C89). A's daemon items crash after [0] was recorded Succeeded: the
-// TaskGroup's outcome fails with them, so [0]'s derived phase does, and so
-// does the workflow, as on main. HEAD never looked at [0] again and the
-// workflow Succeeded.
+// TestRegressionR4_C89_StepsExpandedDaemonCrashNextGroup: a's daemon items
+// crash after [0] was recorded Succeeded: the TaskGroup's outcome fails with
+// them, so [0]'s derived phase does, and so does the workflow, as on main.
+// HEAD never looked at [0] again and the workflow Succeeded.
 func TestRegressionR4_C89_StepsExpandedDaemonCrashNextGroup(t *testing.T) {
 	woc := r4C89Crash(t, "r4-c89", "\n        withItems: [p, q]")
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "daemon items crashed; the workflow must not succeed")
 }
 
-// TestRegressionR4_C89_StepsPlainDaemonCrashControl ports
-// TestProbe_lead1_StepsPlainDaemonCrashControl (lead1-1_test.go). Control:
-// the same crash of a plain daemon step fails the workflow at base and
-// HEAD. Fixing C23 without deriving a recorded group's phase again would
-// break it: [0] would be Succeeded for good once the daemon was up.
+// TestRegressionR4_C89_StepsPlainDaemonCrashControl: Control: the same crash
+// of a plain daemon step fails the workflow at base and HEAD. Fixing C23
+// without deriving a recorded group's phase again would break it: [0] would
+// be Succeeded for good once the daemon was up.
 func TestRegressionR4_C89_StepsPlainDaemonCrashControl(t *testing.T) {
 	woc := r4C89Crash(t, "r4-c89c", "")
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C74_StepGroupWaitsForOnExit ports
-// TestProbe_v1x6_StepGroupWaitsForOnExit (v1x6-1_test.go / C74). A's step
-// group waits for A's exit handler, as main's did: it stays Running, with
-// no FinishedAt, while the handler runs, and does not finish before it.
-// HEAD recorded the group Succeeded as soon as A's pod did.
+// TestRegressionR4_C74_StepGroupWaitsForOnExit: a's step group waits for A's
+// exit handler, as main's did: it stays Running, with no FinishedAt, while
+// the handler runs, and does not finish before it. HEAD recorded the group
+// Succeeded as soon as A's pod did.
 func TestRegressionR4_C74_StepGroupWaitsForOnExit(t *testing.T) {
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -5674,11 +5564,9 @@ spec:
     container: {image: alpine, command: [echo]}
 `
 
-// TestRegressionR4_C74_HooksExitAllSucceed ports
-// TestProbe_lead10_StepsHooksExitAllSucceed (lead10-1_test.go / C74, lead
-// 10). Under spec.retryStrategy a's exit hook runs once. HEAD recorded [0]
-// before the hook finished and linked [1] under the hook's Retry node,
-// which then started a second hook attempt.
+// TestRegressionR4_C74_HooksExitAllSucceed: under spec.retryStrategy a's exit
+// hook runs once. HEAD recorded [0] before the hook finished and linked [1]
+// under the hook's Retry node, which then started a second hook attempt.
 func TestRegressionR4_C74_HooksExitAllSucceed(t *testing.T) {
 	woc, pods := r4RunDecided(t, r4C74SpecRetryHooked, 20, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -5686,12 +5574,10 @@ func TestRegressionR4_C74_HooksExitAllSucceed(t *testing.T) {
 	assert.Len(t, hooks, 1, "exit hook pods %v", hooks)
 }
 
-// TestRegressionR4_C74_SpecRetryStepsHookedFail ports
-// TestProbe_lead7_SpecRetryStepsHookedFail (lead7-1_test.go / C74, lead 7).
-// a always fails: the workflow makes exactly spec.retryStrategy's two
-// attempts, each running a twice, and leaves nothing running. HEAD's early
-// link started an attempt beyond the limit and left nodes Running in the
-// completed workflow.
+// TestRegressionR4_C74_SpecRetryStepsHookedFail: a always fails: the workflow
+// makes exactly spec.retryStrategy's two attempts, each running a twice, and
+// leaves nothing running. HEAD's early link started an attempt beyond the
+// limit and left nodes Running in the completed workflow.
 func TestRegressionR4_C74_SpecRetryStepsHookedFail(t *testing.T) {
 	isA := func(name string) bool {
 		return strings.Contains(name, ".a(") && !strings.Contains(name, "onExit") && !strings.Contains(name, "hooks")
@@ -5711,10 +5597,9 @@ func TestRegressionR4_C74_SpecRetryStepsHookedFail(t *testing.T) {
 	assert.Empty(t, r4Unfulfilled(woc), "nodes left unfulfilled")
 }
 
-// TestRegressionR4_C53_StepsFailFastItems ports TestProbe_v1x46_StepsFailFastItems
-// (v1x46-1_test.go / C53). A single-group Steps template with an expanded
-// step (withItems) and failFast+parallelism ends the workflow Failed while
-// one item is still running. The TaskGroup node between the StepGroup and
+// TestRegressionR4_C53_StepsFailFastItems: a single-group Steps template with an
+// expanded step (withItems) and failFast+parallelism ends the workflow Failed
+// while one item is still running. The TaskGroup node between the StepGroup and
 // its items is never assessed by the failFast branch (it only walked to a
 // StepGroup leaf), so it is left Running forever inside a Failed workflow.
 func TestRegressionR4_C53_StepsFailFastItems(t *testing.T) {
@@ -5793,13 +5678,12 @@ spec:
     container: {image: alpine, command: [echo, "{{inputs.parameters.msg}}"]}
 `
 
-// TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem ports
-// TestProbe_v1x54_ExpandedStepFailureMessageNamesFailedItem (v1x54-1_test.go
-// / C81). When a withItems step fails, the StepGroup, Steps and workflow
-// message must name the failed item's own node (the one with the pod), as
-// executeStepGroup did, not the TaskGroup HEAD inserts between the StepGroup
-// and its items: the TaskGroup has no pod and an empty message, and the same
-// ID would appear whichever item failed.
+// TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem: when a
+// withItems step fails, the StepGroup, Steps and workflow message must name
+// the failed item's own node (the one with the pod), as executeStepGroup did,
+// not the TaskGroup HEAD inserts between the StepGroup and its items: the
+// TaskGroup has no pod and an empty message, and the same ID would appear
+// whichever item failed.
 func TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C81LoopWf)
@@ -5835,10 +5719,9 @@ func TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem(t *testing.T
 	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
 }
 
-// TestRegressionR4_C81_ExpandedRetriedStepFailureMessage ports
-// TestProbe_v1x54_ExpandedRetriedStepFailureMessage (v1x54-1_test.go / C81).
-// With a retryStrategy on the expanded template, the message names the
-// failed item's Retry node, as base did, not the TaskGroup.
+// TestRegressionR4_C81_ExpandedRetriedStepFailureMessage: with a
+// retryStrategy on the expanded template, the message names the failed item's
+// Retry node, as base did, not the TaskGroup.
 func TestRegressionR4_C81_ExpandedRetriedStepFailureMessage(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -5895,7 +5778,7 @@ spec:
 
 // TestRegressionR4_C81_DAGExpandedTaskFailureMessageNamesFailedItem is the
 // DAG counterpart of TestRegressionR4_C81_ExpandedStepFailureMessageNamesFailedItem
-// (round 1 fix, controller ruling): boundaryFailureMessage named the
+// boundaryFailureMessage named the
 // TaskGroup HEAD inserts between a DAG task and its items, using the same
 // bare node.ID that stepGroupOutcome used before failedNodeID. Base DAG
 // never produced a "child '<id>' failed" message in the first place (it had
@@ -6057,14 +5940,12 @@ func r4C12AssertFailedBeforeB(ctx context.Context, t *testing.T, woc *wfOperatio
 	r4C12AssertItemsUnderOneParent(t, woc, "A(0:x)", "A(1:z)")
 }
 
-// TestRegressionR4_C12_LegacyItemFailedSiblingRunning ports
-// TestProbe_v1x29_LegacyShapeItemFailedSiblingRunning (v1x29-1_test.go /
-// C12), with "B absent" relaxed to "B has no pod / is Omitted" (R4/R10).
-// An older controller left A's items directly under StepGroup [0]: A(0:x)
-// had Failed and A(1:z) was still Running. The new controller must adopt
-// both items under the TaskGroup it creates, so the failure fails the step
-// group, instead of assessing an empty TaskGroup that holds only the items
-// it dispatches itself.
+// TestRegressionR4_C12_LegacyItemFailedSiblingRunning: with "B absent"
+// relaxed to "B has no pod / is Omitted" (R4/R10). An older controller left
+// A's items directly under StepGroup [0]: A(0:x) had Failed and A(1:z) was
+// still Running. The new controller must adopt both items under the TaskGroup
+// it creates, so the failure fails the step group, instead of assessing an
+// empty TaskGroup that holds only the items it dispatches itself.
 func TestRegressionR4_C12_LegacyItemFailedSiblingRunning(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -6078,11 +5959,10 @@ func TestRegressionR4_C12_LegacyItemFailedSiblingRunning(t *testing.T) {
 	r4C12AssertFailedBeforeB(ctx, t, woc)
 }
 
-// TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed ports
-// TestProbe_v1x29_LegacyShapeBothDoneWhileDownOneFailed (v1x29-1_test.go /
-// C12), with "B absent" relaxed to "B has no pod / is Omitted" (R4/R10).
-// Both legacy items were Running in the old controller's status and both
-// pods finished while the controller was being upgraded, A(0:x) Failed.
+// TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed: with "B absent"
+// relaxed to "B has no pod / is Omitted" (R4/R10). Both legacy items were
+// Running in the old controller's status and both pods finished while the
+// controller was being upgraded, A(0:x) Failed.
 func TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -6098,13 +5978,11 @@ func TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed(t *testing.T) {
 	r4C12AssertFailedBeforeB(ctx, t, woc)
 }
 
-// TestRegressionR4_C12_LegacyAggregateMidFanout is the self-contained
-// equivalent of TestProbe_r1x29_ParamAggUpgradeMidFanout (r1x29-1_test.go /
-// C12). An older controller left A's items directly under StepGroup [0]:
-// A(0:x) had Succeeded with its output, A(1:z) was still Running. After the
-// upgrade A(1:z) finishes; the aggregate {{steps.A.outputs.parameters.out}}
-// that C receives must hold both items' outputs, not only the one the new
-// controller saw finish.
+// TestRegressionR4_C12_LegacyAggregateMidFanout: an older controller
+// left A's items directly under StepGroup [0]: A(0:x) had Succeeded with its
+// output, A(1:z) was still Running. After the upgrade A(1:z) finishes; the
+// aggregate {{steps.A.outputs.parameters.out}} that C receives must hold both
+// items' outputs, not only the one the new controller saw finish.
 func TestRegressionR4_C12_LegacyAggregateMidFanout(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -6168,7 +6046,6 @@ spec:
 // execution node or a node with no children at all; the on-demand next
 // StepGroup, created Omitted under the failed step, gave it a child, so it
 // was never treated as the actually-failed node and retry reset nothing.
-// Ported from _pr-16290-round4/probes/v2x2-1_test.go.
 
 const r4C35WhenErr = `
 apiVersion: argoproj.io/v1alpha1
@@ -6331,13 +6208,11 @@ func TestRegressionR4_C35_RetryAfterRejectedSuspendStep(t *testing.T) {
 
 // D3: a ContainerSet pod whose containers all finished successfully (exit 0)
 // but whose pod is deleted before the wait container finishes uploading ends
-// Error "pod deleted", while its Container children keep their true
-// Succeeded phase (the node-phase state machine refuses Succeeded->Error, by
-// design: D3 decision). isDescendantNodeSucceeded counted those Succeeded
-// Container children as a succeeded descendant, so planReset never reset the
-// pod node and `argo retry` silently did nothing. Ported from
-// _pr-16290-round4/probes/v1x68-1_test.go
-// TestProbe_v1x68_CtrSetAllDoneDeletedThenRetry.
+// Error "pod deleted", while its Container children keep their true Succeeded
+// phase (the node-phase state machine refuses Succeeded->Error, by design).
+// isDescendantNodeSucceeded counted those Succeeded Container
+// children as a succeeded descendant, so planReset never reset the pod node
+// and `argo retry` silently did nothing.
 const r4D3CtrSetAllDone = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -6429,14 +6304,13 @@ spec:
       command: [sh, -c, "exit 1"]
 `
 
-// TestRegressionR4_C28_PodDeletedWhileFailedUnsynced ports
-// TestProbe_v1x51_DAG (v1x51-1_test.go / C28). A's pod fails before its
-// WorkflowTaskResult is complete, so A is Failed but unsynced (not
-// fulfilled). The pod is then deleted, and pod reconciliation marks A
-// Error "pod deleted". The branch's state machine refused Failed -> Error
-// and returned before storing the node, which also dropped the synced
-// fix-up, so A never became fulfilled and the workflow stayed Running for
-// good. Base moved A to Error, synced, and the workflow ended.
+// TestRegressionR4_C28_PodDeletedWhileFailedUnsynced: a's pod fails before
+// its WorkflowTaskResult is complete, so A is Failed but unsynced (not
+// fulfilled). The pod is then deleted, and pod reconciliation marks A Error
+// "pod deleted". The branch's state machine refused Failed -> Error and
+// returned before storing the node, which also dropped the synced fix-up, so
+// A never became fulfilled and the workflow stayed Running for good. Base
+// moved A to Error, synced, and the workflow ended.
 func TestRegressionR4_C28_PodDeletedWhileFailedUnsynced(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0s")
 	t.Setenv("RECENTLY_DELETED_POD_DURATION", "0s")
@@ -6494,14 +6368,13 @@ spec:
         dependencies: [a]
 `
 
-// TestRegressionR4_C58_CsAutoRestartOriginal ports
-// TestProbe_v2x11_CsAutoRestartOriginal (v2x11-1_test.go / C58). With
-// failedPodRestart enabled, a containerSet pod evicted before its
-// containers start is recreated (the pod node goes back to Pending). The
-// branch marked each container node Failed "Pod Failed whilst container
-// running" on the evicted pod, and the state machine then refused every
-// transition out of Failed, so the container nodes stayed Failed inside a
-// Succeeded pod node and workflow. Base's container nodes ended Succeeded.
+// TestRegressionR4_C58_CsAutoRestartOriginal: with failedPodRestart enabled,
+// a containerSet pod evicted before its containers start is recreated (the
+// pod node goes back to Pending). The branch marked each container node
+// Failed "Pod Failed whilst container running" on the evicted pod, and the
+// state machine then refused every transition out of Failed, so the container
+// nodes stayed Failed inside a Succeeded pod node and workflow. Base's
+// container nodes ended Succeeded.
 func TestRegressionR4_C58_CsAutoRestartOriginal(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C58CsAutoRestart)
@@ -6553,12 +6426,12 @@ func TestRegressionR4_C58_CsAutoRestartOriginal(t *testing.T) {
 	}
 }
 
-// C55 (hook side): a hook node that errors while it is created is still
-// linked under the node it hooks, so `argo retry` and `argo resubmit
-// --memoized` find its parent. The exit-hook cases pass at base (runOnExitNode
-// linked unconditionally); the lifecycle-hook and workflow-level-hook cases
-// are the decided always-link rule (T4.1) and fail at base, which returned
-// before linking for those too.
+// C55 (hook side): a hook node that errors while it is created is still linked
+// under the node it hooks, so `argo retry` and `argo resubmit --memoized` find
+// its parent. The exit-hook cases pass at base (runOnExitNode linked
+// unconditionally); the lifecycle-hook and workflow-level-hook cases are the
+// decided always-link rule and fail at base, which returned before linking for
+// those too.
 
 // r4C55HookLinked runs wf to completion and asserts that hookName is an Error
 // node linked under parentName and that `argo retry` (restartSuccessful when
@@ -7604,9 +7477,9 @@ spec:
 	assert.Equal(t, []string{"v1x7-prevout[0].a"}, r4PodNodeNames(ctx, t, woc))
 }
 
-// C47 / lead 4 (lead4-1): a true-expression hook on a step after a failed
-// group, whose argument names the failed step's result, fires nothing and
-// leaves the workflow Failed, not Error.
+// C47: a true-expression hook on a step after a failed group, whose argument
+// names the failed step's result, fires nothing and leaves the workflow
+// Failed, not Error.
 func TestRegressionR4_C47_TrueHookUnresolvedArgOnOmitted(t *testing.T) {
 	_, woc := r4HookRun(t, `
 metadata:
@@ -7703,10 +7576,10 @@ spec:
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "lead11.a(1:q).onExit"))
 }
 
-// Review Focus 1 (upgrade): main ran a DAG task's lifecycle hooks on its
-// TaskGroup node. A workflow it started can hold such a hook node, and when
-// that node is not a pod (here a suspend with a duration) it only advances
-// when re-entered. The group, its dependant and the workflow wait for it.
+// Upgrade: main ran a DAG task's lifecycle hooks on its TaskGroup node. A
+// workflow it started can hold such a hook node, and when that node is not a
+// pod (here a suspend with a duration) it only advances when re-entered. The
+// group, its dependant and the workflow wait for it.
 func TestRegressionR4_Lead11_UpgradedGroupHookReentered(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -8129,10 +8002,10 @@ func TestRegressionR4_C41_DAGExitHookPendingTimeoutIsError(t *testing.T) {
 	assert.Equal(t, "timeout", wf.Status.Message)
 }
 
-// C33 with Review Focus 4: `argo retry` of a DAG that a denied exit hook
-// ended Error removes the Error hook node, so the retried DAG runs the hook
-// again and, once it is admitted, runs b and Succeeds. (Base DAG Succeeded
-// in the first place, so there was nothing to retry.)
+// C33 with `argo retry`: `argo retry` of a DAG that a denied exit hook ended
+// Error removes the Error hook node, so the retried DAG runs the hook again
+// and, once it is admitted, runs b and Succeeds. (Base DAG Succeeded in the
+// first place, so there was nothing to retry.)
 func TestRegressionR4_C33_DAGHookErrorRetried(t *testing.T) {
 	ctx, r := r4Start(t, r4C33DAG)
 	denied := 0
@@ -8232,13 +8105,11 @@ spec:
 // the entry node Succeeded -> Error with the hook error instead) and on
 // this branch before the fix (where the strict node-phase state machine
 // refuses that transition and the error is dropped entirely, logging
-// "refusing invalid node phase transition" every reconcile). See C92 in
-// pr-16290-round4-regressions.md and P17's answer.
+// "refusing invalid node phase transition" every reconcile).
 //
 // The workflow-level hook (spec.hooks) here has an expression that only
 // errors once the workflow has Succeeded: comparing the string parameter
-// "abc" against 5 is a runtime type error, mirroring lead9's
-// lead9ExprSteps probe. The fix records that error on its own Error hook
+// "abc" against 5 is a runtime type error. The fix records that error on its own Error hook
 // node "<wf>.hooks.notify" instead, leaving the entry node and the
 // workflow itself Succeeded.
 func TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode(t *testing.T) {
@@ -8327,7 +8198,7 @@ func r4C2BackingOff(t *testing.T, manifest, boundary string) {
 	assert.Equal(t, wfv1.WorkflowRunning, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 }
 
-// C2: A's retry limit comes from its inputs. Ports TestProbe_v1x0_ParamLimitDAG.
+// C2: A's retry limit comes from its inputs.
 func TestRegressionR4_C2_ParamLimitDAG(t *testing.T) {
 	r4C2BackingOff(t, r4C2Workflow("dag", "", `    retryStrategy:
       limit: "{{inputs.parameters.p}}"
@@ -8335,8 +8206,7 @@ func TestRegressionR4_C2_ParamLimitDAG(t *testing.T) {
 `), "c2-dag")
 }
 
-// C2 for Steps, where HEAD reported the workflow Succeeded. Ports
-// TestProbe_v1x0_ParamLimitSteps.
+// C2 for Steps, where HEAD reported the workflow Succeeded.
 func TestRegressionR4_C2_ParamLimitSteps(t *testing.T) {
 	r4C2BackingOff(t, r4C2Workflow("steps", "", `    retryStrategy:
       limit: "{{inputs.parameters.p}}"
@@ -8345,8 +8215,7 @@ func TestRegressionR4_C2_ParamLimitSteps(t *testing.T) {
 }
 
 // C2: A's retryStrategy comes from spec.templateDefaults, which also retries
-// the DAG itself; the DAG's first attempt must keep running. Ports
-// TestProbe_v1x0_TemplateDefaultsDAG.
+// the DAG itself; the DAG's first attempt must keep running.
 func TestRegressionR4_C2_TemplateDefaultsDAG(t *testing.T) {
 	r4C2BackingOff(t, r4C2Workflow("dag", `  templateDefaults:
     retryStrategy:
@@ -8355,8 +8224,7 @@ func TestRegressionR4_C2_TemplateDefaultsDAG(t *testing.T) {
 `, ""), "c2-dag(0)")
 }
 
-// C2: A's retry expression refers to its inputs. Ports
-// TestProbe_v1x0_ParamExprDAG.
+// C2: A's retry expression refers to its inputs.
 func TestRegressionR4_C2_ParamExprDAG(t *testing.T) {
 	r4C2BackingOff(t, r4C2Workflow("dag", "", `    retryStrategy:
       limit: "2"
@@ -8408,8 +8276,7 @@ func r4C27Succeeds(ctx context.Context, t *testing.T, r *r4Run) {
 }
 
 // C27: the Pending pod of a memoized retried DAG task is deleted; the next
-// reconciles must create it again, as base did. Ports
-// TestProbe_v3x12_DagMemoRetryPendingPodDeleted.
+// reconciles must create it again, as base did.
 func TestRegressionR4_C27_MemoRetryPendingPodDeleted(t *testing.T) {
 	ctx, r := r4Start(t, r4C27Workflow("dag"))
 	r.op(ctx)
@@ -8423,9 +8290,8 @@ func TestRegressionR4_C27_MemoRetryPendingPodDeleted(t *testing.T) {
 }
 
 // C27: the first pod creation of a memoized retried step is refused by a
-// ResourceQuota (a transient error that leaves the attempt Pending); once
-// the quota frees up the pod must be created. Ports
-// TestProbe_v3x12_StepsMemoRetryQuotaExceeded.
+// ResourceQuota (a transient error that leaves the attempt Pending); once the
+// quota frees up the pod must be created.
 func TestRegressionR4_C27_StepsMemoRetryQuotaExceeded(t *testing.T) {
 	quotaFull := true
 	ctx := logging.TestContext(t.Context())
@@ -8445,8 +8311,7 @@ func TestRegressionR4_C27_StepsMemoRetryQuotaExceeded(t *testing.T) {
 
 // C34: after `argo resubmit --memoized`, a retried DAG task that had
 // Succeeded keeps its Succeeded Retry node over a Skipped placeholder
-// attempt; it must count as Succeeded, not as a failed retry. Ports
-// TestProbe_v2x1_MemoizedRetryLeafDAG.
+// attempt; it must count as Succeeded, not as a failed retry.
 func TestRegressionR4_C34_MemoizedRetryLeafDAG(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -8485,7 +8350,7 @@ spec:
 }
 
 // C34 for Steps: the memoized C of the first group must not stop the second
-// group, which never ran. Ports TestProbe_v2x1_MemoizedRetryStepsNextGroup.
+// group, which never ran.
 func TestRegressionR4_C34_MemoizedRetryStepsNextGroup(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -8565,8 +8430,8 @@ func r4C78Start(t *testing.T) (context.Context, *r4Run) {
 	return ctx, r
 }
 
-// C78: the Retry node of a running daemon is itself daemoned, reconcile
-// after reconcile. Ports TestProbe_v1x3_DaemonRetryNodeDaemoned.
+// C78: the Retry node of a running daemon is itself daemoned, reconcile after
+// reconcile.
 func TestRegressionR4_C78_DaemonRetryNodeDaemoned(t *testing.T) {
 	ctx, r := r4C78Start(t)
 	for i := range 4 {
@@ -8579,7 +8444,6 @@ func TestRegressionR4_C78_DaemonRetryNodeDaemoned(t *testing.T) {
 
 // C78: `argo stop` while the daemon and client run ends the daemon's Retry
 // node Succeeded, like its attempt, not Failed "Stopped with strategy".
-// Ports TestProbe_v1x3_DaemonStopRetryNodePhase.
 func TestRegressionR4_C78_DaemonStopRetryNodePhase(t *testing.T) {
 	ctx, r := r4C78Start(t)
 	stored, err := r.controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Get(ctx, "c78", metav1.GetOptions{})
@@ -8676,21 +8540,18 @@ func r4C24ResumedSuspend(t *testing.T, manifest string) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
 }
 
-// C24: a resumed suspend step releases its mutex. Ports
-// TestProbe_v1x43_ResumedSuspendMutexSteps.
+// C24: a resumed suspend step releases its mutex.
 func TestRegressionR4_C24_ResumedSuspendMutexSteps(t *testing.T) {
 	r4C24ResumedSuspend(t, r4C24SuspendMutexSteps)
 }
 
-// C24: a resumed suspend task releases its mutex. Ports
-// TestProbe_v1x43_ResumedSuspendMutexDAG.
+// C24: a resumed suspend task releases its mutex.
 func TestRegressionR4_C24_ResumedSuspendMutexDAG(t *testing.T) {
 	r4C24ResumedSuspend(t, r4C24SuspendMutexDAG)
 }
 
 // C24: an HTTP task, completed by task-set reconciliation after the Engine
-// has run, releases its mutex so its dependant can take it. Ports
-// TestProbe_v1x43_HTTPTaskReleasesMutex.
+// has run, releases its mutex so its dependant can take it.
 func TestRegressionR4_C24_HTTPTaskReleasesMutex(t *testing.T) {
 	ctx, r := r4StartLocked(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -8759,8 +8620,7 @@ const r4C25FailFastInner = `
 `
 
 // C25: a nested DAG holding a mutex that its own failFast check marks Failed
-// releases it, so a sibling waiting on the mutex runs. Ports
-// TestProbe_v2x8_FailFastSimpleMutexReleased.
+// releases it, so a sibling waiting on the mutex runs.
 func TestRegressionR4_C25_FailFastSimpleMutexReleased(t *testing.T) {
 	ctx, r := r4StartLocked(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -8792,7 +8652,7 @@ spec:
 }
 
 // C25: the failFast nested DAG's dependant (depends: inner.Failed) takes the
-// mutex it released. Ports TestProbe_v2x8_FailFastDependantAcquiresMutex.
+// mutex it released.
 func TestRegressionR4_C25_FailFastDependantAcquiresMutex(t *testing.T) {
 	ctx, r := r4StartLocked(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -8820,9 +8680,8 @@ spec:
 	assert.Contains(t, r4PodNodeNames(ctx, t, r.woc), "r4-c25-ffd.cleanup")
 }
 
-// C25: a pod holding a mutex whose pendingTimeout expires while it is
-// Pending releases the mutex, so its sibling runs and the workflow ends.
-// Ports TestProbe_r2syncmemo_PendingTimeoutHolderReleasesDAG.
+// C25: a pod holding a mutex whose pendingTimeout expires while it is Pending
+// releases the mutex, so its sibling runs and the workflow ends.
 func TestRegressionR4_C25_PendingTimeoutHolderReleasesDAG(t *testing.T) {
 	ctx, r := r4StartLocked(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -8874,9 +8733,8 @@ spec:
 	assert.True(t, r.woc.wf.Status.Phase.Completed(), "workflow phase %s, unfulfilled: %v", r.woc.wf.Status.Phase, r4Unfulfilled(r.woc))
 }
 
-// C25: a template that takes a mutex and then fails its memoization setup
-// (an invalid maxAge) releases the mutex. Ports
-// TestProbe_r2syncmemo_MemoizeErrorHolderReleases.
+// C25: a template that takes a mutex and then fails its memoization setup (an
+// invalid maxAge) releases the mutex.
 func TestRegressionR4_C25_MemoizeErrorHolderReleases(t *testing.T) {
 	ctx, r := r4StartLocked(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -8952,9 +8810,8 @@ spec:
 ` + body
 }
 
-// C64 (section 7): items holding a semaphore from templateDefaults release
-// it, so the next item and the workflow finish. Ports
-// TestProbe_r3wfdefaults_TDSyncDAGItems.
+// C64: items holding a semaphore from templateDefaults release it, so the
+// next item and the workflow finish.
 func TestRegressionR4_C64_TDSyncDAGItems(t *testing.T) {
 	ctx, r := r4StartLocked(t, r4C64TDSync("r4-c64-td-dag", `
   - name: main
@@ -8972,8 +8829,7 @@ func TestRegressionR4_C64_TDSyncDAGItems(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
 }
 
-// C64 (section 7): the Steps form. Ports
-// TestProbe_r3wfdefaults_TDSyncStepsItems.
+// C64: the Steps form.
 func TestRegressionR4_C64_TDSyncStepsItems(t *testing.T) {
 	ctx, r := r4StartLocked(t, r4C64TDSync("r4-c64-td-steps", `
   - name: main
@@ -8990,9 +8846,8 @@ func TestRegressionR4_C64_TDSyncStepsItems(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
 }
 
-// C64 (section 7): two plain suspend tasks holding the templateDefaults
-// semaphore, resumed in turn, release it. Ports
-// TestProbe_r3wfdefaults_TDSyncSuspendPlainDAG.
+// C64: two plain suspend tasks holding the templateDefaults semaphore,
+// resumed in turn, release it.
 func TestRegressionR4_C64_TDSyncSuspendPlainDAG(t *testing.T) {
 	ctx, r := r4StartLocked(t, r4C64TDSync("r4-c64-td-suspend", `
   - name: main
@@ -9013,8 +8868,7 @@ func TestRegressionR4_C64_TDSyncSuspendPlainDAG(t *testing.T) {
 }
 
 // C62: the completion metric of a task whose argument comes from another
-// task's output is labelled with the resolved argument. Ports
-// TestProbe_v1x49_DAGOutputArgMetricLabel.
+// task's output is labelled with the resolved argument.
 func TestRegressionR4_C62_DAGOutputArgMetricLabel(t *testing.T) {
 	woc := r4MetricsRun(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9076,7 +8930,6 @@ spec:
 }
 
 // C62: the completion metric of an expanded step is labelled with its item.
-// Ports TestProbe_v1x49_StepsItemMetricInputLabel.
 func TestRegressionR4_C62_StepsItemMetricInputLabel(t *testing.T) {
 	woc := r4MetricsRun(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9122,7 +8975,6 @@ spec:
 }
 
 // C63: a retried item that completes inside its own dispatch counts once.
-// Ports TestProbe_v1x52_DAGItemsRetryCounter.
 func TestRegressionR4_C63_DAGItemsRetryCounter(t *testing.T) {
 	woc := r4MetricsRun(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9160,7 +9012,7 @@ spec:
 }
 
 // C63: a nested Steps item that completes inside its own dispatch counts
-// once. Ports TestProbe_v1x52_DAGItemsNestedStepsCounter.
+// once.
 func TestRegressionR4_C63_DAGItemsNestedStepsCounter(t *testing.T) {
 	woc := r4MetricsRun(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9198,8 +9050,7 @@ spec:
 
 // C63 and P22: a memoize cache hit emits its template's completion metrics
 // once, like an unmemoized run (a decided deviation, P22: main emitted
-// none for a hit, so this fails at base). Rewrites
-// TestProbe_v1x52_MemoCacheHitCounter, which expected 0.
+// none for a hit, so this fails at base).
 func TestRegressionR4_C63_MemoCacheHitCounter(t *testing.T) {
 	memoTmpl := func(name, metric string) string {
 		return `
@@ -9248,9 +9099,9 @@ spec:
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_memo_item"), 0.001, "one per item hit")
 }
 
-// C42: a newer value exported further down the tree (by a nested step)
-// wins over an earlier step's: the Steps boundary does not re-export its
-// steps' outputs when it completes. Ports TestProbe_v2x3_NestedStepsOverwrite.
+// C42: a newer value exported further down the tree (by a nested step) wins
+// over an earlier step's: the Steps boundary does not re-export its steps'
+// outputs when it completes.
 func TestRegressionR4_C42_NestedStepsOverwrite(t *testing.T) {
 	woc := r4MetricsRun(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9298,7 +9149,7 @@ spec:
 }
 
 // C42: the value an expanded step's item exported last wins over an earlier
-// step's. Ports TestProbe_v2x3_ExpandedStepOverwrite.
+// step's.
 func TestRegressionR4_C42_ExpandedStepOverwrite(t *testing.T) {
 	woc := r4MetricsRun(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9534,7 +9385,7 @@ func r4C64AssertItemsCounted(t *testing.T, woc *wfOperationCtx, metric string) {
 }
 
 // C64: spec.templateDefaults metrics are emitted once per withItems item of a
-// DAG task. Ports TestProbe_v1x70_DAGItemsTemplateDefaultsMetric.
+// DAG task.
 func TestRegressionR4_C64_DAGItemsTemplateDefaultsMetric(t *testing.T) {
 	woc := r4MetricsRun(t, r4C64DefaultsMetric("r4-c64-dag-items", "r4_c64_dag_items", `
   - name: main
@@ -9547,8 +9398,7 @@ func TestRegressionR4_C64_DAGItemsTemplateDefaultsMetric(t *testing.T) {
 	r4C64AssertItemsCounted(t, woc, "r4_c64_dag_items")
 }
 
-// C64: the Steps form. Ports
-// TestProbe_v1x70_StepsItemsTemplateDefaultsMetric.
+// C64: the Steps form.
 func TestRegressionR4_C64_StepsItemsTemplateDefaultsMetric(t *testing.T) {
 	woc := r4MetricsRun(t, r4C64DefaultsMetric("r4-c64-steps-items", "r4_c64_steps_items", `
   - name: main
@@ -9561,9 +9411,8 @@ func TestRegressionR4_C64_StepsItemsTemplateDefaultsMetric(t *testing.T) {
 }
 
 // C87: a step exit hook whose optional artifact argument names an output the
-// step did not produce ends Error "missing location information", as the
-// hook requires its input, instead of running without it. Ports
-// TestProbe_v2x5_StepsExitHookOptionalArgMissing.
+// step did not produce ends Error "missing location information", as the hook
+// requires its input, instead of running without it.
 func TestRegressionR4_C87_StepsExitHookOptionalArgMissing(t *testing.T) {
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9623,7 +9472,6 @@ spec:
 // C87: a workflow exit hook whose artifact argument is a raw
 // {{workflow.outputs.artifacts.g}} tag ends Error "missing location
 // information" instead of creating a pod with a location-less artifact.
-// Ports TestProbe_v2x5_WfExitHookGlobalArtifact.
 func TestRegressionR4_C87_WfExitHookGlobalArtifact(t *testing.T) {
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -9823,7 +9671,7 @@ spec:
 	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_p9_late_sync", "status", "Failed"), 0.001)
 }
 
-// C66 and lead 2: a retried template's metrics belong to its Retry node.
+// C66: a retried template's metrics belong to its Retry node.
 //
 // A realtime gauge must be registered once, for the Retry node
 // (status=Running, duration covering the whole retry), not once per attempt
@@ -9843,7 +9691,7 @@ func r4GaugeStatuses(ctx context.Context, name string) map[string]float64 {
 	return out
 }
 
-// C66: ports TestProbe_v1x53_RealtimeMetricRetriedTemplate.
+// C66::
 func TestRegressionR4_C66_RealtimeMetricRetriedTemplate(t *testing.T) {
 	for _, kind := range []string{"root", "dag", "steps"} {
 		t.Run(kind, func(t *testing.T) {
@@ -9912,9 +9760,8 @@ spec:
 	}
 }
 
-// lead2, folded into C66: a Steps/DAG template with retryStrategy and a
-// {{status}} counter counts each failed non-final attempt once, not twice.
-// Ports TestProbe_lead2_RetriedNestedFailOnceThenSucceed.
+// C66: a Steps/DAG template with retryStrategy and a {{status}} counter
+// counts each failed non-final attempt once, not twice.
 func TestRegressionR4_C66_RetriedNestedCounterCountsOnce(t *testing.T) {
 	for _, parent := range []string{"steps", "dag"} {
 		for _, inner := range []string{"steps", "dag"} {
@@ -10032,11 +9879,10 @@ const r4C39Inner = `
       command: [echo, hi]
 `
 
-// TestRegressionR4_C39_RetryOnError ports TestProbe_v1x28_RetryOnError
-// (v1x28-1_test.go / C39). A Steps template whose outputs cannot be
+// TestRegressionR4_C39_RetryOnError: a Steps template whose outputs cannot be
 // resolved ends Error, as executeSteps' returned error did, so its
-// retryStrategy with retryPolicy OnError retries it: b runs once per
-// attempt. HEAD ended it Failed, which OnError does not retry.
+// retryStrategy with retryPolicy OnError retries it: b runs once per attempt.
+// HEAD ended it Failed, which OnError does not retry.
 func TestRegressionR4_C39_RetryOnError(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10058,11 +9904,10 @@ spec:
 	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c39-onerror[0].call(0)"), "the attempt ends Error")
 }
 
-// TestRegressionR4_C39_ItemsScriptResultOutput ports
-// TestProbe_v1x28_ItemsScriptResultOutput (v1x28-1_test.go / C39). The Steps
-// template's output reads the aggregated result of a withItems script that
-// printed plain text, which cannot be aggregated: the template itself errors,
-// and it and the workflow end Error, not Failed.
+// TestRegressionR4_C39_ItemsScriptResultOutput: the Steps template's output
+// reads the aggregated result of a withItems script that printed plain text,
+// which cannot be aggregated: the template itself errors, and it and the
+// workflow end Error, not Failed.
 func TestRegressionR4_C39_ItemsScriptResultOutput(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10100,13 +9945,11 @@ spec:
 	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c39-itemsout"))
 }
 
-// TestRegressionR4_C59_PodRejectedMessage ports
-// TestProbe_v1x30_PodRejectedMessage (v1x30-1_test.go / C59). A step whose
-// pod an admission webhook rejects ends Error; its StepGroup ends Error with
-// main's "step group deemed errored due to child <name> error: <reason>",
-// which the Steps node and the workflow carry. HEAD said only "child '<id>'
-// failed" and left the StepGroup Failed. Per P23 the rule is keyed on the
-// step's phase.
+// TestRegressionR4_C59_PodRejectedMessage: a step whose pod an admission
+// webhook rejects ends Error; its StepGroup ends Error with main's "step
+// group deemed errored due to child <name> error: <reason>", which the Steps
+// node and the workflow carry. HEAD said only "child '<id>' failed" and left
+// the StepGroup Failed. Per P23 the rule is keyed on the step's phase.
 func TestRegressionR4_C59_PodRejectedMessage(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10147,10 +9990,9 @@ spec:
 	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-c59-rej[1]"), "the StepGroup")
 }
 
-// TestRegressionR4_C59_WithParamNotJSONMessage ports
-// TestProbe_v1x30_WithParamNotJSONMessage (v1x30-1_test.go / C59). A step
-// whose withParam is not a JSON list errors, and the workflow message says
-// why rather than only naming the step's node.
+// TestRegressionR4_C59_WithParamNotJSONMessage: a step whose withParam is not
+// a JSON list errors, and the workflow message says why rather than only
+// naming the step's node.
 func TestRegressionR4_C59_WithParamNotJSONMessage(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10209,13 +10051,12 @@ const r4C40Say = `
       command: [echo, "{{inputs.parameters.in}}"]
 `
 
-// TestRegressionR4_C40_AggregationErrorWorkflowError ports
-// TestProbe_v1x60_AggregationErrorWorkflowError (v1x60-1_test.go / C40).
-// gen's items print plain text, so their results cannot be aggregated for
-// the next group: as when executeSteps aggregated a finished group into the
-// template's scope, that is an error of the Steps template itself, which
-// ends Error, as does the workflow; use never runs. HEAD recorded the error
-// on use, and the Steps node and the workflow ended Failed.
+// TestRegressionR4_C40_AggregationErrorWorkflowError: gen's items print plain
+// text, so their results cannot be aggregated for the next group: as when
+// executeSteps aggregated a finished group into the template's scope, that is
+// an error of the Steps template itself, which ends Error, as does the
+// workflow; use never runs. HEAD recorded the error on use, and the Steps
+// node and the workflow ended Failed.
 func TestRegressionR4_C40_AggregationErrorWorkflowError(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10247,10 +10088,9 @@ spec:
 	assert.Empty(t, r4NodePhase(woc, "r4-c40-agg[1].use"), "use never starts")
 }
 
-// TestRegressionR4_C40_AggErrContinueOnError ports
-// TestProbe_v1x60_AggErrContinueOnError (v1x60-1_test.go / C40). The
-// aggregation error is the template's, not use's, so use's continueOn.error
-// does not apply: neither use nor after runs, and the workflow ends Error.
+// TestRegressionR4_C40_AggErrContinueOnError: the aggregation error is the
+// template's, not use's, so use's continueOn.error does not apply: neither
+// use nor after runs, and the workflow ends Error.
 func TestRegressionR4_C40_AggErrContinueOnError(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10346,13 +10186,11 @@ func r4WorkflowFailures(t *testing.T, woc *wfOperationCtx) []string {
 	return names
 }
 
-// TestRegressionR4_D1_WorkflowFailuresExcludeTaskGroups ports
-// TestProbe_v1x36_StepsFailuresOneItem and _DagFailuresOneItem
-// (v1x36-1_test.go / D1). {{workflow.failures}} must not list a TaskGroup's
-// own entry: only the failed items and the enclosing boundary node. HEAD
-// added this entry for Steps (fixed here). Base already emitted it for a
-// failed expanded DAG task, so excluding it for DAG too is a decided
-// deviation from main (D1 in pr-16290-round4-regressions.md): the DAG
+// TestRegressionR4_D1_WorkflowFailuresExcludeTaskGroups:
+// {{workflow.failures}} must not list a TaskGroup's own entry: only the
+// failed items and the enclosing boundary node. HEAD added this entry for
+// Steps (fixed here). Base already emitted it for a failed expanded DAG task,
+// so excluding it for DAG too is a decided deviation from main: the DAG
 // subtest is written to the decided behaviour and fails at base as well as
 // on the branch before this fix.
 func TestRegressionR4_D1_WorkflowFailuresExcludeTaskGroups(t *testing.T) {
@@ -10421,15 +10259,13 @@ spec:
 	})
 }
 
-// TestRegressionR4_C57_CsNoMainExpandedSteps ports
-// TestProbe_v2x10_CsNoMainExpandedSteps (v2x10-1_test.go / C57). A
-// containerSet with no container named "main" has no result for the
-// executor to ever report; validation still puts the aggregated
-// {{steps.cs.outputs.result}} in scope for a later step, since it doesn't
-// know which container(s) exist at runtime. assessNodeStatus's gate case 2
-// held the pod node at its old (non-terminal) phase forever waiting for that
-// result, so the items never finished, print was never created, and the
-// workflow hung with no message.
+// TestRegressionR4_C57_CsNoMainExpandedSteps: a containerSet with no
+// container named "main" has no result for the executor to ever report;
+// validation still puts the aggregated {{steps.cs.outputs.result}} in scope
+// for a later step, since it doesn't know which container(s) exist at
+// runtime. assessNodeStatus's gate case 2 held the pod node at its old
+// (non-terminal) phase forever waiting for that result, so the items never
+// finished, print was never created, and the workflow hung with no message.
 func TestRegressionR4_C57_CsNoMainExpandedSteps(t *testing.T) {
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10495,19 +10331,19 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_StepGroupErrorMessageFallsBackToPhase covers a Task 5.4
-// review follow-up: stepGroupOutcome (engine.go) built the "step group
-// deemed errored due to child <name> error: <reason>" message straight from
-// the failed node's Message, which trails off into "...error: " when that
-// message is empty. There is no realistic pod path that leaves an Error
-// node's Message empty (markNodeError always writes err.Error()), so this
-// builds an in-flight status directly, the way the C12 legacy-upgrade tests
-// do, with the failed step node already Error and Message "": engine.go
-// must still produce a message naming what happened, falling back to the
-// node's phase. This is a defect in this branch's own new message-building
-// code (T5.4), not a base-vs-branch regression, so it is not basecheck-clean:
-// base's steps.go builds Step Group messages on an entirely different path
-// that predates stepGroupOutcome.
+// TestRegressionR4_StepGroupErrorMessageFallsBackToPhase covers a review
+// follow-up: stepGroupOutcome (engine.go) built the "step group deemed
+// errored due to child <name> error: <reason>" message straight from the
+// failed node's Message, which trails off into "...error: " when that message
+// is empty. There is no realistic pod path that leaves an Error node's
+// Message empty (markNodeError always writes err.Error()), so this builds an
+// in-flight status directly, the way the C12 legacy-upgrade tests do, with
+// the failed step node already Error and Message "": engine.go must still
+// produce a message naming what happened, falling back to the node's phase.
+// This is a defect in this branch's own new message-building code, not a
+// base-vs-branch regression, so it does not pass at base: base's steps.go
+// builds Step Group messages on an entirely different path that predates
+// stepGroupOutcome.
 func TestRegressionR4_StepGroupErrorMessageFallsBackToPhase(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -10723,15 +10559,15 @@ func r4RestartDrive(t *testing.T, manifest string, fail func(*wfv1.NodeStatus) b
 	return state
 }
 
-// TestRegressionR4_RestartBetweenReconciles checks Review Focus 5 of the round
-// 4 plan: everything the Engine needs between reconciles (visited tasks,
-// StepGroups created on demand, TaskGroup completion, hook progress, retry
-// attempts, memoized results) must come from the stored status and the
-// cluster, never from controller memory. Each shape runs twice: once on one
-// controller (each reconcile already starts from the stored workflow, see
-// r4Operate), and once with the controller rebuilt from the stored workflow,
-// pods, task results and ConfigMaps before every reconcile. Both runs must
-// end in the same state. Not a red test: it passes at base too.
+// TestRegressionR4_RestartBetweenReconciles checks everything the Engine needs
+// between reconciles (visited tasks, StepGroups created on demand, TaskGroup
+// completion, hook progress, retry attempts, memoized results) must come from
+// the stored status and the cluster, never from controller memory. Each shape
+// runs twice: once on one controller (each reconcile already starts from the
+// stored workflow, see r4Operate), and once with the controller rebuilt from
+// the stored workflow, pods, task results and ConfigMaps before every
+// reconcile. Both runs must end in the same state. Not a red test: it passes
+// at base too.
 func TestRegressionR4_RestartBetweenReconciles(t *testing.T) {
 	never := func(*wfv1.NodeStatus) bool { return false }
 	for _, tc := range []struct {
@@ -10797,15 +10633,14 @@ spec:
 // r4ScaleHookedLimit bounds one reconcile of TestRegressionR4_Scale_HookedFanOut.
 const r4ScaleHookedLimit = time.Second
 
-// TestRegressionR4_Scale_HookedFanOut checks Review Focus 3 of the round 4
-// plan: hook re-entry must not make a wide fan-out expensive. A 1,000-item
-// DAG fan-out whose items have exit hooks (one hook per item, P18) is
-// reconciled while every item runs, and again while every item's exit hook
-// runs; each reconcile must stay under a second. The consumer of the
-// fan-out must then run. Not a red test. Base meets the time bars (about
-// 0.17 s with the items running) but creates the items' exit hooks one per
-// reconcile, so it fails the "one exit hook per item" check here, which
-// allows five reconciles.
+// TestRegressionR4_Scale_HookedFanOut checks hook re-entry must not make a
+// wide fan-out expensive. A 1,000-item DAG fan-out whose items have exit
+// hooks (one hook per item, P18) is reconciled while every item runs, and
+// again while every item's exit hook runs; each reconcile must stay under a
+// second. The consumer of the fan-out must then run. Not a red test. Base
+// meets the time bars (about 0.17 s with the items running) but creates the
+// items' exit hooks one per reconcile, so it fails the "one exit hook per
+// item" check here, which allows five reconciles.
 func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	const n = 1000
 	ctx := logging.TestContext(t.Context())
@@ -10871,11 +10706,10 @@ func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
 }
 
-// r4C95Workflow is the F3 shape of the Task 7.2 fuzzer
-// (acceptance-fuzz/repro/f700017, f701286, f702994): an outer template of
-// kind outer ("steps" or "dag") runs a nested template of kind inner, whose
-// own output reads a when-false step or task and so cannot resolve, then a
-// dependant "after". The nested template ends Error.
+// r4C95Workflow is a shape found by fuzzing: an outer template of kind outer
+// ("steps" or "dag") runs a nested template of kind inner, whose own output
+// reads a when-false step or task and so cannot resolve, then a dependant
+// "after". The nested template ends Error.
 func r4C95Workflow(name, outer, inner string) string {
 	var outerBody, innerBody string
 	if outer == "steps" {
@@ -11016,19 +10850,19 @@ func r4C95Run(t *testing.T, name, outer, inner string) {
 // executeSteps did (base steps.go updateOutboundNodes before
 // getTemplateOutputsFromScope). The branch's finalize resolved the outputs
 // first and returned on the error, so the next StepGroup, created Omitted,
-// had no parent and `argo retry` failed "couldn't find parent node" (F3).
+// had no parent and `argo retry` failed "couldn't find parent node".
 func TestRegressionR4_C95_StepsInSteps(t *testing.T) {
 	r4C95Run(t, "r4-c95-steps-steps", "steps", "steps")
 }
 
 // TestRegressionR4_C95_StepsInDAG: as StepsInSteps, with a DAG dependant of
-// the nested Steps template (acceptance-fuzz f702994).
+// the nested Steps template.
 func TestRegressionR4_C95_StepsInDAG(t *testing.T) {
 	r4C95Run(t, "r4-c95-steps-dag", "dag", "steps")
 }
 
 // TestRegressionR4_C95_DAGInSteps: as StepsInSteps, with a nested DAG
-// template (acceptance-fuzz f701286).
+// template.
 func TestRegressionR4_C95_DAGInSteps(t *testing.T) {
 	r4C95Run(t, "r4-c95-dag-steps", "steps", "dag")
 }
@@ -11042,9 +10876,9 @@ func TestRegressionR4_C95_DAGInDAG(t *testing.T) {
 	r4C95Run(t, "r4-c95-dag-dag", "dag", "dag")
 }
 
-// r4C96Run runs acceptance-fuzz f700718 (F4). In inner, s2's one daemon
-// item comes up, so its TaskGroup is recorded Succeeded, and then dies while
-// s0 still runs. s0 then succeeds, s4 (if it was started) comes up, and slow
+// r4C96Run runs a workflow found by fuzzing. In inner, s2's one daemon item
+// comes up, so its TaskGroup is recorded Succeeded, and then dies while s0
+// still runs. s0 then succeeds, s4 (if it was started) comes up, and slow
 // succeeds. It reports whether s4 ever had a node other than Omitted.
 func r4C96Run(t *testing.T) (*wfOperationCtx, bool) {
 	t.Helper()
@@ -11098,14 +10932,14 @@ spec:
 
 const r4C96S4 = "r4-c96[0].inner[1].s4"
 
-// TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied (acceptance-fuzz
-// f700718, F4). When s0 finishes, inner's group [0] has failed with s2's
-// dead item: executeSteps stopped there, so s4 never started and the
-// workflow ended Failed once slow did. The branch read s2's recorded
-// Succeeded for s4's dependency and started s4 in the reconcile in which
-// inner failed. Nothing stopped that daemon (inner had already finished), so
-// the workflow stayed Running. Base never creates [1] or s4; here they may
-// only be Omitted (the decided shape is pinned by _LaterGroupOmitted).
+// TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied. When s0 finishes,
+// inner's group [0] has failed with s2's dead item: executeSteps stopped
+// there, so s4 never started and the workflow ended Failed once slow did. The
+// branch read s2's recorded Succeeded for s4's dependency and started s4 in
+// the reconcile in which inner failed. Nothing stopped that daemon (inner had
+// already finished), so the workflow stayed Running. Base never creates [1]
+// or s4; here they may only be Omitted (the decided shape is pinned by
+// _LaterGroupOmitted).
 func TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied(t *testing.T) {
 	woc, s4Started := r4C96Run(t)
 	assert.False(t, s4Started, "s4 must never start once group [0] has failed")
@@ -11127,13 +10961,12 @@ func TestRegressionR4_C96_LaterGroupOmitted(t *testing.T) {
 	assert.True(t, r4Reachable(woc, r4C96S4), "s4 hangs off the graph")
 }
 
-// r4C97Run runs acceptance-fuzz f700130 (F5), minimised: s1's one item is
-// retried and has an exit hook with its own retryStrategy, and s2 in the
-// next group fails. The next StepGroup hangs off the item's hook, a Retry
-// node, so `argo retry` resets that hook to Running (planReset's
-// resetBoundaries resets a group's Retry parent) along with group [1],
-// while s1's group stays Succeeded. The retried workflow is then run with
-// every pod succeeding.
+// r4C97Run runs a workflow found by fuzzing, minimised: s1's one item is
+// retried and has an exit hook with its own retryStrategy, and s2 in the next
+// group fails. The next StepGroup hangs off the item's hook, a Retry node, so
+// `argo retry` resets that hook to Running (planReset's resetBoundaries
+// resets a group's Retry parent) along with group [1], while s1's group stays
+// Succeeded. The retried workflow is then run with every pod succeeding.
 func r4C97Run(t *testing.T, body string) *wfOperationCtx {
 	t.Helper()
 	ctx, r := r4Start(t, fmt.Sprintf(`
@@ -11173,11 +11006,11 @@ spec:
 	return r.woc
 }
 
-// TestRegressionR4_C97_StepsItemExitHookAfterRetry (acceptance-fuzz
-// f700130, F5): base and HEAD re-entered the item's reset exit hook and the
-// retried workflow Succeeded. On the branch an expanded step's item hooks
-// were driven only while its TaskGroup ran; the TaskGroup stayed Succeeded,
-// so nothing re-entered the hook, and finalize waited for it forever.
+// TestRegressionR4_C97_StepsItemExitHookAfterRetry: base and HEAD re-entered
+// the item's reset exit hook and the retried workflow Succeeded. On the
+// branch an expanded step's item hooks were driven only while its TaskGroup
+// ran; the TaskGroup stayed Succeeded, so nothing re-entered the hook, and
+// finalize waited for it forever.
 //
 // The pods pin the decided behaviour, which deliberately differs from base
 // and HEAD: the reset exit hook had already succeeded, so it is completed
@@ -11199,9 +11032,9 @@ func TestRegressionR4_C97_StepsItemExitHookAfterRetry(t *testing.T) {
 		r4PodNodeNames(logging.TestContext(t.Context()), t, woc))
 }
 
-// r4C98Run runs the F6 probe (acceptance-fuzz f700517): a's first attempt
-// succeeds while its running lifecycle hook is still running. It returns the
-// pods the workflow created.
+// r4C98Run runs a workflow found by fuzzing: a's first attempt succeeds while
+// its running lifecycle hook is still running. It returns the pods the
+// workflow created.
 func r4C98Run(t *testing.T, body string) (*wfOperationCtx, []string) {
 	t.Helper()
 	ctx, r := r4Start(t, fmt.Sprintf(`
@@ -11238,7 +11071,7 @@ spec:
 	return r.woc, r4PodNodeNames(ctx, t, r.woc)
 }
 
-// TestRegressionR4_C98_DAGNoAttemptAfterSuccess (F6): base's executeDAGTask
+// TestRegressionR4_C98_DAGNoAttemptAfterSuccess: base's executeDAGTask
 // left a task alone while its lifecycle hooks ran, so a's Retry node never
 // saw its succeeded attempt with the hook still running, and a ran once. On
 // the branch the walk re-enters a, the operator marks the Retry node
@@ -11257,7 +11090,7 @@ func TestRegressionR4_C98_DAGNoAttemptAfterSuccess(t *testing.T) {
 	assert.Equal(t, []string{"r4-c98.a(0)", "r4-c98.a.hooks.running"}, pods)
 }
 
-// TestRegressionR4_C98_StepsNoAttemptAfterSuccess (F6) is a decided
+// TestRegressionR4_C98_StepsNoAttemptAfterSuccess is a decided
 // improvement over base, not a red test from it: base's executeSteps
 // re-entered the step while its hook ran and started a(1) as the branch
 // does; HEAD ran a once. A Retry node whose last attempt has finished starts
@@ -11274,15 +11107,14 @@ func TestRegressionR4_C98_StepsNoAttemptAfterSuccess(t *testing.T) {
 	assert.Equal(t, []string{"r4-c98[0].a(0)", "r4-c98[0].a.hooks.running"}, pods)
 }
 
-// TestRegressionR4_C93_LegacyItemsDoneWhileDownMetrics ports
-// TestProbe_inflight_StepsExpandedMetricsDoneWhileDown (inflight-5, F1).
-// An older controller left A's items directly under StepGroup [0], both
-// Running, and both pods succeeded while the controller was being upgraded.
-// The new controller adopts them into the TaskGroup it creates for A, in the
-// reconcile that sees them finish; each must emit its template's completion
-// metric then, as base did when it re-entered them. On the branch the
-// adoption came after the reconcile's finishing pass, and the next reconcile
-// saw them already finished, so neither was ever counted.
+// TestRegressionR4_C93_LegacyItemsDoneWhileDownMetrics: an older controller
+// left A's items directly under StepGroup [0], both Running, and both pods
+// succeeded while the controller was being upgraded. The new controller
+// adopts them into the TaskGroup it creates for A, in the reconcile that sees
+// them finish; each must emit its template's completion metric then, as base
+// did when it re-entered them. On the branch the adoption came after the
+// reconcile's finishing pass, and the next reconcile saw them already
+// finished, so neither was ever counted.
 func TestRegressionR4_C93_LegacyItemsDoneWhileDownMetrics(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -11353,8 +11185,7 @@ const r4C94Template = `
     container: {image: busybox, command: [echo]}
 `
 
-// TestRegressionR4_C94_StepsDisplayNameOnCreation (diffsim
-// loops-param-argument, F2): a step's node takes its template's
+// TestRegressionR4_C94_StepsDisplayNameOnCreation: a step's node takes its template's
 // workflows.argoproj.io/display-name annotation, a plain step and each item
 // of an expanded one alike. Base applied it when it re-entered the node on
 // the next reconcile, which it did for every step, finished or not. The
@@ -11385,7 +11216,7 @@ spec:
 	assert.Equal(t, "dn-yy", names["r4-c94-steps[1].b(1:yy)"])
 }
 
-// TestRegressionR4_C94_DAGItemDisplayNameOnCreation (F2) is the DAG case:
+// TestRegressionR4_C94_DAGItemDisplayNameOnCreation is the DAG case:
 // base re-entered every item of a TaskGroup on each reconcile, so each item
 // was named. A plain DAG task that finished before the next reconcile was
 // not re-entered at base, and is not asserted here; it is named on creation
@@ -11416,19 +11247,18 @@ spec:
 	assert.Equal(t, "dn-yy", names["r4-c94-dag.b(1:yy)"])
 }
 
-// TestRegressionR4_C99_StepsNoAttemptAfterRetriesExhausted (acceptance-fuzz
-// f702249, F7): a Steps template with retryStrategy limit 1 runs a daemon
-// beside a when-false step, and its next group's `when` reads the skipped
-// step's output, so every attempt fails. `argo retry` then revives attempt
-// 0 (a retry-planning quirk base shares, not asserted here) under the
-// Retry node, which processNodeRetries finds out of retries again. Base
-// started no other attempt. On the branch the Retry node's revived attempt 0
-// kept childrenFulfilled false, so handleRetries went on past "No more
-// retries left" and started attempt 2 and its daemon pod: since T3.2 attempt
-// 0 has an on-demand group [1] recorded Error with no children, a leaf that
-// retry revives to Running (at base attempt 0 had no such leaf). T8.3's
-// "done once its last attempt is" rule in handleRetries fixed it; this
-// pins it.
+// TestRegressionR4_C99_StepsNoAttemptAfterRetriesExhausted: a Steps template
+// with retryStrategy limit 1 runs a daemon beside a when-false step, and its
+// next group's `when` reads the skipped step's output, so every attempt
+// fails. `argo retry` then revives attempt 0 (a retry-planning quirk base
+// shares, not asserted here) under the Retry node, which processNodeRetries
+// finds out of retries again. Base started no other attempt. On the branch
+// the Retry node's revived attempt 0 kept childrenFulfilled false, so
+// handleRetries went on past "No more retries left" and started attempt 2 and
+// its daemon pod: since StepGroups are created on demand, attempt 0 has a
+// group [1] recorded Error with no children, a leaf that retry revives to
+// Running (at base attempt 0 had no such leaf). The "done once its last
+// attempt is" rule in handleRetries fixed it; this pins it.
 func TestRegressionR4_C99_StepsNoAttemptAfterRetriesExhausted(t *testing.T) {
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -11518,11 +11348,11 @@ func TestRegressionR4_C12_LegacyItemsRetried(t *testing.T) {
 
 // r4HookErrSiblingRun runs a template of two sibling tasks with no
 // dependency between them: hooked, whose running hook's expression cannot be
-// evaluated, and plain. kind is "steps" (one step group, in the order
+// evaluated, and b. kind is "steps" (one step group, in the order
 // given) or "dag" (the walk takes the leaves in name order, so the names set
 // the order). Every pod succeeds; the workflow is reconciled until it
 // completes, then three more times.
-func r4HookErrSiblingRun(t *testing.T, kind, hooked, plain string, hookedFirst bool) (*wfOperationCtx, []string) {
+func r4HookErrSiblingRun(t *testing.T, kind, hooked string, hookedFirst bool) (*wfOperationCtx, []string) {
 	t.Helper()
 	tasks := []string{
 		fmt.Sprintf(`name: %s
@@ -11531,8 +11361,8 @@ func r4HookErrSiblingRun(t *testing.T, kind, hooked, plain string, hookedFirst b
           running:
             expression: nosuchvar == "x"
             template: c`, hooked),
-		fmt.Sprintf(`name: %s
-        template: c`, plain),
+		`name: b
+        template: c`,
 	}
 	if !hookedFirst {
 		tasks[0], tasks[1] = tasks[1], tasks[0]
@@ -11567,7 +11397,7 @@ spec:
 // (it stayed Running before the fix), and the workflow completes with no
 // node left running.
 func TestRegressionR4_HookErrorSibling_StepsHookedFirst(t *testing.T) {
-	woc, pods := r4HookErrSiblingRun(t, "steps", "a", "b", true)
+	woc, pods := r4HookErrSiblingRun(t, "steps", "a", true)
 	r4AssertHookErrSiblingNotStarted(t, woc, pods, "r4-hookerr-steps[0].a", "r4-hookerr-steps[0].b")
 	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-hookerr-steps[0]"), "the StepGroup")
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -11576,7 +11406,7 @@ func TestRegressionR4_HookErrorSibling_StepsHookedFirst(t *testing.T) {
 
 // As _StepsHookedFirst, in a DAG: a's name puts it first in the walk.
 func TestRegressionR4_HookErrorSibling_DAGHookedFirst(t *testing.T) {
-	woc, pods := r4HookErrSiblingRun(t, "dag", "a", "b", true)
+	woc, pods := r4HookErrSiblingRun(t, "dag", "a", true)
 	r4AssertHookErrSiblingNotStarted(t, woc, pods, "r4-hookerr-dag.a", "r4-hookerr-dag.b")
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	assert.Equal(t, fmt.Sprintf("child '%s' failed", woc.wf.NodeID("r4-hookerr-dag.a")), woc.wf.Status.Message)
@@ -11605,14 +11435,14 @@ func r4AssertHookErrSiblingNotStarted(t *testing.T, woc *wfOperationCtx, pods []
 // the hook recorded on it, as a pod's phase does on every pod node, so its
 // StepGroup ends Succeeded. No node is left running.
 func TestRegressionR4_HookErrorSibling_StepsSiblingFirst(t *testing.T) {
-	woc, pods := r4HookErrSiblingRun(t, "steps", "a", "b", false)
+	woc, pods := r4HookErrSiblingRun(t, "steps", "a", false)
 	r4AssertHookErrSiblingRan(t, woc, pods, "r4-hookerr-steps[0].a", "r4-hookerr-steps[0].b")
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "r4-hookerr-steps[0]"), "the StepGroup")
 }
 
 // As _StepsSiblingFirst, in a DAG: z's name puts b first in the walk.
 func TestRegressionR4_HookErrorSibling_DAGSiblingFirst(t *testing.T) {
-	woc, pods := r4HookErrSiblingRun(t, "dag", "z", "b", false)
+	woc, pods := r4HookErrSiblingRun(t, "dag", "z", false)
 	r4AssertHookErrSiblingRan(t, woc, pods, "r4-hookerr-dag.z", "r4-hookerr-dag.b")
 }
 
