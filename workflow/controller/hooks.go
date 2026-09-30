@@ -27,7 +27,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if hook.Expression == "" {
 			// No node exists yet for this hook (reconcileTemplate never ran),
 			// so record the error on its own hook node, as errorHookNode
-			// does for a template-level hook (C92): the entry node may
+			// does for a template-level hook: the entry node may
 			// already be Succeeded, and the strict node phase state machine
 			// refuses to flip it to Error.
 			return true, woc.errorHookNode(ctx, hookNodeName, &hook, entryNode, "", tmplCtx, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName))
