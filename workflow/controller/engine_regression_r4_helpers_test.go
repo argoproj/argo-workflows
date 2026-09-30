@@ -388,8 +388,7 @@ func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.C
 // completes or rounds run out, then extra more times. After each reconcile
 // every unfinished pod is succeeded, a pod of a template named in results
 // with that script result. setup, if not nil, runs on the controller before
-// the first reconcile. It reconciles from the in-memory status, as the
-// probes it ports did.
+// the first reconcile. It reconciles from the in-memory status.
 func r4RunResults(t *testing.T, manifest string, results map[string]string, rounds, extra int, setup func(*WorkflowController)) *wfOperationCtx {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
