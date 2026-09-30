@@ -268,7 +268,7 @@ func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	}
 	task := engine.getTaskByName(tasks, "client")
 	fake.calls = nil
-	engine.visit(ctx, task, result, true)
+	engine.visit(ctx, task, result, true, true)
 	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
 
 	node, err := engine.woc.wf.GetNodeByName(engine.taskNodeName("client"))
@@ -277,7 +277,7 @@ func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	assert.Equal(t, "depends expression failed to evaluate", node.Message)
 
 	// Idempotent: a second visit neither re-creates nor re-dispatches.
-	engine.visit(ctx, task, result, true)
+	engine.visit(ctx, task, result, true, true)
 	assert.Empty(t, fake.calls)
 }
 
@@ -331,7 +331,7 @@ func TestReconcileTaskGroup_WorstPhaseWins(t *testing.T) {
 	markChildPhase(t, woc, "client(1:1)", wfv1.NodeError)
 	markChildPhase(t, woc, "client(2:2)", wfv1.NodeSucceeded)
 
-	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true)
+	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true, true)
 
 	assert.Empty(t, fake.calls, "finished items are not reconciled again")
 	tgNode, err := woc.wf.GetNodeByName(engine.taskNodeName("client"))

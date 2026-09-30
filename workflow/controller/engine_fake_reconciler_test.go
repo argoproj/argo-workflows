@@ -149,7 +149,7 @@ func TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch(t *testing.T) {
 	}
 
 	fake.calls = nil
-	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true)
+	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true, true)
 
 	assert.Equal(t, 1, expands, "the fan-out should be expanded once per dispatch")
 	assert.Equal(t, []string{
