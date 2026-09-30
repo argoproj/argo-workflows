@@ -188,8 +188,8 @@ func workflowFrom(ctx context.Context, namespace string, found []*v1.ConfigMap) 
 	// annotations are kept because the controller-level docs show them.
 	wf.Status = wfv1.WorkflowStatus{}
 	wf.ObjectMeta = metav1.ObjectMeta{
-		Labels:      wf.ObjectMeta.Labels,
-		Annotations: wf.ObjectMeta.Annotations,
+		Labels:      wf.Labels,
+		Annotations: wf.Annotations,
 	}
 
 	logging.RequireLoggerFromContext(ctx).WithField("namespace", namespace).Debug(ctx, "resolved namespace workflow defaults")

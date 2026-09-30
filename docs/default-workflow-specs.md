@@ -90,4 +90,4 @@ Anything else under `metadata`, and `status`, are ignored, so a namespace Config
 
 A namespace without a labelled ConfigMap simply has no namespace-level defaults.
 A ConfigMap that exists but is missing the `workflowDefaults` key, or whose value is not valid YAML, is an error rather than being ignored, so that defaults never silently fail to apply.
-An unrecognised field is an error for the same reason, so a misspelling is reported rather than quietly applying nothing.
+An unrecognized field is an error for the same reason, so a misspelling is reported rather than quietly applying nothing.

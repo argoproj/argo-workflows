@@ -9,11 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/argoproj/argo-workflows/v4"
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"

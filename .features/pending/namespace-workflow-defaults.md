@@ -14,4 +14,4 @@ A namespace must have at most one ConfigMap with that label.
 More than one is an error for every Workflow in that namespace, because there is no sensible way to choose between them.
 
 A namespace without a labelled ConfigMap simply has no namespace-level defaults.
-A ConfigMap that exists but is missing the `workflowDefaults` key, whose value is not valid YAML, or which sets a field that is not recognised, is an error rather than being ignored, so that defaults never silently fail to apply.
+A ConfigMap that exists but is missing the `workflowDefaults` key, whose value is not valid YAML, or which sets a field that is not recognized, is an error rather than being ignored, so that defaults never silently fail to apply.
