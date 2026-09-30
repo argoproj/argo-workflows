@@ -282,7 +282,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	} else {
 		cwftmplInformer = clusterworkflowtemplate.NewNullClusterWorkflowTemplate()
 	}
-	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
+	eventRecorderManager := events.NewEventRecorderManagerWithLogger(as.clients.Kubernetes, log)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
 	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)

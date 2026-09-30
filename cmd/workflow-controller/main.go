@@ -165,7 +165,7 @@ func NewRootCommand() *cobra.Command {
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
 						LeaseMeta: metav1.ObjectMeta{Name: leaderName, Namespace: namespace}, Client: kubeclientset.CoordinationV1(),
-						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManager(kubeclientset).Get(ctx, namespace)},
+						LockConfig: resourcelock.ResourceLockConfig{Identity: nodeID, EventRecorder: events.NewEventRecorderManagerWithLogger(kubeclientset, log).Get(ctx, namespace)},
 					},
 					ReleaseOnCancel: false,
 					LeaseDuration:   env.LookupEnvDurationOr(ctx, "LEADER_ELECTION_LEASE_DURATION", 15*time.Second),
