@@ -1113,7 +1113,7 @@ spec:
 // The task-corruption symptom is independently blocked by node_phase_sm.go
 // (which refuses terminal->Error), so node state alone cannot distinguish the
 // bug. This test therefore parses the captured logs: the fix swallows
-// ErrParallelismReached in hookHandler.DriveTaskHooks (mirroring operator.go's
+// ErrParallelismReached in hookHandler.DriveExitHook (mirroring operator.go's
 // workflow-level onExit handling), so the "task hook errored" Error
 // entry must NOT appear. It also asserts the user-visible outcome.
 func TestBug_ExitHookNotReRunUnderParallelism(t *testing.T) {
