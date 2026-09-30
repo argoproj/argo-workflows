@@ -95,13 +95,18 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 		// A step group is closed before the next one starts, so a step sees
 		// the recorded phase of the group before it ({{steps.X.status}} of an
 		// expanded step). Once a group has failed no later step starts, as
-		// executeSteps stopped there, even one whose dependencies read a
-		// recorded Succeeded (a TaskGroup whose daemon item died, C96).
+		// executeSteps stopped there: one that would start is Omitted
+		// instead, as its dependencies can read a recorded Succeeded (a
+		// TaskGroup whose daemon item died, C96).
 		for i, ok := stepGroupIndexOf(name); ok && group < i; group++ {
 			phase, _, _ := e.assessStepGroup(ctx, group)
 			groupFailed = groupFailed || phase.FailedOrError()
 		}
-		stop := e.visit(ctx, task, e.evaluator.Evaluate(ctx, name), dispatching, !groupFailed)
+		result := e.evaluator.Evaluate(ctx, name)
+		if groupFailed && result.ShouldRun && e.getTaskNode(ctx, name) == nil {
+			result = dag.EvaluationResult{TaskName: name, Skipped: true, SkipReason: "an earlier step group failed"}
+		}
+		stop := e.visit(ctx, task, result, dispatching)
 		dispatching = dispatching && !stop
 		// The task's hooks are driven before any dependant is evaluated, so a
 		// dependant waits for a pending exit hook in this same walk.
@@ -116,10 +121,10 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 // visit acts on one task's evaluation: it records an evaluation error on the
 // task's node, creates the Omitted node of a task that can never run, or
 // dispatches a task the evaluator found runnable, unless dispatching has
-// stopped at the operation deadline, or the task has no node yet and is not
-// starting (an earlier step group failed) or a hook error is ending the
-// boundary (what already runs is still reconciled). stop is dispatchOutcome's.
-func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching, starting bool) (stop bool) {
+// stopped at the operation deadline, or the task has no node yet and a hook
+// error is ending the boundary (what already runs is still reconciled). stop
+// is dispatchOutcome's.
+func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.EvaluationResult, dispatching bool) (stop bool) {
 	name := task.GetName()
 	e.logEvaluation(ctx, result)
 	node := e.getTaskNode(ctx, name)
@@ -144,7 +149,7 @@ func (e *Engine) visit(ctx context.Context, task dag.Task, result dag.Evaluation
 			e.initTaskNode(ctx, task, e.parentsFor(ctx, name), wfv1.NodeTypeSkipped, wfv1.NodeOmitted, "omitted: "+reason)
 		}
 		return false
-	case !dispatching || (node == nil && (!starting || e.hookErr != nil)) || !result.ShouldRun:
+	case !dispatching || (node == nil && e.hookErr != nil) || !result.ShouldRun:
 		return false
 	}
 	_, err := e.executeTask(ctx, task)
