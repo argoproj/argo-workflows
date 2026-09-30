@@ -3166,6 +3166,190 @@ spec:
 	assert.NotContains(t, woc.wf.Status.Message, "task r4-c84-pod-retry errored")
 }
 
+// r4RetryExprErrRun drives a workflow whose retryStrategy.expression fails to
+// evaluate (asInt on a fractional duration, the case docs/retries.md warns
+// about) through failing pod attempts until the boundary's Retry re-entry
+// sees the expression error. Shared by the TestRegressionR4_C84_*AttemptError
+// tests below (ported from v3x2-1_test.go's v3x2runExprErr).
+func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow, extraRounds int) *wfOperationCtx {
+	t.Helper()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
+		for id, n := range woc.wf.Status.Nodes {
+			if (n.Type == wfv1.NodeTypeSteps || n.Type == wfv1.NodeTypeDAG) && !n.StartedAt.IsZero() {
+				n.StartedAt = metav1.NewTime(n.StartedAt.Add(time.Duration(-1500) * time.Millisecond))
+				woc.wf.Status.Nodes[id] = n
+			}
+		}
+		makePodsPhase(ctx, woc, apiv1.PodFailed)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	for range extraRounds {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	dumpNodes(t, "final", woc.wf)
+	return woc
+}
+
+// TestRegressionR4_C84_SpecRetryStepsAttemptError ports
+// TestProbe_v3x2_SpecRetryExprErrorBoundary (v3x2-1_test.go / C84). A
+// spec-level retryStrategy wraps a Steps entrypoint; once the last attempt's
+// StepGroup rolls up Failed, handleRetries' re-entry finds the expression
+// error and must mark that fulfilled attempt Error, as base did, not leave
+// it Failed.
+func TestRegressionR4_C84_SpecRetryStepsAttemptError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c84-spec-steps
+  namespace: default
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 2
+    expression: 'asInt(lastRetry.duration) >= 0'
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [echo]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4RetryExprErrRun(ctx, t, controller, wf, 0)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	att, err := woc.wf.GetNodeByName("r4-c84-spec-steps(0)")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+}
+
+// TestRegressionR4_C84_SpecRetryDAGAttemptError ports
+// TestProbe_v3x2_SpecRetryExprErrorBoundaryDAG (v3x2-1_test.go / C84). Same
+// as the Steps case above but the entrypoint is a DAG: one shared rule, no
+// DAG/Steps special case.
+func TestRegressionR4_C84_SpecRetryDAGAttemptError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c84-spec-dag
+  namespace: default
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 2
+    expression: 'asInt(lastRetry.duration) >= 0'
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [echo]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4RetryExprErrRun(ctx, t, controller, wf, 0)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	att, err := woc.wf.GetNodeByName("r4-c84-spec-dag(0)")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+}
+
+// TestRegressionR4_C84_TmplRetryStepsAttemptError ports
+// TestProbe_v3x2_TmplRetryExprErrorBoundary (v3x2-1_test.go / C84). The
+// retryStrategy is on the entry template itself, not spec-level.
+func TestRegressionR4_C84_TmplRetryStepsAttemptError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c84-tmpl-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy:
+      limit: 2
+      expression: 'asInt(lastRetry.duration) >= 0'
+    steps:
+    - - name: a
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [echo]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4RetryExprErrRun(ctx, t, controller, wf, 0)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	att, err := woc.wf.GetNodeByName("r4-c84-tmpl-steps(0)")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+}
+
+// TestRegressionR4_C84_NestedRetryStepsAttemptError ports
+// TestProbe_v3x2_NestedRetryExprErrorBoundary (v3x2-1_test.go / C84). The
+// retried Steps template is nested one level inside the entry template: both
+// the Retry node and the fulfilled attempt one level down must end Error.
+func TestRegressionR4_C84_NestedRetryStepsAttemptError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c84-nested-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: inner
+        template: inner
+  - name: inner
+    retryStrategy:
+      limit: 2
+      expression: 'asInt(lastRetry.duration) >= 0'
+    steps:
+    - - name: a
+        template: work
+  - name: work
+    container:
+      image: alpine
+      command: [echo]
+`)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := r4RetryExprErrRun(ctx, t, controller, wf, 2)
+	rn, err := woc.wf.GetNodeByName("r4-c84-nested-steps[0].inner")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, rn.Phase, "retry node phase")
+	att, err := woc.wf.GetNodeByName("r4-c84-nested-steps[0].inner(0)")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+}
+
 // r4WhenBadWfWithGen builds a workflow whose entrypoint has a "gen" step/task
 // producing "heads" and a dependant with an invalid `when` clause containing
 // a stray `@`, in DAG or Steps shape. Shared by the C83 tests.
