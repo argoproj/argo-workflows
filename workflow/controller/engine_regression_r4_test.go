@@ -3341,6 +3341,8 @@ spec:
     steps:
     - - name: inner
         template: inner
+      - name: slow
+        template: work
   - name: inner
     retryStrategy:
       limit: 2
@@ -11040,4 +11042,62 @@ func TestRegressionR4_C95_DAGInSteps(t *testing.T) {
 // the one rule covers a nested DAG as well.
 func TestRegressionR4_C95_DAGInDAG(t *testing.T) {
 	r4C95Run(t, "r4-c95-dag-dag", "dag", "dag")
+}
+
+// TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied (acceptance-fuzz
+// f700718, F4). In inner, s2's one daemon item comes up, so its TaskGroup is
+// recorded Succeeded, and then dies while s0 still runs. When s0 finishes,
+// group [0] has failed with the item: executeSteps stopped there, so s4
+// never started and the workflow ended Failed once slow did. The branch read
+// s2's recorded Succeeded for s4's dependency and started s4 in the
+// reconcile in which inner failed. Nothing stopped that daemon (inner had
+// already finished), so the workflow stayed Running.
+func TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied(t *testing.T) {
+	ctx, r := r4Start(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c96
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: inner
+        template: inner
+      - name: slow
+        template: work
+  - name: inner
+    steps:
+    - - name: s0
+        template: work
+      - name: s2
+        template: daemon
+        withSequence: {count: "1"}
+    - - name: s4
+        template: daemon
+  - name: work
+    container: {image: alpine, command: [echo]}
+  - name: daemon
+    daemon: true
+    container: {image: alpine, command: [sleep, infinity]}
+`)
+	const s0, s4 = "r4-c96[0].inner[0].s0", "r4-c96[0].inner[1].s4"
+	items := r4PodForNodePrefix("r4-c96[0].inner[0].s2(")
+	s4Started := false
+	stage := func(phase apiv1.PodPhase, match func(*apiv1.Pod) bool, with ...with) {
+		r4SetPodsPhase(t, ctx, r.woc, phase, match, with...)
+		for range 2 {
+			r.op(ctx)
+			s4Started = s4Started || r4NodePhase(r.woc, s4) != ""
+		}
+	}
+	stage(apiv1.PodRunning, items, r4WithReady)
+	stage(apiv1.PodFailed, items)
+	stage(apiv1.PodSucceeded, r4PodForNode(s0))
+	stage(apiv1.PodRunning, r4PodForNode(s4), r4WithReady)
+	stage(apiv1.PodSucceeded, r4PodForNode("r4-c96[0].slow"))
+	assert.False(t, s4Started, "s4 must never start once group [0] has failed")
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase, "left: %v", r4Unfulfilled(r.woc))
 }
