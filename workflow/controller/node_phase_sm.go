@@ -17,7 +17,7 @@ import (
 //	Failed    = terminal: non-zero exit code, or daemon pod exited unexpectedly
 //	Error     = terminal: controller-level error unrelated to process exit
 //	Skipped   = terminal: when-clause evaluated to false
-//	Omitted   = terminal: DAG depends condition was not met, or a StepGroup whose every step was omitted
+//	Omitted   = terminal: DAG depends condition was not met, a StepGroup whose every step was omitted, or a TaskGroup a hook error stopped before any item started
 var validTransitions = map[wfv1.NodePhase][]wfv1.NodePhase{
 	"": {
 		wfv1.NodePending,
@@ -46,7 +46,7 @@ var validTransitions = map[wfv1.NodePhase][]wfv1.NodePhase{
 		wfv1.NodeSucceeded,
 		wfv1.NodeFailed,
 		wfv1.NodeError,
-		wfv1.NodeOmitted, // StepGroup initialized Running whose every step was omitted after an earlier group failed
+		wfv1.NodeOmitted, // StepGroup whose every step was omitted after an earlier group failed, or TaskGroup a hook error stopped before any item started
 	},
 	// Terminal states have no valid outbound transitions.
 	// The existing `if node.Phase != phase` guard in markNodePhase makes
