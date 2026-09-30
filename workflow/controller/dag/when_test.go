@@ -100,8 +100,8 @@ func TestShouldExecuteBareLiterals(t *testing.T) {
 }
 
 // TestShouldExecuteInvalidWhenHint verifies the invalid-when error message
-// keeps main's full hint, including the closing quote (C83): moving this
-// evaluator into engine.go in 8d178132c dropped the ` ("))` suffix.
+// keeps main's full hint, including the closing quote: moving this
+// evaluator into engine.go once dropped the ` ("))` suffix.
 func TestShouldExecuteInvalidWhenHint(t *testing.T) {
 	_, err := ShouldExecute("heads == @tails")
 	require.Error(t, err)

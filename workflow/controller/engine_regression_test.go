@@ -754,7 +754,7 @@ func TestRegression_MissingDependencyOutputRequeues(t *testing.T) {
 
 // 14. A lifecycle hook is not an item: it must not make the group
 // AnySucceeded when every item failed. An expanded task's lifecycle hook runs
-// once per item, on the item node (P18), so the group has no hook child;
+// once per item, on the item node, so the group has no hook child;
 // main ran a DAG task's on the TaskGroup and counted it as an item, a bug
 // fixed here, not a regression.
 var regHookNotAnItem = `
