@@ -22,9 +22,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -501,24 +503,61 @@ func r4Restart(t *testing.T, ctx context.Context, old *WorkflowController, stopO
 	for i := range cms.Items {
 		cm := cms.Items[i]
 		cm.ResourceVersion = ""
-		_, err := controller.kubeclientset.CoreV1().ConfigMaps(namespace).Create(ctx, &cm, metav1.CreateOptions{})
+		created, err := controller.kubeclientset.CoreV1().ConfigMaps(namespace).Create(ctx, &cm, metav1.CreateOptions{})
 		require.NoError(t, err)
+		// typedConfigMapInformer only watches configmaps carrying the
+		// configmap-type label (memoization caches, and executor-plugin
+		// configmaps): waiting on it for one without the label would block
+		// until the timeout, since it would never appear in that informer's
+		// store.
+		if _, ok := created.Labels[common.LabelKeyConfigMapType]; ok {
+			r4WaitForInformer(ctx, controller.typedConfigMapInformer, created, func(any) bool { return true })
+		}
 	}
 	for i := range pods.Items {
 		pod := pods.Items[i]
 		pod.ResourceVersion = ""
 		created, err := controller.kubeclientset.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
 		require.NoError(t, err)
-		waitForInformer(ctx, controller.PodController.TestingPodInformer(), created, func(any) bool { return true })
+		r4WaitForInformer(ctx, controller.PodController.TestingPodInformer(), created, func(any) bool { return true })
 	}
 	for i := range trs.Items {
 		tr := trs.Items[i]
 		tr.ResourceVersion = ""
 		created, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(namespace).Create(ctx, &tr, metav1.CreateOptions{})
 		require.NoError(t, err)
-		waitForInformer(ctx, controller.taskResultInformer, created, func(any) bool { return true })
+		r4WaitForInformer(ctx, controller.taskResultInformer, created, func(any) bool { return true })
 	}
 	return controller, cancel
+}
+
+// r4WaitForInformer is waitForInformer (controller_test.go) with a longer
+// poll timeout, scoped to the restart helper above: r4Restart rebuilds a
+// whole controller and its informers from scratch on every reconcile of
+// TestRegressionR4_RestartBetweenReconciles, so it does many times what a
+// normal test's single waitForInformer call does. Under a loaded machine
+// (for example the full controller suite running concurrently) that adds up
+// and 10s was once not enough, panicking the test. The extra time is only
+// spent when an informer is genuinely slow to catch up; a synced informer
+// still returns immediately, so this does not slow the normal case.
+func r4WaitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		panic(err)
+	}
+	err = kwait.PollUntilContextTimeout(ctx, time.Millisecond, time.Minute, true, func(context.Context) (bool, error) {
+		if informer.IsStopped() {
+			return true, informer.GetStore().Update(obj)
+		}
+		stored, exists, getErr := informer.GetStore().GetByKey(key)
+		if getErr != nil || !exists {
+			return false, getErr
+		}
+		return upToDate(stored), nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("informer did not catch up for %q: %v", key, err))
+	}
 }
 
 func r4GlobalOut(value string) *wfv1.Outputs {
