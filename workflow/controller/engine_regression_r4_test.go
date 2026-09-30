@@ -11126,3 +11126,141 @@ func TestRegressionR4_C96_LaterGroupOmitted(t *testing.T) {
 	assert.Equal(t, wfv1.NodeOmitted, r4NodePhase(woc, r4C96S4), "s4")
 	assert.True(t, r4Reachable(woc, r4C96S4), "s4 hangs off the graph")
 }
+
+// r4C97Run runs acceptance-fuzz f700130 (F5), minimised: s1's one item is
+// retried and has an exit hook with its own retryStrategy, and s2 in the
+// next group fails. The next StepGroup hangs off the item's hook, a Retry
+// node, so `argo retry` resets that hook to Running (planReset's
+// resetBoundaries resets a group's Retry parent) along with group [1],
+// while s1's group stays Succeeded. The retried workflow is then run with
+// every pod succeeding.
+func r4C97Run(t *testing.T, body string) *wfOperationCtx {
+	t.Helper()
+	ctx, r := r4Start(t, fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c97
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    %s
+  - name: work
+    container: {image: alpine, command: [echo]}
+  - name: retried
+    retryStrategy: {limit: 1}
+    container: {image: alpine, command: [echo]}
+  - name: hook
+    retryStrategy: {limit: 1}
+    container: {image: alpine, command: [echo, hook]}
+`, body))
+	isS2 := func(pod *apiv1.Pod) bool {
+		return strings.HasSuffix(pod.Annotations[common.AnnotationKeyNodeName], ".s2")
+	}
+	for i := 0; i < 12 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, isS2)
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, func(pod *apiv1.Pod) bool { return !isS2(pod) })
+		r.op(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase, "s2 fails the first run")
+	r.woc = r4Operate(t, ctx, r.controller, r4RetryStored(t, ctx, r.controller, r.woc.wf))
+	for i := 0; i < 12 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, func(*apiv1.Pod) bool { return true })
+		r.op(ctx)
+	}
+	return r.woc
+}
+
+// TestRegressionR4_C97_StepsItemExitHookAfterRetry (acceptance-fuzz
+// f700130, F5): base and HEAD re-entered the item's reset exit hook and the
+// retried workflow Succeeded. On the branch an expanded step's item hooks
+// were driven only while its TaskGroup ran; the TaskGroup stayed Succeeded,
+// so nothing re-entered the hook, and finalize waited for it forever.
+func TestRegressionR4_C97_StepsItemExitHookAfterRetry(t *testing.T) {
+	woc := r4C97Run(t, `steps:
+    - - name: s1
+        template: retried
+        withSequence: {count: "1"}
+        hooks:
+          exit: {template: hook}
+    - - name: s2
+        template: work`)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "left: %v", r4Unfulfilled(woc))
+}
+
+// r4C98Run runs the F6 probe (acceptance-fuzz f700517): a's first attempt
+// succeeds while its running lifecycle hook is still running. It returns the
+// pods the workflow created.
+func r4C98Run(t *testing.T, body string) (*wfOperationCtx, []string) {
+	t.Helper()
+	ctx, r := r4Start(t, fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c98
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    %s
+  - name: work
+    retryStrategy: {limit: 1}
+    container: {image: alpine, command: [echo, hi]}
+  - name: hook
+    container: {image: alpine, command: [echo, hook]}
+`, body))
+	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		r4MoveNewPodsPending(ctx, r.woc)
+		hookRuns := i < 2
+		setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if strings.Contains(n.Name, ".hooks.") && hookRuns {
+				return apiv1.PodRunning
+			}
+			if n.Phase == wfv1.NodePending || n.Phase == wfv1.NodeRunning {
+				return apiv1.PodSucceeded
+			}
+			return ""
+		})
+		r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
+	}
+	return r.woc, r4PodNodeNames(ctx, t, r.woc)
+}
+
+// TestRegressionR4_C98_DAGNoAttemptAfterSuccess (F6): base's executeDAGTask
+// left a task alone while its lifecycle hooks ran, so a's Retry node never
+// saw its succeeded attempt with the hook still running, and a ran once. On
+// the branch the walk re-enters a, the operator marks the Retry node
+// Succeeded, and because a child (the hook) had not finished it went on to
+// start a second attempt a(1).
+func TestRegressionR4_C98_DAGNoAttemptAfterSuccess(t *testing.T) {
+	woc, pods := r4C98Run(t, `dag:
+      tasks:
+      - name: a
+        template: work
+        hooks:
+          running:
+            expression: tasks.a.status == "Running"
+            template: hook`)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, []string{"r4-c98.a(0)", "r4-c98.a.hooks.running"}, pods)
+}
+
+// TestRegressionR4_C98_StepsNoAttemptAfterSuccess (F6) is a decided
+// improvement over base, not a red test from it: base's executeSteps
+// re-entered the step while its hook ran and started a(1) as the branch
+// does; HEAD ran a once. A Retry node whose last attempt has finished starts
+// no other attempt, whatever its hooks are doing, for Steps as for DAG.
+func TestRegressionR4_C98_StepsNoAttemptAfterSuccess(t *testing.T) {
+	woc, pods := r4C98Run(t, `steps:
+    - - name: a
+        template: work
+        hooks:
+          running:
+            expression: steps.a.status == "Running"
+            template: hook`)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, []string{"r4-c98[0].a(0)", "r4-c98[0].a.hooks.running"}, pods)
+}
