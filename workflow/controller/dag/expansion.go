@@ -76,10 +76,6 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 	return expandedTasks, nil
 }
 
-func (e *DAGEvaluator) ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string, substitutor Substitutor) ([]wfv1.DAGTask, error) {
-	return ExpandTask(ctx, task, scope, substitutor)
-}
-
 // mustExecute reports whether a task with this resolved when may run: true
 // unless the when evaluates to false. A when that needs {{item}} cannot be
 // evaluated yet, so its task may run.

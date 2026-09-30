@@ -17,9 +17,10 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 )
 
-// newDAGEvaluator builds a DAGEvaluator over a DAG template's tasks, mirroring
-// the engine's task wrapping. Test-only: prod uses NewDAGEvaluatorFromTasks.
-func newDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template, boundaryID, boundaryName string) *dag.DAGEvaluator {
+// newDAGEvaluator builds a DAGEvaluator over a DAG template's tasks, in a
+// boundary named "test", mirroring the engine's task wrapping. Test-only:
+// prod uses NewDAGEvaluatorFromTasks.
+func newDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template) *dag.DAGEvaluator {
 	var tasks []dag.Task
 	if tmpl.DAG != nil {
 		tasks = make([]dag.Task, len(tmpl.DAG.Tasks))
@@ -27,7 +28,7 @@ func newDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template, boundaryID, boundar
 			tasks[i] = &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[i]}
 		}
 	}
-	return dag.NewDAGEvaluatorFromTasks(wf, tasks, tmpl, boundaryID, boundaryName)
+	return dag.NewDAGEvaluatorFromTasks(wf, tasks, tmpl, "test", "test")
 }
 
 // TestDagXfail verifies a DAG can fail properly
@@ -242,14 +243,8 @@ func TestExpandTaskWithParam(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 	}
 	woc := newWoc(ctx, *wf)
-	tmpl := &wfv1.Template{
-		DAG: &wfv1.DAGTemplate{
-			Tasks: []wfv1.DAGTask{task},
-		},
-	}
-	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
-	expanded, err := evaluator.ExpandTask(ctx, task, map[string]string{}, woc)
+	expanded, err := dag.ExpandTask(ctx, task, map[string]string{}, woc)
 	require.NoError(t, err)
 	require.Len(t, expanded, 4)
 
@@ -324,7 +319,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 			Tasks: testTasks,
 		},
 	}
-	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
+	evaluator := newDAGEvaluator(wf, tmpl)
 
 	// Task A is running
 	nodeID := wf.NodeID("test.A")
@@ -424,7 +419,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 			Tasks: testTasks,
 		},
 	}
-	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
+	evaluator := newDAGEvaluator(wf, tmpl)
 
 	// Task A is still running, A-1 succeeded but A-2 failed
 	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A",
@@ -509,7 +504,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 			Tasks: testTasks,
 		},
 	}
-	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
+	evaluator := newDAGEvaluator(wf, tmpl)
 
 	// Task A is running
 	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeOmitted}
@@ -555,7 +550,7 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 				Tasks: testTasks,
 			},
 		}
-		evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
+		evaluator := newDAGEvaluator(wf, tmpl)
 
 		// Task A is running
 		wf.Status.Nodes[wf.NodeID("test.same")] = wfv1.NodeStatus{Name: "test.same", Phase: statusMap[status]}
@@ -615,7 +610,7 @@ func TestDAGEnhancedDependsWithFailureIntegration(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Name: "test.B", Phase: wfv1.NodeSucceeded}
 	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Name: "test.C", Phase: wfv1.NodeFailed}
 
-	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
+	evaluator := newDAGEvaluator(wf, tmpl)
 
 	// D: "A && (C.Succeeded || C.Failed)" — A succeeded, C failed → C.Failed is true → should run
 	result := evaluator.Evaluate(ctx, "D")
@@ -665,16 +660,12 @@ func TestDAGAssessPhaseWithPendingTasks(t *testing.T) {
 	// C has failed
 	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Name: "test.C", Phase: wfv1.NodeFailed}
 
-	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
+	evaluator := newDAGEvaluator(wf, tmpl)
 
 	// D should be ready to run (C.Failed is true)
 	result := evaluator.Evaluate(ctx, "D")
 	require.NoError(t, result.Error)
 	assert.True(t, result.ShouldRun, "D should run because C.Failed is true")
-
-	// D has no workflow node yet, so the DAG still has a pending task and
-	// assessDAGPhase keeps it Running rather than prematurely Failed.
-	assert.Equal(t, wfv1.NodePending, result.CurrentPhase, "D is still pending")
 }
 
 // Restored integration tests from the old DAG engine test suite, adapted

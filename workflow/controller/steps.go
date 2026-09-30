@@ -167,6 +167,16 @@ func (t expandedStepTask) GetDisplayName() string {
 	return stepNameOf(t.GetName())
 }
 
+// Resolve resolves the item as the embedded task does, keeping this wrapper,
+// so the resolved item keeps its display name.
+func (t expandedStepTask) Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, error)) (dag.Task, error) {
+	resolved, err := t.Task.Resolve(resolve)
+	if err != nil {
+		return nil, err
+	}
+	return expandedStepTask{Task: resolved}, nil
+}
+
 // stepNameOf is the inverse of stepTaskNameFor: the step (or expanded item)
 // name without the "[i]." group prefix.
 func stepNameOf(taskName string) string {
@@ -219,7 +229,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		}
 	}
 
-	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, orgTmpl, node.ID, opts.onExitTemplate)
+	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, node.ID, opts.onExitTemplate)
 	engine.Execute(ctx, tasks)
 	return woc.wf.GetNodeByName(nodeName)
 }

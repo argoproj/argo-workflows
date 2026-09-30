@@ -262,9 +262,8 @@ func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	engine, fake, _, tasks := engineWithFakeReconciler(ctx, t)
 
 	result := dag.EvaluationResult{
-		TaskName:     "client",
-		CurrentPhase: wfv1.NodePending,
-		Error:        errors.New("depends expression failed to evaluate"),
+		TaskName: "client",
+		Error:    errors.New("depends expression failed to evaluate"),
 	}
 	task := engine.getTaskByName(tasks, "client")
 	fake.calls = nil
@@ -424,7 +423,7 @@ spec:
 	require.NoError(t, err)
 	root, err := woc.wf.GetNodeByName(wf.Name)
 	require.NoError(t, err)
-	engine := NewEngine(woc, root.Name, tmplCtx, tmpl, root, root.ID, false)
+	engine := NewEngine(woc, root.Name, tmplCtx, tmpl, root.ID, false)
 	tasks := []dag.Task{&dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]}, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[1]}}
 	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, tasks, tmpl, root.ID, root.Name)
 	require.Equal(t, wfv1.NodeSkipped, engine.getTaskNode(ctx, "A").Phase)
