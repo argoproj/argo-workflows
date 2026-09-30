@@ -48,6 +48,7 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
@@ -302,7 +303,6 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		namespaceDefaults:          namespacedefaults.New(kube),
 		cliExecutorLogFormat:       "text",
 		kubeclientset:              kube,
 		dynamicInterface:           dynamicClient,
@@ -330,6 +330,13 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		},
 		enableWorkflowLevelExecutorPlugins: true,
 	}
+
+	wfc.namespaceDefaults = namespacedefaults.New(func() cache.Indexer {
+		if wfc.typedConfigMapInformer == nil {
+			return nil
+		}
+		return wfc.typedConfigMapInformer.GetIndexer()
+	}, indexes.ConfigMapLabelsIndex)
 
 	for _, opt := range options {
 		// any post-processing
@@ -1978,13 +1985,8 @@ func TestNamespaceWorkflowDefaults(t *testing.T) {
 	cancel, controller := newControllerWithDefaults(ctx)
 	defer cancel()
 
-	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: namespacedefaults.ConfigMapName, Namespace: "default"},
-		Data: map[string]string{
-			namespacedefaults.Key: "spec:\n  serviceAccountName: from-namespace\n  entrypoint: from-namespace\n  hostNetwork: false\n",
-		},
-	}, metav1.CreateOptions{})
-	require.NoError(t, err)
+	addNamespaceDefaults(t, controller, "default", "my-defaults",
+		"spec:\n  serviceAccountName: from-namespace\n  entrypoint: from-namespace\n  hostNetwork: false\n")
 
 	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	workflow.Namespace = "default"
@@ -2000,4 +2002,88 @@ func TestNamespaceWorkflowDefaults(t *testing.T) {
 	// A field the workflow itself sets is untouched by either layer.
 	assert.Equal(t, wfv1.MustUnmarshalWorkflow(helloWorldWf).Spec.Entrypoint, workflow.Spec.Entrypoint,
 		"the workflow's own value must win over namespace defaults")
+}
+
+// newControllerWithDefaults only sets hostNetwork, which the namespace overrides, so it
+// cannot show that a controller-only default still applies. newControllerWithComplexDefaults
+// has a TTL, a label and an annotation the namespace layer leaves alone.
+func TestNamespaceWorkflowDefaultsKeepControllerDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newControllerWithComplexDefaults(ctx)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, "default", "my-defaults",
+		"spec:\n  serviceAccountName: from-namespace\n")
+
+	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	workflow.Namespace = "default"
+	require.NoError(t, controller.setWorkflowDefaults(ctx, workflow))
+
+	// The namespace layer wins where both set a field.
+	assert.Equal(t, "from-namespace", workflow.Spec.ServiceAccountName)
+
+	// Everything only the controller sets must still survive: namespace defaults layer
+	// on top of controller defaults, they do not replace them.
+	require.NotNil(t, workflow.Spec.TTLStrategy)
+	require.NotNil(t, workflow.Spec.TTLStrategy.SecondsAfterCompletion)
+	assert.Equal(t, int32(10), *workflow.Spec.TTLStrategy.SecondsAfterCompletion)
+	assert.Equal(t, "value", workflow.Labels["label"])
+	assert.Equal(t, "value", workflow.Annotations["annotation"])
+}
+
+// Workflows using workflowTemplateRef never reach setWorkflowDefaults - they go through
+// setStoredWfSpec instead - so this is the only thing proving namespace defaults reach them.
+func TestNamespaceWorkflowDefaultsWithWorkflowTemplateRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, wf.Namespace, "my-defaults",
+		"spec:\n  activeDeadlineSeconds: 5\n")
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.execWf.Spec.ActiveDeadlineSeconds,
+		"namespace defaults must reach workflows using workflowTemplateRef")
+	assert.Equal(t, int64(5), *woc.execWf.Spec.ActiveDeadlineSeconds)
+}
+
+// Which of two labelled ConfigMaps wins is not something the controller should arbitrate,
+// so every workflow in the namespace errors instead.
+func TestNamespaceWorkflowDefaultsMoreThanOneConfigMap(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newControllerWithDefaults(ctx)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, "default", "a-defaults",
+		"spec:\n  serviceAccountName: from-a\n")
+	addNamespaceDefaults(t, controller, "default", "b-defaults",
+		"spec:\n  serviceAccountName: from-b\n")
+
+	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	workflow.Namespace = "default"
+	err := controller.setWorkflowDefaults(ctx, workflow)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "a-defaults")
+	assert.Contains(t, err.Error(), "b-defaults")
+}
+
+// addNamespaceDefaults seeds a labelled workflow defaults ConfigMap into the controller's
+// typed ConfigMap informer. It writes to the indexer directly rather than through the
+// clientset, because the informer has already listed by the time a test runs and a later
+// Create would race the watch.
+func addNamespaceDefaults(t *testing.T, controller *WorkflowController, namespace, name, value string) {
+	t.Helper()
+	require.NoError(t, controller.typedConfigMapInformer.GetIndexer().Add(&apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapWorkflowDefaults,
+			},
+		},
+		Data: map[string]string{namespacedefaults.Key: value},
+	}))
 }

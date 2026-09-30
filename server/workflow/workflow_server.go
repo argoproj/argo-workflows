@@ -39,6 +39,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
@@ -64,14 +65,14 @@ type workflowServer struct {
 	wfReflector           *cache.Reflector
 	wftmplStore           servertypes.WorkflowTemplateStore
 	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
-	wfDefaults            *wfv1.Workflow
+	wfDefaults            namespacedefaults.Func
 	artifactRepositories  artifactrepositories.Interface
 }
 
 var _ Server = &workflowServer{}
 
 // NewServer returns a new Server
-func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface) Server {
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults namespacedefaults.Func, namespace *string, artifactRepositories artifactrepositories.Interface) Server {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -121,7 +122,12 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{})
+	wfDefaults, err := namespacedefaults.Resolve(ctx, s.wfDefaults, req.Workflow.Namespace)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, wfDefaults, validate.Opts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -552,7 +558,12 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	}
 	creator.LabelCreator(ctx, newWF)
 
-	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{})
+	wfDefaults, err := namespacedefaults.Resolve(ctx, s.wfDefaults, req.Namespace)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, wfDefaults, &wfv1.SubmitOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -713,7 +724,12 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	s.instanceIDService.Label(req.Workflow)
 	creator.LabelCreator(ctx, req.Workflow)
 
-	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{Lint: true})
+	wfDefaults, err := namespacedefaults.Resolve(ctx, s.wfDefaults, req.Workflow.Namespace)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, wfDefaults, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
@@ -929,7 +945,12 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.Opts{Submit: true})
+	wfDefaults, err := namespacedefaults.Resolve(ctx, s.wfDefaults, req.Namespace)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf, wfDefaults, validate.Opts{Submit: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}

@@ -13,8 +13,11 @@ import (
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 )
@@ -27,7 +30,12 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	}
 	logger.Info(ctx, "Configuration updated")
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
-	wfc.namespaceDefaults = namespacedefaults.New(wfc.kubeclientset)
+	wfc.namespaceDefaults = namespacedefaults.New(func() cache.Indexer {
+		if wfc.typedConfigMapInformer == nil {
+			return nil
+		}
+		return wfc.typedConfigMapInformer.GetIndexer()
+	}, indexes.ConfigMapLabelsIndex)
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
