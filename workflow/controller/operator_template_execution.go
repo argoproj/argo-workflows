@@ -362,7 +362,7 @@ func (woc *wfOperationCtx) postExecutionHandling(ctx context.Context, node *wfv1
 			}
 		}
 		if release {
-			woc.releaseLock(ctx, node.ID, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			return node, err
 		}
 	}

@@ -122,12 +122,6 @@ type wfOperationCtx struct {
 	// exportedNodes holds the nodes whose globalName outputs this operation
 	// has exported (exportNodeOutputs).
 	exportedNodes map[string]bool
-	// lockHeldForHooks holds, by node ID, whether a task node's lock waits
-	// for its lifecycle hooks: true until the Engine's hook driver finds the
-	// node finished and its lifecycle hooks done (Engine.driveHooks), which
-	// then releases it, before the node's exit hook runs. It is rebuilt on
-	// every operation from the stored status.
-	lockHeldForHooks map[string]bool
 	// execWf holds the Workflow for use in execution.
 	// In Normal workflow scenario: It holds copy of workflow object
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
@@ -195,7 +189,6 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
 		finishedNodes:            make(map[string]bool),
 		exportedNodes:            make(map[string]bool),
-		lockHeldForHooks:         make(map[string]bool),
 		taskSet:                  make(map[string]wfv1.Template),
 		currentStackDepth:        0,
 	}
@@ -2481,8 +2474,7 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 // fulfilled it: a pod, a memoize cache hit, an HTTP or plugin result, a
 // suspend resumed, a template's own outputs. Its lock is released every time,
 // as executeTemplate did (Release is idempotent), so a node fulfilled outside
-// the controller (a resumed suspend) still frees it, unless it waits for the
-// node's lifecycle hooks (see releaseLock). Once per completion, in
+// the controller (a resumed suspend) still frees it. Once per completion, in
 // the operation that sees it fulfilled first, its completion metrics are
 // emitted (a memoize cache hit included) and its globalName outputs are
 // exported, so the workflow's globals follow completion order.
@@ -2490,7 +2482,7 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.N
 	if node == nil || !node.Fulfilled() {
 		return false
 	}
-	woc.releaseLock(ctx, node.ID, tmpl.Synchronization)
+	woc.controller.syncManager.Release(ctx, woc.wf, node.ID, tmpl.Synchronization)
 	if prev, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prev.Fulfilled()) && !woc.finishedNodes[node.ID] {
 		woc.finishedNodes[node.ID] = true
 		if tmpl.Metrics != nil {
@@ -2504,15 +2496,6 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.N
 		woc.log.WithField("nodeName", node.Name).Debug(ctx, "Node already completed")
 	}
 	return completed
-}
-
-// releaseLock releases the lock sync that nodeID holds, unless it is held
-// while the node's lifecycle hooks run (lockHeldForHooks): a task's lock is
-// held until the task and its lifecycle hooks have finished.
-func (woc *wfOperationCtx) releaseLock(ctx context.Context, nodeID string, sync *wfv1.Synchronization) {
-	if !woc.lockHeldForHooks[nodeID] {
-		woc.controller.syncManager.Release(ctx, woc.wf, nodeID, sync)
-	}
 }
 
 // emitNodeMetrics registers tmpl's realtime metrics for node, once, in the
