@@ -22,7 +22,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -531,33 +530,48 @@ func r4Restart(t *testing.T, ctx context.Context, old *WorkflowController, stopO
 	return controller, cancel
 }
 
-// r4WaitForInformer is waitForInformer (controller_test.go) with a longer
-// poll timeout, scoped to the restart helper above: r4Restart rebuilds a
-// whole controller and its informers from scratch on every reconcile of
-// TestRegressionR4_RestartBetweenReconciles, so it does many times what a
-// normal test's single waitForInformer call does. Under a loaded machine
-// (for example the full controller suite running concurrently) that adds up
-// and 10s was once not enough, panicking the test. The extra time is only
-// spent when an informer is genuinely slow to catch up; a synced informer
-// still returns immediately, so this does not slow the normal case.
+// r4WaitForInformer gives waitForInformer (controller_test.go) a longer
+// ceiling than its fixed 10s, for the restart helper above: r4Restart
+// rebuilds a whole controller and its informers from scratch on every
+// reconcile of TestRegressionR4_RestartBetweenReconciles, so it does many
+// times what a normal test's single waitForInformer call does. Under a
+// loaded machine (for example the full controller suite running
+// concurrently) that adds up and 10s was once not enough, panicking the
+// test.
+//
+// This file must still compile when overlaid onto wt-base (basecheck),
+// where waitForInformer has no timeout parameter and must stay that way for
+// every other caller, so this cannot add a parameter to it or call a
+// shared helper with a longer timeout baked in — either would be a symbol
+// this file depends on that wt-base's controller_test.go does not have.
+// Instead of duplicating its poll loop, this just retries the unchanged
+// waitForInformer (recovering the panic it raises on its own timeout)
+// until a longer deadline. A synced informer still returns on
+// waitForInformer's first attempt, so this does not slow the normal case.
 func r4WaitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) {
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		panic(err)
-	}
-	err = kwait.PollUntilContextTimeout(ctx, time.Millisecond, time.Minute, true, func(context.Context) (bool, error) {
-		if informer.IsStopped() {
-			return true, informer.GetStore().Update(obj)
+	deadline := time.Now().Add(time.Minute)
+	for {
+		if r4TryWaitForInformer(ctx, informer, obj, upToDate) {
+			return
 		}
-		stored, exists, getErr := informer.GetStore().GetByKey(key)
-		if getErr != nil || !exists {
-			return false, getErr
+		if time.Now().After(deadline) {
+			waitForInformer(ctx, informer, obj, upToDate) // out of time: let it panic with its own message
+			return
 		}
-		return upToDate(stored), nil
-	})
-	if err != nil {
-		panic(fmt.Sprintf("informer did not catch up for %q: %v", key, err))
 	}
+}
+
+// r4TryWaitForInformer runs waitForInformer once and reports whether it
+// caught up, recovering the panic it raises on its own 10s timeout instead
+// of failing the test.
+func r4TryWaitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+	waitForInformer(ctx, informer, obj, upToDate)
+	return true
 }
 
 func r4GlobalOut(value string) *wfv1.Outputs {
