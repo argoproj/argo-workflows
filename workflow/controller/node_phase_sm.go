@@ -48,18 +48,11 @@ var validTransitions = map[wfv1.NodePhase][]wfv1.NodePhase{
 		wfv1.NodeError,
 		wfv1.NodeOmitted, // StepGroup initialized Running whose every step was omitted after an earlier group failed
 	},
-	// Terminal states have no valid outbound transitions, with one exception:
-	// a Failed attempt may still go to Error when the boundary retrying it
-	// re-enters immediately in the same reconcile and finds its own
-	// retryStrategy.expression fails to evaluate (C84). That is a
-	// controller-level error discovered synchronously while finishing the
-	// attempt, not a late or duplicate report reopening an already-settled
-	// node, so it does not weaken the guard markNodePhase's `final` check
-	// enforces against those (decision P15).
+	// Terminal states have no valid outbound transitions.
 	// The existing `if node.Phase != phase` guard in markNodePhase makes
 	// same-phase updates no-ops, so they are not listed here.
 	wfv1.NodeSucceeded: {},
-	wfv1.NodeFailed:    {wfv1.NodeError},
+	wfv1.NodeFailed:    {},
 	wfv1.NodeError:     {},
 	wfv1.NodeSkipped:   {},
 	wfv1.NodeOmitted:   {},
