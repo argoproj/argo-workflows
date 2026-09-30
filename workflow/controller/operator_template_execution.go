@@ -319,7 +319,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 
 	// Re-fetch the child node since dispatch (next) may have updated it in-place
 	// (e.g., a Steps/DAG child that completed during executeSteps).
-	if retrieved, err := woc.wf.GetNodeByName(childNode.Name); err == nil {
+	if retrieved, getErr := woc.wf.GetNodeByName(childNode.Name); getErr == nil {
 		childNode = retrieved
 	}
 
@@ -331,7 +331,16 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	if childNode.Phase.Fulfilled(childNode.TaskResultSynced) {
 		retryParentNode, _ = woc.wf.GetNodeByName(retryParentNode.Name)
 		if retryParentNode != nil && !retryParentNode.Phase.Fulfilled(retryParentNode.TaskResultSynced) {
-			return woc.handleRetries(ctx, retryParentNode, retryNodeName, unsubstitutedTmpl, templateScope, orgTmpl, opts, next)
+			retryParentNode, err = woc.handleRetries(ctx, retryParentNode, retryNodeName, unsubstitutedTmpl, templateScope, orgTmpl, opts, next)
+			if err != nil {
+				// The retry re-entry's own error (e.g. a bad
+				// retryStrategy.expression, C84) also marks the
+				// just-fulfilled attempt Error, matching base's "Swap the
+				// node back to retry node" behaviour (wt-base operator.go
+				// ~2669: `return woc.markNodeError(ctx, node.Name, err), err`).
+				woc.markNodeError(ctx, childNode.Name, err)
+			}
+			return retryParentNode, err
 		}
 	}
 
