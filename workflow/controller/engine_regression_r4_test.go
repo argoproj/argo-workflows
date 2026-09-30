@@ -11515,3 +11515,175 @@ func TestRegressionR4_C12_LegacyItemsRetried(t *testing.T) {
 	r4C12AssertItemsUnderOneParent(t, woc, "A(0:x)", "A(1:z)")
 	assert.Equal(t, []string{wf.Name + "[0].A(0:x)", wf.Name + "[0].A(1:z)", wf.Name + "[1].B"}, r4PodNodeNames(ctx, t, woc))
 }
+
+// r4HookErrSiblingRun runs a template of two sibling tasks with no
+// dependency between them: hooked, whose running hook's expression cannot be
+// evaluated, and plain. kind is "steps" (one step group, in the order
+// given) or "dag" (the walk takes the leaves in name order, so the names set
+// the order). Every pod succeeds; the workflow is reconciled until it
+// completes, then three more times.
+func r4HookErrSiblingRun(t *testing.T, kind, hooked, plain string, hookedFirst bool) (*wfOperationCtx, []string) {
+	t.Helper()
+	tasks := []string{
+		fmt.Sprintf(`name: %s
+        template: c
+        hooks:
+          running:
+            expression: nosuchvar == "x"
+            template: c`, hooked),
+		fmt.Sprintf(`name: %s
+        template: c`, plain),
+	}
+	if !hookedFirst {
+		tasks[0], tasks[1] = tasks[1], tasks[0]
+	}
+	body := fmt.Sprintf("    steps:\n    - - %s\n      - %s", tasks[0], tasks[1])
+	if kind == "dag" {
+		body = fmt.Sprintf("    dag:\n      tasks:\n      - %s\n      - %s", tasks[0], tasks[1])
+	}
+	return r4RunDecided(t, fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-hookerr-%s
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+%s
+  - name: c
+    container: {image: busybox, command: [echo]}
+`, kind, body), 6, allSucceed)
+}
+
+// A running hook's expression errors on the reconcile that dispatches its
+// task, while a sibling with no dependency on it has not started (it comes
+// later in the walk). Decided shape, fails at base (base Steps dispatched
+// the whole group before driving hooks; base DAG ended Error at once,
+// leaving the hooked task Pending): the sibling is not started, and gets no node, so `argo
+// retry` still dispatches it. The hooked task is marked Error at once and
+// its pod is not waited for. The StepGroup closes from the step that ran
+// (it stayed Running before the fix), and the workflow completes with no
+// node left running.
+func TestRegressionR4_HookErrorSibling_StepsHookedFirst(t *testing.T) {
+	woc, pods := r4HookErrSiblingRun(t, "steps", "a", "b", true)
+	r4AssertHookErrSiblingNotStarted(t, woc, pods, "r4-hookerr-steps[0].a", "r4-hookerr-steps[0].b")
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, "r4-hookerr-steps[0]"), "the StepGroup")
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "step group deemed errored due to child r4-hookerr-steps[0].a error: unknown name nosuchvar")
+}
+
+// As _StepsHookedFirst, in a DAG: a's name puts it first in the walk.
+func TestRegressionR4_HookErrorSibling_DAGHookedFirst(t *testing.T) {
+	woc, pods := r4HookErrSiblingRun(t, "dag", "a", "b", true)
+	r4AssertHookErrSiblingNotStarted(t, woc, pods, "r4-hookerr-dag.a", "r4-hookerr-dag.b")
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, fmt.Sprintf("child '%s' failed", woc.wf.NodeID("r4-hookerr-dag.a")), woc.wf.Status.Message)
+}
+
+// r4AssertHookErrSiblingNotStarted checks the shape _StepsHookedFirst and
+// _DAGHookedFirst describe.
+func r4AssertHookErrSiblingNotStarted(t *testing.T, woc *wfOperationCtx, pods []string, hooked, plain string) {
+	t.Helper()
+	assert.Empty(t, r4Unfulfilled(woc), "a node is left running in a completed workflow")
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, hooked+".hooks.running"), "the hook node")
+	hookedNode, err := woc.wf.GetNodeByName(hooked)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, hookedNode.Phase, "the hooked task")
+	assert.Contains(t, hookedNode.Message, "unknown name nosuchvar")
+	assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(woc, plain), "the sibling has a node")
+	assert.Equal(t, []string{hooked}, pods, "the sibling has a pod")
+}
+
+// The other order: the sibling comes first in the walk, so it is dispatched
+// before the hook errors. Decided shape, fails at base (base Steps ended
+// Failed, through its StepGroup; base DAG ended Error at once, leaving both
+// pods Pending): the boundary waits for the sibling and, once nothing runs,
+// ends Error with the hook's message. The hooked task's pod
+// also finishes in that time and its phase, Succeeded, replaces the Error
+// the hook recorded on it, as a pod's phase does on every pod node, so its
+// StepGroup ends Succeeded. No node is left running.
+func TestRegressionR4_HookErrorSibling_StepsSiblingFirst(t *testing.T) {
+	woc, pods := r4HookErrSiblingRun(t, "steps", "a", "b", false)
+	r4AssertHookErrSiblingRan(t, woc, pods, "r4-hookerr-steps[0].a", "r4-hookerr-steps[0].b")
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, "r4-hookerr-steps[0]"), "the StepGroup")
+}
+
+// As _StepsSiblingFirst, in a DAG: z's name puts b first in the walk.
+func TestRegressionR4_HookErrorSibling_DAGSiblingFirst(t *testing.T) {
+	woc, pods := r4HookErrSiblingRun(t, "dag", "z", "b", false)
+	r4AssertHookErrSiblingRan(t, woc, pods, "r4-hookerr-dag.z", "r4-hookerr-dag.b")
+}
+
+// r4AssertHookErrSiblingRan checks the shape _StepsSiblingFirst and
+// _DAGSiblingFirst describe.
+func r4AssertHookErrSiblingRan(t *testing.T, woc *wfOperationCtx, pods []string, hooked, plain string) {
+	t.Helper()
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "nosuchvar")
+	assert.Empty(t, r4Unfulfilled(woc), "a node is left running in a completed workflow")
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, hooked+".hooks.running"), "the hook node")
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, plain), "the sibling")
+	assert.ElementsMatch(t, []string{hooked, plain}, pods)
+}
+
+// _StepsHookedFirst with `argo retry`: a's running hook pod is denied once,
+// so b, after a in the same group, is not started and the workflow fails
+// (decided shape; base started b before driving the hook, so this fails at
+// base). `argo retry` resets a and its group; the hook is admitted, and b, which
+// has no node, runs, so the workflow Succeeds.
+func TestRegressionR4_HookErrorSibling_StepsRetried(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-hookerr-retry
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: c
+        hooks:
+          running:
+            expression: "true"
+            template: c
+      - name: b
+        template: c
+  - name: c
+    container: {image: busybox, command: [echo]}
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	denied := 0
+	r4RejectPodCreate(controller, func(pod *apiv1.Pod) bool {
+		if strings.Contains(pod.Annotations[common.AnnotationKeyNodeName], ".hooks.running") && denied == 0 {
+			denied++
+			return true
+		}
+		return false
+	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
+	r := &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
+	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	require.True(t, r.woc.wf.Status.Phase.Completed(), "workflow %s", r.woc.wf.Status.Phase)
+	require.NotEqual(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+	require.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "r4-hookerr-retry[0].b"), "b started")
+	require.Empty(t, r4Unfulfilled(r.woc))
+
+	r4RetryStored(t, ctx, r.controller, r.woc.wf)
+	r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
+	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, allSucceed)
+		r.op(ctx)
+	}
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-retry[0].a.hooks.running"))
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-retry[0].b"))
+}

@@ -383,7 +383,8 @@ func (e *Engine) assessStepGroup(ctx context.Context, i int) (phase wfv1.NodePha
 // stepGroupOutcome derives group i's phase from its steps, as
 // executeStepGroup did. The group is done once every step has a node that
 // has finished (see outcome: a running daemon has, a step whose hooks still
-// run has not). The first step that failed or errored without continueOn
+// run has not); a step that a hook error stopped from starting (hookErr)
+// has no node and never will, so it does not hold the group open. The first step that failed or errored without continueOn
 // then decides it, in the message that bubbles up to the workflow status: an
 // errored step makes it Error, "step group deemed errored due to child
 // <name> error: <reason>", whether the step errored before it ran (a setup
@@ -397,6 +398,9 @@ func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePh
 	allOmitted := len(steps) > 0 || e.previousStepGroupPhase(i) != wfv1.NodeSucceeded
 	for _, step := range steps {
 		node := e.getTaskNode(ctx, stepTaskNameFor(i, step.Name))
+		if node == nil && e.hookErr != nil {
+			continue // never starts: a hook error stops new tasks
+		}
 		if node == nil {
 			return wfv1.NodeRunning, "", false
 		}
