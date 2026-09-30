@@ -85,13 +85,11 @@ A DAG task's lifecycle hooks now always run before its exit hook, as they alread
 Previously a task that finished in the same reconciliation that started it (for example a memoization cache hit, or a retried task whose attempt had already succeeded) ran its exit hook alongside its lifecycle hooks.
 Its exit hook, and so its dependants, now wait for the lifecycle hooks; the final result is the same.
 
-A DAG task's completion metrics and `globalName` outputs are now exported as soon as the task itself finishes, whether or not it was retried, even while its lifecycle hook is still running.
-Previously a DAG task delayed them until its lifecycle hooks had finished.
+A task's or step's mutex or semaphore lock is released when the task finishes, in DAG and Steps templates, whether or not it was retried, even while its lifecycle or exit hooks are still running.
+A DAG task's completion metrics and `globalName` outputs are likewise exported as soon as the task itself finishes.
+Previously a DAG task held its lock, and delayed its metrics and `globalName` export, until its lifecycle hooks had finished, so a lifecycle hook that needed the same lock (for example through `templateDefaults.synchronization`) waited for it forever; that no longer happens.
+A Steps step already released its lock when it finished.
 Dependants of the task, and the DAG or Steps template itself, still wait for the hooks to finish.
-
-A task's or step's mutex or semaphore lock is now held while its lifecycle hooks run, in DAG and Steps templates, whether or not it was retried.
-Previously a step released its lock when it finished, and so did a retried DAG task.
-The lock is still released before the exit hook runs, so an exit hook can take the lock its task held.
 
 #### Expanded tasks and steps
 
