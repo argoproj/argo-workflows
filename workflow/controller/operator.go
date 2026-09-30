@@ -4564,7 +4564,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		ctx = woc.markWorkflowError(ctx, err)
 		return ctx, err
 	default:
-		err := woc.controller.setWorkflowDefaults(woc.wf)
+		err := woc.controller.setWorkflowDefaults(ctx, woc.wf)
 		if err != nil {
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
@@ -4578,10 +4578,19 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
+		// validate.Workflow treats the defaults' workflowMetadata labels and annotations as
+		// valid sources for {{workflow.labels.x}}, so it needs the namespace layer too or a
+		// workflow relying on one is rejected at submit.
+		wfDefaults, err := woc.controller.mergedWorkflowDefaults(ctx, woc.wf.Namespace)
+		if err != nil {
+			ctx = woc.markWorkflowError(ctx, err)
+			return ctx, err
+		}
+
 		// Validate the execution wfSpec
-		err := waitutil.Backoff(retry.DefaultRetry(ctx),
+		err = waitutil.Backoff(retry.DefaultRetry(ctx),
 			func() (bool, error) {
-				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
+				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, wfDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
 				}
@@ -4653,7 +4662,12 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
-	wfDefault := woc.controller.Config.WorkflowDefaults
+	// Namespace defaults reach workflowTemplateRef workflows here rather than through
+	// setWorkflowDefaults, which this path never calls.
+	wfDefault, err := woc.controller.mergedWorkflowDefaults(ctx, woc.wf.Namespace)
+	if err != nil {
+		return err
+	}
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}
