@@ -124,6 +124,8 @@ Previously cache hits emitted no metrics.
 A failed DAG template's node now has the message `child '<node ID>' failed`, naming its first failed task, as a Steps template's node already did.
 A `retryStrategy.expression` on a DAG template that tests `lastRetry.message` now sees this message.
 
+When a `retryStrategy.expression` fails to evaluate, the retried node still ends `Error` as before, with the expression's error as its message; its last attempt keeps its own phase (for example `Failed`) instead of also becoming `Error`.
+
 A DAG task node whose task fails before it runs (for example because its pod is rejected) now shows the cause without the `task '<node name>' errored:` prefix, as step nodes already did.
 
 When the entrypoint DAG or Steps template ends `Error` because of its own error (for example its outputs cannot be resolved), the workflow message is now that error, without the `error in entry template execution:` prefix.

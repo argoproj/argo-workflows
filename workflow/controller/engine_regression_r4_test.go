@@ -3198,8 +3198,11 @@ func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowCo
 // TestProbe_v3x2_SpecRetryExprErrorBoundary (v3x2-1_test.go / C84). A
 // spec-level retryStrategy wraps a Steps entrypoint; once the last attempt's
 // StepGroup rolls up Failed, handleRetries' re-entry finds the expression
-// error and must mark that fulfilled attempt Error, as base did, not leave
-// it Failed.
+// error.
+//
+// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
+// which the strict state machine (D3/P15) refuses. The workflow outcome
+// matches base.
 func TestRegressionR4_C84_SpecRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3230,13 +3233,17 @@ spec:
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	att, err := woc.wf.GetNodeByName("r4-c84-spec-steps(0)")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
 // TestRegressionR4_C84_SpecRetryDAGAttemptError ports
 // TestProbe_v3x2_SpecRetryExprErrorBoundaryDAG (v3x2-1_test.go / C84). Same
 // as the Steps case above but the entrypoint is a DAG: one shared rule, no
 // DAG/Steps special case.
+//
+// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
+// which the strict state machine (D3/P15) refuses. The workflow outcome
+// matches base.
 func TestRegressionR4_C84_SpecRetryDAGAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3268,12 +3275,16 @@ spec:
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	att, err := woc.wf.GetNodeByName("r4-c84-spec-dag(0)")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
 // TestRegressionR4_C84_TmplRetryStepsAttemptError ports
 // TestProbe_v3x2_TmplRetryExprErrorBoundary (v3x2-1_test.go / C84). The
 // retryStrategy is on the entry template itself, not spec-level.
+//
+// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
+// which the strict state machine (D3/P15) refuses. The workflow outcome
+// matches base.
 func TestRegressionR4_C84_TmplRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3304,13 +3315,17 @@ spec:
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	att, err := woc.wf.GetNodeByName("r4-c84-tmpl-steps(0)")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
 // TestRegressionR4_C84_NestedRetryStepsAttemptError ports
 // TestProbe_v3x2_NestedRetryExprErrorBoundary (v3x2-1_test.go / C84). The
-// retried Steps template is nested one level inside the entry template: both
-// the Retry node and the fulfilled attempt one level down must end Error.
+// retried Steps template is nested one level inside the entry template.
+//
+// Decided (T7.1a ruling): the attempt keeps Failed; base marked it Error,
+// which the strict state machine (D3/P15) refuses. The workflow outcome
+// matches base. The Retry node itself is unaffected by this decision: it
+// already ended Error, matching base.
 func TestRegressionR4_C84_NestedRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3347,7 +3362,7 @@ spec:
 	assert.Equal(t, wfv1.NodeError, rn.Phase, "retry node phase")
 	att, err := woc.wf.GetNodeByName("r4-c84-nested-steps[0].inner(0)")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, att.Phase, "attempt phase")
+	assert.Equal(t, wfv1.NodeFailed, att.Phase, "attempt phase")
 }
 
 // r4WhenBadWfWithGen builds a workflow whose entrypoint has a "gen" step/task
