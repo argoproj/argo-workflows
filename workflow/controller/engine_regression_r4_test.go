@@ -11484,3 +11484,34 @@ spec:
 	require.Error(t, err, "no attempt after the Retry node ran out of retries")
 	assert.Equal(t, []string{"r4-c99(0)[0].s0", "r4-c99(1)[0].s0"}, r4PodNodeNames(ctx, t, r.woc))
 }
+
+// C12 with `argo retry`: an older controller left A's items directly under
+// StepGroup [0], A(0:x) Failed and A(1:z) Running. The new controller adopts
+// both under the TaskGroup it creates and the workflow fails. `argo retry`
+// then resets A(0:x) under that TaskGroup (a single parent, so retry's graph
+// walk finds it), the item runs again, B runs and the workflow Succeeds, as
+// it does at base, where the items stay under the StepGroup.
+func TestRegressionR4_C12_LegacyItemsRetried(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := r4LegacyStepsStatus(r4C12Fanout, 0, "A", "c", []r4LegacyStepItem{{Name: "0:x", Phase: wfv1.NodeFailed}, {Name: "1:z", Phase: wfv1.NodeRunning}})
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "c", apiv1.PodRunning)
+	woc := r4C12Drive(ctx, controller, wf)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+
+	stored, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	woc = r4C12Drive(ctx, controller, r4RetryStored(t, ctx, controller, stored))
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
+	assert.Empty(t, r4Unfulfilled(woc))
+	for _, name := range []string{"[0].A(0:x)", "[0].A(1:z)", "[1].B"} {
+		assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, wf.Name+name), name)
+	}
+	assert.Contains(t, []wfv1.NodePhase{"", wfv1.NodeSucceeded}, r4NodePhase(woc, wf.Name+"[0].A"), "the TaskGroup (base has none)")
+	r4C12AssertItemsUnderOneParent(t, woc, "A(0:x)", "A(1:z)")
+	assert.Equal(t, []string{wf.Name + "[0].A(0:x)", wf.Name + "[0].A(1:z)", wf.Name + "[1].B"}, r4PodNodeNames(ctx, t, woc))
+}
