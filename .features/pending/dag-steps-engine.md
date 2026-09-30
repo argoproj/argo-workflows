@@ -29,7 +29,7 @@ A DAG `TaskGroup` node records the resolved `templateRef`.
 A step group after a failed, stopped or timed-out group is shown as `Omitted`, and an empty step group after a failed group is `Omitted`.
 A step group with a step that ended `Error` is `Error`, and names the step.
 A daemon that dies after its group finished fails the template and workflow, while the group stays `Succeeded`.
-A daemon's exit hook, or the lifecycle hook for the phase it ends in, runs when it is stopped at the end of its DAG.
+A daemon that dies this way also runs its exit hook and a lifecycle hook matching its ending phase, and the template waits for them before ending.
 
 `globalName` outputs are exported when their node finishes, so the last to finish wins, and memoized, HTTP, plugin and resumed suspend steps export them at once.
 An entrypoint DAG template's own `globalName` outputs are now exported to `workflow.status.outputs`, as for Steps.

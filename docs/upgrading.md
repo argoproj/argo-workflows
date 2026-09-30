@@ -111,8 +111,8 @@ The daemon's node fails, the Steps template and the workflow fail with `child '<
 Previously the step group was changed to `Failed` as well.
 In a DAG, expanded daemon items that die after their `TaskGroup` has finished now fail the DAG, as a daemon task without items already did.
 
-A daemon task's exit hook, or the lifecycle hook for the phase it ends in, now runs when the daemon is stopped at the end of its DAG.
-Previously it did not run.
+A daemon that dies this way now also runs its exit hook, and a lifecycle hook whose expression matches the phase it ends in, and the template waits for them to finish before ending `Failed`.
+Previously a DAG never started these hooks; a Steps template's workflow could end before a hook it had started finished.
 
 #### Outputs, metrics and messages
 
