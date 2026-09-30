@@ -67,26 +67,6 @@ func TestWorkflowStore_New(t *testing.T) {
 	})
 }
 
-func TestWorkflowStore_GetState(t *testing.T) {
-	t.Run("returns state from node phase", func(t *testing.T) {
-		wf := newTestWorkflow("test-wf")
-		store := newWorkflowStore(wf, "", "dag")
-
-		addNodeToWorkflow(testCtx(t), wf, "dag.taskA", wfv1.NodeSucceeded)
-
-		state := store.getPhase(t.Context(), "taskA")
-		assert.Equal(t, wfv1.NodeSucceeded, state)
-	})
-
-	t.Run("returns pending for nonexistent node", func(t *testing.T) {
-		wf := newTestWorkflow("test-wf")
-		store := newWorkflowStore(wf, "", "dag")
-
-		state := store.getPhase(t.Context(), "nonexistent")
-		assert.Equal(t, wfv1.NodePending, state)
-	})
-}
-
 func TestWorkflowStore_GetNode(t *testing.T) {
 	t.Run("returns node for task", func(t *testing.T) {
 		wf := newTestWorkflow("test-wf")
@@ -658,27 +638,6 @@ func TestDAGEvaluator_MixedReachability(t *testing.T) {
 	assert.False(t, resultD.Suspended)
 }
 
-func TestWorkflowStore_GetStateWithDaemonedNode(t *testing.T) {
-	wf := newTestWorkflow("test-wf")
-	store := newWorkflowStore(wf, "", "dag")
-	ctx := testCtx(t)
-
-	// Create a daemoned running node
-	nodeID := wf.NodeID("dag.daemon-task")
-	daemoned := true
-	node := wfv1.NodeStatus{
-		ID:       nodeID,
-		Name:     "dag.daemon-task",
-		Phase:    wfv1.NodeRunning,
-		Daemoned: &daemoned,
-		Type:     wfv1.NodeTypePod,
-	}
-	wf.Status.Nodes.Set(ctx, nodeID, node)
-
-	state := store.getPhase(ctx, "daemon-task")
-	assert.Equal(t, wfv1.NodeSucceeded, state, "Daemoned running node should return Succeeded")
-}
-
 func TestDAGEvaluator_DaemonedCompletedNode(t *testing.T) {
 	wf := newTestWorkflow("test-wf")
 	ctx := testCtx(t)
@@ -876,8 +835,6 @@ func TestEvaluateRetryNode(t *testing.T) {
 			result := NewDAGEvaluator(wf, createDAGTemplate([]wfv1.DAGTask{{Name: "A"}}), "", "dag").Evaluate(ctx, "A")
 			assert.Equal(t, tt.wantRun, result.ShouldRun)
 			assert.Equal(t, tt.wantRun, result.Action == ActionExecute)
-			assert.Equal(t, !tt.wantRun, result.FulfilledForDeps)
-			assert.Equal(t, tt.retry.Phase, result.CurrentPhase)
 		})
 	}
 }
@@ -1157,18 +1114,14 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 	})
 }
 
-func TestTaskNodeName_RoundTrip(t *testing.T) {
+func TestTaskNodeName(t *testing.T) {
 	for _, tt := range []struct{ boundary, task, node string }{
 		{"wf.dag", "build", "wf.dag.build"},
 		{"wf.dag", "build(0:x)", "wf.dag.build(0:x)"},
 		{"wf.steps", "[1].step-b", "wf.steps[1].step-b"},
 	} {
 		assert.Equal(t, tt.node, TaskNodeName(tt.boundary, tt.task))
-		assert.Equal(t, tt.task, TaskNameFromNodeName(tt.boundary, tt.node))
 	}
-	// A node that merely shares the boundary as a string prefix is not a child.
-	assert.Equal(t, "boundaryother", TaskNameFromNodeName("boundary", "boundaryother"))
-	assert.Equal(t, "elsewhere.x", TaskNameFromNodeName("boundary", "elsewhere.x"))
 }
 
 func TestActionString(t *testing.T) {

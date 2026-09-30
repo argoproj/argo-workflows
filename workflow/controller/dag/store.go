@@ -1,7 +1,6 @@
 package dag
 
 import (
-	"context"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -37,29 +36,6 @@ func TaskNodeName(boundaryName, taskName string) string {
 	return boundaryName + "." + taskName
 }
 
-// TaskNameFromNodeName is the inverse of TaskNodeName: it strips the boundary
-// prefix from a node name to recover the task name. Returns the input unchanged
-// if it doesn't look like a child of this boundary (no proper separator).
-//
-// TaskNodeName always inserts "." (DAG) or "[" (Steps) between the boundary
-// and the task name, so we require the same separator on the way back —
-// otherwise a node merely sharing the boundary as a string prefix (e.g.
-// "boundaryother") would be incorrectly truncated to "other".
-func TaskNameFromNodeName(boundaryName, nodeName string) string {
-	rest, ok := strings.CutPrefix(nodeName, boundaryName)
-	if !ok || rest == "" {
-		return nodeName
-	}
-	switch rest[0] {
-	case '.':
-		return rest[1:]
-	case '[':
-		return rest
-	default:
-		return nodeName
-	}
-}
-
 func (s *workflowStore) taskNodeName(taskName string) string {
 	return TaskNodeName(s.boundaryName, taskName)
 }
@@ -67,19 +43,6 @@ func (s *workflowStore) taskNodeName(taskName string) string {
 // taskNodeID computes the node ID for a task.
 func (s *workflowStore) taskNodeID(taskName string) string {
 	return s.workflow.ResolveNodeID(s.taskNodeName(taskName))
-}
-
-// getPhase returns the current phase of a task's node, Pending while it has
-// none. A running daemon counts as Succeeded.
-func (s *workflowStore) getPhase(_ context.Context, key Key) wfv1.NodePhase {
-	node, err := s.nodes.Get(s.taskNodeID(key))
-	if err != nil {
-		return wfv1.NodePending
-	}
-	if node.IsDaemoned() && node.Phase == wfv1.NodeRunning {
-		return wfv1.NodeSucceeded
-	}
-	return node.Phase
 }
 
 // getNode returns the raw node status for a task.

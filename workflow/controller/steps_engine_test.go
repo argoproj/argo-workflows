@@ -73,7 +73,7 @@ func stepsEngineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, 
 		prev = current
 	}
 
-	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode, mainNode.ID, false)
+	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode.ID, false)
 	fake := &fakeReconciler{}
 	engine.reconciler = fake
 	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, tasks, tmpl, mainNode.ID, mainNode.Name)
@@ -86,7 +86,7 @@ func TestStepsEngine_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	engine, fake, woc, tasks := stepsEngineWithFakeReconciler(ctx, t)
 
-	result := dag.EvaluationResult{TaskName: "[0].client", CurrentPhase: wfv1.NodeRunning, Error: errors.New("depends expression failed to evaluate")}
+	result := dag.EvaluationResult{TaskName: "[0].client", Error: errors.New("depends expression failed to evaluate")}
 	fake.calls = nil
 	engine.visit(ctx, engine.getTaskByName(tasks, "[0].client"), result, true)
 	assert.Empty(t, fake.calls)

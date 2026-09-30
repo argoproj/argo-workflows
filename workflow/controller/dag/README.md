@@ -11,7 +11,7 @@ Both template types use it — Steps tasks are adapted to the same `Task` interf
 | `doc.go` | Package comment |
 | `argo.go` | `DAGEvaluator` — readiness evaluation, retry and task-group assessment, public API |
 | `topology.go` | `WorkflowTasks` — task collection, dependency resolution, leaf tasks; `PullOrder` |
-| `store.go` | `workflowStore` — maps task names to workflow nodes; `TaskNodeName` / `TaskNameFromNodeName` naming convention |
+| `store.go` | `workflowStore` — maps task names to workflow nodes; `TaskNodeName` naming convention |
 | `task.go` | `Task` interface and the `DAGTask` adapter for `wfv1.DAGTask` (`StepAdapter` lives in `workflow/controller/steps.go`) |
 | `types.go` | `EvaluationResult`, `Action`, and the `taskResult` scope struct |
 | `expansion.go` | `withItems` / `withParam` / `withSequence` expansion and expanded task naming |
@@ -53,11 +53,11 @@ Because the engine's walk evaluates a task after all of its dependencies, an omi
 
 ### 5. Retry and task-group nodes
 
-The evaluator makes no retry decision. `evaluateRetryNode` reports a retry node by its own phase, which the controller's `processNodeRetries` records from the processed `retryStrategy`: until the node is fulfilled it asks for it to be dispatched (`ActionExecute`), so that `processNodeRetries` alone decides whether to start another attempt, wait out a backoff (it requeues the workflow), or finish the node; once it is fulfilled, a running daemon included, it is `FulfilledForDeps`.
+The evaluator makes no retry decision. `evaluateRetryNode` reports a retry node by its own phase, which the controller's `processNodeRetries` records from the processed `retryStrategy`: until the node is fulfilled it asks for it to be dispatched (`ActionExecute`), so that `processNodeRetries` alone decides whether to start another attempt, wait out a backoff (it requeues the workflow), or finish the node; once it is fulfilled, a running daemon included, nothing is dispatched.
 An expanded item's retry node is not assessed here: the engine re-enters the item on every dispatch of its TaskGroup, and `processNodeRetries` drives its retries.
 
 An expanded task has one result, for its TaskGroup node: `evaluateTaskGroupNode` asks for it to be dispatched until the node is fulfilled, and the engine's dispatch creates or re-enters each item, drives each item's hooks, and completes the group once every item and its hooks have finished.
-`TaskGroupPhase` is the one rule for a group's phase, used by the engine to complete it and by `evaluateTaskGroupNode` to report a completed group whose daemoned item has since died: the worst item phase (Error over Failed over Succeeded), and not done while an item is missing or unfinished; a running daemon counts as finished.
+`TaskGroupPhase` is the one rule for a group's phase, used by the engine to complete it: the worst item phase (Error over Failed over Succeeded), and not done while an item is missing or unfinished; a running daemon counts as finished.
 
 ### 6. Public API
 
@@ -70,8 +70,8 @@ evaluator.FindLeafTaskNames(ctx)        // tasks nothing depends on
 evaluator.GetAncestors(ctx, task)       // transitive dependencies (unordered)
 evaluator.GetDependencies(ctx, task)    // direct dependencies
 evaluator.GetTask(name)                 // the Task by name
-dag.ExpandTask / dag.HasExpansion       // withItems/withParam/withSequence expansion
-dag.TaskNodeName / dag.TaskNameFromNodeName // task ↔ node name convention
+task.Expand / dag.HasExpansion         // withItems/withParam/withSequence expansion
+dag.TaskNodeName                        // task → node name convention
 dag.TaskGroupPhase                      // a TaskGroup's phase from its items
 dag.PullOrder                           // a DAG's tasks in walk order: the targets' ancestry, dependencies first
 ```
@@ -83,7 +83,6 @@ Fields of `EvaluationResult` the engine acts on:
 - `Error` — the task could not be assessed; the engine records a terminal Error node.
 
 `Action`, `ActionReason`, `Suspended` and `WaitingOn` are diagnostic: the engine logs them at debug level and does not act on them.
-`CurrentPhase` and `FulfilledForDeps` describe the task's node (a running daemon is fulfilled for its dependants); the engine reads the nodes themselves.
 
 ## Architecture
 
