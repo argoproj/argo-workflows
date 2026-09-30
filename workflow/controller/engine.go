@@ -496,12 +496,18 @@ func (e *Engine) expansionScope(scope *wfScope) map[string]string {
 // waiter), one item's error staying with that item. Each item's hooks are then
 // driven (driveHooks), and the group is completed from its items once every
 // one exists and has finished, with its hooks, so that it is never recorded
-// before an item's exit hook exists. items are the expansion of task,
-// resolved. Only the operation deadline stops the items early; its error is
-// returned.
+// before an item's exit hook exists. While a hook error is ending the
+// boundary (hookErr) an item with no node is not created and never will be,
+// so the group completes from the items that exist, as a step group closes
+// from the steps that ran; `argo retry` resets the group to create the rest.
+// items are the expansion of task, resolved. Only the operation deadline
+// stops the items early; its error is returned.
 func (e *Engine) reconcileTaskGroup(ctx context.Context, task dag.Task, tgNode *wfv1.NodeStatus, items []dag.Task) error {
 	var stopErr error
 	for _, item := range items {
+		if e.hookErr != nil && e.getTaskNode(ctx, item.GetName()) == nil {
+			continue
+		}
 		err := e.reconcileTask(ctx, item, []string{tgNode.Name})
 		if e.dispatchOutcome(ctx, item.GetName(), err) {
 			stopErr = err
@@ -509,11 +515,16 @@ func (e *Engine) reconcileTaskGroup(ctx context.Context, task dag.Task, tgNode *
 		}
 	}
 	hooksDone := e.driveHooks(ctx, task, items, false)
-	itemNodes := make([]*wfv1.NodeStatus, len(items))
-	for i, item := range items {
-		if n := e.getTaskNode(ctx, item.GetName()); n != nil && !e.hasPendingHooks(n) {
-			itemNodes[i] = n
+	var itemNodes []*wfv1.NodeStatus
+	for _, item := range items {
+		n := e.getTaskNode(ctx, item.GetName())
+		if n == nil && e.hookErr != nil {
+			continue // never starts: a hook error stops new items
 		}
+		if n != nil && e.hasPendingHooks(n) {
+			n = nil
+		}
+		itemNodes = append(itemNodes, n)
 	}
 	if phase, done := dag.TaskGroupPhase(itemNodes); done && hooksDone {
 		e.woc.markNodePhase(ctx, tgNode.Name, phase)

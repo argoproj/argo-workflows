@@ -292,8 +292,9 @@ func (e *DAGEvaluator) evaluateRetryNode(taskName string, node *wfv1.NodeStatus)
 // evaluateTaskGroupNode assesses a TaskGroup node (from withItems/withParam/withSequence).
 // Until the group is fulfilled it is dispatched on every reconcile: the Engine
 // expands the task, creates or re-enters each item, and completes the group
-// with TaskGroupPhase once every item exists and has finished, as
-// executeDAGTask and executeStepGroup did before the Engine.
+// with TaskGroupPhase once every item exists and has finished (after a hook
+// error, once the items that exist have), as executeDAGTask and
+// executeStepGroup did before the Engine.
 func (e *DAGEvaluator) evaluateTaskGroupNode(taskName string, node *wfv1.NodeStatus) EvaluationResult {
 	result := EvaluationResult{TaskName: taskName}
 	if !node.Fulfilled() {
