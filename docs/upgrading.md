@@ -55,8 +55,13 @@ Previously the error was only logged and the template succeeded.
 
 A task's or step's exit or lifecycle hook that ends `Error` now ends the DAG or Steps template it belongs to with `Error`.
 This covers a hook that could not be started (for example its pod was denied by an admission webhook, or its expression could not be evaluated), a hook that timed out, and a hook that errored while it ran, such as one whose pod was deleted.
-Once a hook has errored, no new task or step of that template starts; tasks that are already running finish, and then the template ends `Error` with the hook's message.
-If a task has already failed — including the task whose own hook is erroring — or a step's lifecycle hook errors while the step is still running (the step itself is then marked `Error`), the template ends `Failed` with that failure's message instead.
+Once a hook has errored, no new task or step of that template starts; one that has not started gets no node, so `argo retry` runs it.
+Tasks and steps that are already running finish, and then the template ends `Error` with the hook's message.
+The exception is a task or step whose lifecycle hook errors while it is still running: it is marked `Error` at once, and its pod is not waited for.
+The template then fails as it does for any task that errored: a DAG ends `Error` with `child '<node ID>' failed`, and a Steps template ends `Failed` with its step group's message.
+If the template is still waiting for a sibling that had already started, that task's pod can finish in the meantime, and the pod's phase replaces the `Error`; the template then ends `Error` with the hook's message.
+So which siblings start, and the template's final phase and message, can depend on the order in which DAG tasks are named or steps are listed, as a DAG's already could.
+If another task or step had already failed or errored, the template ends with that failure's phase and message instead.
 A hook that runs and ends `Failed` is still ignored, as before.
 Previously a DAG ignored an exit hook that errored and went on to run the task's dependants.
 `continueOn.error` on a task does not cover an error from its hooks: previously a DAG could still succeed when a lifecycle hook of a task with `continueOn.error` errored.
@@ -111,7 +116,8 @@ The daemon's node fails, the Steps template and the workflow fail with `child '<
 Previously the step group was changed to `Failed` as well.
 In a DAG, expanded daemon items that die after their `TaskGroup` has finished now fail the DAG, as a daemon task without items already did.
 
-A daemon that dies this way now also runs its exit hook, and a lifecycle hook whose expression matches the phase it ends in, and the template waits for them to finish before ending `Failed`.
+A daemon task or step without items that dies this way now also runs its exit hook, and a lifecycle hook whose expression matches the phase it ends in, and the template waits for them to finish before ending `Failed`.
+The items of an expanded daemon task or step that die this way do not start new hooks.
 Previously a DAG never started these hooks; a Steps template's workflow could end before a hook it had started finished.
 
 #### Outputs, metrics and messages
