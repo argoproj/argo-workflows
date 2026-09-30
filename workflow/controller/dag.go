@@ -35,8 +35,24 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, node.ID, opts.onExitTemplate)
 
 	var tasks []dag.Task
+	known := make(map[string]bool, len(tmpl.DAG.Tasks))
 	for i := range tmpl.DAG.Tasks {
 		tasks = append(tasks, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[i]})
+		known[tmpl.DAG.Tasks[i].Name] = true
+	}
+
+	// dag.target may be parameterised (validate.go's validateDAGTargets
+	// skips it), so a target naming no task can only be caught here, once
+	// substituted. dag.PullOrder silently drops a target it can't find, so
+	// left unchecked the boundary would never see a node for it and
+	// assessDAGPhase (target with no node) would keep it Running forever;
+	// main panicked here (recovered by the operator into an Error), so this
+	// keeps main's Error outcome without the panic.
+	for name := range strings.FieldsSeq(tmpl.DAG.Target) {
+		if !known[name] {
+			woc.markNodeError(ctx, nodeName, fmt.Errorf("target '%s' is not defined", name))
+			return woc.wf.GetNodeByName(nodeName)
+		}
 	}
 
 	engine.Execute(ctx, dag.PullOrder(tasks, strings.Fields(tmpl.DAG.Target)))
