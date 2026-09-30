@@ -2367,6 +2367,18 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 	if err != nil {
 		return node, err
 	}
+	if node == nil {
+		// A node this call creates is named as soon as it exists, as an
+		// existing one is above: one that finishes before the next reconcile
+		// (a quick pod, a memoize hit) is not re-entered (C94).
+		defer func() {
+			named, nameErr := woc.prepareNode(ctx, nodeName, tmplCtx, processedTmpl, orgTmpl, opts.boundaryID, opts.nodeFlag)
+			if named != nil && node != nil && node.ID == named.ID {
+				node = named
+			}
+			err = cmp.Or(err, nameErr)
+		}()
+	}
 
 	if woc.handleNodeFulfilled(ctx, node, processedTmpl) {
 		return node, nil

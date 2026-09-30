@@ -547,7 +547,9 @@ func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []str
 // task, a failFast or timeout mark) is finished. Each node is reconciled with
 // the template it was dispatched with: the task resolved against its scope,
 // items expanded, templateDefaults merged. A task whose template has no lock
-// and no metrics has nothing to finish (mayNeedFinishing).
+// and no metrics has nothing to finish (mayNeedFinishing). Legacy items,
+// which have no TaskGroup before dispatch creates one, are finished when
+// they are adopted (adoptItems).
 func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) {
 	for _, task := range tasks {
 		node := e.getTaskNode(ctx, task.GetName())
@@ -824,7 +826,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		tgNode := taskNode
 		if tgNode == nil {
 			tgNode = e.initTaskNode(ctx, resolved, parents, wfv1.NodeTypeTaskGroup, wfv1.NodeRunning)
-			e.adoptItems(ctx, taskName, tgNode.Name, expandedTasks)
+			e.adoptItems(ctx, task, tgNode.Name, expandedTasks)
 		}
 		if err := e.reconcileTaskGroup(ctx, task, tgNode, expandedTasks); err != nil {
 			return nil, err
@@ -858,8 +860,13 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 // TaskGroup is assessed, aggregates its outputs and is reconciled over its
 // children, so it must hold every item, including those that finished before
 // the upgrade. Each adopted item's edge from the task's parents is removed,
-// so it keeps a single parent, as retry's graph walk expects.
-func (e *Engine) adoptItems(ctx context.Context, taskName, tgNodeName string, expanded []dag.Task) {
+// so it keeps a single parent, as retry's graph walk expects. The adopted
+// items are then finished as reconcileFulfilledTasks finishes every task's,
+// since it ran before their TaskGroup existed: one that completed while the
+// controller was down emits its metrics and releases its lock in this
+// reconcile, the one that sees it complete, and dispatch skips it.
+func (e *Engine) adoptItems(ctx context.Context, task dag.Task, tgNodeName string, expanded []dag.Task) {
+	taskName := task.GetName()
 	adopted := make(map[string]bool)
 	for _, item := range expanded {
 		if node := e.getTaskNode(ctx, item.GetName()); node != nil {
@@ -876,6 +883,7 @@ func (e *Engine) adoptItems(ctx context.Context, taskName, tgNodeName string, ex
 			e.woc.wf.Status.Nodes.Set(ctx, parent.ID, *parent)
 		}
 	}
+	e.reconcileFulfilledTasks(ctx, []dag.Task{task})
 }
 
 // initTaskNode creates a node the Engine records itself for task (Omitted,
