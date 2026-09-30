@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -34,6 +35,9 @@ const (
 	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS environment variable
 	defaultEstimationDBQueryTimeoutSeconds = 5
 )
+
+// archivedWorkflowListColumns are the plain columns ListWorkflows reads into archivedWorkflowMetadata.
+var archivedWorkflowListColumns = []any{"name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp"}
 
 type archivedWorkflowMetadata struct {
 	ClusterName       string             `db:"clustername"`
@@ -177,7 +181,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 }
 
 // pageSelector selects the primary keys of the archived workflows matching options, sorted and
-// limited to the requested page. Filtering, sorting and paging on these narrow rows, then joining
+// limited to the requested page, for Postgres. Filtering, sorting and paging on these narrow rows, then joining
 // back for the wide columns, keeps the workflow JSON out of the sort: otherwise every matching
 // row's extracted JSON is sorted, which spills to disk once it outgrows the sort memory.
 func (r *workflowArchive) pageSelector(s db.Session, options sutils.ListOptions) (db.Selector, error) {
@@ -188,19 +192,24 @@ func (r *workflowArchive) pageSelector(s db.Session, options sutils.ListOptions)
 	return BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
 }
 
+// sortListedWorkflows puts a page of listed workflows in the order BuildArchivedWorkflowSelector's
+// ORDER BY chose them. On Postgres the join back for the wide columns doesn't keep that order, and
+// ordering the page here rather than in the query keeps the extracted JSON out of a database sort.
+// Callers fetch one row past the page and drop it, so the order must match exactly.
+func sortListedWorkflows(wfs []archivedWorkflowMetadata) {
+	slices.SortFunc(wfs, func(a, b archivedWorkflowMetadata) int {
+		return cmp.Or(b.StartedAt.Compare(a.StartedAt), strings.Compare(a.UID, b.UID))
+	})
+}
+
 func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 
 	switch r.dbType {
 	case sqldb.MySQL:
 		if err := r.sessionProxy.With(ctx, func(s db.Session) error {
-			page, err := r.pageSelector(s, options)
-			if err != nil {
-				return err
-			}
-
-			return s.SQL().
-				Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp").
+			selectQuery := s.SQL().
+				Select(archivedWorkflowListColumns...).
 				Columns(
 					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.metadata.labels'), '{}') as labels"),
 					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.metadata.annotations'), '{}') as annotations"),
@@ -212,9 +221,15 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.status.resourcesDuration'), '{}') as resourcesduration"),
 				).
 				From(archiveTableName).
-				Join(db.Raw("? AS page", page)).
-				Using("clustername", "uid").
-				All(&archivedWfs)
+				Where(r.clusterManagedNamespaceAndInstanceID())
+
+			var err error
+			selectQuery, err = BuildArchivedWorkflowSelector(selectQuery, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+			if err != nil {
+				return err
+			}
+
+			return selectQuery.All(&archivedWfs)
 		}); err != nil {
 			return nil, err
 		}
@@ -229,7 +244,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			// them, to reduce detoast overhead for the "workflow" column:
 			// https://github.com/argoproj/argo-workflows/issues/13601#issuecomment-2420499551
 			workflows := s.SQL().
-				Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp").
+				Select(archivedWorkflowListColumns...).
 				Columns(
 					db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
 					db.Raw("coalesce(workflow->'status', '{}') as status"),
@@ -244,7 +259,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			// repeat workflow->'metadata' and workflow->'status' (and their detoasting) in every
 			// field below.
 			return s.SQL().
-				Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp").
+				Select(archivedWorkflowListColumns...).
 				Columns(
 					db.Raw("coalesce(metadata->>'labels', '{}') as labels"),
 					db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
@@ -264,12 +279,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 		return nil, fmt.Errorf("unsupported db type %s", r.dbType)
 	}
 
-	// The page query chose and limited the rows, but the join back for the wide columns doesn't keep
-	// its order. Ordering the page here rather than in the query keeps the extracted JSON out of a
-	// database sort.
-	slices.SortStableFunc(archivedWfs, func(a, b archivedWorkflowMetadata) int {
-		return b.StartedAt.Compare(a.StartedAt)
-	})
+	sortListedWorkflows(archivedWfs)
 
 	wfs := make(wfv1.Workflows, len(archivedWfs))
 	for i, md := range archivedWfs {
