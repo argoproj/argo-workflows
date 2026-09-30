@@ -11178,6 +11178,13 @@ spec:
 // retried workflow Succeeded. On the branch an expanded step's item hooks
 // were driven only while its TaskGroup ran; the TaskGroup stayed Succeeded,
 // so nothing re-entered the hook, and finalize waited for it forever.
+//
+// The pods pin the decided behaviour, which deliberately differs from base
+// and HEAD: the reset exit hook had already succeeded, so it is completed
+// without running again. Base re-ran it as onExit(1), through a
+// retry-planning quirk (its Retry node's childrenFulfilled check recursed
+// into the next StepGroup), so the pod assertion fails at base; a hook
+// without a retryStrategy is not re-run at base either.
 func TestRegressionR4_C97_StepsItemExitHookAfterRetry(t *testing.T) {
 	woc := r4C97Run(t, `steps:
     - - name: s1
@@ -11188,6 +11195,8 @@ func TestRegressionR4_C97_StepsItemExitHookAfterRetry(t *testing.T) {
     - - name: s2
         template: work`)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "left: %v", r4Unfulfilled(woc))
+	assert.Equal(t, []string{"r4-c97[0].s1(0:0)(0)", "r4-c97[0].s1(0:0).onExit(0)", "r4-c97[1].s2"},
+		r4PodNodeNames(logging.TestContext(t.Context()), t, woc))
 }
 
 // r4C98Run runs the F6 probe (acceptance-fuzz f700517): a's first attempt
