@@ -475,6 +475,50 @@ func r4InputParam(wf *wfv1.Workflow, display string) string {
 }
 
 // r4GlobalOut is the output p, exported as the workflow output g.
+// r4Restart replaces the controller with a new one built only from the
+// cluster state, as after a controller restart: the workflow as stored, its
+// pods, task results and ConfigMaps (memoization caches). newController's
+// initManagers re-establishes recorded lock holders, as start-up does. The
+// old controller is stopped; nothing it held in memory is carried over.
+//
+//nolint:revive // matches the r4 harness convention (t before ctx)
+func r4Restart(t *testing.T, ctx context.Context, old *WorkflowController, stopOld context.CancelFunc, namespace, name string) (*WorkflowController, context.CancelFunc) {
+	t.Helper()
+	wf, err := old.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, metav1.GetOptions{})
+	require.NoError(t, err)
+	pods, err := old.kubeclientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	trs, err := old.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	cms, err := old.kubeclientset.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	stopOld()
+
+	wf.ResourceVersion = ""
+	cancel, controller := newController(ctx, wf)
+	for i := range cms.Items {
+		cm := cms.Items[i]
+		cm.ResourceVersion = ""
+		_, err := controller.kubeclientset.CoreV1().ConfigMaps(namespace).Create(ctx, &cm, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+	for i := range pods.Items {
+		pod := pods.Items[i]
+		pod.ResourceVersion = ""
+		created, err := controller.kubeclientset.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
+		require.NoError(t, err)
+		waitForInformer(ctx, controller.PodController.TestingPodInformer(), created, func(any) bool { return true })
+	}
+	for i := range trs.Items {
+		tr := trs.Items[i]
+		tr.ResourceVersion = ""
+		created, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(namespace).Create(ctx, &tr, metav1.CreateOptions{})
+		require.NoError(t, err)
+		waitForInformer(ctx, controller.taskResultInformer, created, func(any) bool { return true })
+	}
+	return controller, cancel
+}
+
 func r4GlobalOut(value string) *wfv1.Outputs {
 	return &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", GlobalName: "g", Value: wfv1.AnyStringPtr(value)}}}
 }
