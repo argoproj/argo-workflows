@@ -10870,3 +10870,174 @@ func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
 }
+
+// r4C95Workflow is the F3 shape of the Task 7.2 fuzzer
+// (acceptance-fuzz/repro/f700017, f701286, f702994): an outer template of
+// kind outer ("steps" or "dag") runs a nested template of kind inner, whose
+// own output reads a when-false step or task and so cannot resolve, then a
+// dependant "after". The nested template ends Error.
+func r4C95Workflow(name, outer, inner string) string {
+	var outerBody, innerBody string
+	if outer == "steps" {
+		outerBody = `
+    steps:
+    - - name: nested
+        template: nested
+    - - name: after
+        template: work`
+	} else {
+		outerBody = `
+    dag:
+      tasks:
+      - name: nested
+        template: nested
+      - name: after
+        template: work
+        depends: nested`
+	}
+	if inner == "steps" {
+		innerBody = `
+    steps:
+    - - name: a
+        template: work
+    - - name: b
+        template: gen
+        when: "false"
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          parameter: "{{steps.b.outputs.parameters.out}}"`
+	} else {
+		innerBody = `
+    dag:
+      tasks:
+      - name: a
+        template: work
+      - name: b
+        template: gen
+        depends: a
+        when: "false"
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          parameter: "{{tasks.b.outputs.parameters.out}}"`
+	}
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: %s
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main%s
+  - name: nested%s
+  - name: work
+    container:
+      image: alpine
+      command: [echo, work]
+  - name: gen
+    container:
+      image: alpine
+      command: [sh, -c, "echo 1 > /tmp/out"]
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+`, name, outerBody, innerBody)
+}
+
+// r4C95Orphans lists the nodes, other than the root, that no node lists as
+// a child: the UI graph drops them and `argo retry` cannot find their parent.
+func r4C95Orphans(wf *wfv1.Workflow) []string {
+	linked := map[string]bool{}
+	for _, n := range wf.Status.Nodes {
+		for _, c := range n.Children {
+			linked[c] = true
+		}
+	}
+	var out []string
+	for id, n := range wf.Status.Nodes {
+		if id != wf.NodeID(wf.Name) && !linked[id] {
+			out = append(out, n.Name)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// r4C95Run runs r4C95Workflow(outer, inner) to its end and checks that the
+// nested node ended Error with no orphaned node. It then applies `argo
+// retry`, runs the retry to its end, and checks the graph again.
+func r4C95Run(t *testing.T, name, outer, inner string) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(r4C95Workflow(name, outer, inner))
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	nested := name + ".nested"
+	if outer == "steps" {
+		nested = name + "[0].nested"
+	}
+
+	woc := r4Operate(t, ctx, controller, wf)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 10)
+	require.True(t, woc.wf.Status.Phase.Completed(), "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+	require.Equal(t, wfv1.NodeError, r4NodePhase(woc, nested), "the nested template cannot resolve its own output")
+	if inner == "steps" {
+		// Base's executeDAG resolved the outputs first, so a nested DAG
+		// had none there; its dependant is checked through the orphans.
+		node, err := woc.wf.GetNodeByName(nested)
+		require.NoError(t, err)
+		assert.NotEmpty(t, node.OutboundNodes, "the nested template records its outbound nodes")
+	}
+	assert.Empty(t, r4C95Orphans(woc.wf), "every node has a parent")
+	if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
+		// Base's outer DAG ended Succeeded (C70): nothing to retry.
+		return
+	}
+
+	retried := r4RetryStored(t, ctx, controller, woc.wf)
+	require.False(t, retried.Status.Phase.Completed(), "argo retry reopens the workflow")
+	woc = r4Operate(t, ctx, controller, retried)
+	woc = r4DriveToEnd(t, ctx, controller, woc, 10)
+	require.True(t, woc.wf.Status.Phase.Completed(), "the retry runs to its end; left: %v", r4Unfulfilled(woc))
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, nested), "the nested template still cannot resolve its output")
+	assert.Empty(t, r4C95Orphans(woc.wf), "every node has a parent after the retry")
+}
+
+// TestRegressionR4_C95_StepsInSteps: a nested Steps template that ends Error
+// because its own output cannot resolve records its outbound nodes first, as
+// executeSteps did (base steps.go updateOutboundNodes before
+// getTemplateOutputsFromScope). The branch's finalize resolved the outputs
+// first and returned on the error, so the next StepGroup, created Omitted,
+// had no parent and `argo retry` failed "couldn't find parent node" (F3).
+func TestRegressionR4_C95_StepsInSteps(t *testing.T) {
+	r4C95Run(t, "r4-c95-steps-steps", "steps", "steps")
+}
+
+// TestRegressionR4_C95_StepsInDAG: as StepsInSteps, with a DAG dependant of
+// the nested Steps template (acceptance-fuzz f702994).
+func TestRegressionR4_C95_StepsInDAG(t *testing.T) {
+	r4C95Run(t, "r4-c95-steps-dag", "dag", "steps")
+}
+
+// TestRegressionR4_C95_DAGInSteps: as StepsInSteps, with a nested DAG
+// template (acceptance-fuzz f701286).
+func TestRegressionR4_C95_DAGInSteps(t *testing.T) {
+	r4C95Run(t, "r4-c95-dag-steps", "steps", "dag")
+}
+
+// TestRegressionR4_C95_DAGInDAG: as StepsInSteps, with a nested DAG template
+// and a DAG dependant. Not a red test from base: base's executeDAG resolved
+// the outputs before recording the outbound nodes too, so base left the
+// dependant unevaluated and the workflow Running for good. It checks that
+// the one rule covers a nested DAG as well.
+func TestRegressionR4_C95_DAGInDAG(t *testing.T) {
+	r4C95Run(t, "r4-c95-dag-dag", "dag", "dag")
+}
