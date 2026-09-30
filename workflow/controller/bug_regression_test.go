@@ -197,7 +197,7 @@ spec:
 	}
 	woc.wf.Status.Nodes = wfv1.Nodes{mainNode.ID: *mainNode}
 
-	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode, mainNode.ID, false)
+	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode.ID, false)
 	engine.reconciler = &fakeReconciler{}
 	engine.evaluator = dag.NewDAGEvaluatorFromTasks(woc.wf, []dag.Task{
 		&dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[0]},

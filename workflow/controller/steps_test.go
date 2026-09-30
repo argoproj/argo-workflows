@@ -164,8 +164,7 @@ func TestExpandStepGroupWithParam(t *testing.T) {
 		WithParam: step.WithParam,
 	}
 
-	evaluator := newDAGEvaluator(wf, &tmpl, "test", "test")
-	expanded, err := evaluator.ExpandTask(ctx, *dagTask, make(map[string]string), woc)
+	expanded, err := dag.ExpandTask(ctx, *dagTask, make(map[string]string), woc)
 	require.NoError(t, err)
 	require.Len(t, expanded, 4)
 
@@ -231,8 +230,7 @@ func TestExpandStepGroupWithItems(t *testing.T) {
 		WithItems: step.WithItems,
 	}
 
-	evaluator := newDAGEvaluator(wf, &tmpl, "test", "test")
-	expanded, err := evaluator.ExpandTask(ctx, *dagTask, make(map[string]string), woc)
+	expanded, err := dag.ExpandTask(ctx, *dagTask, make(map[string]string), woc)
 	require.NoError(t, err)
 	require.Len(t, expanded, 1)
 

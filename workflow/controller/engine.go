@@ -29,7 +29,6 @@ type Engine struct {
 	boundaryID     string
 	nodeName       string
 	tmpl           *wfv1.Template
-	orgTmpl        wfv1.TemplateReferenceHolder
 	onExitTemplate bool
 	log            logging.Logger
 	reconciler     TaskReconciler
@@ -50,13 +49,12 @@ type Engine struct {
 }
 
 // NewEngine creates a new Engine.
-func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, onExitTemplate bool) *Engine {
+func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, boundaryID string, onExitTemplate bool) *Engine {
 	return &Engine{
 		woc:            woc,
 		nodeName:       nodeName,
 		tmplCtx:        tmplCtx,
 		tmpl:           tmpl,
-		orgTmpl:        orgTmpl,
 		boundaryID:     boundaryID,
 		onExitTemplate: onExitTemplate,
 		log:            woc.log,
@@ -76,14 +74,16 @@ func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution
 // visited once per reconcile, so it is dispatched at most once and its exit
 // handler is driven at most once (#14392).
 //
-// Before the walk, every task node that is already fulfilled is finished
-// (reconcileFulfilledTasks); after it, the boundary is assessed (a Steps
-// template group by group) and finalized. An error of the template itself
+// Before the walk, a Retry node whose daemon has died is made unfulfilled
+// again (clearStaleDaemonedRetries), and every task node that has just
+// finished, or still holds a lock, is finished (reconcileFulfilledTasks);
+// after it, the boundary is assessed (a Steps template group by group) and
+// finalized. An error of the template itself
 // ends the boundary Error (markBoundaryError).
 func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	e.evaluator = dag.NewDAGEvaluatorFromTasks(e.woc.wf, tasks, e.tmpl, e.boundaryID, e.nodeName)
 
-	e.reconcileDaemonedTasks(ctx, tasks)
+	e.clearStaleDaemonedRetries(ctx, tasks)
 	e.reconcileFulfilledTasks(ctx, tasks)
 
 	if hook := e.findTaskHook(ctx, tasks, func(n *wfv1.NodeStatus) bool { return n.Phase == wfv1.NodeError }); hook != nil {
@@ -175,30 +175,20 @@ type templateError struct{ error }
 
 func (e templateError) Unwrap() error { return e.error }
 
-// reconcileDaemonedTasks re-executes any tasks whose pods are running as daemons.
-func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
+// clearStaleDaemonedRetries clears the Daemoned flag of a task's Retry node
+// whose last attempt is no longer a running daemon, so the walk finds the
+// node unfulfilled and its retry handling runs. A daemoned task is otherwise
+// fulfilled, and has nothing to dispatch.
+func (e *Engine) clearStaleDaemonedRetries(ctx context.Context, tasks []dag.Task) {
 	for _, task := range tasks {
 		taskNode := e.getTaskNode(ctx, task.GetName())
-		if taskNode == nil || !taskNode.IsDaemoned() {
+		if taskNode == nil || !taskNode.IsDaemoned() || taskNode.Type != wfv1.NodeTypeRetry {
 			continue
 		}
-
-		// If this is a retry node whose daemon child has exited (no longer daemoned),
-		// clear the stale Daemoned flag so executeTask doesn't treat it as "fulfilled"
-		// and skip the retry logic.
-		if taskNode.Type == wfv1.NodeTypeRetry {
-			_, lastChild := getChildNodeIdsAndLastRetriedNode(taskNode, e.woc.wf.Status.Nodes)
-			if lastChild != nil && !lastChild.IsDaemoned() {
-				taskNode.Daemoned = nil
-				e.woc.wf.Status.Nodes.Set(ctx, taskNode.ID, *taskNode)
-				e.woc.updated = true
-				continue // Skip executeTask — the walk will pick it up now
-			}
-		}
-
-		e.log.Info(ctx, fmt.Sprintf("reconciling daemoned task %s", task.GetName()))
-		if _, err := e.executeTask(ctx, task); err != nil {
-			e.log.WithError(err).Error(ctx, "failed to reconcile daemoned task")
+		if _, lastChild := getChildNodeIdsAndLastRetriedNode(taskNode, e.woc.wf.Status.Nodes); lastChild != nil && !lastChild.IsDaemoned() {
+			taskNode.Daemoned = nil
+			e.woc.wf.Status.Nodes.Set(ctx, taskNode.ID, *taskNode)
+			e.woc.updated = true
 		}
 	}
 }

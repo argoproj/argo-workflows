@@ -44,40 +44,34 @@ func TestEvaluateTaskGroupNode_ExecuteWhileUnfulfilled(t *testing.T) {
 			result := evaluateTaskGroup(t, taskGroupWorkflow(t, wfv1.NodeRunning, items...))
 			assert.Equal(t, ActionExecute, result.Action)
 			assert.True(t, result.ShouldRun)
-			assert.False(t, result.FulfilledForDeps)
-			assert.Equal(t, wfv1.NodeRunning, result.CurrentPhase)
 		})
 	}
 }
 
-// A completed TaskGroup is fulfilled for its dependants and not dispatched.
-// If one of its daemoned items has died since the group Succeeded, it
-// reports that failure (worst phase wins, a live daemon counts as
-// finished), without changing the node.
+// A completed TaskGroup is not dispatched, even when one of its daemoned
+// items has died since the group Succeeded (the Engine assesses that from
+// the items).
 func TestEvaluateTaskGroupNode_Fulfilled(t *testing.T) {
 	daemoned := true
 	for name, tc := range map[string]struct {
 		group wfv1.NodePhase
 		items []wfv1.NodeStatus
-		want  wfv1.NodePhase
 	}{
-		"succeeded": {wfv1.NodeSucceeded, []wfv1.NodeStatus{{Name: "dag.A(0:x)", Phase: wfv1.NodeSucceeded}}, wfv1.NodeSucceeded},
-		"failed":    {wfv1.NodeFailed, []wfv1.NodeStatus{{Name: "dag.A(0:x)", Phase: wfv1.NodeFailed}}, wfv1.NodeFailed},
+		"succeeded": {wfv1.NodeSucceeded, []wfv1.NodeStatus{{Name: "dag.A(0:x)", Phase: wfv1.NodeSucceeded}}},
+		"failed":    {wfv1.NodeFailed, []wfv1.NodeStatus{{Name: "dag.A(0:x)", Phase: wfv1.NodeFailed}}},
 		"live daemons": {wfv1.NodeSucceeded, []wfv1.NodeStatus{
 			{Name: "dag.A(0:x)", Phase: wfv1.NodeRunning, Daemoned: &daemoned},
 			{Name: "dag.A(1:y)", Phase: wfv1.NodeRunning, Daemoned: &daemoned},
-		}, wfv1.NodeSucceeded},
+		}},
 		"one daemon crashed, one live": {wfv1.NodeSucceeded, []wfv1.NodeStatus{
 			{Name: "dag.A(0:x)", Phase: wfv1.NodeFailed, Daemoned: &daemoned},
 			{Name: "dag.A(1:y)", Phase: wfv1.NodeRunning, Daemoned: &daemoned},
-		}, wfv1.NodeFailed},
+		}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			result := evaluateTaskGroup(t, taskGroupWorkflow(t, tc.group, tc.items...))
 			assert.Equal(t, ActionNone, result.Action)
 			assert.False(t, result.ShouldRun)
-			assert.True(t, result.FulfilledForDeps)
-			assert.Equal(t, tc.want, result.CurrentPhase)
 		})
 	}
 }

@@ -153,12 +153,7 @@ func (e *DAGEvaluator) FindLeafTaskNames(_ context.Context) []Key {
 
 // evaluateTaskResult builds an EvaluationResult for a single task.
 func (e *DAGEvaluator) evaluateTaskResult(ctx context.Context, taskName string) EvaluationResult {
-	phase := e.store.getPhase(ctx, taskName)
-
-	result := EvaluationResult{
-		TaskName:     taskName,
-		CurrentPhase: phase,
-	}
+	result := EvaluationResult{TaskName: taskName}
 
 	// Check for depends expression parsing errors (e.g., invalid qualifiers).
 	if err := e.tasks.GetDependsError(taskName); err != nil {
@@ -284,12 +279,8 @@ func (e *DAGEvaluator) Evaluate(ctx context.Context, taskName string) Evaluation
 // every reconcile, so that handling alone decides whether to start another
 // attempt, wait out a backoff, or finish the node.
 func (e *DAGEvaluator) evaluateRetryNode(taskName string, node *wfv1.NodeStatus) EvaluationResult {
-	result := EvaluationResult{
-		TaskName:     taskName,
-		CurrentPhase: node.Phase,
-	}
+	result := EvaluationResult{TaskName: taskName}
 	if node.Fulfilled() {
-		result.FulfilledForDeps = true
 		return result
 	}
 	result.Action = ActionExecute
@@ -302,25 +293,13 @@ func (e *DAGEvaluator) evaluateRetryNode(taskName string, node *wfv1.NodeStatus)
 // Until the group is fulfilled it is dispatched on every reconcile: the Engine
 // expands the task, creates or re-enters each item, and completes the group
 // with TaskGroupPhase once every item exists and has finished, as
-// executeDAGTask and executeStepGroup did before the Engine. A completed
-// group whose daemoned item has since died reports that failure without
-// changing the node.
+// executeDAGTask and executeStepGroup did before the Engine.
 func (e *DAGEvaluator) evaluateTaskGroupNode(taskName string, node *wfv1.NodeStatus) EvaluationResult {
-	result := EvaluationResult{
-		TaskName:     taskName,
-		CurrentPhase: node.Phase,
-	}
+	result := EvaluationResult{TaskName: taskName}
 	if !node.Fulfilled() {
 		result.Action = ActionExecute
 		result.ShouldRun = true
 		result.ActionReason = "task group items in progress"
-		return result
-	}
-	result.FulfilledForDeps = true
-	if node.Phase == wfv1.NodeSucceeded {
-		if phase, done := TaskGroupPhase(e.store.getTaskGroupChildren(taskName)); done && phase.FailedOrError() {
-			result.CurrentPhase = phase
-		}
 	}
 	return result
 }

@@ -119,7 +119,7 @@ spec:
 	require.NoError(t, err)
 	root, err := woc.wf.GetNodeByName(wf.Name)
 	require.NoError(t, err)
-	engine := NewEngine(woc, root.Name, tmplCtx, tmpl, root, root.ID, false)
+	engine := NewEngine(woc, root.Name, tmplCtx, tmpl, root.ID, false)
 	var tasks []dag.Task
 	for i := range tmpl.DAG.Tasks {
 		tasks = append(tasks, &dag.DAGTask{DAGTask: &tmpl.DAG.Tasks[i]})

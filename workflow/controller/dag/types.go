@@ -2,8 +2,6 @@ package dag
 
 import (
 	"fmt"
-
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 // Action is the evaluator's decision for a retry or task-group node, which
@@ -71,10 +69,9 @@ type EvaluationResult struct {
 	WaitingOn []string
 	// Skipped is set when the task can never run; the Engine creates its
 	// Omitted node with SkipReason.
-	Skipped      bool
-	SkipReason   string
-	Error        error
-	CurrentPhase wfv1.NodePhase
+	Skipped    bool
+	SkipReason string
+	Error      error
 
 	// Action is the evaluator's decision for a retry or task-group node; see
 	// the Action constants for what the Engine does with each.
@@ -82,7 +79,4 @@ type EvaluationResult struct {
 	// ActionReason explains the chosen Action. The Engine logs it at debug
 	// level with the task's other diagnostics.
 	ActionReason string
-	// FulfilledForDeps is set once a retry or task-group node is fulfilled (a
-	// running daemon counts), so its dependants may proceed.
-	FulfilledForDeps bool
 }

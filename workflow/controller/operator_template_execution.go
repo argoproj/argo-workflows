@@ -222,7 +222,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	// attempt is: it goes on only to re-enter an attempt still running, never
 	// to start another. Its other children (its hooks, the next StepGroup
 	// hung off it) do not hold it back.
-	if retryParentNode.Fulfilled() && (lastChildNode == nil || lastChildNode.Fulfilled() || woc.childrenFulfilled(retryParentNode) || (retryParentNode.IsDaemoned() && retryParentNode.FailedOrError())) {
+	if retryParentNode.Fulfilled() && (lastChildNode == nil || lastChildNode.Fulfilled() || (retryParentNode.IsDaemoned() && retryParentNode.FailedOrError())) {
 		if lastChildNode != nil {
 			retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
 			woc.wf.Status.Nodes.Set(ctx, retryParentNode.ID, *retryParentNode)

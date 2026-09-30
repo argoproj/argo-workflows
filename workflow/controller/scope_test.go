@@ -359,12 +359,12 @@ func TestAbsentOptionalRefRequiresTag(t *testing.T) {
 	assert.False(t, scope.absentOptionalRef("{{tasks.unknown.outputs.parameters.msg}}"), "an unknown key is unresolved, not absent")
 }
 
-// TestBug_ResolveArguments_DoesNotMutateSourceArtifacts verifies that resolving
+// TestBug_ResolveArtifactArguments_DoesNotMutateSourceArtifacts verifies that resolving
 // arguments does not write through to the caller's Artifacts backing array.
 // Regression: scope.go args.Artifacts[i] = *resolvedArt mutated the
 // shared slice because args wfv1.Arguments was passed by value but the
 // slice header's backing array was shared with the task spec.
-func TestBug_ResolveArguments_DoesNotMutateSourceArtifacts(t *testing.T) {
+func TestBug_ResolveArtifactArguments_DoesNotMutateSourceArtifacts(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 	varkeys.TasksNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{
@@ -389,12 +389,12 @@ func TestBug_ResolveArguments_DoesNotMutateSourceArtifacts(t *testing.T) {
 		"source.Artifacts[0].S3 must not be populated by resolveArtifactArguments")
 }
 
-// TestBug_ResolveArguments_OptionalArtifactDropped verifies that an optional
+// TestBug_ResolveArtifactArguments_OptionalArtifactDropped verifies that an optional
 // artifact whose source cannot be resolved is omitted from the resulting
 // Arguments.Artifacts (matching legacy resolveDependencyReferences). The
 // pre-fix code left the unresolved entry in place, causing downstream
 // ProcessArgs to see a stale From/FromExpression reference.
-func TestBug_ResolveArguments_OptionalArtifactDropped(t *testing.T) {
+func TestBug_ResolveArtifactArguments_OptionalArtifactDropped(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 	// No producer registered — resolution will fail.
@@ -427,11 +427,11 @@ func TestCreateScope_NilParamValue(t *testing.T) {
 	})
 }
 
-// TestResolveArgumentsSkipsOptionalArtifactFromSkippedStep verifies that an
+// TestResolveArtifactArgumentsSkipsOptionalArtifactFromSkippedStep verifies that an
 // optional artifact whose source resolves to an empty placeholder (the output of
 // a skipped or omitted step) is dropped from the arguments rather than passed on
 // as an input with no location (#16839).
-func TestResolveArgumentsSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
+func TestResolveArtifactArgumentsSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{}, "generate", "message")

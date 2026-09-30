@@ -61,7 +61,7 @@ func engineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, *fake
 	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
 	require.NoError(t, err)
 
-	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode, mainNode.ID, false)
+	engine := NewEngine(woc, mainNode.Name, tmplCtx, tmpl, mainNode.ID, false)
 	fake := &fakeReconciler{}
 	engine.reconciler = fake
 

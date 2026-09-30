@@ -32,7 +32,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		}
 	}()
 
-	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, orgTmpl, node.ID, opts.onExitTemplate)
+	engine := NewEngine(woc, nodeName, tmplCtx, tmpl, node.ID, opts.onExitTemplate)
 
 	var tasks []dag.Task
 	for i := range tmpl.DAG.Tasks {
