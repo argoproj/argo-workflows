@@ -9601,8 +9601,7 @@ func TestStepsFailFast(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
 
-// TestDAGFailFastItems ports TestProbe_v1x46_DAGFailFastItems (v1x46-1_test.go
-// / C53's pre-existing DAG form). failFast with an expanded task (withItems)
+// TestDAGFailFastItems: failFast with an expanded task (withItems)
 // and parallelism ends the workflow Failed while one item is still running,
 // leaving the TaskGroup node between the DAG task and its items Running
 // forever: the failFast branch never assesses it. This fails at base too.

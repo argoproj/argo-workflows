@@ -1,14 +1,12 @@
 package controller
 
-// Shared helpers for the round 4 regression red tests
-// (engine_regression_r4_test.go and the per-item test files layered on top
-// of it). Copied and renamed (r4 prefix) from the probe files under
-// _pr-16290-round4/probes/, per pr-16290-round4-fix-plan/task-0-brief.md.
+// Shared helpers for the DAG/Steps Engine regression tests
+// (engine_regression_r4_test.go).
 //
-// These helpers must compile against wt-base (4389bbf96) as well as this
-// branch: use only functions/types present in both trees. Do not add a
-// helper that only exists to serve one later task's naming convenience;
-// keep them general enough for reuse, matching the brief's interfaces.
+// These helpers must also compile against the controller from before the
+// refactor (4389bbf96), so the tests can be run there to compare: use only
+// functions and types present in both trees. Keep them general enough for
+// reuse by several tests.
 
 import (
 	"context"
@@ -40,10 +38,9 @@ import (
 // builds a fresh wfOperationCtx from it, and operates once. It never reuses
 // an in-memory *wfv1.Workflow across reconciles, so a bug that keeps state
 // only in Engine memory (rather than in the persisted status) shows up as a
-// regression here, simulating a controller restart between reconciles
-// (Review Focus item 5).
+// regression here, simulating a controller restart between reconciles.
 //
-//nolint:revive // task-0-brief.md mandates this exact signature (t before ctx)
+//nolint:revive // t before ctx, as every r4 helper takes them, for its many callers
 func r4Operate(t *testing.T, ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow) *wfOperationCtx {
 	t.Helper()
 	stored, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
@@ -56,7 +53,7 @@ func r4Operate(t *testing.T, ctx context.Context, controller *WorkflowController
 // r4SetPodsPhase acts like makePodsPhase, but only touches pods for which
 // filter returns true, leaving the rest alone.
 //
-//nolint:revive // task-0-brief.md mandates this exact signature (t before ctx)
+//nolint:revive // t before ctx, as every r4 helper takes them, for its many callers
 func r4SetPodsPhase(t *testing.T, ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, filter func(*apiv1.Pod) bool, with ...with) {
 	t.Helper()
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -85,7 +82,7 @@ func r4SetPodsPhase(t *testing.T, ctx context.Context, woc *wfOperationCtx, phas
 // phase. The fake clientset creates a pod with an empty Status.Phase (real
 // Kubernetes would report Pending as soon as the kubelet accepts it); an
 // empty phase reaching the Engine is a harness artefact, not a real pod
-// state (see the regressions document section 6.4).
+// state.
 func r4MoveNewPodsPending(ctx context.Context, woc *wfOperationCtx) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
@@ -539,11 +536,11 @@ func r4Restart(t *testing.T, ctx context.Context, old *WorkflowController, stopO
 // concurrently) that adds up and 10s was once not enough, panicking the
 // test.
 //
-// This file must still compile when overlaid onto wt-base (basecheck),
-// where waitForInformer has no timeout parameter and must stay that way for
+// This file must still compile against the controller from before the
+// refactor, where waitForInformer has no timeout parameter and must stay that way for
 // every other caller, so this cannot add a parameter to it or call a
 // shared helper with a longer timeout baked in — either would be a symbol
-// this file depends on that wt-base's controller_test.go does not have.
+// this file depends on that the older controller_test.go does not have.
 // Instead of duplicating its poll loop, this just retries the unchanged
 // waitForInformer (recovering the panic it raises on its own timeout)
 // until a longer deadline. A synced informer still returns on

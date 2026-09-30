@@ -462,7 +462,7 @@ func TestFormulateRetryWorkflowNonPodFailure(t *testing.T) {
 	assert.True(t, newWf.Status.Nodes.Has("wf-gen"))
 }
 
-// C35 (DAG form; a bug present at base too, not only a HEAD regression): a
+// A bug present before the DAG/Steps engine refactor too: a
 // DAG task that could not be set up (here, a `when` that cannot be
 // evaluated) is recorded as a Skipped Error leaf, and its dependant, never
 // dispatched, hangs underneath it as Omitted. planReset's old leaf rule
@@ -527,7 +527,7 @@ func TestFormulateRetryWorkflowDAGLeafWithOmittedChild(t *testing.T) {
 	assert.False(t, newWf.Status.Nodes.Has("wf-after"), "the omitted dependant must be re-created")
 }
 
-// D3: a ContainerSet pod whose containers all finished successfully is
+// A ContainerSet pod whose containers all finished successfully is
 // deleted before its wait container reports (e.g. the pod is evicted). The
 // node-phase state machine refuses Succeeded->Error, so the pod node itself
 // goes Error "pod deleted" while its Container children keep their true

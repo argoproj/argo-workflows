@@ -969,8 +969,7 @@ func TestEval_DaemonedRunningNodeNotReEvaluated(t *testing.T) {
 			"node.Phase.Fulfilled()=false but node.Fulfilled()=true for daemoned+Running")
 }
 
-// TestEval_PendingNodeDependsBecameFalseStillShouldRun covers C22 (task
-// 1.3): once a task's node exists and is unfinished, it keeps being
+// TestEval_PendingNodeDependsBecameFalseStillShouldRun: once a task's node exists and is unfinished, it keeps being
 // dispatched (ShouldRun) even if its depends expression has since turned
 // false, whatever its Phase — not only Running (main's evaluateDependsLogic
 // rule; a re-evaluation regression would only re-check depends for a
