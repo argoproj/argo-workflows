@@ -177,6 +177,20 @@ func TestUnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestClaimsJSON(t *testing.T) {
+	claims := &Claims{
+		Groups: []string{},
+	}
+
+	data, err := json.Marshal(claims)
+	require.NoError(t, err)
+
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(data, &result))
+
+	assert.Equal(t, []any{}, result["groups"])
+}
+
 func TestGetCustomGroup(t *testing.T) {
 	t.Run("NoCustomGroupSet", func(t *testing.T) {
 		claims := &Claims{}
