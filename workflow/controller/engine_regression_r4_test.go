@@ -3,9 +3,10 @@ package controller
 // Regression tests for the DAG/Steps Engine refactor. Each
 // TestRegressionR4_<Item>_<Case> test is named after the internal ID of the
 // regression it covers (C1, C2, ...) and the case it exercises. Most assert
-// the behaviour of the controller before the refactor; a test that pins a
-// deliberate change of behaviour instead says so in its comment ("decided
-// deviation" or "decided shape"). Shared helpers live in
+// the behaviour of the controller before the refactor; a test whose comment
+// says "decided" (as in "decided deviation" or "decided shape") instead pins
+// a deliberate change from the previous controller's behaviour, expected and
+// not a regression. Shared helpers live in
 // engine_regression_r4_helpers_test.go. Both files must also compile against
 // the controller from before the refactor (4389bbf96), so the tests can be
 // run there to compare: use only functions and types present in both.
@@ -873,10 +874,10 @@ func TestRegressionR4_C22_NestedDependantOfDeadDaemon(t *testing.T) {
 	defer cancel()
 
 	woc := r4Operate(t, ctx, controller, wf)
-	// op mirrors the probe's v14Run.op(): a real kubelet reports Pending as
-	// soon as it accepts a pod, but the fake clientset leaves a freshly
-	// created pod's phase empty, which the pod assessor treats as
-	// "Unexpected pod phase" (a harness artefact, see r4MoveNewPodsPending).
+	// op mirrors a real kubelet: it reports Pending as soon as it accepts a
+	// pod, but the fake clientset leaves a freshly created pod's phase
+	// empty, which the pod assessor treats as "Unexpected pod phase" (a
+	// harness artefact, see r4MoveNewPodsPending).
 	op := func() {
 		r4MoveNewPodsPending(ctx, woc)
 		woc = r4Operate(t, ctx, controller, woc.wf)
@@ -1683,8 +1684,8 @@ spec:
       command: [echo, hi]
 `
 
-// TestRegressionR4_P3_RetryParameterEmptiesFanOut encodes decision P3, not
-// a base behaviour (base could panic here). One item of the fan-out fails,
+// TestRegressionR4_P3_RetryParameterEmptiesFanOut pins a deliberate change
+// of behaviour, not base's (which could panic here). One item of the fan-out fails,
 // and `argo retry --parameter list=[]` resets its TaskGroup to Running with
 // only the succeeded item left and no items to expand into. The branch
 // marked the group Succeeded with no message, by the same empty-group
@@ -1732,7 +1733,6 @@ func TestRegressionR4_P3_RetryParameterEmptiesFanOut(t *testing.T) {
 // Each round it records the display names of pods created that round (sorted
 // within the round, since they started together), then sets pods named in
 // failing to Failed and everything else to Succeeded before re-operating.
-// Matches v1x20RunOrder / probeR1x20Run.
 //
 //nolint:revive // matches the r4 harness convention (t before ctx)
 func r4PodStartOrder(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx, rounds int, failing map[string]bool) ([]string, *wfOperationCtx) {
@@ -3142,7 +3142,8 @@ func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowCo
 // Failed, handleRetries' re-entry finds the expression error.
 //
 // Decided: the attempt keeps Failed; base marked it Error, which the strict
-// state machine (D3/P15) refuses. The workflow outcome matches base.
+// node-phase state machine refuses (it does not allow Failed -> Error). The
+// workflow outcome matches base.
 func TestRegressionR4_C84_SpecRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3180,7 +3181,8 @@ spec:
 // but the entrypoint is a DAG: one shared rule, no DAG/Steps special case.
 //
 // Decided: the attempt keeps Failed; base marked it Error, which the strict
-// state machine (D3/P15) refuses. The workflow outcome matches base.
+// node-phase state machine refuses (it does not allow Failed -> Error). The
+// workflow outcome matches base.
 func TestRegressionR4_C84_SpecRetryDAGAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3219,7 +3221,8 @@ spec:
 // the entry template itself, not spec-level.
 //
 // Decided: the attempt keeps Failed; base marked it Error, which the strict
-// state machine (D3/P15) refuses. The workflow outcome matches base.
+// node-phase state machine refuses (it does not allow Failed -> Error). The
+// workflow outcome matches base.
 func TestRegressionR4_C84_TmplRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3257,9 +3260,9 @@ spec:
 // template is nested one level inside the entry template.
 //
 // Decided: the attempt keeps Failed; base marked it Error, which the strict
-// state machine (D3/P15) refuses. The workflow outcome matches base. The
-// Retry node itself is unaffected by this decision: it already ended Error,
-// matching base.
+// node-phase state machine refuses (it does not allow Failed -> Error). The
+// workflow outcome matches base. The Retry node itself is unaffected by this
+// decision: it already ended Error, matching base.
 func TestRegressionR4_C84_NestedRetryStepsAttemptError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
@@ -3456,7 +3459,7 @@ func r4ValidateWithTemplates(ctx context.Context, t *testing.T, controller *Work
 
 // r4RunGen validates manifest, operates once, succeeds the pods of template
 // "gen" with genOut (other pods are left alone), then operates rounds more
-// times, reconciling from the in-memory status as the probes did.
+// times, reconciling from the in-memory status.
 func r4RunGen(t *testing.T, manifest string, genOut wfv1.Outputs, rounds int, objs ...any) *wfOperationCtx {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -4508,8 +4511,8 @@ func TestRegressionR4_C30_EmptyStepGroupKeepsOrder(t *testing.T) {
 }
 
 // TestRegressionR4_C30_FailedFirstStepDoesNotRunLater: when first fails, the
-// step after the empty group never runs. It may have an Omitted node (the
-// decided R4/R10 shape), but no pod.
+// step after the empty group never runs. It may have an Omitted node (a
+// deliberate shape for a step that never ran), but no pod.
 func TestRegressionR4_C30_FailedFirstStepDoesNotRunLater(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C30EmptyGroup)
@@ -4691,7 +4694,7 @@ spec:
 	assert.Equal(t, fmt.Sprintf("child '%s' failed", a.ID), steps.Message)
 	if sg1, err := woc.wf.GetNodeByName("r4-c75-deadline[1]"); err == nil {
 		// Absent at base; on the branch the Omitted b gives it an Omitted
-		// group (R4/R10). It never ran, so it is never Failed.
+		// group. It never ran, so it is never Failed.
 		assert.Equal(t, wfv1.NodeOmitted, sg1.Phase, "a StepGroup that never ran")
 		assert.NotEqual(t, "Step exceeded its deadline", sg1.Message, "a StepGroup that never ran is not a deadline-killed step")
 	}
@@ -5357,7 +5360,7 @@ func TestRegressionR4_C23_DaemonStepsClientFailedArgoRetry(t *testing.T) {
 // Succeeded once db was up; db then dies while test runs. Each group's phase
 // is derived from its steps on every reconcile, as main re-assessed it, so
 // the Steps node fails straight away, naming db, and report never starts. [0]
-// itself keeps the Succeeded it was recorded with (P16). HEAD never looked at
+// itself keeps the Succeeded it was recorded with. HEAD never looked at
 // a finished group again: report ran and the workflow failed only afterwards,
 // or not at all.
 func TestRegressionR4_C50_StepsDaemonDiesTrajectory(t *testing.T) {
@@ -5841,7 +5844,7 @@ spec:
 	assert.Equal(t, want, woc.wf.Status.Message, "workflow message")
 }
 
-// r4C12Fanout is v1x29-1's workflow: a withItems step A in group [0] and a
+// r4C12Fanout is a workflow with a withItems step A in group [0] and a
 // plain step B in group [1], started by a pre-Engine controller.
 const r4C12Fanout = `
 apiVersion: argoproj.io/v1alpha1
@@ -5907,8 +5910,8 @@ func r4C12Drive(ctx context.Context, controller *WorkflowController, wf *wfv1.Wo
 
 // r4C12AssertItemsUnderOneParent checks that every legacy item of step A
 // hangs off exactly one node: the TaskGroup [0].A when there is one (the
-// new controller adopted the items, moving their StepGroup edge to it,
-// P14), else the StepGroup [0] (base, which had no TaskGroup). A TaskGroup
+// new controller adopted the items, moving their StepGroup edge to it),
+// else the StepGroup [0] (base, which had no TaskGroup). A TaskGroup
 // that exists next to the items, rather than above them, fails this.
 func r4C12AssertItemsUnderOneParent(t *testing.T, woc *wfOperationCtx, items ...string) {
 	t.Helper()
@@ -5923,7 +5926,7 @@ func r4C12AssertItemsUnderOneParent(t *testing.T, woc *wfOperationCtx, items ...
 
 // r4C12AssertFailedBeforeB checks the outcome both C12 fan-out cases share:
 // the failed legacy item fails the workflow, B never runs (it has no pod,
-// and is Omitted if it has a node at all, R4/R10), and both legacy items
+// and is Omitted if it has a node at all), and both legacy items
 // hang off one parent (r4C12AssertItemsUnderOneParent).
 func r4C12AssertFailedBeforeB(ctx context.Context, t *testing.T, woc *wfOperationCtx) {
 	t.Helper()
@@ -5941,7 +5944,7 @@ func r4C12AssertFailedBeforeB(ctx context.Context, t *testing.T, woc *wfOperatio
 }
 
 // TestRegressionR4_C12_LegacyItemFailedSiblingRunning: with "B absent"
-// relaxed to "B has no pod / is Omitted" (R4/R10). An older controller left
+// relaxed to "B has no pod / is Omitted". An older controller left
 // A's items directly under StepGroup [0]: A(0:x) had Failed and A(1:z) was
 // still Running. The new controller must adopt both items under the TaskGroup
 // it creates, so the failure fails the step group, instead of assessing an
@@ -5960,7 +5963,7 @@ func TestRegressionR4_C12_LegacyItemFailedSiblingRunning(t *testing.T) {
 }
 
 // TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed: with "B absent"
-// relaxed to "B has no pod / is Omitted" (R4/R10). Both legacy items were
+// relaxed to "B has no pod / is Omitted". Both legacy items were
 // Running in the old controller's status and both pods finished while the
 // controller was being upgraded, A(0:x) Failed.
 func TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed(t *testing.T) {
@@ -6206,7 +6209,7 @@ func TestRegressionR4_C35_RetryAfterRejectedSuspendStep(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, approve.Phase, "approve must be suspended again")
 }
 
-// D3: a ContainerSet pod whose containers all finished successfully (exit 0)
+// A ContainerSet pod whose containers all finished successfully (exit 0)
 // but whose pod is deleted before the wait container finishes uploading ends
 // Error "pod deleted", while its Container children keep their true Succeeded
 // phase (the node-phase state machine refuses Succeeded->Error, by design).
@@ -7231,7 +7234,7 @@ func r4FailStepA(n *wfv1.NodeStatus) apiv1.PodPhase {
 	return apiv1.PodSucceeded
 }
 
-// C15 (v1x4): an expanded step's exit hook is its item's, with {{item}}
+// C15: an expanded step's exit hook is its item's, with {{item}}
 // substituted, as executeStepGroup drove it.
 func TestRegressionR4_C15_ExpandedStepExitHookItemArg(t *testing.T) {
 	_, woc := r4HookRun(t, `
@@ -7266,7 +7269,7 @@ spec:
 	assert.Equal(t, "i2", r4HookInput(woc, "items-exit[0].a(1:i2).onExit"))
 }
 
-// C15 (v1x4): an exit-hook expression that selects an item runs the hook for
+// C15: an exit-hook expression that selects an item runs the hook for
 // that item only.
 func TestRegressionR4_C15_ExpandedStepExitHookItemExpression(t *testing.T) {
 	_, woc := r4HookRun(t, `
@@ -7294,7 +7297,7 @@ spec:
 	assert.Equal(t, []string{"items-expr[0].a(0:i1).onExit"}, r4HookNodes(woc))
 }
 
-// C48 (v1x5): an expanded step's lifecycle hook runs once per item, on each
+// C48: an expanded step's lifecycle hook runs once per item, on each
 // item node, as executeStepGroup ran it.
 func TestRegressionR4_C48_StepsExpandedRunningHookPerItem(t *testing.T) {
 	ctx, woc := r4HookRun(t, `
@@ -7348,7 +7351,7 @@ const r4C46Templates = `
     container: {image: alpine, command: [echo, "{{inputs.parameters.msg}}"]}
 `
 
-// C46 (v3x4): a step's lifecycle hook sees the status of an earlier step in
+// C46: a step's lifecycle hook sees the status of an earlier step in
 // its own group, as executeStepGroup's group scope gave it.
 func TestRegressionR4_C46_LifecycleExprSibling(t *testing.T) {
 	ctx, woc := r4HookRun(t, `
@@ -7376,7 +7379,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-// C46 (v3x4): a step's exit hook argument can name an earlier step in its
+// C46: a step's exit hook argument can name an earlier step in its
 // own group.
 func TestRegressionR4_C46_ExitArgSibling(t *testing.T) {
 	_, woc := r4HookRun(t, `
@@ -7406,7 +7409,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-// C47 (v1x7): a step skipped by its when clause never ran, so its hooks do
+// C47: a step skipped by its when clause never ran, so its hooks do
 // not run.
 func TestRegressionR4_C47_StepsWhenSkippedStepHookNotRun(t *testing.T) {
 	ctx, woc := r4HookRun(t, `
@@ -7437,7 +7440,7 @@ spec:
 	assert.Equal(t, []string{"v1x7-skip[1].c"}, r4PodNodeNames(ctx, t, woc), "only c runs")
 }
 
-// C47 (v1x7): a step after a failed group never ran, so its hook, which
+// C47: a step after a failed group never ran, so its hook, which
 // reads the failed step's missing output, is not evaluated.
 func TestRegressionR4_C47_StepsHookOnPrevOutputAfterFailure(t *testing.T) {
 	ctx, woc := r4HookRun(t, `
@@ -7525,7 +7528,7 @@ spec:
 	assert.Empty(t, r4HookNodes(woc))
 }
 
-// Lead 11: a TaskGroup is completed only once its items' exit hooks have
+// A TaskGroup is completed only once its items' exit hooks have
 // finished, as executeDAGTask returned before marking the group while an
 // item's onExit was unfinished. The branch recorded the group Succeeded in
 // the reconcile that created the item hooks.
@@ -7648,7 +7651,7 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-// P18, decided behaviour (fails at base, which passed the DAG item exit hook
+// Decided behaviour (fails at base, which passed the DAG item exit hook
 // the literal {{item}}): an expanded DAG task's exit hook is each item's own,
 // with {{item}} substituted, as for Steps.
 func TestRegressionR4_P18_ExpandedDAGTaskExitHookItemArg(t *testing.T) {
@@ -7732,9 +7735,9 @@ spec:
     container: {image: busybox, command: [echo, cleanup]}
 `
 
-// C33 (r1x58 _StepsHookDenied): a step's exit hook pod is denied after the
-// step Succeeded. As at base, the Steps template and the workflow end Error,
-// and the next group's step b is never created.
+// C33: a step's exit hook pod is denied after the step Succeeded. As at
+// base, the Steps template and the workflow end Error, and the next
+// group's step b is never created.
 func TestRegressionR4_C33_StepsHookDenied(t *testing.T) {
 	ctx, r := r4C33Run(t, r4C33Steps, 6)
 	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "c33-steps[0].a.onExit"))
@@ -7743,9 +7746,8 @@ func TestRegressionR4_C33_StepsHookDenied(t *testing.T) {
 	assert.Equal(t, []string{"c33-steps[0].a"}, r4PodNodeNames(ctx, t, r.woc), "b's pod was created although the workflow errored in group [0]")
 }
 
-// C33 (r1x58 _StepsHookExprErrorNextGroup): the #14031 fixture with a second
-// group. The exit hook's expression fails after a Succeeded: the workflow
-// ends Error and b never starts.
+// C33: the #14031 fixture with a second group. The exit hook's expression
+// fails after a Succeeded: the workflow ends Error and b never starts.
 func TestRegressionR4_C33_StepsHookExprErrorNextGroup(t *testing.T) {
 	woc, pods := r4RunDecided(t, strings.Replace(r4C33Steps, "            template: cleanup", "            expression: steps[\"a\"].outputs !\n            template: cleanup", 1), 6, allSucceed)
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase, woc.wf.Status.Message)
@@ -7791,9 +7793,9 @@ func TestRegressionR4_C33_DAGHookDeniedIsErrorWithoutStrayPod(t *testing.T) {
 	assert.Equal(t, []string{"c33-dag.a"}, r4PodNodeNames(ctx, t, r.woc))
 }
 
-// C33 with P20, decided deviation (base DAG ignored the errored hook and
-// Succeeded; fails at base by design), from v1x58 H: a's exit hook pod is
-// denied while its sibling b still runs. The DAG waits for b, keeps b's pod
+// C33, decided deviation (base DAG ignored the errored hook and Succeeded;
+// fails at base by design): a's exit hook pod is denied while its sibling b
+// still runs. The DAG waits for b, keeps b's pod
 // and dispatches nothing new (c, which depends on a, gets no node) on every
 // reconcile, then ends Error once b has finished.
 func TestRegressionR4_C33_DAGHookErrorWaitsForRunningSibling(t *testing.T) {
@@ -7889,8 +7891,8 @@ spec:
 	}
 }
 
-// v1x58 D and E, controls: a hook pod that runs and Fails is still ignored,
-// in DAG and Steps, as at base.
+// Controls: a hook pod that runs and Fails is still ignored, in DAG and
+// Steps, as at base.
 func TestRegressionR4_C33_FailedHookPodIgnored(t *testing.T) {
 	failHook := func(n *wfv1.NodeStatus) apiv1.PodPhase {
 		if strings.HasSuffix(n.Name, ".onExit") {
@@ -7907,8 +7909,8 @@ func TestRegressionR4_C33_FailedHookPodIgnored(t *testing.T) {
 
 // r4C41Run runs a template (steps or dag) whose task a has an exit or
 // running hook with pendingTimeout: 1s, keeps the hook's pod Pending past
-// it, then lets a finish (as v3x7Run does), deletes the timed-out pod as the
-// pod controller would, and reconciles to the end.
+// it, then lets a finish, deletes the timed-out pod as the pod controller
+// would, and reconciles to the end.
 func r4C41Run(t *testing.T, kind, hookKind string) *wfv1.Workflow {
 	t.Helper()
 	ref, body := "steps", "    steps:\n    - - name: a\n        template: c\n        hooks:\n"
@@ -7971,7 +7973,7 @@ spec:
 	return r.woc.wf
 }
 
-// C41 (v3x7): a step's exit hook times out (pendingTimeout) after the step
+// C41: a step's exit hook times out (pendingTimeout) after the step
 // Succeeded. As at base, the workflow ends Error "timeout".
 func TestRegressionR4_C41_StepsExitHookPendingTimeout(t *testing.T) {
 	wf := r4C41Run(t, "steps", "exit")
@@ -7979,21 +7981,21 @@ func TestRegressionR4_C41_StepsExitHookPendingTimeout(t *testing.T) {
 	assert.Equal(t, "timeout", wf.Status.Message)
 }
 
-// C41 (v3x7): a step's running hook times out while the step runs. As at
+// C41: a step's running hook times out while the step runs. As at
 // base, the workflow ends Failed.
 func TestRegressionR4_C41_StepsLifecycleHookPendingTimeout(t *testing.T) {
 	wf := r4C41Run(t, "steps", "running")
 	assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase, wf.Status.Message)
 }
 
-// C41 (v3x7): a DAG task's running hook times out while the task runs. As at
+// C41: a DAG task's running hook times out while the task runs. As at
 // base, the workflow ends Error.
 func TestRegressionR4_C41_DAGLifecycleHookPendingTimeout(t *testing.T) {
 	wf := r4C41Run(t, "dag", "running")
 	assert.Equal(t, wfv1.WorkflowError, wf.Status.Phase, wf.Status.Message)
 }
 
-// C41 with P21, decided deviation (base DAG ignored a timed-out exit hook and
+// C41, decided deviation (base DAG ignored a timed-out exit hook and
 // Succeeded; fails at base by design): a DAG task's exit hook times out
 // after the task Succeeded. The DAG ends Error "timeout", as Steps does.
 func TestRegressionR4_C41_DAGExitHookPendingTimeoutIsError(t *testing.T) {
@@ -8099,7 +8101,7 @@ spec:
     container: {image: busybox, command: [echo, notify]}
 `
 
-// TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode (C92, P17) is a
+// TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode is a
 // decided deviation: it encodes the chosen fix, not main's behaviour, so it
 // is expected to fail both at base (4389bbf96, where markNodeError flips
 // the entry node Succeeded -> Error with the hook error instead) and on
@@ -9048,8 +9050,8 @@ spec:
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_items_nested"), 0.001)
 }
 
-// C63 and P22: a memoize cache hit emits its template's completion metrics
-// once, like an unmemoized run (a decided deviation, P22: main emitted
+// C63: a memoize cache hit emits its template's completion metrics
+// once, like an unmemoized run (a decided deviation: main emitted
 // none for a hit, so this fails at base).
 func TestRegressionR4_C63_MemoCacheHitCounter(t *testing.T) {
 	memoTmpl := func(name, metric string) string {
@@ -9182,7 +9184,7 @@ spec:
 	assert.Equal(t, "B", r4GlobalParam(woc.wf), "wf.status.outputs g")
 }
 
-// P9: a memoize cache hit in a Steps template exports its globalName output
+// A memoize cache hit in a Steps template exports its globalName output
 // when it is fulfilled, so the next step reads it (a decided deviation:
 // main's Steps exported only pod outputs, so this fails at base).
 func TestRegressionR4_P9_MemoHitStepExportsGlobal(t *testing.T) {
@@ -9226,7 +9228,7 @@ spec:
 	assert.Equal(t, "M", r4GlobalParam(woc.wf), "wf.status.outputs g")
 }
 
-// P9: an HTTP step exports its globalName output when task-set
+// An HTTP step exports its globalName output when task-set
 // reconciliation completes it, so the next step reads it (a decided
 // deviation: main's Steps exported only pod outputs, so this fails at base).
 func TestRegressionR4_P9_HTTPStepExportsGlobal(t *testing.T) {
@@ -9289,7 +9291,7 @@ spec:
 	assert.Equal(t, "H", r4GlobalParam(woc.wf), "wf.status.outputs g")
 }
 
-// P9: two DAG tasks export the same globalName; the one that finished last
+// Two DAG tasks export the same globalName; the one that finished last
 // wins, also once the DAG completes (a decided deviation: main re-exported
 // every task's outputs in declaration order when the DAG completed, so b's
 // older value won at base).
@@ -9525,10 +9527,10 @@ spec:
 	assert.Len(t, r4PodNodeNames(ctx, t, r.woc), 1, "no hook pod")
 }
 
-// P9: a suspend resumed with `argo resume` takes its supplied output's
+// A suspend resumed with `argo resume` takes its supplied output's
 // default, and that value is exported as its globalName when the node is
 // fulfilled (by ResumeWorkflow, outside the controller), so the consumer and
-// wf.status.outputs see it. A decided deviation (P9) that fails at base in
+// wf.status.outputs see it. A decided deviation that fails at base in
 // both forms: main's DAG exported g only in its completion sweep, so
 // wf.status.outputs ended right but c, dispatched before, got the raw tag;
 // main's Steps never exported it.
@@ -9593,7 +9595,7 @@ spec:
 	}
 }
 
-// P9: a pod that ends Failed before its task result is complete is stored
+// A pod that ends Failed before its task result is complete is stored
 // Failed but not fulfilled. When its task result syncs in a later reconcile,
 // that is its completion: its globalName output is exported (the consumer
 // dispatched in that reconcile sees it) and its completion metric is emitted
@@ -9949,7 +9951,8 @@ spec:
 // webhook rejects ends Error; its StepGroup ends Error with main's "step
 // group deemed errored due to child <name> error: <reason>", which the Steps
 // node and the workflow carry. HEAD said only "child '<id>' failed" and left
-// the StepGroup Failed. Per P23 the rule is keyed on the step's phase.
+// the StepGroup Failed. The StepGroup's phase is now keyed on the step's own
+// phase.
 func TestRegressionR4_C59_PodRejectedMessage(t *testing.T) {
 	woc := r4RunResults(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -10123,8 +10126,8 @@ spec:
 	assert.Empty(t, r4CommandsMatching(ctx, t, woc, ".after"))
 }
 
-// TestRegressionR4_P16_DaemonDiesAfterGroupSucceeded is a decided deviation
-// (P16): it encodes the chosen behaviour, not main's. db's StepGroup [0] is
+// TestRegressionR4_P16_DaemonDiesAfterGroupSucceeded is a decided deviation:
+// it encodes the chosen behaviour, not main's. db's StepGroup [0] is
 // recorded Succeeded once db is up; db then dies while test runs. [0] keeps
 // the Succeeded it was recorded with, while db, the Steps node and the
 // workflow go Failed, naming db.
@@ -10635,7 +10638,7 @@ const r4ScaleHookedLimit = time.Second
 
 // TestRegressionR4_Scale_HookedFanOut checks hook re-entry must not make a
 // wide fan-out expensive. A 1,000-item DAG fan-out whose items have exit
-// hooks (one hook per item, P18) is reconciled while every item runs, and
+// hooks (one hook per item) is reconciled while every item runs, and
 // again while every item's exit hook runs; each reconcile must stay under a
 // second. The consumer of the fan-out must then run. Not a red test. Base
 // meets the time bars (about 0.17 s with the items running) but creates the
@@ -10949,7 +10952,7 @@ func TestRegressionR4_C96_NoGroupAfterExpandedDaemonDied(t *testing.T) {
 	}
 }
 
-// TestRegressionR4_C96_LaterGroupOmitted is a decided shape (R10/P12), not
+// TestRegressionR4_C96_LaterGroupOmitted is a decided shape, not
 // base's: base never created the groups after a failed one. A step the walk
 // stops after a failed group is recorded Omitted, as the steps after an
 // ordinary failed group are, so its group exists and ends Omitted, linked
