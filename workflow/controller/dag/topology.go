@@ -197,7 +197,7 @@ func getBaseTaskName(name string) string {
 // executeDAG passes this order to Execute as its tasks argument, and the
 // Engine's walk visits the tasks in it, so each task is evaluated after
 // everything it depends on has been dispatched, omitted and had its hooks
-// driven in the same walk (C54, C73). Steps templates already come in
+// driven in the same walk. Steps templates already come in
 // dependency order, as written, and never call PullOrder.
 func PullOrder(tasks []Task, targets []string) []Task {
 	w := newWorkflowTasks(tasks)

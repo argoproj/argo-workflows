@@ -37,7 +37,7 @@ type Engine struct {
 	// finished holds, per finished task, what the task adds to its
 	// dependants' scopes, built on first use: a finished node does not
 	// change within a reconcile, and rebuilding its part for every dependant
-	// makes a chain of n tasks cost n² template resolutions (C67).
+	// makes a chain of n tasks cost n² template resolutions.
 	finished map[string]*variables.Scope
 	// hookErr is the hook error that ends the boundary Error: that of a hook
 	// node found Error when the reconcile starts (one that could not be
@@ -45,7 +45,7 @@ type Engine struct {
 	// it; a hook that ran and Failed is not an error, as on main), or one
 	// raised in this reconcile (markHookError). While it is set no
 	// new task node is created, and finalize ends the boundary Error once
-	// nothing in it is running (C33, P20, P21).
+	// nothing in it is running.
 	hookErr error
 }
 
@@ -97,7 +97,7 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 		// expanded step). Once a group has failed no later step starts, as
 		// executeSteps stopped there: one that would start is Omitted
 		// instead, as its dependencies can read a recorded Succeeded (a
-		// TaskGroup whose daemon item died, C96).
+		// TaskGroup whose daemon item died later).
 		for i, ok := stepGroupIndexOf(name); ok && group < i; group++ {
 			phase, _, _ := e.assessStepGroup(ctx, group)
 			groupFailed = groupFailed || phase.FailedOrError()
@@ -210,7 +210,7 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 // DAG task's lifecycle hooks on its TaskGroup): they are re-entered until
 // they finish, and none is created. Likewise an item's hook node that has not
 // finished under a TaskGroup recorded before this reconcile (`argo retry`
-// reset it) is re-entered, as a task's own existing hook node always is (F5).
+// reset it) is re-entered, as a task's own existing hook node always is.
 func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
 	node := e.getTaskNode(ctx, task.GetName())
 	if node == nil || node.Type != wfv1.NodeTypeTaskGroup {
@@ -632,7 +632,7 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, onExitCompleted
 	phase, message := e.assessDAGPhase(ctx, tasks, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
 	if e.hookErr != nil && !phase.FailedOrError() {
 		// A hook error ends the boundary Error, without outputs or
-		// memoization, once nothing it has started is still running (P20).
+		// memoization, once nothing it has started is still running.
 		if e.running(ctx, tasks) {
 			return nil
 		}
@@ -1411,8 +1411,8 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 	}
 	scope := createScope(e.tmpl)
 	// Seed the scope with the workflow's own outputs so that a template's own
-	// output params/artifacts can read {{workflow.outputs.*}} (C43), as base's
-	// executeSteps did — and, as an improvement, executeDAG too (P8).
+	// output params/artifacts can read {{workflow.outputs.*}}, as executeSteps
+	// did, for DAG templates too.
 	e.woc.addWorkflowOutputsToLocalScope(e.woc.wf.Status.Outputs, scope)
 
 	includeArtifacts := e.tmpl.GetType() == wfv1.TemplateTypeSteps
