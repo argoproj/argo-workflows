@@ -15,7 +15,7 @@ An expanded task or step whose items end both `Error` and `Failed` is `Error`, w
 A task after a nested DAG or Steps template sees that template's own phase, not its inner nodes' phases.
 A memoized DAG or Steps template whose result cannot be saved to the cache ends `Error`.
 
-A hook that ends `Error`, including one that could not start or timed out, ends its DAG or Steps template `Error` once running tasks finish, unless the template has already failed or errored, and no task or step that has not yet started begins meanwhile (an already-started fan-out keeps creating its remaining items, and a task or step already being retried keeps making attempts); `continueOn.error` does not cover it.
+A hook that ends `Error`, including one that could not start or timed out, ends its DAG or Steps template `Error` once running tasks finish, unless the template has already failed or errored, and no task or step that has not yet started begins meanwhile (an already-started fan-out creates none of its remaining items, which `argo retry` then creates, and a task or step already being retried keeps making attempts); `continueOn.error` does not cover it.
 A task whose lifecycle hook errors while it runs is marked `Error` at once, so the template's outcome can depend on the order of its tasks.
 A timed-out hook, including a workflow-level hook or the workflow `onExit` node, is recorded as `Error` rather than `Failed`.
 A workflow-level hook's expression error is recorded on an `Error` hook node.

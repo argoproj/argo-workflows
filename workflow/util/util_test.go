@@ -527,6 +527,99 @@ func TestFormulateRetryWorkflowDAGLeafWithOmittedChild(t *testing.T) {
 	assert.False(t, newWf.Status.Nodes.Has("wf-after"), "the omitted dependant must be re-created")
 }
 
+// A's exit hook errored while fan ran, so fan created no more items and
+// completed from the one that ran; pre had completed before the hook
+// errored. Retry must reset fan, keeping its item, so the retried DAG creates
+// its remaining items, and must leave pre alone.
+const hookErrorStoppedFanOutFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: pre, template: run, withItems: ["0"]}
+      - {name: A, template: run, hooks: {exit: {template: run}}}
+      - {name: fan, template: run, withItems: ["0", "1"]}
+  - name: run
+    container: {image: alpine, command: [echo]}
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-pre, wf-A, wf-fan]
+    wf-pre:
+      id: wf-pre
+      name: wf.pre
+      type: TaskGroup
+      boundaryID: wf
+      phase: Succeeded
+      finishedAt: "2026-01-01T10:00:00Z"
+      children: [wf-pre0]
+    wf-pre0:
+      id: wf-pre0
+      name: wf.pre(0:0)
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+    wf-A:
+      id: wf-A
+      name: wf.A
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      children: [wf-A-exit]
+    wf-A-exit:
+      id: wf-A-exit
+      name: wf.A.onExit
+      type: Pod
+      boundaryID: wf
+      phase: Error
+      nodeFlag: {hooked: true}
+      finishedAt: "2026-01-01T10:01:00Z"
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: TaskGroup
+      boundaryID: wf
+      phase: Succeeded
+      finishedAt: "2026-01-01T10:02:00Z"
+      children: [wf-fan0]
+    wf-fan0:
+      id: wf-fan0
+      name: wf.fan(0:0)
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+`
+
+func TestFormulateRetryWorkflowHookErrorStoppedFanOut(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(hookErrorStoppedFanOutFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	phase := func(id string) wfv1.NodePhase {
+		if n, err := newWf.Status.Nodes.Get(id); err == nil {
+			return n.Phase
+		}
+		return ""
+	}
+	assert.Equal(t, wfv1.NodeRunning, phase("wf"))
+	assert.Equal(t, wfv1.NodeRunning, phase("wf-fan"), "the TaskGroup the hook error stopped")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-fan0"), "the item that ran")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-pre"), "the TaskGroup that completed before the hook errored")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-A"))
+	assert.Equal(t, wfv1.NodePhase(""), phase("wf-A-exit"), "the errored hook is re-created")
+}
+
 // A ContainerSet pod whose containers all finished successfully is
 // deleted before its wait container reports (e.g. the pod is evicted). The
 // node-phase state machine refuses Succeeded->Error, so the pod node itself
