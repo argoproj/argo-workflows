@@ -541,23 +541,25 @@ func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []str
 	return e.reconciler.Reconcile(ctx, []DesiredTask{*desired})
 }
 
-// reconcileFulfilledTasks finishes every task node that is already
-// fulfilled (each item, for an expanded task) once per reconcile, before
-// anything is dispatched, as executeTemplate was run for every task on every
-// reconcile before the Engine: the reconciler's handleNodeFulfilled releases
-// its lock and, if it completed since the last reconcile, emits its
-// completion metrics and exports its globalName outputs. This is where a
-// node that finished outside a dispatch (a pod, a resumed suspend, an HTTP
-// task, a failFast or timeout mark) is finished. Each node is reconciled with
-// the template it was dispatched with: the task resolved against its scope,
-// items expanded, templateDefaults merged. A task whose template has no lock
-// and no metrics has nothing to finish (mayNeedFinishing). Legacy items,
-// which have no TaskGroup before dispatch creates one, are finished when
-// they are adopted (adoptItems).
+// reconcileFulfilledTasks finishes, before anything is dispatched, each
+// task node (each item, for an expanded task) that has run to completion
+// since the reconcile started, or that still holds a lock (toFinish): the
+// reconciler's handleNodeFulfilled releases its lock and, once per
+// completion, emits its completion metrics and exports its globalName
+// outputs. This is where a node that finished outside a dispatch (a pod, a
+// resumed suspend, an HTTP task, a failFast or timeout mark) is finished. A
+// node that had already completed, and holds no lock, was finished when it
+// completed, so a finished fan-out is not resolved again on every reconcile.
+// Each node is reconciled with the template it was dispatched with: the task
+// resolved against its scope, items expanded, templateDefaults merged. A task
+// whose template has no lock and no metrics has nothing to finish
+// (mayNeedFinishing). Legacy items, which have no TaskGroup until dispatch
+// creates one, are finished when they are adopted (adoptItems).
 func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) {
+	holders := lockHolders(e.woc.wf)
 	for _, task := range tasks {
 		node := e.getTaskNode(ctx, task.GetName())
-		if node == nil || (node.Type != wfv1.NodeTypeTaskGroup && !ranToCompletion(node)) || !e.mayNeedFinishing(ctx, task) {
+		if node == nil || !e.hasNodeToFinish(node, holders) || !e.mayNeedFinishing(ctx, task) {
 			continue
 		}
 		log := e.log.WithField("task", task.GetName())
@@ -565,17 +567,17 @@ func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) 
 		if err != nil {
 			// A task that could not be resolved to be dispatched ended Error
 			// without running, and cannot be resolved now either.
-			log.WithError(err).Debug(ctx, "cannot finish a completed task")
+			log.WithError(err).Warn(ctx, "cannot finish a completed task")
 			continue
 		}
 		var desired []DesiredTask
 		for _, item := range items {
-			if !ranToCompletion(e.getTaskNode(ctx, item.GetName())) {
+			if !e.toFinish(e.getTaskNode(ctx, item.GetName()), holders) {
 				continue
 			}
 			dt, err := e.desiredTask(ctx, item)
 			if err != nil {
-				log.WithError(err).Debug(ctx, "cannot finish a completed task")
+				log.WithError(err).Warn(ctx, "cannot finish a completed task")
 				continue
 			}
 			desired = append(desired, dt)
@@ -607,6 +609,59 @@ func (e *Engine) resolveItems(ctx context.Context, task dag.Task, expand bool) (
 // ran: a Skipped or Omitted node holds no lock and owes no metrics.
 func ranToCompletion(node *wfv1.NodeStatus) bool {
 	return node != nil && node.Phase.Fulfilled(node.TaskResultSynced) && ran(node)
+}
+
+// toFinish reports whether node has run to completion and is still to be
+// finished: it completed in this reconcile, or it still holds a lock (in
+// holders, see lockHolders), as one completed outside the controller, such
+// as a resumed suspend, does. A node that had completed when the reconcile
+// started, and holds no lock, was finished then.
+func (e *Engine) toFinish(node *wfv1.NodeStatus, holders map[string]bool) bool {
+	if !ranToCompletion(node) {
+		return false
+	}
+	prev, ok := e.woc.preExecutionNodeStatuses[node.ID]
+	return !ok || !ranToCompletion(&prev) || holders[node.ID]
+}
+
+// hasNodeToFinish reports whether node, a task's node, or one of its items
+// for a TaskGroup, is to be finished (toFinish).
+func (e *Engine) hasNodeToFinish(node *wfv1.NodeStatus, holders map[string]bool) bool {
+	if node.Type != wfv1.NodeTypeTaskGroup {
+		return e.toFinish(node, holders)
+	}
+	for _, item := range e.getChildNodes(node) {
+		if e.toFinish(&item, holders) {
+			return true
+		}
+	}
+	return false
+}
+
+// lockHolders returns the IDs of the nodes of wf that hold a mutex or a
+// semaphore, as its synchronization status records them: a node's holder key
+// ends with its ID ("<namespace>/<workflow>/<node ID>", or the node ID alone
+// in the oldest form).
+func lockHolders(wf *wfv1.Workflow) map[string]bool {
+	holders := make(map[string]bool)
+	sync := wf.Status.Synchronization
+	if sync == nil {
+		return holders
+	}
+	add := func(key string) { holders[key[strings.LastIndex(key, "/")+1:]] = true }
+	if sync.Mutex != nil {
+		for _, h := range sync.Mutex.Holding {
+			add(h.Holder)
+		}
+	}
+	if sync.Semaphore != nil {
+		for _, h := range sync.Semaphore.Holding {
+			for _, key := range h.Holders {
+				add(key)
+			}
+		}
+	}
+	return holders
 }
 
 // mayNeedFinishing reports whether a fulfilled node of task can have
