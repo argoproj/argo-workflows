@@ -11273,3 +11273,145 @@ func TestRegressionR4_C98_StepsNoAttemptAfterSuccess(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.Equal(t, []string{"r4-c98[0].a(0)", "r4-c98[0].a.hooks.running"}, pods)
 }
+
+// TestRegressionR4_C93_LegacyItemsDoneWhileDownMetrics ports
+// TestProbe_inflight_StepsExpandedMetricsDoneWhileDown (inflight-5, F1).
+// An older controller left A's items directly under StepGroup [0], both
+// Running, and both pods succeeded while the controller was being upgraded.
+// The new controller adopts them into the TaskGroup it creates for A, in the
+// reconcile that sees them finish; each must emit its template's completion
+// metric then, as base did when it re-entered them. On the branch the
+// adoption came after the reconcile's finishing pass, and the next reconcile
+// saw them already finished, so neither was ever counted.
+func TestRegressionR4_C93_LegacyItemsDoneWhileDownMetrics(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := r4LegacyStepsStatus(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c93
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: c
+        withItems: [x, z]
+    - - name: B
+        template: d
+  - name: c
+    metrics:
+      prometheus:
+      - name: r4_c93_item_ok
+        help: "items succeeded"
+        labels:
+        - key: name
+          value: r4-c93
+        when: "{{status}} == Succeeded"
+        counter:
+          value: "1"
+    container: {image: busybox, command: [echo]}
+  - name: d
+    container: {image: busybox, command: [echo]}
+`, 0, "A", "c", []r4LegacyStepItem{{Name: "0:x", Phase: wfv1.NodeRunning}, {Name: "1:z", Phase: wfv1.NodeRunning}})
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	for _, item := range []string{"A(0:x)", "A(1:z)"} {
+		r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0]."+item, "c", apiv1.PodSucceeded)
+		wf.Status.MarkTaskResultComplete(ctx, wf.NodeID(wf.Name+"[0]."+item))
+	}
+
+	woc := r4C12Drive(ctx, controller, wf)
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c93_item_ok", "name", "r4-c93"), 0.001)
+}
+
+// r4C94DisplayNames runs manifest with every pod succeeding before the
+// next reconcile and returns the display names of the nodes, by node name.
+func r4C94DisplayNames(t *testing.T, manifest string) map[string]string {
+	t.Helper()
+	woc := r4MetricsRun(t, manifest, 0, nil, nil)
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	names := make(map[string]string)
+	for _, n := range woc.wf.Status.Nodes {
+		names[n.Name] = n.DisplayName
+	}
+	return names
+}
+
+// r4C94Template is the template both C94 cases run: its display name comes
+// from its input, as in examples/loops-param-argument.yaml.
+const r4C94Template = `
+  - name: c
+    annotations:
+      workflows.argoproj.io/display-name: "dn-{{inputs.parameters.p}}"
+    inputs: {parameters: [{name: p}]}
+    container: {image: busybox, command: [echo]}
+`
+
+// TestRegressionR4_C94_StepsDisplayNameOnCreation (diffsim
+// loops-param-argument, F2): a step's node takes its template's
+// workflows.argoproj.io/display-name annotation, a plain step and each item
+// of an expanded one alike. Base applied it when it re-entered the node on
+// the next reconcile, which it did for every step, finished or not. The
+// branch's walk does not re-enter a finished node, so a node that finished
+// before the next reconcile kept its default name.
+func TestRegressionR4_C94_StepsDisplayNameOnCreation(t *testing.T) {
+	names := r4C94DisplayNames(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c94-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: c
+        arguments: {parameters: [{name: p, value: one}]}
+    - - name: b
+        template: c
+        arguments: {parameters: [{name: p, value: "{{item}}"}]}
+        withItems: [xx, yy]
+`+r4C94Template)
+	assert.Equal(t, "dn-one", names["r4-c94-steps[0].a"])
+	assert.Equal(t, "dn-xx", names["r4-c94-steps[1].b(0:xx)"])
+	assert.Equal(t, "dn-yy", names["r4-c94-steps[1].b(1:yy)"])
+}
+
+// TestRegressionR4_C94_DAGItemDisplayNameOnCreation (F2) is the DAG case:
+// base re-entered every item of a TaskGroup on each reconcile, so each item
+// was named. A plain DAG task that finished before the next reconcile was
+// not re-entered at base, and is not asserted here; it is named on creation
+// now too, as HEAD named it.
+func TestRegressionR4_C94_DAGItemDisplayNameOnCreation(t *testing.T) {
+	names := r4C94DisplayNames(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-c94-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: c
+        arguments: {parameters: [{name: p, value: one}]}
+      - name: b
+        template: c
+        depends: a
+        arguments: {parameters: [{name: p, value: "{{item}}"}]}
+        withItems: [xx, yy]
+`+r4C94Template)
+	assert.Equal(t, "dn-xx", names["r4-c94-dag.b(0:xx)"])
+	assert.Equal(t, "dn-yy", names["r4-c94-dag.b(1:yy)"])
+}
