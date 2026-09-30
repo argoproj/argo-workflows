@@ -12079,3 +12079,115 @@ func TestRegressionR4_HookLock_ExitHookNotRun(t *testing.T) {
 		})
 	}
 }
+
+// r4UnknownTargetWFT is a WorkflowTemplate, reached only through a dynamic
+// templateRef (validate.go's validateTemplateHolder gives up on a
+// templateRef whose name isn't fully resolved yet and skips deep validation
+// of what it points at — see TestRegressionR4_C44_DynTRefStepsParam above),
+// so its "inner" DAG's parameterised target, "{{inputs.parameters.target}}",
+// is never checked against "inner"'s own tasks at admission time.
+const r4UnknownTargetWFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: r4-dag-unknown-target-wft
+  namespace: default
+spec:
+  templates:
+  - name: inner
+    inputs:
+      parameters:
+      - name: target
+    dag:
+      target: "{{inputs.parameters.target}}"
+      tasks:
+      - name: a
+        template: echo
+  - name: echo
+    container:
+      image: busybox
+      command: [echo, hi]
+`
+
+// TestRegressionR4_DAGUnknownRuntimeTarget: dag.target may be parameterised
+// (e.g. "{{inputs.parameters.target}}"); here "inner" (in r4UnknownTargetWFT)
+// is only reachable through a dynamic templateRef, so validate.Workflow
+// never looks inside it (see r4UnknownTargetWFT) and its target is only
+// substituted once the controller actually runs it — with "target: bogus", a
+// task name "inner" doesn't define. Base's executeDAGTask panicked "target
+// bogus does not exist" there (workflow/controller/dag.go on main, ~line
+// 98); the operator's top-level recover marks the *workflow* Error with that
+// panic text (markWorkflowError), while the "run" node itself is left
+// stranded Running (a pre-existing base quirk, not this fix's concern).
+// HEAD's executeDAG instead passed the unknown target straight to
+// dag.PullOrder, which silently drops a target it can't find; with no node
+// ever created for it, assessDAGPhase's target loop (engine.go) kept the
+// inner DAG (and so the workflow) Running forever, and no pod for its task
+// was ever dispatched. This fix marks the "run" DAG node itself Error with
+// "target 'bogus' is not defined", and the boundary above it folds that into
+// its own "child ... failed" Error — a different node carries the target's
+// name than at base, so, like TestRegressionR4_C83_StepsInvalidWhenHint,
+// this only checks that the name appears somewhere. What every version
+// (base, HEAD unfixed, HEAD fixed) shares is checked at base-compatible
+// strength: the workflow and its entrypoint node.
+const r4UnknownRuntimeTargetManifest = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-dag-unknown-runtime-target
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: pick
+        template: gen
+      - name: run
+        depends: pick
+        templateRef:
+          name: "{{tasks.pick.outputs.parameters.wft}}"
+          template: inner
+        arguments:
+          parameters:
+          - name: target
+            value: bogus
+  - name: gen
+    container:
+      image: busybox
+      command: [echo]
+    outputs:
+      parameters:
+      - name: wft
+        valueFrom:
+          path: /tmp/wft
+`
+
+func TestRegressionR4_DAGUnknownRuntimeTarget(t *testing.T) {
+	woc := r4RunGen(t, r4UnknownRuntimeTargetManifest,
+		wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "wft", Value: wfv1.AnyStringPtr("r4-dag-unknown-target-wft")}}}, 5,
+		wfv1.MustUnmarshalWorkflowTemplate(r4UnknownTargetWFT))
+	ctx := logging.TestContext(t.Context())
+	dumpNodes(t, "final", woc.wf)
+
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase, "workflow must Error, not hang Running")
+
+	root := woc.wf.Status.Nodes.FindByDisplayName(woc.wf.Name)
+	require.NotNil(t, root, "the entrypoint DAG node should exist")
+	assert.Equal(t, wfv1.NodeError, root.Phase, "the entrypoint node must Error, not hang Running")
+
+	all := woc.wf.Status.Message + "\n"
+	for _, n := range woc.wf.Status.Nodes {
+		all += n.Message + "\n"
+	}
+	assert.Contains(t, all, "bogus", "the undefined target's name must be named somewhere")
+
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("a"), "task a is not in the unknown target's ancestry and must never be dispatched")
+
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	for _, pod := range pods.Items {
+		assert.NotEqual(t, "echo", woc.wf.Status.Nodes[woc.nodeID(&pod)].TemplateName, "no pod should ever be created for an undefined runtime target")
+	}
+}
