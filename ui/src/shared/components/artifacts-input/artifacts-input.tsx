@@ -1,6 +1,8 @@
 import * as React from 'react';
 import {useRef, useState} from 'react';
 
+import {uiUrl} from '../../base';
+
 import './artifacts-input.scss';
 
 interface ArtifactsInputProps {
@@ -75,7 +77,7 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
                     reject(new Error('Network error'));
                 };
 
-                xhr.open('POST', `/upload-artifacts/${encodeURIComponent(namespace)}/${encodeURIComponent(workflowTemplateName)}/${encodeURIComponent(artifactName)}`);
+                xhr.open('POST', uiUrl(`upload-artifacts/${encodeURIComponent(namespace)}/${encodeURIComponent(workflowTemplateName)}/${encodeURIComponent(artifactName)}`));
                 xhr.send(formData);
             });
         } catch (error) {
