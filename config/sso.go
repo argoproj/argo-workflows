@@ -10,7 +10,9 @@ import (
 // SSOConfig contains single sign-on configuration settings
 type SSOConfig struct {
 	// Issuer is the OIDC issuer URL
-	Issuer string `json:"issuer"`
+	Issuer string `json:"issuer,omitempty"`
+	// IssuerSecret references a secret containing the OIDC issuer URL, as an alternative to Issuer
+	IssuerSecret apiv1.SecretKeySelector `json:"issuerSecret,omitzero"`
 	// IssuerAlias is an optional alias for the issuer
 	IssuerAlias string `json:"issuerAlias,omitempty"`
 	// ClientID references a secret containing the OIDC client ID
@@ -18,7 +20,9 @@ type SSOConfig struct {
 	// ClientSecret references a secret containing the OIDC client secret
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	// RedirectURL is the OIDC redirect URL
-	RedirectURL string `json:"redirectUrl"`
+	RedirectURL string `json:"redirectUrl,omitempty"`
+	// RedirectURLSecret references a secret containing the OIDC redirect URL, as an alternative to RedirectURL
+	RedirectURLSecret apiv1.SecretKeySelector `json:"redirectUrlSecret,omitzero"`
 	// LogoutRedirectURL is the absolute URL to redirect to after logout; it is also used as the post-logout redirect URI for OIDC provider logout
 	LogoutRedirectURL string `json:"logoutRedirectUrl,omitempty"`
 	// RBAC contains role-based access control settings
