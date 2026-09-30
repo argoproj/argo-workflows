@@ -137,6 +137,13 @@ type listedDefaults struct {
 }
 
 func (s *listedDefaults) Get(ctx context.Context, namespace string) (*wfv1.Workflow, error) {
+	// ConfigMaps("").List would list every namespace, so an empty namespace would pick
+	// up someone else's defaults or trip the at-most-one rule. The indexed lookup
+	// returns nil here because no ConfigMap has an empty namespace; match it.
+	if namespace == "" {
+		return nil, nil
+	}
+
 	list, err := s.kubernetesInterface.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector(),
 	})

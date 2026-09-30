@@ -724,7 +724,14 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	s.instanceIDService.Label(req.Workflow)
 	creator.LabelCreator(ctx, req.Workflow)
 
-	wfDefaults, err := namespacedefaults.Resolve(ctx, s.wfDefaults, req.Workflow.Namespace)
+	// A lint request may carry the namespace on the request rather than in the workflow
+	// body, as CreateWorkflow allows. Without this the lookup would run with an empty
+	// namespace.
+	namespace := req.Workflow.Namespace
+	if namespace == "" {
+		namespace = req.Namespace
+	}
+	wfDefaults, err := namespacedefaults.Resolve(ctx, s.wfDefaults, namespace)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

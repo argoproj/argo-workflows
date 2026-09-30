@@ -226,6 +226,20 @@ func TestNamespaceDefaultsFromLister(t *testing.T) {
 		_, err := NewLister(k).Get(ctx, "my-ns")
 		require.Error(t, err, "the server must reject a misspelling exactly as the controller does")
 	})
+	t.Run("EmptyNamespaceDoesNotListEveryNamespace", func(t *testing.T) {
+		// A List with an empty namespace spans the cluster, so without a guard a caller
+		// that has not resolved its namespace would pick up another namespace's defaults,
+		// or trip the at-most-one rule on ConfigMaps it has nothing to do with.
+		ctx := logging.TestContext(t.Context())
+		k := kubefake.NewClientset(
+			configMap("ns-a", "a-defaults", map[string]string{Key: "spec:\n  serviceAccountName: from-a\n"}),
+			configMap("ns-b", "b-defaults", map[string]string{Key: "spec:\n  serviceAccountName: from-b\n"}),
+		)
+
+		wf, err := NewLister(k).Get(ctx, "")
+		require.NoError(t, err, "an empty namespace must not trip the at-most-one rule")
+		assert.Nil(t, wf)
+	})
 }
 
 // Merged is what puts namespace defaults above controller defaults, and both the
