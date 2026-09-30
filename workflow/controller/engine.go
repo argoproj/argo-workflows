@@ -208,10 +208,38 @@ func (e *Engine) reconcileDaemonedTasks(ctx context.Context, tasks []dag.Task) {
 // drives with the items, so this controller gives a TaskGroup node no hook
 // of its own. One started by an older controller can have some (main ran a
 // DAG task's lifecycle hooks on its TaskGroup): they are re-entered until
-// they finish, and none is created.
+// they finish, and none is created. Likewise an item's hook node that has not
+// finished under a TaskGroup recorded before this reconcile (`argo retry`
+// reset it) is re-entered, as a task's own existing hook node always is (F5).
 func (e *Engine) processHooks(ctx context.Context, task dag.Task) bool {
 	node := e.getTaskNode(ctx, task.GetName())
-	return e.driveHooks(ctx, task, []dag.Task{task}, node != nil && node.Type == wfv1.NodeTypeTaskGroup)
+	if node == nil || node.Type != wfv1.NodeTypeTaskGroup {
+		return e.driveHooks(ctx, task, []dag.Task{task}, false)
+	}
+	nodeTasks := []dag.Task{task}
+	if e.hooks.hasHooks(task) && e.itemHooksToReenter(node) {
+		items, err := e.resolveItems(ctx, task, true)
+		if err != nil {
+			e.log.WithField("task", task.GetName()).WithError(err).Warn(ctx, "cannot re-enter the hooks of a completed task's items")
+		}
+		nodeTasks = append(nodeTasks, items...)
+	}
+	return e.driveHooks(ctx, task, nodeTasks, true)
+}
+
+// itemHooksToReenter reports whether tg, a TaskGroup, was recorded before
+// this reconcile (so reconcileTaskGroup did not drive its items in it) and
+// one of its items has a hook node to re-enter.
+func (e *Engine) itemHooksToReenter(tg *wfv1.NodeStatus) bool {
+	if prev, ok := e.woc.preExecutionNodeStatuses[tg.ID]; !ok || !prev.Fulfilled() {
+		return false
+	}
+	for _, item := range e.getChildNodes(tg) {
+		if len(e.hooks.hookNodesToReenter(&item)) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // driveHooks drives, through hookHandler.DriveTaskHooks, the hooks of each
@@ -527,14 +555,7 @@ func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) 
 			continue
 		}
 		log := e.log.WithField("task", task.GetName())
-		scope, err := e.buildLocalScopeFromTask(ctx, task)
-		if err == nil {
-			task, err = e.resolveTask(ctx, task, scope)
-		}
-		items := []dag.Task{task}
-		if err == nil && node.Type == wfv1.NodeTypeTaskGroup {
-			items, err = task.Expand(ctx, e.expansionScope(scope), e.woc)
-		}
+		items, err := e.resolveItems(ctx, task, node.Type == wfv1.NodeTypeTaskGroup)
 		if err != nil {
 			// A task that could not be resolved to be dispatched ended Error
 			// without running, and cannot be resolved now either.
@@ -557,6 +578,23 @@ func (e *Engine) reconcileFulfilledTasks(ctx context.Context, tasks []dag.Task) 
 			log.WithError(err).Warn(ctx, "failed to finish a completed task")
 		}
 	}
+}
+
+// resolveItems resolves task against its scope, as it was dispatched, and,
+// with expand, expands it into its items; without, it is its own one item.
+func (e *Engine) resolveItems(ctx context.Context, task dag.Task, expand bool) ([]dag.Task, error) {
+	scope, err := e.buildLocalScopeFromTask(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	resolved, err := e.resolveTask(ctx, task, scope)
+	if err != nil {
+		return nil, err
+	}
+	if !expand {
+		return []dag.Task{resolved}, nil
+	}
+	return resolved.Expand(ctx, e.expansionScope(scope), e.woc)
 }
 
 // ranToCompletion reports whether node is a task node that has finished and
