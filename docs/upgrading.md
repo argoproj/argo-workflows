@@ -56,7 +56,7 @@ Previously the error was only logged and the template succeeded.
 A task's or step's exit or lifecycle hook that ends `Error` now ends the DAG or Steps template it belongs to with `Error`.
 This covers a hook that could not be started (for example its pod was denied by an admission webhook, or its expression could not be evaluated), a hook that timed out, and a hook that errored while it ran, such as one whose pod was deleted.
 Once a hook has errored, no new task or step of that template starts; tasks that are already running finish, and then the template ends `Error` with the hook's message.
-If another task has already failed, or a step's lifecycle hook errors while the step is still running (the step itself is then marked `Error`), the template ends `Failed` with that failure's message instead.
+If a task has already failed — including the task whose own hook is erroring — or a step's lifecycle hook errors while the step is still running (the step itself is then marked `Error`), the template ends `Failed` with that failure's message instead.
 A hook that runs and ends `Failed` is still ignored, as before.
 Previously a DAG ignored an exit hook that errored and went on to run the task's dependants.
 `continueOn.error` on a task does not cover an error from its hooks: previously a DAG could still succeed when a lifecycle hook of a task with `continueOn.error` errored.
@@ -76,6 +76,10 @@ A DAG task that did not run, because its `when` clause was false or its dependen
 A DAG task's lifecycle hooks now always run before its exit hook, as they already did for other DAG tasks and for steps.
 Previously a task that finished in the same reconciliation that started it (for example a memoization cache hit, or a retried task whose attempt had already succeeded) ran its exit hook alongside its lifecycle hooks.
 Its exit hook, and so its dependants, now wait for the lifecycle hooks; the final result is the same.
+
+A DAG task's mutex or semaphore lock is now released, and its completion metrics and `globalName` outputs exported, as soon as the task itself finishes, whether or not it was retried, even while its lifecycle hook is still running.
+Previously a DAG task held its lock, and delayed its metrics and `globalName` export, until its hooks had finished; a Steps step already released its lock at this point.
+Dependants of the task, and the DAG or Steps template itself, still wait for the hooks to finish.
 
 #### Expanded tasks and steps
 
@@ -107,6 +111,9 @@ The daemon's node fails, the Steps template and the workflow fail with `child '<
 Previously the step group was changed to `Failed` as well.
 In a DAG, expanded daemon items that die after their `TaskGroup` has finished now fail the DAG, as a daemon task without items already did.
 
+A daemon task's exit hook, or the lifecycle hook for the phase it ends in, now runs when the daemon is stopped at the end of its DAG.
+Previously it did not run.
+
 #### Outputs, metrics and messages
 
 `globalName` outputs are now exported when the node that produces them finishes, so the workflow's global outputs hold the value from the node that finished last.
@@ -136,6 +143,10 @@ When a `containerSet` pod is deleted, containers that had already finished now k
 
 `argo retry` now re-runs a failed DAG task whose dependants were all omitted, for example a task whose `when` clause or `withParam` could not be evaluated.
 Previously the retry did not reset such a task.
+
+After `argo retry`, a succeeded task's or step's exit hook that has its own `retryStrategy` is now completed without starting a new attempt of the hook.
+Previously it ran a new attempt.
+A hook without a `retryStrategy` was not re-run at either version.
 
 If you roll the controller back to an earlier version while Steps workflows with an expanded step are running, those workflows stay `Running`, and `argo retry` does not recover them.
 Let them finish before rolling back, or delete (or terminate) them and resubmit them afterwards.

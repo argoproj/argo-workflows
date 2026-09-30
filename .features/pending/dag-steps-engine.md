@@ -29,14 +29,17 @@ A DAG `TaskGroup` node records the resolved `templateRef`.
 A step group after a failed, stopped or timed-out group is shown as `Omitted`, and an empty step group after a failed group is `Omitted`.
 A step group with a step that ended `Error` is `Error`, and names the step.
 A daemon that dies after its group finished fails the template and workflow, while the group stays `Succeeded`.
+A daemon's exit hook, or the lifecycle hook for the phase it ends in, runs when it is stopped at the end of its DAG.
 
 `globalName` outputs are exported when their node finishes, so the last to finish wins, and memoized, HTTP, plugin and resumed suspend steps export them at once.
 An entrypoint DAG template's own `globalName` outputs are now exported to `workflow.status.outputs`, as for Steps.
 The outputs of a DAG template can refer to `workflow.outputs`.
 Template metrics are emitted for memoize cache hits.
+A DAG task's mutex or semaphore lock, its completion metrics and its `globalName` export happen when the task finishes, even while its lifecycle hook still runs; dependants and the template still wait for the hook.
 A failed DAG template's node names its failed task (`child '<node ID>' failed`), which `lastRetry.message` sees.
 A DAG task node's error message no longer starts with `task '<node name>' errored:`, and the workflow message for an entry template's own error no longer starts with `error in entry template execution:`.
 In a `containerSet` whose pod is deleted, containers that had finished keep their phase.
 
 `argo retry` re-runs a failed DAG task whose dependants were all omitted.
+`argo retry` completes, without a new attempt, a succeeded task's or step's exit hook that has its own retry strategy.
 After rolling the controller back, delete or terminate running Steps workflows that have an expanded step, and resubmit them.
