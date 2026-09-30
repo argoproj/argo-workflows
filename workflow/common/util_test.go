@@ -139,7 +139,12 @@ func TestParseObjects(t *testing.T) {
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(ctx, invalidObj, false))
+	res = ParseObjects(ctx, invalidObj, false)
+	// the document cannot be parsed into a Kubernetes object, so it is returned
+	// with a nil object and the error instead of being logged and dropped (#9550)
+	assert.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	assert.Error(t, res[0].Err)
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
@@ -449,4 +454,119 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 		// Must NOT match IsMissingVariableErr, which would requeue the node forever.
 		assert.False(t, template.IsMissingVariableErr(err))
 	})
+}
+
+// Strict conversion rejects duplicate keys but retains the kind and name for lint (#9550).
+func TestParseObjectsDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyWf := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: duplicate-key-
+spec:
+  templates: []
+  templates: []
+`)
+	res := ParseObjects(ctx, duplicateKeyWf, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, `key "templates" already set in map`)
+	assert.Equal(t, "duplicate-key-", res[0].Object.GetGenerateName())
+
+	res = ParseObjects(ctx, duplicateKeyWf, false)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+
+	_, err := SplitWorkflowYAMLFile(ctx, duplicateKeyWf, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+}
+
+// TestParseObjectsUnparseableDocumentIsReported verifies that a document which cannot
+// be parsed into a Kubernetes object at all is returned with a nil object and the
+// error, so linters can report which file failed (previously only logged, and
+// swallowed entirely by strict lints) (#9550).
+func TestParseObjectsUnparseableDocumentIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	brokenYAML := []byte(`foo: [
+`)
+	res := ParseObjects(ctx, brokenYAML, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "did not find expected node content")
+}
+
+// Split skips nil parse results and non-Workflow Argo objects without hiding typed errors.
+func TestSplitWorkflowSkipsOtherDocuments(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	mixed := []byte(`foo: [
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: mixed-
+`)
+	wfs, err := SplitWorkflowYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	require.Len(t, wfs, 1)
+
+	wfs, err = SplitWorkflowYAMLFile(ctx, []byte("apiVersion: argoproj.io/v1alpha1\nkind: WorkflowTemplate\nmetadata:\n  name: other\n"), true)
+	require.NoError(t, err)
+	assert.Empty(t, wfs)
+}
+
+// TestSplitCronWorkflowDuplicateKeyIsReported verifies the strict duplicate-key error
+// is propagated for CronWorkflows too (#9550).
+func TestSplitCronWorkflowDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyCwf := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: duplicate-key
+spec:
+  schedules: ["* * * * *"]
+  schedules: ["0 * * * *"]
+`)
+	_, err := SplitCronWorkflowYAMLFile(ctx, duplicateKeyCwf, true)
+	require.ErrorContains(t, err, `key "schedules" already set in map`)
+
+	cwfs, err := SplitCronWorkflowYAMLFile(ctx, duplicateKeyCwf, false)
+	require.NoError(t, err)
+	require.Len(t, cwfs, 1)
+}
+
+func TestSplitWorkflowTemplateDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicate := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: duplicate-key
+spec:
+  templates: []
+  templates: []
+`)
+	_, err := SplitWorkflowTemplateYAMLFile(ctx, duplicate, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	templates, err := SplitWorkflowTemplateYAMLFile(ctx, duplicate, false)
+	require.NoError(t, err)
+	require.Len(t, templates, 1)
+}
+
+// Strict-invalid non-Argo documents still expose their errors to lint (#9550).
+func TestParseObjectsUnknownKindStrictFailureIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	unknownKind := []byte(`apiVersion: v1
+kind: ConfigMap
+data:
+  key: value
+  key: duplicated
+`)
+	res := ParseObjects(ctx, unknownKind, true)
+	require.Len(t, res, 1)
+	require.ErrorContains(t, res[0].Err, `key "key" already set in map`)
+	assert.Nil(t, res[0].Object)
+
+	wfs, err := SplitWorkflowYAMLFile(ctx, unknownKind, true)
+	require.NoError(t, err)
+	assert.Empty(t, wfs)
 }
