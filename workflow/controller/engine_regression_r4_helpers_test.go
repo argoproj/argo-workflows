@@ -233,6 +233,8 @@ type r4LegacyStepItem struct {
 // must adopt these legacy items into a TaskGroup it creates for them,
 // rather than creating a fresh, empty TaskGroup that ignores items which
 // already finished or failed under the old controller.
+//
+//nolint:unparam // a general builder of the legacy shape; today's callers happen to share the group and step
 func r4LegacyStepsStatus(manifest string, groupIdx int, stepName, tmplName string, items []r4LegacyStepItem) *wfv1.Workflow {
 	wf := wfv1.MustUnmarshalWorkflow(manifest)
 	now := metav1.NewTime(time.Now().Add(-time.Minute))

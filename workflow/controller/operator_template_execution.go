@@ -19,7 +19,9 @@ import (
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
-// prepareNode initializes or updates the node status and sets the display name.
+// prepareNode returns the node named nodeName, if it exists, with the
+// display name of processedTmpl's workflows.argoproj.io/display-name
+// annotation applied (or marked Error if that name is invalid).
 func (woc *wfOperationCtx) prepareNode(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, processedTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, nodeFlag *wfv1.NodeFlag) (*wfv1.NodeStatus, error) {
 	// A missing node will be initialized via woc.initializeNodeOrMarkError
 	node, _ := woc.wf.GetNodeByName(nodeName)
