@@ -39,29 +39,22 @@ func (h *hookHandler) hasHooks(task dag.Task) bool {
 	return len(task.GetHooks()) > 0 || task.GetExitHook(h.woc.execWf.Spec.Arguments) != nil
 }
 
-// DriveLifecycleHooks drives the lifecycle hooks of node, task's node, and
-// reports whether they are done. refName is the name the hooks refer to the
-// task by ({{tasks.<refName>.status}}). A hook error is returned, except
-// back-pressure (parallelism, rate limit, operation deadline), which is not
-// the task's failure: the hook stays not done and is tried again.
-func (h *hookHandler) DriveLifecycleHooks(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (bool, error) {
+// DriveTaskHooks drives the hooks of node, task's node: its lifecycle hooks
+// and, once they are done and node has completed, its exit hook (see
+// driveExitHook). refName is the name the hooks refer to the task by
+// ({{tasks.<refName>.status}}). It reports whether every hook is done. A hook
+// error is returned, except back-pressure (parallelism, rate limit, operation
+// deadline), which is not the task's failure: the hook stays not done and is
+// tried again. The Engine's walk calls it once per task per reconcile, so an
+// exit hook is driven at most once per reconcile: driving it again would run
+// checkParallelism against a pod count this reconcile just bumped (#14392).
+func (h *hookHandler) DriveTaskHooks(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (done bool, err error) {
 	h.ref.Status.Set(scope.scope, string(node.Phase), refName)
-	done, err := h.woc.executeTmplLifeCycleHook(ctx, scope, task.GetHooks(), node, h.boundaryID, h.tmplCtx, h.ref, refName)
-	if err != nil {
+	done, err = h.woc.executeTmplLifeCycleHook(ctx, scope, task.GetHooks(), node, h.boundaryID, h.tmplCtx, h.ref, refName)
+	if err != nil || !done {
 		return false, h.ignoreThrottle(ctx, node, err)
 	}
-	return done, nil
-}
-
-// DriveExitHook drives node's exit hook (see driveExitHook), once its
-// lifecycle hooks are done (DriveLifecycleHooks), and reports whether it is
-// done. Errors are returned as DriveLifecycleHooks returns them. The Engine's
-// walk calls it once per task per reconcile, so an exit hook is driven at
-// most once per reconcile: driving it again would run checkParallelism
-// against a pod count this reconcile just bumped (#14392).
-func (h *hookHandler) DriveExitHook(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (bool, error) {
-	h.ref.Status.Set(scope.scope, string(node.Phase), refName)
-	done, err := h.driveExitHook(ctx, task, refName, node, scope)
+	done, err = h.driveExitHook(ctx, task, refName, node, scope)
 	return done, h.ignoreThrottle(ctx, node, err)
 }
 
@@ -114,12 +107,12 @@ func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName 
 // on its TaskGroup), and those of a node whose hooks' scope cannot be built:
 // a hook node that is not a pod (a nested template, a suspend) only advances
 // when re-entered, and re-entry releases its lock and emits its metrics once
-// it has finished. lifecycleDone leaves the exit hook out.
-func (h *hookHandler) reenterHooks(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (lifecycleDone, done bool, err error) {
+// it has finished.
+func (h *hookHandler) reenterHooks(ctx context.Context, task dag.Task, refName string, node *wfv1.NodeStatus, scope *wfScope) (bool, error) {
 	if scope != nil {
 		h.ref.Status.Set(scope.scope, string(node.Phase), refName)
 	}
-	lifecycleDone, done = true, true
+	done := true
 	for _, child := range h.hookNodesToReenter(node) {
 		hook, onExit := task.GetExitHook(h.woc.execWf.Spec.Arguments), true
 		if child.Name != common.GenerateOnExitNodeName(node.Name) {
@@ -133,12 +126,11 @@ func (h *hookHandler) reenterHooks(ctx context.Context, task dag.Task, refName s
 		}
 		hookNode, err := h.woc.reconcileHookNode(ctx, child.Name, hook, node, onExit, h.boundaryID, h.tmplCtx, h.ref, refName, scope)
 		if err != nil {
-			return false, false, h.ignoreThrottle(ctx, node, err)
+			return false, h.ignoreThrottle(ctx, node, err)
 		}
 		done = done && hookNode.Fulfilled()
-		lifecycleDone = lifecycleDone && (onExit || hookNode.Fulfilled())
 	}
-	return lifecycleDone, done, nil
+	return done, nil
 }
 
 // hookNodesToReenter lists node's hook nodes that had not finished when this

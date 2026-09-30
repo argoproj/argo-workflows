@@ -232,33 +232,23 @@ func (e *Engine) itemHooksToReenter(tg *wfv1.NodeStatus) bool {
 	return false
 }
 
-// driveHooks drives the hooks of each node of task that ran: task's own
-// node, or, for an expanded task, each item node, with that item's hooks
-// ({{item}} substituted), as executeStepGroup did. Every node's lifecycle
-// hooks are driven first (hookHandler.DriveLifecycleHooks), then the exit
-// hook of each node whose lifecycle hooks are done (DriveExitHook). With
-// existingOnly, or when the hooks' scope cannot be built, it only re-enters
-// the hook nodes that already exist (hookHandler.reenterHooks). The hooks
-// refer to the task by its own name and see its hookScope, built only when
-// there is a hook to drive. It reports whether every hook is done; a node
-// whose hooks errored is done once none of its hook nodes is still running,
-// its error recorded (markHookError), so that an error that recurs does not
-// hold its task back for good.
-//
-// A node's lock is held while its lifecycle hooks run (lockHeldForHooks), as
-// executeDAGTask held a task's: once the node has finished and its lifecycle
-// hooks are done, the lock is released here, by finishing the node again
-// (reconcileFulfilledTasks), before its exit hook runs, so that an exit hook
-// can take the lock its task held.
+// driveHooks drives, through hookHandler.DriveTaskHooks, the hooks of each
+// node of task that ran: task's own node, or, for an expanded task, each item
+// node, with that item's hooks ({{item}} substituted), as executeStepGroup
+// did. With existingOnly, or when the hooks' scope cannot be built, it only
+// re-enters the hook nodes that already exist (hookHandler.reenterHooks). The
+// hooks refer to the task by its own name and see its hookScope, built only
+// when there is a hook to drive. It reports whether every hook is done; a
+// node whose hooks errored is done once none of its hook nodes is still
+// running, its error recorded (markHookError), so that an error that recurs
+// does not hold its task back for good.
 func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.Task, existingOnly bool) bool {
 	if !e.hooks.hasHooks(task) {
 		return true
 	}
 	var scope *wfScope
 	var scopeErr error
-	done, release := true, false
-	holders := lockHolders(e.woc.wf)
-	var exitHooks []dag.Task
+	done := true
 	for _, nodeTask := range nodeTasks {
 		node := e.getTaskNode(ctx, nodeTask.GetName())
 		if node == nil || !ran(node) || (existingOnly && len(e.hooks.hookNodesToReenter(node)) == 0) {
@@ -267,33 +257,16 @@ func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.
 		if scope == nil && scopeErr == nil {
 			scope, scopeErr = e.hookScope(ctx, task)
 		}
-		var lifecycleDone, nodeDone bool
+		var nodeDone bool
 		var err error
 		if existingOnly || scopeErr != nil {
-			lifecycleDone, nodeDone, err = e.hooks.reenterHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
+			nodeDone, err = e.hooks.reenterHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
 			e.markHookError(ctx, node, scopeErr)
 		} else {
-			lifecycleDone, err = e.hooks.DriveLifecycleHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
+			nodeDone, err = e.hooks.DriveTaskHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
 		}
 		e.markHookError(ctx, node, err)
-		failed := (err != nil || scopeErr != nil) && !e.hasPendingHooks(node)
-		finished := (lifecycleDone || failed) && e.getTaskNode(ctx, nodeTask.GetName()).Fulfilled()
-		e.woc.lockHeldForHooks[node.ID] = !finished
-		release = release || (finished && holders[node.ID])
-		if lifecycleDone && err == nil && !existingOnly && scopeErr == nil {
-			exitHooks = append(exitHooks, nodeTask)
-			continue
-		}
-		done = done && (nodeDone || failed)
-	}
-	if release {
-		e.reconcileFulfilledTasks(ctx, []dag.Task{task})
-	}
-	for _, nodeTask := range exitHooks {
-		node := e.getTaskNode(ctx, nodeTask.GetName())
-		nodeDone, err := e.hooks.DriveExitHook(ctx, nodeTask, task.GetDisplayName(), node, scope)
-		e.markHookError(ctx, node, err)
-		done = done && (nodeDone || (err != nil && !e.hasPendingHooks(node)))
+		done = done && (nodeDone || ((err != nil || scopeErr != nil) && !e.hasPendingHooks(node)))
 	}
 	return done
 }
@@ -574,8 +547,7 @@ func (e *Engine) reconcileTask(ctx context.Context, task dag.Task, parents []str
 // reconcileFulfilledTasks finishes, before anything is dispatched, each
 // task node (each item, for an expanded task) that has run to completion
 // since the reconcile started, or that still holds a lock (toFinish): the
-// reconciler's handleNodeFulfilled releases its lock (a task with hooks keeps
-// it until driveHooks finds its lifecycle hooks done) and, once per
+// reconciler's handleNodeFulfilled releases its lock and, once per
 // completion, emits its completion metrics and exports its globalName
 // outputs. This is where a node that finished outside a dispatch (a pod, a
 // resumed suspend, an HTTP task, a failFast or timeout mark) is finished. A
@@ -1087,14 +1059,6 @@ func (e *Engine) desiredTask(ctx context.Context, task dag.Task) (DesiredTask, e
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		return DesiredTask{}, err
-	}
-
-	// A task with hooks holds its lock while its lifecycle hooks run: its
-	// hook driver releases it (driveHooks).
-	if nodeID := e.woc.wf.ResolveNodeID(taskNodeName); e.hooks.hasHooks(task) {
-		if _, ok := e.woc.lockHeldForHooks[nodeID]; !ok {
-			e.woc.lockHeldForHooks[nodeID] = true
-		}
 	}
 
 	return DesiredTask{
