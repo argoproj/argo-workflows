@@ -2,7 +2,7 @@ package validation
 
 import (
 	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -49,8 +49,10 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 	c := jsonschema.NewCompiler()
 	// api/jsonschema/schema.json declares draft 2020-12, for which format
 	// assertion is off by default; gojsonschema (the library this replaced)
-	// always asserted format, so this restores that behaviour for the one
-	// format either library recognizes, date-time.
+	// always asserted format, so this restores that behaviour. v6 asserts many
+	// formats (date-time, uuid, email, uri, ipv4 and others); date-time is the
+	// only one of them schema.json uses today. Its other formats (byte, int32,
+	// int64, uint64) are OpenAPI hints that v6 does not assert.
 	c.AssertFormat()
 	if err := c.AddResource("schema.json", schemaDoc); err != nil {
 		return nil, err
@@ -94,8 +96,8 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		}
 
 		if validationErr := schema.Validate(doc); validationErr != nil {
-			ve, ok := validationErr.(*jsonschema.ValidationError)
-			if !ok {
+			var ve *jsonschema.ValidationError
+			if !errors.As(validationErr, &ve) {
 				return validationErr
 			}
 			if errs := realErrors(doc, ve.DetailedOutput()); len(errs) > 0 {
@@ -157,15 +159,8 @@ func isAcceptedTypeMismatch(doc any, u *jsonschema.OutputUnit) bool {
 	if !ok {
 		return false
 	}
-	switch num := val.(type) {
-	case float64:
-		return num == math.Trunc(num)
-	case json.Number:
-		_, err := num.Int64()
-		return err == nil
-	default:
-		return false
-	}
+	num, ok := val.(float64)
+	return ok && num == math.Trunc(num)
 }
 
 // isHttpGetPortOrMinAvailable reports whether loc is a JSON pointer to a

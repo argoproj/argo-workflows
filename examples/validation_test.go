@@ -66,6 +66,36 @@ func TestValidateArgoYamlRecursivelyReportsFailures(t *testing.T) {
 		"          port: 80\n"+
 		"          path: /\n")
 
+	nonIntegralPort := writeYaml("non-integral-port.yaml", ""+
+		"kind: Workflow\n"+
+		"apiVersion: argoproj.io/v1alpha1\n"+
+		"metadata:\n"+
+		"  generateName: x-\n"+
+		"spec:\n"+
+		"  entrypoint: x\n"+
+		"  templates:\n"+
+		"  - name: x\n"+
+		"    container:\n"+
+		"      image: alpine\n"+
+		"      livenessProbe:\n"+
+		"        httpGet:\n"+
+		"          port: 80.5\n"+
+		"          path: /\n")
+
+	intOrStringMinAvailable := writeYaml("intorstring-minavailable.yaml", ""+
+		"kind: Workflow\n"+
+		"apiVersion: argoproj.io/v1alpha1\n"+
+		"metadata:\n"+
+		"  generateName: x-\n"+
+		"spec:\n"+
+		"  entrypoint: x\n"+
+		"  podDisruptionBudget:\n"+
+		"    minAvailable: 1\n"+
+		"  templates:\n"+
+		"  - name: x\n"+
+		"    container:\n"+
+		"      image: alpine\n")
+
 	listRoot := writeYaml("list-root.yaml", "- not-a-workflow\n")
 	empty := writeYaml("empty.yaml", "")
 
@@ -85,6 +115,12 @@ func TestValidateArgoYamlRecursivelyReportsFailures(t *testing.T) {
 	}
 	if got, ok := failures[intOrStringPort]; ok {
 		t.Errorf("intorstring-port.yaml: expected no failures (integer port is a tolerated IntOrString), got %v", got)
+	}
+	if got := failures[nonIntegralPort]; len(got) != 1 || !strings.Contains(got[0], "in /spec/templates/0/container/livenessProbe/httpGet/port") {
+		t.Errorf("non-integral-port.yaml: expected a single httpGet.port error (only integral values are tolerated), got %v", got)
+	}
+	if got, ok := failures[intOrStringMinAvailable]; ok {
+		t.Errorf("intorstring-minavailable.yaml: expected no failures (integer minAvailable is a tolerated IntOrString), got %v", got)
 	}
 	if got := failures[listRoot]; len(got) != 1 || got[0] != `unknown kind ""` {
 		t.Errorf(`list-root.yaml: expected [unknown kind ""], got %v`, got)
