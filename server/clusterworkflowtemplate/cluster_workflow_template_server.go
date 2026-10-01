@@ -64,6 +64,11 @@ func (cwts *Server) GetClusterWorkflowTemplate(ctx context.Context, req *cluster
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
 	}
+
+	if err := serverutils.EvaluateParameterDefaults(ctx, &wfTmpl.Spec); err != nil {
+		return nil, serverutils.ToStatusError(err, codes.Internal)
+	}
+
 	return wfTmpl, nil
 }
 
