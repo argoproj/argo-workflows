@@ -16,53 +16,10 @@ import (
 )
 
 func TestCreateTaskSet(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http 
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/create-task-set-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-nxvtg-1265710817:
-      http:
-        url: http://openlibrary.org/people/george08/nofound.json
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      name: http
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/taskset/create-task-set-taskset.yaml", &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
 		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
@@ -118,179 +75,10 @@ spec:
 }
 
 func TestRemoveCompletedTaskSetStatus(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-status:
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  finishedAt: null
-  nodes:
-    http-template-fqgsf:
-      children:
-      - http-template-fqgsf-898749974
-      displayName: http-template-fqgsf
-      finishedAt: null
-      id: http-template-fqgsf
-      name: http-template-fqgsf
-      phase: Running
-      startedAt: "2021-07-20T16:05:13Z"
-      templateName: main
-      templateScope: local/http-template-fqgsf
-      type: Steps
-    http-template-fqgsf-898749974:
-      boundaryID: http-template-fqgsf
-      children:
-      - http-template-fqgsf-2338098285
-      - http-template-fqgsf-3753847819
-      displayName: '[0]'
-      finishedAt: null
-      id: http-template-fqgsf-898749974
-      name: http-template-fqgsf[0]
-      phase: Running
-      startedAt: "2021-07-20T16:05:13Z"
-      templateScope: local/http-template-fqgsf
-      type: StepGroup
-    http-template-fqgsf-2338098285:
-      boundaryID: http-template-fqgsf
-      displayName: good
-      finishedAt: null
-      id: http-template-fqgsf-2338098285
-      inputs:
-        parameters:
-        - name: url
-          value: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
-      name: http-template-fqgsf[0].good
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            {
-              "swagger": "2.0",
-              "info": {
-                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
-                "version": "version not set"
-              },
-              "consumes": [
-                "application/json"
-              ],
-              "produces": [
-                "application/json"
-              ],
-              "paths": {},
-              "definitions": {}
-            }
-      phase: Succeeded
-      startedAt: "2021-07-20T16:05:13Z"
-      templateName: http
-      templateScope: local/http-template-fqgsf
-      type: HTTP
-    http-template-fqgsf-3753847819:
-      boundaryID: http-template-fqgsf
-      displayName: bad
-      finishedAt: null
-      id: http-template-fqgsf-3753847819
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      message: 404 Not Found
-      name: http-template-fqgsf[0].bad
-      phase: Failed
-      startedAt: "2021-07-20T16:05:13Z"
-      templateName: http
-      templateScope: local/http-template-fqgsf
-      type: HTTP
-  phase: Running
-  progress: 0/0
-  startedAt: "2021-07-20T16:05:13Z"
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/remove-completed-task-set-status-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-fqgsf-2338098285:
-      http:
-        url: http://openlibrary.org/people/george08/nofound.json
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      name: http
-status:
-  nodes:
-    http-template-fqgsf-2338098285:
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            {
-              "swagger": "2.0",
-              "info": {
-                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
-                "version": "version not set"
-              },
-              "consumes": [
-                "application/json"
-              ],
-              "produces": [
-                "application/json"
-              ],
-              "paths": {},
-              "definitions": {}
-            }
-      phase: Succeeded
-    http-template-fqgsf-3753847819:
-      message: 404 Not Found
-      phase: Failed
-
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/taskset/remove-completed-task-set-status-taskset.yaml", &ts)
 	t.Run("RemoveCompletedTaskSetStatus", func(t *testing.T) {
 		cancel, controller := newController(ctx, wf, ts)
 		defer cancel()
@@ -333,67 +121,10 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 }
 
 func TestReconcileTaskSetWithMemoization(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      http:
-       url: "http://localhost"
-      memoize:
-        key: cache-demo-1
-        maxAge: "10s"
-        cache:
-          configMap:
-            name: cache-demo-1
-status:
-  nodes:
-    http-template-fqgsf-2338098285:
-      boundaryID: http-template-fqgsf
-      displayName: main
-      id: http-template-fqgsf-2338098285
-      name: http-template-fqgsf[0].main
-      memoizationStatus:
-        hit: false
-        key: cache-demo-1
-        cacheName: cache-demo-1
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            { demo }
-      phase: Succeeded
-      templateName: http
-      type: HTTP
-  phase: Running
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/reconcile-task-set-with-memoization-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-fqgsf-2338098285:
-      http:
-        url: http://localhost
-      name: http
-status:
-  nodes:
-    http-template-fqgsf-2338098285:
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            { demo }
-      phase: Succeeded
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/taskset/reconcile-task-set-with-memoization-taskset.yaml", &ts)
 	t.Run("MemoizeOnTaskSetSucceeded", func(t *testing.T) {
 		cancel, controller := newController(ctx, wf, ts)
 		defer cancel()
