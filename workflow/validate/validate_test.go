@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -3654,6 +3655,63 @@ spec:
 func TestDynamicTemplateRefName(t *testing.T) {
 	err := validateWorkflowTemplate(logging.TestContext(t.Context()), dynamicTemplateRefName, Opts{})
 	require.NoError(t, err)
+}
+
+var dynamicClusterTemplateRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-cluster-template-ref-name
+spec:
+  templates:
+  - name: main
+    inputs:
+      parameters:
+        - name: workflow-name
+    dag:
+      tasks:
+        - name: run
+          templateRef:
+            name: "prefix-{{inputs.parameters.workflow-name}}"
+            template: main
+            clusterScope: true
+`
+
+// plainErrorWorkflowTemplateGetter returns an uncoded error like the offline lint client.
+type plainErrorWorkflowTemplateGetter struct{}
+
+func (plainErrorWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
+	return nil, fmt.Errorf("couldn't find workflow template %q", name)
+}
+
+// plainErrorClusterWorkflowTemplateGetter returns an uncoded error like the offline lint client.
+type plainErrorClusterWorkflowTemplateGetter struct{}
+
+func (plainErrorClusterWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return nil, fmt.Errorf("couldn't find cluster workflow template %q", name)
+}
+
+func TestDynamicTemplateRefNameWithUncodedGetterErrors(t *testing.T) {
+	getters := map[string]struct {
+		wftmplGetter  templateresolution.WorkflowTemplateNamespacedGetter
+		cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter
+	}{
+		"offline":   {plainErrorWorkflowTemplateGetter{}, plainErrorClusterWorkflowTemplateGetter{}},
+		"forbidden": {plainErrorWorkflowTemplateGetter{}, &templateresolution.NullClusterWorkflowTemplateGetter{}},
+	}
+	specs := map[string]string{
+		"steps":             dynamicTemplateRefName,
+		"dag cluster scope": dynamicClusterTemplateRefName,
+	}
+	for getterName, g := range getters {
+		for specName, spec := range specs {
+			t.Run(getterName+"/"+specName, func(t *testing.T) {
+				wftmpl := unmarshalWftmpl(spec)
+				err := WorkflowTemplate(logging.TestContext(t.Context()), g.wftmplGetter, g.cwftmplGetter, wftmpl, nil, Opts{})
+				require.NoError(t, err)
+			})
+		}
+	}
 }
 
 var inlineWorkflowTemplate14329 = `

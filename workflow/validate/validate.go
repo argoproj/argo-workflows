@@ -656,6 +656,10 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 			logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "template reference needs resolution")
 			return nil, nil
 		}
+		if strings.Contains(tmplRef.Name, template.PlaceholderPrefix) {
+			// internal placeholder indicates the referenced template is dynamic, it cannot be resolved until runtime
+			return nil, nil
+		}
 	} else if tmplName != "" {
 		_, err := tmplCtx.GetTemplateByName(ctx, tmplName)
 		if err != nil {
@@ -671,7 +675,7 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	if err != nil {
 		var argoerr errors.ArgoError
 		if stderrors.As(err, &argoerr) && argoerr.Code() == errors.CodeNotFound {
-			if tmplRef != nil && (strings.Contains(tmplRef.Name, template.PlaceholderPrefix) || strings.Contains(tmplRef.Template, template.PlaceholderPrefix)) {
+			if tmplRef != nil && strings.Contains(tmplRef.Template, template.PlaceholderPrefix) {
 				// internal placeholder indicates this is a dynamic template, skip validation
 				return nil, nil
 			}
