@@ -7,6 +7,8 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -85,6 +87,11 @@ metadata:
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
+	t.Run("LintWorkflowWithNilBody", func(t *testing.T) {
+		_, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: "my-ns"})
+		require.Error(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
 		require.NoError(t, err)
@@ -102,6 +109,11 @@ metadata:
 		})
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
+		t.Run("NilBody", func(t *testing.T) {
+			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns"})
+			require.Error(t, err)
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+		})
 		t.Run("Invalid", func(t *testing.T) {
 			x := cronWf.DeepCopy()
 			x.Spec.Schedules = []string{"invalid"}
