@@ -580,6 +580,13 @@ func (m *Artifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Description != nil {
+		i -= len(*m.Description)
+		copy(dAtA[i:], *m.Description)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Description)))
+		i--
+		dAtA[i] = 0x72
+	}
 	i--
 	if m.Deleted {
 		dAtA[i] = 1
@@ -9889,6 +9896,10 @@ func (m *Artifact) Size() (n int) {
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	n += 2
+	if m.Description != nil {
+		l = len(*m.Description)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	return n
 }
 
@@ -13225,6 +13236,7 @@ func (this *Artifact) String() string {
 		`FromExpression:` + fmt.Sprintf("%v", this.FromExpression) + `,`,
 		`ArtifactGC:` + strings.Replace(this.ArtifactGC.String(), "ArtifactGC", "ArtifactGC", 1) + `,`,
 		`Deleted:` + fmt.Sprintf("%v", this.Deleted) + `,`,
+		`Description:` + valueToStringGenerated(this.Description) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -16702,6 +16714,39 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Deleted = bool(v != 0)
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := AnyString(dAtA[iNdEx:postIndex])
+			m.Description = &s
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
