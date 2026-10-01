@@ -49,6 +49,17 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 	if count {
 		return selector, nil
 	}
+
+	// Use keyset pagination when a cursor is provided. This replaces
+	// OFFSET with a WHERE clause on (startedat, uid), providing
+	// constant-time pagination regardless of page depth.
+	if !options.CursorStartedAt.IsZero() && options.CursorUID != "" {
+		return selector.
+			And(db.Raw("(startedat, uid) < (?, ?)", options.CursorStartedAt, options.CursorUID)).
+			OrderBy(db.Raw("startedat desc, uid desc")).
+			Limit(options.Limit), nil
+	}
+
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
 	if options.Limit == 0 {
