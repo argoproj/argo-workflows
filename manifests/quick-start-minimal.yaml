@@ -966,6 +966,11 @@ spec:
                 description: ArchiveLogs indicates if the container logs should be
                   archived
                 type: boolean
+              archiveSystemContainerLogs:
+                description: ArchiveSystemContainerLogs indicates if the system container
+                  logs should be archived (init/wait in legacy Pods, supervisor in
+                  init-less Pods)
+                type: boolean
               arguments:
                 description: |-
                   Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -1007,6 +1012,11 @@ spec:
                         archiveLogs:
                           description: ArchiveLogs indicates if the container logs
                             should be archived
+                          type: boolean
+                        archiveSystemContainerLogs:
+                          description: ArchiveSystemContainerLogs indicates if the
+                            system container logs should be archived (init/wait in
+                            legacy Pods, supervisor in init-less Pods)
                           type: boolean
                         artifactGC:
                           description: ArtifactGC describes the strategy to use when
@@ -3940,6 +3950,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -6487,6 +6503,8 @@ spec:
                     properties:
                       archiveLogs:
                         type: boolean
+                      archiveSystemContainerLogs:
+                        type: boolean
                       artifactory:
                         properties:
                           passwordSecret:
@@ -8535,6 +8553,8 @@ spec:
                                         type: object
                                       archiveLogs:
                                         type: boolean
+                                      archiveSystemContainerLogs:
+                                        type: boolean
                                       artifactGC:
                                         properties:
                                           podMetadata:
@@ -9210,6 +9230,8 @@ spec:
                                                   type: object
                                               type: object
                                             archiveLogs:
+                                              type: boolean
+                                            archiveSystemContainerLogs:
                                               type: boolean
                                             artifactGC:
                                               properties:
@@ -9954,6 +9976,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -11367,6 +11391,8 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            archiveSystemContainerLogs:
+                              type: boolean
                             artifactGC:
                               properties:
                                 podMetadata:
@@ -12147,6 +12173,8 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            archiveSystemContainerLogs:
+                              type: boolean
                             artifactGC:
                               properties:
                                 podMetadata:
@@ -12873,6 +12901,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -15077,6 +15107,8 @@ spec:
                                       type: object
                                     archiveLogs:
                                       type: boolean
+                                    archiveSystemContainerLogs:
+                                      type: boolean
                                     artifactGC:
                                       properties:
                                         podMetadata:
@@ -15746,6 +15778,8 @@ spec:
                                                 type: object
                                             type: object
                                           archiveLogs:
+                                            type: boolean
+                                          archiveSystemContainerLogs:
                                             type: boolean
                                           artifactGC:
                                             properties:
@@ -18298,6 +18332,11 @@ spec:
                         archiveLogs:
                           description: ArchiveLogs indicates if the container logs
                             should be archived
+                          type: boolean
+                        archiveSystemContainerLogs:
+                          description: ArchiveSystemContainerLogs indicates if the
+                            system container logs should be archived (init/wait in
+                            legacy Pods, supervisor in init-less Pods)
                           type: boolean
                         artifactory:
                           description: Artifactory contains artifactory artifact location
@@ -22509,6 +22548,12 @@ spec:
                                           description: ArchiveLogs indicates if the
                                             container logs should be archived
                                           type: boolean
+                                        archiveSystemContainerLogs:
+                                          description: ArchiveSystemContainerLogs
+                                            indicates if the system container logs
+                                            should be archived (init/wait in legacy
+                                            Pods, supervisor in init-less Pods)
+                                          type: boolean
                                         artifactGC:
                                           description: ArtifactGC describes the strategy
                                             to use when to deleting an artifact from
@@ -23851,6 +23896,13 @@ spec:
                                                 description: ArchiveLogs indicates
                                                   if the container logs should be
                                                   archived
+                                                type: boolean
+                                              archiveSystemContainerLogs:
+                                                description: ArchiveSystemContainerLogs
+                                                  indicates if the system container
+                                                  logs should be archived (init/wait
+                                                  in legacy Pods, supervisor in init-less
+                                                  Pods)
                                                 type: boolean
                                               artifactGC:
                                                 description: ArtifactGC describes
@@ -25383,6 +25435,12 @@ spec:
                                 archiveLogs:
                                   description: ArchiveLogs indicates if the container
                                     logs should be archived
+                                  type: boolean
+                                archiveSystemContainerLogs:
+                                  description: ArchiveSystemContainerLogs indicates
+                                    if the system container logs should be archived
+                                    (init/wait in legacy Pods, supervisor in init-less
+                                    Pods)
                                   type: boolean
                                 artifactGC:
                                   description: ArtifactGC describes the strategy to
@@ -28186,6 +28244,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -29591,6 +29655,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -30950,6 +31020,12 @@ spec:
                                 archiveLogs:
                                   description: ArchiveLogs indicates if the container
                                     logs should be archived
+                                  type: boolean
+                                archiveSystemContainerLogs:
+                                  description: ArchiveSystemContainerLogs indicates
+                                    if the system container logs should be archived
+                                    (init/wait in legacy Pods, supervisor in init-less
+                                    Pods)
                                   type: boolean
                                 artifactGC:
                                   description: ArtifactGC describes the strategy to
@@ -35558,6 +35634,12 @@ spec:
                                         description: ArchiveLogs indicates if the
                                           container logs should be archived
                                         type: boolean
+                                      archiveSystemContainerLogs:
+                                        description: ArchiveSystemContainerLogs indicates
+                                          if the system container logs should be archived
+                                          (init/wait in legacy Pods, supervisor in
+                                          init-less Pods)
+                                        type: boolean
                                       artifactGC:
                                         description: ArtifactGC describes the strategy
                                           to use when to deleting an artifact from
@@ -36878,6 +36960,13 @@ spec:
                                             archiveLogs:
                                               description: ArchiveLogs indicates if
                                                 the container logs should be archived
+                                              type: boolean
+                                            archiveSystemContainerLogs:
+                                              description: ArchiveSystemContainerLogs
+                                                indicates if the system container
+                                                logs should be archived (init/wait
+                                                in legacy Pods, supervisor in init-less
+                                                Pods)
                                               type: boolean
                                             artifactGC:
                                               description: ArtifactGC describes the
@@ -43930,6 +44019,11 @@ spec:
                     description: ArchiveLogs indicates if the container logs should
                       be archived
                     type: boolean
+                  archiveSystemContainerLogs:
+                    description: ArchiveSystemContainerLogs indicates if the system
+                      container logs should be archived (init/wait in legacy Pods,
+                      supervisor in init-less Pods)
+                    type: boolean
                   arguments:
                     description: |-
                       Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -43972,6 +44066,11 @@ spec:
                             archiveLogs:
                               description: ArchiveLogs indicates if the container
                                 logs should be archived
+                              type: boolean
+                            archiveSystemContainerLogs:
+                              description: ArchiveSystemContainerLogs indicates if
+                                the system container logs should be archived (init/wait
+                                in legacy Pods, supervisor in init-less Pods)
                               type: boolean
                             artifactGC:
                               description: ArtifactGC describes the strategy to use
@@ -46947,6 +47046,12 @@ spec:
                                     description: ArchiveLogs indicates if the container
                                       logs should be archived
                                     type: boolean
+                                  archiveSystemContainerLogs:
+                                    description: ArchiveSystemContainerLogs indicates
+                                      if the system container logs should be archived
+                                      (init/wait in legacy Pods, supervisor in init-less
+                                      Pods)
+                                    type: boolean
                                   artifactGC:
                                     description: ArtifactGC describes the strategy
                                       to use when to deleting an artifact from completed
@@ -49535,6 +49640,8 @@ spec:
                         properties:
                           archiveLogs:
                             type: boolean
+                          archiveSystemContainerLogs:
+                            type: boolean
                           artifactory:
                             properties:
                               passwordSecret:
@@ -51584,6 +51691,8 @@ spec:
                                             type: object
                                           archiveLogs:
                                             type: boolean
+                                          archiveSystemContainerLogs:
+                                            type: boolean
                                           artifactGC:
                                             properties:
                                               podMetadata:
@@ -52260,6 +52369,8 @@ spec:
                                                       type: object
                                                   type: object
                                                 archiveLogs:
+                                                  type: boolean
+                                                archiveSystemContainerLogs:
                                                   type: boolean
                                                 artifactGC:
                                                   properties:
@@ -53004,6 +53115,8 @@ spec:
                                         type: object
                                     type: object
                                   archiveLogs:
+                                    type: boolean
+                                  archiveSystemContainerLogs:
                                     type: boolean
                                   artifactGC:
                                     properties:
@@ -54417,6 +54530,8 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
+                                archiveSystemContainerLogs:
+                                  type: boolean
                                 artifactGC:
                                   properties:
                                     podMetadata:
@@ -55198,6 +55313,8 @@ spec:
                                   type: object
                                 archiveLogs:
                                   type: boolean
+                                archiveSystemContainerLogs:
+                                  type: boolean
                                 artifactGC:
                                   properties:
                                     podMetadata:
@@ -55924,6 +56041,8 @@ spec:
                                         type: object
                                     type: object
                                   archiveLogs:
+                                    type: boolean
+                                  archiveSystemContainerLogs:
                                     type: boolean
                                   artifactGC:
                                     properties:
@@ -58129,6 +58248,8 @@ spec:
                                           type: object
                                         archiveLogs:
                                           type: boolean
+                                        archiveSystemContainerLogs:
+                                          type: boolean
                                         artifactGC:
                                           properties:
                                             podMetadata:
@@ -58798,6 +58919,8 @@ spec:
                                                     type: object
                                                 type: object
                                               archiveLogs:
+                                                type: boolean
+                                              archiveSystemContainerLogs:
                                                 type: boolean
                                               artifactGC:
                                                 properties:
@@ -61355,6 +61478,11 @@ spec:
                             archiveLogs:
                               description: ArchiveLogs indicates if the container
                                 logs should be archived
+                              type: boolean
+                            archiveSystemContainerLogs:
+                              description: ArchiveSystemContainerLogs indicates if
+                                the system container logs should be archived (init/wait
+                                in legacy Pods, supervisor in init-less Pods)
                               type: boolean
                             artifactory:
                               description: Artifactory contains artifactory artifact
@@ -65608,6 +65736,13 @@ spec:
                                               description: ArchiveLogs indicates if
                                                 the container logs should be archived
                                               type: boolean
+                                            archiveSystemContainerLogs:
+                                              description: ArchiveSystemContainerLogs
+                                                indicates if the system container
+                                                logs should be archived (init/wait
+                                                in legacy Pods, supervisor in init-less
+                                                Pods)
+                                              type: boolean
                                             artifactGC:
                                               description: ArtifactGC describes the
                                                 strategy to use when to deleting an
@@ -67009,6 +67144,13 @@ spec:
                                                     description: ArchiveLogs indicates
                                                       if the container logs should
                                                       be archived
+                                                    type: boolean
+                                                  archiveSystemContainerLogs:
+                                                    description: ArchiveSystemContainerLogs
+                                                      indicates if the system container
+                                                      logs should be archived (init/wait
+                                                      in legacy Pods, supervisor in
+                                                      init-less Pods)
                                                     type: boolean
                                                   artifactGC:
                                                     description: ArtifactGC describes
@@ -68610,6 +68752,12 @@ spec:
                                     archiveLogs:
                                       description: ArchiveLogs indicates if the container
                                         logs should be archived
+                                      type: boolean
+                                    archiveSystemContainerLogs:
+                                      description: ArchiveSystemContainerLogs indicates
+                                        if the system container logs should be archived
+                                        (init/wait in legacy Pods, supervisor in init-less
+                                        Pods)
                                       type: boolean
                                     artifactGC:
                                       description: ArtifactGC describes the strategy
@@ -71467,6 +71615,12 @@ spec:
                                     description: ArchiveLogs indicates if the container
                                       logs should be archived
                                     type: boolean
+                                  archiveSystemContainerLogs:
+                                    description: ArchiveSystemContainerLogs indicates
+                                      if the system container logs should be archived
+                                      (init/wait in legacy Pods, supervisor in init-less
+                                      Pods)
+                                    type: boolean
                                   artifactGC:
                                     description: ArtifactGC describes the strategy
                                       to use when to deleting an artifact from completed
@@ -72914,6 +73068,12 @@ spec:
                                     description: ArchiveLogs indicates if the container
                                       logs should be archived
                                     type: boolean
+                                  archiveSystemContainerLogs:
+                                    description: ArchiveSystemContainerLogs indicates
+                                      if the system container logs should be archived
+                                      (init/wait in legacy Pods, supervisor in init-less
+                                      Pods)
+                                    type: boolean
                                   artifactGC:
                                     description: ArtifactGC describes the strategy
                                       to use when to deleting an artifact from completed
@@ -74315,6 +74475,12 @@ spec:
                                     archiveLogs:
                                       description: ArchiveLogs indicates if the container
                                         logs should be archived
+                                      type: boolean
+                                    archiveSystemContainerLogs:
+                                      description: ArchiveSystemContainerLogs indicates
+                                        if the system container logs should be archived
+                                        (init/wait in legacy Pods, supervisor in init-less
+                                        Pods)
                                       type: boolean
                                     artifactGC:
                                       description: ArtifactGC describes the strategy
@@ -78985,6 +79151,12 @@ spec:
                                             description: ArchiveLogs indicates if
                                               the container logs should be archived
                                             type: boolean
+                                          archiveSystemContainerLogs:
+                                            description: ArchiveSystemContainerLogs
+                                              indicates if the system container logs
+                                              should be archived (init/wait in legacy
+                                              Pods, supervisor in init-less Pods)
+                                            type: boolean
                                           artifactGC:
                                             description: ArtifactGC describes the
                                               strategy to use when to deleting an
@@ -80339,6 +80511,13 @@ spec:
                                                   description: ArchiveLogs indicates
                                                     if the container logs should be
                                                     archived
+                                                  type: boolean
+                                                archiveSystemContainerLogs:
+                                                  description: ArchiveSystemContainerLogs
+                                                    indicates if the system container
+                                                    logs should be archived (init/wait
+                                                    in legacy Pods, supervisor in
+                                                    init-less Pods)
                                                   type: boolean
                                                 artifactGC:
                                                   description: ArtifactGC describes
@@ -86517,6 +86696,8 @@ spec:
                       properties:
                         archiveLogs:
                           type: boolean
+                        archiveSystemContainerLogs:
+                          type: boolean
                         artifactory:
                           properties:
                             passwordSecret:
@@ -87059,6 +87240,8 @@ spec:
                                 type: object
                             type: object
                           archiveLogs:
+                            type: boolean
+                          archiveSystemContainerLogs:
                             type: boolean
                           artifactGC:
                             properties:
@@ -87772,6 +87955,11 @@ spec:
                             archiveLogs:
                               description: ArchiveLogs indicates if the container
                                 logs should be archived
+                              type: boolean
+                            archiveSystemContainerLogs:
+                              description: ArchiveSystemContainerLogs indicates if
+                                the system container logs should be archived (init/wait
+                                in legacy Pods, supervisor in init-less Pods)
                               type: boolean
                             artifactGC:
                               description: ArtifactGC describes the strategy to use
@@ -89985,6 +90173,11 @@ spec:
                 description: ArchiveLogs indicates if the container logs should be
                   archived
                 type: boolean
+              archiveSystemContainerLogs:
+                description: ArchiveSystemContainerLogs indicates if the system container
+                  logs should be archived (init/wait in legacy Pods, supervisor in
+                  init-less Pods)
+                type: boolean
               arguments:
                 description: |-
                   Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -90026,6 +90219,11 @@ spec:
                         archiveLogs:
                           description: ArchiveLogs indicates if the container logs
                             should be archived
+                          type: boolean
+                        archiveSystemContainerLogs:
+                          description: ArchiveSystemContainerLogs indicates if the
+                            system container logs should be archived (init/wait in
+                            legacy Pods, supervisor in init-less Pods)
                           type: boolean
                         artifactGC:
                           description: ArtifactGC describes the strategy to use when
@@ -92959,6 +93157,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -95506,6 +95710,8 @@ spec:
                     properties:
                       archiveLogs:
                         type: boolean
+                      archiveSystemContainerLogs:
+                        type: boolean
                       artifactory:
                         properties:
                           passwordSecret:
@@ -97554,6 +97760,8 @@ spec:
                                         type: object
                                       archiveLogs:
                                         type: boolean
+                                      archiveSystemContainerLogs:
+                                        type: boolean
                                       artifactGC:
                                         properties:
                                           podMetadata:
@@ -98229,6 +98437,8 @@ spec:
                                                   type: object
                                               type: object
                                             archiveLogs:
+                                              type: boolean
+                                            archiveSystemContainerLogs:
                                               type: boolean
                                             artifactGC:
                                               properties:
@@ -98973,6 +99183,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -100386,6 +100598,8 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            archiveSystemContainerLogs:
+                              type: boolean
                             artifactGC:
                               properties:
                                 podMetadata:
@@ -101166,6 +101380,8 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            archiveSystemContainerLogs:
+                              type: boolean
                             artifactGC:
                               properties:
                                 podMetadata:
@@ -101892,6 +102108,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -104096,6 +104314,8 @@ spec:
                                       type: object
                                     archiveLogs:
                                       type: boolean
+                                    archiveSystemContainerLogs:
+                                      type: boolean
                                     artifactGC:
                                       properties:
                                         podMetadata:
@@ -104765,6 +104985,8 @@ spec:
                                                 type: object
                                             type: object
                                           archiveLogs:
+                                            type: boolean
+                                          archiveSystemContainerLogs:
                                             type: boolean
                                           artifactGC:
                                             properties:
@@ -107317,6 +107539,11 @@ spec:
                         archiveLogs:
                           description: ArchiveLogs indicates if the container logs
                             should be archived
+                          type: boolean
+                        archiveSystemContainerLogs:
+                          description: ArchiveSystemContainerLogs indicates if the
+                            system container logs should be archived (init/wait in
+                            legacy Pods, supervisor in init-less Pods)
                           type: boolean
                         artifactory:
                           description: Artifactory contains artifactory artifact location
@@ -111528,6 +111755,12 @@ spec:
                                           description: ArchiveLogs indicates if the
                                             container logs should be archived
                                           type: boolean
+                                        archiveSystemContainerLogs:
+                                          description: ArchiveSystemContainerLogs
+                                            indicates if the system container logs
+                                            should be archived (init/wait in legacy
+                                            Pods, supervisor in init-less Pods)
+                                          type: boolean
                                         artifactGC:
                                           description: ArtifactGC describes the strategy
                                             to use when to deleting an artifact from
@@ -112870,6 +113103,13 @@ spec:
                                                 description: ArchiveLogs indicates
                                                   if the container logs should be
                                                   archived
+                                                type: boolean
+                                              archiveSystemContainerLogs:
+                                                description: ArchiveSystemContainerLogs
+                                                  indicates if the system container
+                                                  logs should be archived (init/wait
+                                                  in legacy Pods, supervisor in init-less
+                                                  Pods)
                                                 type: boolean
                                               artifactGC:
                                                 description: ArtifactGC describes
@@ -114402,6 +114642,12 @@ spec:
                                 archiveLogs:
                                   description: ArchiveLogs indicates if the container
                                     logs should be archived
+                                  type: boolean
+                                archiveSystemContainerLogs:
+                                  description: ArchiveSystemContainerLogs indicates
+                                    if the system container logs should be archived
+                                    (init/wait in legacy Pods, supervisor in init-less
+                                    Pods)
                                   type: boolean
                                 artifactGC:
                                   description: ArtifactGC describes the strategy to
@@ -117205,6 +117451,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -118610,6 +118862,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -119969,6 +120227,12 @@ spec:
                                 archiveLogs:
                                   description: ArchiveLogs indicates if the container
                                     logs should be archived
+                                  type: boolean
+                                archiveSystemContainerLogs:
+                                  description: ArchiveSystemContainerLogs indicates
+                                    if the system container logs should be archived
+                                    (init/wait in legacy Pods, supervisor in init-less
+                                    Pods)
                                   type: boolean
                                 artifactGC:
                                   description: ArtifactGC describes the strategy to
@@ -124577,6 +124841,12 @@ spec:
                                         description: ArchiveLogs indicates if the
                                           container logs should be archived
                                         type: boolean
+                                      archiveSystemContainerLogs:
+                                        description: ArchiveSystemContainerLogs indicates
+                                          if the system container logs should be archived
+                                          (init/wait in legacy Pods, supervisor in
+                                          init-less Pods)
+                                        type: boolean
                                       artifactGC:
                                         description: ArtifactGC describes the strategy
                                           to use when to deleting an artifact from
@@ -125897,6 +126167,13 @@ spec:
                                             archiveLogs:
                                               description: ArchiveLogs indicates if
                                                 the container logs should be archived
+                                              type: boolean
+                                            archiveSystemContainerLogs:
+                                              description: ArchiveSystemContainerLogs
+                                                indicates if the system container
+                                                logs should be archived (init/wait
+                                                in legacy Pods, supervisor in init-less
+                                                Pods)
                                               type: boolean
                                             artifactGC:
                                               description: ArtifactGC describes the
@@ -131909,6 +132186,8 @@ spec:
                     properties:
                       archiveLogs:
                         type: boolean
+                      archiveSystemContainerLogs:
+                        type: boolean
                       artifactory:
                         properties:
                           keyFormat:
@@ -132289,6 +132568,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -132969,6 +133250,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -133670,6 +133953,8 @@ spec:
                               type: object
                           type: object
                         archiveLogs:
+                          type: boolean
+                        archiveSystemContainerLogs:
                           type: boolean
                         artifactGC:
                           properties:
@@ -135293,6 +135578,11 @@ spec:
                     archiveLogs:
                       description: ArchiveLogs indicates if the container logs should
                         be archived
+                      type: boolean
+                    archiveSystemContainerLogs:
+                      description: ArchiveSystemContainerLogs indicates if the system
+                        container logs should be archived (init/wait in legacy Pods,
+                        supervisor in init-less Pods)
                       type: boolean
                     artifactGC:
                       description: ArtifactGC describes the strategy to use when to
@@ -136967,6 +137257,8 @@ spec:
                     archiveLocation:
                       properties:
                         archiveLogs:
+                          type: boolean
+                        archiveSystemContainerLogs:
                           type: boolean
                         artifactory:
                           properties:
@@ -139011,6 +139303,8 @@ spec:
                                           type: object
                                         archiveLogs:
                                           type: boolean
+                                        archiveSystemContainerLogs:
+                                          type: boolean
                                         artifactGC:
                                           properties:
                                             podMetadata:
@@ -139677,6 +139971,8 @@ spec:
                                                     type: object
                                                 type: object
                                               archiveLogs:
+                                                type: boolean
+                                              archiveSystemContainerLogs:
                                                 type: boolean
                                               artifactGC:
                                                 properties:
@@ -140398,6 +140694,8 @@ spec:
                                       type: object
                                   type: object
                                 archiveLogs:
+                                  type: boolean
+                                archiveSystemContainerLogs:
                                   type: boolean
                                 artifactGC:
                                   properties:
@@ -141803,6 +142101,8 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                type: boolean
                               artifactGC:
                                 properties:
                                   podMetadata:
@@ -142571,6 +142871,8 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                type: boolean
                               artifactGC:
                                 properties:
                                   podMetadata:
@@ -143289,6 +143591,8 @@ spec:
                                       type: object
                                   type: object
                                 archiveLogs:
+                                  type: boolean
+                                archiveSystemContainerLogs:
                                   type: boolean
                                 artifactGC:
                                   properties:
@@ -145485,6 +145789,8 @@ spec:
                                             type: object
                                           archiveLogs:
                                             type: boolean
+                                          archiveSystemContainerLogs:
+                                            type: boolean
                                           artifactGC:
                                             properties:
                                               podMetadata:
@@ -146145,6 +146451,8 @@ spec:
                                                       type: object
                                                   type: object
                                                 archiveLogs:
+                                                  type: boolean
+                                                archiveSystemContainerLogs:
                                                   type: boolean
                                                 artifactGC:
                                                   properties:
@@ -147781,6 +148089,12 @@ spec:
                               archiveLogs:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
+                                type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
                                 type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
@@ -149960,6 +150274,11 @@ spec:
                 description: ArchiveLogs indicates if the container logs should be
                   archived
                 type: boolean
+              archiveSystemContainerLogs:
+                description: ArchiveSystemContainerLogs indicates if the system container
+                  logs should be archived (init/wait in legacy Pods, supervisor in
+                  init-less Pods)
+                type: boolean
               arguments:
                 description: |-
                   Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -150001,6 +150320,11 @@ spec:
                         archiveLogs:
                           description: ArchiveLogs indicates if the container logs
                             should be archived
+                          type: boolean
+                        archiveSystemContainerLogs:
+                          description: ArchiveSystemContainerLogs indicates if the
+                            system container logs should be archived (init/wait in
+                            legacy Pods, supervisor in init-less Pods)
                           type: boolean
                         artifactGC:
                           description: ArtifactGC describes the strategy to use when
@@ -152934,6 +153258,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -155481,6 +155811,8 @@ spec:
                     properties:
                       archiveLogs:
                         type: boolean
+                      archiveSystemContainerLogs:
+                        type: boolean
                       artifactory:
                         properties:
                           passwordSecret:
@@ -157529,6 +157861,8 @@ spec:
                                         type: object
                                       archiveLogs:
                                         type: boolean
+                                      archiveSystemContainerLogs:
+                                        type: boolean
                                       artifactGC:
                                         properties:
                                           podMetadata:
@@ -158204,6 +158538,8 @@ spec:
                                                   type: object
                                               type: object
                                             archiveLogs:
+                                              type: boolean
+                                            archiveSystemContainerLogs:
                                               type: boolean
                                             artifactGC:
                                               properties:
@@ -158948,6 +159284,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -160361,6 +160699,8 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            archiveSystemContainerLogs:
+                              type: boolean
                             artifactGC:
                               properties:
                                 podMetadata:
@@ -161141,6 +161481,8 @@ spec:
                               type: object
                             archiveLogs:
                               type: boolean
+                            archiveSystemContainerLogs:
+                              type: boolean
                             artifactGC:
                               properties:
                                 podMetadata:
@@ -161867,6 +162209,8 @@ spec:
                                     type: object
                                 type: object
                               archiveLogs:
+                                type: boolean
+                              archiveSystemContainerLogs:
                                 type: boolean
                               artifactGC:
                                 properties:
@@ -164071,6 +164415,8 @@ spec:
                                       type: object
                                     archiveLogs:
                                       type: boolean
+                                    archiveSystemContainerLogs:
+                                      type: boolean
                                     artifactGC:
                                       properties:
                                         podMetadata:
@@ -164740,6 +165086,8 @@ spec:
                                                 type: object
                                             type: object
                                           archiveLogs:
+                                            type: boolean
+                                          archiveSystemContainerLogs:
                                             type: boolean
                                           artifactGC:
                                             properties:
@@ -167292,6 +167640,11 @@ spec:
                         archiveLogs:
                           description: ArchiveLogs indicates if the container logs
                             should be archived
+                          type: boolean
+                        archiveSystemContainerLogs:
+                          description: ArchiveSystemContainerLogs indicates if the
+                            system container logs should be archived (init/wait in
+                            legacy Pods, supervisor in init-less Pods)
                           type: boolean
                         artifactory:
                           description: Artifactory contains artifactory artifact location
@@ -171503,6 +171856,12 @@ spec:
                                           description: ArchiveLogs indicates if the
                                             container logs should be archived
                                           type: boolean
+                                        archiveSystemContainerLogs:
+                                          description: ArchiveSystemContainerLogs
+                                            indicates if the system container logs
+                                            should be archived (init/wait in legacy
+                                            Pods, supervisor in init-less Pods)
+                                          type: boolean
                                         artifactGC:
                                           description: ArtifactGC describes the strategy
                                             to use when to deleting an artifact from
@@ -172845,6 +173204,13 @@ spec:
                                                 description: ArchiveLogs indicates
                                                   if the container logs should be
                                                   archived
+                                                type: boolean
+                                              archiveSystemContainerLogs:
+                                                description: ArchiveSystemContainerLogs
+                                                  indicates if the system container
+                                                  logs should be archived (init/wait
+                                                  in legacy Pods, supervisor in init-less
+                                                  Pods)
                                                 type: boolean
                                               artifactGC:
                                                 description: ArtifactGC describes
@@ -174377,6 +174743,12 @@ spec:
                                 archiveLogs:
                                   description: ArchiveLogs indicates if the container
                                     logs should be archived
+                                  type: boolean
+                                archiveSystemContainerLogs:
+                                  description: ArchiveSystemContainerLogs indicates
+                                    if the system container logs should be archived
+                                    (init/wait in legacy Pods, supervisor in init-less
+                                    Pods)
                                   type: boolean
                                 artifactGC:
                                   description: ArtifactGC describes the strategy to
@@ -177180,6 +177552,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -178585,6 +178963,12 @@ spec:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the system container logs should be archived
+                                  (init/wait in legacy Pods, supervisor in init-less
+                                  Pods)
+                                type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to
                                   use when to deleting an artifact from completed
@@ -179944,6 +180328,12 @@ spec:
                                 archiveLogs:
                                   description: ArchiveLogs indicates if the container
                                     logs should be archived
+                                  type: boolean
+                                archiveSystemContainerLogs:
+                                  description: ArchiveSystemContainerLogs indicates
+                                    if the system container logs should be archived
+                                    (init/wait in legacy Pods, supervisor in init-less
+                                    Pods)
                                   type: boolean
                                 artifactGC:
                                   description: ArtifactGC describes the strategy to
@@ -184552,6 +184942,12 @@ spec:
                                         description: ArchiveLogs indicates if the
                                           container logs should be archived
                                         type: boolean
+                                      archiveSystemContainerLogs:
+                                        description: ArchiveSystemContainerLogs indicates
+                                          if the system container logs should be archived
+                                          (init/wait in legacy Pods, supervisor in
+                                          init-less Pods)
+                                        type: boolean
                                       artifactGC:
                                         description: ArtifactGC describes the strategy
                                           to use when to deleting an artifact from
@@ -185872,6 +186268,13 @@ spec:
                                             archiveLogs:
                                               description: ArchiveLogs indicates if
                                                 the container logs should be archived
+                                              type: boolean
+                                            archiveSystemContainerLogs:
+                                              description: ArchiveSystemContainerLogs
+                                                indicates if the system container
+                                                logs should be archived (init/wait
+                                                in legacy Pods, supervisor in init-less
+                                                Pods)
                                               type: boolean
                                             artifactGC:
                                               description: ArtifactGC describes the
