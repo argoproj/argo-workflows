@@ -56,6 +56,11 @@ $contentMinWidth: 560px;
         }
     }
 
+    &__token-hint {
+        color: $argo-color-red;
+        font-size: 0.85em;
+    }
+
     &__logo {
         display: block;
         background-repeat: no-repeat;
