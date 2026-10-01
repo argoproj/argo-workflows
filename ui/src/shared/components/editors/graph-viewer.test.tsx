@@ -2,7 +2,7 @@ import {render, waitFor} from '@testing-library/react';
 import React from 'react';
 
 import {exampleClusterWorkflowTemplate, exampleCronWorkflow, exampleWorkflow, exampleWorkflowTemplate} from '../../examples';
-import {Workflow} from '../../models';
+import {Workflow, WorkflowTemplate} from '../../models';
 import {services} from '../../services';
 import {convertFromCronWorkflow, getLeafNodes, getStringAfterDelimiter, GraphViewer, parseDepends, populateGraphFromWorkflow} from './graph-viewer';
 
@@ -143,6 +143,29 @@ describe('populateGraphFromWorkflow', () => {
         const genres = Array.from(graph.nodes.values()).map((n: any) => n.genre);
         expect(genres).toContain('DAG');
         expect(genres).toContain('Pod');
+    });
+
+    it('creates the edge for a forward-referenced DAG dependency', () => {
+        const workflowTmpl: WorkflowTemplate = {
+            metadata: {name: 'dag-forward-reference'},
+            spec: {
+                entrypoint: 'main',
+                templates: [
+                    {
+                        name: 'main',
+                        dag: {
+                            tasks: [
+                                {name: 'deploy', depends: 'build', template: 'echo'},
+                                {name: 'build', template: 'echo'}
+                            ]
+                        }
+                    },
+                    {name: 'echo', container: {name: 'echo', image: 'alpine', command: ['echo']}}
+                ]
+            }
+        };
+        const graph = populateGraphFromWorkflow(workflowTmpl);
+        expect([...graph.edges.keys()]).toContainEqual({v: 'dag-forward-reference.build', w: 'dag-forward-reference.deploy'});
     });
 
     it('creates Steps and StepGroup nodes for a steps workflow', () => {
