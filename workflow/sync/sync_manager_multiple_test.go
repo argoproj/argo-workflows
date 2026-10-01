@@ -72,18 +72,18 @@ func setupMultipleLockManagersWithExistence(t *testing.T, dbType sqldb.DBType, s
 
 	// Set up the semaphore limit in the database
 	dbKey := "default/my-db-semaphore"
-	_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
+	_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
 	syncMgr1 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowExists1)
 	require.NotNil(t, syncMgr1)
-	require.NotNil(t, syncMgr1.dbInfo.SessionProxy.Session())
+	require.NotNil(t, syncMgr1.dbInfo.SessionProxy.Session(ctx))
 	// Second controller
 	cfg.ControllerName = "test2"
 	syncMgr2 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowExists2)
 	require.NotNil(t, syncMgr2)
-	require.NotNil(t, syncMgr2.dbInfo.SessionProxy.Session())
+	require.NotNil(t, syncMgr2.dbInfo.SessionProxy.Session(ctx))
 	return ctx, deferfn2, syncMgr1, syncMgr2
 }
 
