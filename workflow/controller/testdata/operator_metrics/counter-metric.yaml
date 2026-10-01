@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: counter-metric
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      metrics:
+        prometheus:
+          - name: execution_counter
+            help: "How many times a step has executed"
+            labels:
+              - key: name
+                value: flakey
+            counter:
+              value: "1"
+          - name: failure_counter
+            help: "How many times a step has failed"
+            labels:
+              - key: name
+                value: flakey
+            when: "{{status}} == Failed"
+            counter:
+              value: "1"
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+
