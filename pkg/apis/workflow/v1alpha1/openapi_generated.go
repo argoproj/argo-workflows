@@ -5376,8 +5376,17 @@ func schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses \"kubernetes.io/hostname\".",
+				Description: "RetryNodeAntiAffinity prevents running steps on the hosts that previous attempts ran on. In order to identify hosts, it uses \"kubernetes.io/hostname\".",
 				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type determines whether previously used hosts are excluded outright (\"Required\", the default) or merely de-prioritised (\"Preferred\"). Use \"Preferred\" when a retry should still be able to run on a previously used host once every eligible host has been tried, rather than staying pending.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}
