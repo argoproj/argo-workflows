@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,8 +17,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
-
 type UUIDVersion struct {
 	UID     string `db:"uid"`
 	Version string `db:"version"`
@@ -26,7 +25,7 @@ type UUIDVersion struct {
 type OffloadNodeStatusRepo interface {
 	Save(ctx context.Context, uid, namespace string, nodes wfv1.Nodes) (string, error)
 	Get(ctx context.Context, uid, version string) (wfv1.Nodes, error)
-	List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error)
+	List(ctx context.Context, namespace string, keys []UUIDVersion) (map[UUIDVersion]wfv1.Nodes, error)
 	ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error)
 	Delete(ctx context.Context, uid, version string) error
 	IsEnabled() bool
@@ -149,34 +148,59 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 	return nodes, nil
 }
 
-func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
-	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing offloaded nodes")
-	var res map[UUIDVersion]wfv1.Nodes
-	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
-		var records []nodesRecord
-		err := s.SQL().
-			Select("uid", "version", "nodes").
-			From(wdc.tableName).
-			Where(db.Cond{"clustername": wdc.clusterName}).
-			And(namespaceEqual(namespace)).
-			All(&records)
-		if err != nil {
-			return err
-		}
+// offloadListBatchSize caps how many keys go into a single query. MySQL and Postgres allow
+// 65535 placeholders per prepared statement and each pair costs two, so this leaves plenty of
+// headroom. A ceiling is needed because the caller decides the key count: ListWorkflows treats
+// an unset limit as "the whole namespace", and `argo list` defaults --chunk-size to 0.
+const offloadListBatchSize = 1000
 
-		res = make(map[UUIDVersion]wfv1.Nodes)
-		for _, r := range records {
-			nodes := &wfv1.Nodes{}
-			err = json.Unmarshal([]byte(r.Nodes), nodes)
+// uuidVersionIn matches exactly the given (uid, version) pairs. Written as OR-of-ANDs rather
+// than a row value `(uid, version) IN ((?,?),...)` so that it behaves the same on MySQL,
+// MariaDB and Postgres.
+func uuidVersionIn(keys []UUIDVersion) db.LogicalExpr {
+	conds := make([]db.LogicalExpr, len(keys))
+	for i, key := range keys {
+		conds[i] = db.And(db.Cond{"uid": key.UID}, db.Cond{"version": key.Version})
+	}
+	return db.Or(conds...)
+}
+
+// List returns the offloaded nodes for the given keys only.
+func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string, keys []UUIDVersion) (map[UUIDVersion]wfv1.Nodes, error) {
+	// This is not merely an optimisation: db.Or() with no arguments is an empty condition,
+	// so the query would silently widen back to every nodes blob in the namespace.
+	if len(keys) == 0 {
+		return map[UUIDVersion]wfv1.Nodes{}, nil
+	}
+	wdc.log.WithFields(logging.Fields{"namespace": namespace, "keys": len(keys)}).Debug(ctx, "Listing offloaded nodes")
+	res := make(map[UUIDVersion]wfv1.Nodes)
+	for batch := range slices.Chunk(keys, offloadListBatchSize) {
+		err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+			var records []nodesRecord
+			err := s.SQL().
+				Select("uid", "version", "nodes").
+				From(wdc.tableName).
+				Where(db.Cond{"clustername": wdc.clusterName}).
+				And(namespaceEqual(namespace)).
+				And(uuidVersionIn(batch)).
+				All(&records)
 			if err != nil {
 				return err
 			}
-			res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
+
+			for _, r := range records {
+				nodes := &wfv1.Nodes{}
+				err = json.Unmarshal([]byte(r.Nodes), nodes)
+				if err != nil {
+					return err
+				}
+				res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 	return res, nil
 }

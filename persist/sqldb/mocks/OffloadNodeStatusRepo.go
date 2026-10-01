@@ -67,13 +67,13 @@ func (_m *OffloadNodeStatusRepo) IsEnabled() bool {
 	return r0
 }
 
-// List provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) List(ctx context.Context, namespace string) (map[sqldb.UUIDVersion]v1alpha1.Nodes, error) {
-	ret := _m.Called(namespace)
+// List provides a mock function with given fields: namespace, keys
+func (_m *OffloadNodeStatusRepo) List(ctx context.Context, namespace string, keys []sqldb.UUIDVersion) (map[sqldb.UUIDVersion]v1alpha1.Nodes, error) {
+	ret := _m.Called(namespace, keys)
 
 	var r0 map[sqldb.UUIDVersion]v1alpha1.Nodes
-	if rf, ok := ret.Get(0).(func(string) map[sqldb.UUIDVersion]v1alpha1.Nodes); ok {
-		r0 = rf(namespace)
+	if rf, ok := ret.Get(0).(func(string, []sqldb.UUIDVersion) map[sqldb.UUIDVersion]v1alpha1.Nodes); ok {
+		r0 = rf(namespace, keys)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[sqldb.UUIDVersion]v1alpha1.Nodes)
@@ -81,8 +81,8 @@ func (_m *OffloadNodeStatusRepo) List(ctx context.Context, namespace string) (ma
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(namespace)
+	if rf, ok := ret.Get(1).(func(string, []sqldb.UUIDVersion) error); ok {
+		r1 = rf(namespace, keys)
 	} else {
 		r1 = ret.Error(1)
 	}
