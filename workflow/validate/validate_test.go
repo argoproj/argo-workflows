@@ -3024,6 +3024,38 @@ func TestCronWorkflowInvalidTimezoneRejected(t *testing.T) {
 	require.ErrorContains(t, err, `invalid timezone "Not/A_Real_Timezone"`)
 }
 
+func TestCronWorkflowHashedSchedule(t *testing.T) {
+	newCronWf := func(schedules ...string) *wfv1.CronWorkflow {
+		return &wfv1.CronWorkflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-cron-wf", Namespace: metav1.NamespaceDefault},
+			Spec: wfv1.CronWorkflowSpec{
+				Schedules: schedules,
+				WorkflowSpec: wfv1.WorkflowSpec{
+					Entrypoint: "whalesay",
+					Templates: []wfv1.Template{
+						{
+							Name: "whalesay",
+							Container: &corev1.Container{
+								Image:   "docker/whalesay:latest",
+								Command: []string{"cowsay"},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	err := CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, newCronWf("H H * * *", "H(0-29)/10 H(9-17) * * MON-FRI"), nil)
+	require.NoError(t, err)
+
+	err = CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, newCronWf("H(30-10) * * * *"), nil)
+	require.ErrorContains(t, err, `cron schedule H(30-10) * * * * is malformed: "H(30-10)" is malformed: range "30-10" is inverted`)
+
+	err = CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, newCronWf("* H(0-30) * * *"), nil)
+	require.ErrorContains(t, err, `range "0-30" is outside of 0-23, the range of the hour field`)
+}
+
 var invalidContainerSetDependencyNotFound = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
