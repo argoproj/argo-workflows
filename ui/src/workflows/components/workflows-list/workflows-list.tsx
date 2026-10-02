@@ -8,10 +8,10 @@ import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
-import {ToolbarLinks} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {TimestampSwitch} from '../../../shared/components/timestamp';
+import {ToolbarActions} from '../../../shared/components/toolbar-actions';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -222,16 +222,24 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                     {title: 'Workflows', path: uiUrl('workflows')},
                     {title: namespace, path: uiUrl('workflows/' + namespace)}
                 ],
-                actionMenu: {
-                    items: [
-                        {
-                            title: 'Submit New Workflow',
-                            iconClassName: 'fa fa-plus',
-                            action: () => setSidePanel('submit-new-workflow')
-                        }
-                    ]
-                },
-                tools: <ToolbarLinks links={links} />
+                tools: (
+                    <ToolbarActions
+                        items={[
+                            {
+                                title: 'Submit New Workflow',
+                                iconClassName: 'fa fa-plus',
+                                action: () => setSidePanel('submit-new-workflow')
+                            },
+                            ...links.map(link => ({
+                                title: link.name,
+                                iconClassName: 'fa fa-external-link',
+                                href: link.url,
+                                // `openLinkWithKey` opened in a new tab unless a target was configured, so default to the same here
+                                target: link.target || '_blank'
+                            }))
+                        ]}
+                    />
+                )
             }}>
             <WorkflowsToolbar
                 selectedWorkflows={selectedWorkflows}

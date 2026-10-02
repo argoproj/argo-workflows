@@ -9,9 +9,10 @@ import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {openLinkWithKey, processURL, ToolbarLinks} from '../../../shared/components/links';
+import {processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
+import {ToolbarAction, ToolbarActions} from '../../../shared/components/toolbar-actions';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -192,7 +193,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     function getItems() {
         const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
-        const items = Object.keys(workflowOperationsMap)
+        const items: ToolbarAction[] = Object.keys(workflowOperationsMap)
             .filter(actionName => !workflowOperationsMap[actionName].disabled(workflow))
             .map(actionName => {
                 const workflowOperation = workflowOperationsMap[actionName];
@@ -247,6 +248,20 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             title: 'Share'
         });
 
+        if (links && workflow) {
+            links
+                .filter(link => link.scope === 'workflow')
+                .forEach(link => {
+                    items.push({
+                        title: link.name,
+                        iconClassName: 'fa fa-external-link-alt',
+                        href: processURL(link.url, linkObject()),
+                        // `openLinkWithKey` opened in a new tab unless a target was configured, so default to the same here
+                        target: link.target || '_blank'
+                    });
+                });
+        }
+
         // we only want one link, and we have a preference
         for (const k of [
             'workflows.argoproj.io/workflow-template',
@@ -273,16 +288,11 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             const url: string = clusterScope ? uiUrl(`cluster-workflow-templates/${templateName}`) : uiUrl(`workflow-templates/${workflow.metadata.namespace}/${templateName}`);
             const icon: string = clusterScope ? 'fa fa-window-restore' : 'fa fa-window-maximize';
 
-            const templateLink: Link = {
-                name: 'Open Workflow Template',
-                scope: 'workflow',
-                url
-            };
-
             items.push({
-                title: templateLink.name,
+                title: 'Open Workflow Template',
                 iconClassName: icon,
-                action: () => openLink(templateLink)
+                href: url,
+                target: '_blank'
             });
         }
 
@@ -425,10 +435,6 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         };
     }
 
-    function openLink(link: Link) {
-        openLinkWithKey(processURL(link.url, linkObject()), link.target);
-    }
-
     function setParameter(key: string, value: string) {
         setParameters(previous => {
             return previous?.map(parameter => {
@@ -485,12 +491,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                     {title: namespace, path: uiUrl('workflows/' + namespace)},
                     {title: name, path: uiUrl('workflows/' + namespace + '/' + name)}
                 ],
-                actionMenu: {
-                    items: getItems()
-                },
                 tools: (
-                    <>
-                        {workflow && links && <ToolbarLinks links={links.filter(link => link.scope === 'workflow')} object={linkObject()} />}
+                    <ToolbarActions items={getItems()}>
                         <div className='workflow-details__topbar-buttons'>
                             <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
                                 <i className='fa fa-columns' />
@@ -506,7 +508,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                 <i className='argo-icon-workflow' />
                             </a>
                         </div>
-                    </>
+                    </ToolbarActions>
                 )
             }}>
             <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': isSidePanelExpanded})}>

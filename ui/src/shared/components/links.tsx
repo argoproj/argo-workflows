@@ -6,8 +6,6 @@ import {Link, Workflow} from '../models';
 import {services} from '../services';
 import {Button} from './button';
 
-import './links.scss';
-
 function toEpoch(datetime: string) {
     if (datetime) {
         return new Date(datetime).getTime();
@@ -73,19 +71,6 @@ export function LinkButtons({links, object}: {links: Link[]; object?: LinkObject
                 </Button>
             ))}
         </>
-    );
-}
-
-// ToolbarLinks renders links for a `Page` toolbar's `tools`.
-// The toolbar's action menu can only render buttons, so links are rendered as anchors in the tools instead.
-export function ToolbarLinks({links, object}: {links: Link[]; object?: LinkObject}) {
-    if (!links || links.length === 0) {
-        return null;
-    }
-    return (
-        <span className='top-bar__links'>
-            <LinkButtons links={links} object={object} />
-        </span>
     );
 }
 
