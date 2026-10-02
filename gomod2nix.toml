@@ -320,8 +320,8 @@ schema = 3
     version = "v1.10.1"
     hash = "sha256-6LBLgsh4nKkMpgRKVsYFEaGDSU1fncBcWVSjKBdfgjU="
   [mod."github.com/fxamacker/cbor/v2"]
-    version = "v2.9.0"
-    hash = "sha256-/IZK76MRCrz9XCiilieH5tKaLnIWyPJhwxDoVKB8dFc="
+    version = "v2.9.1"
+    hash = "sha256-lwx/RvW1pEXTezGAZRjAXEtDymE+pfBn7HOTpDdkF9o="
   [mod."github.com/gaganhr94/docker-credential-acr"]
     version = "v1.0.2"
     hash = "sha256-tn1WA/K0Yyzb7ABP9tF6p59euljQunFSmu9PPT7znxs="
@@ -983,14 +983,14 @@ schema = 3
     version = "v0.1.2"
     hash = "sha256-ATVL9yEmgYbkJ1DkltDGRn/auGAjqGOfjQyBYyUo8s8="
   [mod."k8s.io/api"]
-    version = "v0.35.4"
-    hash = "sha256-QiykPDGY9yD/uwEXd3P56VHgImHudLiE9Sag4+GY8f4="
+    version = "v0.37.0"
+    hash = "sha256-OXz/uKhejAYG+OfBgWP3V0OKVZ9s5oguNk028voAHw0="
   [mod."k8s.io/apiextensions-apiserver"]
     version = "v0.35.4"
     hash = "sha256-F0jPg+DzBHE1FyqGDGgmHRfS7hIx9JWb0iypA0PPVnI="
   [mod."k8s.io/apimachinery"]
-    version = "v0.35.4"
-    hash = "sha256-2THXGj+IHegAUB6l+4FVW1apliSNgrfgz6M4saX66yY="
+    version = "v0.37.0"
+    hash = "sha256-au0DAFcup83qIhR9fxXEnrJoi+li2/FgJl1hfCTMpnU="
   [mod."k8s.io/apiserver"]
     version = "v0.35.4"
     hash = "sha256-WzXOOT5A+2861nr/jZAQ2/PiTFHhy97Q+V/lROSCDeU="
@@ -1055,8 +1055,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-xldQxDwW84hmlihdSOFfjXyauhxEWV9KmIDLZMTcYNo="
   [mod."sigs.k8s.io/structured-merge-diff/v6"]
-    version = "v6.4.1"
-    hash = "sha256-9ZoaaRvTiiv4GpROcm1oa6NPlmEtUGuH+O5XBiaWq7k="
+    version = "v6.4.2"
+    hash = "sha256-Q4GT7pinbkhNOae9Q3WuTKAVOLqNvrP9EfrEDEM1S3I="
   [mod."sigs.k8s.io/yaml"]
     version = "v1.6.0"
     hash = "sha256-49hg7IVPzwxeovp+HTMiWa/10NMMTSTjAdCmIv6p9dw="
