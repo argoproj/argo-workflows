@@ -58,7 +58,23 @@ export function openLinkWithKey(url: string, target?: string) {
     }
 }
 
-export function Links({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; workflow?: Workflow; status?: any}; button?: boolean}) {
+type LinkObject = {metadata: ObjectMeta; workflow?: Workflow; status?: any};
+
+// LinkButtons renders links as anchors styled as buttons. URLs are only templated when an object is given.
+export function LinkButtons({links, object}: {links: Link[]; object?: LinkObject}) {
+    return (
+        <>
+            {links.map(({url, name, target}) => (
+                // `openLinkWithKey` opens in a new tab unless a target is configured, so default to the same here
+                <Button href={object ? processURL(url, object) : url} target={target || '_blank'} key={name} icon='external-link-alt'>
+                    {name}
+                </Button>
+            ))}
+        </>
+    );
+}
+
+export function Links({scope, object, button}: {scope: string; object: LinkObject; button?: boolean}) {
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
     useEffect(() => {
@@ -73,20 +89,15 @@ export function Links({scope, object, button}: {scope: string; object: {metadata
         <>
             {error && error.message}
             {links &&
-                links.map(({url, name, target}) => {
-                    if (button) {
-                        return (
-                            <Button onClick={() => openLinkWithKey(processURL(url, object), target)} key={name} icon='external-link-alt'>
-                                {name}
-                            </Button>
-                        );
-                    }
-                    return (
+                (button ? (
+                    <LinkButtons links={links} object={object} />
+                ) : (
+                    links.map(({url, name, target}) => (
                         <a key={name} href={processURL(url, object)} target={target} rel='noreferrer'>
                             {name} <i className='fa fa-external-link-alt' />
                         </a>
-                    );
-                })}
+                    ))
+                ))}
         </>
     );
 }
