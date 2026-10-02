@@ -144,7 +144,20 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	return &wf, err
 }
 
-func FromUnstructuredObj(un *unstructured.Unstructured, v any) error {
+func FromUnstructuredObj(un *unstructured.Unstructured, v any) (retErr error) {
+	// Recover from panics in apimachinery's structFromUnstructured (e.g.
+	// "reflect.Value.Set using value obtained using unexported field") by
+	// falling back to JSON round-trip conversion.
+	defer func() {
+		if r := recover(); r != nil {
+			data, marshalErr := json.Marshal(un)
+			if marshalErr != nil {
+				retErr = marshalErr
+				return
+			}
+			retErr = json.Unmarshal(data, v)
+		}
+	}()
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
 		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {

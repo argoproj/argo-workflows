@@ -30,6 +30,9 @@ type dagContext struct {
 	// tasks are all the tasks in the template
 	tasks []wfv1.DAGTask
 
+	// taskMap - lookup cache for dag tasks based on their name.
+	taskMap map[string]*wfv1.DAGTask
+
 	// visited keeps track of tasks we have already visited during an invocation of executeDAG
 	// in order to avoid duplicating work
 	visited map[string]bool
@@ -96,10 +99,8 @@ func (d *dagContext) GetTaskFinishedAtTime(ctx context.Context, taskName string)
 }
 
 func (d *dagContext) GetTask(ctx context.Context, taskName string) *wfv1.DAGTask {
-	for _, task := range d.tasks {
-		if task.Name == taskName {
-			return &task
-		}
+	if t, ok := d.taskMap[taskName]; ok {
+		return t
 	}
 	panic("target " + taskName + " does not exist")
 }
@@ -305,6 +306,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		dependsLogic:   make(map[string]string),
 		log:            woc.log,
 	}
+	// Build the task index for lookup. The tasks slice is immutable during this reconcile cycle —
+	// expandTask returns new slices and does not mutate d.tasks — so the map stays valid for the
+	// lifetime of this dagContext.
+	dagCtx.taskMap = make(map[string]*wfv1.DAGTask, len(tmpl.DAG.Tasks))
+	for i := range tmpl.DAG.Tasks {
+		dagCtx.taskMap[tmpl.DAG.Tasks[i].Name] = &tmpl.DAG.Tasks[i]
+	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
 	// no dependants.
@@ -328,8 +336,29 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 	// kick off execution of each target task asynchronously
 	onExitCompleted := true
-	for _, taskName := range targetTasks {
+	for i, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
+
+		// Break early when the number of active pods exceeds parallelism: stop iterating, so the cycle
+		// reaches persistUpdates and completed pods are GC'd instead of walking the rest of the DAG
+		// for nothing.
+		if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
+			break
+		}
+
+		// Out of budget: stop iterating, so the cycle ends by persisting what it has and the workflow
+		// is requeued. The sweep gives the remaining node-less tasks one more scheduling attempt
+		// (bounded by parallelism) before phase assessment, because a task that never gets a node
+		// leaves the DAG unable to finalise and stuck at N-1.
+		if time.Now().UTC().After(woc.deadline) {
+			for _, t2 := range targetTasks[i:] {
+				if dagCtx.getTaskNode(t2) == nil {
+					woc.executeDAGTask(ctx, dagCtx, t2)
+				}
+			}
+			woc.requeue()
+			break
+		}
 
 		// The exit hook for each target task is started by executeDAGTask -> processTask.
 		// We only inspect the onExit node's status here to decide whether the DAG can be
@@ -674,6 +703,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			proceed, whenErr := shouldExecute(t.When)
 			if whenErr != nil {
 				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, whenErr.Error())
+				// Node was created (Skipped/Error), safe to link as a child now.
 				connectDependencies(taskNodeName)
 				continue
 			}
@@ -686,7 +716,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 
 		// Finally execute the template
-		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate, bypassOperationDeadline: node == nil})
 		// Add the child relationship from our dependency's outbound nodes to
 		// this node, only once its node exists: executeTemplate can defer
 		// creation (parallelism, transient errors), and an edge persisted for
@@ -700,9 +730,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			case errors.Is(err, ErrDeadlineExceeded):
 				return
 			case errors.Is(err, ErrParallelismReached):
-				// continue
+				// Task not scheduled this cycle — node was NOT created. Do not link it as a child:
+				// the parent would keep a reference to a node that never appears, which floods
+				// sumProgress and stalls the workflow.
+				return
 			case errors.Is(err, ErrMaxDepthExceeded):
-				// continue
+				// node is initialized as Skipped/Error by executeTemplate, linked below.
 			case errors.Is(err, ErrTimeout):
 				_ = woc.markNodePhase(ctx, taskNodeName, wfv1.NodeFailed, err.Error())
 				return
@@ -715,6 +748,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		if node == nil {
 			return
 		}
+		// Node exists now — safe to add the child relationship from our
+		// dependency's outbound nodes to this node.
+		connectDependencies(taskNodeName)
 		if node.Completed() {
 			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 			if err != nil {
