@@ -1,0 +1,12 @@
+name: retry-backoff
+retryStrategy:
+  limit: 10
+  backoff:
+    duration: "1"
+    factor: 1
+    maxDuration: "20"
+container:
+  image: alpine
+  command: [sh, -c]
+  args: ["sleep $(( {{retries}} * 100 )); exit 1"]
+

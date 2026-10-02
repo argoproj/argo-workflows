@@ -97,7 +97,7 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	}
 	log := logging.RequireLoggerFromContext(ctx)
 	var err error
-	log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
+	log.WithField("Workflow Size", wf.Size()).Debug(ctx, "Workflow to be dehydrated")
 	if !h.alwaysOffloadNodeStatus {
 		err = packer.CompressWorkflowIfNeeded(ctx, wf)
 		if err == nil {

@@ -600,11 +600,6 @@ var SpanStartupController = Span{
 
 // StartStartupController starts a startup_controller span
 func (t *Tracing) StartStartupController(ctx context.Context) (context.Context, trace.Span) {
-	parent := trace.SpanFromContext(ctx)
-	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
-		parentName := roParent.Name()
-		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartStartupController", "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
-	}
 	return t.tracer.Start(ctx, "startupController", trace.WithSpanKind(trace.SpanKindInternal))
 }
 
@@ -666,11 +661,6 @@ var SpanWaitClientRateLimiter = Span{
 
 // StartWaitClientRateLimiter starts a wait_client_rate_limiter span
 func (t *Tracing) StartWaitClientRateLimiter(ctx context.Context) (context.Context, trace.Span) {
-	parent := trace.SpanFromContext(ctx)
-	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
-		parentName := roParent.Name()
-		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartWaitClientRateLimiter", "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
-	}
 	return t.tracer.Start(ctx, "waitClientRateLimiter", trace.WithSpanKind(trace.SpanKindInternal))
 }
 
@@ -705,11 +695,6 @@ var SpanWorkflow = Span{
 
 // StartWorkflow starts a workflow span
 func (t *Tracing) StartWorkflow(ctx context.Context, traceID trace.TraceID, spanID trace.SpanID, workflowName string, workflowNamespace string) (context.Context, trace.Span) {
-	parent := trace.SpanFromContext(ctx)
-	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
-		parentName := roParent.Name()
-		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartWorkflow", "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
-	}
 	ctx = WithTraceID(ctx, traceID)
 	ctx = WithSpanID(ctx, spanID)
 	attribs := []attribute.KeyValue{

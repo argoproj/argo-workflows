@@ -552,7 +552,7 @@ jobs:
         run: git diff --exit-code
       # lint GH Actions
       - name: Ensure GH Actions are pinned to SHAs
-        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@60e3a74c7b74a319e8e53e46bc455205f7173e1a # v5.0.8
+        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@62574f011e0d1967d555a862bd28a7abba8684fe # v5.0.9
 
   ui:
     name: UI

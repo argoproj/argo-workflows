@@ -1,9 +1,9 @@
-#syntax=docker/dockerfile:1.26
+#syntax=docker/dockerfile:1.27
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.26.5-alpine3.23 AS builder
+FROM golang:1.27.1-alpine3.23 AS builder
 
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \

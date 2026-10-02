@@ -155,17 +155,15 @@ type startFuncData struct {
 
 var startFuncTmpl = template.Must(template.New("startFunc").Parse(`// {{.MethodName}} starts a {{.DisplayName}} span
 func (t *Tracing) {{.MethodName}}({{.Params}}) (context.Context, trace.Span) {
+{{if .RuntimeParents -}}
 parent := trace.SpanFromContext(ctx)
 if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 parentName := roParent.Name()
-{{if .RuntimeParents -}}
 if {{.ParentCondition}} {
 logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": {{printf "%q" .MethodName}}, "expectedParents": {{printf "%q" .JoinedParents}}, "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 }
-{{- else -}}
-logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": {{printf "%q" .MethodName}}, "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
-{{- end}}
 }
+{{end -}}
 {{if .DeterministicRoot}}ctx = WithTraceID(ctx, traceID)
 {{end -}}
 {{if .Deterministic}}ctx = WithSpanID(ctx, spanID)
