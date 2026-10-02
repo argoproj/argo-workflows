@@ -4,7 +4,7 @@ import * as React from 'react';
 import './checkbox-filter.scss';
 
 interface Props {
-    items: {name: string; count: number}[];
+    items: {name: string; count: number; icon?: string}[];
     type: string;
     selected: string[];
     onChange: (selected: string[]) => void;
@@ -37,6 +37,7 @@ export function CheckboxFilter(props: Props) {
                                 />{' '}
                                 <label title={item.name} htmlFor={`filter-${props.type}-${item.name}`}>
                                     {item.name}
+                                    {item.icon && <i className={`fa ${item.icon} checkbox-filter__icon`} />}
                                 </label>
                             </div>
                         </div>
