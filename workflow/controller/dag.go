@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -74,6 +75,49 @@ type dagContext struct {
 
 	// used for logging in the dag
 	log logging.Logger
+}
+
+// maxDependsChunkOperands is the number of depends operands evaluated per chunk, and the
+// dependency count above which chunked evaluation is used. expr's AST node budget keeps
+// the value low — re-measure before raising it.
+const maxDependsChunkOperands = 500
+
+var (
+	// dependsResult is a single self-contained task result reference, e.g. `A.Succeeded`.
+	// The caller dash-replaces all task names, so identifiers are [a-zA-Z0-9_].
+	dependsResult = `[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+`
+
+	// dependsExpandedOperand is what expandDependency emits for one Dependencies entry:
+	// `(A.Succeeded || A.Skipped || A.Daemoned)`, plus `|| A.Errored` and `|| A.Failed`
+	// when that task sets continueOn.error / continueOn.failed — so 3 to 5 results.
+	dependsExpandedOperand = `\(` + dependsResult + `(?: \|\| ` + dependsResult + `){2,4}\)`
+
+	// dependsOperand is a single self-contained operand: either `name.Result` or the
+	// expanded form. Nothing else is valid, which is what makes splitting the resolved
+	// logic on " && " provably safe: the grammar holds no paren or operator that
+	// splitting could break.
+	dependsOperand = `(?:` + dependsResult + `|` + dependsExpandedOperand + `)`
+
+	// dependsPureConjunction proves the whole resolved logic is `operand && operand && ...`
+	// and nothing else. Anything that fails (top-level ||, !, nested &&, function calls,
+	// literals) is evaluated as one expression by the single-eval path below.
+	dependsPureConjunction = regexp.MustCompile(`^` + dependsOperand + `(?: && ` + dependsOperand + `)+$`)
+
+	// dependsScopeKey captures the "X" in "X.Succeeded"; group 1 is the evalScope key.
+	dependsScopeKey = regexp.MustCompile(`([a-zA-Z0-9_]+)\.`)
+)
+
+// maxErrorExpressionLen bounds the resolved depends logic echoed into error messages: a
+// failed evaluation would otherwise stamp the whole expression into the message of every
+// affected node.
+const maxErrorExpressionLen = 256
+
+func truncateForError(logic string) string {
+	if len(logic) <= maxErrorExpressionLen {
+		return logic
+	}
+	nOperators := strings.Count(logic, " && ") + strings.Count(logic, " || ")
+	return fmt.Sprintf("%.*s ... [%d operators total, truncated]", maxErrorExpressionLen, logic, nOperators)
 }
 
 func (d *dagContext) GetTaskDependencies(ctx context.Context, taskName string) []string {
@@ -1004,9 +1048,11 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 		return true, true, nil
 	}
 
+	deps := d.GetTaskDependencies(ctx, taskName)
+
 	evalScope := make(map[string]TaskResults)
 
-	for _, taskName := range d.GetTaskDependencies(ctx, taskName) {
+	for _, taskName := range deps {
 		// If the task is still running, we should not proceed.
 		depNode := d.getTaskNode(taskName)
 		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
@@ -1049,9 +1095,59 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	}
 
 	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(ctx, taskName), "-", "_")
+
+	// A large logical expression (many operands joined by "&&") that exceeds expr's AST node
+	// budget (github.com/expr-lang/expr) fails to evaluate. Above maxDependsChunkOperands a
+	// pure conjunction is split into subexpressions that are evaluated individually;
+	// everything else is evaluated as one expression.
+	if len(deps) > maxDependsChunkOperands && dependsPureConjunction.MatchString(evalLogic) {
+		operands := strings.Split(evalLogic, " && ")
+		for start := 0; start < len(operands); start += maxDependsChunkOperands {
+			end := start + maxDependsChunkOperands
+			if end > len(operands) {
+				end = len(operands)
+			}
+
+			// Collect this chunk's scope keys (de-duplicated, first-seen order); operands are
+			// self-contained so only their own keys are needed — e.g. the operand
+			// "(t1.Succeeded || t1.Skipped || t1.Daemoned)" contributes only the key "t1".
+			var groupKeys []string
+			seen := make(map[string]struct{})
+			for i := start; i < end; i++ {
+				for _, m := range dependsScopeKey.FindAllStringSubmatch(operands[i], -1) {
+					k := m[1]
+					if _, ok := seen[k]; ok {
+						continue
+					}
+					seen[k] = struct{}{}
+					groupKeys = append(groupKeys, k)
+				}
+			}
+			chunkScope := make(map[string]TaskResults, len(groupKeys))
+			for _, k := range groupKeys {
+				results, present := evalScope[k]
+				if !present {
+					return false, false, fmt.Errorf("unable to evaluate expression '%s': scope key '%s' not found", truncateForError(evalLogic), k)
+				}
+				chunkScope[k] = results
+			}
+
+			chunkExpr := strings.Join(operands[start:end], " && ")
+			execute, err := argoexpr.EvalBool(chunkExpr, chunkScope)
+			if err != nil {
+				return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", truncateForError(evalLogic), err)
+			}
+			// A && B is false whenever A is false, so the first false chunk decides.
+			// proceed stays true: every dependency was verified fulfilled above.
+			if !execute {
+				return false, true, nil
+			}
+		}
+		return true, true, nil
+	}
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
-		return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", evalLogic, err)
+		return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", truncateForError(evalLogic), err)
 	}
 	return execute, true, nil
 }
