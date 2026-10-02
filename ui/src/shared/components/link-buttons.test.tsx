@@ -1,7 +1,7 @@
 import {render, screen} from '@testing-library/react';
 import React from 'react';
 
-import {LinkButtons} from './links';
+import {LinkButtons, ToolbarLinks} from './links';
 
 describe('LinkButtons', () => {
     it('renders links as anchors, so they can be opened in a new tab from the context menu', () => {
@@ -19,5 +19,17 @@ describe('LinkButtons', () => {
         const link = screen.getByRole('link', {name: 'Logs'});
         expect(link).toHaveAttribute('href', 'https://logging/argo/my-wf');
         expect(link).toHaveAttribute('target', '_blank');
+    });
+});
+
+describe('ToolbarLinks', () => {
+    it('renders nothing without links', () => {
+        const {container} = render(<ToolbarLinks links={[]} />);
+        expect(container).toBeEmptyDOMElement();
+    });
+
+    it('renders links as anchors', () => {
+        render(<ToolbarLinks links={[{name: 'Logs', scope: 'workflow-list', url: 'https://logging', target: ''}]} />);
+        expect(screen.getByRole('link', {name: 'Logs'})).toHaveAttribute('href', 'https://logging');
     });
 });

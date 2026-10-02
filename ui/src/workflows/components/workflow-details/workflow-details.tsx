@@ -9,7 +9,7 @@ import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {LinkButtons, openLinkWithKey, processURL} from '../../../shared/components/links';
+import {openLinkWithKey, processURL, ToolbarLinks} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
@@ -490,8 +490,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 },
                 tools: (
                     <>
-                        {/* the action menu can only render buttons, so links are rendered as anchors here instead */}
-                        {workflow && links && <LinkButtons links={links.filter(link => link.scope === 'workflow')} object={linkObject()} />}
+                        {workflow && links && <ToolbarLinks links={links.filter(link => link.scope === 'workflow')} object={linkObject()} />}
                         <div className='workflow-details__topbar-buttons'>
                             <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
                                 <i className='fa fa-columns' />
