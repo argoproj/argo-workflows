@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-inline-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            inline:
+              inputs:
+                parameters:
+                  - name: message
+                    value: foo
+              container:
+                image: docker/whalesay:latest
+                command:
+                  - cowsay
+                args:
+                  - '{{inputs.parameters.message}}'

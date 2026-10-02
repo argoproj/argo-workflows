@@ -12,29 +12,7 @@ import (
 )
 
 func TestInlineDAG(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: inline-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: a
-            inline:
-              container:
-                image: argoproj/argosay:v2
-                args:
-                  - echo
-                  - "{{inputs.parameters.foo}}"
-              inputs:
-                parameters:
-                  - name: foo
-                    value: bar
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/inline/dag.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, wfc := newController(ctx, wf)
 	defer cancel()
@@ -44,29 +22,7 @@ spec:
 }
 
 func TestInlineSteps(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-inline-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: a
-            inline:
-              inputs:
-                parameters:
-                  - name: message
-                    value: foo
-              container:
-                image: docker/whalesay:latest
-                command:
-                  - cowsay
-                args:
-                  - '{{inputs.parameters.message}}'
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/inline/steps.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, wfc := newController(ctx, wf)
 	defer cancel()
@@ -79,90 +35,9 @@ spec:
 	assert.Equal(t, "foo", node.Inputs.Parameters[0].Value.String())
 }
 
-var workflowCallTemplateWithInline = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-call-inline-iterated
-  namespace: argo
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: process
-            templateRef:
-              name: test-inline-iterated
-              template: main`
-
-var workflowTemplateWithInlineSteps = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-inline-iterated
-  namespace: argo
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: iterated
-            template: steps-inline
-            arguments:
-              parameters:
-                - name: arg
-                  value: "{{ item }}"
-            withItems:
-              - foo
-              - bar
-
-    - name: steps-inline
-      inputs:
-        parameters:
-          - name: arg
-      steps:
-        - - name: inline-a
-            arguments:
-              parameters:
-                - name: arg
-                  value: "{{ inputs.parameters.arg }}"
-            inline:
-              inputs:
-                parameters:
-                  - name: arg
-              container:
-                image: docker/whalesay
-                command: [echo]
-                args:
-                  - "{{ inputs.parameters.arg }} a"
-              outputs:
-                parameters:
-                  - name: arg-out
-                    value: "{{ inputs.parameters.arg }}"
-          - name: inline-b
-            arguments:
-              parameters:
-                - name: arg
-                  value: "{{ inputs.parameters.arg }}"
-            inline:
-              inputs:
-                parameters:
-                  - name: arg
-              container:
-                image: docker/whalesay
-                command: [echo]
-                args:
-                  - "{{ inputs.parameters.arg }} b"
-              outputs:
-                parameters:
-                  - name: arg-out
-                    value: "{{ inputs.parameters.arg }}"
-`
-
 func TestCallTemplateWithInlineSteps(t *testing.T) {
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowTemplateWithInlineSteps)
-	wf := wfv1.MustUnmarshalWorkflow(workflowCallTemplateWithInline)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/inline/workflow-template-with-inline-steps.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/inline/workflow-template-ref.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wftmpl)
 	defer cancel()
@@ -194,77 +69,9 @@ func TestCallTemplateWithInlineSteps(t *testing.T) {
 	}
 }
 
-var workflowTemplateWithInlineDAG = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-inline-iterated
-  namespace: argo
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: iterated
-            template: dag-inline
-            arguments:
-              parameters:
-                - name: arg
-                  value: "{{ item }}"
-            withItems:
-              - foo
-              - bar
-
-    - name: dag-inline
-      inputs:
-        parameters:
-          - name: arg
-      dag:
-        tasks:
-          - name: inline-a
-            arguments:
-              parameters:
-              - name: arg
-                value: '{{ inputs.parameters.arg }}'
-            inline:
-              container:
-                args:
-                - '{{ inputs.parameters.arg }} a'
-                command:
-                - echo
-                image: docker/whalesay
-              inputs:
-                parameters:
-                - name: arg
-              outputs:
-                parameters:
-                - name: arg-out
-                  value: '{{ inputs.parameters.arg }}'
-
-          - name: inline-b
-            arguments:
-              parameters:
-              - name: arg
-                value: '{{ inputs.parameters.arg }}'
-            inline:
-              container:
-                args:
-                - '{{ inputs.parameters.arg }} b'
-                command:
-                - echo
-                image: docker/whalesay
-              inputs:
-                parameters:
-                - name: arg
-              outputs:
-                parameters:
-                - name: arg-out
-                  value: '{{ inputs.parameters.arg }}'
-`
-
 func TestCallTemplateWithInlineDAG(t *testing.T) {
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(workflowTemplateWithInlineDAG)
-	wf := wfv1.MustUnmarshalWorkflow(workflowCallTemplateWithInline)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/inline/workflow-template-with-inline-dag.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/inline/workflow-template-ref.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wftmpl)
 	defer cancel()

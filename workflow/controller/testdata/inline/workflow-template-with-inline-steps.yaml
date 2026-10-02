@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-inline-iterated
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: iterated
+            template: steps-inline
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{ item }}"
+            withItems:
+              - foo
+              - bar
+
+    - name: steps-inline
+      inputs:
+        parameters:
+          - name: arg
+      steps:
+        - - name: inline-a
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{ inputs.parameters.arg }}"
+            inline:
+              inputs:
+                parameters:
+                  - name: arg
+              container:
+                image: docker/whalesay
+                command: [echo]
+                args:
+                  - "{{ inputs.parameters.arg }} a"
+              outputs:
+                parameters:
+                  - name: arg-out
+                    value: "{{ inputs.parameters.arg }}"
+          - name: inline-b
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{ inputs.parameters.arg }}"
+            inline:
+              inputs:
+                parameters:
+                  - name: arg
+              container:
+                image: docker/whalesay
+                command: [echo]
+                args:
+                  - "{{ inputs.parameters.arg }} b"
+              outputs:
+                parameters:
+                  - name: arg-out
+                    value: "{{ inputs.parameters.arg }}"

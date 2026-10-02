@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-call-inline-iterated
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: process
+            templateRef:
+              name: test-inline-iterated
+              template: main
