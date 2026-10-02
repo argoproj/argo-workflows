@@ -9,7 +9,7 @@ import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {openLinkWithKey, processURL} from '../../../shared/components/links';
+import {LinkButtons, openLinkWithKey, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
@@ -247,18 +247,6 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             title: 'Share'
         });
 
-        if (links) {
-            links
-                .filter(link => link.scope === 'workflow')
-                .forEach(link => {
-                    items.push({
-                        title: link.name,
-                        iconClassName: 'fa fa-external-link-alt',
-                        action: () => openLink(link)
-                    });
-                });
-        }
-
         // we only want one link, and we have a preference
         for (const k of [
             'workflows.argoproj.io/workflow-template',
@@ -423,8 +411,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         })();
     }, [namespace, name, uid]);
 
-    function openLink(link: Link) {
-        const object = {
+    function linkObject() {
+        return {
             metadata: {
                 namespace: workflow.metadata.namespace,
                 name: workflow.metadata.name
@@ -435,7 +423,10 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        openLinkWithKey(processURL(link.url, object), link.target);
+    }
+
+    function openLink(link: Link) {
+        openLinkWithKey(processURL(link.url, linkObject()), link.target);
     }
 
     function setParameter(key: string, value: string) {
@@ -498,21 +489,25 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                     items: getItems()
                 },
                 tools: (
-                    <div className='workflow-details__topbar-buttons'>
-                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
-                            <i className='fa fa-columns' />
-                            {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
-                        </a>
-                        <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
-                            <i className='argo-icon-notification' />
-                        </a>
-                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
-                            <i className='argo-icon-timeline' />
-                        </a>
-                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
-                            <i className='argo-icon-workflow' />
-                        </a>
-                    </div>
+                    <>
+                        {/* the action menu can only render buttons, so links are rendered as anchors here instead */}
+                        {workflow && links && <LinkButtons links={links.filter(link => link.scope === 'workflow')} object={linkObject()} />}
+                        <div className='workflow-details__topbar-buttons'>
+                            <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
+                                <i className='fa fa-columns' />
+                                {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
+                            </a>
+                            <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
+                                <i className='argo-icon-notification' />
+                            </a>
+                            <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
+                                <i className='argo-icon-timeline' />
+                            </a>
+                            <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
+                                <i className='argo-icon-workflow' />
+                            </a>
+                        </div>
+                    </>
                 )
             }}>
             <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': isSidePanelExpanded})}>

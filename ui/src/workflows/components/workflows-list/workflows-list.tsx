@@ -8,7 +8,7 @@ import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
-import {openLinkWithKey} from '../../../shared/components/links';
+import {LinkButtons} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {TimestampSwitch} from '../../../shared/components/timestamp';
@@ -228,14 +228,11 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                             title: 'Submit New Workflow',
                             iconClassName: 'fa fa-plus',
                             action: () => setSidePanel('submit-new-workflow')
-                        },
-                        ...links.map(link => ({
-                            title: link.name,
-                            iconClassName: 'fa fa-external-link',
-                            action: () => openLinkWithKey(link.url, link.target)
-                        }))
+                        }
                     ]
-                }
+                },
+                // the action menu can only render buttons, so links are rendered as anchors in the tools instead
+                tools: <LinkButtons links={links} />
             }}>
             <WorkflowsToolbar
                 selectedWorkflows={selectedWorkflows}
