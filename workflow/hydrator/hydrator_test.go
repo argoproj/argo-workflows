@@ -78,7 +78,8 @@ func TestHydrator(t *testing.T) {
 				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}},
 			}
 			err := hydrator.Dehydrate(ctx, wf)
-			require.Error(t, err)
+			require.ErrorIs(t, err, sqldb.ErrOffloadNotSupported)
+			assert.True(t, packer.IsTooLargeError(err))
 		})
 	})
 	t.Run("Hydrate", func(t *testing.T) {

@@ -8209,6 +8209,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 	})
 	t.Run("PendingTimeout", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+		wf.UID = "pending-timeout-workflow"
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -8216,7 +8217,10 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-		makePodsPhase(ctx, woc, apiv1.PodPending)
+		makePodsPhase(ctx, woc, apiv1.PodPending, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+			pod.UID = "pending-timeout-pod"
+			pod.ResourceVersion = "1"
+		})
 		time.Sleep(6 * time.Second)
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
@@ -8225,7 +8229,13 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 
 		// the timed-out pending pod is queued for deletion
-		assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+		require.Eventually(t, func() bool {
+			if controller.PodController.TestingQueueLen() > 0 {
+				controller.PodController.TestingProcessNextItem(ctx)
+			}
+			pods, err := listPods(ctx, woc)
+			return err == nil && len(pods.Items) == 0
+		}, time.Second, time.Millisecond, "drain recovery and timeout actions until the Pending Pod is deleted")
 		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.Empty(t, pods.Items)

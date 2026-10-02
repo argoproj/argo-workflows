@@ -4518,6 +4518,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"capturedPodUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CapturedPodUID identifies the Pod whose observed state produced this node status, or whose freshly verified result exactly matches a supported completed legacy node. It is persisted with the result and used to protect Pod cleanup. Pending automatic restarts use RestartingPodUID instead. Empty values do not prove status capture.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},

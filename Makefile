@@ -76,6 +76,7 @@ E2E_SUITE_TIMEOUT     ?= 30m
 TEST_RETRIES          ?= 2
 # extra flags passed to `go test` for the unit `test` target (e.g. coverage flags in CI)
 GOTEST_FLAGS          ?=
+PYTHON                ?= python3
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -128,7 +129,12 @@ override BASE_HREF := $(BASE_HREF:%/=%)/
 endif
 SSO_REDIRECT_URL   := $(SSO_REDIRECT_URL)://localhost:8080$(BASE_HREF)oauth2/callback
 
+# The offline helper tests do not need to inspect a local kubeconfig.
+ifeq ($(MAKECMDGOALS),test-status-capture)
+KUBECTX               := none
+else
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
+endif
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
 
 # -- controller + server + executor env vars
@@ -675,6 +681,10 @@ lint-ui: ui/dist/app/index.html
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
 	if [ -e ui/node_modules ]; then yarn --cwd ui deduplicate ; fi
+
+.PHONY: test-status-capture
+test-status-capture: ## Test the offline status-capture operator helper
+	$(PYTHON) -B -m unittest discover -s hack/tests -p 'test_status_capture.py' -v
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test

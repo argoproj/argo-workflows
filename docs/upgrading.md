@@ -7,6 +7,23 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v4.2
 
+### Pod status capture protects persisted results and supports limited legacy capture
+
+When `ARGO_POD_STATUS_CAPTURE_FINALIZER=true`, Pod cleanup now requires the persisted node result to identify the exact Pod using `capturedPodUID`.
+Apply the new full CRDs before starting the new controller and verify actual field retention.
+Align controller, Argo Server and CLI versions according to the [supported version policy](releases.md#supported-version-skew).
+To preserve outstanding capture obligations through the transition, pause submissions and mutating Workflow operations, stop all old controller replicas for the affected scope, apply the CRDs and start only new replicas.
+An old standby does not perform cleanup, but the new guarantee is lost if an old binary becomes active.
+This controlled procedure concerns outstanding protection; it is not a blanket requirement to stop installations with the flag disabled.
+Already-running workloads continue while controllers are stopped.
+
+The new controller can record a fresh UID association for a limited completed legacy success without changing its outcome.
+Other old results, including an ordinary successful two-step Workflow and memoization errors, remain held when their association cannot be proved.
+They have an evidence-preserving operator procedure that can retain Workflow history.
+For rollback, drain active executions and capture obligations with the new controller first; unresolved obligations require retaining the new controller or keeping that scope stopped.
+Do not downgrade the CRD or assume an older typed writer preserves the new field.
+See [Pod Status Capture and Retained Pods](status-capture.md) for the supported transition, exact legacy scope, storage inspection and explicit operator disposition.
+
 ### ContainerSet siblings are no longer terminated when one container fails
 
 Previously, as soon as any container in a `containerSet` exited with a non-zero exit code, the controller terminated the whole pod, killing any sibling containers that were still running.

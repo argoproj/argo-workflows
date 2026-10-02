@@ -4757,6 +4757,13 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.CapturedPodUID)
+	copy(dAtA[i:], m.CapturedPodUID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CapturedPodUID)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xfa
 	i -= len(m.RestartingPodUID)
 	copy(dAtA[i:], m.RestartingPodUID)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RestartingPodUID)))
@@ -11444,6 +11451,8 @@ func (m *NodeStatus) Size() (n int) {
 	n += 2 + sovGenerated(uint64(m.FailedPodRestarts))
 	l = len(m.RestartingPodUID)
 	n += 2 + l + sovGenerated(uint64(l))
+	l = len(m.CapturedPodUID)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14381,6 +14390,7 @@ func (this *NodeStatus) String() string {
 		`TaskResultSynced:` + valueToStringGenerated(this.TaskResultSynced) + `,`,
 		`FailedPodRestarts:` + fmt.Sprintf("%v", this.FailedPodRestarts) + `,`,
 		`RestartingPodUID:` + fmt.Sprintf("%v", this.RestartingPodUID) + `,`,
+		`CapturedPodUID:` + fmt.Sprintf("%v", this.CapturedPodUID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -30150,6 +30160,38 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.RestartingPodUID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 31:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CapturedPodUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CapturedPodUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

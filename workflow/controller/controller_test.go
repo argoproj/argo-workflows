@@ -183,7 +183,8 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
-		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
+		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel, wfc.lookupWorkflowForPodCleanup)
+		wfc.PodController.SetWorkflowHydrator(wfc.hydrateWorkflowForPodCleanup)
 
 		wfc.typedConfigMapInformer = wfc.newTypedConfigMapInformer(ctx)
 		wfc.createSynchronizationManager(ctx)
@@ -1507,6 +1508,7 @@ spec:
       container:
         image: my-image
   `)
+	wf.UID = "cleanup-test-workflow"
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -1516,13 +1518,26 @@ spec:
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		// The fake API does not populate immutable identity or resourceVersion.
+		pod.UID = "cleanup-retry-pod"
+		pod.ResourceVersion = "1"
+	})
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
 
 	woc.operate(ctx)
-	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-	podCleanupKey := "test/my-wf/labelPodCompleted"
-	assert.Equal(t, 0, controller.PodController.TestingQueueNumRequeues(podCleanupKey))
+	podCleanupKey := fmt.Sprintf("%s/%s/labelPodCompleted/%s", pod.Namespace, pod.Name, pod.UID)
+	require.Positive(t, controller.PodController.TestingQueueNumRequeues(podCleanupKey), "the assertion must address an actually enqueued UID key")
+	require.Eventually(t, func() bool {
+		if controller.PodController.TestingQueueLen() > 0 {
+			controller.PodController.TestingProcessNextItem(ctx)
+		}
+		return controller.PodController.TestingQueueNumRequeues(podCleanupKey) == 0
+	}, time.Second, time.Millisecond, "successful cleanup must Forget the actual UID-bound action")
 }
 
 func TestPodCleanupDeletePendingPodWhenTerminate(t *testing.T) {
@@ -1537,6 +1552,7 @@ spec:
       container:
         image: my-image
   `)
+	wf.UID = "cleanup-test-workflow"
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -1546,12 +1562,19 @@ spec:
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodPending)
+	makePodsPhase(ctx, woc, apiv1.PodPending, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		pod.UID = "pending-cleanup-pod"
+		pod.ResourceVersion = "1"
+	})
 	woc.execWf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	woc.operate(ctx)
-	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
-	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
-	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+	require.Eventually(t, func() bool {
+		if controller.PodController.TestingQueueLen() > 0 {
+			controller.PodController.TestingProcessNextItem(ctx)
+		}
+		pods, err := listPods(ctx, woc)
+		return err == nil && len(pods.Items) == 0
+	}, time.Second, time.Millisecond, "drain recovery and termination until the Pending Pod is deleted")
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
@@ -1579,6 +1602,7 @@ func TestPendingPodWhenTerminate(t *testing.T) {
 
 func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(fromExrpessingWf)
+	wf.UID = "cleanup-test-workflow"
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -1588,15 +1612,33 @@ func TestWorkflowReferItselfFromExpression(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		pod.UID = "expression-cleanup-pod"
+		pod.ResourceVersion = "1"
+	})
 
 	woc.operate(ctx)
-	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+	require.Eventually(t, func() bool {
+		if controller.PodController.TestingQueueLen() > 0 {
+			controller.PodController.TestingProcessNextItem(ctx)
+		}
+		pods, err := listPods(ctx, woc)
+		if err != nil || len(pods.Items) == 0 {
+			return false
+		}
+		for _, pod := range pods.Items {
+			if pod.Labels[common.LabelKeyCompleted] != "true" {
+				return false
+			}
+		}
+		return true
+	}, time.Second, time.Millisecond, "drain recovery and completion actions until all Pods are labeled")
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
 func TestWorkflowWithLongArguments(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testLongArgumentsWorkflow)
+	wf.UID = "cleanup-test-workflow"
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -1625,10 +1667,19 @@ func TestWorkflowWithLongArguments(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
-	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		pod.UID = "long-arguments-cleanup-pod"
+		pod.ResourceVersion = "1"
+	})
 
 	woc.operate(ctx)
-	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+	require.Eventually(t, func() bool {
+		if controller.PodController.TestingQueueLen() > 0 {
+			controller.PodController.TestingProcessNextItem(ctx)
+		}
+		current, err := podcs.Get(ctx, pod.Name, metav1.GetOptions{})
+		return err == nil && current.Labels[common.LabelKeyCompleted] == "true"
+	}, time.Second, time.Millisecond, "drain recovery and completion actions until the Pod is labeled")
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
