@@ -30,15 +30,17 @@ import (
 const disableValueListRetrievalKeyPattern = "DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN"
 
 type archivedWorkflowServer struct {
-	wfArchive             sqldb.WorkflowArchive
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	hydrator              hydrator.Interface
-	wfDefaults            *wfv1.Workflow
+	wfArchive              sqldb.WorkflowArchive
+	offloadNodeStatusRepo  sqldb.OffloadNodeStatusRepo
+	hydrator               hydrator.Interface
+	wfDefaults             *wfv1.Workflow
+	templateRepo           sqldb.TemplateRepo
+	templateOffloadMinSize int
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfDefaults *wfv1.Workflow) workflowarchivepkg.ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfDefaults}
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfDefaults *wfv1.Workflow, templateRepo sqldb.TemplateRepo, templateOffloadMinSize int) workflowarchivepkg.ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfDefaults, templateRepo, templateOffloadMinSize}
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
@@ -132,7 +134,71 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 		// no need to call ToStatusError since it is already a status
 		return nil, status.Error(codes.NotFound, "not found")
 	}
+	// Hydrate node status if offloaded
+	if err := w.hydrator.Hydrate(ctx, wf); err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	// Hydrate templates if they were offloaded
+	if err := w.hydrateTemplates(ctx, wf); err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
 	return wf, nil
+}
+
+// hydrateTemplates loads templates from database if they were offloaded
+func (w *archivedWorkflowServer) hydrateTemplates(ctx context.Context, wf *wfv1.Workflow) error {
+	// Skip if template repo not configured
+	if w.templateRepo == nil || !w.templateRepo.IsEnabled() {
+		return nil
+	}
+
+	// Skip if templates were not offloaded for this workflow. The StoredTemplateSpecs
+	// marker can be missing even when templates WERE offloaded (a lost resourceVersion
+	// race) — WFT/ClusterWFT-ref workflows have no offload rows by design, so never probe.
+	markerMissing := wf.Status.StoredTemplateSpecs == nil || wf.Status.StoredTemplateSpecs.UID == ""
+	if markerMissing && wf.Spec.WorkflowTemplateRef != nil {
+		return nil
+	}
+
+	// Skip if already hydrated (templates in spec)
+	if len(wf.Spec.Templates) > 0 {
+		return nil
+	}
+
+	// Only probe the DB when the archived record looks offloaded (empty spec templates).
+	// Archived records carry templates at archive time now, so this is a fallback.
+	if len(wf.Spec.Templates) == 0 {
+		templates, err := w.templateRepo.GetTemplates(ctx, string(wf.UID))
+		if err != nil {
+			return fmt.Errorf("failed to hydrate templates: %w", err)
+		}
+
+		if len(templates) == 0 {
+			logging.RequireLoggerFromContext(ctx).WithField("uid", wf.UID).Debug(ctx, "No offloaded templates found in database for archived workflow (may have been cleaned up)")
+			return nil
+		}
+
+		// Populate templates in spec for API response
+		wf.Spec.Templates = templates
+		// Also populate StoredTemplates for template lookup
+		if wf.Status.StoredTemplates == nil {
+			wf.Status.StoredTemplates = make(map[string]wfv1.Template)
+		}
+		for _, tmpl := range templates {
+			wf.Status.StoredTemplates[tmpl.Name] = tmpl
+		}
+
+		// Restore the marker on the hydrated record.
+		if markerMissing {
+			wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
+				UID:      string(wf.UID),
+				Version:  util.ComputeTemplateVersion(templates),
+				Hydrated: true,
+			}
+		}
+	}
+
+	return nil
 }
 
 func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.DeleteArchivedWorkflowRequest) (*workflowarchivepkg.ArchivedWorkflowDeletedResponse, error) {
@@ -160,6 +226,17 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
+	// Clean up offloaded template rows so they don't become orphaned.
+	// The workflow UID is still available from the archive record.
+	if w.templateRepo != nil && w.templateRepo.IsEnabled() {
+		if err := w.templateRepo.DeleteTemplates(ctx, string(wf.UID)); err != nil {
+			// Log but don't fail the request — the archive record is already deleted
+			// and the periodic template GC will eventually clean this up.
+			logging.RequireLoggerFromContext(ctx).WithError(err).WithField("uid", wf.UID).Warn(ctx, "Failed to delete offloaded templates for archived workflow")
+		}
+	}
+
 	return &workflowarchivepkg.ArchivedWorkflowDeletedResponse{}, nil
 }
 
@@ -234,7 +311,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 	}
 	creator.LabelCreator(ctx, newWF)
 
-	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, w.wfDefaults, &wfv1.SubmitOpts{})
+	created, err := util.SubmitWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepo, req.Namespace, newWF, w.wfDefaults, &wfv1.SubmitOpts{}, w.templateOffloadMinSize)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -285,7 +362,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 		wf.ResourceVersion = ""
 		wf.UID = ""
-		result, createErr := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		result, createErr := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepo, wf, w.templateOffloadMinSize)
 		if createErr != nil {
 			return nil, sutils.ToStatusError(createErr, codes.Internal)
 		}

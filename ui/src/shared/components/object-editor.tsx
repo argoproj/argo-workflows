@@ -74,7 +74,7 @@ export function ObjectEditor<T>({type, value, text, lang, onChange, onLangChange
                     <span style={{fontWeight: lang === 'json' ? 'bold' : 'normal'}}>JSON</span>/<span style={{fontWeight: lang === 'yaml' ? 'bold' : 'normal'}}>YAML</span>
                 </Button>
 
-                {Object.keys(value).map(x => (
+                {Object.keys(value || {}).map(x => (
                     <Button
                         key={x}
                         icon='caret-right'

@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -223,6 +224,15 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}()
 
 	woc.log.WithFields(logging.Fields{"phase": woc.wf.Status.Phase, "resourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info(ctx, "Processing workflow")
+
+	// Hydrate templates from the database before execution. A transient DB error here must
+	// NOT fault the workflow: a failed hydrate is usually a temporary outage, so requeue
+	// rather than mark the workflow terminal — the reconcile loop retries on the next sync.
+	if err := woc.hydrateTemplates(ctx); err != nil {
+		woc.log.WithError(err).Error(ctx, "Failed to hydrate templates")
+		woc.requeue()
+		return
+	}
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -806,6 +816,19 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace)
 
+	// Dehydrate templates FIRST - remove from spec before persisting to etcd
+	// This must happen before node dehydration to avoid exceeding size limits
+	var cachedTemplates []wfv1.Template
+	if woc.wf.Status.StoredTemplateSpecs != nil && woc.wf.Status.StoredTemplateSpecs.Hydrated && woc.execWf != nil {
+		// Save a copy so we can restore after persist without re-reading from DB
+		cachedTemplates = make([]wfv1.Template, len(woc.execWf.Spec.Templates))
+		copy(cachedTemplates, woc.execWf.Spec.Templates)
+		woc.execWf.Spec.Templates = nil
+		// Also clear StoredTemplates to avoid persisting large template map to etcd
+		woc.wf.Status.StoredTemplates = nil
+		woc.log.Debug(ctx, "Templates removed from execWf spec and StoredTemplates cleared before persisting")
+	}
+
 	nodes := woc.wf.Status.Nodes
 
 	// try and compress nodes if needed
@@ -854,6 +877,20 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	woc.controller.recordWorkflowWrite(woc.wf)
+
+	// Restore cached templates so the rest of this cycle (e.g. artifact GC) can
+	// read them without a DB re-read. Restored in-memory only — they are not written
+	// to etcd and are re-hydrated from the DB on the next reconcile.
+	if cachedTemplates != nil {
+		woc.execWf.Spec.Templates = cachedTemplates
+		if woc.wf.Status.StoredTemplates == nil {
+			woc.wf.Status.StoredTemplates = make(map[string]wfv1.Template)
+		}
+		for _, tmpl := range cachedTemplates {
+			woc.wf.Status.StoredTemplates[tmpl.Name] = tmpl
+		}
+	}
+
 	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
 	// with it, so copy from the original workflow.
 	woc.wf.TypeMeta = woc.orig.TypeMeta
@@ -4539,6 +4576,206 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 	return woc.execWf.Spec.RetryStrategy
 }
 
+// hydrateTemplates loads templates from database if they were offloaded
+func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
+	// Skip if already hydrated AND templates are in memory (StoredTemplates populated)
+	// If Hydrated=true but StoredTemplates is empty, we need to re-hydrate (e.g., after dehydration)
+	if woc.wf.Status.StoredTemplateSpecs != nil && woc.wf.Status.StoredTemplateSpecs.Hydrated {
+		if len(woc.wf.Status.StoredTemplates) > 0 {
+			woc.log.Debug(ctx, "Templates already hydrated and in memory")
+			return nil
+		}
+		// Expected state for hydrated workflows: persistUpdates strips StoredTemplates
+		// from etcd, so every reconcile starts with an empty in-memory map and re-hydrates.
+		woc.log.Debug(ctx, "Templates marked as hydrated but not in memory, re-hydrating from database")
+	}
+
+	// Skip if no template repo configured
+	if woc.controller.templateRepo == nil {
+		woc.log.Debug(ctx, "Template repo not configured, skipping hydration")
+		return nil
+	}
+
+	// Skip if templates were not offloaded for this workflow (small workflows)
+	// Templates are offloaded when StoredTemplateSpecs.UID is set
+	if woc.wf.Status.StoredTemplateSpecs == nil || woc.wf.Status.StoredTemplateSpecs.UID == "" { // not-woc-misuse
+		// WorkflowTemplate-referenced workflows carry no inline templates and have no
+		// offload record, so skip the DB lookup: probing here returns zero rows forever,
+		// wasting ~14 min in retry backoff and stalling the workflow.
+		if woc.wf.Spec.WorkflowTemplateRef != nil { //nolint:forbidigo // not-woc-misuse
+			woc.log.WithField("templateRef", woc.wf.Spec.WorkflowTemplateRef.Name).Debug(ctx, "Workflow references a template, skipping template hydration") //nolint:forbidigo // not-woc-misuse
+			return nil
+		}
+		// Fallback: Check if spec has no templates but workflow was submitted via API server
+		// In this case, templates might have been offloaded but status wasn't set yet
+		if len(woc.wf.Spec.Templates) == 0 && woc.controller.templateRepo != nil { //nolint:forbidigo // not-woc-misuse
+			woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Spec has no templates, checking database for offloaded templates")
+
+			templates, err := woc.hydrateTemplatesWithRetry(ctx, true)
+			if err != nil {
+				// A persistent error after all retries is a real DB connectivity issue, not
+				// "no rows found" — return it so the workflow fails clearly instead of proceeding.
+				return fmt.Errorf("failed to check for offloaded templates after retries: %w", err)
+			}
+
+			if len(templates) > 0 {
+				woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Found offloaded templates in database (status not set), hydrating...")
+				woc.applyHydratedTemplates(templates)
+				woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully via fallback")
+				return nil
+			}
+		}
+
+		woc.log.Debug(ctx, "Templates were not offloaded for this workflow, using inline templates")
+		return nil
+	}
+
+	// Fetch templates from database with retry (race condition: workflow may be processed before templates are committed)
+	woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Hydrating templates from database")
+	templates, err := woc.hydrateTemplatesWithRetry(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	if len(templates) == 0 {
+		woc.log.WithField("uid", string(woc.wf.UID)).Error(ctx, "No templates found in database after retries")
+		return fmt.Errorf("no templates found in database for uid %s", woc.wf.UID)
+	}
+
+	woc.applyHydratedTemplates(templates)
+	woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully")
+	return nil
+}
+
+// hydrateTemplatesWithRetry fetches templates from database with configurable retry logic
+// isFallback determines whether to use fallback (more retries, longer backoff) or main hydration settings
+func (woc *wfOperationCtx) hydrateTemplatesWithRetry(ctx context.Context, isFallback bool) ([]wfv1.Template, error) {
+	var templates []wfv1.Template
+	var err error
+
+	// Version-keyed cache lookup (non-fallback only: fallback probing has no marker
+	// to key on). A hit — marker.Version is a content hash of the offloaded templates
+	// — proves the DB rows are byte-identical to the cached ones, skipping the fetch.
+	if !isFallback {
+		if marker := woc.wf.Status.StoredTemplateSpecs; marker != nil && marker.Version != "" { // not-woc-misuse
+			if cached, ok := woc.controller.templateCache.get(string(woc.wf.UID), marker.Version); ok {
+				woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Template cache hit (version match), skipping database fetch")
+				return cached, nil
+			}
+		}
+	}
+
+	// Hydration retry settings; a nil Persistence gets zero-value getters (= the defaults),
+	// and fallback hydration gets more retries and longer backoff.
+	cfg := woc.controller.Config.Persistence
+	if cfg == nil {
+		cfg = &config.PersistConfig{}
+	}
+	var maxRetries int
+	var initialBackoff, maxBackoff time.Duration
+	if isFallback {
+		maxRetries = cfg.GetTemplateHydrationFallbackRetries()
+		initialBackoff = cfg.GetTemplateHydrationFallbackBackoff()
+		maxBackoff = cfg.GetTemplateHydrationFallbackBackoffMax()
+	} else {
+		maxRetries = cfg.GetTemplateHydrationRetries()
+		initialBackoff = cfg.GetTemplateHydrationBackoff()
+		maxBackoff = cfg.GetTemplateHydrationBackoffMax()
+	}
+	// Always attempt at least one fetch: retries counts re-attempts, and a zero-attempt
+	// fallback would silently treat offloaded workflows as template-less.
+	attempts := max(maxRetries, 1)
+
+	// Fallback empty-retry budget covers the submit race (stub created before DB rows
+	// commit); SaveTemplates can take 30s+ for large workflows, so 15 retries (~45
+	// min worst case) — but the first non-empty result breaks the loop immediately.
+	const fallbackMaxEmptyRetries = 15
+	fallbackEmptyRetries := 0
+
+	for i := range attempts {
+		templates, err = woc.controller.templateRepo.GetTemplates(ctx, string(woc.wf.UID))
+		if err != nil {
+			// Retry DB errors in BOTH fallback and non-fallback modes: transient DB
+			// restarts must not fault the workflow on the first error.
+			backoff := min(initialBackoff*time.Duration(1<<i), maxBackoff)
+			woc.log.WithField("attempt", i+1).WithError(err).WithField("backoff", backoff).Warn(ctx, "Failed to get templates from database, retrying...")
+			if i < attempts-1 {
+				time.Sleep(backoff)
+				continue
+			}
+			// Last attempt failed — propagate the error
+			woc.log.WithError(err).Error(ctx, "Failed to get templates from database after all retries")
+			return nil, fmt.Errorf("failed to hydrate templates after %d attempts: %w", attempts, err)
+		}
+		if len(templates) > 0 {
+			break
+		}
+		// On a clean empty result (no error, 0 rows) in fallback probing mode: the rows
+		// may not be committed yet (stub created BEFORE the DB write), so retry a bounded
+		// number of times, then zero out the budget so the loop exits promptly.
+		if isFallback {
+			if fallbackEmptyRetries < fallbackMaxEmptyRetries {
+				fallbackEmptyRetries++
+				if i < attempts-1 {
+					backoff := min(initialBackoff*time.Duration(1<<i), maxBackoff)
+					woc.log.WithFields(logging.Fields{"attempt": i + 1, "backoff": backoff}).Debug(ctx, "No templates found yet (fallback race window), retrying...")
+					time.Sleep(backoff)
+					continue
+				}
+			}
+			break
+		}
+		if i < attempts-1 {
+			// Exponential backoff: initialBackoff * 2^i, capped at maxBackoff
+			backoff := min(initialBackoff*time.Duration(1<<i), maxBackoff)
+			woc.log.WithFields(logging.Fields{"attempt": i + 1, "backoff": backoff}).Debug(ctx, "No templates found yet, retrying...")
+			time.Sleep(backoff)
+		}
+	}
+
+	return templates, nil
+}
+
+// applyHydratedTemplates applies the hydrated templates to execWf and marks workflow as hydrated
+func (woc *wfOperationCtx) applyHydratedTemplates(templates []wfv1.Template) {
+	// Initialize execWf with a copy of the workflow if not already set
+	if woc.execWf == nil {
+		woc.execWf = woc.wf.DeepCopy()
+	}
+
+	// Merge into execWf spec
+	woc.execWf.Spec.Templates = templates
+
+	// Populate StoredTemplates for template lookup (GetTemplateByName checks this)
+	if woc.wf.Status.StoredTemplates == nil {
+		woc.wf.Status.StoredTemplates = make(map[string]wfv1.Template)
+	}
+	for _, tmpl := range templates {
+		woc.wf.Status.StoredTemplates[tmpl.Name] = tmpl
+	}
+
+	// Mark as hydrated via transition-only dirtying: set woc.updated only on the
+	// nil/false->hydrated transition or a version change (re-hydration is otherwise
+	// content-identical, so flagging updated every cycle would sustain a requeue loop).
+	version := wfutil.ComputeTemplateVersion(templates)
+	prev := woc.wf.Status.StoredTemplateSpecs
+	firstHydration := prev == nil || !prev.Hydrated
+	versionChanged := prev == nil || prev.Version != version
+
+	woc.wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
+		UID:      string(woc.wf.UID),
+		Version:  version,
+		Hydrated: true,
+	}
+
+	if firstHydration || versionChanged {
+		woc.updated = true
+	}
+	// Warm the version-keyed controller cache so subsequent reconciles skip the
+	// database fetch entirely (hydrateTemplatesWithRetry consults it first).
+	woc.controller.templateCache.put(string(woc.wf.UID), version, templates)
+}
+
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
 	switch {
 	case woc.wf.Spec.WorkflowTemplateRef != nil: //nolint:forbidigo // not-woc-misuse
@@ -4573,7 +4810,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 	}
 
 	// Perform one-time workflow validation
-	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+	if woc.wf.Status.Phase == wfv1.WorkflowUnknown && woc.wf.Status.StoredTemplateSpecs == nil {
 		validateOpts := validate.Opts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -4754,9 +4991,19 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params common.Parameters) error {
 	execWfSpec := woc.execWf.Spec
 
-	// To Avoid the stale Global parameter value substitution to templates.
-	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
-	execWfSpec.Templates = nil
+	// Preserve offloaded/hydrated templates to avoid "template not found" errors.
+	// Templates that were hydrated from the database only exist in woc.execWf.Spec.Templates,
+	// and removing them makes them inaccessible during template resolution.
+	// For non-offloaded workflows, templates remain in woc.wf.Spec.Templates and can be safely removed. // not-woc-misuse
+	isHydrated := woc.wf.Status.StoredTemplateSpecs != nil && woc.wf.Status.StoredTemplateSpecs.Hydrated
+	if !isHydrated {
+		// To Avoid the stale Global parameter value substitution to templates.
+		// Updated Global parameter values will be substituted in 'executetemplate' for templates.
+		execWfSpec.Templates = nil
+		woc.log.Debug(ctx, "Removed templates from execWfSpec for non-hydrated workflow")
+	} else {
+		woc.log.WithField("templateCount", len(execWfSpec.Templates)).Debug(ctx, "Preserved templates in execWfSpec for hydrated workflow")
+	}
 
 	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {
