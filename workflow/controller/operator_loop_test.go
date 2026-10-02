@@ -89,6 +89,17 @@ func TestTemplateCache_VersionKeyedLookup(t *testing.T) {
 	_, ok = c.get("uid-x", "sha256:aaa")
 	require.False(t, ok)
 
+	// re-put of an already-cached UID (every steady-state reconcile) must not grow the FIFO order
+	c.put("uid-a", "sha256:aaa", templates)
+	require.Len(t, c.order, 1)
+	updated := []wfv1.Template{{Name: "t2"}} // same marshal size: must not trigger eviction
+	c.put("uid-a", "sha256:aaa", updated)
+	got, ok = c.get("uid-a", "sha256:aaa")
+	require.True(t, ok)
+	require.Len(t, got, 1)
+	require.Equal(t, "t2", got[0].Name)
+	require.Len(t, c.order, 1)
+
 	// eviction: oversize a single entry beyond the budget -> previous entries evicted
 	big := make([]wfv1.Template, 64)
 	for i := range big {

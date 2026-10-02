@@ -63,11 +63,13 @@ func (c *templateCache) put(uid, version string, templates []wfv1.Template) {
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// First insert only: re-putting a cached UID must not grow the FIFO order (steady-state leak).
 	if old, ok := c.byUID[uid]; ok {
 		c.bytes -= old.storedSize
+	} else {
+		c.order = append(c.order, uid)
 	}
 	c.byUID[uid] = entry
-	c.order = append(c.order, uid)
 	c.bytes += entry.storedSize
 	for c.bytes > c.maxBytes && len(c.order) > 0 {
 		oldest := c.order[0]
