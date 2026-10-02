@@ -28,18 +28,18 @@ func (c *Controller) GetPodsByIndex(index, key string) ([]any, error) {
 	return c.podInformer.GetIndexer().ByIndex(index, key)
 }
 
-func (c *Controller) TerminateContainers(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, terminateContainers)
+func (c *Controller) TerminateContainers(ctx context.Context, namespace, name, uid string) {
+	c.queuePodForCleanup(ctx, namespace, name, terminateContainers, uid)
 }
 
-func (c *Controller) DeletePod(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, deletePod)
+func (c *Controller) DeletePod(ctx context.Context, namespace, name, uid string) {
+	c.queuePodForCleanup(ctx, namespace, name, deletePod, uid)
 }
 
 func (c *Controller) DeletePodByUID(ctx context.Context, namespace, name, uid string) {
 	c.queuePodForCleanupByUID(ctx, namespace, name, uid)
 }
 
-func (c *Controller) RemoveFinalizer(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, removeFinalizer)
+func (c *Controller) RemoveFinalizer(ctx context.Context, namespace, name, uid string) {
+	c.queuePodForCleanup(ctx, namespace, name, removeFinalizer, uid)
 }

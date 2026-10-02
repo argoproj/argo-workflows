@@ -21,14 +21,20 @@ func (c *Controller) EnactAnyPodCleanup(
 	workflowPhase wfv1.WorkflowPhase,
 	delay time.Duration,
 ) {
+	if statusCaptureEnabled() && !terminalPod(pod) {
+		// A stopped daemon may still be Running. Keep it in the recovery watch
+		// until termination completes, rather than labeling it completed first.
+		c.ReconcilePodCleanup(ctx, pod)
+		return
+	}
 	action := determinePodCleanupAction(selector, pod.Labels, strategy, workflowPhase, pod.Status.Phase, pod.Finalizers)
 	switch action {
 	case noAction:
 		// ignore
 	case deletePod:
-		c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
+		c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay, string(pod.UID))
 	default:
-		c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action)
+		c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action, string(pod.UID))
 	}
 }
 

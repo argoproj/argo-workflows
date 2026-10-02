@@ -82,6 +82,7 @@ func TestPodCleanupPatch(t *testing.T) {
 
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			UID:             "pod-uid",
 			Labels:          map[string]string{common.LabelKeyCompleted: "false"},
 			Finalizers:      []string{common.FinalizerPodStatus},
 			ResourceVersion: "123456",
@@ -93,13 +94,13 @@ func TestPodCleanupPatch(t *testing.T) {
 	// pod finalizer enabled, patch label
 	patch, err := c.getPodCleanupPatch(pod, true)
 	require.NoError(t, err)
-	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
+	expected := `{"metadata":{"uid":"pod-uid","resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
 	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer enabled, do not patch label
 	patch, err = c.getPodCleanupPatch(pod, false)
 	require.NoError(t, err)
-	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
+	expected = `{"metadata":{"uid":"pod-uid","resourceVersion":"123456","finalizers":[]}}`
 	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer enabled, do not patch label, nil/empty finalizers
@@ -113,7 +114,7 @@ func TestPodCleanupPatch(t *testing.T) {
 	// pod finalizer disabled, patch both
 	patch, err = c.getPodCleanupPatch(pod, true)
 	require.NoError(t, err)
-	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
+	expected = `{"metadata":{"uid":"pod-uid","resourceVersion":"123456","labels":{"workflows.argoproj.io/completed":"true"}}}`
 	assert.JSONEq(t, expected, string(patch))
 
 	// pod finalizer disabled, do not patch label

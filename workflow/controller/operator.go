@@ -124,6 +124,11 @@ type wfOperationCtx struct {
 
 	taskSet map[string]wfv1.Template
 
+	// pendingPodRetirements records observed Pod incarnations awaiting a persisted
+	// Pending/RestartingPodUID disposition. It is only a delivery hint; cleanup
+	// independently verifies that disposition from the Workflow API.
+	pendingPodRetirements map[string]*apiv1.Pod
+
 	// currentStackDepth tracks the depth of the "stack", increased with every nested call to executeTemplate and decreased
 	// when such calls return. This is used to prevent infinite recursion
 	currentStackDepth int
@@ -788,6 +793,7 @@ func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
+		woc.queuePendingPodRetirements(ctx)
 		return
 	}
 
@@ -812,6 +818,14 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	err := woc.controller.hydrator.Dehydrate(ctx, woc.wf)
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Failed to dehydrate")
+		if woc.wf.Status.Fulfilled() {
+			// The completed outcome is not durable yet. Do not rewrite its
+			// terminal phase or publish cleanup without the node version; retry
+			// the persisted Workflow even when no further Pod event arrives.
+			woc.markInMemoryReapplyFailed()
+			woc.requeueAfter(30 * time.Second)
+			return
+		}
 		ctx = woc.markWorkflowError(ctx, err)
 	}
 
@@ -883,6 +897,25 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be labeled multiple times.
 	woc.queuePodsForCleanup(ctx)
+}
+
+// queuePendingPodRetirements only delivers dispositions already represented by
+// this persisted snapshot. The Pod worker verifies the authoritative tuple before
+// removing the finalizer or deleting the exact Pod UID.
+func (woc *wfOperationCtx) queuePendingPodRetirements(ctx context.Context) {
+	for nodeID, pod := range woc.pendingPodRetirements {
+		node, err := woc.wf.Status.Nodes.Get(nodeID)
+		if err == nil && node.Phase == wfv1.NodePending && node.RestartingPodUID == string(pod.UID) {
+			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+		}
+	}
+}
+
+func (woc *wfOperationCtx) rememberPendingPodRetirement(nodeID string, pod *apiv1.Pod) {
+	if woc.pendingPodRetirements == nil {
+		woc.pendingPodRetirements = make(map[string]*apiv1.Pod)
+	}
+	woc.pendingPodRetirements[nodeID] = pod.DeepCopy()
 }
 
 func (woc *wfOperationCtx) checkTaskResultsInProgress(ctx context.Context) bool {
@@ -979,6 +1012,14 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 			if (nodeErr == nil) && currNode.Fulfilled() && node.Phase != currNode.Phase {
 				return nil, fmt.Errorf("must never update completed node %s", id)
 			}
+			if nodeErr == nil && (currNode.CapturedPodUID != node.CapturedPodUID || currNode.RestartingPodUID != node.RestartingPodUID) {
+				origNode, origErr := woc.orig.Status.Nodes.Get(id)
+				// Do not reapply a stale result across a concurrently changed Pod
+				// disposition. Unchanged nodes can still retain concurrent updates.
+				if origErr != nil || (!reflect.DeepEqual(*origNode, node) && (currNode.CapturedPodUID != origNode.CapturedPodUID || currNode.RestartingPodUID != origNode.RestartingPodUID)) {
+					return nil, fmt.Errorf("captured pod changed for node %s", id)
+				}
+			}
 		}
 		currWfBytes, err := json.Marshal(currWf)
 		if err != nil {
@@ -993,6 +1034,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if err != nil {
 			return nil, err
 		}
+		mergedNodes := newWf.Status.Nodes
 		err = woc.controller.hydrator.Dehydrate(ctx, &newWf)
 		if err != nil {
 			return nil, err
@@ -1000,7 +1042,7 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		wf, err := wfClient.Update(ctx, &newWf, metav1.UpdateOptions{})
 		if err == nil {
 			woc.log.WithField("attempt", attempt).Info(ctx, "Update retry attempt successful")
-			woc.controller.hydrator.HydrateWithNodes(wf, nodes)
+			woc.controller.hydrator.HydrateWithNodes(wf, mergedNodes)
 			return wf, nil
 		}
 		attempt++
@@ -1469,9 +1511,22 @@ func (woc *wfOperationCtx) printPodSpecLog(ctx context.Context, pod *apiv1.Pod, 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod, old *wfv1.NodeStatus) *wfv1.NodeStatus {
+	// A committed restart disposition must be delivered even when the template
+	// disappears or the restart budget/configuration has since changed.
+	if pod.UID != "" && pod.Status.Phase == apiv1.PodFailed && old.Phase == wfv1.NodePending && old.RestartingPodUID == string(pod.UID) {
+		woc.rememberPendingPodRetirement(old.ID, pod)
+		return nil
+	}
 	updated := old.DeepCopy()
 	tmpl, err := woc.GetNodeTemplate(ctx, old)
 	if err != nil {
+		// Template lookup can mark this node Error. That failed assessment must
+		// not reuse an earlier observation as proof of this result's capture.
+		if node, nodeErr := woc.wf.Status.Nodes.Get(old.ID); nodeErr == nil && node.CapturedPodUID != "" {
+			node.CapturedPodUID = ""
+			woc.wf.Status.Nodes.Set(ctx, old.ID, *node)
+			woc.updated = true
+		}
 		woc.log.Error(ctx, err.Error())
 		return nil
 	}
@@ -1521,11 +1576,6 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 
 		podUID := string(pod.UID)
-		// If we've already transitioned this node to Pending for this pod UID,
-		// ignore duplicate Failed updates to avoid reverting back to Failed.
-		if podUID != "" && podUID == old.RestartingPodUID && old.Phase == wfv1.NodePending {
-			return nil
-		}
 		// Check if this pod qualifies for automatic restart (failed before entering Running state)
 		// Skip if we've already initiated a restart for this pod (prevents duplicate restarts on rapid reprocessing)
 		if woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
@@ -1543,9 +1593,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				updated.Message = fmt.Sprintf("Pod auto-restarting due to %s: %s", pod.Status.Reason, pod.Status.Message)
 				woc.controller.metrics.RecordPodRestart(ctx, pod.Status.Reason, pod.Status.Message, pod.Namespace)
 			}
-			// Issue a delete request by UID here in case we lost the delete request
-			// since the last call to operate() (for example: controller restart)
-			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, podUID)
+			// Delivery follows successful persistence, including a later operation
+			// that sees this already-persisted Pending disposition.
+			woc.rememberPendingPodRetirement(old.ID, pod)
 		}
 	case apiv1.PodRunning:
 		// Daemons are a special case we need to understand the rules:
@@ -1660,6 +1710,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 					woc.log.WithFields(logging.Fields{"nodeID": nodeID, "container": c.Name, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
 						Warn(ctx, "marking its taskResult as completed since aux container did not exit normally")
 					woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+					if updated.TaskResultSynced != nil {
+						updated.TaskResultSynced = new(true)
+					}
 				}
 			}
 		}
@@ -1672,6 +1725,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			woc.log.WithFields(logging.Fields{"nodeID": nodeID}).
 				Warn(ctx, "marking its taskResult as completed since aux container has been cleaned up.")
 			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+			if updated.TaskResultSynced != nil {
+				updated.TaskResultSynced = new(true)
+			}
 		}
 	}
 
@@ -1702,8 +1758,18 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 
 	if updated.Fulfilled() && updated.FinishedAt.IsZero() {
-		updated.FinishedAt = getLatestFinishedAt(pod)
-		updated.ResourcesDuration = resource.DurationForPod(pod)
+		setPodCompletionMetadata(pod, updated)
+	}
+
+	// Record provenance for the successfully assessed incarnation, including
+	// Running daemons whose node can later be completed by controller teardown.
+	// The caller may still transform its outcome (for example memoization Error);
+	// the association is persisted with that final result.
+	updated.CapturedPodUID = ""
+	if pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed || pod.Status.Phase == apiv1.PodRunning && tmpl.IsDaemon() {
+		if (updated.Phase != wfv1.NodePending || updated.RestartingPodUID != string(pod.UID)) && (!stoppedDaemon || old.CapturedPodUID == string(pod.UID)) {
+			updated.CapturedPodUID = woc.podCaptureUID(pod, old.ID)
+		}
 	}
 
 	if !reflect.DeepEqual(old, updated) {
@@ -1722,6 +1788,16 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	woc.log.WithField("nodeID", old.ID).
 		Debug(ctx, "node unchanged")
 	return nil
+}
+
+// podCaptureUID validates the observed Pod's association before recording a
+// terminal assessment or an explicit controller-directed stop disposition.
+func (woc *wfOperationCtx) podCaptureUID(pod *apiv1.Pod, nodeID string) string {
+	owner := metav1.GetControllerOf(pod)
+	if pod.UID == "" || woc.wf.UID == "" || pod.Namespace != woc.wf.Namespace || owner == nil || owner.UID != woc.wf.UID || owner.Name != woc.wf.Name || owner.Kind != workflow.WorkflowKind || owner.APIVersion != workflow.APIVersion || woc.nodeID(pod) != nodeID {
+		return ""
+	}
+	return string(pod.UID)
 }
 
 // hasRequiredArtifacts checks if there are any required (non-optional) artifacts
@@ -1761,7 +1837,7 @@ func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool 
 
 func (woc *wfOperationCtx) cleanUpPod(ctx context.Context, pod *apiv1.Pod, tmpl wfv1.Template) {
 	if podHasContainerNeedingTermination(pod, tmpl) {
-		woc.controller.PodController.TerminateContainers(ctx, woc.wf.Namespace, pod.Name)
+		woc.controller.PodController.TerminateContainers(ctx, woc.wf.Namespace, pod.Name, string(pod.UID))
 	}
 }
 
@@ -2328,16 +2404,22 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node, time.Now().UTC())
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
+		failed := woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error())
 		if node.Type == wfv1.NodeTypePod {
 			// delete the timed-out pod so the resources it was waiting for are freed.
 			// Deletion is by UID so a pod recreated by a retry cannot be affected.
 			if pod, exists, podErr := woc.podExists(node.ID); podErr != nil {
 				woc.log.WithError(podErr).Warn(ctx, "failed to check pod existence while cleaning up timed-out node")
 			} else if exists {
+				if uid := woc.podCaptureUID(pod, failed.ID); failed.CapturedPodUID != uid {
+					failed.CapturedPodUID = uid
+					woc.wf.Status.Nodes.Set(ctx, failed.ID, *failed)
+					woc.updated = true
+				}
 				woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
 			}
 		}
-		return woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error()), err
+		return failed, err
 	}
 	// Ensure that we will check again soon after the earliest deadline
 	if deadline == nil || (pendingDeadline != nil && pendingDeadline.Before(*deadline)) {
@@ -2892,7 +2974,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		woc.updated = true
 		if woc.hasTaskSetNodes() {
-			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getAgentPodName())
+			woc.controller.PodController.QueueAgentDeletion(ctx, woc.wf, woc.getAgentPodName())
 		}
 	}
 	return ctx

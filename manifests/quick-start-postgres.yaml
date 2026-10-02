@@ -132250,6 +132250,8 @@ spec:
                   properties:
                     boundaryID:
                       type: string
+                    capturedPodUID:
+                      type: string
                     children:
                       items:
                         type: string

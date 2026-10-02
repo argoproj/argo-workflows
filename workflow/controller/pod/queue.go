@@ -3,8 +3,11 @@ package pod
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -39,7 +43,6 @@ func (c *Controller) getPodCleanupPatch(pod *apiv1.Pod, labelPodCompleted bool) 
 			func(s string) bool { return s == common.FinalizerPodStatus })
 		if len(finalizers) != len(pod.Finalizers) {
 			un.SetFinalizers(finalizers)
-			un.SetResourceVersion(pod.ResourceVersion)
 		}
 	}
 
@@ -47,41 +50,42 @@ func (c *Controller) getPodCleanupPatch(pod *apiv1.Pod, labelPodCompleted bool) 
 	if len(un.Object) == 0 {
 		return nil, nil
 	}
+	// Guard the mutation itself, not just a subsequent DELETE. A resourceVersion
+	// obtained from a replacement must never authorize an old Pod's cleanup.
+	if pod.UID == "" || pod.ResourceVersion == "" {
+		return nil, fmt.Errorf("cannot clean up pod without UID and resourceVersion")
+	}
+	un.SetUID(pod.UID)
+	un.SetResourceVersion(pod.ResourceVersion)
 
 	return un.MarshalJSON()
 }
 
-// signalContainers signals all containers of a pod
-func (c *Controller) signalContainers(ctx context.Context, namespace string, podName string, sig syscall.Signal) (time.Duration, error) {
-	pod, err := c.GetPod(namespace, podName)
-	if pod == nil || err != nil {
-		return 0, err
-	}
+type containerSignalFunc func(context.Context, *rest.Config, *apiv1.Pod, string, syscall.Signal) error
 
+// signalContainers signals all running containers, preserving delivery failures
+// without allowing one failed or already-exited container to block the others.
+func (c *Controller) signalContainers(ctx context.Context, pod *apiv1.Pod, sig syscall.Signal) (time.Duration, error) {
+	signalContainer := c.signalContainer
+	if signalContainer == nil {
+		signalContainer = signal.Container
+	}
+	var failures []error
 	for _, container := range pod.Status.ContainerStatuses {
 		if container.State.Running == nil {
 			continue
 		}
-		// problems are already logged at info level, so we just ignore errors here
-		_ = signal.Container(ctx, c.restConfig, pod, container.Name, sig)
+		if err := signalContainer(ctx, c.restConfig, pod, container.Name, sig); err != nil {
+			failures = append(failures, fmt.Errorf("signal %s to container %q: %w", sig, container.Name, err))
+		}
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
-		return 30 * time.Second, nil
+		return 30 * time.Second, errors.Join(failures...)
 	}
-	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, nil
+	return time.Duration(*pod.Spec.TerminationGracePeriodSeconds) * time.Second, errors.Join(failures...)
 }
 
-func (c *Controller) patchPodForCleanup(ctx context.Context, pods typedv1.PodInterface, namespace, podName string, labelPodCompleted bool) error {
-	pod, err := c.GetPod(namespace, podName)
-	// err is always nil in all kind of caches for now
-	if err != nil {
-		return err
-	}
-	// if pod is nil, it must have been deleted
-	if pod == nil {
-		return nil
-	}
-
+func (c *Controller) patchPodForCleanup(ctx context.Context, pods typedv1.PodInterface, pod *apiv1.Pod, labelPodCompleted bool) error {
 	patch, err := c.getPodCleanupPatch(pod, labelPodCompleted)
 	if err != nil {
 		return err
@@ -90,7 +94,7 @@ func (c *Controller) patchPodForCleanup(ctx context.Context, pods typedv1.PodInt
 		return nil
 	}
 
-	_, err = pods.Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
+	_, err = pods.Patch(ctx, pod.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -105,50 +109,72 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		return false
 	}
 
-	defer func() {
-		c.workqueue.Forget(key)
-		c.workqueue.Done(key)
-	}()
+	defer c.workqueue.Done(key)
+	if strings.HasPrefix(key, workflowPodCleanupKeyPrefix) {
+		c.processWorkflowPodCleanupIntent(ctx, key)
+		return true
+	}
 
 	namespace, podName, action, uid := parsePodCleanupKey(key)
 	ctx, log := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName}).InContext(ctx)
-	log.Info(ctx, "cleaning up pod")
+	log.Debug(ctx, "cleaning up pod")
+	if uid == "" {
+		log.Warn(ctx, "ignoring cleanup request without identity")
+		c.workqueue.Forget(key)
+		return true
+	}
 	err := func() error {
+		if action == reconcileWorkflowCleanup {
+			return c.reconcileWorkflowCleanup(ctx, namespace, podName, uid)
+		}
+		pods := c.kubeclientset.CoreV1().Pods(namespace)
+		pod, err := pods.Get(ctx, podName, metav1.GetOptions{})
+		if apierr.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if string(pod.UID) != uid || pod.Namespace != namespace || !c.matchesInstance(pod) {
+			log.WithField("currentUID", pod.UID).Debug(ctx, "ignoring cleanup for a replaced pod")
+			return nil
+		}
+		if action == reconcilePodCleanup {
+			return c.reconcilePodCleanup(ctx, pod)
+		}
+		switch action {
+		case labelPodCompleted, deletePod, deletePodByUID, removeFinalizer:
+			allowed, err := c.allowPodCleanup(ctx, pod)
+			if err != nil || !allowed {
+				return err
+			}
+		}
 		switch action {
 		case terminateContainers:
-			pod, err := c.GetPod(namespace, podName)
-			if err == nil && pod != nil && pod.Status.Phase == apiv1.PodPending {
-				c.queuePodForCleanup(ctx, namespace, podName, deletePod)
-			} else if terminationGracePeriod, err := c.signalContainers(ctx, namespace, podName, syscall.SIGTERM); err != nil {
-				return err
-			} else if terminationGracePeriod > 0 {
-				c.queuePodForCleanupAfter(ctx, namespace, podName, killContainers, terminationGracePeriod)
+			if pod.Status.Phase == apiv1.PodPending {
+				c.queuePodForCleanup(ctx, namespace, podName, deletePod, uid)
+			} else {
+				terminationGracePeriod, err := c.signalContainers(ctx, pod, syscall.SIGTERM)
+				// Preserve escalation even if only some containers received
+				// SIGTERM. Both failed actions retain their exact Pod UID and
+				// retry from a fresh Pod read without needing another event.
+				if terminationGracePeriod > 0 {
+					c.queuePodForCleanupAfter(ctx, namespace, podName, killContainers, terminationGracePeriod, uid)
+				}
+				if err != nil {
+					return err
+				}
 			}
 		case killContainers:
-			if _, err := c.signalContainers(ctx, namespace, podName, syscall.SIGKILL); err != nil {
+			if _, err := c.signalContainers(ctx, pod, syscall.SIGKILL); err != nil {
 				return err
 			}
 		case labelPodCompleted:
-			pods := c.kubeclientset.CoreV1().Pods(namespace)
-			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, true); err != nil {
+			if err := c.patchPodForCleanup(ctx, pods, pod, true); err != nil {
 				return err
 			}
-		case deletePod:
-			pods := c.kubeclientset.CoreV1().Pods(namespace)
-			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
-				return err
-			}
-			propagation := metav1.DeletePropagationBackground
-			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
-				PropagationPolicy:  &propagation,
-				GracePeriodSeconds: c.config.PodGCGracePeriodSeconds,
-			})
-			if err != nil && !apierr.IsNotFound(err) {
-				return err
-			}
-		case deletePodByUID:
-			pods := c.kubeclientset.CoreV1().Pods(namespace)
-			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+		case deletePod, deletePodByUID:
+			if err := c.patchPodForCleanup(ctx, pods, pod, false); err != nil {
 				return err
 			}
 			propagation := metav1.DeletePropagationBackground
@@ -162,39 +188,53 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 				return err
 			}
 		case removeFinalizer:
-			pods := c.kubeclientset.CoreV1().Pods(namespace)
-			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+			if err := c.patchPodForCleanup(ctx, pods, pod, false); err != nil {
 				return err
 			}
 		}
 		return nil
 	}()
 	if err != nil {
-		log.WithError(err).Warn(ctx, "failed to clean-up pod")
-		if errorsutil.IsTransientErr(ctx, err) || apierr.IsConflict(err) {
+		c.reportCleanupHold(ctx, key, log, err)
+		if errorsutil.IsTransientErrQuiet(ctx, err) || apierr.IsConflict(err) {
 			c.workqueue.AddRateLimited(key)
+			return true
 		}
+		// Permission and other read/write failures can recover without a Pod
+		// event. Keep the cleanup intent, with a bounded retry frequency.
+		c.workqueue.AddAfter(key, podCleanupRetryDelay)
+		return true
 	}
+	c.cleanupDiagnostics.forget(key)
+	c.workqueue.Forget(key)
 	return true
 }
 
-func (c *Controller) queuePodForCleanup(ctx context.Context, namespace string, podName string, action podCleanupAction) {
+func (c *Controller) queuePodForCleanup(ctx context.Context, namespace string, podName string, action podCleanupAction, uid string) {
+	if uid == "" {
+		c.log.WithField("podName", podName).Warn(ctx, "cannot queue pod cleanup without UID")
+		return
+	}
 	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Debug(ctx, "queueing pod for cleanup")
-	c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
+	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, action, uid))
 }
 
-func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace string, podName string, action podCleanupAction, duration time.Duration) {
+func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace string, podName string, action podCleanupAction, duration time.Duration, uid string) {
+	if uid == "" {
+		c.log.WithField("podName", podName).Warn(ctx, "cannot queue pod cleanup without UID")
+		return
+	}
 	logCtx := c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
 	if duration > 0 {
 		logCtx.Debug(ctx, "queueing pod for cleanup after")
-		c.workqueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
+		c.workqueue.AddAfter(newPodCleanupKeyWithUID(namespace, podName, action, uid), duration)
 	} else {
 		logCtx.Warn(ctx, "queueing pod for cleanup now, rather than delayed")
-		c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
+		c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, action, uid))
 	}
 }
 
 func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, uid string) {
 	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": deletePodByUID}).Info(ctx, "queueing pod for cleanup by UID")
-	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid))
+	c.queuePodForCleanup(ctx, namespace, podName, deletePodByUID, uid)
 }

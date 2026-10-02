@@ -15,13 +15,15 @@ type (
 )
 
 const (
-	noAction            podCleanupAction = ""
-	deletePod           podCleanupAction = "deletePod"
-	deletePodByUID      podCleanupAction = "deletePodByUID"
-	labelPodCompleted   podCleanupAction = "labelPodCompleted"
-	terminateContainers podCleanupAction = "terminateContainers"
-	killContainers      podCleanupAction = "killContainers"
-	removeFinalizer     podCleanupAction = "removeFinalizer"
+	noAction                 podCleanupAction = ""
+	deletePod                podCleanupAction = "deletePod"
+	deletePodByUID           podCleanupAction = "deletePodByUID"
+	labelPodCompleted        podCleanupAction = "labelPodCompleted"
+	terminateContainers      podCleanupAction = "terminateContainers"
+	killContainers           podCleanupAction = "killContainers"
+	removeFinalizer          podCleanupAction = "removeFinalizer"
+	reconcilePodCleanup      podCleanupAction = "reconcilePodCleanup"
+	reconcileWorkflowCleanup podCleanupAction = "reconcileWorkflowCleanup"
 )
 
 func newPodCleanupKey(namespace string, podName string, action podCleanupAction) podCleanupKey {
