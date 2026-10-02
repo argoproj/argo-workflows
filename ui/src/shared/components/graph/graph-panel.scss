@@ -37,11 +37,13 @@
   box-shadow: 1px 1px 3px $argo-color-gray-5;
   position: fixed;
 
-  div.argo-dropdown, a {
+  div.argo-dropdown, a, button {
     padding: 5px;
     color: $argo-color-gray-6;
     border: 1px solid transparent;
     border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
 
     &.active {
       background-color: $argo-color-gray-3;
@@ -161,5 +163,17 @@
 
   .arrow {
     fill: $argo-color-gray-4;
+  }
+}
+
+.graph-options-panel {
+  .zoom-percentage {
+    display: inline-block;
+    padding: 5px;
+    min-width: 44px;
+    text-align: center;
+    color: $argo-color-gray-6;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
   }
 }
