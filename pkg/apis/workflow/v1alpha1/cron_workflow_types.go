@@ -115,6 +115,10 @@ func (c *CronWorkflow) IsUsingNewSchedule() bool {
 	return !exists || lastUsedSchedule != c.Spec.GetScheduleWithTimezoneString()
 }
 
+func (c *CronWorkflow) GetScheduleAnnotationKey() string {
+	return annotationKeyLatestSchedule
+}
+
 func (c *CronWorkflow) SetSchedule(schedule string) {
 	if c.Annotations == nil {
 		c.Annotations = map[string]string{}
