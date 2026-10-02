@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -63,6 +64,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
 	"github.com/argoproj/argo-workflows/v4/workflow/progress"
 	wfsync "github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
@@ -819,6 +821,14 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Failed to dehydrate")
 		if woc.wf.Status.Fulfilled() {
+			if !woc.orig.Status.Fulfilled() && packer.IsTooLargeError(err) && errors.Is(err, sqldb.ErrOffloadNotSupported) {
+				// This result cannot fit in the configured storage. Persist an
+				// explicit size error using the last stored nodes, without publishing
+				// the unsaved capture receipts. The completion informer releases
+				// synchronization locks only after observing the successful write.
+				woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
+				return
+			}
 			// The completed outcome is not durable yet. Do not rewrite its
 			// terminal phase or publish cleanup without the node version; retry
 			// the persisted Workflow even when no further Pod event arrives.
@@ -942,14 +952,32 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
 // See https://github.com/argoproj/argo-workflows/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
+	completed := woc.wf.Status.Fulfilled() && !woc.orig.Status.Fulfilled()
+	nodes, taskResults := woc.wf.Status.Nodes, woc.wf.Status.TaskResultsCompletionStatus
+	synchronization := woc.wf.Status.Synchronization.DeepCopy()
 	woc.wf = woc.orig.DeepCopy()
+	storedNodes, storedTaskResults := woc.wf.Status.Nodes, woc.wf.Status.TaskResultsCompletionStatus
+	if completed {
+		// Locks acquired in this operation may not exist in the old snapshot.
+		// Retain their identities so the persisted completion can release them.
+		woc.wf.Status.Synchronization = synchronization
+		// Completion was already established in this operation. Old daemon or
+		// task-result state must not veto the explicit storage error, but the
+		// selected nodes and their capture receipts have not been stored.
+		woc.wf.Status.Nodes, woc.wf.Status.TaskResultsCompletionStatus = nodes, taskResults
+	}
 	ctx = woc.markWorkflowError(ctx, err)
+	if completed {
+		woc.wf.Status.Nodes, woc.wf.Status.TaskResultsCompletionStatus = storedNodes, storedTaskResults
+	}
 
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.markInMemoryReapplyFailed()
+		woc.requeueAfter(30 * time.Second)
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
 	} else {
+		woc.wf = wf
 		woc.controller.recordWorkflowWrite(wf)
 	}
 }

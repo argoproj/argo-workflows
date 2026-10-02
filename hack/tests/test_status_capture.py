@@ -39,6 +39,16 @@ def fixture():
     return pod, wf
 
 
+def storage_error_fixture():
+    pod, wf = fixture()
+    wf['status']['message'] = ('workflow is longer than maximum allowed size. compressed size 4096 > maxSize 2048'
+                               'Tried to offload but encountered error: offload node status is not supported')
+    node = wf['status']['nodes']['example']
+    node.update(phase='Running', taskResultSynced=False)
+    wf['status']['taskResultsCompletionStatus'] = {'example': False}
+    return pod, wf
+
+
 class OperatorTests(unittest.TestCase):
     def setUp(self):
         self.pod, self.wf = fixture()
@@ -51,6 +61,76 @@ class OperatorTests(unittest.TestCase):
         self.assertEqual(row['reason'], 'legacy-no-receipt')
         self.assertEqual(row['legacyClass'], 'memoization-transformation')
         self.assertFalse(row['automaticCaptureProved'])
+
+    def test_null_optional_template_sources_are_absent(self):
+        for source in ('spec', 'storedWorkflowSpec', 'storedTemplates', None):
+            with self.subTest(source=source):
+                self.pod, self.wf = fixture()
+                template = self.wf['spec']['templates'][0]
+                self.wf['spec']['templates'] = None
+                self.wf['status'].update(storedWorkflowSpec=None, storedTemplates=None, phase='Succeeded')
+                node = self.wf['status']['nodes']['example']
+                node.pop('memoizationStatus')
+                node['phase'] = 'Succeeded'
+                if source == 'spec':
+                    self.wf['spec']['templates'] = [template]
+                elif source == 'storedWorkflowSpec':
+                    self.wf['status']['storedWorkflowSpec'] = {'templates': [template]}
+                elif source == 'storedTemplates':
+                    self.wf['status']['storedWorkflowSpec'] = {'templates': None}
+                    self.wf['status']['storedTemplates'] = {'scope/main': template}
+                else:
+                    self.wf['spec'] = None
+                row = self.inspect()
+                expected = ('possible-simple-success-controller-verification-required' if source
+                            else 'template-unavailable-or-not-container')
+                self.assertEqual(row['legacyClass'], expected)
+                self.assertEqual(row['reason'], 'legacy-no-receipt')
+                self.assertFalse(row['automaticCaptureProved'])
+
+    def test_unnamed_template_is_not_a_match_for_missing_node_template_name(self):
+        node = self.wf['status']['nodes']['example']
+        node.pop('memoizationStatus')
+        node.pop('templateName')
+        node['phase'] = 'Succeeded'
+        self.wf['status']['phase'] = 'Succeeded'
+        self.wf['spec']['templates'][0].pop('name')
+        self.assertEqual(self.inspect()['legacyClass'], 'template-unavailable-or-not-container')
+
+    def test_malformed_template_sources_produce_cli_error_without_artifacts(self):
+        cases = ((('spec',), []),
+                 (('spec', 'templates'), {}),
+                 (('spec', 'templates'), [None]),
+                 (('status', 'storedWorkflowSpec'), []),
+                 (('status', 'storedWorkflowSpec', 'templates'), 'invalid'),
+                 (('status', 'storedWorkflowSpec', 'templates'), [None]),
+                 (('status', 'storedTemplates'), []),
+                 (('status', 'storedTemplates'), {'scope/main': None}))
+        for path, value in cases:
+            with self.subTest(path=path, value=value), tempfile.TemporaryDirectory() as directory:
+                self.pod, self.wf = fixture()
+                target = self.wf
+                for key in path[:-1]:
+                    target = target.setdefault(key, {})
+                target[path[-1]] = value
+                args = self.files(directory)
+                commands = (['inventory', '--pods', args.pod, '--workflows', args.workflow],
+                            ['export', '--pod', args.pod, '--workflow', args.workflow,
+                             '--output-dir', args.output_dir],
+                            ['prepare-release', '--pod', args.pod, '--workflow', args.workflow,
+                             '--output', args.output, '--acknowledge-unproven-capture'])
+                for command in commands:
+                    with self.subTest(command=command[0]):
+                        output, errors = io.StringIO(), io.StringIO()
+                        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+                            code = tool.main(command)
+                        self.assertEqual(code, 2)
+                        self.assertEqual(output.getvalue(), '')
+                        error = json.loads(errors.getvalue())
+                        self.assertIn('.'.join(path), error['error'])
+                        self.assertFalse(error['applied'])
+                        self.assertFalse(Path(args.output).exists())
+                        self.assertFalse(Path(args.output_dir).exists())
 
     def test_missing_owner_snapshot_is_not_orphan(self):
         row, _ = tool.inspect(self.pod, None, [], {})
@@ -118,8 +198,86 @@ class OperatorTests(unittest.TestCase):
         pod_path.write_text(json.dumps(self.pod))
         wf_path.write_text(json.dumps(self.wf))
         return argparse.Namespace(pod=str(pod_path), workflow=str(wf_path), offload=[], hydrated_workflows=None,
-                                  acknowledge_unproven_capture=True, output=str(Path(directory) / 'patch.json'),
+                                  acknowledge_unproven_capture=True, acknowledge_incomplete_result=False,
+                                  output=str(Path(directory) / 'patch.json'),
                                   output_dir=str(Path(directory) / 'export'), task_results=None)
+
+    def test_storage_error_inventory_and_export_preserve_incomplete_result(self):
+        self.pod, self.wf = storage_error_fixture()
+        before = copy.deepcopy(self.wf)
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.files(directory)
+            result = tool.export_evidence(args)
+            row = result['evidence']
+            self.assertEqual(row['reason'], 'completed-storage-error-without-capture')
+            self.assertEqual(row['taskResult'], 'pending')
+            self.assertEqual(row['nodePhase'], 'Running')
+            self.assertFalse(row['automaticCaptureProved'])
+            self.assertEqual(json.loads((Path(args.output_dir) / 'workflow.json').read_text()), before)
+            self.assertEqual(json.loads((Path(args.output_dir) / 'nodes.json').read_text()), before['status']['nodes'])
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                code = tool.main(['inventory', '--pods', args.pod, '--workflows', args.workflow])
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(output.getvalue())['pods'][0], row)
+        self.assertEqual(self.wf, before)
+
+    def test_storage_error_release_requires_both_acknowledgements(self):
+        for capture_ack, incomplete_ack in ((False, False), (False, True), (True, False), (True, True)):
+            with self.subTest(capture_ack=capture_ack, incomplete_ack=incomplete_ack), tempfile.TemporaryDirectory() as directory:
+                self.pod, self.wf = storage_error_fixture()
+                before_pod, before_wf = copy.deepcopy(self.pod), copy.deepcopy(self.wf)
+                args = self.files(directory)
+                command = ['prepare-release', '--pod', args.pod, '--workflow', args.workflow, '--output', args.output]
+                if capture_ack:
+                    command.append('--acknowledge-unproven-capture')
+                if incomplete_ack:
+                    command.append('--acknowledge-incomplete-result')
+                output, errors = io.StringIO(), io.StringIO()
+                with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+                    code = tool.main(command)
+                if capture_ack and incomplete_ack:
+                    self.assertEqual(code, 0)
+                    result = json.loads(output.getvalue())
+                    self.assertFalse(result['applied'])
+                    self.assertFalse(result['evidence']['automaticCaptureProved'])
+                    patch = json.loads(Path(args.output).read_text())
+                    self.assertEqual(patch, [
+                        {'op': 'test', 'path': '/metadata/uid', 'value': before_pod['metadata']['uid']},
+                        {'op': 'test', 'path': '/metadata/resourceVersion', 'value': before_pod['metadata']['resourceVersion']},
+                        {'op': 'test', 'path': '/metadata/finalizers', 'value': before_pod['metadata']['finalizers']},
+                        {'op': 'remove', 'path': '/metadata/finalizers/1'},
+                    ])
+                else:
+                    self.assertEqual(code, 2)
+                    self.assertFalse(json.loads(errors.getvalue())['applied'])
+                    self.assertFalse(Path(args.output).exists())
+                self.assertEqual(self.pod, before_pod)
+                self.assertEqual(self.wf, before_wf)
+
+    def test_storage_error_acknowledgement_does_not_waive_other_holds(self):
+        cases = (lambda p, w: w['metadata']['labels'].update({tool.DOMAIN + 'completed': 'false'}),
+                 lambda p, w: w['status'].update(phase='Running'),
+                 lambda p, w: w['status'].update(message='offload node status is not supported'),
+                 lambda p, w: w['status'].update(message='workflow is longer than maximum allowed size. SQL unavailable'),
+                 lambda p, w: w['status'].update(message='ordinary workflow error'),
+                 lambda p, w: p['status'].update(phase='Running'),
+                 lambda p, w: w['status']['nodes']['example'].update(capturedPodUID='other'),
+                 lambda p, w: w['status']['nodes']['example'].update(capturedPodUID='pod-uid'),
+                 lambda p, w: w['status']['nodes']['example'].update(restartingPodUID='pod-uid', phase='Pending'),
+                 lambda p, w: (w['status']['nodes']['example'].update(restartingPodUID='other', phase='Succeeded', taskResultSynced=True),
+                               w['status']['taskResultsCompletionStatus'].update(example=True)),
+                 lambda p, w: p['metadata']['ownerReferences'][0].update(uid='foreign'),
+                 lambda p, w: w['status'].update(nodes={}))
+        for number, mutate in enumerate(cases):
+            with self.subTest(case=number), tempfile.TemporaryDirectory() as directory:
+                self.pod, self.wf = storage_error_fixture()
+                mutate(self.pod, self.wf)
+                args = self.files(directory)
+                args.acknowledge_incomplete_result = True
+                with self.assertRaises(tool.EvidenceError):
+                    tool.prepare_release(args)
+                self.assertFalse(Path(args.output).exists())
 
     def test_release_only_own_finalizer_with_uid_rv_preconditions(self):
         before_pod, before_wf = copy.deepcopy(self.pod), copy.deepcopy(self.wf)
@@ -231,6 +389,31 @@ class OperatorTests(unittest.TestCase):
                 code = tool.main(['prepare-release', '--pod', args.pod, '--workflow', args.workflow, '--output', args.output])
             self.assertEqual(code, 2)
             self.assertFalse(Path(args.output).exists())
+
+    def test_cli_accepts_null_stored_spec_without_claiming_capture(self):
+        self.wf['status'].update(storedWorkflowSpec=None, storedTemplates=None)
+        with tempfile.TemporaryDirectory() as directory:
+            args = self.files(directory)
+            commands = (['inventory', '--pods', args.pod, '--workflows', args.workflow],
+                        ['export', '--pod', args.pod, '--workflow', args.workflow,
+                         '--output-dir', args.output_dir],
+                        ['prepare-release', '--pod', args.pod, '--workflow', args.workflow,
+                         '--output', args.output, '--acknowledge-unproven-capture'])
+            for command in commands:
+                with self.subTest(command=command[0]):
+                    output = io.StringIO()
+                    with contextlib.redirect_stdout(output):
+                        code = tool.main(command)
+                    self.assertEqual(code, 0)
+                    result = json.loads(output.getvalue())
+                    row = result['pods'][0] if command[0] == 'inventory' else result['evidence']
+                    self.assertEqual(row['reason'], 'legacy-no-receipt')
+                    self.assertEqual(row['legacyClass'], 'memoization-transformation')
+                    self.assertFalse(row['automaticCaptureProved'])
+            self.assertFalse(result['applied'])
+            self.assertEqual(json.loads((Path(args.output_dir) / 'workflow.json').read_text()), self.wf)
+            self.assertEqual(json.loads(Path(args.output).read_text())[0],
+                             {'op': 'test', 'path': '/metadata/uid', 'value': self.pod['metadata']['uid']})
 
 
 if __name__ == '__main__':

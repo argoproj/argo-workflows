@@ -179,12 +179,36 @@ def task_state(wf, node_id, node):
     return "legacy-unspecified"
 
 
+def optional_object(value, field):
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise EvidenceError(field + " must be an object")
+    return value
+
+
+def optional_templates(value, field):
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        raise EvidenceError(field + " must be a list of template objects")
+    return value
+
+
 def legacy_class(wf, node, nodes):
     """Triage hints only: this intentionally does not duplicate the verifier."""
-    spec = wf.get("spec", {})
-    templates = spec.get("templates", []) + wf.get("status", {}).get("storedWorkflowSpec", {}).get("templates", [])
-    templates += list(wf.get("status", {}).get("storedTemplates", {}).values())
-    template = next((item for item in templates if item.get("name") == node.get("templateName")), {})
+    spec = optional_object(wf.get("spec"), "spec")
+    status = optional_object(wf.get("status"), "status")
+    stored_spec = optional_object(status.get("storedWorkflowSpec"), "status.storedWorkflowSpec")
+    stored_templates = optional_object(status.get("storedTemplates"), "status.storedTemplates")
+    if not all(isinstance(item, dict) for item in stored_templates.values()):
+        raise EvidenceError("status.storedTemplates must contain template objects")
+    templates = optional_templates(spec.get("templates"), "spec.templates")
+    templates = templates + optional_templates(stored_spec.get("templates"), "status.storedWorkflowSpec.templates")
+    templates += list(stored_templates.values())
+    template_name = node.get("templateName")
+    template = next((item for item in templates
+                     if isinstance(template_name, str) and template_name and item.get("name") == template_name), {})
     if node.get("memoizationStatus") or template.get("memoize"):
         return "memoization-transformation"
     if node.get("daemoned") or template.get("daemon") or spec.get("shutdown"):
@@ -202,6 +226,15 @@ def legacy_class(wf, node, nodes):
     if not template.get("container"):
         return "template-unavailable-or-not-container"
     return "possible-simple-success-controller-verification-required"
+
+
+def completed_storage_error(wf):
+    status = wf.get("status", {})
+    message = status.get("message", "")
+    return (metadata(wf).get("labels", {}).get(DOMAIN + "completed") == "true"
+            and status.get("phase") == "Error" and isinstance(message, str)
+            and message.startswith("workflow is longer than maximum allowed size.")
+            and message.endswith("Tried to offload but encountered error: offload node status is not supported"))
 
 
 def inspect(pod, wf, offloads, hydrated):
@@ -247,6 +280,14 @@ def inspect(pod, wf, offloads, hydrated):
         report["reason"] = "persisted-restart-disposition"
     elif node.get("capturedPodUID") and node["capturedPodUID"] != pm.get("uid"):
         report["reason"] = "capture-identity-conflict"
+    elif completed_storage_error(wf):
+        if node.get("capturedPodUID") not in (None, ""):
+            report["reason"] = "matching-receipt-in-snapshot" if node["capturedPodUID"] == pm.get("uid") else "capture-identity-conflict"
+        elif node.get("restartingPodUID") not in (None, ""):
+            report["reason"] = "persisted-restart-disposition"
+        else:
+            report["reason"] = "completed-storage-error-without-capture"
+            report["detail"] = "stored node data may be incomplete; explicit disposal requires acknowledging loss of the unsaved result"
     elif report["taskResult"] == "pending" or node_phase not in TERMINAL:
         report["reason"] = "result-or-task-pending"
     elif node.get("capturedPodUID") == pm.get("uid"):
@@ -288,8 +329,11 @@ def prepare_release(args):
     if not args.acknowledge_unproven_capture:
         raise EvidenceError("explicit --acknowledge-unproven-capture is required; export is not capture proof")
     pod, _, report, _ = one_report(args)
-    if report["reason"] != "legacy-no-receipt":
-        raise EvidenceError("release requires a completed legacy result with no receipt, not " + report["reason"])
+    if report["reason"] == "completed-storage-error-without-capture":
+        if not args.acknowledge_incomplete_result:
+            raise EvidenceError("explicit --acknowledge-incomplete-result is also required; the unsaved result may be lost")
+    elif report["reason"] != "legacy-no-receipt":
+        raise EvidenceError("release requires a supported completed disposition with no receipt, not " + report["reason"])
     finalizers = metadata(pod).get("finalizers", [])
     if finalizers.count(FINALIZER) != 1:
         raise EvidenceError("exactly one status finalizer is required")
@@ -338,6 +382,8 @@ def main(argv=None):
     export.add_argument("--task-results")
     release = commands.add_parser("prepare-release", help="prepare, never apply, an explicit operator patch")
     release.add_argument("--acknowledge-unproven-capture", action="store_true")
+    release.add_argument("--acknowledge-incomplete-result", action="store_true",
+                         help="also accept loss of the unsaved result after a completed unsupported-offload size error")
     release.add_argument("--output", required=True)
     for command in (inventory, export, release):
         command.add_argument("--offload", action="append", default=[], help="exact {namespace,uid,version,nodes} SQL snapshot")

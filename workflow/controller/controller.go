@@ -521,12 +521,19 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	workflowExists := func(key string) bool {
-		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+		obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
+			return true
+		}
+		if !exists {
 			return false
 		}
-		return exists
+		// A retained completed object no longer needs execution locks. This
+		// also lets the existing periodic database lock cleanup finish a
+		// release interrupted by a controller restart after persistence.
+		un, ok := obj.(*unstructured.Unstructured)
+		return !ok || !workflowExecutionCompleted(un)
 	}
 
 	syncManager, err := sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists, true)
@@ -1372,6 +1379,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		return err
 	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			wfc.releaseCompletedWorkflowLocks(ctx, obj)
+		},
+		UpdateFunc: func(_, obj any) {
+			wfc.releaseCompletedWorkflowLocks(ctx, obj)
+		},
 		DeleteFunc: func(obj any) {
 			var wf *unstructured.Unstructured
 			switch x := obj.(type) {
@@ -1565,6 +1578,41 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig
 		Temporality:  wfc.Config.MetricsConfig.GetTemporality(),
 	}
 	return &metricsConfig
+}
+
+// Observe the new persisted completion, including startup and artifact GC.
+// The reconciliation filter's DeleteFunc receives the old object on filter
+// exit, which may lack locks acquired during the completing operation.
+func (wfc *WorkflowController) releaseCompletedWorkflowLocks(ctx context.Context, obj any) {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok || !workflowExecutionCompleted(un) {
+		return
+	}
+	if synchronization, found, err := unstructured.NestedFieldNoCopy(un.Object, "status", "synchronization"); err != nil || !found || synchronization == nil {
+		return
+	}
+	key, err := cache.MetaNamespaceKeyFunc(un)
+	if err != nil || un.GetUID() == "" {
+		return
+	}
+	// Event listeners can lag behind a retry or same-name replacement. Lock
+	// holder keys use namespace/name, so serialize with execution and verify
+	// the current cached identity before releasing any hold.
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
+	current, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+	if err != nil || !exists {
+		return
+	}
+	latest, ok := current.(*unstructured.Unstructured)
+	if ok && latest.GetUID() == un.GetUID() && workflowExecutionCompleted(latest) {
+		wfc.releaseAllWorkflowLocks(ctx, latest)
+	}
+}
+
+func workflowExecutionCompleted(un *unstructured.Unstructured) bool {
+	phase, _, err := unstructured.NestedString(un.Object, "status", "phase")
+	return err == nil && un.GetLabels()[common.LabelKeyCompleted] == "true" && wfv1.WorkflowPhase(phase).Completed()
 }
 
 func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj any) {

@@ -5,6 +5,20 @@ The optional node field `capturedPodUID` binds that result to the observed Pod i
 For offloaded nodes, the stored Workflow must reference the saved version; a database write alone is insufficient.
 A confirmed deleting, absent or replaced owner has a separate cleanup rule, which does not assert result capture.
 
+## Storage failures at completion
+
+If a newly completed Workflow still exceeds the size limit after compression and node offloading is not supported, the controller records an explicit Workflow `Error` using the last persisted node data.
+It does not publish the unsaved node results or their capture receipts.
+Synchronization locks are released after the error has been persisted; a failed error write retains them and is retried.
+Workflow parallelism slots follow the existing completion rules, including any outstanding artifact garbage collection finalizer.
+Pods without a proven capture remain protected and require the evidence-preserving operator procedure below, including the additional acknowledgement for an incomplete stored result.
+Enabling offload later does not automatically restore the original in-memory `Succeeded` or `Failed` outcome of this completed storage error.
+
+Errors from configured storage, including SQL, network and access failures, continue to retry the original result without requiring another Pod event.
+An error not classified as transient is not, by itself, proof that it cannot be repaired.
+While persistence is unavailable, the Workflow can remain Running and retain its parallelism slot and synchronization locks; restore storage access to resume completion.
+This recovery path does not replace an already persisted terminal outcome.
+
 ## Upgrade and rollback
 
 Install the new full Workflow CRD before starting the new controller.
@@ -90,6 +104,7 @@ Controller logs supply current hold reasons; the inventory groups evidence using
 |---|---|
 | Matching receipt in snapshot | Re-read the current API and applicable task state; allow normal cleanup, policy delay and retries. |
 | Active Workflow or pending result/task state | Restore normal reconciliation and output dependencies; do not force completion. |
+| Completed storage Error without capture | Preserve the Pod, Workflow and task-result evidence; the old node data is incomplete and needs the explicit storage-error disposition below. |
 | Data unavailable | Restore API or referenced storage access, then collect a fresh snapshot. |
 | Legacy result without receipt | Check whether the controller's limited same-result capture applies; otherwise retain evidence or choose explicit operator disposition. |
 | Identity conflict | Compare namespace, Workflow owner UID, node identity and Pod UID; do not copy a receipt to a replacement. |
@@ -188,10 +203,17 @@ An operator may deliberately retire a specific terminal Pod after preserving and
 This waives the missing automatic capture proof and may permanently lose remaining Pod details or unsaved outputs once the Pod disappears.
 It is not an automatic fallback or a claim that the old result has been reconstructed.
 
-The helper prepares this action only for a matching live completed owner, a terminal Pod node with no receipt, available node data and no known incomplete task synchronization.
+For an ordinary legacy result, the helper prepares this action only for a matching live completed owner, a terminal Pod node with no receipt, available node data and no known incomplete task synchronization.
 It rejects an active Workflow, conflicting identities, a different nonempty receipt, missing offload data and already proven receipts.
 Legacy unspecified task state is reported explicitly; the operator must account for that missing evidence in the decision.
 Do not make this decision while another actor is retrying or changing the Workflow; preserve the completed version under review and re-read both objects before preparation.
+
+A completed size error with unsupported offload has a separate inventory reason, `completed-storage-error-without-capture`.
+Its last persisted node or task state can still be incomplete even though execution has finished.
+Preserve the Pod and available WorkflowTaskResult data before considering release; the Workflow will retain its storage Error and incomplete historical nodes.
+For this class only, add `--acknowledge-incomplete-result` to the command below as well as `--acknowledge-unproven-capture`.
+The additional acknowledgement accepts disposal despite the incomplete stored result; it does not create a capture receipt, reconstruct outputs or change the Workflow.
+The helper still rejects a nonempty receipt, a restart marker, identity conflicts and an owner that has not completed with the specific size/offload error.
 
 After reviewing the private bundle and accepting that limitation, prepare a patch from fresh snapshots:
 

@@ -258,6 +258,8 @@ func TestCleanupCostEventMatrix(t *testing.T) {
 							node.Phase = wfv1.NodePhase(phase)
 							wf.Status.Nodes[node.ID] = node
 							h := newCleanupCostHarness(t, wf, []*apiv1.Pod{p}, storage, false)
+							callbacks := 0
+							h.c.callBack = func(*apiv1.Pod) error { callbacks++; return nil }
 							if event == "add" {
 								h.c.addPodEvent(logging.TestContext(t.Context()), p)
 							} else {
@@ -268,6 +270,7 @@ func TestCleanupCostEventMatrix(t *testing.T) {
 								h.c.updatePodEvent(logging.TestContext(t.Context()), old, p)
 							}
 							h.drain()
+							require.Equal(t, 1, callbacks, "workflow reconciliation must still receive ordinary live events")
 							initial := h.snapshot()
 							require.NotNil(t, h.pod(p))
 							require.Equal(t, p.Finalizers, h.pod(p).Finalizers)
@@ -277,6 +280,12 @@ func TestCleanupCostEventMatrix(t *testing.T) {
 							require.Equal(t, initial, h.snapshot(), "known active state must not become permanent polling")
 							cleanupCostReport(t, scenario, storage, wf, []*apiv1.Pod{p}, h, "initial+idle-minute")
 							cleanupCostActiveBudget(t, initial)
+							if event == "update" {
+								require.Zero(t, initial.Attempts, "ordinary live updates only need workflow reconciliation")
+								require.Zero(t, initial.Pod["get"])
+								require.Zero(t, initial.Workflow["get"])
+								require.Zero(t, initial.Hydrate)
+							}
 						})
 					}
 				}

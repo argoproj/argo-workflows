@@ -4,10 +4,14 @@ import (
 	"os"
 
 	apiv1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 )
 
 func significantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 	return os.Getenv("ALL_POD_CHANGES_SIGNIFICANT") == "true" ||
+		from.UID != to.UID ||
+		!apiequality.Semantic.DeepEqual(from.OwnerReferences, to.OwnerReferences) ||
+		hasOurFinalizer(from.Finalizers) != hasOurFinalizer(to.Finalizers) ||
 		from.Spec.NodeName != to.Spec.NodeName ||
 		from.Status.Phase != to.Status.Phase ||
 		from.Status.Message != to.Status.Message ||

@@ -117,7 +117,7 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 			return !errorsutil.IsTransientErr(ctx, offloadErr), offloadErr
 		})
 		if offloadErr != nil {
-			return fmt.Errorf("%sTried to offload but encountered error: %s", errMsg, offloadErr.Error())
+			return fmt.Errorf("%sTried to offload but encountered error: %w", errMsg, offloadErr)
 		}
 		wf.Status.Nodes = nil
 		wf.Status.CompressedNodes = ""

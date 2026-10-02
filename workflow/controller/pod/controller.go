@@ -8,6 +8,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -169,11 +170,23 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, _ *apiv1.Pod, newPod *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, oldPod *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
 	err := c.callBack(newPod)
 	if err != nil {
 		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
+	}
+	if !terminalPod(newPod) && newPod.DeletionTimestamp == nil && oldPod.UID == newPod.UID &&
+		!significantMetadataChange(oldPod.Labels, newPod.Labels) &&
+		!significantMetadataChange(oldPod.Annotations, newPod.Annotations) &&
+		apiequality.Semantic.DeepEqual(oldPod.OwnerReferences, newPod.OwnerReferences) &&
+		hasOurFinalizer(oldPod.Finalizers) == hasOurFinalizer(newPod.Finalizers) {
+		// Ordinary live updates already notify the workflow controller above.
+		// Its explicit cleanup intents retain retries without Pod events. Add
+		// events still rebuild lost intents after restart, including stopped
+		// nodes whose Pods remain Running. Only disposition/identity changes
+		// need an additional authoritative cleanup read on this update path.
+		return
 	}
 	deleting := newPod.DeletionTimestamp != nil
 	c.commonPodEvent(ctx, newPod, deleting)
