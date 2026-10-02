@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"encoding/json"
+	stdliberrors "errors"
 	"fmt"
 	"io"
 	"sort"
@@ -56,32 +57,36 @@ type Server interface {
 }
 
 type workflowServer struct {
-	instanceIDService     instanceid.Service
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	hydrator              hydrator.Interface
-	wfArchive             sqldb.WorkflowArchive
-	wfLister              store.WorkflowLister
-	wfReflector           *cache.Reflector
-	wftmplStore           servertypes.WorkflowTemplateStore
-	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
-	wfDefaults            *wfv1.Workflow
-	artifactRepositories  artifactrepositories.Interface
+	instanceIDService      instanceid.Service
+	offloadNodeStatusRepo  sqldb.OffloadNodeStatusRepo
+	hydrator               hydrator.Interface
+	wfArchive              sqldb.WorkflowArchive
+	wfLister               store.WorkflowLister
+	wfReflector            *cache.Reflector
+	wftmplStore            servertypes.WorkflowTemplateStore
+	cwftmplStore           servertypes.ClusterWorkflowTemplateStore
+	wfDefaults             *wfv1.Workflow
+	artifactRepositories   artifactrepositories.Interface
+	templateRepo           sqldb.TemplateRepo
+	templateOffloadMinSize int
 }
 
 var _ Server = &workflowServer{}
 
 // NewServer returns a new Server
-func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface) Server {
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface, templateRepo sqldb.TemplateRepo, templateOffloadMinSize int) Server {
 	ws := &workflowServer{
-		instanceIDService:     instanceIDService,
-		offloadNodeStatusRepo: offloadNodeStatusRepo,
-		hydrator:              hydrator.New(offloadNodeStatusRepo),
-		wfArchive:             wfArchive,
-		wfLister:              wfLister,
-		wftmplStore:           wftmplStore,
-		cwftmplStore:          cwftmplStore,
-		wfDefaults:            wfDefaults,
-		artifactRepositories:  artifactRepositories,
+		instanceIDService:      instanceIDService,
+		offloadNodeStatusRepo:  offloadNodeStatusRepo,
+		hydrator:               hydrator.New(offloadNodeStatusRepo),
+		wfArchive:              wfArchive,
+		wfLister:               wfLister,
+		wftmplStore:            wftmplStore,
+		cwftmplStore:           cwftmplStore,
+		wfDefaults:             wfDefaults,
+		artifactRepositories:   artifactRepositories,
+		templateRepo:           templateRepo,
+		templateOffloadMinSize: templateOffloadMinSize,
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
@@ -118,15 +123,29 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	s.instanceIDService.Label(req.Workflow)
 	creator.LabelCreator(ctx, req.Workflow)
 
+	logger := logging.RequireLoggerFromContext(ctx)
+
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{})
+	// Validate the full spec (templates included) before offloading so malformed
+	// workflows are rejected either way. Timeout guards against very large specs.
+	validationCtx, validationCancel := context.WithTimeout(ctx, 2*time.Minute)
+	validationStart := time.Now()
+	err := validate.Workflow(validationCtx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{})
+	validationDuration := time.Since(validationStart)
+	validationCancel()
+	logger.WithField("duration", validationDuration.String()).WithField("templateCount", len(req.Workflow.Spec.Templates)).Debug(ctx, "Workflow validation completed")
 	if err != nil {
+		if stdliberrors.Is(err, context.DeadlineExceeded) || validationCtx.Err() == context.DeadlineExceeded {
+			return nil, sutils.ToStatusError(
+				fmt.Errorf("workflow validation timed out after 2m — the spec is likely too large. Use nested DAGs (WorkflowTemplate pattern) for large workflows: %w", err),
+				codes.DeadlineExceeded)
+		}
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	// if we are doing a normal dryRun, just return the workflow un-altered
+	// Dry-run callers get the workflow unaltered as a preview — templates must not be stripped.
 	if req.CreateOptions != nil && len(req.CreateOptions.DryRun) > 0 {
 		return req.Workflow, nil
 	}
@@ -138,8 +157,10 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return workflow, nil
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, req.Workflow, metav1.CreateOptions{})
-	logger := logging.RequireLoggerFromContext(ctx)
+	// Create the workflow, offloading its templates to the database first when a templateRepo is
+	// configured and the spec is large enough. The strip -> create (with retry backoff) ->
+	// save-or-delete -> marker -> best-effort update sequence lives in workflow/util.
+	wf, err := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, s.templateRepo, req.Workflow, s.templateOffloadMinSize)
 	if err != nil {
 		if apierr.IsServerTimeout(err) && req.Workflow.GenerateName != "" && req.Workflow.Name != "" {
 			errWithHint := fmt.Errorf(`create request failed due to timeout, but it's possible that workflow "%s" already exists. Original error: %w`, req.Workflow.Name, err)
@@ -173,6 +194,10 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
 	}
+	// Hydrate templates if they were offloaded
+	if err := s.hydrateTemplates(ctx, wf); err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
 	newWf := &wfv1.Workflow{}
 	if ok, err := cleaner.Clean(wf, &newWf); err != nil {
 		// should this be InvalidArgument?
@@ -183,6 +208,67 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	return wf, nil
 }
 
+func (s *workflowServer) hydrateTemplates(ctx context.Context, wf *wfv1.Workflow) error {
+	if s.templateRepo == nil || !s.templateRepo.IsEnabled() {
+		return nil
+	}
+
+	// StoredTemplateSpecs.UID marks a workflow as offloaded, but the marker can be
+	// missing after a lost status-Update race. Template-ref workflows never have
+	// offload rows, so skip those; anything else with an empty spec gets probed.
+	missingOffloadMarker := wf.Status.StoredTemplateSpecs == nil || wf.Status.StoredTemplateSpecs.UID == ""
+	if missingOffloadMarker && wf.Spec.WorkflowTemplateRef != nil {
+		return nil
+	}
+
+	if len(wf.Spec.Templates) > 0 {
+		return nil
+	}
+
+	// Single fast probe — the read path must not inherit the controller's long retry backoff.
+	templates, err := s.templateRepo.GetTemplates(ctx, string(wf.UID))
+	if err != nil {
+		return fmt.Errorf("failed to hydrate templates: %w", err)
+	}
+
+	if len(templates) == 0 {
+		// No rows: the controller deletes them after archiving (the archive record
+		// carries the templates), so fall back to the archive for completed workflows.
+		if s.wfArchive != nil && s.wfArchive.IsEnabled() {
+			archivedWf, archiveErr := s.wfArchive.GetWorkflow(ctx, string(wf.UID), wf.Namespace, wf.Name)
+			if archiveErr == nil && archivedWf != nil && len(archivedWf.Spec.Templates) > 0 {
+				templates = archivedWf.Spec.Templates
+				logging.RequireLoggerFromContext(ctx).WithField("uid", wf.UID).WithField("templateCount", len(templates)).Debug(ctx, "Hydrated templates from archive record")
+			}
+		}
+		if len(templates) == 0 {
+			// Inline workflow or empty archive — no templates is not a read error.
+			logging.RequireLoggerFromContext(ctx).WithField("uid", wf.UID).Debug(ctx, "No offloaded templates found in database or archive for workflow")
+			return nil
+		}
+	}
+
+	// Populate the spec and StoredTemplates so template lookup and the UI manifest view work.
+	wf.Spec.Templates = templates
+	if wf.Status.StoredTemplates == nil {
+		wf.Status.StoredTemplates = make(map[string]wfv1.Template)
+	}
+	for _, tmpl := range templates {
+		wf.Status.StoredTemplates[tmpl.Name] = tmpl
+	}
+
+	// Rebuild the marker so subsequent reads short-circuit as already hydrated.
+	if missingOffloadMarker {
+		wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
+			UID:      string(wf.UID),
+			Version:  util.ComputeTemplateVersion(templates),
+			Hydrated: true,
+		}
+	}
+
+	return nil
+}
+
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*wfv1.WorkflowList, error) {
 	listOption := metav1.ListOptions{}
 	if req.ListOptions != nil {
@@ -191,7 +277,6 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	s.instanceIDService.With(&listOption)
 
 	options, err := sutils.BuildListOptions(listOption, req.Namespace, "", req.NameFilter, req.CreatedAfter, req.FinishedBefore)
-
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +443,6 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	// immediately.  Without this, we cannot detect a streaming response, and we can't write to the
 	// response since a subsequent write by the stream causes an error.
 	err = ws.SendHeader(metadata.MD{})
-
 	if err != nil {
 		return err
 	}
@@ -381,6 +465,12 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				if err := s.hydrator.Hydrate(ctx, wf); err != nil {
 					return sutils.ToStatusError(err, codes.Internal)
 				}
+			}
+			// Hydrate templates if they were offloaded. A transient DB error here must NOT
+			// tear down the client's watch stream: warn and emit the event un-hydrated so
+			// the controller can retry hydration on a later sync.
+			if err := s.hydrateTemplates(ctx, wf); err != nil {
+				logger.WithError(err).WithField("workflow", wf.Name).Warn(ctx, "Failed to hydrate offloaded templates; emitting event un-hydrated and retrying on a later sync")
 			}
 			newWf, err := clean(wf)
 			if err != nil {
@@ -415,7 +505,6 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 	defer logger.Debug(ctx, "Result channel done")
 
 	err = ws.SendHeader(metadata.MD{})
-
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}
@@ -495,6 +584,14 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	// FormulateRetryWorkflow needs templates resolvable in the spec; keep them there
+	// (re-offloaded below) and clear the offload marker, which this path rebuilds.
+	err = s.hydrateTemplates(ctx, wf)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	wf.Status.StoredTemplateSpecs = nil
+	wf.Status.StoredTemplates = nil
 	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -519,6 +616,29 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	// Re-offload in place: the retry keeps the workflow's UID, so SaveTemplates refreshes
+	// the existing rows, and pushing the full template spec through the Update below would
+	// send a multi-MB object to etcd. Small workflows stay inline, honoring the same
+	// templateOffloadMinSize gate as the create path.
+	if s.templateRepo != nil && s.templateRepo.IsEnabled() && util.ShouldOffloadTemplates(wf.Spec.Templates, s.templateOffloadMinSize) {
+		err = s.templateRepo.SaveTemplates(ctx, string(wf.UID), wf.Namespace, wf.Spec.Templates)
+		if err != nil {
+			// Rows may already be gone (deleted after archiving). Fail soft: keep
+			// the templates in spec rather than losing the retry.
+			logger.WithError(err).WithField("wf", wf.Name).Warn(ctx, "Failed to re-save offloaded templates on retry; keeping templates in spec")
+		} else {
+			templates := wf.Spec.Templates
+			wf.Spec.Templates = nil
+			// Keep the offload marker in sync with the fresh rows; the Update below
+			// persists it. A lost race is covered by DB-fallback hydration.
+			wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
+				UID:      string(wf.UID),
+				Version:  util.ComputeTemplateVersion(templates),
+				Hydrated: false,
+			}
+		}
+	}
+
 	err = s.hydrator.Dehydrate(ctx, wf)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -528,6 +648,8 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
 	if err != nil {
+		// Update never landed — the live object keeps its full inline spec, and the
+		// fresh rows are reclaimed by template GC or a subsequent retry.
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
@@ -546,13 +668,18 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
+	// Hydrate templates if they were offloaded
+	err = s.hydrateTemplates(ctx, wf)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
 	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	creator.LabelCreator(ctx, newWF)
 
-	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{})
+	created, err := util.SubmitWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, s.templateRepo, req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{}, s.templateOffloadMinSize)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -609,6 +736,11 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	// Hydrate templates if they were offloaded
+	if err := s.hydrateTemplates(ctx, wf); err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
 	return wf, nil
 }
 
@@ -634,6 +766,11 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
+	// Hydrate templates if they were offloaded
+	if err := s.hydrateTemplates(ctx, wf); err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
 	return wf, nil
 }
 
@@ -654,6 +791,11 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	// Hydrate templates if they were offloaded
+	if err := s.hydrateTemplates(ctx, wf); err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return wf, nil
@@ -699,6 +841,11 @@ func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.Workf
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	// Hydrate templates if they were offloaded
+	if err := s.hydrateTemplates(ctx, wf); err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	return wf, nil

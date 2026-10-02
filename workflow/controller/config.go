@@ -36,6 +36,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
+		if err := persistence.Validate(); err != nil {
+			return err
+		}
 		logger.Info(ctx, "Persistence configuration enabled")
 		tableName, err := persist.GetTableName(persistence)
 		if err != nil {
@@ -55,13 +58,19 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		}
 		sqldb.ConfigureDBSession(wfc.sessionProxy.Session(ctx), persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), tableName, persistence.GetOperationTimeout())
 			if err != nil {
 				return err
 			}
 			logger.Info(ctx, "Node status offloading is enabled")
 		} else {
 			logger.Info(ctx, "Node status offloading is disabled")
+		}
+		if persistence.TemplateOffload {
+			wfc.templateRepo = persist.NewTemplateRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), "argo_offloaded_workflow_templates", persistence.GetOperationTimeout())
+			logger.Info(ctx, "Template offloading is enabled")
+		} else {
+			logger.Info(ctx, "Template offloading is disabled")
 		}
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
@@ -82,6 +91,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory(ctx)
 	wfc.rateLimiter = wfc.newRateLimiter()
+	wfc.templateCache = newTemplateCache(defaultTemplateCacheMaxBytes)
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
 
 	logger.WithField("executorImage", wfc.executorImage()).

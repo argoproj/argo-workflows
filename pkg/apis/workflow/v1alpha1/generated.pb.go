@@ -283,6 +283,8 @@ func (m *Template) Reset() { *m = Template{} }
 
 func (m *TemplateRef) Reset() { *m = TemplateRef{} }
 
+func (m *TemplateSpecReference) Reset() { *m = TemplateSpecReference{} }
+
 func (m *TransformationStep) Reset() { *m = TransformationStep{} }
 
 func (m *UserContainer) Reset() { *m = UserContainer{} }
@@ -7601,6 +7603,47 @@ func (m *TemplateRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *TemplateSpecReference) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TemplateSpecReference) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TemplateSpecReference) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	i--
+	if m.Hydrated {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x18
+	i -= len(m.Version)
+	copy(dAtA[i:], m.Version)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Version)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.UID)
+	copy(dAtA[i:], m.UID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.UID)))
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func (m *TransformationStep) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -8917,6 +8960,20 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.StoredTemplateSpecs != nil {
+		{
+			size, err := m.StoredTemplateSpecs.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xaa
+	}
 	if len(m.TaskResultsCompletionStatus) > 0 {
 		keysForTaskResultsCompletionStatus := make([]string, 0, len(m.TaskResultsCompletionStatus))
 		for k := range m.TaskResultsCompletionStatus {
@@ -12397,6 +12454,20 @@ func (m *TemplateRef) Size() (n int) {
 	return n
 }
 
+func (m *TemplateSpecReference) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.UID)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Version)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
+	return n
+}
+
 func (m *TransformationStep) Size() (n int) {
 	if m == nil {
 		return 0
@@ -12921,6 +12992,10 @@ func (m *WorkflowStatus) Size() (n int) {
 			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + 1
 			n += mapEntrySize + 2 + sovGenerated(uint64(mapEntrySize))
 		}
+	}
+	if m.StoredTemplateSpecs != nil {
+		l = m.StoredTemplateSpecs.Size()
+		n += 2 + l + sovGenerated(uint64(l))
 	}
 	return n
 }
@@ -15047,6 +15122,18 @@ func (this *TemplateRef) String() string {
 	}, "")
 	return s
 }
+func (this *TemplateSpecReference) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TemplateSpecReference{`,
+		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
+		`Version:` + fmt.Sprintf("%v", this.Version) + `,`,
+		`Hydrated:` + fmt.Sprintf("%v", this.Hydrated) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *TransformationStep) String() string {
 	if this == nil {
 		return "nil"
@@ -15448,6 +15535,7 @@ func (this *WorkflowStatus) String() string {
 		`ArtifactRepositoryRef:` + strings.Replace(fmt.Sprintf("%v", this.ArtifactRepositoryRef), "ArtifactRepositoryRefStatus", "ArtifactRepositoryRefStatus", 1) + `,`,
 		`ArtifactGCStatus:` + strings.Replace(this.ArtifactGCStatus.String(), "ArtGCStatus", "ArtGCStatus", 1) + `,`,
 		`TaskResultsCompletionStatus:` + mapStringForTaskResultsCompletionStatus + `,`,
+		`StoredTemplateSpecs:` + strings.Replace(this.StoredTemplateSpecs.String(), "TemplateSpecReference", "TemplateSpecReference", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -38115,6 +38203,140 @@ func (m *TemplateRef) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *TemplateSpecReference) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: TemplateSpecReference: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: TemplateSpecReference: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Version = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Hydrated", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Hydrated = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *TransformationStep) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -43155,6 +43377,42 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.TaskResultsCompletionStatus[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 21:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StoredTemplateSpecs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StoredTemplateSpecs == nil {
+				m.StoredTemplateSpecs = &TemplateSpecReference{}
+			}
+			if err := m.StoredTemplateSpecs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

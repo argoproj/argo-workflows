@@ -255,6 +255,23 @@ drop index argo_archived_workflows_i1 on argo_archived_workflows;
 -- Step 68
 create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC);
 
+-- Step 69
+create table if not exists argo_offloaded_workflow_templates (
+    clustername   varchar(64) not null,
+    uid           varchar(128) not null,
+    namespace     varchar(256) not null,
+    template_name varchar(256) not null,
+    template      json not null,
+    createdat     timestamp not null default current_timestamp,
+    primary key (clustername, uid, template_name)
+);
+
+-- Step 70
+— *Programmatic migration: {mysql argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_uid {mysql map[mysql:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid, namespace) postgres:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid)]}}*
+
+-- Step 71
+— *Programmatic migration: {mysql argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_namespace {mysql map[postgres:create index idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace) sqlite:create index if not exists idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)]}}*
+
 ```
 
 ### PostgreSQL
@@ -492,6 +509,23 @@ drop index argo_archived_workflows_i1;
 
 -- Step 68
 create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC);
+
+-- Step 69
+create table if not exists argo_offloaded_workflow_templates (
+    clustername   varchar(64) not null,
+    uid           varchar(128) not null,
+    namespace     varchar(256) not null,
+    template_name varchar(256) not null,
+    template      jsonb not null,
+    createdat     timestamp not null default current_timestamp,
+    primary key (clustername, uid, template_name)
+);
+
+-- Step 70
+— *Programmatic migration: {postgres argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_uid {postgres map[mysql:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid, namespace) postgres:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid)]}}*
+
+-- Step 71
+— *Programmatic migration: {postgres argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_namespace {postgres map[postgres:create index idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace) sqlite:create index if not exists idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)]}}*
 
 ```
 

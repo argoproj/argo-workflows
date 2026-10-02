@@ -2,6 +2,7 @@ import {SlideContents} from 'argo-ui/src/components/slide-contents/slide-content
 import * as React from 'react';
 
 import {SerializingObjectEditor} from '../../../shared/components/object-editor';
+import {PhaseIcon} from '../../../shared/components/phase-icon';
 import * as models from '../../../shared/models';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
@@ -21,21 +22,41 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
 
     if (props.selectedNode) {
         const parentNode = props.workflow.status.nodes[props.selectedNode.boundaryID];
+        let renderedNode = false;
         if (parentNode) {
-            contents.push(
-                <div key='parent-node'>
-                    <h4>{normalizeNodeName(props.selectedNode.displayName || props.selectedNode.name)}</h4>
-                    <SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={getResolvedTemplates(props.workflow, parentNode)} />
-                </div>
-            );
+            const parentNodeTemplate = getResolvedTemplates(props.workflow, parentNode);
+            if (parentNodeTemplate) {
+                renderedNode = true;
+                contents.push(
+                    <div key='parent-node'>
+                        <h4>{normalizeNodeName(props.selectedNode.displayName || props.selectedNode.name)}</h4>
+                        <SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={parentNodeTemplate} />
+                    </div>
+                );
+            }
         }
 
         const currentNodeTemplate = getResolvedTemplates(props.workflow, props.selectedNode);
         if (currentNodeTemplate) {
+            renderedNode = true;
             contents.push(
                 <div key='current-node'>
                     <h4>{props.selectedNode.name}</h4>
                     <SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={currentNodeTemplate} />
+                </div>
+            );
+        }
+
+        if (!renderedNode) {
+            // The node's template could not be resolved. This happens for archived
+            // workflows whose offloaded template rows were garbage-collected after
+            // completion — the template is genuinely unrecoverable. Show a clear note
+            // rather than a silently empty (or crashing) panel.
+            contents.push(
+                <div key='no-template' className='argo-field' style={{marginTop: '1em'}}>
+                    <PhaseIcon value='Error' />
+                    Template not available: the template for this node could not be resolved.
+                    It may have been garbage-collected after the workflow was archived.
                 </div>
             );
         }
@@ -53,8 +74,12 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
         );
     }
 
+    // Show storedTemplates section only when templates are offloaded AND spec.templates is empty
+    // (e.g., list view where hydration hasn't happened).
+    // When spec.templates is already populated (server-side hydration), storedTemplates is redundant.
+    const isTemplatesOffloaded = props.workflow.status.storedTemplateSpecs?.uid != null;
     const storedTemplates = props.workflow.status.storedTemplates;
-    if (storedTemplates && Object.keys(storedTemplates).length) {
+    if (isTemplatesOffloaded && storedTemplates && Object.keys(storedTemplates).length && (!templates || Object.keys(templates).length === 0)) {
         contents.push(
             <SlideContents
                 title='Stored Templates'

@@ -88,7 +88,12 @@ export function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
 export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate | ClusterWorkflowTemplate): Graph {
     const graph = new Graph();
 
-    const templates = workflow.spec.templates || [];
+    // Prefer spec.templates (server hydrates offloaded templates into spec on GetWorkflow).
+    // Fall back to status.storedTemplates when spec is empty (e.g., list view, watch event before hydration).
+    let templates = workflow.spec.templates || [];
+    if (templates.length === 0 && 'status' in workflow) {
+        templates = Object.values(workflow.status.storedTemplates || {});
+    }
     const templateMap = new Map<string, Template>();
     const templateLeafMap = new Map<string, string[]>();
     let previousSteps: string[] = [];
