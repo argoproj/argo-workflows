@@ -371,7 +371,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 			go wfc.controllerConfigMapInformer.Run(ctx.Done())
 			if !cache.WaitForCacheSync(ctx.Done(), handlerSynced) {
 				logger.Error(ctx, "Timed out waiting for controller config map to sync")
-				os.Exit(1)
+				os.Exit(1) //nolint:gocritic // fatal exit is intended; deferred cleanup is not needed on process exit
 			}
 		}
 	}

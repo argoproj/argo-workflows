@@ -81,7 +81,6 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 	tracer, err := tracing.New(ctx, `argoexec`)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "failed to initialize tracing")
-		os.Exit(1)
 		return err
 	}
 	defer func() {

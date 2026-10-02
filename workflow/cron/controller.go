@@ -114,7 +114,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
 		cc.logger.Error(ctx, err.Error())
-		os.Exit(1)
+		os.Exit(1) //nolint:gocritic // fatal exit is intended; deferred cleanup is not needed on process exit
 	}
 
 	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,

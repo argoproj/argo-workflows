@@ -630,15 +630,15 @@ func mustRegisterGWHandler(ctx context.Context, register registerFunc, mux *runt
 func (as *argoServer) checkServeErr(ctx context.Context, name string, err error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	nameField := logging.Fields{"name": name}
-	if err != nil {
-		if as.stopCh == nil {
-			// a nil stopCh indicates a graceful shutdown
-			log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
-		} else {
-			log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
-			os.Exit(1)
-		}
-	} else {
+	if err == nil {
 		log.WithFields(nameField).Info(ctx, "graceful shutdown")
+		return
 	}
+	if as.stopCh == nil {
+		// a nil stopCh indicates a graceful shutdown
+		log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
+		return
+	}
+	log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
+	os.Exit(1)
 }

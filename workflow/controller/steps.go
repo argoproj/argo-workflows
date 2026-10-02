@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -50,7 +49,6 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		nodePhase, phaseErr := woc.wf.Status.Nodes.GetPhase(node.ID)
 		if phaseErr != nil {
 			woc.log.WithField("nodeID", node.ID).Error(ctx, "was unable to obtain nodePhase for nodeID")
-			os.Exit(1)
 			panic(fmt.Sprintf("unable to obtain nodePhase for %s", node.ID))
 		}
 		if nodePhase.Fulfilled(node.TaskResultSynced) {
@@ -103,7 +101,6 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 						outNodeName, nameErr := woc.wf.Status.Nodes.GetName(outNodeID)
 						if nameErr != nil {
 							woc.log.WithField("nodeID", outNodeID).Error(ctx, "was not able to obtain node name for nodeID")
-							os.Exit(1)
 							panic(fmt.Sprintf("could not obtain the out noden name for %s", outNodeID))
 						}
 						woc.addChildNode(ctx, outNodeName, sgNodeName)
