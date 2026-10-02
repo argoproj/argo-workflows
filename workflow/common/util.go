@@ -275,9 +275,23 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+	// Fast path: if the template JSON contains no template variables ({{ }),
+	// skip the expensive string replacement and JSON round-trip entirely.
+	// This is a major optimization for large flat DAGs where many simple
+	// container templates have no parameter substitutions.
+	tmplStr := string(tmplBytes)
+	if !strings.Contains(tmplStr, "{{") {
+		// No template variables found — return a copy without substitution
+		var newTmpl wfv1.Template
+		err = json.Unmarshal(tmplBytes, &newTmpl)
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+		return &newTmpl, nil
+	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := template.ToAnyMap(globalParams.Merge(localParams))
-	globalReplacedTmplStr, err := template.Replace(ctx, string(tmplBytes), replaceMap, true)
+	globalReplacedTmplStr, err := template.Replace(ctx, tmplStr, replaceMap, true)
 	if err != nil {
 		return nil, err
 	}

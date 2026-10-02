@@ -240,6 +240,10 @@ func TestEvaluateDependsLogic(t *testing.T) {
 		dependsLogic: make(map[string]string),
 		log:          logging.RequireLoggerFromContext(ctx),
 	}
+	d.taskMap = make(map[string]*wfv1.DAGTask, len(testTasks))
+	for i := range testTasks {
+		d.taskMap[testTasks[i].Name] = &testTasks[i]
+	}
 
 	// Task A is running
 	d.wf = &wfv1.Workflow{
@@ -342,6 +346,10 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		dependsLogic: make(map[string]string),
 		log:          logging.RequireLoggerFromContext(ctx),
 	}
+	d.taskMap = make(map[string]*wfv1.DAGTask, len(testTasks))
+	for i := range testTasks {
+		d.taskMap[testTasks[i].Name] = &testTasks[i]
+	}
 
 	// Task A is still running, A-1 succeeded but A-2 failed
 	d.wf = &wfv1.Workflow{
@@ -430,6 +438,10 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 		dependsLogic: make(map[string]string),
 		log:          logging.RequireLoggerFromContext(ctx),
 	}
+	d.taskMap = make(map[string]*wfv1.DAGTask, len(testTasks))
+	for i := range testTasks {
+		d.taskMap[testTasks[i].Name] = &testTasks[i]
+	}
 
 	// Task A is running
 	daemon := true
@@ -481,6 +493,10 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 		dependsLogic: make(map[string]string),
 		log:          logging.RequireLoggerFromContext(ctx),
 	}
+	d.taskMap = make(map[string]*wfv1.DAGTask, len(testTasks))
+	for i := range testTasks {
+		d.taskMap[testTasks[i].Name] = &testTasks[i]
+	}
 
 	// Task A is running
 	d.wf = &wfv1.Workflow{
@@ -528,6 +544,10 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 			dependencies: make(map[string][]string),
 			dependsLogic: make(map[string]string),
 			log:          logging.RequireLoggerFromContext(ctx),
+		}
+		d.taskMap = make(map[string]*wfv1.DAGTask, len(testTasks))
+		for i := range testTasks {
+			d.taskMap[testTasks[i].Name] = &testTasks[i]
 		}
 
 		// Task A is running

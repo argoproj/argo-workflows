@@ -1486,6 +1486,7 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		resolvedTemplates[task.Name] = resolvedTmpl
 
 		aggregate := len(task.WithItems) > 0 || task.WithParam != ""
+
 		tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, scope, aggregate, false)
 
 		err = common.ValidateTaskResults(&task)
@@ -1518,6 +1519,7 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		return err
 	}
 
+	secondLoopStart := time.Now()
 	for _, task := range tmpl.DAG.Tasks {
 		resolvedTmpl := resolvedTemplates[task.Name]
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
@@ -1533,9 +1535,31 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
+
+		// Fast path: a task with no template variables, no inline template and no items/with
+		// expansion cannot reference ancestor outputs, so the scope copy, the ancestry walk and
+		// variable resolution are skipped. The walk is deferred to the slow path below.
+		taskStr := string(taskBytes)
+		hasTemplateVars := strings.Contains(taskStr, "{{")
+		needsScopeWork := hasTemplateVars ||
+			task.Inline != nil ||
+			len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil
+
+		if !needsScopeWork {
+			// Argument structure is still validated. The dependency-reference check is not needed
+			// here: it only inspects {{tasks.X...}} references, which require a template variable and
+			// therefore take the slow path above with the real ancestry.
+			err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments, false)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+			}
+			continue
+		}
+
+		ancestry := common.GetTaskAncestry(ctx, dagValidationCtx, task.Name)
+
 		taskScope := make(map[string]any)
 		maps.Copy(taskScope, scope)
-		ancestry := common.GetTaskAncestry(ctx, dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
 			ancestorTask := dagValidationCtx.GetTask(ctx, ancestor)
 			resolvedTmpl := resolvedTemplates[ancestor]
@@ -1552,7 +1576,7 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = resolveAllVariables(taskScope, tctx.globalParams, string(taskBytes), workflowTemplateValidation)
+		err = resolveAllVariables(taskScope, tctx.globalParams, taskStr, workflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
@@ -1564,12 +1588,17 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		// Validate the template again with actual arguments.
-		_, err = tctx.validateTemplateHolder(ctx, &task, tmplCtx, &task.Arguments, workflowTemplateValidation)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		// Skip the second validation pass for a task with no arguments: the first pass with
+		// FakeArguments produces an identical result.
+		if len(task.Arguments.Parameters) > 0 || len(task.Arguments.Artifacts) > 0 {
+			_, err = tctx.validateTemplateHolder(ctx, &task, tmplCtx, &task.Arguments, workflowTemplateValidation)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+			}
 		}
 	}
+
+	logging.RequireLoggerFromContext(ctx).WithField("duration", time.Since(secondLoopStart).String()).WithField("taskCount", len(tmpl.DAG.Tasks)).WithField("scopeSize", len(scope)).Debug(ctx, "DAG second loop completed")
 
 	return nil
 }
