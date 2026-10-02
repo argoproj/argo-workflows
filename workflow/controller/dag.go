@@ -116,8 +116,10 @@ func truncateForError(logic string) string {
 	if len(logic) <= maxErrorExpressionLen {
 		return logic
 	}
+	utf8String := []rune(logic)
 	nOperators := strings.Count(logic, " && ") + strings.Count(logic, " || ")
-	return fmt.Sprintf("%.*s ... [%d operators total, truncated]", maxErrorExpressionLen, logic, nOperators)
+	slicedString := string(utf8String[:min(len(utf8String), maxErrorExpressionLen)])
+	return fmt.Sprintf("%s ... [%d operators total, truncated]", slicedString, nOperators)
 }
 
 func (d *dagContext) GetTaskDependencies(ctx context.Context, taskName string) []string {
@@ -1100,13 +1102,10 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	// budget (github.com/expr-lang/expr) fails to evaluate. Above maxDependsChunkOperands a
 	// pure conjunction is split into subexpressions that are evaluated individually;
 	// everything else is evaluated as one expression.
-	if len(deps) > maxDependsChunkOperands && dependsPureConjunction.MatchString(evalLogic) {
+	if strings.Count(evalLogic, " && ") >= maxDependsChunkOperands && dependsPureConjunction.MatchString(evalLogic) {
 		operands := strings.Split(evalLogic, " && ")
 		for start := 0; start < len(operands); start += maxDependsChunkOperands {
-			end := start + maxDependsChunkOperands
-			if end > len(operands) {
-				end = len(operands)
-			}
+			end := min(start+maxDependsChunkOperands, len(operands))
 
 			// Collect this chunk's scope keys (de-duplicated, first-seen order); operands are
 			// self-contained so only their own keys are needed — e.g. the operand

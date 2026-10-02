@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -348,7 +349,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {Name: d.taskNodeName("A"),
+				d.taskNodeID("A"): {
+					Name:     d.taskNodeName("A"),
 					Phase:    wfv1.NodeRunning,
 					Type:     wfv1.NodeTypeTaskGroup,
 					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -366,7 +368,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Task A succeeded
-	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"),
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+		Name:     d.taskNodeName("A"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -388,7 +391,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 
 	// Task B succeeds and B-1 fails
-	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Name: d.taskNodeName("B"),
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+		Name:     d.taskNodeName("B"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
@@ -1318,12 +1322,15 @@ func TestTruncateForError(t *testing.T) {
 	assert.Equal(t, short, truncateForError(short))
 
 	long := ""
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		long += "A.Succeeded && "
 	}
 	long += "B.Succeeded"
 	got := truncateForError(long)
 	assert.Equal(t, long[:maxErrorExpressionLen]+" ... [50 operators total, truncated]", got)
+	// utf8 test
+	runes := strings.Repeat("𝄞€ä", 500) + ".Succeeded && B.Succeeded"
+	assert.True(t, utf8.ValidString(truncateForError(runes)))
 }
 
 // newDependsTestDagContext builds a bare dagContext for the evaluateDependsLogic tests:
@@ -1337,10 +1344,6 @@ func newDependsTestDagContext(ctx context.Context, tasks []wfv1.DAGTask) *dagCon
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
 		log:          logging.RequireLoggerFromContext(ctx),
-	}
-	// Index the fixture the way executeDAG does for real DAGs, so GetTask resolves
-	// these tasks.
-	if len(tasks) > 0 {
 	}
 	return d
 }
@@ -1410,7 +1413,7 @@ func TestEvaluateDependsLogicManyDependencies(t *testing.T) {
 	// cannot evaluate this.
 	numDeps := 2*maxDependsChunkOperands + 5
 	names := make([]string, numDeps)
-	for i := 0; i < numDeps; i++ {
+	for i := range numDeps {
 		names[i] = fmt.Sprintf("t%d", i)
 	}
 
