@@ -58,7 +58,22 @@ export class ListWatch<T extends Resource> {
         this.stop();
         this.list()
             .then(x => {
-                this.items = (x.items || []).sort(this.sorter);
+                // Deduplicate by UID — the API may return both the live etcd
+                // workflow and its archived postgres row with the same UID,
+                // causing duplicate entries in the workflow list.
+                const seen = new Set<string>();
+                this.items = (x.items || [])
+                    .filter(item => {
+                        const uid = item.metadata.uid;
+                        if (uid && seen.has(uid)) {
+                            return false;
+                        }
+                        if (uid) {
+                            seen.add(uid);
+                        }
+                        return true;
+                    })
+                    .sort(this.sorter);
                 this.onLoad(x.metadata);
                 this.onChange(this.items);
                 this.retryWatch.start(x.metadata.resourceVersion);

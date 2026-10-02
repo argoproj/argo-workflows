@@ -55,6 +55,9 @@ func TestHydrator(t *testing.T) {
 		t.Run("Offload", func(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
 			offloadNodeStatusRepo.On("Save", "my-uid", "my-ns", mock.Anything).Return("my-offload-version", nil)
+			// Dehydrate reads the saved version back to confirm it is durably queryable
+			// before stamping it.
+			offloadNodeStatusRepo.On("Get", "my-uid", "my-offload-version").Return(wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}, nil)
 			hydrator := New(offloadNodeStatusRepo)
 			wf := &wfv1.Workflow{
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid", Namespace: "my-ns"},

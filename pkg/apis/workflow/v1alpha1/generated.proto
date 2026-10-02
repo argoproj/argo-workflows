@@ -1945,6 +1945,18 @@ message TemplateRef {
   optional bool clusterScope = 4;
 }
 
+// TemplateSpecReference references offloaded template specifications stored in database
+message TemplateSpecReference {
+  // UID is the workflow UID
+  optional string uid = 1;
+
+  // Version is a hash of the template specifications
+  optional string version = 2;
+
+  // Hydrated indicates if templates have been loaded from database
+  optional bool hydrated = 3;
+}
+
 message TransformationStep {
   // Expression defines an expr expression to apply
   optional string expression = 1;
@@ -2375,6 +2387,9 @@ message WorkflowStatus {
 
   // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
   map<string, bool> taskResultsCompletionStatus = 20;
+
+  // StoredTemplateSpecs references offloaded template specifications stored in database
+  optional TemplateSpecReference storedTemplateSpecs = 21;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

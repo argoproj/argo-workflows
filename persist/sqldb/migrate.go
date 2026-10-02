@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/upper/db/v4"
 
@@ -231,7 +232,115 @@ func MigrateChanges(clusterName, tableName string, dbType sqldb.DBType) []sqldb.
 			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
 		}),
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
+
+		// TEMPLATE HYDRATION - offloaded template table. PostgreSQL uses jsonb (indexable);
+		// MySQL/MariaDB use json, and SQLite stores it as text.
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.Postgres: sqldb.AnsiSQLChange(`create table if not exists argo_offloaded_workflow_templates (
+    clustername   varchar(64) not null,
+    uid           varchar(128) not null,
+    namespace     varchar(256) not null,
+    template_name varchar(256) not null,
+    template      jsonb not null,
+    createdat     timestamp not null default current_timestamp,
+    primary key (clustername, uid, template_name)
+)`),
+			sqldb.MySQL: sqldb.AnsiSQLChange(`create table if not exists argo_offloaded_workflow_templates (
+    clustername   varchar(64) not null,
+    uid           varchar(128) not null,
+    namespace     varchar(256) not null,
+    template_name varchar(256) not null,
+    template      json not null,
+    createdat     timestamp not null default current_timestamp,
+    primary key (clustername, uid, template_name)
+)`),
+			sqldb.SQLite: sqldb.AnsiSQLChange(`create table if not exists argo_offloaded_workflow_templates (
+    clustername   varchar(64) not null,
+    uid           varchar(128) not null,
+    namespace     varchar(256) not null,
+    template_name varchar(256) not null,
+    template      json not null,
+    createdat     timestamp not null default current_timestamp,
+    primary key (clustername, uid, template_name)
+)`),
+		}),
+
+		// Add indexes. MySQL can't do CREATE INDEX IF NOT EXISTS and doesn't roll back
+		// transaction errors, so each index is a dedicated change guarded by a catalog
+		// probe (skipIfIndexExists), making it a safe no-op when already present.
+		skipIfIndexExists{
+			dbType:    dbType,
+			tableName: "argo_offloaded_workflow_templates",
+			indexName: "idx_argo_offloaded_wf_templates_uid",
+			inner: sqldb.ByType(dbType, sqldb.TypedChanges{
+				// MySQL: uid is a left prefix of the (uid, namespace) composite
+				// index, so one index serves both lookup patterns.
+				sqldb.MySQL:    sqldb.AnsiSQLChange(`create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid, namespace)`),
+				sqldb.Postgres: sqldb.AnsiSQLChange(`create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid)`),
+			}),
+		},
+		skipIfIndexExists{
+			dbType:    dbType,
+			tableName: "argo_offloaded_workflow_templates",
+			indexName: "idx_argo_offloaded_wf_templates_namespace",
+			inner: sqldb.ByType(dbType, sqldb.TypedChanges{
+				sqldb.Postgres: sqldb.AnsiSQLChange(`create index idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)`),
+				sqldb.SQLite:   sqldb.AnsiSQLChange(`create index if not exists idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)`),
+			}),
+		},
+
+		// No further changes: Postgres jsonb is applied at table creation; MySQL needs no namespace index.
 	}
+}
+
+// skipIfIndexExists wraps a schema change and no-ops it when an index with the
+// given name already exists (queried per-DB catalog). Reruns stay safe because a
+// prior partial application (e.g. after the version bump failed) may have created it.
+type skipIfIndexExists struct {
+	dbType    sqldb.DBType
+	tableName string
+	indexName string
+	// inner may be nil, in which case the change is a no-op for this DB type
+	// (e.g. MySQL where a composite index already covers the columns).
+	inner sqldb.Change
+}
+
+func (s skipIfIndexExists) Apply(ctx context.Context, session db.Session) error {
+	exists, err := indexExists(session, s.dbType, s.tableName, s.indexName)
+	if err != nil {
+		return err
+	}
+	if exists || s.inner == nil {
+		return nil
+	}
+	return s.inner.Apply(ctx, session)
+}
+
+// indexExists consults the per-DB catalog. The session was created with the
+// caller's context, so queries issued on it inherit that lifetime.
+func indexExists(session db.Session, dbType sqldb.DBType, tableName, indexName string) (bool, error) {
+	var count int
+	var q string
+	switch dbType {
+	case sqldb.Postgres:
+		q = `select count(*) from pg_indexes where tablename = $1 and indexname = $2`
+	case sqldb.MySQL:
+		q = `select count(*) from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ?`
+	case sqldb.SQLite:
+		q = `select count(*) from sqlite_master where type = 'index' and tbl_name = ? and name = ?`
+	default:
+		// Unknown driver: assume the index is absent and let the inner change
+		// run; a duplicate-index error then surfaces exactly as before.
+		return false, nil
+	}
+	row, err := session.SQL().QueryRow(q, tableName, indexName)
+	if err != nil {
+		return false, fmt.Errorf("failed to check index %s on %s: %w", indexName, tableName, err)
+	}
+	if err := row.Scan(&count); err != nil {
+		return false, fmt.Errorf("failed to scan index check for %s on %s: %w", indexName, tableName, err)
+	}
+	return count > 0, nil
 }
 
 func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {

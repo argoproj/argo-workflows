@@ -563,7 +563,17 @@ export interface Workflow {
     status?: WorkflowStatus;
 }
 
-export const execSpec = (w: Workflow) => Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
+// execSpec returns the effective workflow spec by merging the stored template spec (populated when
+// templates are offloaded to Postgres) with the live spec. With templates offloaded both sources may
+// have an empty/undefined templates array — default to [] so downstream .find()/.filter()/.map()
+// calls don't crash with "Cannot read property 'find' of undefined".
+export const execSpec = (w: Workflow) => {
+    const spec = Object.assign({}, w.status.storedWorkflowTemplateSpec, w.spec);
+    if (!spec.templates) {
+        spec.templates = [];
+    }
+    return spec;
+};
 
 export const archivalStatus = 'workflows.argoproj.io/workflow-archiving-status';
 
@@ -738,6 +748,12 @@ export interface TemplateRef {
     clusterScope?: boolean;
 }
 
+export interface TemplateSpecReference {
+    uid?: string;
+    version?: string;
+    hydrated?: boolean;
+}
+
 export interface WorkflowStatus {
     /**
      * Phase a simple, high-level summary of where the workflow is in its lifecycle.
@@ -776,6 +792,11 @@ export interface WorkflowStatus {
      * StoredTemplates is a mapping between a template ref and the node's status.
      */
     storedTemplates: {[name: string]: Template};
+
+    /**
+     * StoredTemplateSpecs references offloaded template specifications stored in database.
+     */
+    storedTemplateSpecs?: TemplateSpecReference;
 
     /**
      * ResourcesDuration tracks how much resources were requested.

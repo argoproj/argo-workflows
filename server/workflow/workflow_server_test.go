@@ -39,6 +39,7 @@ import (
 	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 const unlabelled = `{
@@ -666,7 +667,7 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	namespaceAll := metav1.NamespaceAll
 	wftmplStore := workflowtemplate.NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
-	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, nil)
+	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, nil, nil, 0)
 	return server, ctx
 }
 
@@ -1532,7 +1533,315 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 	}
 
 	namespaceAll := metav1.NamespaceAll
-	server := NewServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
+	server := NewServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos, nil, 0)
 
 	return server, ctx
+}
+
+func TestComputeTemplateVersion(t *testing.T) {
+	// Empty templates
+	assert.Equal(t, "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", wfutil.ComputeTemplateVersion(nil))
+	assert.Equal(t, "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", wfutil.ComputeTemplateVersion([]v1alpha1.Template{}))
+
+	// Single template
+	v1 := wfutil.ComputeTemplateVersion([]v1alpha1.Template{{Name: "tmpl-1"}})
+	assert.Contains(t, v1, "sha256:")
+	assert.Len(t, v1, 64+7) // "sha256:" prefix + 64 hex chars
+
+	// Different templates produce different hashes
+	v2 := wfutil.ComputeTemplateVersion([]v1alpha1.Template{{Name: "tmpl-2"}})
+	assert.NotEqual(t, v1, v2)
+
+	// Order does NOT matter: the hash is computed over the name-sorted canonical form, so
+	// version hashes are stable irrespective of storage/insertion order (see ComputeTemplateVersion).
+	v3 := wfutil.ComputeTemplateVersion([]v1alpha1.Template{{Name: "tmpl-1"}, {Name: "tmpl-2"}})
+	v4 := wfutil.ComputeTemplateVersion([]v1alpha1.Template{{Name: "tmpl-2"}, {Name: "tmpl-1"}})
+	assert.Equal(t, v3, v4)
+
+	// Same templates produce same hash
+	v5 := wfutil.ComputeTemplateVersion([]v1alpha1.Template{{Name: "tmpl-1"}})
+	assert.Equal(t, v1, v5)
+}
+
+// newWorkflowServerWithTemplateRepo returns a workflowServer with a templateRepo injected.
+// This is used by tests that exercise the template offloading path.
+func newWorkflowServerWithTemplateRepo(t *testing.T, templateRepo sqldb.TemplateRepo) (*workflowServer, context.Context) {
+	t.Helper()
+	server, ctx := getWorkflowServer(t)
+	ws := server.(*workflowServer)
+	ws.templateRepo = templateRepo
+	// offload everything: these tests exercise the offload path with small templates
+	ws.templateOffloadMinSize = 1
+	return ws, ctx
+}
+
+// TestRetryWorkflow_ReOffloadsTemplates verifies the retry path re-offloads
+// hydrated templates to the DB (keyed by the unchanged UID) and strips them
+// from spec before the final Update — instead of writing the full hydrated
+// spec back to etcd and relying on a controller re-offload that never happens.
+func TestRetryWorkflow_ReOffloadsTemplates(t *testing.T) {
+	// Failed, offloaded workflow: stub spec (no templates), marker present.
+	const offloadedFailedWf = `{
+		"apiVersion": "argoproj.io/v1alpha1",
+		"kind": "Workflow",
+		"metadata": {
+			"name": "failed-offloaded",
+			"namespace": "workflows",
+			"uid": "failed-offloaded-uid",
+			"labels": {
+				"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+			}
+		},
+		"spec": {
+			"entrypoint": "whalesay"
+		},
+		"status": {
+			"phase": "Failed",
+			"storedTemplateSpecs": {
+				"uid": "failed-offloaded-uid",
+				"version": "sha256:old",
+				"hydrated": false
+			}
+		}
+	}`
+	var wfObj v1alpha1.Workflow
+	v1alpha1.MustUnmarshal([]byte(offloadedFailedWf), &wfObj)
+
+	tmpl := v1alpha1.Template{
+		Name:      "whalesay",
+		Container: &corev1.Container{Image: "docker/whalesay:latest"},
+	}
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("IsEnabled").Return(true)
+	mockRepo.On("GetTemplates", mock.Anything, "failed-offloaded-uid").
+		Return([]v1alpha1.Template{tmpl}, nil)
+	var savedUID, savedNS string
+	var savedCount int
+	mockRepo.On("SaveTemplates", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			savedUID = args.String(1)
+			savedNS = args.String(2)
+			if ts, ok := args.Get(3).([]v1alpha1.Template); ok {
+				savedCount = len(ts)
+			}
+		}).Return(nil)
+
+	server, ctx := getWorkflowServerWithArtifacts(t, &wfObj, nil)
+	server.(*workflowServer).templateRepo = mockRepo
+	// offload everything: these tests exercise the offload path with small templates
+	server.(*workflowServer).templateOffloadMinSize = 1
+
+	retried, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "failed-offloaded", Namespace: "workflows"})
+	require.NoError(t, err)
+	require.NotNil(t, retried)
+
+	// Templates were re-saved under the SAME uid (retry is in-place) ...
+	mockRepo.AssertCalled(t, "SaveTemplates", mock.Anything, "failed-offloaded-uid", "workflows", mock.Anything)
+	assert.Equal(t, "failed-offloaded-uid", savedUID)
+	assert.Equal(t, "workflows", savedNS)
+	assert.Equal(t, 1, savedCount)
+	// ... and the persisted object is a stub: no inline templates, fresh marker.
+	assert.Empty(t, retried.Spec.Templates, "retry must not write hydrated templates back to etcd")
+	require.NotNil(t, retried.Status.StoredTemplateSpecs)
+	assert.Equal(t, "failed-offloaded-uid", retried.Status.StoredTemplateSpecs.UID)
+	assert.Equal(t, wfutil.ComputeTemplateVersion([]v1alpha1.Template{tmpl}), retried.Status.StoredTemplateSpecs.Version)
+
+	// And the object stored in the (fake) API server matches.
+	persisted, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows("workflows").Get(ctx, "failed-offloaded", metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, persisted.Spec.Templates)
+	require.NotNil(t, persisted.Status.StoredTemplateSpecs)
+}
+
+// TestRetryWorkflow_ReOffloadFails_KeepsTemplatesInSpec: if the DB write fails,
+// retry must fall back to keeping templates inline rather than producing a
+// template-less workflow the controller cannot hydrate.
+func TestRetryWorkflow_ReOffloadFails_KeepsTemplatesInSpec(t *testing.T) {
+	const offloadedFailedWf = `{
+		"apiVersion": "argoproj.io/v1alpha1",
+		"kind": "Workflow",
+		"metadata": {
+			"name": "failed-offloaded",
+			"namespace": "workflows",
+			"uid": "failed-offloaded-uid",
+			"labels": {
+				"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+			}
+		},
+		"spec": {
+			"entrypoint": "whalesay"
+		},
+		"status": {
+			"phase": "Failed",
+			"storedTemplateSpecs": {
+				"uid": "failed-offloaded-uid",
+				"version": "sha256:old",
+				"hydrated": false
+			}
+		}
+	}`
+	var wfObj v1alpha1.Workflow
+	v1alpha1.MustUnmarshal([]byte(offloadedFailedWf), &wfObj)
+
+	tmpl := v1alpha1.Template{
+		Name:      "whalesay",
+		Container: &corev1.Container{Image: "docker/whalesay:latest"},
+	}
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("IsEnabled").Return(true)
+	mockRepo.On("GetTemplates", mock.Anything, "failed-offloaded-uid").
+		Return([]v1alpha1.Template{tmpl}, nil)
+	mockRepo.On("SaveTemplates", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(fmt.Errorf("db is down"))
+
+	server, ctx := getWorkflowServerWithArtifacts(t, &wfObj, nil)
+	server.(*workflowServer).templateRepo = mockRepo
+	// offload everything: these tests exercise the offload path with small templates
+	server.(*workflowServer).templateOffloadMinSize = 1
+
+	retried, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "failed-offloaded", Namespace: "workflows"})
+	require.NoError(t, err)
+	require.NotNil(t, retried)
+	// Fallback: templates remain in spec so the workflow is still runnable.
+	require.Len(t, retried.Spec.Templates, 1)
+	assert.Equal(t, "whalesay", retried.Spec.Templates[0].Name)
+}
+
+// TestCreateWorkflow_WithTemplateOffload_ValidationFails verifies fix #1:
+// validation must run on the full spec BEFORE templates are stripped for offloading.
+// A malformed workflow (entrypoint referencing a non-existent template) must be rejected
+// even when template offloading is enabled.
+func TestCreateWorkflow_WithTemplateOffload_ValidationFails(t *testing.T) {
+	mockRepo := mocks.NewTemplateRepo(t)
+
+	server, ctx := newWorkflowServerWithTemplateRepo(t, mockRepo)
+
+	// Malformed workflow: entrypoint "does-not-exist" references no template
+	malformed := `{
+  "namespace": "test",
+  "workflow": {
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Workflow",
+    "metadata": {
+      "generateName": "malformed-",
+      "labels": {
+        "workflows.argoproj.io/controller-instanceid": "my-instanceid"
+      }
+    },
+    "spec": {
+      "entrypoint": "does-not-exist",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "docker/whalesay:latest"
+          }
+        }
+      ]
+    }
+  }
+}`
+	var req workflowpkg.WorkflowCreateRequest
+	v1alpha1.MustUnmarshal([]byte(malformed), &req)
+	wf, err := server.CreateWorkflow(ctx, &req)
+	require.Error(t, err)
+	assert.Nil(t, wf)
+	// SaveTemplates must NOT have been called since validation failed before offloading
+	mockRepo.AssertNotCalled(t, "SaveTemplates", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+// TestCreateWorkflow_WithTemplateOffload_SetsStoredTemplateSpecs verifies fix #4:
+// after a successful create with offloading, StoredTemplateSpecs is set on the workflow
+// so the controller doesn't need a fallback path and the archive race is eliminated.
+func TestCreateWorkflow_WithTemplateOffload_SetsStoredTemplateSpecs(t *testing.T) {
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("SaveTemplates", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	server, ctx := newWorkflowServerWithTemplateRepo(t, mockRepo)
+
+	valid := `{
+  "namespace": "test",
+  "workflow": {
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Workflow",
+    "metadata": {
+      "generateName": "valid-offload-",
+      "uid": "valid-offload-uid-1234",
+      "labels": {
+        "workflows.argoproj.io/controller-instanceid": "my-instanceid"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "docker/whalesay:latest"
+          }
+        }
+      ]
+    }
+  }
+}`
+	var req workflowpkg.WorkflowCreateRequest
+	v1alpha1.MustUnmarshal([]byte(valid), &req)
+	wf, err := server.CreateWorkflow(ctx, &req)
+	require.NoError(t, err)
+	require.NotNil(t, wf)
+
+	// Templates must be stripped from the spec (offloaded to DB)
+	assert.Empty(t, wf.Spec.Templates, "Templates should be stripped from spec after offloading")
+
+	// StoredTemplateSpecs must be set (fix #4)
+	require.NotNil(t, wf.Status.StoredTemplateSpecs, "StoredTemplateSpecs must be set on creation")
+	assert.NotEmpty(t, wf.Status.StoredTemplateSpecs.UID, "StoredTemplateSpecs.UID must be set")
+	assert.NotEmpty(t, wf.Status.StoredTemplateSpecs.Version, "StoredTemplateSpecs.Version must be set")
+	assert.False(t, wf.Status.StoredTemplateSpecs.Hydrated, "StoredTemplateSpecs.Hydrated should be false on creation")
+
+	mockRepo.AssertCalled(t, "SaveTemplates", mock.Anything, string(wf.UID), wf.Namespace, mock.Anything)
+}
+
+// TestCreateWorkflow_WithTemplateOffload_DBFailureDeletesWorkflow verifies the compensating
+// delete: if SaveTemplates fails after the workflow stub is created in etcd, the stub is deleted
+// to avoid orphaned workflows with no templates.
+func TestCreateWorkflow_WithTemplateOffload_DBFailureDeletesWorkflow(t *testing.T) {
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("SaveTemplates", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("db connection failed"))
+
+	server, ctx := newWorkflowServerWithTemplateRepo(t, mockRepo)
+
+	valid := `{
+  "namespace": "test",
+  "workflow": {
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Workflow",
+    "metadata": {
+      "generateName": "db-fail-",
+      "uid": "db-fail-uid-5678",
+      "labels": {
+        "workflows.argoproj.io/controller-instanceid": "my-instanceid"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "docker/whalesay:latest"
+          }
+        }
+      ]
+    }
+  }
+}`
+	var req workflowpkg.WorkflowCreateRequest
+	v1alpha1.MustUnmarshal([]byte(valid), &req)
+	wf, err := server.CreateWorkflow(ctx, &req)
+	require.Error(t, err)
+	assert.Nil(t, wf)
+	assert.Contains(t, err.Error(), "failed to save templates")
 }
