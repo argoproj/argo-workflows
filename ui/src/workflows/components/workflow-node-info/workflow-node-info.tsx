@@ -226,7 +226,10 @@ function WorkflowNodeSummary(props: Props) {
                         object={{
                             metadata: {
                                 namespace: props.workflow.metadata.namespace,
-                                name: podName
+                                name: podName,
+                                annotations: props.workflow.spec?.templates?.find(
+                                    t => t.name === props.node.templateName
+                                )?.metadata?.annotations
                             },
                             workflow: props.workflow,
                             status: {
