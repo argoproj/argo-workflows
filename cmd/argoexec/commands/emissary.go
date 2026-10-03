@@ -33,8 +33,7 @@ import (
 // varRunArgo is a var, not a const, so tests can point it at a temp dir.
 var varRunArgo = common.VarRunArgoPath
 
-// traceParentEnv serialises ctx's current span as TRACEPARENT/TRACESTATE
-// entries for a child process's environment.
+// traceParentEnv returns ctx's span as TRACEPARENT/TRACESTATE env entries.
 func traceParentEnv(ctx context.Context) []string {
 	carrier := propagation.MapCarrier{}
 	propagation.TraceContext{}.Inject(ctx, carrier)
@@ -57,10 +56,7 @@ func NewEmissaryCommand() *cobra.Command {
 	}
 }
 
-// newPodSource is the emissary's composition root for its task. The pod
-// spec delivers exactly one: the template (file, or ARGO_TEMPLATE for
-// init-less templates without a supervisor), the command from argv plus any
-// offloaded args file, and the environment.
+// newPodSource builds the one task a pod spec delivers, from env and argv.
 func newPodSource(containerName string, includeScriptOutput bool, args []string) maindriver.TaskSource {
 	return &maindriver.PodSource{
 		VarRunArgo:          varRunArgo,
@@ -75,13 +71,29 @@ func newPodSource(containerName string, includeScriptOutput bool, args []string)
 	}
 }
 
+// traceContextFromEnv extracts TRACEPARENT/TRACESTATE from env into ctx.
+func traceContextFromEnv(ctx context.Context, env []string) context.Context {
+	carrier := propagation.MapCarrier{}
+	for _, kv := range env {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			continue
+		}
+		switch strings.ToUpper(k) {
+		case "TRACEPARENT":
+			carrier["traceparent"] = v
+		case "TRACESTATE":
+			carrier["tracestate"] = v
+		}
+	}
+	return propagation.TraceContext{}.Extract(ctx, carrier)
+}
+
 // runEmissary is the emissary body, with everything the command parses from
 // the environment passed in as parameters so it is testable without env or
-// package-level state. The pod layout (markers, locks, dependency waits,
-// signals, the exitcode file) lives here; running the command is the
-// driver's, and the task comes from source once the pod is ready for it.
+// package-level state.
 func runEmissary(ctx context.Context, containerName string, source maindriver.TaskSource, driver maindriver.MainDriver) error {
-	exitCode := 64
+	exitCode := 64 // written to the exitcode file: the last task's
 	logger := logging.RequireLoggerFromContext(ctx)
 	// Registered before the exit code defer so that it runs after it: releasing
 	// the liveness lock is what tells a dependent the exit code is readable, so
@@ -111,11 +123,8 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		}
 	}()
 
-	ctx = tracing.InjectTraceContext(ctx)
 	workflowName := os.Getenv(common.EnvVarWorkflowName)
 	namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-	ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
-	defer span.End()
 
 	osspecific.AllowGrantingAccessToEveryone()
 
@@ -167,119 +176,132 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		}
 	}
 
-	task, ok, err := source.Next(ctx)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New("no task to run")
-	}
-	if task.Template == nil {
-		return errors.New("task has no template")
-	}
-	// The user's process parents its spans to runMainContainer, not to the
-	// controller's span the pod spec carries. Appended so it wins: os/exec
-	// keeps the last value of a duplicated key. Cloned so the source's
-	// slice is untouched.
-	task.Env = append(slices.Clone(task.Env), traceParentEnv(ctx)...)
-	template := task.Template
-
-	// In init-less pod mode, main can't use the legacy per-artifact
-	// SubPath bind mount (kubelet races the supervisor's write). The
-	// input-artifacts volume is mounted whole at /argo/inputs/artifacts
-	// and the emissary symlinks each input artifact into its expected
-	// path once supervisor has finished writing (guaranteed by the
-	// ready-marker wait above). Only `main` runs this — ContainerSet
-	// children and sidecars don't get artifact paths symlinked in.
-	if waitForReady && containerName == common.MainContainerName {
-		if stageErr := stageInputArtifacts(ctx, template); stageErr != nil {
-			// As above: propagate the sentinel as the process exit code so
-			// inferFailedReason attributes this to supervisor pre-main setup.
-			exitCode = common.ExitCodeSupervisorPreMainFailure
-			logger.WithError(stageErr).Error(ctx, "failed to stage input artifacts before main container started")
-			return argoerrors.NewExitErrWithCause(exitCode, stageErr)
+	// runTask runs one task and returns its exit code and error.
+	runTask := func(ctx context.Context, task maindriver.Task) (int, error) {
+		code := 64
+		if task.Template == nil {
+			return code, errors.New("task has no template")
 		}
-	}
+		template := task.Template
 
-	// setup signal handlers
-	signals := make(chan os.Signal, 1)
-	defer close(signals)
-	signal.Notify(signals)
-	defer signal.Reset()
+		// Per-task span, parented from the task's TRACEPARENT; its id reaches
+		// the child via task.Env (appended: os/exec keeps the last duplicate).
+		// theory-debt: parent context read from task.Env, not a Task field.
+		ctx, span := tracer.StartRunMainContainer(traceContextFromEnv(ctx, task.Env), workflowName, string(namespace))
+		defer span.End()
+		task.Env = append(slices.Clone(task.Env), traceParentEnv(ctx)...)
 
-	if waitErr := waitForDependencies(ctx, logger, template, containerName, signals); waitErr != nil {
-		return waitErr
-	}
-
-	// Resolved once, before the retry loop, so a missing binary is not
-	// retried. Copied rather than written in place: the slice is the
-	// source's, and a source may hand the same Task out again.
-	name, err := exec.LookPath(task.Command[0])
-	if err != nil {
-		return fmt.Errorf("failed to find name in PATH: %w", err)
-	}
-	task.Command = append([]string{name}, task.Command[1:]...)
-
-	if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
-		// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
-		// in order to break out of the wait and release the container from
-		// the debugging state.
-		if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/before"); waitErr != nil {
-			return fmt.Errorf("failed waiting for debug-pause-before marker: %w", waitErr)
-		}
-	}
-
-	backoff, err := template.GetRetryStrategy()
-	if err != nil {
-		return fmt.Errorf("failed to get retry strategy: %w", err)
-	}
-
-	// The driver hands each attempt's outputs to a collector; they are the
-	// template's declared paths, so staging is deferred until retries are
-	// done rather than repeated per attempt.
-	var outputs outputCollector
-	cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-		// innerCtx scopes the signal forwarders and sidecar watcher to this
-		// attempt, so a retry never signals an earlier attempt's pid.
-		innerCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		task.OnStart = func(pid int) {
-			forwardSignals(innerCtx, signals, pid, false)
-			startFileSignalHandler(innerCtx, pid, containerName)
-			if slices.Contains(template.GetSidecarNames(), containerName) {
-				go terminateWhenMainExits(innerCtx, logger, template, containerName)
+		// In init-less pod mode, main can't use the legacy per-artifact
+		// SubPath bind mount (kubelet races the supervisor's write). The
+		// input-artifacts volume is mounted whole at /argo/inputs/artifacts
+		// and the emissary symlinks each input artifact into its expected
+		// path once supervisor has finished writing (guaranteed by the
+		// ready-marker wait above). Only `main` runs this — ContainerSet
+		// children and sidecars don't get artifact paths symlinked in.
+		if waitForReady && containerName == common.MainContainerName {
+			if stageErr := stageInputArtifacts(ctx, template); stageErr != nil {
+				// As above: propagate the sentinel as the process exit code so
+				// inferFailedReason attributes this to supervisor pre-main setup.
+				code = common.ExitCodeSupervisorPreMainFailure
+				logger.WithError(stageErr).Error(ctx, "failed to stage input artifacts before main container started")
+				return code, argoerrors.NewExitErrWithCause(code, stageErr)
 			}
 		}
-		outputs = nil
-		var runErr error
-		exitCode, runErr = driver.Run(ctx, task, &outputs)
-		return runErr
-	})
-	logger.WithError(cmdErr).Info(ctx, "sub-process exited")
 
-	if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
-		// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
-		// in order to break out of the wait and release the container from
-		// the debugging state.
-		if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/after"); waitErr != nil {
-			return fmt.Errorf("failed waiting for debug-pause-after marker: %w", waitErr)
+		// setup signal handlers
+		signals := make(chan os.Signal, 1)
+		defer close(signals)
+		signal.Notify(signals)
+		defer signal.Reset()
+
+		if waitErr := waitForDependencies(ctx, logger, template, containerName, signals); waitErr != nil {
+			return code, waitErr
 		}
+
+		// Resolved before the retry loop so a missing binary is not retried.
+		name, err := exec.LookPath(task.Command[0])
+		if err != nil {
+			return code, fmt.Errorf("failed to find name in PATH: %w", err)
+		}
+		task.Command = append([]string{name}, task.Command[1:]...)
+
+		if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
+			// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
+			// in order to break out of the wait and release the container from
+			// the debugging state.
+			if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/before"); waitErr != nil {
+				return code, fmt.Errorf("failed waiting for debug-pause-before marker: %w", waitErr)
+			}
+		}
+
+		backoff, err := template.GetRetryStrategy()
+		if err != nil {
+			return code, fmt.Errorf("failed to get retry strategy: %w", err)
+		}
+
+		// Stage outputs once after retries, not per attempt.
+		var outputs outputCollector
+		cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
+			// Scoped to the attempt so a retry never signals an old pid.
+			innerCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			task.OnStart = func(pid int) {
+				forwardSignals(innerCtx, signals, pid, false)
+				startFileSignalHandler(innerCtx, pid, containerName)
+				if slices.Contains(template.GetSidecarNames(), containerName) {
+					go terminateWhenMainExits(innerCtx, logger, template, containerName)
+				}
+			}
+			outputs = nil
+			var runErr error
+			code, runErr = driver.Run(ctx, task, &outputs)
+			return runErr
+		})
+		logger.WithError(cmdErr).Info(ctx, "sub-process exited")
+
+		if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
+			// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
+			// in order to break out of the wait and release the container from
+			// the debugging state.
+			if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/after"); waitErr != nil {
+				return code, fmt.Errorf("failed waiting for debug-pause-after marker: %w", waitErr)
+			}
+		}
+
+		// The sink decides which containers' outputs are staged (main only).
+		var sink maindriver.ResultSink = maindriver.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
+		for _, out := range outputs {
+			if err := sink.Put(ctx, task.NodeID, out); err != nil {
+				return code, err
+			}
+		}
+
+		return code, cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 	}
 
-	// The sink decides which containers' outputs are staged (main only).
-	var sink maindriver.ResultSink = maindriver.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
-	for _, out := range outputs {
-		if err := sink.Put(ctx, task.NodeID, out); err != nil {
+	ran := false
+	for {
+		task, ok, err := source.Next(ctx)
+		if err != nil {
 			return err
 		}
+		if !ok {
+			break
+		}
+		ran = true
+		var taskErr error
+		exitCode, taskErr = runTask(ctx, task)
+		if taskErr != nil {
+			return taskErr
+		}
 	}
-
-	return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
+	if !ran {
+		return errors.New("no task to run")
+	}
+	return nil
 }
 
-// outputCollector is a ResultSink that records the outputs the driver
-// declares for an attempt, so staging happens once after retries rather than
-// on every attempt.
+// outputCollector records an attempt's outputs for staging after retries.
 type outputCollector []maindriver.Output
 
 func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output) error {
