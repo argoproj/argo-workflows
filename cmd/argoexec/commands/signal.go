@@ -15,14 +15,11 @@ import (
 )
 
 // forwardSignals starts a goroutine that forwards OS signals received on the
-// given channel to the process with the given pid, until the channel is
-// closed or ctx is done. Signals that can be ignored are dropped; when
-// ignoreTerm is true SIGTERM is dropped as well (artifact sidecars stay alive
-// to assist the aux container and are terminated only via the file-signal
-// mechanism). The caller owns the channel's lifecycle (signal.Notify /
-// signal.Reset / close). A caller that runs the process more than once
-// (the emissary's retry loop) scopes ctx to the attempt, so signals never go
-// to a pid from an earlier attempt.
+// given channel to the process with the given pid, until the channel is closed
+// or ctx is done. Signals that can be ignored are dropped; when ignoreTerm is
+// true SIGTERM is dropped as well (artifact sidecars stay alive to assist the
+// aux container and are terminated only via the file-signal mechanism). The
+// caller owns the channel's lifecycle (signal.Notify / signal.Reset / close).
 func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	forward := func(s os.Signal) {
@@ -37,9 +34,7 @@ func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, igno
 		for {
 			select {
 			case <-ctx.Done():
-				// The same SIGTERM that cancels ctx (main.go's NotifyContext)
-				// may already be buffered here; deliver it before leaving,
-				// as the pre-ctx forwarder always did.
+				// Deliver a SIGTERM that is already buffered before leaving.
 				for {
 					select {
 					case s, ok := <-signals:
