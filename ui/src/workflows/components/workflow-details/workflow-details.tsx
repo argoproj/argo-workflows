@@ -206,15 +206,28 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                 .then(async yes => {
                                     if (!yes) return;
 
+                                    // Use a local flag instead of React `error` state (stale closure).
+                                    // Otherwise a failed DELETE still navigates away and the ErrorNotice never shows.
+                                    let deleteFailed = false;
                                     const allPromises = [];
                                     if (isWorkflowInCluster(workflow)) {
-                                        allPromises.push(services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError));
+                                        allPromises.push(
+                                            services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(err => {
+                                                deleteFailed = true;
+                                                setError(err);
+                                            })
+                                        );
                                     }
                                     if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
-                                        allPromises.push(services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError));
+                                        allPromises.push(
+                                            services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(err => {
+                                                deleteFailed = true;
+                                                setError(err);
+                                            })
+                                        );
                                     }
                                     await Promise.all(allPromises);
-                                    if (error !== null) {
+                                    if (deleteFailed) {
                                         return;
                                     }
 
