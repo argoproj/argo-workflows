@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
@@ -51,6 +52,7 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (int, erro
 		if task.WorkDir == "" {
 			return exitCodeUnknown, errors.New("task has no workdir to capture logs in")
 		}
+		logging.RequireLoggerFromContext(ctx).Info(ctx, "capturing logs")
 		stdoutPath := filepath.Join(task.WorkDir, "stdout")
 		combinedPath := filepath.Join(task.WorkDir, "combined")
 		// O_APPEND: a caller that retries keeps every attempt's logs.
