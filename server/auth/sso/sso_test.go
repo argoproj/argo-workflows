@@ -281,6 +281,71 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 }
 
+func TestLoadSsoIssuerAndRedirectURLFromSecret(t *testing.T) {
+	issuerSecret := &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace,
+			Name:      "argo-sso-secret",
+		},
+		Type: apiv1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"client-id":     []byte("sso-client-id-value"),
+			"client-secret": []byte("sso-client-secret-value"),
+			"issuer":        []byte("https://test-issuer-from-secret"),
+			"redirect-url":  []byte("https://dummy-from-secret"),
+		},
+	}
+	fakeClient := fake.NewClientset(issuerSecret).CoreV1().Secrets(testNamespace)
+	config := Config{
+		IssuerSecret:      getSecretKeySelector("argo-sso-secret", "issuer"),
+		ClientID:          getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret:      getSecretKeySelector("argo-sso-secret", "client-secret"),
+		RedirectURLSecret: getSecretKeySelector("argo-sso-secret", "redirect-url"),
+	}
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
+	require.NoError(t, err)
+	ssoObject := ssoInterface.(*sso)
+	assert.Equal(t, "https://test-issuer-from-secret", ssoObject.issuer)
+	assert.Equal(t, "https://dummy-from-secret", ssoObject.config.RedirectURL)
+}
+
+func TestLoadSsoIssuerLiteralTakesPrecedenceOverIssuerSecret(t *testing.T) {
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	config := Config{
+		Issuer:       "https://test-issuer",
+		IssuerSecret: getSecretKeySelector("argo-sso-secret", "nonexistent"),
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+	}
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
+	require.NoError(t, err)
+	ssoObject := ssoInterface.(*sso)
+	assert.Equal(t, "https://test-issuer", ssoObject.issuer)
+}
+
+func TestLoadSsoIssuerSecretNoKeyFails(t *testing.T) {
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	config := Config{
+		IssuerSecret: getSecretKeySelector("argo-sso-secret", "nonexistent"),
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+	}
+	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
+	require.Error(t, err)
+	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
+}
+
+func TestLoadSsoNoIssuerOrIssuerSecretFails(t *testing.T) {
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	config := Config{
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+	}
+	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
+	require.Error(t, err)
+	assert.Regexp(t, "issuer empty", err.Error())
+}
+
 func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 	config := Config{
