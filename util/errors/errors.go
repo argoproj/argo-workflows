@@ -46,6 +46,7 @@ func isTransientErr(err error) bool {
 		apierr.IsTooManyRequests(err) ||
 		isResourceQuotaConflictErr(err) ||
 		isResourceQuotaTimeoutErr(err) ||
+		isTransientWebhookErr(err) ||
 		isTransientNetworkErr(err) ||
 		apierr.IsServerTimeout(err) ||
 		apierr.IsTimeout(err) ||
@@ -86,6 +87,11 @@ func isResourceQuotaConflictErr(err error) bool {
 
 func isResourceQuotaTimeoutErr(err error) bool {
 	return apierr.IsInternalError(err) && strings.Contains(err.Error(), "resource quota evaluation timed out")
+}
+
+// isTransientWebhookErr reports whether the error is a transient apiserver failure to reach an admission webhook.
+func isTransientWebhookErr(err error) bool {
+	return apierr.IsInternalError(err) && strings.Contains(err.Error(), "failed calling webhook")
 }
 
 func isTransientEtcdErr(err error) bool {
