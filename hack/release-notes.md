@@ -30,10 +30,10 @@ curl -sLO "https://github.com/argoproj/argo-workflows/releases/download/$version
 gunzip "argo-$ARGO_OS-amd64.gz"
 
 # Make binary executable
-chmod +x "argo-$ARGO_OS-amd64"
+sudo chmod +x "argo-$ARGO_OS-amd64"
 
 # Move binary to path
-mv "./argo-$ARGO_OS-amd64" /usr/local/bin/argo
+sudo mv "./argo-$ARGO_OS-amd64" /usr/local/bin/argo
 
 # Test installation
 argo version
