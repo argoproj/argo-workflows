@@ -11,6 +11,15 @@
         }
     }
 
+    &__template-link {
+        color: inherit;
+        text-decoration: none;
+
+        &:hover {
+            color: $argo-color-teal-5;
+        }
+    }
+
     &__multi-line {
         line-height: 24px;
         display: inline-block;
