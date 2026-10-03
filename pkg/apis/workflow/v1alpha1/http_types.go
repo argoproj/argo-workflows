@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	v1 "k8s.io/api/core/v1"
+  "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type HTTPHeaderSource struct {
@@ -43,7 +44,7 @@ type HTTP struct {
 	// Headers are an optional list of headers to send with HTTP requests
 	Headers HTTPHeaders `json:"headers,omitempty" protobuf:"bytes,3,rep,name=headers"`
 	// TimeoutSeconds is request timeout for HTTP Request. Default is 30 seconds
-	TimeoutSeconds *int64 `json:"timeoutSeconds,omitempty" protobuf:"bytes,4,opt,name=timeoutSeconds"`
+	TimeoutSeconds *intstr.IntOrString `json:"timeoutSeconds,omitempty" protobuf:"bytes,4,opt,name=timeoutSeconds"`
 	// SuccessCondition is an expression if evaluated to true is considered successful
 	SuccessCondition string `json:"successCondition,omitempty" protobuf:"bytes,6,opt,name=successCondition"`
 	// Body is content of the HTTP Request
