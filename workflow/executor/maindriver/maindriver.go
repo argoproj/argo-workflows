@@ -14,19 +14,16 @@ type Task struct {
 	Template *wfv1.Template
 	// Command is the executable followed by its arguments.
 	Command []string
-	// Env is the environment the command runs with. A nil Env inherits the
-	// calling process's environment (os/exec semantics); an empty, non-nil
-	// Env runs the command with no environment at all.
+	// Env is the command's environment; nil inherits the process's (os/exec).
 	// theory-debt: nil-inherits is os/exec's rule, not a stated decision.
 	Env []string
 	// IncludeScriptOutput captures stdout so it can become the script result.
 	IncludeScriptOutput bool
-	// WorkDir is where captured stdout/combined logs are written. Required
-	// when logs are captured (IncludeScriptOutput or archived logs).
-	// theory-debt: not in the stated inputs; added so log capture has somewhere to write.
+	// WorkDir holds captured stdout/combined logs; required when capturing.
+	// theory-debt: not in the stated inputs.
 	WorkDir string
-	// OnStart, if set, is called with the command's pid once it has started.
-	// theory-debt: not in the stated inputs; added so the caller can forward signals to the process.
+	// OnStart, if set, receives the command's pid once started.
+	// theory-debt: not in the stated inputs.
 	OnStart func(pid int)
 }
 
@@ -56,9 +53,8 @@ type ResultSink interface {
 
 // TaskSource yields the tasks a worker runs, one at a time.
 type TaskSource interface {
-	// Next returns the next task. Callers check err first; ok is false with
-	// a nil err once the source has no more tasks.
-	// theory-debt: the method shape (pull-based Next with an ok flag) is a choice.
+	// Next returns the next task; check err first, ok=false means exhausted.
+	// theory-debt: the pull-based shape is a choice.
 	Next(ctx context.Context) (task Task, ok bool, err error)
 }
 
@@ -66,10 +62,8 @@ type TaskSource interface {
 // signal delivery and every other concern of the pod layout belong to the
 // caller.
 type MainDriver interface {
-	// Run blocks until the command exits and its outputs have been handed to
-	// sink. exitCode reports the command's exit whatever err is. err is
-	// non-nil if the command could not be run, exited non-zero, or an output
-	// could not be handed over; in the last case err is the handover error
-	// and the remaining outputs are not handed over.
+	// Run blocks until the command exits and its outputs are handed to sink.
+	// exitCode is the command's regardless of err; a handover error replaces
+	// the exit error and stops further handover.
 	Run(ctx context.Context, task Task, sink ResultSink) (exitCode int, err error)
 }

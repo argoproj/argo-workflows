@@ -18,15 +18,9 @@ import (
 // matching the emissary's default.
 const exitCodeUnknown = 64
 
-// Container runs a task's main command as a child process.
-//
-// It is not safe for concurrent Run calls in one process: the command is
-// reaped through osspecific.Wait, which waits on any child (PID 1
-// semantics), so two concurrent runs would take each other's exit
-// statuses. Cancelling ctx does not stop the command either: the process is
-// released before it is waited on, so exec.CommandContext's kill fails, and
-// the wait polls without regard to ctx. Both are inherited from the
-// emissary, which only ever runs one command per process.
+// Container runs a task's main command as a child process. Not safe for
+// concurrent Run calls in one process (osspecific.Wait reaps any child), and
+// ctx cancellation does not stop the command (released before wait).
 type Container struct{}
 
 var _ MainDriver = Container{}
@@ -86,13 +80,11 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (int, erro
 	closer()
 	exitCode := exitCodeFromErr(waitErr)
 
-	// Outputs are handed over whatever the exit code, as the emissary does.
-	// The sink decides which containers' outputs to keep.
+	// Outputs are handed over whatever the exit code.
 	if err := putOutputs(ctx, task, sink, logs); err != nil {
 		return exitCode, err
 	}
-	// waitErr is returned as-is: argoexec's main() reads the exit code off it
-	// with a bare type assertion, so it must stay unwrapped.
+	// Unwrapped: main() reads the exit code with a type assertion.
 	return exitCode, waitErr
 }
 

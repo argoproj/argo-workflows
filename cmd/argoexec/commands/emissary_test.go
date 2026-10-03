@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -239,6 +240,58 @@ func TestEmissary_ChildGetsRunMainContainerTraceParent(t *testing.T) {
 	assert.Len(t, got[2], 16)
 }
 
+// neverRunDriver fails the test if the harness reaches the driver.
+type neverRunDriver struct{ t *testing.T }
+
+func (d neverRunDriver) Run(context.Context, maindriver.Task, maindriver.ResultSink) (int, error) {
+	d.t.Fatal("driver must not run")
+	return 0, nil
+}
+
+type taskList []maindriver.Task
+
+func (l *taskList) Next(context.Context) (maindriver.Task, bool, error) {
+	if len(*l) == 0 {
+		return maindriver.Task{}, false, nil
+	}
+	task := (*l)[0]
+	*l = (*l)[1:]
+	return task, true, nil
+}
+
+// Each task is its own runMainContainer span: two tasks in one process see
+// the pod's trace id with two different span ids.
+func TestEmissary_SpanPerTask(t *testing.T) {
+	varRunArgo = t.TempDir()
+	ctx, err := testContext()
+	require.NoError(t, err)
+	const podTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	task := maindriver.Task{
+		Template:            &wfv1.Template{},
+		Command:             []string{"sh", "-c", `echo "$TRACEPARENT"`},
+		Env:                 append(os.Environ(), "TRACEPARENT="+podTraceParent),
+		IncludeScriptOutput: true,
+		WorkDir:             varRunArgo + "/ctr/main",
+	}
+	source := &taskList{task, task}
+
+	require.NoError(t, runEmissary(ctx, "main", source, maindriver.Container{}))
+
+	data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
+	require.NoError(t, err)
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	require.Len(t, lines, 2)
+	var spanIDs []string
+	for _, line := range lines {
+		parts := strings.Split(line, "-")
+		require.Len(t, parts, 4, "not a W3C traceparent: %q", line)
+		assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", parts[1], "trace id must be the pod's")
+		assert.NotEqual(t, "b7ad6b7169203331", parts[2], "span id must not be the pod's")
+		spanIDs = append(spanIDs, parts[2])
+	}
+	assert.NotEqual(t, spanIDs[0], spanIDs[1], "each task gets its own span")
+}
+
 // A source with no task must fail the emissary rather than run an empty
 // command.
 func TestEmissary_ExhaustedSource(t *testing.T) {
@@ -251,7 +304,7 @@ func TestEmissary_ExhaustedSource(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	err = runEmissary(ctx, "main", source, maindriver.Container{})
+	err = runEmissary(ctx, "main", source, neverRunDriver{t})
 
 	require.EqualError(t, err, "no task to run")
 	data, err := os.ReadFile(varRunArgo + "/ctr/main/exitcode")

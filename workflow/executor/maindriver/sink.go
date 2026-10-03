@@ -15,12 +15,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// PodSink stages a task's outputs under VarRunArgo/outputs, where the wait or
-// supervisor container collects them. Only the main container's outputs are
-// staged; logs are already in the task's WorkDir, so they need nothing.
-//
-// theory-debt: the sink is built per task, holding that task's template (for
-// the overlapping-volume check) rather than looking it up by nodeID.
+// PodSink stages main's outputs under VarRunArgo/outputs for the wait or
+// supervisor container. Logs stay in WorkDir.
+// theory-debt: built per task with its template, not keyed by nodeID.
 type PodSink struct {
 	VarRunArgo    string
 	ContainerName string

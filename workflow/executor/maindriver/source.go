@@ -13,12 +13,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// PodSource yields the single task baked into this pod by the pod spec, then
-// is exhausted. Every field is parsed from the environment or argv by the
-// caller.
-//
-// In the init-less layout the supervisor writes the template during Prepare,
-// so Next must not be called before the supervisor reports READY.
+// PodSource yields the one task a pod spec delivers, then is exhausted. In
+// the init-less layout, call Next only after the supervisor is READY.
 type PodSource struct {
 	// VarRunArgo is the shared argoexec directory, normally /var/run/argo.
 	VarRunArgo string
@@ -71,10 +67,9 @@ func (s *PodSource) Next(ctx context.Context) (Task, bool, error) {
 	}, true, nil
 }
 
-// command appends the args file to Command and offloads any arg too large to
-// pass on the command line to a file, passed as @<file>.
 func (s *PodSource) command(ctx context.Context) ([]string, error) {
 	command := append([]string{}, s.Command...)
+	// Check if args were offloaded to a file (for large args that exceed exec limit)
 	if s.ArgsFile == "" {
 		return command, nil
 	}
@@ -91,7 +86,9 @@ func (s *PodSource) command(ctx context.Context) ([]string, error) {
 	command = append(command, fileArgs...)
 	logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
 
-	// Index 0 is the executable; the emissary numbers args from after it.
+	// Check for a large args and offload to file if needed
+	// This avoids the exec() "argument list too long" error
+	// Downstream programs should support @filename for parsing large args
 	for i, arg := range command[1:] {
 		if len(arg) > common.MaxEnvVarLen {
 			filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
@@ -109,6 +106,15 @@ func (s *PodSource) command(ctx context.Context) ([]string, error) {
 	return command, nil
 }
 
+// readTemplate returns the serialized template JSON. It prefers
+// /var/run/argo/template (legacy: init container wrote it; init-less with
+// supervisor: supervisor wrote it), and falls back to the ARGO_TEMPLATE env
+// var when the file is absent. This covers the init-less case for templates
+// that don't run a supervisor (data, resource-without-logs) — the controller
+// sets ARGO_TEMPLATE directly on main in that case.
+//
+// Offload-sentinel resolution is shared with the legacy init container via
+// common.ResolveTemplateEnvValue.
 func (s *PodSource) readTemplate() ([]byte, error) {
 	filePath := filepath.Join(s.VarRunArgo, "template")
 	if data, err := os.ReadFile(filePath); err == nil {
@@ -116,8 +122,7 @@ func (s *PodSource) readTemplate() ([]byte, error) {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
-	// theory-debt: an empty ARGO_TEMPLATE is treated as unset; the emissary
-	// distinguishes them (an empty value then fails to unmarshal instead).
+	// theory-debt: empty ARGO_TEMPLATE treated as unset (emissary did not).
 	if s.TemplateEnv == "" {
 		return nil, fmt.Errorf("neither %s nor %s is available", filePath, common.EnvVarTemplate)
 	}
