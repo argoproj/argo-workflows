@@ -2,6 +2,7 @@ import * as React from 'react';
 import type {MonacoEditorProps} from 'react-monaco-editor';
 import type MonacoEditor from 'react-monaco-editor';
 
+import {useTheme} from '../theme';
 import {Loading} from './loading';
 
 // lazy load Monaco Editor as it is a gigantic component (which can be split into a separate bundle)
@@ -14,9 +15,10 @@ const LazyMonacoEditor = React.lazy(() => {
 const noop = () => {}; // tslint:disable-line:no-empty
 
 export const SuspenseMonacoEditor = React.forwardRef(function InnerMonacoEditor(props: MonacoEditorProps, ref: React.MutableRefObject<MonacoEditor>) {
+    const {theme} = useTheme();
     return (
         <React.Suspense fallback={<Loading />}>
-            <LazyMonacoEditor ref={ref} editorWillUnmount={noop} {...props} />
+            <LazyMonacoEditor ref={ref} editorWillUnmount={noop} theme={theme === 'dark' ? 'vs-dark' : 'vs'} {...props} />
         </React.Suspense>
     );
 });

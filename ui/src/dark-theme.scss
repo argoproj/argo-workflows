@@ -1,0 +1,61 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.theme-dark {
+    color: $argo-color-gray-3;
+    background-color: $dark-theme-background-1;
+
+    .wf-summary-container,
+    .wf-filters-container,
+    .workflows-list__filters-container,
+    .graph-options-panel {
+        background-color: $dark-theme-background-2;
+        box-shadow: none;
+    }
+
+    .login__box {
+        background-color: $dark-theme-background-1;
+    }
+
+    .workflows-list__row-container a,
+    .wf-summary-container__title {
+        color: $argo-color-gray-4;
+    }
+
+    .graph-options-panel .active {
+        background-color: $argo-color-gray-7;
+        border-color: $argo-color-gray-6;
+    }
+
+    .graph text.node-label,
+    .graph .edge text {
+        fill: $argo-color-gray-4;
+    }
+
+    .row.header {
+        color: $argo-color-gray-3;
+        background-color: $dark-theme-background-2;
+    }
+
+    .artifact-row,
+    .workflow-details__attribute-grid {
+        color: $argo-color-gray-3;
+    }
+
+    .workflow-details__attribute-grid > * {
+        border-color: $argo-color-gray-7;
+    }
+
+    .artifact-row:hover {
+        background-color: $argo-color-gray-7;
+    }
+
+    textarea {
+        color: $argo-color-gray-3;
+        background-color: $dark-theme-background-1;
+    }
+}
+
+.theme-toggle {
+    margin-top: 4px;
+    cursor: pointer;
+}
