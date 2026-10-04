@@ -8,8 +8,8 @@ const icons: {[key in ThemePreference]: string} = {system: 'fa-desktop', light: 
 export function ThemeToggle() {
     const {preference} = useTheme();
     return (
-        <div className='theme-toggle' title={`Theme: ${preference}`} onClick={() => setThemePreference(next[preference])}>
+        <button type='button' className='theme-toggle' title={`Theme: ${preference}`} aria-label={`Theme: ${preference}`} onClick={() => setThemePreference(next[preference])}>
             <i className={`fa ${icons[preference]}`} />
-        </div>
+        </button>
     );
 }

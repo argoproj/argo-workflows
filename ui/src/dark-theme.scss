@@ -56,6 +56,11 @@
 }
 
 .theme-toggle {
+    display: block;
     margin-top: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
     cursor: pointer;
 }

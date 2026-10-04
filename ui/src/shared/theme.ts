@@ -6,7 +6,16 @@ const storageKey = 'theme';
 const media = window.matchMedia?.('(prefers-color-scheme: dark)');
 const listeners = new Set<() => void>();
 
-let preference: ThemePreference = (localStorage.getItem(storageKey) as ThemePreference) || 'system';
+function readPreference(): ThemePreference {
+    try {
+        const stored = localStorage.getItem(storageKey);
+        return stored === 'light' || stored === 'dark' ? stored : 'system';
+    } catch {
+        return 'system';
+    }
+}
+
+let preference = readPreference();
 
 function notify() {
     listeners.forEach(listener => listener());
@@ -16,7 +25,11 @@ media?.addEventListener('change', notify);
 
 export function setThemePreference(value: ThemePreference) {
     preference = value;
-    localStorage.setItem(storageKey, value);
+    try {
+        localStorage.setItem(storageKey, value);
+    } catch {
+        // storage is unavailable, so the preference only lasts for this session
+    }
     notify();
 }
 
