@@ -115,7 +115,7 @@ func (tplCtx *TemplateContext) GetTemplateByName(ctx context.Context, name strin
 	tplCtx.log.WithField("name", name).Debug(ctx, "Getting the template by name")
 
 	if cached, ok := tplCtx.templateNameCache[name]; ok {
-		return cached, nil
+		return cached.DeepCopy(), nil
 	}
 
 	var tmpl *wfv1.Template
@@ -128,13 +128,10 @@ func (tplCtx *TemplateContext) GetTemplateByName(ctx context.Context, name strin
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
 	}
 
-	// Cache the result for future lookups
-	tplCtx.templateNameCache[name] = tmpl
-
-	podMetadata := tplCtx.tmplBase.GetPodMetadata()
-	tplCtx.addPodMetadata(podMetadata, tmpl)
-
-	return tmpl.DeepCopy(), nil
+	cp := tmpl.DeepCopy()
+	tplCtx.addPodMetadata(tplCtx.tmplBase.GetPodMetadata(), cp)
+	tplCtx.templateNameCache[name] = cp
+	return cp.DeepCopy(), nil
 }
 
 // buildTemplateIndex fills templateIndex from the base holder when it is a *Workflow.
