@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -285,19 +287,22 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	cleaner := fields.NewCleaner(req.Fields)
-	logger := logging.RequireLoggerFromContext(ctx)
 	if s.offloadNodeStatusRepo.IsEnabled() && !cleaner.WillExclude("items.status.nodes") {
-		offloadedNodes, err := s.offloadNodeStatusRepo.List(ctx, req.Namespace)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
-		}
+		// This page is already resolved, so we know exactly which offloaded rows we need.
+		offloaded := map[int]sqldb.UUIDVersion{}
 		for i, wf := range wfs {
 			if wf.Status.IsOffloadNodeStatus() {
-				if s.offloadNodeStatusRepo.IsEnabled() {
-					wfs[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
-				} else {
-					logger.WithFields(logging.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(ctx, sqldb.OffloadNodeStatusDisabled)
-				}
+				offloaded[i] = sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}
+			}
+		}
+		// Nothing on this page is offloaded, so there is nothing to fetch.
+		if len(offloaded) > 0 {
+			offloadedNodes, err := s.offloadNodeStatusRepo.List(ctx, req.Namespace, slices.Collect(maps.Values(offloaded)))
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
+			for i, key := range offloaded {
+				wfs[i].Status.Nodes = offloadedNodes[key]
 			}
 		}
 	}
