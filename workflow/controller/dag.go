@@ -351,9 +351,16 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		// (bounded by parallelism) before phase assessment, because a task that never gets a node
 		// leaves the DAG unable to finalise and stuck at N-1.
 		if time.Now().UTC().After(woc.deadline) {
+			// ponytail: belt gets half the op budget past deadline — storm-wave DAGs
+			// finish scheduling in-cycle; pathological reconcile ≤ ~45s. Flip to /10
+			// if cross-workflow latency complains.
+			beltDeadline := time.Now().UTC().Add(woc.controller.maxOperationTime / 2)
 			for _, t2 := range targetTasks[i:] {
 				if dagCtx.getTaskNode(t2) == nil {
 					woc.executeDAGTask(ctx, dagCtx, t2)
+				}
+				if time.Now().UTC().After(beltDeadline) {
+					break
 				}
 			}
 			woc.requeue()

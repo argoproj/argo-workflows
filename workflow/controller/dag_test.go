@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1331,4 +1332,69 @@ func TestDAGTaskGroupWithDeferredItems(t *testing.T) {
 			assert.Equal(t, wfv1.NodeSucceeded, node.Phase, item)
 		}
 	}
+}
+
+// TestDAGExpiredDeadlineBeltIsBounded verifies that the expired-deadline catch-up
+// sweep in executeDAG stays time-bounded: a large flat DAG reconciles promptly and
+// is left requeued for the remaining scheduling instead of sweeping targets for
+// an unbounded stretch of time.
+func TestDAGExpiredDeadlineBeltIsBounded(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(genFlatDAGYaml(t, 500))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	// Drain the fake event recorder: pod-creation events would otherwise fill its
+	// buffered channel and block operate().
+	recorder := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder
+	go func() {
+		for range recorder.Events {
+		}
+	}()
+	defer close(recorder.Events)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.deadline = time.Now().UTC().Add(-time.Minute)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		woc.operate(ctx)
+	}()
+	select {
+	case <-done:
+	case <-time.After(15 * time.Second):
+		t.Fatal("reconcile blew past its budget in the belt sweep")
+	}
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+		"the belt requeues with pods pending, it does not finish the DAG")
+	assert.Positive(t, controller.wfQueue.NumRequeues(wf.Namespace+"/"+wf.Name),
+		"expected requeue after expired-deadline belt")
+}
+
+// genFlatDAGYaml returns a workflow YAML with n independent container tasks under one DAG template.
+func genFlatDAGYaml(t *testing.T, n int) string {
+	t.Helper()
+	var sb strings.Builder
+	sb.WriteString(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: flat-dag-belt
+spec:
+  entrypoint: flat
+  templates:
+  - name: flat
+    dag:
+      tasks:
+`)
+	for i := 0; i < n; i++ {
+		fmt.Fprintf(&sb, "      - name: task-%d\n        template: echo\n", i)
+	}
+	sb.WriteString(`  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`)
+	return sb.String()
 }
