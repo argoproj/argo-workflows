@@ -287,6 +287,12 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
+		// Same contract as the slow path below — validation is unconditional on main
+		for _, inParam := range newTmpl.Inputs.Parameters {
+			if inParam.Value == nil && inParam.ValueFrom == nil {
+				return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+			}
+		}
 		return &newTmpl, nil
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
