@@ -2222,6 +2222,16 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	return localScope
 }
 
+// operationGraceExpired reports whether this reconciliation has exhausted its
+// base MAX_OPERATION_TIME budget plus one grace period of the same length.
+// Node creation bypasses the deadline check inside executeTemplate (deliberate:
+// hydration may legitimately spend the base budget before scheduling starts), so
+// bypassed paths self-limit on this helper instead. Leftover work is resumed by
+// the queued re-reconcile, which starts with a fresh budget.
+func (woc *wfOperationCtx) operationGraceExpired() bool {
+	return time.Now().UTC().After(woc.deadline.Add(woc.controller.maxOperationTime))
+}
+
 type executeTemplateOpts struct {
 	// boundaryID is an ID for node grouping
 	boundaryID string

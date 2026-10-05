@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -357,7 +359,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {Name: d.taskNodeName("A"),
+				d.taskNodeID("A"): {
+					Name:     d.taskNodeName("A"),
 					Phase:    wfv1.NodeRunning,
 					Type:     wfv1.NodeTypeTaskGroup,
 					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -375,7 +378,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Task A succeeded
-	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"),
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+		Name:     d.taskNodeName("A"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -397,7 +401,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 
 	// Task B succeeds and B-1 fails
-	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Name: d.taskNodeName("B"),
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+		Name:     d.taskNodeName("B"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
@@ -1348,7 +1353,8 @@ func TestDAGExpiredDeadlineBeltIsBounded(t *testing.T) {
 	// buffered channel and block operate().
 	recorder := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder
 	go func() {
-		for range recorder.Events {
+		for evt := range recorder.Events {
+			_ = evt
 		}
 	}()
 	defer close(recorder.Events)
@@ -1369,8 +1375,67 @@ func TestDAGExpiredDeadlineBeltIsBounded(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
 		"the belt requeues with pods pending, it does not finish the DAG")
-	assert.Positive(t, controller.wfQueue.NumRequeues(wf.Namespace+"/"+wf.Name),
-		"expected requeue after expired-deadline belt")
+	key, _ := cache.MetaNamespaceKeyFunc(wf)
+	assert.Eventually(t, func() bool {
+		return controller.wfQueue.NumRequeues(key) > 0
+	}, 2*time.Second, 5*time.Millisecond, "expected requeue after expired-deadline belt")
+}
+
+func TestDAGExpiredDeadlineFanOutBounded(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(genFanOutDAGYaml(t, 20000))
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	// Push the operation deadline into the past with a hair to spare
+	woc.deadline = time.Now().UTC().Add(-woc.controller.maxOperationTime).Add(-time.Second)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		woc.operate(ctx)
+	}()
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		t.Fatal("fan-out expansion blew past the grace budget")
+	}
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+		"grace halt leaves the workflow Running, not failed")
+	key, _ := cache.MetaNamespaceKeyFunc(wf)
+	assert.Eventually(t, func() bool {
+		return controller.wfQueue.NumRequeues(key) > 0
+	}, 2*time.Second, 5*time.Millisecond, "expected requeue after the fan-out grace halt")
+}
+
+func genFanOutDAGYaml(t *testing.T, n int) string {
+	t.Helper()
+	items := make([]int, n)
+	for i := range items {
+		items[i] = i
+	}
+	raw, err := json.Marshal(items)
+	require.NoError(t, err)
+	return fmt.Sprintf(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: fanout-grace-bounded
+spec:
+  entrypoint: fan
+  templates:
+  - name: fan
+    dag:
+      tasks:
+      - name: fan
+        template: echo
+        withParam: '%s'
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`, raw)
 }
 
 // genFlatDAGYaml returns a workflow YAML with n independent container tasks under one DAG template.
@@ -1388,7 +1453,7 @@ spec:
     dag:
       tasks:
 `)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		fmt.Fprintf(&sb, "      - name: task-%d\n        template: echo\n", i)
 	}
 	sb.WriteString(`  - name: echo
