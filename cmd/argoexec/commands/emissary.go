@@ -245,8 +245,14 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 			// Scoped to the attempt so a retry never signals an old pid.
 			innerCtx, cancel := context.WithCancel(ctx)
 			defer cancel()
+			var stopForwarding func()
+			defer func() {
+				if stopForwarding != nil {
+					stopForwarding()
+				}
+			}()
 			task.OnStart = func(pid int) {
-				forwardSignals(innerCtx, signals, pid, false)
+				stopForwarding = forwardSignals(innerCtx, signals, pid, false)
 				startFileSignalHandler(innerCtx, pid, containerName)
 				if slices.Contains(template.GetSidecarNames(), containerName) {
 					go terminateWhenMainExits(innerCtx, logger, template, containerName)

@@ -25,13 +25,26 @@ type Container struct{}
 
 var _ MainDriver = Container{}
 
-func (Container) Run(ctx context.Context, task Task, sink ResultSink) (int, error) {
+func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode int, err error) {
 	if task.Template == nil {
 		return exitCodeUnknown, errors.New("task has no template")
 	}
 	if len(task.Command) == 0 {
 		return exitCodeUnknown, errors.New("no command to run")
 	}
+	captureLogs := task.IncludeScriptOutput || task.Template.SaveLogsAsArtifact()
+	if captureLogs && task.WorkDir == "" {
+		return exitCodeUnknown, errors.New("task has no workdir to capture logs in")
+	}
+	var logs []Output
+	// A failed startup can leave outputs from an earlier retry in place. Hand
+	// over their paths even when this attempt cannot start; the sink decides
+	// whether each file exists and needs staging.
+	defer func() {
+		if outputErr := putOutputs(ctx, task, sink, logs); outputErr != nil {
+			err = outputErr
+		}
+	}()
 	name, err := exec.LookPath(task.Command[0])
 	if err != nil {
 		return exitCodeUnknown, fmt.Errorf("failed to find name in PATH: %w", err)
@@ -41,11 +54,7 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (int, erro
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	var logs []Output
-	if task.IncludeScriptOutput || task.Template.SaveLogsAsArtifact() {
-		if task.WorkDir == "" {
-			return exitCodeUnknown, errors.New("task has no workdir to capture logs in")
-		}
+	if captureLogs {
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "capturing logs")
 		stdoutPath := filepath.Join(task.WorkDir, "stdout")
 		combinedPath := filepath.Join(task.WorkDir, "combined")
@@ -78,14 +87,8 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (int, erro
 	}
 	waitErr := osspecific.Wait(cmd.Process)
 	closer()
-	exitCode := exitCodeFromErr(waitErr)
-
-	// Outputs are handed over whatever the exit code.
-	if err := putOutputs(ctx, task, sink, logs); err != nil {
-		return exitCode, err
-	}
 	// Unwrapped: main() reads the exit code with a type assertion.
-	return exitCode, waitErr
+	return exitCodeFromErr(waitErr), waitErr
 }
 
 func putOutputs(ctx context.Context, task Task, sink ResultSink, logs []Output) error {
