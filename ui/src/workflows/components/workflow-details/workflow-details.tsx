@@ -9,7 +9,7 @@ import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {processURL} from '../../../shared/components/links';
+import {linkTarget, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {ToolbarAction, ToolbarActions} from '../../../shared/components/toolbar-actions';
@@ -256,8 +256,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                         title: link.name,
                         iconClassName: 'fa fa-external-link-alt',
                         href: processURL(link.url, linkObject()),
-                        // `openLinkWithKey` opened in a new tab unless a target was configured, so default to the same here
-                        target: link.target || '_blank'
+                        target: linkTarget(link.target)
                     });
                 });
         }
@@ -429,8 +428,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             },
             workflow,
             status: {
-                startedAt: workflow.status.startedAt,
-                finishedAt: workflow.status.finishedAt
+                startedAt: workflow.status?.startedAt,
+                finishedAt: workflow.status?.finishedAt
             }
         };
     }

@@ -15,7 +15,7 @@ function toEpoch(datetime: string) {
 }
 
 function addEpochTimestamp(jsonObject: {metadata: ObjectMeta; workflow?: Workflow; status?: any}) {
-    if (jsonObject === undefined || jsonObject.status.startedAt === undefined) {
+    if (jsonObject?.status?.startedAt === undefined) {
         return;
     }
 
@@ -58,6 +58,11 @@ export function openLinkWithKey(url: string, target?: string) {
     }
 }
 
+// linkTarget mirrors `openLinkWithKey`: the `''` sentinel means same tab, otherwise default to a new tab.
+export function linkTarget(target?: string) {
+    return target === `''` ? '_self' : target || '_blank';
+}
+
 type LinkObject = {metadata: ObjectMeta; workflow?: Workflow; status?: any};
 
 // LinkButtons renders links as anchors styled as buttons. URLs are only templated when an object is given.
@@ -65,8 +70,7 @@ export function LinkButtons({links, object}: {links: Link[]; object?: LinkObject
     return (
         <>
             {links.map(({url, name, target}) => (
-                // `openLinkWithKey` opens in a new tab unless a target is configured, so default to the same here
-                <Button href={object ? processURL(url, object) : url} target={target || '_blank'} key={name} icon='external-link-alt'>
+                <Button href={object ? processURL(url, object) : url} target={linkTarget(target)} key={name} icon='external-link-alt'>
                     {name}
                 </Button>
             ))}
