@@ -13,5 +13,7 @@ Defaults are merged rather than replaced, and the more specific value wins: a va
 A namespace must have at most one ConfigMap with that label.
 More than one is an error for every Workflow in that namespace, because there is no sensible way to choose between them.
 
-A namespace without a labelled ConfigMap simply has no namespace-level defaults.
+A namespace without a labelled ConfigMap has no namespace-level defaults.
 A ConfigMap that exists but is missing the `workflowDefaults` key, whose value is not valid YAML, or which sets a field that is not recognized, is an error rather than being ignored, so that defaults never silently fail to apply.
+This also affects Workflows that are already running, not only new ones.
+The controller reads the defaults again on every reconcile, so a broken ConfigMap, or a second labelled one, puts every running Workflow in the namespace into `Error`.
