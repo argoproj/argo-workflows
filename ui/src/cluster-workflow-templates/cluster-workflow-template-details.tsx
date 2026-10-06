@@ -48,7 +48,21 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     );
 
     useEffect(() => {
-        history.push(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));
+        const currentParams = new URLSearchParams(location.search);
+        const extraSearchParams = new URLSearchParams();
+        currentParams.forEach((value, key) => {
+            if (key.startsWith('parameters[') || key === 'entrypoint' || key === 'labels') {
+                extraSearchParams.set(key, value);
+            }
+        });
+        history.push(
+            historyUrl('cluster-workflow-templates/{name}', {
+                name,
+                sidePanel,
+                tab,
+                extraSearchParams: extraSearchParams.toString() ? extraSearchParams : null
+            })
+        );
     }, [name, sidePanel, tab]);
 
     useEffect(() => {
