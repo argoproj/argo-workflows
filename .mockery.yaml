@@ -2,6 +2,9 @@ dir: '{{.InterfaceDir}}/mocks'
 structname: '{{.InterfaceName}}'
 filename: "{{.InterfaceName}}.go"
 pkgname: mocks
+# WorkflowServiceClient and WorkflowTemplateServiceClient live in generated .pb.go files,
+# which mockery >= v3.6 skips by default.
+include-auto-generated: true
 
 template-data:
   unroll-variadic: true

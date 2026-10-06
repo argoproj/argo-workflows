@@ -25,6 +25,12 @@ func (s *lifecycleSessionStub) Close() error {
 	return nil
 }
 
+// With binds the session to the caller's context before running fn. Return the
+// same stub so the tests can still compare session identity.
+func (s *lifecycleSessionStub) WithContext(context.Context) db.Session {
+	return s
+}
+
 func (s *lifecycleSessionStub) TxContext(ctx context.Context, fn func(db.Session) error, opts *sql.TxOptions) error {
 	return s.txContext(ctx, fn, opts)
 }

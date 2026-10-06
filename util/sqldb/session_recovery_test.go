@@ -60,9 +60,15 @@ func TestSessionRecoveryAfterFailedReconnect(t *testing.T) {
 			cfg := config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{
 				DatabaseConfig: config.DatabaseConfig{Database: dbName, Host: host, Port: port},
 			}}
+			// The canceled variant interrupts a reconnect in its backoff, so the
+			// backoff has to be long enough to still be pending when that happens.
+			delay := time.Millisecond
+			if canceled {
+				delay = time.Second
+			}
 			proxy, err := NewSessionProxy(ctx, SessionProxyConfig{
 				DBConfig: cfg, Username: userName, Password: password,
-				MaxRetries: 1, BaseDelay: time.Millisecond, MaxDelay: time.Millisecond,
+				MaxRetries: 1, BaseDelay: delay, MaxDelay: delay,
 			})
 			require.NoError(t, err)
 			t.Cleanup(func() { assert.NoError(t, proxy.Close()) })
@@ -80,26 +86,24 @@ func TestSessionRecoveryAfterFailedReconnect(t *testing.T) {
 			for cycle := range 2 {
 				stopTimeout := time.Second
 				require.NoError(t, postgres.Stop(ctx, &stopTimeout))
-				failedCtx, cancel := context.WithCancel(ctx)
-				err = proxy.With(failedCtx, func(s db.Session) error {
-					pingErr := s.Ping()
-					if canceled {
-						// Cancel before the reconnect backoff. The failed connection
-						// attempt must not permanently close the proxy either.
-						cancel()
-					}
-					return pingErr
-				})
-				cancel()
+				err = proxy.With(ctx, func(s db.Session) error { return s.Ping() })
+				require.ErrorContains(t, err, "reconnection failed after 1 retries")
 				if canceled {
+					// The proxy is now disconnected, so the next operation reconnects
+					// before it runs. A caller that has already given up stops in the
+					// reconnect backoff; that must not permanently close the proxy either.
+					canceledCtx, cancel := context.WithCancel(ctx)
+					cancel()
+					err = proxy.With(canceledCtx, func(db.Session) error {
+						t.Error("operation ran without a successful reconnection")
+						return nil
+					})
 					require.ErrorIs(t, err, context.Canceled)
-				} else {
-					require.ErrorContains(t, err, "reconnection failed after 1 retries")
 				}
 				// Controller configuration reloads use Session() directly to
 				// update pool settings, including while reconnect is failing.
 				require.NotPanics(t, func() {
-					ConfigureDBSession(proxy.Session(), &config.ConnectionPool{MaxOpenConns: 4})
+					ConfigureDBSession(proxy.Session(ctx), &config.ConnectionPool{MaxOpenConns: 4})
 				})
 
 				require.NoError(t, postgres.Start(ctx))

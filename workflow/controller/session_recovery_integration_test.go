@@ -66,7 +66,7 @@ func TestWorkflowController_ArchiveRecoversAfterDatabaseOutage(t *testing.T) {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, proxy.Close()) })
-	require.NoError(t, persist.Migrate(ctx, proxy.Session(), "test", "argo_workflows", proxy.DBType()))
+	require.NoError(t, persist.Migrate(ctx, proxy.Session(ctx), "test", "argo_workflows", proxy.DBType()))
 	archive := persist.NewWorkflowArchive(proxy, "test", "", instanceid.NewService(""))
 
 	wf := pendingArchiveWorkflow()
