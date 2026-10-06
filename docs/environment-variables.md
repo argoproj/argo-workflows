@@ -100,26 +100,9 @@ spec:
 
 ### Pod status capture
 
-When `ARGO_POD_STATUS_CAPTURE_FINALIZER=true`, a terminal Pod's status finalizer is retained until the controller has persisted the corresponding node result and the applicable task-result synchronization is complete.
-The optional `status.nodes[*].capturedPodUID` records which Pod supplied that result or an explicit controller stop disposition.
-For offloaded nodes, the Workflow must reference the saved node version before cleanup is permitted.
-The controller rechecks retained Pods after a restart, including Pods belonging to completed Workflows, and retries failed reads or cleanup requests without requiring another Pod event.
-Pod garbage collection still follows the configured strategy and deletion delay.
-The flag controls the status-finalizer protection, not all cleanup recovery work.
-The controller also records Pod UID provenance and checks retained cleanup work when the flag is disabled, so disabling the flag does not eliminate the additional API and node-storage reads.
-
-Before upgrading an installation using full CRDs, apply the CRDs for the new controller version so that the API server preserves `capturedPodUID` in uncompressed node status.
-Previously completed Workflows may lack this identity information.
-The controller can add a fresh UID association for a supported single-node ordinary success after reconstructing and comparing the complete applicable result, without rewriting the completed outcome.
-An ordinary successful two-step Workflow is outside this limited legacy path.
-When the controller cannot prove which Pod supplied an old result, it retains the status finalizer and reports the missing capture evidence instead of removing it based on age.
-An authoritative lookup confirming that the owning Workflow was deleted, replaced, or is being deleted still allows owner cleanup.
-API or offload storage failures do not establish that the owner is absent.
-
-For retained Pods, check the controller logs, the owning Workflow's node status, and access to the referenced offload data.
-Permanent dependency failures or another controller's finalizer can continue to prevent deletion.
-The status finalizer cannot recover a Pod that has already been deleted or outputs that the executor did not save.
-See [Pod Status Capture and Retained Pods](status-capture.md) for upgrade and rollback order, the limited legacy scope, private evidence collection and explicit operator disposition while preserving Workflow history.
+`ARGO_POD_STATUS_CAPTURE_FINALIZER=true` keeps the `workflows.argoproj.io/status` finalizer on a finished Pod until the controller has saved that Pod's result in the Workflow status, so the Pod cannot be deleted before its result is recorded.
+Pod garbage collection then follows the configured strategy and delay as usual.
+See [Pod Status Capture and Retained Pods](status-capture.md) for what the controller records, what changes with the flag off, the upgrade and rollback order, and how to handle Pods that keep the finalizer.
 
 ## Executor
 

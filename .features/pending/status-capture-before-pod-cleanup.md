@@ -7,4 +7,4 @@ With `ARGO_POD_STATUS_CAPTURE_FINALIZER=true`, Pod cleanup verifies the saved no
 The optional `capturedPodUID` node status field allows the controller to recover cleanup after restarting, including for completed Workflows.
 Previously completed nodes without provable Pod identity retain their status finalizer with diagnostics until a supported cleanup disposition can be established.
 Installations using full CRDs must update them with the controller.
-See [Pod status capture](environment-variables.md#pod-status-capture) for upgrade and cleanup behavior.
+See [Pod Status Capture and Retained Pods](status-capture.md) for upgrade and cleanup behavior.

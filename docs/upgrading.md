@@ -7,22 +7,26 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v4.2
 
-### Pod status capture protects persisted results and supports limited legacy capture
+### Pod status capture: new node field, extra reads on Pod Add, and completed Workflows wait for storage
 
-When `ARGO_POD_STATUS_CAPTURE_FINALIZER=true`, Pod cleanup now requires the persisted node result to identify the exact Pod using `capturedPodUID`.
-Apply the new full CRDs before starting the new controller and verify actual field retention.
-Align controller, Argo Server and CLI versions according to the [supported version policy](releases.md#supported-version-skew).
-To preserve outstanding capture obligations through the transition, pause submissions and mutating Workflow operations, stop all old controller replicas for the affected scope, apply the CRDs and start only new replicas.
-An old standby does not perform cleanup, but the new guarantee is lost if an old binary becomes active.
-This controlled procedure concerns outstanding protection; it is not a blanket requirement to stop installations with the flag disabled.
-Already-running workloads continue while controllers are stopped.
+The controller now records which Pod produced each saved node result in a new node status field, `capturedPodUID` ([#17115](https://github.com/argoproj/argo-workflows/pull/17115)).
+Three things change for every installation, whether or not `ARGO_POD_STATUS_CAPTURE_FINALIZER` is set.
 
-The new controller can record a fresh UID association for a limited completed legacy success without changing its outcome.
-Other old results, including an ordinary successful two-step Workflow and memoization errors, remain held when their association cannot be proved.
-They have an evidence-preserving operator procedure that can retain Workflow history.
-For rollback, drain active executions and capture obligations with the new controller first; unresolved obligations require retaining the new controller or keeping that scope stopped.
-Do not downgrade the CRD or assume an older typed writer preserves the new field.
-See [Pod Status Capture and Retained Pods](status-capture.md) for the supported transition, exact legacy scope, storage inspection and explicit operator disposition.
+Installations that use the full CRDs must apply the v4.2 CRDs before starting the v4.2 controller; otherwise the API server drops the new field from uncompressed node status.
+
+Every Pod Add event now costs one Pod GET and one Workflow GET against the API, plus a decode of the whole node map when the Workflow's nodes are compressed or offloaded.
+The controller receives an Add for every existing Workflow Pod when it starts, so expect a burst of reads after each restart that grows with the number of live Pods.
+Ordinary status updates of a running Pod add no reads.
+
+A Workflow that finishes while its status cannot be saved, for example because the offload database is unreachable, now stays `Running` and is retried every 30 seconds until the write succeeds, keeping its parallelism slot and synchronization locks meanwhile.
+Previously it was marked `Error`.
+A finished Workflow that is still too large after compression, with node offloading not configured, is marked `Error` as before.
+
+With the flag on, a finished Pod now keeps the `workflows.argoproj.io/status` finalizer until its result has been saved under its own Pod UID.
+Previously, once such a Pod was being deleted, the finalizer was removed two minutes after the Pod's last status transition whether or not the result had been saved.
+Pods of Workflows that completed under an older controller and still carry the finalizer have no recorded UID; the new controller fills it in only for a completed single-node successful Workflow whose Pod is unchanged, and keeps the finalizer on every other such Pod until you act.
+The protection is lost whenever an older controller replica is leader, and reverting to an older CRD drops the new field.
+See [Pod Status Capture and Retained Pods](status-capture.md) for the controlled upgrade and rollback order, how to list and classify retained Pods, and how to release one by hand.
 
 ### ContainerSet siblings are no longer terminated when one container fails
 
