@@ -45,9 +45,8 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	// skips it), so a target naming no task can only be caught here, once
 	// substituted. dag.PullOrder silently drops a target it can't find, so
 	// left unchecked the boundary would never see a node for it and
-	// assessDAGPhase (target with no node) would keep it Running forever;
-	// main panicked here (recovered by the operator into an Error), so this
-	// keeps main's Error outcome without the panic.
+	// assessDAGPhase (target with no node) would keep it Running forever,
+	// so the DAG node ends Error instead.
 	for name := range strings.FieldsSeq(tmpl.DAG.Target) {
 		if !known[name] {
 			woc.markNodeError(ctx, nodeName, fmt.Errorf("target '%s' is not defined", name))

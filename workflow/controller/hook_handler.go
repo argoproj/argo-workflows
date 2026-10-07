@@ -103,7 +103,7 @@ func (h *hookHandler) driveExitHook(ctx context.Context, task dag.Task, refName 
 // reenterHooks advances the hook nodes of node that had not finished when this
 // reconcile started, lifecycle and exit alike, and creates none. It reports
 // whether they have all finished. It serves the hook nodes an older controller
-// created where this one creates none (main ran a DAG task's lifecycle hooks
+// created where this one creates none (it ran a DAG task's lifecycle hooks
 // on its TaskGroup), and those of a node whose hooks' scope cannot be built:
 // a hook node that is not a pod (a nested template, a suspend) only advances
 // when re-entered, and re-entry releases its lock and emits its metrics once

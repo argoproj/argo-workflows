@@ -130,7 +130,7 @@ type wfOperationCtx struct {
 
 	taskSet map[string]wfv1.Template
 
-	// currentStackDepth tracks the depth of the "stack", increased with every nested call to executeTemplate and decreased
+	// currentStackDepth tracks the depth of the "stack", increased with every nested call to executeProcessedTemplate and decreased
 	// when such calls return. This is used to prevent infinite recursion
 	currentStackDepth int
 }
@@ -1718,8 +1718,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// Two cases are handled:
 	//   1. Declared outputs (any template type): once updated.Outputs has been partially
 	//      populated (e.g. by the controller writing an ExitCode), require that every
-	//      declared piece of Outputs is present before flipping to Succeeded. This
-	//      matches the pre-existing #14568 fix on main.
+	//      declared piece of Outputs is present before flipping to Succeeded.
 	//   2. ContainerSet with implicit Outputs.Result: a parent step/task may reference
 	//      outputs.result without the template statically declaring it. In that case
 	//      includeScriptOutput returns true and we must wait for the result to land
@@ -1737,7 +1736,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			}
 		}
 
-		// Gate case 1: declared outputs that are partially synced. Mirrors main: only
+		// Gate case 1: declared outputs that are partially synced. Only
 		// fires when updated.Outputs != nil so test fakes that bypass taskResult sync
 		// (and real flows with no partial outputs yet) are unaffected.
 		if tmpl.Outputs.HasOutputs() && updated.Outputs != nil {
@@ -2318,7 +2317,7 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 	// an already-fulfilled node -- for example the entry node on the operate
 	// that finally sees its pod succeed, or a workflow-level hook node
 	// re-entered on every operate -- completes even on an operate that has
-	// run past its deadline, as main did. A gate here, before template
+	// run past its deadline. A gate here, before template
 	// resolution, would bail out before that fulfilled check ever runs.
 
 	// The name variable follows orgTmpl's own kind and name.
@@ -2371,8 +2370,8 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 	}()
 
 	// Track recursion depth to prevent infinite template recursion.
-	// This was previously in reconcileTemplate, but must be here so that
-	// the Engine path (which bypasses reconcileTemplate) also gets the check.
+	// It is here rather than in reconcileTemplate so that the Engine path
+	// (which bypasses reconcileTemplate) also gets the check.
 	woc.currentStackDepth++
 	defer func() { woc.currentStackDepth-- }()
 
@@ -2490,7 +2489,7 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 // nothing left to run. It is the one place a node is finished, whatever
 // fulfilled it: a pod, a memoize cache hit, an HTTP or plugin result, a
 // suspend resumed, a template's own outputs. Its lock is released every time,
-// as executeTemplate did (Release is idempotent), so a node fulfilled outside
+// (Release is idempotent), so a node fulfilled outside
 // the controller (a resumed suspend) still frees it. Once per completion, in
 // the operation that sees it fulfilled first, its completion metrics are
 // emitted (a memoize cache hit included) and its globalName outputs are
@@ -2521,12 +2520,13 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.N
 // operate that created node. A retried template's realtime series therefore
 // belongs to its Retry node (handleRetries always returns it to
 // executeProcessedTemplate, never an attempt) rather than resetting on
-// every attempt. Completion metrics are not emitted here:
-// handleNodeFulfilled already emits them, once per node, wherever a node is
-// found fulfilled (a dispatch that finishes synchronously, a retry's own
-// completion, memoization, or a node already fulfilled when reconciled) —
-// duplicating that here for the returned node double-counted a retried
-// template's completion.
+// every attempt. Completion metrics are not emitted here: handleNodeFulfilled
+// emits them, once per node, wherever a node is found fulfilled (a dispatch
+// that finishes synchronously, a Retry node's completion, memoization, or a
+// node already fulfilled when reconciled), except for a retry's attempts. A
+// non-final attempt is counted by emitPassedAttemptMetrics when the retry
+// moves past it, and the final attempt through its Retry node; emitting them
+// here as well would count a retried template's completion twice.
 func (woc *wfOperationCtx) emitNodeMetrics(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) {
 	if node == nil || tmpl.Metrics == nil {
 		return
@@ -2587,7 +2587,7 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 // now is supplied by the caller rather than read from time.Now here so the
 // caller controls which clock is used: the pure pod builder passes pb.in.now (the
 // captured snapshot time) to keep build() deterministic for a given snapshot,
-// while the live executeTemplate path passes the current wall-clock.
+// while checkConstraints passes the current wall-clock.
 func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
 	if node == nil {
 		return nil, nil, nil

@@ -192,8 +192,8 @@ func getBaseTaskName(name string) string {
 	return name
 }
 
-// PullOrder returns the tasks main's executeDAG visited, in the order it
-// visited them: from each target in turn (the given targets, as written on
+// PullOrder returns the tasks a DAG's walk visits, in the order it visits
+// them: from each target in turn (the given targets, as written on
 // dag.target, or else the leaves by name when none is set), every task right
 // after its dependencies, depth first. A task outside every target's
 // ancestry is left out: nothing needs it, so it is never dispatched, and it

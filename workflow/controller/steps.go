@@ -162,7 +162,7 @@ func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, subst
 // expandedStepTask is one item of an expanded step. Its task name keeps the
 // "[i]." group prefix the Engine schedules by; its display name, which is
 // what {{steps.name}} and the steps.<name> scope keys carry, is the item name
-// alone (e.g. "A(0:x)"), as it was before the Engine.
+// alone (e.g. "A(0:x)").
 type expandedStepTask struct {
 	dag.Task
 }
@@ -226,8 +226,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			currentStepNames = append(currentStepNames, task.GetName())
 		}
 		// An empty group (`- []`) has no steps to wait for, so the group
-		// after it waits for the last group that had steps, as the groups
-		// ran in sequence before the Engine.
+		// after it waits for the last group that had steps, so the groups
+		// still run in sequence.
 		if len(currentStepNames) > 0 {
 			prevStepNames = currentStepNames
 		}

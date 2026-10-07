@@ -69,8 +69,8 @@ func (e *DAGEvaluator) evalBool(input string, env map[string]taskResult) (bool, 
 // evaluateDependsReadiness evaluates the depends expression for a task and
 // returns a readinessResult. The task waits while any dependency it references
 // is still pending; once every one has finished, the expression decides
-// whether it runs or is omitted. This is the pre-Engine rule: an expression is
-// never evaluated against a dependency that has not finished.
+// whether it runs or is omitted: an expression is never evaluated against a
+// dependency that has not finished.
 func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName string) (readinessResult, error) {
 	node := e.store.getNode(taskName)
 	if node != nil && node.Fulfilled() {
@@ -181,8 +181,7 @@ func (e *DAGEvaluator) evaluateTaskResult(ctx context.Context, taskName string) 
 		}
 		// Once its node exists a task is dispatched until it is fulfilled,
 		// without re-evaluating its depends expression against dependencies
-		// that may since have changed (e.g. a dead daemon), as
-		// evaluateDependsLogic did before the Engine.
+		// that may since have changed (e.g. a dead daemon).
 		result.ShouldRun = !node.Fulfilled()
 		return result
 	}
@@ -298,8 +297,7 @@ func (e *DAGEvaluator) evaluateRetryNode(taskName string, node *wfv1.NodeStatus)
 // Until the group is fulfilled it is dispatched on every reconcile: the Engine
 // expands the task, creates or re-enters each item, and completes the group
 // with TaskGroupPhase once every item exists and has finished (after a hook
-// error, once the items that exist have), as executeDAGTask and
-// executeStepGroup did before the Engine.
+// error, once the items that exist have).
 func (e *DAGEvaluator) evaluateTaskGroupNode(taskName string, node *wfv1.NodeStatus) EvaluationResult {
 	result := EvaluationResult{TaskName: taskName}
 	if !node.Fulfilled() {
