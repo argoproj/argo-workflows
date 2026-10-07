@@ -326,9 +326,9 @@ spec:
 func TestReconcileTaskGroup_WorstPhaseWins(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	engine, fake, woc, _ := engineWithFakeReconciler(ctx, t)
-	markChildPhase(t, woc, "client(0:0)", wfv1.NodeFailed)
-	markChildPhase(t, woc, "client(1:1)", wfv1.NodeError)
-	markChildPhase(t, woc, "client(2:2)", wfv1.NodeSucceeded)
+	forceNodePhaseForTest(woc, "dag-seq-integ.client(0:0)", wfv1.NodeFailed)
+	forceNodePhaseForTest(woc, "dag-seq-integ.client(1:1)", wfv1.NodeError)
+	forceNodePhaseForTest(woc, "dag-seq-integ.client(2:2)", wfv1.NodeSucceeded)
 
 	engine.visit(ctx, engine.evaluator.GetTask("client"), engine.evaluator.Evaluate(ctx, "client"), true)
 

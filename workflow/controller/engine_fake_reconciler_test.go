@@ -78,21 +78,6 @@ func engineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, *fake
 	return engine, fake, woc, tasks
 }
 
-// markChildPhase rewrites the in-memory phase of an existing child node by
-// display name. Returns the node ID that was updated.
-func markChildPhase(t *testing.T, woc *wfOperationCtx, displayName string, phase wfv1.NodePhase) string {
-	t.Helper()
-	for id, node := range woc.wf.Status.Nodes {
-		if node.DisplayName == displayName {
-			node.Phase = phase
-			woc.wf.Status.Nodes[id] = node
-			return id
-		}
-	}
-	t.Fatalf("no node with display name %q", displayName)
-	return ""
-}
-
 const dagWithSequenceForIntegration = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
