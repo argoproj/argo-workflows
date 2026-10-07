@@ -9847,6 +9847,155 @@ spec:
 	}
 }
 
+// A retried pod template's metrics count each attempt once, with that
+// attempt's status and exit code, as main does (#8207, #10463): every
+// non-final attempt is counted by itself and the final one by the Retry node.
+// Mirrors e2e TestRetryMetrics, whose three failing attempts must raise
+// {exit_code="1",status="Failed"} by 3. Extra reconciles, and a backoff
+// that holds the next attempt back, must not count an attempt again.
+func TestRegressionR4_RetriedPodMetricsPerAttempt(t *testing.T) {
+	type attempt struct {
+		phase apiv1.PodPhase
+		code  int32
+	}
+	failed := attempt{apiv1.PodFailed, 1}
+	succeeded := attempt{apiv1.PodSucceeded, 0}
+	for _, tc := range []struct {
+		name     string
+		backoff  bool
+		attempts []attempt
+		// {exit_code, status} -> count; -1 is a series never counted.
+		want map[[2]string]float64
+	}{
+		{"all-fail", false, []attempt{failed, failed, failed},
+			map[[2]string]float64{{"1", "Failed"}: 3, {"0", "Succeeded"}: -1}},
+		{"fail-fail-succeed", false, []attempt{failed, failed, succeeded},
+			map[[2]string]float64{{"1", "Failed"}: 2, {"0", "Succeeded"}: 1}},
+		{"backoff", true, []attempt{failed, failed, failed},
+			map[[2]string]float64{{"1", "Failed"}: 3, {"0", "Succeeded"}: -1}},
+	} {
+		for _, kind := range []string{"steps", "dag", "root"} {
+			t.Run(tc.name+"/"+kind, func(t *testing.T) {
+				metric := "r4_retry_pod_attempts_" + strings.ReplaceAll(tc.name, "-", "_") + "_" + kind
+				entry := "main"
+				if kind == "root" {
+					entry = "run-test"
+				}
+				mainBody := `
+    steps:
+    - - name: runTest
+        template: run-test
+        continueOn:
+          error: true
+          failed: true`
+				if kind == "dag" {
+					mainBody = `
+    dag:
+      tasks:
+      - name: runTest
+        template: run-test
+        continueOn:
+          error: true
+          failed: true`
+				}
+				backoff := ""
+				if tc.backoff {
+					backoff = `
+      backoff:
+        duration: "1h"`
+				}
+				wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-retry-pod-attempts
+  namespace: default
+spec:
+  entrypoint: ` + entry + `
+  templates:
+  - name: main` + mainBody + `
+  - name: run-test
+    retryStrategy:
+      limit: "2"` + backoff + `
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: Count of runs by exit code
+        labels:
+        - key: exit_code
+          value: "{{exitCode}}"
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["exit 1"]
+`)
+				// continueOn lets a Steps/DAG workflow succeed past the
+				// failed retry; a root retry is the workflow.
+				wantPhase := wfv1.WorkflowSucceeded
+				if kind == "root" && tc.attempts[len(tc.attempts)-1] == failed {
+					wantPhase = wfv1.WorkflowFailed
+				}
+				ctx := logging.TestContext(t.Context())
+				cancel, controller := newController(ctx, wf)
+				defer cancel()
+				var woc *wfOperationCtx
+				// Each reconcile starts a new pod running, as a kubelet would.
+				reconcile := func() {
+					if woc == nil {
+						woc = newWorkflowOperationCtx(ctx, wf, controller)
+					} else {
+						woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+					}
+					woc.operate(ctx)
+					setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+						if n.Phase == wfv1.NodePending {
+							return apiv1.PodRunning
+						}
+						return ""
+					})
+				}
+				reconcile()
+				for i, a := range tc.attempts {
+					require.False(t, woc.wf.Status.Phase.Completed(), "workflow ended before attempt %d", i)
+					// The attempt's FinishedAt starts its backoff.
+					makePodsPhase(ctx, woc, a.phase, withExitCode(a.code), func(pod *apiv1.Pod, _ *wfOperationCtx) {
+						for j := range pod.Status.ContainerStatuses {
+							pod.Status.ContainerStatuses[j].State.Terminated.FinishedAt = metav1.Now()
+						}
+					})
+					reconcile()
+					reconcile()
+					if tc.backoff && i < len(tc.attempts)-1 {
+						// The next attempt waits out the backoff: end it now.
+						for _, n := range woc.wf.Status.Nodes {
+							if n.Type == wfv1.NodeTypeRetry {
+								require.Contains(t, n.Message, "Backoff for", "next attempt held back")
+							}
+						}
+						for id, n := range woc.wf.Status.Nodes {
+							if n.Type == wfv1.NodeTypePod && n.Phase.Fulfilled(n.TaskResultSynced) {
+								n.FinishedAt = metav1.NewTime(n.FinishedAt.Add(-2 * time.Hour))
+								woc.wf.Status.Nodes[id] = n
+							}
+						}
+						reconcile()
+						reconcile()
+					}
+				}
+				require.Equal(t, wantPhase, woc.wf.Status.Phase)
+				for labels, want := range tc.want {
+					got := r4C65Counter(t, metric, "exit_code", labels[0], "status", labels[1])
+					assert.InDelta(t, want, got, 0.001, "exit_code=%s status=%s", labels[0], labels[1])
+				}
+			})
+		}
+	}
+}
+
 // r4C39Inner is a Steps template whose output parameter reads a when-false
 // step's output with no default: the output cannot be resolved, an error of
 // the template itself.

@@ -212,7 +212,20 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	processedRetryParentNode, continueExecution, err := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 	if err != nil {
 		return woc.markNodeError(ctx, retryNodeName, err), err
-	} else if !continueExecution {
+	}
+	// An attempt the retry will follow with another is finished here, so
+	// its metrics count it with its own status and exit code (#8207,
+	// #10463); the final attempt is counted by the Retry node below. A pod
+	// attempt is fulfilled by pod reconciliation and is never re-entered, so
+	// this is the only place that finishes it. A nested Steps/DAG attempt
+	// finished itself in its own dispatch, and handleNodeFulfilled does not
+	// finish a node twice. This runs before a backoff returns, so an attempt
+	// is finished in the operation that sees it fail.
+	if _, lastChildNode := getChildNodeIdsAndLastRetriedNode(processedRetryParentNode, woc.wf.Status.Nodes); lastChildNode != nil &&
+		!processedRetryParentNode.Fulfilled() && lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
+		woc.handleNodeFulfilled(ctx, lastChildNode, processedTmpl)
+	}
+	if !continueExecution {
 		return retryParentNode, nil
 	}
 	retryParentNode = processedRetryParentNode
@@ -230,16 +243,6 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		woc.handleNodeFulfilled(ctx, retryParentNode, processedTmpl)
 		return retryParentNode, nil
 	}
-	// No separate metric here for a fulfilled-but-not-final lastChildNode
-	// (a failed attempt the retry will follow with another): its own
-	// dispatch already finished it through handleNodeFulfilled, either
-	// synchronously (postExecutionHandling, for an attempt that completes
-	// inside its own dispatch, e.g. a nested Steps/DAG boundary reacting to
-	// an already-failed child) or on re-entry here after that dispatch
-	// (childNode.Phase.Fulfilled below re-enters handleRetries, which
-	// revisits this same lastChildNode). Emitting again here double-counted
-	// every such attempt.
-
 	var retryNum int
 	if lastChildNode != nil && !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
 		nodeName = lastChildNode.Name
