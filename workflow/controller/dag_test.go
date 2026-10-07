@@ -738,7 +738,7 @@ func TestDagParallelism(t *testing.T) {
 	woc.operate(ctx)
 	woc1 := newWoc(ctx, *woc.wf)
 	woc1.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowRunning, woc1.wf.Status.Phase)
 }
 
 var dagDaemonFailedTest = `
