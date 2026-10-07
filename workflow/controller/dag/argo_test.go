@@ -1140,6 +1140,22 @@ func TestTaskGroupItems(t *testing.T) {
 	parent.Children = append(parent.Children, "pruned")
 	_, missing = TaskGroupItems(wf.Status.Nodes, parent)
 	assert.True(t, missing)
+
+	// An adopted legacy Steps fan-out: TaskGroup wf[0].A with its item
+	// wf[0].A(0:x), a Retry node. The item counts once; its retry attempt,
+	// wf[0].A(0:x)(1), hangs off the item's Retry node and is not an item.
+	legacy := addTaskGroupParent(t, wf, "wf[0].A")
+	addTaskGroupChild(t, wf, legacy, "wf[0].A(0:x)", wfv1.NodeRunning, nil)
+	retry, err := wf.Status.Nodes.Get(wf.NodeID("wf[0].A(0:x)"))
+	require.NoError(t, err)
+	retry.Type = wfv1.NodeTypeRetry
+	addTaskGroupChild(t, wf, retry, "wf[0].A(0:x)(1)", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true})
+
+	items, missing = TaskGroupItems(wf.Status.Nodes, legacy)
+	require.Len(t, items, 1)
+	assert.Equal(t, "wf[0].A(0:x)", items[0].Name)
+	assert.Equal(t, wfv1.NodeTypeRetry, items[0].Type)
+	assert.False(t, missing)
 }
 
 func TestTaskNodeName(t *testing.T) {
