@@ -10,6 +10,9 @@ import {services} from '../../shared/services';
 import {useEditableObject} from '../../shared/use-editable-object';
 import {podPanelState} from './pod-panel-state';
 
+// The gateway only sends headers with the first message, so the open event cannot mark initial sync complete.
+const SETTLE_MS = 3000;
+
 function PodViewer({pod}: {pod: Pod}) {
     const {serialization, lang, setLang, resetObject} = useEditableObject<Pod>(pod);
     // useEditableObject only reads its argument once, so every watch update has to be pushed in
@@ -20,11 +23,14 @@ function PodViewer({pod}: {pod: Pod}) {
 export function PodPanel({namespace, name, podName, nodePhase}: {namespace: string; name: string; podName: string; nodePhase: NodePhase | undefined}) {
     const [pod, setPod] = useState<Pod>();
     const [deleted, setDeleted] = useState(false);
+    const [settled, setSettled] = useState(false);
     const [error, setError] = useState<Error>();
 
     useEffect(() => {
+        setSettled(false);
         setPod(undefined);
         setDeleted(false);
+        const settleTimer = setTimeout(() => setSettled(true), SETTLE_MS);
         const lw = new ListWatch<Pod>(
             // no list function, so we fake it
             () => Promise.resolve({metadata: {}, items: []}),
@@ -42,10 +48,13 @@ export function PodPanel({namespace, name, podName, nodePhase}: {namespace: stri
             setError
         );
         lw.start();
-        return () => lw.stop();
+        return () => {
+            clearTimeout(settleTimer);
+            lw.stop();
+        };
     }, [namespace, name, podName]);
 
-    const state = podPanelState(pod, deleted, nodePhase);
+    const state = podPanelState(pod, deleted, nodePhase, settled);
 
     return (
         <>
@@ -53,6 +62,11 @@ export function PodPanel({namespace, name, podName, nodePhase}: {namespace: stri
             {state === 'waiting' && (
                 <Notice>
                     <i className='fa fa-spin fa-circle-notch' /> Waiting for pod {podName} to be created.
+                </Notice>
+            )}
+            {state === 'loading' && (
+                <Notice>
+                    <i className='fa fa-spin fa-circle-notch' /> Loading pod {podName}.
                 </Notice>
             )}
             {state === 'not-found' && <Notice>Pod {podName} was not found. It may have been deleted or never created.</Notice>}
