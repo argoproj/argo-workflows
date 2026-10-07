@@ -90,8 +90,14 @@ Values are merged rather than replaced, and the more specific value wins:
 Namespace defaults may set `spec` fields, plus labels and annotations under `metadata`.
 Anything else under `metadata`, and `status`, are ignored, so a namespace ConfigMap cannot put finalizers or owner references on the Workflows of whoever uses that namespace.
 
+Namespace defaults are not restricted by `templateReferencing: Strict`, which sanitizes only the submitted Workflow spec.
+A namespace ConfigMap can therefore set fields a user cannot set directly, such as `serviceAccountName`, `hostNetwork` or `podSpecPatch`, wherever the Workflow and its `WorkflowTemplate` leave them unset.
+Write access to that ConfigMap carries the same trust as the controller-level `workflowDefaults`.
+
 A namespace without a labelled ConfigMap has no namespace-level defaults.
 A ConfigMap that exists but is missing the `workflowDefaults` key, or whose value is not valid YAML, is an error rather than being ignored, so that defaults never silently fail to apply.
 An unrecognized field is an error for the same reason, so a misspelling is reported rather than quietly applying nothing.
 This also affects Workflows that are already running, not only new ones.
 The controller reads the defaults again on every reconcile, so a broken ConfigMap, or a second labelled one, puts every running Workflow in the namespace into `Error`.
+Under `templateReferencing: Secure` even a valid edit does this.
+A running Workflow that uses `workflowTemplateRef` has its merged spec compared with the stored one on every reconcile, so changing a default it has already picked up puts it into `Error`.
