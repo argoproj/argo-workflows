@@ -1152,7 +1152,7 @@ func (e *Engine) branchPhase(ctx context.Context, name string, memo map[string]w
 		phase = wfv1.NodeSucceeded
 		deps, _ := e.evaluator.GetDependencies(ctx, name)
 		for _, dep := range deps {
-			phase = worsePhase(phase, e.branchPhase(ctx, dep, memo))
+			phase = dag.WorsePhase(phase, e.branchPhase(ctx, dep, memo))
 		}
 	}
 	memo[name] = phase
@@ -1176,18 +1176,9 @@ func (e *Engine) outcome(node *wfv1.NodeStatus) (wfv1.NodePhase, bool) {
 		if !common.CheckAllHooksFullfilled(item, nodes) {
 			return phase, false
 		}
-		phase = worsePhase(phase, item.Phase)
+		phase = dag.WorsePhase(phase, item.Phase)
 	}
 	return phase, common.CheckAllHooksFullfilled(node, nodes)
-}
-
-// worsePhase is the worse of two phases for an outcome: Error outranks
-// Failed, and both outrank every other phase.
-func worsePhase(a, b wfv1.NodePhase) wfv1.NodePhase {
-	if b == wfv1.NodeError || (b == wfv1.NodeFailed && a != wfv1.NodeError) {
-		return b
-	}
-	return a
 }
 
 // parentsFor returns the nodes a task's node hangs off in the graph. Steps

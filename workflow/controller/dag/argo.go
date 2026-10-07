@@ -315,9 +315,16 @@ func TaskGroupPhase(items []*wfv1.NodeStatus) (phase wfv1.NodePhase, done bool) 
 		if item == nil || !item.Fulfilled() {
 			return "", false
 		}
-		if item.Phase == wfv1.NodeError || (item.Phase == wfv1.NodeFailed && phase != wfv1.NodeError) {
-			phase = item.Phase
-		}
+		phase = WorsePhase(phase, item.Phase)
 	}
 	return phase, true
+}
+
+// WorsePhase is the worse of two phases for an outcome: Error outranks
+// Failed, and both outrank every other phase.
+func WorsePhase(a, b wfv1.NodePhase) wfv1.NodePhase {
+	if b == wfv1.NodeError || (b == wfv1.NodeFailed && a != wfv1.NodeError) {
+		return b
+	}
+	return a
 }
