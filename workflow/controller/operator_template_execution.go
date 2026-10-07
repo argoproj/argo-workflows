@@ -3,7 +3,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -190,6 +192,36 @@ func (woc *wfOperationCtx) handleMemoization(ctx context.Context, nodeName strin
 	return false, node, nil
 }
 
+// emitPassedAttemptMetrics emits tmpl's completion metrics for attempt, the
+// retry's last attempt, as the retry moves past it: in the step that links
+// the next attempt, which happens once and is saved with the workflow, after
+// any backoff and whenever the retry is next walked. A non-final attempt is
+// counted only here, with its own status and exit code (#8207, #10463); the
+// final attempt is counted by its Retry node, and handleNodeFulfilled counts
+// no attempt (isRetryAttempt).
+func (woc *wfOperationCtx) emitPassedAttemptMetrics(ctx context.Context, attempt *wfv1.NodeStatus, tmpl *wfv1.Template) {
+	if attempt == nil || tmpl.Metrics == nil {
+		return
+	}
+	localScope, realTimeScope := woc.prepareMetricScope(attempt)
+	woc.computeMetrics(ctx, tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+}
+
+// isRetryAttempt reports whether node is an attempt of a Retry node: named
+// "<retry node>(N)" and listed in that Retry node's children.
+// (NodeFlag.Retried does not tell: a Retry node can carry it too.)
+func (woc *wfOperationCtx) isRetryAttempt(node *wfv1.NodeStatus) bool {
+	open := strings.LastIndexByte(node.Name, '(')
+	if open < 0 || !strings.HasSuffix(node.Name, ")") {
+		return false
+	}
+	if _, err := strconv.Atoi(node.Name[open+1 : len(node.Name)-1]); err != nil {
+		return false
+	}
+	retry, err := woc.wf.GetNodeByName(node.Name[:open])
+	return err == nil && retry.Type == wfv1.NodeTypeRetry && slices.Contains(retry.Children, node.ID)
+}
+
 // executeTemplateFunc is a function type for executing a template (used in retries)
 type executeTemplateFunc func(ctx context.Context, nodeName string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error)
 
@@ -212,20 +244,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	processedRetryParentNode, continueExecution, err := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 	if err != nil {
 		return woc.markNodeError(ctx, retryNodeName, err), err
-	}
-	// An attempt the retry will follow with another is finished here, so
-	// its metrics count it with its own status and exit code (#8207,
-	// #10463); the final attempt is counted by the Retry node below. A pod
-	// attempt is fulfilled by pod reconciliation and is never re-entered, so
-	// this is the only place that finishes it. A nested Steps/DAG attempt
-	// finished itself in its own dispatch, and handleNodeFulfilled does not
-	// finish a node twice. This runs before a backoff returns, so an attempt
-	// is finished in the operation that sees it fail.
-	if _, lastChildNode := getChildNodeIdsAndLastRetriedNode(processedRetryParentNode, woc.wf.Status.Nodes); lastChildNode != nil &&
-		!processedRetryParentNode.Fulfilled() && lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
-		woc.handleNodeFulfilled(ctx, lastChildNode, processedTmpl)
-	}
-	if !continueExecution {
+	} else if !continueExecution {
 		return retryParentNode, nil
 	}
 	retryParentNode = processedRetryParentNode
@@ -300,6 +319,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		if node == nil {
 			// the attempt node was just created; link it or the next
 			// reconcile re-derives the same attempt name and panics
+			woc.emitPassedAttemptMetrics(ctx, lastChildNode, unsubstitutedTmpl)
 			woc.addChildNode(ctx, retryNodeName, nodeName)
 		}
 		return errNode, err
@@ -311,7 +331,10 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	// errors) can later be claimed by a colliding name (#16376). It still
 	// precedes dispatch so FindRetryNode (used by scheduleOnDifferentHost for
 	// nodeAntiAffinity) can locate the retry parent during pod creation.
+	// Linking the next attempt moves the retry past its last one, which is
+	// counted now, once (emitPassedAttemptMetrics).
 	if node == nil {
+		woc.emitPassedAttemptMetrics(ctx, lastChildNode, unsubstitutedTmpl)
 		woc.addChildNode(ctx, retryNodeName, nodeName)
 	}
 

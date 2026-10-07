@@ -9847,6 +9847,32 @@ spec:
 	}
 }
 
+// r4RunningReconcile operates on a fresh woc for woc's workflow (wf on the
+// first call) and then starts each new pod running, as a kubelet would.
+func r4RunningReconcile(ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow, woc *wfOperationCtx) *wfOperationCtx {
+	if woc != nil {
+		wf = woc.wf
+	}
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.Phase == wfv1.NodePending {
+			return apiv1.PodRunning
+		}
+		return ""
+	})
+	return woc
+}
+
+// r4FinishedNow stamps a pod's terminated containers as finished now.
+func r4FinishedNow(pod *apiv1.Pod, _ *wfOperationCtx) {
+	for j := range pod.Status.ContainerStatuses {
+		if term := pod.Status.ContainerStatuses[j].State.Terminated; term != nil {
+			term.FinishedAt = metav1.Now()
+		}
+	}
+}
+
 // A retried pod template's metrics count each attempt once, with that
 // attempt's status and exit code, as main does (#8207, #10463): every
 // non-final attempt is counted by itself and the final one by the Retry node.
@@ -9943,30 +9969,12 @@ spec:
 				cancel, controller := newController(ctx, wf)
 				defer cancel()
 				var woc *wfOperationCtx
-				// Each reconcile starts a new pod running, as a kubelet would.
-				reconcile := func() {
-					if woc == nil {
-						woc = newWorkflowOperationCtx(ctx, wf, controller)
-					} else {
-						woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-					}
-					woc.operate(ctx)
-					setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
-						if n.Phase == wfv1.NodePending {
-							return apiv1.PodRunning
-						}
-						return ""
-					})
-				}
+				reconcile := func() { woc = r4RunningReconcile(ctx, controller, wf, woc) }
 				reconcile()
 				for i, a := range tc.attempts {
 					require.False(t, woc.wf.Status.Phase.Completed(), "workflow ended before attempt %d", i)
 					// The attempt's FinishedAt starts its backoff.
-					makePodsPhase(ctx, woc, a.phase, withExitCode(a.code), func(pod *apiv1.Pod, _ *wfOperationCtx) {
-						for j := range pod.Status.ContainerStatuses {
-							pod.Status.ContainerStatuses[j].State.Terminated.FinishedAt = metav1.Now()
-						}
-					})
+					makePodsPhase(ctx, woc, a.phase, withExitCode(a.code), r4FinishedNow)
 					reconcile()
 					reconcile()
 					if tc.backoff && i < len(tc.attempts)-1 {
@@ -9991,6 +9999,223 @@ spec:
 					got := r4C65Counter(t, metric, "exit_code", labels[0], "status", labels[1])
 					assert.InDelta(t, want, got, 0.001, "exit_code=%s status=%s", labels[0], labels[1])
 				}
+			})
+		}
+	}
+}
+
+// A retried pod attempt that fails while the workflow is suspended is
+// counted once the workflow resumes and the retry moves past it, as on main.
+// The suspended operation reconciles the pod but walks no template.
+func TestRegressionR4_RetriedAttemptFailsWhileSuspended(t *testing.T) {
+	metric := "r4_retry_attempt_suspended"
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-retry-attempt-suspended
+  namespace: default
+spec:
+  entrypoint: run-test
+  templates:
+  - name: run-test
+    retryStrategy:
+      limit: "2"
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: Count of runs by exit code
+        labels:
+        - key: exit_code
+          value: "{{exitCode}}"
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["exit 1"]
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	var woc *wfOperationCtx
+	reconcile := func() { woc = r4RunningReconcile(ctx, controller, wf, woc) }
+	reconcile()
+	// Attempt 0 fails while the workflow is suspended.
+	woc.wf.Spec.Suspend = new(true)
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(1), r4FinishedNow)
+	reconcile()
+	reconcile()
+	woc.wf.Spec.Suspend = nil
+	reconcile()
+	reconcile()
+	for range 2 {
+		makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(1), r4FinishedNow)
+		reconcile()
+		reconcile()
+	}
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.InDelta(t, 3.0, r4C65Counter(t, metric, "exit_code", "1", "status", "Failed"), 0.001)
+}
+
+// A retried task's attempt that fails in an operation where tasks walked
+// before it fill the workflow's parallelism is counted when the retry later
+// moves past it, as on main.
+func TestRegressionR4_RetriedAttemptBehindParallelism(t *testing.T) {
+	metric := "r4_retry_attempt_parallelism"
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-retry-attempt-parallelism
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 2
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: b
+        template: ok
+      - name: c1
+        template: ok
+        depends: b
+      - name: c2
+        template: ok
+        depends: b
+      - name: z
+        template: run-test
+  - name: ok
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["exit 0"]
+  - name: run-test
+    retryStrategy:
+      limit: "1"
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: Count of runs by status
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c]
+      args: ["exit 1"]
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	var woc *wfOperationCtx
+	reconcile := func() { woc = r4RunningReconcile(ctx, controller, wf, woc) }
+	reconcile()
+	reconcile()
+	// b succeeds as z's first attempt fails: c1 and c2, walked before z,
+	// take the workflow's parallelism.
+	setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		switch n.DisplayName {
+		case "b":
+			return apiv1.PodSucceeded
+		case "z(0)":
+			return apiv1.PodFailed
+		}
+		return ""
+	}, withExitCode(1))
+	reconcile()
+	for range 6 {
+		makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(1))
+		reconcile()
+	}
+	require.True(t, woc.wf.Status.Phase.Completed(), "workflow phase %s", woc.wf.Status.Phase)
+	assert.InDelta(t, 2.0, r4C65Counter(t, metric, "status", "Failed"), 0.001)
+}
+
+// A retried Steps/DAG template counts each attempt exactly once, like a pod
+// template: a non-final attempt when the retry moves past it, the final one
+// through the Retry node, never also from the attempt's own completion.
+// Decided deviation: main also counted the final nested attempt from its own
+// completion, twice in all (Failed 4 for three failed attempts).
+func TestRegressionR4_RetriedNestedAttemptCounts(t *testing.T) {
+	for _, inner := range []string{"steps", "dag"} {
+		for _, tc := range []struct {
+			name           string
+			phases         []apiv1.PodPhase
+			failed, passed float64
+		}{
+			{"fail-fail-fail", []apiv1.PodPhase{apiv1.PodFailed, apiv1.PodFailed, apiv1.PodFailed}, 3, -1},
+			{"fail-succeed", []apiv1.PodPhase{apiv1.PodFailed, apiv1.PodSucceeded}, 1, 1},
+		} {
+			t.Run(inner+"/"+tc.name, func(t *testing.T) {
+				metric := "r4_retry_nested_attempts_" + inner + "_" + strings.ReplaceAll(tc.name, "-", "_")
+				innerBody := `
+    steps:
+    - - name: w
+        template: work`
+				if inner == "dag" {
+					innerBody = `
+    dag:
+      tasks:
+      - name: w
+        template: work`
+				}
+				wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-retry-nested-attempts
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: s
+        template: inner
+        continueOn:
+          failed: true
+  - name: inner
+    retryStrategy:
+      limit: "2"
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: inner completions by status
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"` + innerBody + `
+  - name: work
+    container:
+      image: alpine
+      command: [sh, -c, "exit 1"]
+`)
+				ctx := logging.TestContext(t.Context())
+				cancel, controller := newController(ctx, wf)
+				defer cancel()
+				var woc *wfOperationCtx
+				reconcile := func() { woc = r4RunningReconcile(ctx, controller, wf, woc) }
+				reconcile()
+				for i, ph := range tc.phases {
+					require.False(t, woc.wf.Status.Phase.Completed(), "workflow ended before attempt %d", i)
+					code := int32(0)
+					if ph == apiv1.PodFailed {
+						code = 1
+					}
+					makePodsPhase(ctx, woc, ph, withExitCode(code))
+					reconcile()
+					reconcile()
+				}
+				require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+				assert.InDelta(t, tc.failed, r4C65Counter(t, metric, "status", "Failed"), 0.001, "Failed")
+				assert.InDelta(t, tc.passed, r4C65Counter(t, metric, "status", "Succeeded"), 0.001, "Succeeded (-1: never counted)")
 			})
 		}
 	}
