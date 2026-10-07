@@ -10,7 +10,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 )
 
@@ -190,7 +189,7 @@ func (f substitutorFunc) Substitute(s string, scope map[string]string, strictPre
 // templateSubstitutor substitutes {{...}} tags with the argo template engine,
 // as the controller's wfOperationCtx does.
 func templateSubstitutor(t *testing.T) Substitutor {
-	ctx := logging.TestContext(t.Context())
+	ctx := testCtx(t)
 	return substitutorFunc(func(s string, scope map[string]string, strictPrefixes []string) (string, error) {
 		tmpl, err := template.NewTemplate(s)
 		if err != nil {
@@ -231,7 +230,7 @@ func TestProcessItem_ItemShapes(t *testing.T) {
 			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
 
 			var newTask wfv1.DAGTask
-			newTaskName, err := processItem(t.Context(), taskBytes, task.Name, 0, items[0], &newTask, nil, templateSubstitutor(t), []string{"item"})
+			newTaskName, err := processItem(testCtx(t), taskBytes, task.Name, 0, items[0], &newTask, nil, templateSubstitutor(t), []string{"item"})
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedName, newTaskName)
 			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())
@@ -258,7 +257,7 @@ func TestDAGTaskResolve(t *testing.T) {
 // items rather than an error; a literal list gives its items. With the when
 // not false, the unparseable list is an error.
 func TestExpandTaskWhenFalseLenient(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
+	ctx := testCtx(t)
 	unparsed := wfv1.DAGTask{Name: "fan", When: "none != none", WithParam: "{{tasks.gen.outputs.result}}"}
 	items, err := ExpandTask(ctx, unparsed, nil, templateSubstitutor(t))
 	require.NoError(t, err)

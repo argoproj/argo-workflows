@@ -121,7 +121,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		deps, err := tasks.GetDependencies(ctx, "taskC")
 
 		require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		deps, err := tasks.GetDependencies(ctx, "taskC")
 
 		require.NoError(t, err)
@@ -154,7 +154,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		deps, err := tasks.GetDependencies(ctx, "taskC")
 
 		require.NoError(t, err)
@@ -169,7 +169,7 @@ func TestWorkflowTasks_GetDependencies(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		deps, err := tasks.GetDependencies(ctx, "taskA")
 
 		require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestWorkflowTasks_GetDependsLogic(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		logic := tasks.GetDependsLogic(ctx, "taskB")
 
 		// Should be expanded to include .Succeeded, .Skipped, .Daemoned
@@ -199,7 +199,7 @@ func TestWorkflowTasks_GetDependsLogic(t *testing.T) {
 		}
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		logic := tasks.GetDependsLogic(ctx, "taskB")
 
 		assert.Contains(t, logic, normalizeTaskName("taskA")+".Failed")
@@ -235,7 +235,7 @@ func TestDAGEvaluator_NewDAGEvaluator(t *testing.T) {
 
 		assert.NotNil(t, evaluator)
 		// Verify it can evaluate (internals are properly initialized)
-		ctx := t.Context()
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskA")
 		assert.Equal(t, "taskA", result.TaskName)
 	})
@@ -249,7 +249,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := logging.TestContext(t.Context())
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskA")
 
 		assert.Equal(t, "taskA", result.TaskName)
@@ -267,7 +267,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := logging.TestContext(t.Context())
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskA")
 
 		assert.False(t, result.ShouldRun)
@@ -282,7 +282,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := logging.TestContext(t.Context())
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskA")
 
 		assert.True(t, result.ShouldRun)
@@ -296,7 +296,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := logging.TestContext(t.Context())
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskB")
 		assert.False(t, result.ShouldRun)
 		assert.True(t, result.Suspended)
@@ -313,7 +313,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := logging.TestContext(t.Context())
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskB")
 
 		assert.True(t, result.ShouldRun)
@@ -330,7 +330,7 @@ func TestDAGEvaluator_EvaluateTask(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := logging.TestContext(t.Context())
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskB")
 
 		assert.False(t, result.ShouldRun)
@@ -354,7 +354,7 @@ func TestDAGEvaluator_DiamondDAG(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 
 		// Initially, only A should be ready to run
 		result := evaluator.Evaluate(ctx, "A")
@@ -403,7 +403,7 @@ func TestDAGEvaluator_FindLeafTaskNames(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		leafTasks := evaluator.FindLeafTaskNames(ctx)
 
 		assert.Len(t, leafTasks, 1)
@@ -419,7 +419,7 @@ func TestDAGEvaluator_FindLeafTaskNames(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		leafTasks := evaluator.FindLeafTaskNames(ctx)
 
 		assert.Len(t, leafTasks, 2)
@@ -436,7 +436,7 @@ func TestDAGEvaluator_FindLeafTaskNames(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		leafTasks := evaluator.FindLeafTaskNames(ctx)
 
 		assert.Len(t, leafTasks, 3)
@@ -454,7 +454,7 @@ func TestDAGEvaluator_GetTargetTasks(t *testing.T) {
 		tmpl.DAG.Target = "taskA taskB"
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		targets := evaluator.GetTargetTasks(ctx)
 
 		assert.Equal(t, []string{"taskA", "taskB"}, targets)
@@ -468,7 +468,7 @@ func TestDAGEvaluator_GetTargetTasks(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		targets := evaluator.GetTargetTasks(ctx)
 
 		assert.Equal(t, []string{"taskB"}, targets)
@@ -490,7 +490,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskC")
 
 		assert.True(t, result.ShouldRun)
@@ -508,7 +508,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskC")
 
 		assert.True(t, result.ShouldRun)
@@ -526,7 +526,7 @@ func TestDAGEvaluator_ComplexDependsExpressions(t *testing.T) {
 		})
 		evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 
-		ctx := t.Context()
+		ctx := testCtx(t)
 		result := evaluator.Evaluate(ctx, "taskC")
 
 		assert.False(t, result.ShouldRun)
@@ -864,7 +864,7 @@ func TestDependsReadiness_RetryDaemonFulfillsDeps(t *testing.T) {
 			{Name: "B", Template: "echo", Depends: "A"},
 		},
 	}}
-	ctx := t.Context()
+	ctx := testCtx(t)
 	result := NewDAGEvaluator(wf, tmpl, "test", "test").Evaluate(ctx, "B")
 	assert.True(t, result.Suspended, "B waits while A's retry node is not yet daemoned")
 
@@ -909,7 +909,7 @@ func TestEval_DaemonedRunningNodeNotReEvaluated(t *testing.T) {
 	}}
 
 	eval := NewDAGEvaluator(wf, tmpl, "test", "test")
-	ctx := t.Context()
+	ctx := testCtx(t)
 
 	// Verify the node is actually daemoned and running
 	node := eval.store.getNode("daemoned-task")
