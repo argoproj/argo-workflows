@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/Knetic/govaluate"
@@ -16,6 +15,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
 	argointstr "github.com/argoproj/argo-workflows/v4/util/intstr"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 // ExpandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks.
@@ -55,7 +55,7 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 	// plain-string item is an error here, not a literal that reaches the pod.
 	// A task whose when is already known to be false never runs, so its body
 	// may stay unresolved, as processItem did before the Engine.
-	itemStrict := []string{"item"}
+	itemStrict := []string{varkeys.Item.Template()}
 	if !mustExecute(task.When) {
 		itemStrict = nil
 	}
@@ -224,27 +224,27 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 		// and key order.
 		switch item.GetType() {
 		case wfv1.String:
-			substScope["item"] = item.GetStrVal()
+			substScope[varkeys.Item.Template()] = item.GetStrVal()
 		case wfv1.Map:
 			mapVal := item.GetMapVal()
 			for k, v := range mapVal {
-				substScope["item."+k] = v.String()
+				substScope[varkeys.ItemByKey.Concretize(k)] = v.String()
 			}
 			mapJSON, marshalErr := json.Marshal(mapVal)
 			if marshalErr != nil {
 				return "", errors.InternalWrapError(marshalErr)
 			}
-			substScope["item"] = string(mapJSON)
+			substScope[varkeys.Item.Template()] = string(mapJSON)
 		case wfv1.List:
 			listJSON, marshalErr := json.Marshal(item.GetListVal())
 			if marshalErr != nil {
 				return "", errors.InternalWrapError(marshalErr)
 			}
-			substScope["item"] = string(listJSON)
+			substScope[varkeys.Item.Template()] = string(listJSON)
 		default: // Number, Bool
-			substScope["item"] = item.String()
+			substScope[varkeys.Item.Template()] = item.String()
 		}
-		substScope["index"] = strconv.Itoa(i) // Marshal the new task, substitute, and unmarshal back
+		// Marshal the new task, substitute, and unmarshal back
 		taskJSON, marshalErr := json.Marshal(newTask)
 		if marshalErr != nil {
 			return "", errors.InternalWrapError(marshalErr)
