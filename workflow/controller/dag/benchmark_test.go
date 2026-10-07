@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func generateRandomDAG(n int) (*wfv1.Workflow, *wfv1.Template) {
@@ -124,7 +123,7 @@ func BenchmarkDAGEvaluator(b *testing.B) {
 		b.Run(fmt.Sprintf("Random/Nodes-%d", n), func(b *testing.B) {
 			b.StopTimer()
 			wf, tmpl := generateRandomDAG(n)
-			ctx := logging.TestContext(b.Context())
+			ctx := testCtx(b)
 			evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 			b.StartTimer()
 
@@ -140,7 +139,7 @@ func BenchmarkDAGEvaluator(b *testing.B) {
 		b.Run(fmt.Sprintf("LinearChain/Nodes-%d", n), func(b *testing.B) {
 			b.StopTimer()
 			wf, tmpl := generateLinearChain(n)
-			ctx := logging.TestContext(b.Context())
+			ctx := testCtx(b)
 			evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 			b.StartTimer()
 
@@ -156,7 +155,7 @@ func BenchmarkDAGEvaluator(b *testing.B) {
 		b.Run(fmt.Sprintf("FanOut/Nodes-%d", n), func(b *testing.B) {
 			b.StopTimer()
 			wf, tmpl := generateWideFanOut(n)
-			ctx := logging.TestContext(b.Context())
+			ctx := testCtx(b)
 			evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
 			b.StartTimer()
 
