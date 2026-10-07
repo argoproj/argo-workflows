@@ -157,6 +157,28 @@ func TestLegacyCaptureUnsupportedAndMismatch(t *testing.T) {
 		_, err := legacySuccessfulNode(wf, pod)
 		require.NoError(t, err)
 	})
+	// The controller adds the artifact repository's archive location to the
+	// executed template, so the stored template stays ordinary either way.
+	t.Run("archive location without log archiving", func(t *testing.T) {
+		wf, pod := legacyCaptureFixture(t)
+		executed := wf.Spec.Templates[0].DeepCopy()
+		executed.ArchiveLocation = &wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "archive"}}
+		tmplJSON, err := json.Marshal(executed)
+		require.NoError(t, err)
+		pod.Spec.Containers[1].Env[0].Value = string(tmplJSON)
+		_, err = legacySuccessfulNode(wf, pod)
+		require.NoError(t, err)
+	})
+	t.Run("archived logs are unsupported, not a conflict", func(t *testing.T) {
+		wf, pod := legacyCaptureFixture(t)
+		executed := wf.Spec.Templates[0].DeepCopy()
+		executed.ArchiveLocation = &wfv1.ArtifactLocation{ArchiveLogs: new(true)}
+		tmplJSON, err := json.Marshal(executed)
+		require.NoError(t, err)
+		pod.Spec.Containers[1].Env[0].Value = string(tmplJSON)
+		_, err = legacySuccessfulNode(wf, pod)
+		require.EqualError(t, err, "Pod execution template has external results, such as archived logs")
+	})
 }
 
 func TestLegacyCaptureCommit(t *testing.T) {

@@ -83,7 +83,7 @@ To roll back, pause submissions and let the v4.2 controller finish its active Wo
 Then inspect every Pod that still carries the finalizer: fix temporary failures, keep the evidence for Pods the controller cannot verify, or make the explicit decision described at the end of this page.
 If some of those Pods cannot be resolved, keep the v4.2 controller running or leave that scope stopped with its Pods and data in place, because an old controller removes their finalizers without checking.
 Keep the v4.2 CRD after rolling back the controller; an older CRD drops the new status fields.
-Older controllers, Argo Server and direct Kubernetes CLI versions can also drop `capturedPodUID` when they read and rewrite node status, because they do not know the field.
+Older controllers, Argo Server and `argo` CLI versions that talk to the Kubernetes API directly can also drop `capturedPodUID` when they read and rewrite node status, because they do not know the field.
 Resume, retry and selected-node updates rewrite node status; whole-Workflow stop and terminate use a narrow patch and do not.
 When a command goes through Argo Server, the Server performs the write, so its version is the one that matters.
 Once an old controller takes over a scope, the protection is gone for that scope.
@@ -96,6 +96,7 @@ Pods of Workflows that completed under an older controller have no `capturedPodU
 Only Pods that still carry the finalizer are affected, which means installations that already ran with the flag on.
 
 The controller fills the field in by itself only for one narrow case: a completed Workflow with a single successful node, running an ordinary `container` template, whose Pod is still present and succeeded, and whose `ARGO_TEMPLATE` matches the stored template.
+Log archiving rules this case out: with `archiveLogs` on, the Pod's execution template saves its logs as an artifact, which is a result outside the Pod, so the controller holds that Pod with `legacy_proof_unavailable` instead of filling the field in.
 For that case the controller reads the Pod's container statuses, rebuilds the result, and accepts it only if exit code, message, finish time, progress, host and resource duration match the saved node exactly and the task result is explicitly recorded as synchronized.
 Only `capturedPodUID` is added; the outcome and timestamps stay as they were.
 The controller then reads the Workflow back and proceeds to its normal guarded cleanup only if the field was kept.
@@ -106,7 +107,7 @@ These Pods are not necessarily unrecoverable; the controller has no way to verif
 
 Two cases look wrong but are correct, and the controller leaves them alone.
 A successful Pod can have a saved node `Error` because a later memoization write failed; the controller keeps that `Error` and does not retry the write or change it to `Succeeded`, even if the cache is healthy now.
-A `WorkflowTaskResult` names a node and its Workflow but not the Pod UID that produced it, so it does not prove which Pod the saved data came from.
+A Pod can stay held although its node has a reported `WorkflowTaskResult`: the task result names the node and its Workflow but not the Pod UID that produced it, so the controller does not take it as proof of which Pod the saved data came from.
 Workflows from older controllers that are still running are reconciled as normal, and nodes that already carry a `capturedPodUID` keep their meaning, including nodes whose task completion state was never set.
 
 ## Find and classify retained Pods
@@ -156,7 +157,7 @@ The controller logs why it is holding a Pod in the `captureReason` field:
 |---|---|---|
 | `result_pending` | The result, or its task result synchronization, has not been saved yet. | Let normal reconciliation continue. |
 | `data_unavailable` | An API read, a storage read or a decode failed. | Restore access to the API or to the exact data the Workflow references. |
-| `legacy_proof_unavailable` | The saved result is from an older controller and is outside the narrow case the controller can verify. | Keep the evidence and either leave the Pod held or make the explicit decision below. |
+| `legacy_proof_unavailable` | The saved result is from an older controller and is outside the narrow case the controller can verify, for example because the Pod archived its logs. | Keep the evidence and either leave the Pod held or make the explicit decision below. |
 | `identity_conflict` | The Pod, its owner or its node does not match what the controller expected. | Inspect the exact objects; the controller retries from fresh reads. |
 | `result_conflict` | The result rebuilt from the Pod differs from the saved result. | Keep the saved outcome and investigate the difference. |
 | `receipt_not_retained` | The controller wrote `capturedPodUID` but the field was missing when it read the Workflow back. | Check the installed full CRD and look for older components that rewrite node status, then let the controller retry. |

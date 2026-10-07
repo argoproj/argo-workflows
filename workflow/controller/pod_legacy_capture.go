@@ -69,7 +69,16 @@ func legacySuccessfulNode(wf *wfv1.Workflow, pod *apiv1.Pod) (*wfv1.NodeStatus, 
 				continue
 			}
 			var candidate wfv1.Template
-			if env.ValueFrom != nil || json.Unmarshal([]byte(env.Value), &candidate) != nil || !simpleLegacyTemplate(&candidate) || !sameLegacyTemplate(tmpl, &candidate) || executed != nil && !reflect.DeepEqual(executed, &candidate) {
+			if env.ValueFrom != nil || json.Unmarshal([]byte(env.Value), &candidate) != nil {
+				return nil, hold(conflict, "Pod execution template does not match the stored definition")
+			}
+			// The controller adds the artifact repository's archive location to the
+			// executed template, so a stored ordinary container may still have saved
+			// its logs as an artifact. That is a result outside the Pod, not a conflict.
+			if !simpleLegacyTemplate(&candidate) {
+				return nil, hold(unsupported, "Pod execution template has external results, such as archived logs")
+			}
+			if !sameLegacyTemplate(tmpl, &candidate) || executed != nil && !reflect.DeepEqual(executed, &candidate) {
 				return nil, hold(conflict, "Pod execution template does not match the stored definition")
 			}
 			executed = &candidate
