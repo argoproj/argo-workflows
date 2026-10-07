@@ -48,6 +48,13 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 	return scope
 }
 
+// clone returns a copy of s that can be written to without changing s.
+func (s *wfScope) clone() *wfScope {
+	c := &wfScope{tmpl: s.tmpl, scope: variables.NewScope()}
+	c.scope.Merge(s.scope)
+	return c
+}
+
 // getParametersAny returns the scope's parameters merged over the given globals, preserving nil
 // (absent optional) values so expression tags can distinguish absent from empty (e.g. via `??`).
 // A simple tag resolving to a nil value is a terminal substitution error; arguments rescued by a
