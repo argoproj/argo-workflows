@@ -39,7 +39,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		// executeTemplated should be invoked when hookedNode != nil, because we should reexecute the function to check mutex condition, etc.
 		if execute || hookedNode != nil {
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Info(ctx, "Running workflow level hooks")
-			hookNode, err := woc.reconcileTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, hook.Arguments,
+			hookNode, err := woc.reconcileTemplate(ctx, hookNodeName, toTemplateReferenceHolder(&hook), tmplCtx, hook.Arguments,
 				&executeTemplateOpts{nodeFlag: &wfv1.NodeFlag{Hooked: true}},
 			)
 			// Linked whenever it exists, errored or not, as reconcileHookNode links.
