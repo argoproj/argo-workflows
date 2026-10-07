@@ -14,6 +14,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // TestDagXfail verifies a DAG can fail properly
@@ -1250,6 +1251,107 @@ func TestDAGOrphanedTaskGroupCompletes(t *testing.T) {
 
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Nodes[id(fanout)].Phase, "orphaned TaskGroup should be completed from its children")
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "workflow should complete")
+}
+
+// TestDAGRetryAfterStopReexecutesOmittedDependent verifies that retrying a
+// stopped nested DAG revisits a downstream task that was omitted when shutdown
+// made the nested DAG appear failed before all of its branches had completed.
+func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag/dag-stop-retry-nested-dag.yaml")
+	wf.Status.Phase = wfv1.WorkflowFailed
+	wf.Status.StartedAt = metav1.Now()
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+
+	rootName := wf.Name
+	rootID := wf.NodeID(rootName)
+	workName := rootName + ".work"
+	workID := wf.NodeID(workName)
+	aName := workName + ".a"
+	aID := wf.NodeID(aName)
+	bName := workName + ".b"
+	bID := wf.NodeID(bName)
+	afterName := rootName + ".after"
+	afterID := wf.NodeID(afterName)
+	after2Name := rootName + ".after2"
+	after2ID := wf.NodeID(after2Name)
+	after3Name := rootName + ".after3"
+	after3ID := wf.NodeID(after3Name)
+
+	// This is the state left by stop, before the user retries: work failed,
+	// branch a succeeded, branch b was interrupted, after and after2 were
+	// omitted, and after3 ran because it explicitly depends on after2.Omitted.
+	wf.Status.Nodes = wfv1.Nodes{
+		rootID:   {ID: rootID, Name: rootName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, TemplateName: "main", Children: []string{workID}},
+		workID:   {ID: workID, Name: workName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, TemplateName: "inner", Children: []string{aID, bID}, OutboundNodes: []string{aID}},
+		aID:      {ID: aID, Name: aName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, TemplateName: "echo", Children: []string{afterID}, OutboundNodes: []string{aID}},
+		bID:      {ID: bID, Name: bName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID, TemplateName: "sleep"},
+		afterID:  {ID: afterID, Name: afterName, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, TemplateName: "echo", Children: []string{after2ID}},
+		after2ID: {ID: after2ID, Name: after2Name, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, TemplateName: "echo", Children: []string{after3ID}},
+		after3ID: {ID: after3ID, Name: after3Name, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: rootID, TemplateName: "echo"},
+	}
+
+	retryWf, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+	assert.NotContains(t, retryWf.Status.Nodes, afterID, "retry planning should discard the stale omitted dependent")
+	assert.NotContains(t, retryWf.Status.Nodes, after2ID, "retry planning should discard omitted descendants too")
+	assert.NotContains(t, retryWf.Status.Nodes, after3ID, "completed tasks under the stale omitted subtree must also be re-evaluated")
+	require.Contains(t, podsToDelete, wfutil.GeneratePodName(wf.Name, after3Name, "echo", after3ID, wfutil.GetWorkflowPodNameVersion(wf)))
+
+	cancel, controller := newController(ctx, retryWf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, retryWf, controller)
+	woc.operate(ctx)
+
+	work, err := woc.wf.GetNodeByName(workName)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, work.Phase)
+
+	workB, err := woc.wf.GetNodeByName(workName + ".b")
+	require.NoError(t, err, "retry should recreate the interrupted branch")
+	assert.Equal(t, wfv1.NodePending, workB.Phase)
+
+	_, err = woc.wf.GetNodeByName(afterName)
+	require.Error(t, err, "the stale Omitted dependent must be removed while its dependency is running")
+	_, err = woc.wf.GetNodeByName(after2Name)
+	require.Error(t, err, "omitted descendants must also be reopened through their dependency chain")
+
+	// Completing b creates c; completing c allows after to run; completing after
+	// then allows its downstream dependent to run.
+	makePodsPhase(ctx, woc, v1.PodSucceeded)
+	bNode, err := woc.wf.GetNodeByName(workName + ".b")
+	require.NoError(t, err)
+	cName := workName + ".c"
+	cID := wf.NodeID(cName)
+	bNode.Phase = wfv1.NodeSucceeded
+	bNode.Children = []string{cID}
+	woc.wf.Status.Nodes.Set(ctx, bNode.ID, *bNode)
+	woc.wf.Status.Nodes.Set(ctx, cID, wfv1.NodeStatus{
+		ID: cID, Name: cName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, TemplateName: "echo",
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	after, err := woc.wf.GetNodeByName(afterName)
+	require.NoError(t, err, "the downstream task should be recreated after its dependency succeeds")
+	assert.Equal(t, wfv1.NodePending, after.Phase)
+	_, err = woc.wf.GetNodeByName(after2Name)
+	require.Error(t, err, "the next dependent must wait for after to complete")
+
+	makePodsPhase(ctx, woc, v1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	after2, err := woc.wf.GetNodeByName(after2Name)
+	require.NoError(t, err, "downstream omitted descendants should run after the reopened chain succeeds")
+	assert.Equal(t, wfv1.NodePending, after2.Phase)
+
+	makePodsPhase(ctx, woc, v1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	after3, err := woc.wf.GetNodeByName(after3Name)
+	require.NoError(t, err, "the downstream task should be re-evaluated against after2's new result")
+	assert.Equal(t, wfv1.NodeOmitted, after3.Phase)
 }
 
 // TestOnExitDAGNotFailedOnShutdownStop verifies that when a workflow is stopped with

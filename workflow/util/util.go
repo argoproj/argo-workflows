@@ -1471,6 +1471,45 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 		}
 	}
 
+	// Shutdown can mark a nested DAG or Steps node fulfilled before all of its
+	// branches finish. Downstream tasks may then be recorded as Omitted (or
+	// Skipped) under an already completed outbound branch. When retry resets
+	// that group, those terminal results are stale and must be re-evaluated
+	// against the group's new outbound nodes. Delete each stale skipped node's
+	// subtree too: otherwise surviving children would lose their only parent
+	// when applyResetPlan scrubs the deleted node's links.
+	var downstream []string
+	for nodeID := range toReset {
+		if toDelete[nodeID] || wf.Status.Nodes[nodeID].Name == wf.Name {
+			continue
+		}
+		node, ok := wf.Status.Nodes[nodeID]
+		if !ok || (node.Type != wfv1.NodeTypeDAG && node.Type != wfv1.NodeTypeSteps) {
+			continue
+		}
+		downstream = append(downstream, node.OutboundNodes...)
+	}
+	visited := make(map[string]bool)
+	for len(downstream) > 0 {
+		nodeID := downstream[0]
+		downstream = downstream[1:]
+		if visited[nodeID] {
+			continue
+		}
+		visited[nodeID] = true
+		node, ok := wf.Status.Nodes[nodeID]
+		if !ok {
+			continue
+		}
+		if node.NodeFlag != nil && node.NodeFlag.Hooked {
+			continue
+		}
+		if node.Type == wfv1.NodeTypeSkipped && (node.Phase == wfv1.NodeOmitted || node.Phase == wfv1.NodeSkipped) {
+			markSubtree(wf.Status.Nodes, nodeID, toDelete)
+		}
+		downstream = append(downstream, node.Children...)
+	}
+
 	return resetPlan{toReset: toReset, toDelete: toDelete}, nil
 }
 
