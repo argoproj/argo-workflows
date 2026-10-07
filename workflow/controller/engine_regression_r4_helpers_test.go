@@ -48,23 +48,36 @@ func r4Operate(t *testing.T, ctx context.Context, controller *WorkflowController
 	return woc
 }
 
+// r4OperateAllocs is r4Operate that also returns the number of heap
+// allocations the reconcile made. Allocations count the work a reconcile
+// does, so unlike its wall-clock time they are not changed by a loaded
+// machine: a test of how that work scales (with depth, or with fan-out
+// width) compares these counts rather than timing the reconcile. They do not
+// count work that does not allocate, such as a quadratic scan of nodes
+// already in memory.
+//
+//nolint:revive // t before ctx, as every r4 helper takes them, for its many callers
+func r4OperateAllocs(t *testing.T, ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow) (*wfOperationCtx, uint64) {
+	t.Helper()
+	var before, after goruntime.MemStats
+	goruntime.ReadMemStats(&before)
+	woc := r4Operate(t, ctx, controller, wf)
+	goruntime.ReadMemStats(&after)
+	return woc, after.Mallocs - before.Mallocs
+}
+
 // r4ReconcileAllocs reconciles the stored state of woc's workflow three
-// times and returns the last result and the fewest heap allocations any one
-// of those reconciles made. Allocations count the work a reconcile does, so
-// unlike its wall-clock time they are not changed by a loaded machine: a
-// test of how that work scales (with depth, or with fan-out width) compares
-// these counts rather than timing the reconcile.
+// times with r4OperateAllocs and returns the last result and the fewest
+// allocations any one of those reconciles made.
 //
 //nolint:revive // t before ctx, as every r4 helper takes them, for its many callers
 func r4ReconcileAllocs(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx) (*wfOperationCtx, uint64) {
 	t.Helper()
 	fewest := ^uint64(0)
-	var before, after goruntime.MemStats
 	for range 3 {
-		goruntime.ReadMemStats(&before)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-		goruntime.ReadMemStats(&after)
-		fewest = min(fewest, after.Mallocs-before.Mallocs)
+		var n uint64
+		woc, n = r4OperateAllocs(t, ctx, controller, woc.wf)
+		fewest = min(fewest, n)
 	}
 	return woc, fewest
 }
@@ -408,10 +421,10 @@ func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.C
 
 // r4RunResults validates manifest and reconciles it until the workflow
 // completes (failing the test if rounds reconciles are not enough), then
-// extra more times. After each reconcile
-// every unfinished pod is succeeded, a pod of a template named in results
-// with that script result. setup, if not nil, runs on the controller before
-// the first reconcile. It reconciles from the in-memory status.
+// extra more times. After each reconcile every unfinished pod is succeeded,
+// a pod of a template named in results with that script result. setup, if
+// not nil, runs on the controller before the first reconcile. It reconciles
+// from the in-memory status.
 func r4RunResults(t *testing.T, manifest string, results map[string]string, rounds, extra int, setup func(*WorkflowController)) *wfOperationCtx {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
