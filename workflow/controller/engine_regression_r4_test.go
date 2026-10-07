@@ -2106,31 +2106,31 @@ func r4NestedChain(name, kind string, depth int) string {
 	return b.String()
 }
 
-// TestRegressionR4_C20_NestedReconcileLinearInDepth: at depth 8. Every level
-// of the fixed-point loop dispatches a running nested template once per pass,
-// and it takes two passes to find nothing new, so a reconcile of a running
-// chain doubles with each level. Base reconciles each level once: a few
-// milliseconds at this depth.
+// TestRegressionR4_C20_NestedReconcileLinearInDepth: every level of the
+// fixed-point loop dispatched a running nested template once per pass, and it
+// took two passes to find nothing new, so the work of a reconcile of a running
+// chain doubled with each level. Base reconciles each level once, so the
+// work grows linearly with depth: a chain twice as deep must take no more than
+// r4C20MaxGrowth times the allocations (the fixed-point loop took about 16
+// times as many at depth 8 as at depth 4).
 func TestRegressionR4_C20_NestedReconcileLinearInDepth(t *testing.T) {
 	for _, kind := range []string{"steps", "dag"} {
 		t.Run(kind, func(t *testing.T) {
-			ctx := logging.TestContext(t.Context())
-			wf := wfv1.MustUnmarshalWorkflow(r4NestedChain("r4-c20-"+kind, kind, 8))
-			cancel, controller := newController(ctx, wf, func(c *WorkflowController) { c.maxOperationTime = time.Hour })
-			defer cancel()
-			woc := r4Operate(t, ctx, controller, wf)
-			makePodsPhase(ctx, woc, apiv1.PodRunning)
-			// The fastest of three reconciles of the same running state, so
-			// a scheduling hiccup does not decide the result.
-			took := time.Duration(1<<63 - 1)
-			for range 3 {
-				start := time.Now()
+			allocs := func(depth int) uint64 {
+				ctx := logging.TestContext(t.Context())
+				wf := wfv1.MustUnmarshalWorkflow(r4NestedChain(fmt.Sprintf("r4-c20-%s-%d", kind, depth), kind, depth))
+				cancel, controller := newController(ctx, wf, func(c *WorkflowController) { c.maxOperationTime = time.Hour })
+				defer cancel()
+				woc := r4Operate(t, ctx, controller, wf)
+				makePodsPhase(ctx, woc, apiv1.PodRunning)
 				woc = r4Operate(t, ctx, controller, woc.wf)
-				took = min(took, time.Since(start))
+				woc, n := r4ReconcileAllocs(t, ctx, controller, woc)
 				require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, woc.wf.Status.Message)
+				return n
 			}
-			t.Logf("depth 8 %s: reconcile took %v", kind, took)
-			assert.Less(t, took, r4C20Limit, "reconciling 8 nested %s levels with one running pod", kind)
+			shallow, deep := allocs(4), allocs(8)
+			t.Logf("%s: a reconcile allocates %d times at depth 4, %d at depth 8", kind, shallow, deep)
+			assert.Less(t, float64(deep), r4C20MaxGrowth*float64(shallow), "reconciling 8 nested %s levels with one running pod, against 4", kind)
 		})
 	}
 }
@@ -2273,9 +2273,10 @@ func TestRegressionR4_C67_SkipChainFirstReconcile(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// r4C20Limit bounds TestRegressionR4_C20_NestedReconcileLinearInDepth's
-// reconcile: base takes about 2ms, the fixed-point loop about 50ms.
-const r4C20Limit = 20 * time.Millisecond
+// r4C20MaxGrowth bounds how much more work
+// TestRegressionR4_C20_NestedReconcileLinearInDepth's reconcile may do at
+// twice the depth: linear growth is at most 2.
+const r4C20MaxGrowth = 3
 
 // r4C67OperationTime is TestRegressionR4_C67_SkipChainFirstReconcile's
 // operation deadline: base walks the chain in about 0.1s, the fixed-point
@@ -11023,19 +11024,32 @@ spec:
 `, n)
 }
 
-// r4ScaleHookedLimit bounds one reconcile of TestRegressionR4_Scale_HookedFanOut.
-const r4ScaleHookedLimit = time.Second
+// r4ScaleHookedMaxGrowth bounds how much more work a reconcile of
+// TestRegressionR4_Scale_HookedFanOut may do for ten times the items: linear
+// growth is at most 10.
+const r4ScaleHookedMaxGrowth = 15
 
 // TestRegressionR4_Scale_HookedFanOut checks hook re-entry must not make a
-// wide fan-out expensive. A 1,000-item DAG fan-out whose items have exit
-// hooks (one hook per item) is reconciled while every item runs, and
-// again while every item's exit hook runs; each reconcile must stay under a
-// second. The consumer of the fan-out must then run. Not a red test. Base
-// meets the time bars (about 0.17 s with the items running) but creates the
-// items' exit hooks one per reconcile, so it fails the "one exit hook per
-// item" check here, which allows five reconciles.
+// wide fan-out expensive. A DAG fan-out whose items have exit hooks (one hook
+// per item) is reconciled while every item runs, and again while every item's
+// exit hook runs; the work of each of those reconciles (its allocations) must
+// grow linearly with the number of items, from 100 to 1,000. The consumer of
+// the fan-out must then run. Not a red test. Base grows linearly too but
+// creates the items' exit hooks one per reconcile, so it fails the "one exit
+// hook per item" check here, which allows five reconciles.
 func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
-	const n = 1000
+	small, large := r4ScaleHookedRun(t, 100), r4ScaleHookedRun(t, 1000)
+	for i, what := range []string{"running items", "running item exit hooks"} {
+		t.Logf("%s: a reconcile allocates %d times for 100 items, %d for 1,000", what, small[i], large[i])
+		assert.Less(t, float64(large[i]), r4ScaleHookedMaxGrowth*float64(small[i]), "reconciling 1,000 %s, against 100", what)
+	}
+}
+
+// r4ScaleHookedRun runs TestRegressionR4_Scale_HookedFanOut's workflow with
+// n items and returns the allocations of a reconcile while every item runs
+// and while every item's exit hook runs.
+func r4ScaleHookedRun(t *testing.T, n int) [2]uint64 {
+	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4ScaleHookedFanOut(n))
 	cancel, controller := newController(ctx, wf, func(c *WorkflowController) {
@@ -11059,24 +11073,13 @@ func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 		}
 		return count
 	}
-	// fastest reconciles the stored state three times and returns the
-	// fastest, so a scheduling hiccup does not decide the result.
-	fastest := func(woc *wfOperationCtx) (*wfOperationCtx, time.Duration) {
-		took := time.Duration(1<<63 - 1)
-		for range 3 {
-			start := time.Now()
-			woc = r4Operate(t, ctx, controller, woc.wf)
-			took = min(took, time.Since(start))
-		}
-		return woc, took
-	}
+	var allocs [2]uint64
 
 	woc := r4Operate(t, ctx, controller, wf)
 	require.Equal(t, n, countPods(woc, func(pod *apiv1.Pod) bool { return !isHook(pod) }), "one pod per item")
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true })
-	woc, took := fastest(woc)
-	t.Logf("%d running items: reconcile took %v", n, took)
-	assert.Less(t, took, r4ScaleHookedLimit, "reconciling %d running items", n)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	woc, allocs[0] = r4ReconcileAllocs(t, ctx, controller, woc)
 
 	// Every item succeeds: each gets its exit hook.
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, func(*apiv1.Pod) bool { return true })
@@ -11085,9 +11088,8 @@ func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	}
 	require.Equal(t, n, countPods(woc, isHook), "one exit hook per item")
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, isHook)
-	woc, took = fastest(woc)
-	t.Logf("%d running item exit hooks: reconcile took %v", n, took)
-	assert.Less(t, took, r4ScaleHookedLimit, "reconciling %d running exit hooks", n)
+	woc = r4Operate(t, ctx, controller, woc.wf)
+	woc, allocs[1] = r4ReconcileAllocs(t, ctx, controller, woc)
 	_, err := woc.wf.GetNodeByName(wf.Name + ".consumer")
 	require.Error(t, err, "the consumer must wait for the items' exit hooks")
 
@@ -11097,6 +11099,7 @@ func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	consumer, err := woc.wf.GetNodeByName(wf.Name + ".consumer")
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+	return allocs
 }
 
 // r4C95Workflow is a shape found by fuzzing: an outer template of kind outer
