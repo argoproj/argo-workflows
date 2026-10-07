@@ -22,7 +22,7 @@ type DesiredTask struct {
 	// Template is the resolved template definition for this task
 	Template *wfv1.Template
 
-	// TemplateRef is the original reference (needed for some executeTemplate calls)
+	// TemplateRef is the original reference (needed for some executeProcessedTemplate calls)
 	TemplateRef wfv1.TemplateReferenceHolder
 
 	// NodeFlag contains execution flags like Retried, Hooked, etc.

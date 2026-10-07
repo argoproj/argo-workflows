@@ -307,7 +307,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	// needs the original template to correctly substitute the next retry's values.
 	unsubstitutedTmpl := processedTmpl.DeepCopy()
 
-	// Always substitute retry params (matching main branch behavior).
+	// Always substitute retry params.
 	// This is needed even when re-executing an existing Pending child (e.g. exceeded quota)
 	// because {{retries}} and {{pod.name}} must be resolved before pod creation.
 	processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams(), localParams)
@@ -356,8 +356,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	}
 
 	// If the child became fulfilled during this dispatch, re-enter the retry handler.
-	// This matches main branch behavior where executeTemplate recursively re-enters
-	// itself when a retry child completes, allowing retries to progress within a
+	// Re-entering when a retry child completes lets retries progress within a
 	// single operate cycle. This covers both cases: re-executing an existing child
 	// that transitions to a terminal phase, and new children that complete instantly.
 	if childNode.Phase.Fulfilled(childNode.TaskResultSynced) {

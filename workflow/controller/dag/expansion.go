@@ -21,7 +21,7 @@ import (
 // ExpandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks.
 // The task's references to other tasks and steps are already resolved (the Engine's resolveTask), or, for a task
 // whose when is false, only its when is: such a task never runs, so an expansion that cannot be parsed gives no
-// items rather than an error, as on main.
+// items rather than an error.
 func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string, substitutor Substitutor) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
@@ -54,7 +54,7 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 	// An item reference must resolve at expansion: {{item.name}} against a
 	// plain-string item is an error here, not a literal that reaches the pod.
 	// A task whose when is already known to be false never runs, so its body
-	// may stay unresolved, as processItem did before the Engine.
+	// may stay unresolved.
 	itemStrict := []string{varkeys.Item.Template()}
 	if !mustExecute(task.When) {
 		itemStrict = nil
@@ -218,8 +218,8 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 	if substitutor != nil {
 		substScope := make(map[string]string)
 		maps.Copy(substScope, globalScope)
-		// Item values are formatted through wfv1.Item exactly as the pre-Engine
-		// controller did: normalised JSON for maps and lists (not the raw text
+		// Item values are formatted through wfv1.Item, as by older
+		// controllers: normalised JSON for maps and lists (not the raw text
 		// the user wrote), so substituted values are stable across whitespace
 		// and key order.
 		switch item.GetType() {
@@ -262,9 +262,9 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 	if newTask.Name != "" && newTask.Name != taskName {
 		newTaskName = newTask.Name
 	} else {
-		// Name text is formatted through wfv1.Item exactly as the pre-Engine
-		// controller did, so expanded node names (and hence node IDs) are
-		// unchanged: maps as sorted "key:value" pairs, lists as "[a b c]".
+		// Name text is formatted through wfv1.Item, as by older controllers,
+		// so expanded node names (and hence node IDs) are the same across
+		// controller versions: maps as sorted "key:value" pairs, lists as "[a b c]".
 		var itemText string
 		switch item.GetType() {
 		case wfv1.Map:

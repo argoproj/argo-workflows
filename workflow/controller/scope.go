@@ -132,8 +132,8 @@ func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
 // fails terminally rather than leaving the workflow stuck. No-op for any node
 // that actually produced outputs. includeArtifacts additionally registers empty placeholders for the
 // template's declared output artifacts: steps relies on this to keep artifact references resolvable,
-// while DAG deliberately leaves them unresolved (the pre-Engine dependency resolution omitted optional
-// artifacts and errored on required ones).
+// while DAG deliberately leaves them unresolved (resolveArtifactArguments drops optional
+// artifacts and errors on required ones).
 func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
 	if node == nil || node.Outputs != nil {
 		return
@@ -215,8 +215,8 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 // resolveArtifactArguments resolves the from/fromExpression of artifact
 // arguments to concrete storage locations. An optional artifact that cannot
 // be resolved, or that resolves to an empty placeholder (from a skipped or
-// omitted step, #16839), is dropped, as the pre-Engine dependency resolution
-// did. It returns a fresh slice, so the caller's backing array isn't mutated.
+// omitted step, #16839), is dropped. It returns a fresh slice, so the
+// caller's backing array isn't mutated.
 func (s *wfScope) resolveArtifactArguments(ctx context.Context, arts wfv1.Artifacts) (wfv1.Artifacts, error) {
 	if len(arts) == 0 {
 		return arts, nil

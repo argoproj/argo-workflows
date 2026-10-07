@@ -17,7 +17,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 	var hookNodes []*wfv1.NodeStatus
 	entryNode, _ := woc.wf.GetNodeByName(woc.wf.Name)
 	for hookName, hook := range woc.execWf.Spec.Hooks {
-		// exit hook will be executed in runOnExitNode
+		// the exit hook runs as the workflow's onExit node, once the entry node has finished (operate)
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}
@@ -65,7 +65,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, ref varkeys.NodeRefKeys, name string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
-		// exit hook will be executed in runOnExitNode
+		// the exit hook runs once these hooks are done (hookHandler.driveExitHook)
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
 		}

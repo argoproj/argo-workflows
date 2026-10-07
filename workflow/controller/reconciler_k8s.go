@@ -35,9 +35,9 @@ func NewK8sTaskReconciler(woc *wfOperationCtx, tmplCtx *templateresolution.Templ
 //   - any other error is the task's own outcome: recordTaskError records it as
 //     an Error on the task's node (created and linked if the dispatch left
 //     none), the rest of the batch is still reconciled, and the first such
-//     error is returned unwrapped, as main did for entry/onExit/hook errors
-//     and DAG task node messages alike. The boundary is not touched, so
-//     sibling tasks can still be scheduled.
+//     error is returned unwrapped, with no task prefix, as entry, onExit and
+//     hook errors are, and as the DAG task node's message records it. The
+//     boundary is not touched, so sibling tasks can still be scheduled.
 func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask) error {
 	var taskErr error
 	for _, dt := range desired {
@@ -66,8 +66,8 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 			nodeFlag:       dt.NodeFlag,
 			templateScope:  dt.TemplateScope,
 		})
-		// Link a node this call created, once it exists, and only then, as
-		// executeDAGTask did: creation can be deferred (parallelism) and an
+		// Link a node this call created, once it exists, and only then:
+		// creation can be deferred (parallelism) and an
 		// edge to a node never created can later be claimed by a colliding
 		// name (#16376). A node that already existed is not linked again: its
 		// dependencies' outbound nodes may have moved on since (a daemon's next
@@ -92,7 +92,7 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 }
 
 // recordTaskError records a task's own dispatch error as an Error on its
-// node, as executeDAGTask did, creating and linking the node when the
+// node, creating and linking the node when the
 // dispatch failed before creating it. A node that already reached a terminal
 // phase (a timed-out node marked Failed, a max-depth Error) keeps it.
 func (r *K8sTaskReconciler) recordTaskError(ctx context.Context, dt DesiredTask, err error) {
