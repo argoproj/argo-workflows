@@ -9,7 +9,8 @@ test('shows the pod of a node from the node-info panel', async ({api, workflowDe
     await workflowDetailsPage.goto(name);
     await workflowDetailsPage.openNode('process-a');
     const podName = (await workflowDetailsPage.nodeAttribute('POD NAME').innerText()).trim();
-    await workflowDetailsPage.nodeInfo.getByRole('button', {name: 'POD', exact: true}).click();
+    // The accessible name starts with the icon glyph, so exact matching fails, and a substring match would also hit "Pod Link".
+    await workflowDetailsPage.nodeInfo.getByRole('button', {name: /POD$/}).click();
 
     // The pod of a completed node is not garbage-collected, so the watch's initial ADDED event carries it.
     await expect(workflowPodPanel.editor).toContainText(podName, {timeout: 30_000 * ENV_FACTOR});
