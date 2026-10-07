@@ -443,6 +443,10 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 	}
 }
 
+func (s *workflowServer) WatchWorkflowPod(*workflowpkg.WatchWorkflowPodRequest, workflowpkg.WorkflowService_WatchWorkflowPodServer) error {
+	return status.Error(codes.Unimplemented, "WatchWorkflowPod is not implemented")
+}
+
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})

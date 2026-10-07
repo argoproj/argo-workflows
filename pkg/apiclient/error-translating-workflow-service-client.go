@@ -41,6 +41,11 @@ func (c *errorTranslatingWorkflowServiceClient) WatchEvents(ctx context.Context,
 	return events, grpcutil.TranslateError(err)
 }
 
+func (c *errorTranslatingWorkflowServiceClient) WatchWorkflowPod(ctx context.Context, req *workflowpkg.WatchWorkflowPodRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowPodClient, error) {
+	pods, err := c.delegate.WatchWorkflowPod(ctx, req)
+	return pods, grpcutil.TranslateError(err)
+}
+
 func (c *errorTranslatingWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
 	workflow, err := c.delegate.DeleteWorkflow(ctx, req)
 	return workflow, grpcutil.TranslateError(err)

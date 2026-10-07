@@ -1354,6 +1354,93 @@ func (_c *WorkflowServiceClient_WatchEvents_Call) RunAndReturn(run func(ctx cont
 	return _c
 }
 
+// WatchWorkflowPod provides a mock function for the type WorkflowServiceClient
+func (_mock *WorkflowServiceClient) WatchWorkflowPod(ctx context.Context, in *workflow.WatchWorkflowPodRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowPodClient, error) {
+	// grpc.CallOption
+	_va := make([]any, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []any
+	_ca = append(_ca, ctx, in)
+	_ca = append(_ca, _va...)
+	ret := _mock.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for WatchWorkflowPod")
+	}
+
+	var r0 workflow.WorkflowService_WatchWorkflowPodClient
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchWorkflowPodRequest, ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowPodClient, error)); ok {
+		return returnFunc(ctx, in, opts...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchWorkflowPodRequest, ...grpc.CallOption) workflow.WorkflowService_WatchWorkflowPodClient); ok {
+		r0 = returnFunc(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(workflow.WorkflowService_WatchWorkflowPodClient)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *workflow.WatchWorkflowPodRequest, ...grpc.CallOption) error); ok {
+		r1 = returnFunc(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// WorkflowServiceClient_WatchWorkflowPod_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WatchWorkflowPod'
+type WorkflowServiceClient_WatchWorkflowPod_Call struct {
+	*mock.Call
+}
+
+// WatchWorkflowPod is a helper method to define mock.On call
+//   - ctx context.Context
+//   - in *workflow.WatchWorkflowPodRequest
+//   - opts ...grpc.CallOption
+func (_e *WorkflowServiceClient_Expecter) WatchWorkflowPod(ctx any, in any, opts ...any) *WorkflowServiceClient_WatchWorkflowPod_Call {
+	return &WorkflowServiceClient_WatchWorkflowPod_Call{Call: _e.mock.On("WatchWorkflowPod",
+		append([]any{ctx, in}, opts...)...)}
+}
+
+func (_c *WorkflowServiceClient_WatchWorkflowPod_Call) Run(run func(ctx context.Context, in *workflow.WatchWorkflowPodRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_WatchWorkflowPod_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *workflow.WatchWorkflowPodRequest
+		if args[1] != nil {
+			arg1 = args[1].(*workflow.WatchWorkflowPodRequest)
+		}
+		var arg2 []grpc.CallOption
+		variadicArgs := make([]grpc.CallOption, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(grpc.CallOption)
+			}
+		}
+		arg2 = variadicArgs
+		run(
+			arg0,
+			arg1,
+			arg2...,
+		)
+	})
+	return _c
+}
+
+func (_c *WorkflowServiceClient_WatchWorkflowPod_Call) Return(workflowService_WatchWorkflowPodClient workflow.WorkflowService_WatchWorkflowPodClient, err error) *WorkflowServiceClient_WatchWorkflowPod_Call {
+	_c.Call.Return(workflowService_WatchWorkflowPodClient, err)
+	return _c
+}
+
+func (_c *WorkflowServiceClient_WatchWorkflowPod_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WatchWorkflowPodRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowPodClient, error)) *WorkflowServiceClient_WatchWorkflowPod_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // WatchWorkflows provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error) {
 	// grpc.CallOption
