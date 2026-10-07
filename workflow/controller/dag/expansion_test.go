@@ -152,6 +152,17 @@ func TestExpandSequence_CountAndRange(t *testing.T) {
 	items, err = expandSequence(&wfv1.Sequence{Count: intstrPtr("0")})
 	require.NoError(t, err)
 	assert.Empty(t, items)
+
+	// A negative count gives no items.
+	items, err = expandSequence(&wfv1.Sequence{Count: intstrPtr("-3")})
+	require.NoError(t, err)
+	assert.Empty(t, items)
+
+	_, err = expandSequence(&wfv1.Sequence{Start: intstrPtr("1")})
+	require.ErrorContains(t, err, "neither end nor count")
+
+	_, err = expandSequence(&wfv1.Sequence{Count: intstrPtr("ten")})
+	require.ErrorContains(t, err, "failed to parse sequence count")
 }
 
 func TestExpandedTaskName(t *testing.T) {
