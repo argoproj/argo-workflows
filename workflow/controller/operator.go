@@ -2272,9 +2272,6 @@ type executeTemplateOpts struct {
 	templateScope string
 }
 
-// reconcileTemplate resolves and processes a template for the given node and
-// arguments, then reconciles it as a single desired task, returning the
-// resulting NodeStatus.
 // prepareTemplate prepares the template of node nodeName to be reconciled, for
 // reconcileTemplate and for the Engine's tasks (Engine.desiredTask) alike: it
 // resolves orgTmpl in tmplCtx (recording a newly stored template), merges the
@@ -2309,6 +2306,9 @@ func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string,
 	return newTmplCtx, processedTmpl, nil
 }
 
+// reconcileTemplate resolves and processes a template for the given node and
+// arguments, then reconciles it as a single desired task, returning the
+// resulting NodeStatus.
 func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	// Note: maxStackDepth is checked in executeProcessedTemplate (called via the reconciler)
 	// so that both the reconcileTemplate path and the Engine path get the check.
