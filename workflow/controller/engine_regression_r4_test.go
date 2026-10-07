@@ -1525,8 +1525,8 @@ spec:
 // an expanded step reference an output that the failed (continueOn) step
 // never produced, so no item can be created. The childless TaskGroup was then
 // assessed Succeeded and the workflow Succeeded without running any item.
-// Base waits for the reference (the workflow stays Running); either way it
-// must not Succeed without them.
+// As on main, the workflow waits for the reference: it stays Running, and no
+// consume item (node or pod) is created.
 func TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4C5MissingOutputFromFailedStep)
@@ -1539,9 +1539,10 @@ func TestRegressionR4_C5_ExpandedStepMissingOutputFromFailedStep(t *testing.T) {
 	for range 3 {
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
-	hasConsume := slices.ContainsFunc(r4PodNodeNames(ctx, t, woc), func(n string) bool { return strings.Contains(n, "consume") })
-	if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
-		assert.True(t, hasConsume, "workflow Succeeded but no consume item ran")
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "the workflow waits for the missing output")
+	assert.Equal(t, []string{"r4-c5-miss-out[0].gen"}, r4PodNodeNames(ctx, t, woc), "no consume item pod")
+	for _, n := range woc.wf.Status.Nodes {
+		assert.NotContains(t, n.Name, "consume", "no consume node is created")
 	}
 }
 
@@ -3548,7 +3549,11 @@ spec:
 
 // TestRegressionR4_C5_DAGItemTagNotSilentSuccess: a DAG withParam item with
 // `${{ tasks.x }}` text must not leave a childless TaskGroup that ends the
-// workflow Succeeded without any item running.
+// workflow Succeeded without any item running. The two trees differ beyond
+// that: main ends consume (and the workflow) Error "failed to resolve", while
+// HEAD runs both items with the literal text, as both trees do for Steps
+// (TestRegressionR4_C5_StepsWithParamGitHubActionsExpr). The consume pods are
+// left Pending, so neither consume nor the workflow may have Succeeded.
 func TestRegressionR4_C5_DAGItemTagNotSilentSuccess(t *testing.T) {
 	woc := r4RunGen(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -3573,10 +3578,10 @@ spec:
             value: "{{item}}"
         withParam: "{{tasks.gen.outputs.result}}"
 `+r4C5ItemTagTemplates, wfv1.Outputs{Result: new(`["plain", "ref=${{ tasks.x.outputs.result }}"]`)}, 5)
-	ctx := logging.TestContext(t.Context())
-	if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
-		assert.NotEmpty(t, r4CommandsMatching(ctx, t, woc, "consume"), "workflow Succeeded but no consume item ran")
-	}
+	assert.NotEqual(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	consume, err := woc.wf.GetNodeByName("r4-c5-dag-item-tag.consume")
+	require.NoError(t, err)
+	assert.NotEqual(t, wfv1.NodeSucceeded, consume.Phase, "consume must not succeed before its items run")
 }
 
 // r4C7Drive runs the workflow to completion (or maxRounds), succeeding every
