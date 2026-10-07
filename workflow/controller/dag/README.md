@@ -73,6 +73,7 @@ evaluator.GetTask(name)                 // the Task by name
 task.Expand / dag.HasExpansion         // withItems/withParam/withSequence expansion
 dag.TaskNodeName                        // task → node name convention
 dag.TaskGroupPhase                      // a TaskGroup's phase from its items
+dag.WorsePhase                          // the worse of two phases for an outcome (Error over Failed)
 dag.PullOrder                           // a DAG's tasks in walk order: the targets' ancestry, dependencies first
 ```
 
