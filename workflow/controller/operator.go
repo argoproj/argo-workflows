@@ -2502,7 +2502,9 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.N
 	woc.controller.syncManager.Release(ctx, woc.wf, node.ID, tmpl.Synchronization)
 	if prev, ok := woc.preExecutionNodeStatuses[node.ID]; (!ok || !prev.Fulfilled()) && !woc.finishedNodes[node.ID] {
 		woc.finishedNodes[node.ID] = true
-		if tmpl.Metrics != nil {
+		// A retry's attempt is counted when the retry moves past it
+		// (emitPassedAttemptMetrics) or, the final one, by its Retry node.
+		if tmpl.Metrics != nil && !woc.isRetryAttempt(node) {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(ctx, tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
