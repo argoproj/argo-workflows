@@ -1114,6 +1114,33 @@ func TestWorkflowStore_GetTaskGroupChildren(t *testing.T) {
 	})
 }
 
+// A TaskGroup's items are the children named as its items, in order; its
+// hooks, a retry attempt, and the nodes that hang off an empty group (a
+// dependant, the next step group) are not, and a child missing from the node
+// map is reported.
+func TestTaskGroupItems(t *testing.T) {
+	wf := newTestWorkflow("wf")
+	parent := addTaskGroupParent(t, wf, "dag.client")
+	addTaskGroupChild(t, wf, parent, "dag.client(1:b)", wfv1.NodeFailed, nil)
+	addTaskGroupChild(t, wf, parent, "dag.client.hooks.running", wfv1.NodeRunning, &wfv1.NodeFlag{Hooked: true})
+	addTaskGroupChild(t, wf, parent, "dag.client(0:a)", wfv1.NodeSucceeded, nil)
+	addTaskGroupChild(t, wf, parent, "dag.client(2:c)(0)", wfv1.NodeSucceeded, &wfv1.NodeFlag{Retried: true})
+	addTaskGroupChild(t, wf, parent, "dag.client-after", wfv1.NodeSucceeded, nil)
+	addTaskGroupChild(t, wf, parent, "dag[1]", wfv1.NodeSucceeded, nil)
+
+	items, missing := TaskGroupItems(wf.Status.Nodes, parent)
+	names := make([]string, len(items))
+	for i, item := range items {
+		names[i] = item.Name
+	}
+	assert.Equal(t, []string{"dag.client(1:b)", "dag.client(0:a)"}, names)
+	assert.False(t, missing)
+
+	parent.Children = append(parent.Children, "pruned")
+	_, missing = TaskGroupItems(wf.Status.Nodes, parent)
+	assert.True(t, missing)
+}
+
 func TestTaskNodeName(t *testing.T) {
 	for _, tt := range []struct{ boundary, task, node string }{
 		{"wf.dag", "build", "wf.dag.build"},
