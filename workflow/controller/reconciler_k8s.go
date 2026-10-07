@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"errors"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
@@ -80,7 +79,7 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 		if err == nil {
 			continue
 		}
-		if errors.Is(err, ErrParallelismReached) || errors.Is(err, ErrResourceRateLimitReached) || errors.Is(err, ErrDeadlineExceeded) {
+		if isThrottleErr(err) {
 			return err
 		}
 		r.woc.log.WithError(err).WithField("task", dt.TaskName).Error(ctx, "task errored")
