@@ -11055,10 +11055,10 @@ const r4ScaleHookedMaxGrowth = 15
 // per item) is reconciled to create the items, while every item runs, and
 // while every item's exit hook runs; the work of each of those reconciles
 // (its allocations) must grow linearly with the number of items, from 100 to
-// 1,000. The consumer of
-// the fan-out must then run. Not a red test. Base grows linearly too but
-// creates the items' exit hooks one per reconcile, so it fails the "one exit
-// hook per item" check here, which allows five reconciles.
+// 1,000. The consumer of the fan-out must then run. Not a red test. Base
+// grows linearly too but creates the items' exit hooks one per reconcile, so
+// it fails the "one exit hook per item" check here, which allows five
+// reconciles.
 func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	small, large := r4ScaleHookedRun(t, 100), r4ScaleHookedRun(t, 1000)
 	for i, what := range []string{"created items", "running items", "running item exit hooks"} {

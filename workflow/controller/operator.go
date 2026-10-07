@@ -2313,12 +2313,13 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 	// so that both the reconcileTemplate path and the Engine path get the check.
 	//
 	// The deadline itself is checked in checkConstraints, reached (via the
-	// reconciler and executeProcessedTemplate) only after handleNodeFulfilled:
-	// an already-fulfilled node -- for example the entry node on the operate
-	// that finally sees its pod succeed, or a workflow-level hook node
-	// re-entered on every operate -- completes even on an operate that has
-	// run past its deadline. A gate here, before template
-	// resolution, would bail out before that fulfilled check ever runs.
+	// reconciler and executeProcessedTemplate) only after
+	// handleNodeFulfilled: an already-fulfilled node -- for example the entry
+	// node on the operate that finally sees its pod succeed, or a
+	// workflow-level hook node re-entered on every operate -- completes even
+	// on an operate that has run past its deadline. A gate here, before
+	// template resolution, would bail out before that fulfilled check ever
+	// runs.
 
 	// The name variable follows orgTmpl's own kind and name.
 	var nameKey *variables.Key
@@ -2488,12 +2489,12 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 // running daemon is), and reports whether it has completed, so there is
 // nothing left to run. It is the one place a node is finished, whatever
 // fulfilled it: a pod, a memoize cache hit, an HTTP or plugin result, a
-// suspend resumed, a template's own outputs. Its lock is released every time,
-// (Release is idempotent), so a node fulfilled outside
-// the controller (a resumed suspend) still frees it. Once per completion, in
-// the operation that sees it fulfilled first, its completion metrics are
-// emitted (a memoize cache hit included) and its globalName outputs are
-// exported, so the workflow's globals follow completion order.
+// suspend resumed, a template's own outputs. Its lock is released every time
+// (Release is idempotent), so a node fulfilled outside the controller (a
+// resumed suspend) still frees it. Once per completion, in the operation that
+// sees it fulfilled first, its completion metrics are emitted (a memoize
+// cache hit included) and its globalName outputs are exported, so the
+// workflow's globals follow completion order.
 func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) bool {
 	if node == nil || !node.Fulfilled() {
 		return false
