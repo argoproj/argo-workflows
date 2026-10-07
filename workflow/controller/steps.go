@@ -87,6 +87,10 @@ func (s *StepAdapter) ContinuesOn(phase wfv1.NodePhase) bool {
 	return s.step.ContinuesOn(phase)
 }
 
+func (s *StepAdapter) ShouldExpand() bool {
+	return s.step.ShouldExpand()
+}
+
 func (s *StepAdapter) GetHooks() wfv1.LifecycleHooks {
 	return s.step.Hooks
 }

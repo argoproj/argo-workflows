@@ -70,9 +70,9 @@ evaluator.FindLeafTaskNames(ctx)        // tasks nothing depends on
 evaluator.GetAncestors(ctx, task)       // transitive dependencies (unordered)
 evaluator.GetDependencies(ctx, task)    // direct dependencies
 evaluator.GetTask(name)                 // the Task by name
-task.Expand / dag.HasExpansion         // withItems/withParam/withSequence expansion
+task.Expand / task.ShouldExpand         // withItems/withParam/withSequence expansion
 dag.TaskNodeName                        // task → node name convention
-dag.TaskNodeID / dag.TaskNode          // a task's node ID and node
+dag.TaskNodeID / dag.TaskNode           // a task's node ID and node
 dag.TaskGroupPhase                      // a TaskGroup's phase from its items
 dag.WorsePhase                          // the worse of two phases for an outcome (Error over Failed)
 dag.PullOrder                           // a DAG's tasks in walk order: the targets' ancestry, dependencies first

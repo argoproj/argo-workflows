@@ -1003,33 +1003,34 @@ func withSequenceTemplate(taskName string, count string) *wfv1.Template {
 	})
 }
 
-func TestHasExpansion(t *testing.T) {
+func TestDAGTaskShouldExpand(t *testing.T) {
+	shouldExpand := func(task Task) bool { return task.ShouldExpand() }
 	t.Run("withItems", func(t *testing.T) {
-		assert.True(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{
+		assert.True(t, shouldExpand(&DAGTask{DAGTask: &wfv1.DAGTask{
 			Name:      "x",
 			WithItems: []wfv1.Item{{Value: []byte(`"a"`)}},
 		}}))
 	})
 	t.Run("withParam", func(t *testing.T) {
-		assert.True(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{
+		assert.True(t, shouldExpand(&DAGTask{DAGTask: &wfv1.DAGTask{
 			Name:      "x",
 			WithParam: "{{tasks.upstream.outputs.result}}",
 		}}))
 	})
 	t.Run("withSequence", func(t *testing.T) {
-		assert.True(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{
+		assert.True(t, shouldExpand(&DAGTask{DAGTask: &wfv1.DAGTask{
 			Name:         "x",
 			WithSequence: &wfv1.Sequence{Count: intstrPtr("3")},
 		}}))
 	})
 	t.Run("none of them", func(t *testing.T) {
-		assert.False(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{Name: "x"}}))
+		assert.False(t, shouldExpand(&DAGTask{DAGTask: &wfv1.DAGTask{Name: "x"}}))
 	})
 	t.Run("empty withItems slice is not an expansion", func(t *testing.T) {
 		// An explicit `withItems: []` is equivalent to omitting withItems: the
 		// task runs once (DAGTask.ShouldExpand, validation and ExpandTask all
 		// use len > 0). Only an expansion that yields zero items is skipped.
-		assert.False(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{
+		assert.False(t, shouldExpand(&DAGTask{DAGTask: &wfv1.DAGTask{
 			Name:      "x",
 			WithItems: []wfv1.Item{},
 		}}))
