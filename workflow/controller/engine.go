@@ -1346,28 +1346,16 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 	// Add all ancestor tasks' outputs to scope (transitive closure of dependencies).
 	// A task may reference outputs from any ancestor, not just direct dependencies
 	// (e.g., {{tasks.grandparent.ip}} in a DAG), as the pre-Engine controller did
-	// with GetTaskAncestry.
+	// with GetTaskAncestry. A step's ancestors are every step of every earlier
+	// group (each step depends on the last group before it that has steps), so a
+	// step can reference any earlier group, as executeStepGroup's cumulative
+	// scope allowed.
 	ancestorNames, err := e.evaluator.GetAncestors(ctx, task.GetName())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ancestors for task %s: %w", task.GetName(), err)
 	}
 	for _, depName := range ancestorNames {
-		depNode := e.getTaskNode(ctx, depName)
-		if depNode == nil {
-			continue // ancestor may not have a node yet (e.g., dag.target filtering)
-		}
-		ref, agg, refName := varkeys.TasksNodeRef, varkeys.TasksAggregate, depName
-		if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-			ref, agg = varkeys.StepsNodeRef, varkeys.StepsAggregate
-			parts := strings.SplitN(depName, ".", 2)
-			if len(parts) == 2 {
-				refName = parts[1]
-			}
-		}
-
-		// Steps keeps skipped-node artifact placeholders resolvable (includeArtifacts); DAG
-		// leaves them to resolveArtifactArguments' optional-drop / required-error handling.
-		if err := e.addTaskNodeToScope(ctx, scope, ref, agg, refName, depName, depNode, e.tmpl.GetType() == wfv1.TemplateTypeSteps); err != nil {
+		if err := e.addTaskToScope(ctx, scope, depName); err != nil {
 			return nil, err
 		}
 	}
@@ -1377,34 +1365,25 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 	// can be resolved. These are populated by addOutputsToGlobalScope during execution.
 	e.woc.addWorkflowOutputsToLocalScope(e.woc.wf.Status.Outputs, scope)
 
-	// For steps templates, a step can reference outputs from ANY earlier group, not just
-	// its direct predecessor. The old executeStepGroup accumulated scope cumulatively across
-	// all groups. Replicate that here by adding all preceding groups' outputs.
-	// Step task names are formatted as "[N].stepName" by StepAdapter.GetName(), so we
-	// parse the group index from the name prefix.
-	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		currentGroupIdx, ok := stepGroupIndexOf(task.GetName())
-		if !ok {
-			return nil, fmt.Errorf("failed to parse group index from step task name %q", task.GetName())
-		}
-		for i, stepGroup := range e.tmpl.Steps {
-			if i >= currentGroupIdx {
-				break
-			}
-			for _, step := range stepGroup.Steps {
-				stepTaskName := stepTaskNameFor(i, step.Name)
-				stepNode := e.getTaskNode(ctx, stepTaskName)
-				if stepNode == nil {
-					continue
-				}
-				if err := e.addTaskNodeToScope(ctx, scope, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, stepTaskName, stepNode, true); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
 	return scope, nil
+}
+
+// addTaskToScope adds a task's part to scope (addTaskNodeToScope) under the
+// name templates refer to it by, {{tasks.<task>}} or {{steps.<step>}}. A task
+// with no node yet (e.g. outside dag.target's ancestry) adds nothing.
+func (e *Engine) addTaskToScope(ctx context.Context, scope *wfScope, taskName string) error {
+	node := e.getTaskNode(ctx, taskName)
+	if node == nil {
+		return nil
+	}
+	steps := e.tmpl.GetType() == wfv1.TemplateTypeSteps
+	ref, agg, refName := varkeys.TasksNodeRef, varkeys.TasksAggregate, taskName
+	if steps {
+		ref, agg, refName = varkeys.StepsNodeRef, varkeys.StepsAggregate, stepNameOf(taskName)
+	}
+	// Steps keeps skipped-node artifact placeholders resolvable (includeArtifacts); DAG
+	// leaves them to resolveArtifactArguments' optional-drop / required-error handling.
+	return e.addTaskNodeToScope(ctx, scope, ref, agg, refName, taskName, node, steps)
 }
 
 // setDAGOutputs sets the outputs of the DAG.
@@ -1419,30 +1398,18 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 	// did, for DAG templates too.
 	e.woc.addWorkflowOutputsToLocalScope(e.woc.wf.Status.Outputs, scope)
 
-	includeArtifacts := e.tmpl.GetType() == wfv1.TemplateTypeSteps
-
-	if e.tmpl.DAG != nil {
-		for _, task := range e.tmpl.DAG.Tasks {
-			taskNode := e.getTaskNode(ctx, task.Name)
-			if taskNode == nil {
-				continue
-			}
-			if err = e.addTaskNodeToScope(ctx, scope, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, task.Name, taskNode, includeArtifacts); err != nil {
-				return err
-			}
-		}
-	} else if e.tmpl.Steps != nil {
+	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
 		for i, stepGroup := range e.tmpl.Steps {
 			for _, step := range stepGroup.Steps {
-				// Step nodes use the [i].name format for lookup, but steps.name for scope prefix.
-				taskName := stepTaskNameFor(i, step.Name)
-				taskNode := e.getTaskNode(ctx, taskName)
-				if taskNode == nil {
-					continue
-				}
-				if err = e.addTaskNodeToScope(ctx, scope, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, taskName, taskNode, includeArtifacts); err != nil {
+				if err = e.addTaskToScope(ctx, scope, stepTaskNameFor(i, step.Name)); err != nil {
 					return err
 				}
+			}
+		}
+	} else if e.tmpl.DAG != nil {
+		for _, task := range e.tmpl.DAG.Tasks {
+			if err = e.addTaskToScope(ctx, scope, task.Name); err != nil {
+				return err
 			}
 		}
 	}
