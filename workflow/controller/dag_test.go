@@ -425,10 +425,10 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A",
 		Phase:    wfv1.NodeRunning,
 		Type:     wfv1.NodeTypeTaskGroup,
-		Children: []string{wf.NodeID("test.A-1"), wf.NodeID("test.A-2")},
+		Children: []string{wf.NodeID("test.A(0:1)"), wf.NodeID("test.A(1:2)")},
 	}
-	wf.Status.Nodes[wf.NodeID("test.A-1")] = wfv1.NodeStatus{Name: "test.A-1", Phase: wfv1.NodeRunning}
-	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Name: "test.A-2", Phase: wfv1.NodeRunning}
+	wf.Status.Nodes[wf.NodeID("test.A(0:1)")] = wfv1.NodeStatus{Name: "test.A(0:1)", Phase: wfv1.NodeRunning}
+	wf.Status.Nodes[wf.NodeID("test.A(1:2)")] = wfv1.NodeStatus{Name: "test.A(1:2)", Phase: wfv1.NodeRunning}
 
 	// Task B should not proceed as task A is still running
 	result := evaluator.Evaluate(ctx, "B")
@@ -440,7 +440,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A",
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
-		Children: []string{wf.NodeID("test.A-1"), wf.NodeID("test.A-2")},
+		Children: []string{wf.NodeID("test.A(0:1)"), wf.NodeID("test.A(1:2)")},
 	}
 
 	// Task B should proceed, but not execute as none of the children have succeeded yet
@@ -450,7 +450,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 
 	// Task A-2 succeeded
-	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Name: "test.A-2", Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.A(1:2)")] = wfv1.NodeStatus{Name: "test.A(1:2)", Phase: wfv1.NodeSucceeded}
 
 	// Task B should now proceed and execute
 	result = evaluator.Evaluate(ctx, "B")
@@ -462,9 +462,9 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Name: "test.B",
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
-		Children: []string{wf.NodeID("test.B-1"), wf.NodeID("test.B-2")},
+		Children: []string{wf.NodeID("test.B(0:1)"), wf.NodeID("test.B(1:2)")},
 	}
-	wf.Status.Nodes[wf.NodeID("test.B-1")] = wfv1.NodeStatus{Name: "test.B-1", Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.B(0:1)")] = wfv1.NodeStatus{Name: "test.B(0:1)", Phase: wfv1.NodeFailed}
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
 	result = evaluator.Evaluate(ctx, "C")
@@ -472,7 +472,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
 
-	wf.Status.Nodes[wf.NodeID("test.B-2")] = wfv1.NodeStatus{Name: "test.B-2", Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.B(1:2)")] = wfv1.NodeStatus{Name: "test.B(1:2)", Phase: wfv1.NodeFailed}
 
 	// Task C should now proceed and execute as all of B's children have failed
 	result = evaluator.Evaluate(ctx, "C")

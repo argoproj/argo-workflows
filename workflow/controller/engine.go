@@ -224,8 +224,8 @@ func (e *Engine) itemHooksToReenter(tg *wfv1.NodeStatus) bool {
 	if prev, ok := e.woc.preExecutionNodeStatuses[tg.ID]; !ok || !prev.Fulfilled() {
 		return false
 	}
-	for _, item := range e.getChildNodes(tg) {
-		if len(e.hooks.hookNodesToReenter(&item)) > 0 {
+	for _, item := range e.itemNodes(tg) {
+		if len(e.hooks.hookNodesToReenter(item)) > 0 {
 			return true
 		}
 	}
@@ -273,7 +273,7 @@ func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.
 			nodeDone, err = e.hooks.DriveTaskHooks(ctx, nodeTask, task.GetDisplayName(), node, scope)
 		}
 		e.markHookError(ctx, node, err)
-		done = done && (nodeDone || ((err != nil || scopeErr != nil) && !e.hasPendingHooks(node)))
+		done = done && (nodeDone || ((err != nil || scopeErr != nil) && common.CheckAllHooksFullfilled(node, e.woc.wf.Status.Nodes)))
 	}
 	return done
 }
@@ -426,9 +426,9 @@ func (e *Engine) stepGroupOutcome(ctx context.Context, i int) (phase wfv1.NodePh
 // when items hung directly off the StepGroup.
 func (e *Engine) failedNode(node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	if node.Type == wfv1.NodeTypeTaskGroup {
-		for _, childID := range node.Children {
-			if child, err := e.woc.wf.Status.Nodes.Get(childID); err == nil && child.FailedOrError() && (child.NodeFlag == nil || !child.NodeFlag.Hooked) {
-				return child
+		for _, item := range e.itemNodes(node) {
+			if item.FailedOrError() {
+				return item
 			}
 		}
 	}
@@ -528,7 +528,7 @@ func (e *Engine) reconcileTaskGroup(ctx context.Context, task dag.Task, tgNode *
 	hooksDone := e.driveHooks(ctx, task, items, false)
 	itemNodes := make([]*wfv1.NodeStatus, len(items))
 	for i, item := range items {
-		if n := e.getTaskNode(ctx, item.GetName()); n != nil && !e.hasPendingHooks(n) {
+		if n := e.getTaskNode(ctx, item.GetName()); n != nil && common.CheckAllHooksFullfilled(n, e.woc.wf.Status.Nodes) {
 			itemNodes[i] = n
 		}
 	}
@@ -640,8 +640,8 @@ func (e *Engine) hasNodeToFinish(node *wfv1.NodeStatus, holders map[string]bool)
 	if node.Type != wfv1.NodeTypeTaskGroup {
 		return e.toFinish(node, holders)
 	}
-	for _, item := range e.getChildNodes(node) {
-		if e.toFinish(&item, holders) {
+	for _, item := range e.itemNodes(node) {
+		if e.toFinish(item, holders) {
 			return true
 		}
 	}
@@ -778,33 +778,19 @@ func (e *Engine) findTaskHook(ctx context.Context, tasks []dag.Task, match func(
 		if taskNode == nil {
 			continue
 		}
-		owners := []wfv1.NodeStatus{*taskNode}
+		owners := []*wfv1.NodeStatus{taskNode}
 		if taskNode.Type == wfv1.NodeTypeTaskGroup {
-			owners = append(owners, e.getChildNodes(taskNode)...)
+			owners = append(owners, e.itemNodes(taskNode)...)
 		}
 		for _, owner := range owners {
-			for _, child := range e.getChildNodes(&owner) {
-				if child.NodeFlag != nil && child.NodeFlag.Hooked && match(&child) {
-					return &child
+			for _, hook := range common.HookNodes(owner, e.woc.wf.Status.Nodes) {
+				if match(hook) {
+					return hook
 				}
 			}
 		}
 	}
 	return nil
-}
-
-// hasPendingHooks reports whether node has a hook child that is not fulfilled.
-func (e *Engine) hasPendingHooks(node *wfv1.NodeStatus) bool {
-	for _, childID := range node.Children {
-		childNode, err := e.woc.wf.Status.Nodes.Get(childID)
-		if err != nil {
-			continue
-		}
-		if childNode.NodeFlag != nil && childNode.NodeFlag.Hooked && !childNode.Fulfilled() {
-			return true
-		}
-	}
-	return false
 }
 
 // saveMemoizationCache persists the node outputs to the memoization cache if configured.
@@ -1201,20 +1187,18 @@ func (e *Engine) branchPhase(ctx context.Context, name string, memo map[string]w
 // daemon that dies) and fails the group with it, and an item's hook can
 // still be running.
 func (e *Engine) outcome(node *wfv1.NodeStatus) (wfv1.NodePhase, bool) {
+	nodes := e.woc.wf.Status.Nodes
 	if node.Type != wfv1.NodeTypeTaskGroup || !node.Phase.Fulfilled(nil) {
-		return node.Phase, node.Fulfilled() && !e.hasPendingHooks(node)
+		return node.Phase, node.Fulfilled() && common.CheckAllHooksFullfilled(node, nodes)
 	}
 	phase := node.Phase
-	for _, item := range e.getChildNodes(node) {
-		if !strings.HasPrefix(item.Name, node.Name+"(") {
-			continue // a hook, or the next step group hung off an empty group
-		}
-		if e.hasPendingHooks(&item) {
+	for _, item := range e.itemNodes(node) {
+		if !common.CheckAllHooksFullfilled(item, nodes) {
 			return phase, false
 		}
 		phase = worsePhase(phase, item.Phase)
 	}
-	return phase, !e.hasPendingHooks(node)
+	return phase, common.CheckAllHooksFullfilled(node, nodes)
 }
 
 // worsePhase is the worse of two phases for an outcome: Error outranks
@@ -1321,15 +1305,11 @@ func (e *Engine) stepGroupNodeName(taskName string) string {
 	return ""
 }
 
-// getChildNodes returns all direct child NodeStatus objects of a node.
-func (e *Engine) getChildNodes(node *wfv1.NodeStatus) []wfv1.NodeStatus {
-	children := make([]wfv1.NodeStatus, 0, len(node.Children))
-	for _, childID := range node.Children {
-		if child, err := e.woc.wf.Status.Nodes.Get(childID); err == nil {
-			children = append(children, *child)
-		}
-	}
-	return children
+// itemNodes returns the item nodes of tg, a TaskGroup node
+// (dag.TaskGroupItems); a child missing from the node map is left out.
+func (e *Engine) itemNodes(tg *wfv1.NodeStatus) []*wfv1.NodeStatus {
+	items, _ := dag.TaskGroupItems(e.woc.wf.Status.Nodes, tg)
+	return items
 }
 
 // addTaskNodeToScope adds one dependency/step node's outputs to scope: aggregates
@@ -1368,7 +1348,7 @@ func (e *Engine) addTaskNodeToScope(ctx context.Context, scope *wfScope, ref var
 // node and scopeNode, the node that represents the task in the scope.
 func (e *Engine) buildTaskNodeScope(ctx context.Context, scope *wfScope, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, refName, taskName string, node, scopeNode *wfv1.NodeStatus, includeArtifacts bool) error {
 	if node.Type == wfv1.NodeTypeTaskGroup {
-		if err := e.woc.processAggregateNodeOutputs(scope, agg, refName, e.getChildNodes(node)); err != nil {
+		if err := e.woc.processAggregateNodeOutputs(scope, agg, refName, e.itemNodes(node)); err != nil {
 			if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
 				// executeSteps aggregated a finished group's items into the
 				// template's own scope, so this is the template's error.

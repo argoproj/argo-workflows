@@ -3617,7 +3617,7 @@ func (woc *wfOperationCtx) addOutputsToGlobalScope(ctx context.Context, outputs 
 }
 
 // loopNodes is a node list which supports sorting by loop index
-type loopNodes []wfv1.NodeStatus
+type loopNodes []*wfv1.NodeStatus
 
 func (n loopNodes) Len() int {
 	return len(n)
@@ -3645,20 +3645,12 @@ func (n loopNodes) Swap(i, j int) {
 }
 
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
-// parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, agg varkeys.AggregateKeys, name string, childNodes []wfv1.NodeStatus) error {
+// parameter in the form of a JSON list. childNodes are the template's item nodes
+// (dag.TaskGroupItems); they are sorted in place.
+func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, agg varkeys.AggregateKeys, name string, childNodes []*wfv1.NodeStatus) error {
 	if len(childNodes) == 0 {
 		return nil
 	}
-	// Some of the children may be hooks and some of the children may be retried nodes, only keep those that aren't
-	nodeIdx := 0
-	for i := range childNodes {
-		if childNodes[i].NodeFlag == nil || (!childNodes[i].NodeFlag.Hooked && !childNodes[i].NodeFlag.Retried) {
-			childNodes[nodeIdx] = childNodes[i]
-			nodeIdx++
-		}
-	}
-	childNodes = childNodes[:nodeIdx]
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
 	paramList := make([]map[string]string, 0)

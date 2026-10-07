@@ -137,13 +137,9 @@ func (h *hookHandler) reenterHooks(ctx context.Context, task dag.Task, refName s
 // reconcile started.
 func (h *hookHandler) hookNodesToReenter(node *wfv1.NodeStatus) []*wfv1.NodeStatus {
 	var out []*wfv1.NodeStatus
-	for _, childID := range node.Children {
-		child, err := h.woc.wf.Status.Nodes.Get(childID)
-		if err != nil || child.NodeFlag == nil || !child.NodeFlag.Hooked {
-			continue
-		}
-		if prev, ok := h.woc.preExecutionNodeStatuses[child.ID]; !ok || !prev.Fulfilled() {
-			out = append(out, child)
+	for _, hook := range common.HookNodes(node, h.woc.wf.Status.Nodes) {
+		if prev, ok := h.woc.preExecutionNodeStatuses[hook.ID]; !ok || !prev.Fulfilled() {
+			out = append(out, hook)
 		}
 	}
 	return out
