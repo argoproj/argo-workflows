@@ -5,6 +5,7 @@ package e2e
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -1962,12 +1963,20 @@ func (s *ArgoServerSuite) streamExpectNoData(url string, wait time.Duration) {
 	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 	req.Close = true
 	resp, err := httpClient.Do(req)
+	if errors.Is(err, context.DeadlineExceeded) {
+		// grpc-gateway may defer response headers until the stream produces an event.
+		return
+	}
 	s.Require().NoError(err)
 	defer func() { _ = resp.Body.Close() }()
 	s.Equal(200, resp.StatusCode)
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		s.NotContains(scanner.Text(), "data: ")
+	}
+	s.NotNil(ctx.Err(), "the stream ended before its context deadline")
+	if err := scanner.Err(); err != nil {
+		s.True(errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled), "unexpected stream error: %v", err)
 	}
 }
 
@@ -2035,21 +2044,30 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// a single-pod workflow's pod is named after the workflow
 	s.Run("WatchWorkflowPod", func() {
+		seen := false
 		s.stream("/api/v1/stream/workflows/argo/"+name+"/pods/"+name, func(t *testing.T, line string) (done bool) {
 			if strings.Contains(line, "data: ") {
+				seen = true
 				assert.Contains(t, line, `"type":"ADDED"`)
 				assert.Contains(t, line, fmt.Sprintf(`"name":"%s"`, name))
 				return true
 			}
 			return false
 		})
+		s.True(seen)
 	})
 
 	s.Run("WatchWorkflowPodOfAnotherWorkflow", func() {
 		// the other pod does exist, so silence below is the selector's doing and not a missing pod
+		seen := false
 		s.stream("/api/v1/stream/workflows/argo/"+otherName+"/pods/"+otherName, func(t *testing.T, line string) (done bool) {
-			return strings.Contains(line, "data: ")
+			if strings.Contains(line, "data: ") {
+				seen = true
+				return true
+			}
+			return false
 		})
+		s.True(seen)
 		s.streamExpectNoData("/api/v1/stream/workflows/argo/"+name+"/pods/"+otherName, 5*time.Second)
 	})
 }
