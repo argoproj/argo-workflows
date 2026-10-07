@@ -1637,7 +1637,7 @@ func TestRegressionR4_Lead8_DAGFanOutTimeoutsHeadBetter(t *testing.T) {
 		}
 		return apiv1.PodPending
 	})
-	time.Sleep(1500 * time.Millisecond)
+	r4BackdateNodes(t, ctx, controller, woc.wf, time.Minute) // past the items' 1s pendingTimeout
 	woc = r4Operate(t, ctx, controller, woc.wf)
 	failed := 0
 	for _, n := range woc.wf.Status.Nodes {
@@ -7950,7 +7950,7 @@ spec:
 	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodPending, r4PodForNodePrefix(r.woc.wf.Name+"[0].a"+hookSuffix))
 	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodPending, r4PodForNodePrefix(r.woc.wf.Name+".a"+hookSuffix))
 	r.op(ctx)
-	time.Sleep(1500 * time.Millisecond)
+	r4BackdateNodes(t, ctx, r.controller, r.woc.wf, time.Minute) // past the hook's 1s pendingTimeout
 	r.op(ctx)
 	if hookKind == "running" {
 		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, func(pod *apiv1.Pod) bool {
