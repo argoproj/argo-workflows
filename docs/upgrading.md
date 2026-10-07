@@ -106,6 +106,9 @@ The workflow's own estimate is not affected.
 A `withSequence` with a negative `count` now expands to no items.
 Previously it produced a descending sequence from `start`.
 
+A literal `{{index}}` in an expanded item (`withItems`, `withParam` or `withSequence`) is now left as text.
+Previously the workflow failed with `failed to resolve {{index}}`.
+
 When an expanded DAG task's `templateRef` refers to other tasks' outputs, its `TaskGroup` node (or its `Skipped` node when the expansion is empty) now records the resolved `templateRef`, as Steps templates already did.
 
 #### Step groups
