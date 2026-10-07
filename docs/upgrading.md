@@ -26,6 +26,10 @@ Additionally, a container whose dependency is killed before it can report an exi
 
 DAG and Steps templates are now executed by one shared engine, so both template types follow the same rules for readiness, `continueOn`, retries, hooks and omission.
 Most workflows behave as before.
+
+If you roll the controller back to an earlier version while Steps workflows with an expanded step are running, those workflows stay `Running`, and `argo retry` does not recover them.
+Let them finish before rolling back, or delete (or terminate) them and resubmit them afterwards.
+
 The changes below are deliberate; most of them apply a rule that one template type already had to the other.
 
 An expanded step (one with `withItems`, `withParam` or `withSequence`) now has a `TaskGroup` node that holds its items, as an expanded DAG task already had.
@@ -54,7 +58,7 @@ Previously the error was only logged and the template succeeded.
 #### Hooks
 
 A task's or step's exit or lifecycle hook that ends `Error` now ends the DAG or Steps template it belongs to with `Error`.
-This covers a hook that could not be started (for example its pod was denied by an admission webhook, or its expression could not be evaluated), a hook that timed out, and a hook that errored while it ran, such as one whose pod was deleted.
+This covers a hook that could not be started (for example its pod was denied by an admission webhook, or its expression could not be evaluated), a hook that timed out while it was still `Pending`, and a hook that errored while it ran, such as one whose pod was deleted.
 Once a hook has errored, no task or step that has not yet started begins; one that has not started gets no node, so `argo retry` runs it.
 A fan-out (`withItems`, `withParam` or `withSequence`) that has already started creates no more of the items that `parallelism` held back.
 Its `TaskGroup` node completes from the items it has created, or ends `Omitted` if it has created none, with the message `items not started because a hook errored: <count>`, and `argo retry` creates the remaining items.
@@ -150,7 +154,7 @@ When the entrypoint DAG or Steps template ends `Error` because of its own error 
 
 When a `containerSet` pod is deleted, containers that had already finished now keep their phase instead of becoming `Error` with the message `container deleted`; the pod's node is `Error`, and `argo retry` re-runs the pod.
 
-#### Retry and rollback
+#### Retry
 
 `argo retry` now re-runs a failed DAG task whose dependants were all omitted, for example a task whose `when` clause or `withParam` could not be evaluated.
 Previously the retry did not reset such a task.
@@ -158,9 +162,6 @@ Previously the retry did not reset such a task.
 After `argo retry`, a succeeded task's or step's exit hook that has its own `retryStrategy` is now completed without starting a new attempt of the hook.
 Previously it ran a new attempt.
 A hook without a `retryStrategy` was not re-run at either version.
-
-If you roll the controller back to an earlier version while Steps workflows with an expanded step are running, those workflows stay `Running`, and `argo retry` does not recover them.
-Let them finish before rolling back, or delete (or terminate) them and resubmit them afterwards.
 
 ## Upgrading to v4.1.2
 
