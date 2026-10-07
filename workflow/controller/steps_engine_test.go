@@ -84,11 +84,11 @@ func stepsEngineWithFakeReconciler(ctx context.Context, t *testing.T) (*Engine, 
 // a DAG task (TestVisit_EvaluatorErrorBecomesErrorNode).
 func TestStepsEngine_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	engine, fake, woc, tasks := stepsEngineWithFakeReconciler(ctx, t)
+	engine, fake, woc, _ := stepsEngineWithFakeReconciler(ctx, t)
 
 	result := dag.EvaluationResult{TaskName: "[0].client", Error: errors.New("depends expression failed to evaluate")}
 	fake.calls = nil
-	engine.visit(ctx, engine.getTaskByName(tasks, "[0].client"), result, true)
+	engine.visit(ctx, engine.evaluator.GetTask("[0].client"), result, true)
 	assert.Empty(t, fake.calls)
 
 	node, err := woc.wf.GetNodeByName(engine.taskNodeName("[0].client"))

@@ -1045,33 +1045,21 @@ func (e *Engine) desiredTask(ctx context.Context, task dag.Task) (DesiredTask, e
 	}, nil
 }
 
-func (e *Engine) getTaskByName(tasks []dag.Task, name string) dag.Task {
-	for _, task := range tasks {
-		if task.GetName() == name {
-			return task
-		}
-	}
-	return nil
-}
-
-// taskNodeName formulates the nodeName for a dag task
+// taskNodeName is the node name of a task in this boundary (dag.TaskNodeName).
 func (e *Engine) taskNodeName(taskName string) string {
 	return dag.TaskNodeName(e.nodeName, taskName)
 }
 
-// taskNodeID formulates the node ID for a dag task
+// taskNodeID is the node ID of a task in this boundary (dag.TaskNodeID).
 func (e *Engine) taskNodeID(taskName string) string {
-	nodeName := e.taskNodeName(taskName)
-	return e.woc.wf.ResolveNodeID(nodeName)
+	return dag.TaskNodeID(e.woc.wf, e.nodeName, taskName)
 }
 
-// getTaskNode returns the node status of a task.
+// getTaskNode returns the node status of a task (dag.TaskNode).
 func (e *Engine) getTaskNode(ctx context.Context, taskName string) *wfv1.NodeStatus {
-	nodeID := e.taskNodeID(taskName)
-	node, err := e.woc.wf.Status.Nodes.Get(nodeID)
-	if err != nil {
-		e.log.WithFields(logging.Fields{"nodeID": nodeID, "taskName": taskName}).Debug(ctx, "was unable to obtain the node")
-		return nil
+	node := dag.TaskNode(e.woc.wf, e.nodeName, taskName)
+	if node == nil {
+		e.log.WithFields(logging.Fields{"taskName": taskName}).Debug(ctx, "was unable to obtain the node")
 	}
 	return node
 }
@@ -1110,7 +1098,7 @@ func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, isShutdow
 			}
 			continue
 		}
-		if branch := e.branchPhase(ctx, name, memo); branch.FailedOrError() && !e.getTaskByName(tasks, name).ContinuesOn(branch) {
+		if branch := e.branchPhase(ctx, name, memo); branch.FailedOrError() && !e.evaluator.GetTask(name).ContinuesOn(branch) {
 			phase = branch
 			if failFast {
 				break

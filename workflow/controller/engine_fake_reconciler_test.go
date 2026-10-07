@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -148,8 +149,10 @@ func TestRegressionR4_C19_ExpandedTaskExpandsOncePerDispatch(t *testing.T) {
 		tasks[i] = expandCountingTask{Task: tasks[i], expands: &expands}
 	}
 
+	// The evaluator holds the unwrapped tasks: visit the counting one.
+	client := tasks[slices.IndexFunc(tasks, func(task dag.Task) bool { return task.GetName() == "client" })]
 	fake.calls = nil
-	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true)
+	engine.visit(ctx, client, engine.evaluator.Evaluate(ctx, "client"), true)
 
 	assert.Equal(t, 1, expands, "the fan-out should be expanded once per dispatch")
 	assert.Equal(t, []string{

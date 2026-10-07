@@ -37,23 +37,24 @@ func TaskNodeName(boundaryName, taskName string) string {
 	return boundaryName + "." + taskName
 }
 
-func (s *workflowStore) taskNodeName(taskName string) string {
-	return TaskNodeName(s.boundaryName, taskName)
+// TaskNodeID is the node ID of a task within a DAG/Steps boundary.
+func TaskNodeID(wf *wfv1.Workflow, boundaryName, taskName string) string {
+	return wf.ResolveNodeID(TaskNodeName(boundaryName, taskName))
 }
 
-// taskNodeID computes the node ID for a task.
-func (s *workflowStore) taskNodeID(taskName string) string {
-	return s.workflow.ResolveNodeID(s.taskNodeName(taskName))
-}
-
-// getNode returns the raw node status for a task.
-func (s *workflowStore) getNode(taskName string) *wfv1.NodeStatus {
-	nodeID := s.taskNodeID(taskName)
-	node, err := s.nodes.Get(nodeID)
+// TaskNode returns the node of a task within a DAG/Steps boundary, or nil
+// when the task has no node.
+func TaskNode(wf *wfv1.Workflow, boundaryName, taskName string) *wfv1.NodeStatus {
+	node, err := wf.Status.Nodes.Get(TaskNodeID(wf, boundaryName, taskName))
 	if err != nil {
 		return nil
 	}
 	return node
+}
+
+// getNode returns the raw node status for a task.
+func (s *workflowStore) getNode(taskName string) *wfv1.NodeStatus {
+	return TaskNode(s.workflow, s.boundaryName, taskName)
 }
 
 // TaskGroupItems returns the item nodes of tg, an expanded task's TaskGroup
