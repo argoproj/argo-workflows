@@ -487,7 +487,7 @@ func (s *workflowServer) WatchWorkflowPod(req *workflowpkg.WatchWorkflowPodReque
 				// object is probably metav1.Status, `FromObject` can deal with anything
 				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
 			}
-			// The watch shares the object with other consumers, so managedFields is stripped from a copy.
+			// Strip managedFields from a copy: watch.Interface does not promise exclusive ownership of the objects it emits.
 			pod = pod.DeepCopy()
 			pod.ManagedFields = nil
 			err = ws.Send(&workflowpkg.WorkflowPodWatchEvent{Type: string(event.Type), Object: pod})
