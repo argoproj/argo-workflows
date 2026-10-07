@@ -123,7 +123,7 @@ func (woc *wfOperationCtx) handleSynchronization(ctx context.Context, nodeName s
 	if node != nil {
 		node, err = woc.markNodeWaitingForLock(ctx, node.Name, "", "")
 		if err != nil {
-			woc.log.WithField("node.Name", node.Name).WithField("lockName", "").Error(ctx, "markNodeWaitingForLock returned err")
+			woc.log.WithField("nodeName", nodeName).WithField("lockName", "").Error(ctx, "markNodeWaitingForLock returned err")
 			return true, nil, err
 		}
 	}
