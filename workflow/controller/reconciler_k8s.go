@@ -67,12 +67,12 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 			templateScope:  dt.TemplateScope,
 		})
 		// Link a node this call created, once it exists, and only then:
-		// creation can be deferred (parallelism) and an
-		// edge to a node never created can later be claimed by a colliding
-		// name (#16376). A node that already existed is not linked again: its
-		// dependencies' outbound nodes may have moved on since (a daemon's next
-		// retry attempt) or, for a dependency that had no children, now lead
-		// back through the task itself.
+		// creation can be deferred (parallelism) and an edge to a node never
+		// created can later be claimed by a colliding name (#16376). A node
+		// that already existed is not linked again: its dependencies'
+		// outbound nodes may have moved on since (a daemon's next retry
+		// attempt) or, for a dependency that had no children, now lead back
+		// through the task itself.
 		if _, getErr := r.woc.wf.GetNodeByName(dt.TaskName); isNew && getErr == nil {
 			r.linkTasks(ctx, dt)
 		}
@@ -92,9 +92,9 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 }
 
 // recordTaskError records a task's own dispatch error as an Error on its
-// node, creating and linking the node when the
-// dispatch failed before creating it. A node that already reached a terminal
-// phase (a timed-out node marked Failed, a max-depth Error) keeps it.
+// node, creating and linking the node when the dispatch failed before
+// creating it. A node that already reached a terminal phase (a timed-out node
+// marked Failed, a max-depth Error) keeps it.
 func (r *K8sTaskReconciler) recordTaskError(ctx context.Context, dt DesiredTask, err error) {
 	node, getErr := r.woc.wf.GetNodeByName(dt.TaskName)
 	if getErr != nil {
