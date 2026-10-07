@@ -26,6 +26,7 @@ spec:
         template: echo
       - name: b
         template: sleep
+        withParam: '["1", "2"]'
       - name: c
         template: echo
         depends: b

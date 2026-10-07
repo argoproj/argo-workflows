@@ -1271,6 +1271,10 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	aID := wf.NodeID(aName)
 	bName := workName + ".b"
 	bID := wf.NodeID(bName)
+	b0Name := bName + "(0:1)"
+	b0ID := wf.NodeID(b0Name)
+	b1Name := bName + "(1:2)"
+	b1ID := wf.NodeID(b1Name)
 	afterName := rootName + ".after"
 	afterID := wf.NodeID(afterName)
 	after2Name := rootName + ".after2"
@@ -1279,13 +1283,15 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	after3ID := wf.NodeID(after3Name)
 
 	// This is the state left by stop, before the user retries: work failed,
-	// branch a succeeded, branch b was interrupted, after and after2 were
-	// omitted, and after3 ran because it explicitly depends on after2.Omitted.
+	// branch a succeeded, one item in the b fan-out was interrupted, after and
+	// after2 were omitted, and after3 ran because it depends on after2.Omitted.
 	wf.Status.Nodes = wfv1.Nodes{
 		rootID:   {ID: rootID, Name: rootName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, TemplateName: "main", Children: []string{workID}},
 		workID:   {ID: workID, Name: workName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, TemplateName: "inner", Children: []string{aID, bID}, OutboundNodes: []string{aID}},
 		aID:      {ID: aID, Name: aName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, TemplateName: "echo", Children: []string{afterID}, OutboundNodes: []string{aID}},
-		bID:      {ID: bID, Name: bName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID, TemplateName: "sleep"},
+		bID:      {ID: bID, Name: bName, Type: wfv1.NodeTypeTaskGroup, Phase: wfv1.NodeFailed, BoundaryID: workID, TemplateName: "sleep", Children: []string{b0ID, b1ID}},
+		b0ID:     {ID: b0ID, Name: b0Name, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, TemplateName: "sleep"},
+		b1ID:     {ID: b1ID, Name: b1Name, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID, TemplateName: "sleep"},
 		afterID:  {ID: afterID, Name: afterName, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, TemplateName: "echo", Children: []string{after2ID}},
 		after2ID: {ID: after2ID, Name: after2Name, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, TemplateName: "echo", Children: []string{after3ID}},
 		after3ID: {ID: after3ID, Name: after3Name, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: rootID, TemplateName: "echo"},
@@ -1308,25 +1314,39 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, work.Phase)
 
-	workB, err := woc.wf.GetNodeByName(workName + ".b")
-	require.NoError(t, err, "retry should recreate the interrupted branch")
-	assert.Equal(t, wfv1.NodePending, workB.Phase)
+	bGroup, err := woc.wf.GetNodeByName(bName)
+	require.NoError(t, err, "retry should recreate the fan-out group")
+	assert.Equal(t, wfv1.NodeTypeTaskGroup, bGroup.Type)
+	assert.Equal(t, wfv1.NodeRunning, bGroup.Phase)
+	b0, err := woc.wf.GetNodeByName(b0Name)
+	require.NoError(t, err, "the completed fan-out item should be retained")
+	assert.Equal(t, wfv1.NodeSucceeded, b0.Phase)
+	b1, err := woc.wf.GetNodeByName(b1Name)
+	require.NoError(t, err, "retry should recreate the interrupted fan-out item")
+	assert.Equal(t, wfv1.NodePending, b1.Phase)
 
 	_, err = woc.wf.GetNodeByName(afterName)
 	require.Error(t, err, "the stale Omitted dependent must be removed while its dependency is running")
 	_, err = woc.wf.GetNodeByName(after2Name)
 	require.Error(t, err, "omitted descendants must also be reopened through their dependency chain")
 
-	// Completing b creates c; completing c allows after to run; completing after
-	// then allows its downstream dependent to run.
+	// Completing the fan-out creates c; completing c allows after to run; completing
+	// after then allows its downstream dependent to run.
 	makePodsPhase(ctx, woc, v1.PodSucceeded)
-	bNode, err := woc.wf.GetNodeByName(workName + ".b")
+	bGroup, err = woc.wf.GetNodeByName(bName)
+	require.NoError(t, err)
+	b0, err = woc.wf.GetNodeByName(b0Name)
+	require.NoError(t, err)
+	b1, err = woc.wf.GetNodeByName(b1Name)
 	require.NoError(t, err)
 	cName := workName + ".c"
 	cID := wf.NodeID(cName)
-	bNode.Phase = wfv1.NodeSucceeded
-	bNode.Children = []string{cID}
-	woc.wf.Status.Nodes.Set(ctx, bNode.ID, *bNode)
+	bGroup.Phase = wfv1.NodeSucceeded
+	woc.wf.Status.Nodes.Set(ctx, bGroup.ID, *bGroup)
+	b0.Children = []string{cID}
+	woc.wf.Status.Nodes.Set(ctx, b0.ID, *b0)
+	b1.Children = []string{cID}
+	woc.wf.Status.Nodes.Set(ctx, b1.ID, *b1)
 	woc.wf.Status.Nodes.Set(ctx, cID, wfv1.NodeStatus{
 		ID: cID, Name: cName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, TemplateName: "echo",
 	})
@@ -1352,6 +1372,7 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	after3, err := woc.wf.GetNodeByName(after3Name)
 	require.NoError(t, err, "the downstream task should be re-evaluated against after2's new result")
 	assert.Equal(t, wfv1.NodeOmitted, after3.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "the retried fan-out workflow should complete")
 }
 
 // TestOnExitDAGNotFailedOnShutdownStop verifies that when a workflow is stopped with
