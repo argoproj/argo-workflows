@@ -856,7 +856,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task) (*wfv1.NodeStat
 		return failTask(err)
 	}
 
-	if dag.HasExpansion(resolved) {
+	if resolved.ShouldExpand() {
 		expandedTasks, expandErr := resolved.Expand(ctx, e.expansionScope(scope), e.woc)
 		if expandErr != nil {
 			return failTask(expandErr)
@@ -1471,7 +1471,7 @@ func (e *Engine) resolveTask(ctx context.Context, task dag.Task, scope *wfScope)
 			return nil, err
 		}
 		proceed, err := dag.ShouldExecute(resolvedWhen)
-		if err != nil && !dag.HasExpansion(task) {
+		if err != nil && !task.ShouldExpand() {
 			return nil, err
 		}
 		if err == nil && !proceed {

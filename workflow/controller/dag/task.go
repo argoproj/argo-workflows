@@ -31,18 +31,15 @@ type Task interface {
 	GetHooks() wfv1.LifecycleHooks
 	GetExitHook(args wfv1.Arguments) *wfv1.LifecycleHook
 	ContinuesOn(phase wfv1.NodePhase) bool
+	// ShouldExpand reports whether the task uses withItems/withParam/withSequence
+	// and therefore expands into a TaskGroup of per-item children: the wfv1
+	// DAGTask's or WorkflowStep's ShouldExpand. An explicitly empty withItems
+	// list is not an expansion: the task runs once.
+	ShouldExpand() bool
 	Expand(ctx context.Context, scope map[string]string, substitutor Substitutor) ([]Task, error)
 	// Resolve returns a copy of the task whose body, the task as a
 	// wfv1.DAGTask, is resolve's rewrite of it.
 	Resolve(resolve func(wfv1.DAGTask) (wfv1.DAGTask, error)) (Task, error)
-}
-
-// HasExpansion reports whether the task uses withItems/withParam/withSequence
-// and therefore expands into a TaskGroup of per-item children. An explicitly
-// empty withItems list is not an expansion (matching DAGTask.ShouldExpand and
-// validation): the task runs once, as if withItems had been omitted.
-func HasExpansion(t Task) bool {
-	return len(t.GetWithItems()) > 0 || t.GetWithParam() != "" || t.GetWithSequence() != nil
 }
 
 // DAGTask adapts wfv1.DAGTask to the Task interface.
