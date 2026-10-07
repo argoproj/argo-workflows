@@ -288,16 +288,12 @@ func TestRegressionR4_C32_AdmissionDeniedLinkedAndRetryable(t *testing.T) {
 }
 
 // r4DriveToEnd succeeds every pod, then reconciles, until the workflow
-// completes or rounds run out.
+// completes; it fails the test if rounds reconciles are not enough.
 //
 //nolint:revive // matches the r4 harness convention (t before ctx)
 func r4DriveToEnd(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx, rounds int) *wfOperationCtx {
 	t.Helper()
-	for i := 0; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
-		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
-	return woc
+	return r4Drive(t, ctx, controller, woc, rounds, allSucceed)
 }
 
 // r4Unfulfilled lists the nodes that are not fulfilled, as "name=phase".
@@ -879,7 +875,7 @@ func TestRegressionR4_C22_NestedDependantOfDeadDaemon(t *testing.T) {
 	// empty, which the pod assessor treats as "Unexpected pod phase" (a
 	// harness artefact, see r4MoveNewPodsPending).
 	op := func() {
-		r4MoveNewPodsPending(ctx, woc)
+		r4MoveNewPodsPending(ctx, t, woc)
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
 
@@ -1040,10 +1036,7 @@ func TestRegressionR4_C4_StepsFanOutThrottledConsumer(t *testing.T) {
 	out := withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("v")}}})
 
 	woc := r4Operate(t, ctx, controller, wf)
-	for i := 0; i < 12 && !woc.wf.Status.Phase.Completed(); i++ {
-		makePodsPhase(ctx, woc, apiv1.PodSucceeded, out)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
+	woc = r4Drive(t, ctx, controller, woc, 12, allSucceed, out)
 
 	assert.Equal(t, []string{"r4-c4-steps[0].a", "r4-c4-steps[0].fan(0:p)", "r4-c4-steps[0].fan(1:q)", "r4-c4-steps[1].use"}, r4PodNodeNames(ctx, t, woc))
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
@@ -1150,12 +1143,12 @@ func TestRegressionR4_C1_RetryWorkflowWithOmittedRetryTask(t *testing.T) {
 	defer cancel()
 	op := func(woc *wfOperationCtx) *wfOperationCtx {
 		woc = r4Operate(t, ctx, controller, woc.wf)
-		r4MoveNewPodsPending(ctx, woc)
+		r4MoveNewPodsPending(ctx, t, woc)
 		return woc
 	}
 
 	woc := r4Operate(t, ctx, controller, wf)
-	r4MoveNewPodsPending(ctx, woc)
+	r4MoveNewPodsPending(ctx, t, woc)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	for range 2 {
 		woc = op(woc)
@@ -1230,7 +1223,7 @@ spec:
 
 // r4IncompleteTaskResult is what the wait container writes as soon as its
 // pod starts: an incomplete WorkflowTaskResult for the pod's node.
-func r4IncompleteTaskResult(ctx context.Context) with {
+func r4IncompleteTaskResult(ctx context.Context, t *testing.T) with {
 	return func(pod *apiv1.Pod, woc *wfOperationCtx) {
 		nodeID := woc.nodeID(pod)
 		trs := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace)
@@ -1244,9 +1237,7 @@ func r4IncompleteTaskResult(ctx context.Context) with {
 				common.LabelKeyReportOutputsCompleted: "false",
 			},
 		}}, metav1.CreateOptions{})
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
 		waitForInformer(ctx, woc.controller.taskResultInformer, created, func(any) bool { return true })
 	}
 }
@@ -1282,10 +1273,10 @@ func TestRegressionR4_C11_ItemPodDeleted(t *testing.T) {
 
 	woc := r4Operate(t, ctx, controller, wf)
 	op := func() {
-		r4MoveNewPodsPending(ctx, woc)
+		r4MoveNewPodsPending(ctx, t, woc)
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
-	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true }, r4IncompleteTaskResult(ctx))
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true }, r4IncompleteTaskResult(ctx, t))
 	op()
 	r4DeletePod(ctx, t, woc, lost)
 	for range 3 {
@@ -1464,7 +1455,7 @@ func TestRegressionR4_C21_C77_ExpandedDaemons(t *testing.T) {
 			require.NoError(t, err, "client should start in the reconcile its daemons became ready (C77)")
 
 			// The client finishes: the template completes and the daemons are killed.
-			r4MoveNewPodsPending(ctx, woc)
+			r4MoveNewPodsPending(ctx, t, woc)
 			r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(tc.client))
 			for i := 0; i < 5 && !woc.wf.Status.Phase.Completed(); i++ {
 				woc = r4Operate(t, ctx, controller, woc.wf)
@@ -1729,7 +1720,8 @@ func TestRegressionR4_P3_RetryParameterEmptiesFanOut(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
 }
 
-// r4PodStartOrder drives the workflow to completion, one round at a time,
+// r4PodStartOrder drives the workflow to completion (failing the test if
+// rounds reconciles are not enough), one round at a time,
 // rebuilding the wfOperationCtx from stored status every round (r4Operate).
 // Each round it records the display names of pods created that round (sorted
 // within the round, since they started together), then sets pods named in
@@ -1758,6 +1750,7 @@ func r4PodStartOrder(t *testing.T, ctx context.Context, controller *WorkflowCont
 		})
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
+	r4RequireCompleted(t, woc, rounds)
 	return order, woc
 }
 
@@ -2320,11 +2313,10 @@ func r4ErrorNodes(woc *wfOperationCtx) []string {
 
 // r4SucceedPodsWith marks every unfinished pod Succeeded, giving the pod of
 // a node whose display name is in outs those outputs.
-func r4SucceedPodsWith(ctx context.Context, woc *wfOperationCtx, outs map[string]*wfv1.Outputs) {
+func r4SucceedPodsWith(ctx context.Context, t *testing.T, woc *wfOperationCtx, outs map[string]*wfv1.Outputs) {
+	t.Helper()
 	pods, err := listPods(ctx, woc)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	for _, pod := range pods.Items {
 		if pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed {
 			continue
@@ -2516,10 +2508,7 @@ spec:
 		return apiv1.PodSucceeded
 	}
 	woc := r4Operate(t, ctx, controller, wf)
-	for i := 0; i < 12 && !woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, woc, decide)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
+	woc = r4Drive(t, ctx, controller, woc, 12, decide)
 	dumpNodes(t, "final", woc.wf)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, woc.wf.Status.Message)
 	assert.NotContains(t, woc.wf.Status.Message, "failed to resolve")
@@ -2646,13 +2635,13 @@ spec:
 		return map[string]*wfv1.Outputs{"gen": {Parameters: []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr(v)}}}}
 	}
 	woc := r4Operate(t, ctx, controller, wf)
-	r4SucceedPodsWith(ctx, woc, out("outer"))
+	r4SucceedPodsWith(ctx, t, woc, out("outer"))
 	woc = r4Operate(t, ctx, controller, woc.wf)
 	// a succeeds, so its exit hook (the cleanup steps) starts its inner gen.
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = r4Operate(t, ctx, controller, woc.wf)
 	for range 3 {
-		r4SucceedPodsWith(ctx, woc, out("inner"))
+		r4SucceedPodsWith(ctx, t, woc, out("inner"))
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
 	dumpNodes(t, "final", woc.wf)
@@ -2811,10 +2800,7 @@ func TestRegressionR4_C88_HookTemplateRefScope(t *testing.T) {
 		return apiv1.PodSucceeded
 	}
 	woc := r4Operate(t, ctx, controller, wf)
-	for i := 0; i < 16 && !woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, woc, decide)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
+	woc = r4Drive(t, ctx, controller, woc, 16, decide)
 	dumpNodes(t, "final", woc.wf)
 	require.True(t, woc.wf.Status.Phase.Completed())
 	scope := func(name string) string {
@@ -2960,8 +2946,9 @@ spec:
 }
 
 // r4RunRounds unmarshals manifest, validates it, operates once, then
-// succeeds every pod and operates again for each of the remaining rounds.
-// Shared by the C80/C84 message tests.
+// succeeds every pod and operates again until the workflow completes,
+// failing the test if rounds reconciles in all are not enough. Shared by the
+// C80/C84 message tests.
 func r4RunRounds(t *testing.T, manifest string, rounds int) *wfOperationCtx {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -2976,6 +2963,7 @@ func r4RunRounds(t *testing.T, manifest string, rounds int) *wfOperationCtx {
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
 	}
+	r4RequireCompleted(t, woc, rounds)
 	return woc
 }
 
@@ -3114,7 +3102,8 @@ spec:
 // r4RetryExprErrRun drives a workflow whose retryStrategy.expression fails to
 // evaluate (asInt on a fractional duration, the case docs/retries.md warns
 // about) through failing pod attempts until the boundary's Retry re-entry
-// sees the expression error. Shared by the TestRegressionR4_C84_*AttemptError
+// sees the expression error and the workflow completes (failing the test if
+// 10 rounds are not enough). Shared by the TestRegressionR4_C84_*AttemptError
 // tests below
 func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow, extraRounds int) *wfOperationCtx {
 	t.Helper()
@@ -3131,6 +3120,7 @@ func r4RetryExprErrRun(ctx context.Context, t *testing.T, controller *WorkflowCo
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
 	}
+	r4RequireCompleted(t, woc, 10)
 	for range extraRounds {
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
@@ -3585,8 +3575,8 @@ spec:
 	assert.NotEqual(t, wfv1.NodeSucceeded, consume.Phase, "consume must not succeed before its items run")
 }
 
-// r4C7Drive runs the workflow to completion (or maxRounds), succeeding every
-// pod. Pods of template "gen" report result and parameter out = genOut.
+// r4C7Drive runs the workflow to completion, succeeding every pod; it fails
+// the test if maxRounds reconciles are not enough. Pods of template "gen" report result and parameter out = genOut.
 func r4C7Drive(t *testing.T, manifest, genOut string, maxRounds int) *wfOperationCtx {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -3617,6 +3607,7 @@ func r4C7Drive(t *testing.T, manifest, genOut string, maxRounds int) *wfOperatio
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, maxRounds)
 	return woc
 }
 
@@ -4301,8 +4292,9 @@ spec:
 	assert.Equal(t, "when 'heads == tails' evaluated false", n.Message)
 }
 
-// r4C43RunUntilDone operates woc until the workflow completes or rounds is
-// exhausted, succeeding every unfulfilled pod each round. The first round in
+// r4C43RunUntilDone operates woc until the workflow completes, succeeding
+// every unfulfilled pod each round; it fails the test if rounds reconciles
+// are not enough. The first round in
 // which the node named producerDisplayName exists, it reports producerOut for
 // that node via a WorkflowTaskResult, as the executor would once its pod
 // succeeds.
@@ -4321,6 +4313,7 @@ func r4C43RunUntilDone(ctx context.Context, t *testing.T, controller *WorkflowCo
 		woc.operate(ctx)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, rounds)
 	return woc
 }
 
@@ -4526,10 +4519,7 @@ func TestRegressionR4_C30_FailedFirstStepDoesNotRunLater(t *testing.T) {
 	defer cancel()
 
 	woc := r4Operate(t, ctx, controller, wf)
-	for i := 0; i < 8 && !woc.wf.Status.Phase.Completed(); i++ {
-		makePodsPhase(ctx, woc, apiv1.PodFailed)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
+	woc = r4Drive(t, ctx, controller, woc, 8, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodFailed })
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 	assert.Equal(t, []string{"r4-c30-empty[0].first"}, r4PodNodeNames(ctx, t, woc), "second must never run after first failed")
 	if second, err := woc.wf.GetNodeByName("r4-c30-empty[2].second"); err == nil {
@@ -4995,13 +4985,13 @@ spec:
 	const gen, a = "r4-c10-chain.gen", "r4-c10-chain.a"
 	woc := r4Operate(t, ctx, controller, wf)
 	op := func() {
-		r4MoveNewPodsPending(ctx, woc)
+		r4MoveNewPodsPending(ctx, t, woc)
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(gen), withExitCode(0))
 	op()
 	op()
-	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx, t))
 	op()
 	r4DeletePod(ctx, t, woc, a)
 	for range 3 {
@@ -5163,14 +5153,29 @@ type r4Run struct {
 	woc        *wfOperationCtx
 }
 
-// r4Start validates manifest, creates a controller for it and operates once.
-func r4Start(t *testing.T, manifest string) (context.Context, *r4Run) {
+// r4Start validates manifest, creates a controller for it with the options
+// in opts that newController takes (objects, and functions it runs before
+// the informers start), runs each func(context.Context, *WorkflowController)
+// in opts on the started controller, and operates once.
+func r4Start(t *testing.T, manifest string, opts ...any) (context.Context, *r4Run) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(manifest)
 	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
-	cancel, controller := newController(ctx, wf)
+	options := []any{wf}
+	var setups []func(context.Context, *WorkflowController)
+	for _, o := range opts {
+		if f, ok := o.(func(context.Context, *WorkflowController)); ok {
+			setups = append(setups, f)
+		} else {
+			options = append(options, o)
+		}
+	}
+	cancel, controller := newController(ctx, options...)
 	t.Cleanup(cancel)
+	for _, f := range setups {
+		f(ctx, controller)
+	}
 	return ctx, &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
 }
 
@@ -5178,8 +5183,19 @@ func r4Start(t *testing.T, manifest string) (context.Context, *r4Run) {
 // again from the stored status.
 func (r *r4Run) op(ctx context.Context) {
 	r.t.Helper()
-	r4MoveNewPodsPending(ctx, r.woc)
+	r4MoveNewPodsPending(ctx, r.t, r.woc)
 	r.woc = r4Operate(r.t, ctx, r.controller, r.woc.wf)
+}
+
+// drive sets each pod's phase with decide, then reconciles (op), until the
+// workflow completes; it fails the test if rounds reconciles are not enough.
+func (r *r4Run) drive(ctx context.Context, rounds int, decide func(*wfv1.NodeStatus) apiv1.PodPhase) {
+	r.t.Helper()
+	for i := 0; i < rounds && !r.woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, r.woc, decide)
+		r.op(ctx)
+	}
+	r4RequireCompleted(r.t, r.woc, rounds)
 }
 
 // r4PodForNodePrefix matches the pods of the named node and of its items.
@@ -5223,7 +5239,7 @@ spec:
     container: {image: alpine, command: [sh, -c, "exit 0"]}
 `)
 	const a, b, sg0 = "r4-c9-single[0].a", "r4-c9-single[1].b", "r4-c9-single[0]"
-	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx, t))
 	r.op(ctx)
 	r4DeletePod(ctx, t, r.woc, a)
 	for range 2 {
@@ -5272,7 +5288,7 @@ spec:
     container: {image: alpine, command: [sh, -c, "exit 0"]}
 `)
 	const a, sg0 = "r4-c9-coe[0].a", "r4-c9-coe[0]"
-	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx, t))
 	r.op(ctx)
 	r4DeletePod(ctx, t, r.woc, a)
 	for range 3 {
@@ -5331,6 +5347,7 @@ func r4C23Drive(t *testing.T, clientPhase apiv1.PodPhase) *wfOperationCtx {
 		r4SetPodsPhase(t, ctx, r.woc, clientPhase, r4PodForNode("r4-c23[1].client"))
 		r.op(ctx)
 	}
+	r4RequireCompleted(t, r.woc, 8)
 	for _, n := range r.woc.wf.Status.Nodes {
 		if n.Type == wfv1.NodeTypeStepGroup {
 			assert.True(t, n.Fulfilled(), "StepGroup %s left %s after the workflow %s", n.Name, n.Phase, r.woc.wf.Status.Phase)
@@ -5531,15 +5548,13 @@ spec:
 }
 
 // r4RunDecided reconciles manifest, deciding each pod's phase from its node,
-// until the workflow completes (at most rounds), then three more times.
+// until the workflow completes (failing the test if rounds reconciles are
+// not enough), then three more times.
 // It returns the node names of the workflow's pods.
 func r4RunDecided(t *testing.T, manifest string, rounds int, decide func(*wfv1.NodeStatus) apiv1.PodPhase) (*wfOperationCtx, []string) {
 	t.Helper()
 	ctx, r := r4Start(t, manifest)
-	for i := 0; i < rounds && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, decide)
-		r.op(ctx)
-	}
+	r.drive(ctx, rounds, decide)
 	for range 3 {
 		setPodPhases(ctx, r.woc, decide)
 		r.op(ctx)
@@ -5893,10 +5908,12 @@ func r4C12CreatePod(ctx context.Context, t *testing.T, controller *WorkflowContr
 	waitForInformer(ctx, controller.PodController.TestingPodInformer(), created, func(any) bool { return true })
 }
 
-// r4C12Drive operates the upgraded workflow until it completes, finishing
-// every pod that has not finished yet with Succeeded (and with) after each
-// reconcile. It returns the last operation context.
-func r4C12Drive(ctx context.Context, controller *WorkflowController, wf *wfv1.Workflow, with ...with) *wfOperationCtx {
+// r4C12Drive operates the upgraded workflow until it completes (failing the
+// test if 10 reconciles are not enough), finishing every pod that has not
+// finished yet with Succeeded (and with) after each reconcile. It returns
+// the last operation context.
+func r4C12Drive(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow, with ...with) *wfOperationCtx {
+	t.Helper()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	for range 10 {
 		woc.operate(ctx)
@@ -5911,6 +5928,7 @@ func r4C12Drive(ctx context.Context, controller *WorkflowController, wf *wfv1.Wo
 		}, with...)
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	}
+	r4RequireCompleted(t, woc, 10)
 	return woc
 }
 
@@ -5964,7 +5982,7 @@ func TestRegressionR4_C12_LegacyItemFailedSiblingRunning(t *testing.T) {
 	require.NoError(t, err)
 	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "c", apiv1.PodRunning)
 
-	woc := r4C12Drive(ctx, controller, wf)
+	woc := r4C12Drive(ctx, t, controller, wf)
 	r4C12AssertFailedBeforeB(ctx, t, woc)
 }
 
@@ -5983,7 +6001,7 @@ func TestRegressionR4_C12_LegacyBothDoneWhileDownOneFailed(t *testing.T) {
 	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "c", apiv1.PodSucceeded)
 	wf.Status.MarkTaskResultComplete(ctx, wf.NodeID(wf.Name+"[0].A(1:z)"))
 
-	woc := r4C12Drive(ctx, controller, wf)
+	woc := r4C12Drive(ctx, t, controller, wf)
 	r4C12AssertFailedBeforeB(ctx, t, woc)
 }
 
@@ -6036,7 +6054,7 @@ spec:
 	require.NoError(t, err)
 	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "gen", apiv1.PodRunning)
 
-	woc := r4C12Drive(ctx, controller, wf, withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("v-z")}}}))
+	woc := r4C12Drive(ctx, t, controller, wf, withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", Value: wfv1.AnyStringPtr("v-z")}}}))
 	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	c, err := woc.wf.GetNodeByName(woc.wf.Name + "[1].C")
 	require.NoError(t, err)
@@ -6331,7 +6349,7 @@ func TestRegressionR4_C28_PodDeletedWhileFailedUnsynced(t *testing.T) {
 	defer cancel()
 
 	woc := r4Operate(t, ctx, controller, wf)
-	makePodsPhase(ctx, woc, apiv1.PodRunning, r4IncompleteTaskResult(ctx))
+	makePodsPhase(ctx, woc, apiv1.PodRunning, r4IncompleteTaskResult(ctx, t))
 	woc = r4Operate(t, ctx, controller, woc.wf)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)
 	woc = r4Operate(t, ctx, controller, woc.wf)
@@ -6678,13 +6696,13 @@ func TestRegressionR4_C29_TerminateDAGStepsHookPendingPod(t *testing.T) {
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	woc := r4C29StartHook(ctx, t, controller, wf)
-	r4MoveNewPodsPending(ctx, woc)
+	r4MoveNewPodsPending(ctx, t, woc)
 
 	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	for range 6 {
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
-		r4MoveNewPodsPending(ctx, woc)
+		r4MoveNewPodsPending(ctx, t, woc)
 	}
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(woc))
 }
@@ -6867,7 +6885,8 @@ spec:
 	}
 }
 
-// r4C65RunHTTP drives wf: pods succeed, the agent pod stays Running, and
+// r4C65RunHTTP drives wf until it completes (failing the test if rounds
+// reconciles are not enough): pods succeed, the agent pod stays Running, and
 // every task the task set hands to the agent is reported Succeeded.
 func r4C65RunHTTP(t *testing.T, manifest string, rounds int) *wfOperationCtx {
 	t.Helper()
@@ -6906,6 +6925,7 @@ func r4C65RunHTTP(t *testing.T, manifest string, rounds int) *wfOperationCtx {
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
 	}
+	r4RequireCompleted(t, woc, rounds)
 	return woc
 }
 
@@ -7188,8 +7208,9 @@ spec:
 
 // r4HookRun validates manifest, then reconciles it from its stored status,
 // deciding each pod's phase with decide between reconciles, until it
-// completes or rounds run out, and reconciles twice more so that a hook that
-// fires late still shows.
+// completes, and reconciles twice more so that a hook that fires late still
+// shows. It fails the test if the workflow has not completed within rounds
+// reconciles.
 func r4HookRun(t *testing.T, manifest string, decide func(*wfv1.NodeStatus) apiv1.PodPhase, rounds int) (context.Context, *wfOperationCtx) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -7207,6 +7228,7 @@ func r4HookRun(t *testing.T, manifest string, decide func(*wfv1.NodeStatus) apiv
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, rounds)
 	return ctx, woc
 }
 
@@ -8024,18 +8046,12 @@ func TestRegressionR4_C33_DAGHookErrorRetried(t *testing.T) {
 		}
 		return false
 	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
-	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 6, allSucceed)
 	require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 
 	r4RetryStored(t, ctx, r.controller, r.woc.wf)
 	r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
-	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 8, allSucceed)
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.a.onExit"))
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "c33-dag.b"))
@@ -8132,10 +8148,7 @@ func TestRegressionR4_C92_WorkflowHookExprErrorOnHookNode(t *testing.T) {
 		makePodsPhase(ctx, woc, apiv1.PodRunning)
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
-	for i := 0; i < 6 && !woc.wf.Status.Phase.Completed(); i++ {
-		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-		woc = r4Operate(t, ctx, controller, woc.wf)
-	}
+	woc = r4Drive(t, ctx, controller, woc, 6, allSucceed)
 	require.True(t, woc.wf.Status.Phase.Completed(), "workflow did not complete: phase=%s", woc.wf.Status.Phase)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
@@ -8276,10 +8289,7 @@ spec:
 func r4C27Succeeds(ctx context.Context, t *testing.T, r *r4Run) {
 	t.Helper()
 	require.Len(t, podNames(ctx, r.woc), 1, "the Pending attempt's pod is created again")
-	for i := 0; i < 4 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		makePodsPhase(ctx, r.woc, apiv1.PodSucceeded)
-		r.op(ctx)
-	}
+	r.drive(ctx, 4, allSucceed)
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 }
 
@@ -9101,7 +9111,7 @@ spec:
       - name: B
         template: item-memo
         withItems: [x, y]
-`+memoTmpl("static-memo", "r4_c63_memo_static")+memoTmpl("item-memo", "r4_c63_memo_item"), 2, r4MemoCache("r4-c63-memo-cache", "v"), nil)
+`+memoTmpl("static-memo", "r4_c63_memo_static")+memoTmpl("item-memo", "r4_c63_memo_item"), 2, r4MemoCache(t, "r4-c63-memo-cache", "v"), nil)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.InDelta(t, 1.0, r4C65Counter(t, "r4_c63_memo_static"), 0.001, "static hit")
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c63_memo_item"), 0.001, "one per item hit")
@@ -9228,7 +9238,7 @@ spec:
         globalName: g
         valueFrom:
           path: /tmp/p
-`+r4GlobalTemplates, 0, r4MemoCache("r4-p9-memo-cache", "M"), nil)
+`+r4GlobalTemplates, 0, r4MemoCache(t, "r4-p9-memo-cache", "M"), nil)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.Equal(t, "M", r4InputParam(woc.wf, "c"), "step c")
 	assert.Equal(t, "M", r4GlobalParam(woc.wf), "wf.status.outputs g")
@@ -9651,7 +9661,7 @@ spec:
           path: /tmp/p
 `+r4GlobalTemplates)
 	const a = "r4-p9-late-sync.a"
-	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx))
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx, t))
 	r.op(ctx)
 	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, r4PodForNode(a), withExitCode(1))
 	r.op(ctx)
@@ -10909,7 +10919,7 @@ func r4RestartDrive(t *testing.T, manifest string, fail func(*wfv1.NodeStatus) b
 		if woc.wf.Status.Phase.Completed() {
 			extra--
 		}
-		r4MoveNewPodsPending(ctx, woc)
+		r4MoveNewPodsPending(ctx, t, woc)
 		setPodPhases(ctx, woc, decide)
 		if restart {
 			controller, cancel = r4Restart(t, ctx, controller, cancel, wf.Namespace, wf.Name)
@@ -11399,6 +11409,7 @@ spec:
 		r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, func(*apiv1.Pod) bool { return true })
 		r.op(ctx)
 	}
+	r4RequireCompleted(t, r.woc, 12)
 	return r.woc
 }
 
@@ -11429,8 +11440,9 @@ func TestRegressionR4_C97_StepsItemExitHookAfterRetry(t *testing.T) {
 }
 
 // r4C98Run runs a workflow found by fuzzing: a's first attempt succeeds while
-// its running lifecycle hook is still running. It returns the pods the
-// workflow created.
+// its running lifecycle hook is still running, to completion (failing the
+// test if 8 reconciles are not enough). It returns the pods the workflow
+// created.
 func r4C98Run(t *testing.T, body string) (*wfOperationCtx, []string) {
 	t.Helper()
 	ctx, r := r4Start(t, fmt.Sprintf(`
@@ -11451,7 +11463,7 @@ spec:
     container: {image: alpine, command: [echo, hook]}
 `, body))
 	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		r4MoveNewPodsPending(ctx, r.woc)
+		r4MoveNewPodsPending(ctx, t, r.woc)
 		hookRuns := i < 2
 		setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
 			if strings.Contains(n.Name, ".hooks.") && hookRuns {
@@ -11464,6 +11476,7 @@ spec:
 		})
 		r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
 	}
+	r4RequireCompleted(t, r.woc, 8)
 	return r.woc, r4PodNodeNames(ctx, t, r.woc)
 }
 
@@ -11553,7 +11566,7 @@ spec:
 		wf.Status.MarkTaskResultComplete(ctx, wf.NodeID(wf.Name+"[0]."+item))
 	}
 
-	woc := r4C12Drive(ctx, controller, wf)
+	woc := r4C12Drive(ctx, t, controller, wf)
 	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	assert.InDelta(t, 2.0, r4C65Counter(t, "r4_c93_item_ok", "name", "r4-c93"), 0.001)
 }
@@ -11725,12 +11738,12 @@ func TestRegressionR4_C12_LegacyItemsRetried(t *testing.T) {
 	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	r4C12CreatePod(ctx, t, controller, wf, wf.Name+"[0].A(1:z)", "c", apiv1.PodRunning)
-	woc := r4C12Drive(ctx, controller, wf)
+	woc := r4C12Drive(ctx, t, controller, wf)
 	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 
 	stored, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	woc = r4C12Drive(ctx, controller, r4RetryStored(t, ctx, controller, stored))
+	woc = r4C12Drive(ctx, t, controller, r4RetryStored(t, ctx, controller, stored))
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, woc.wf.Status.Message)
 	assert.Empty(t, r4Unfulfilled(woc))
@@ -11894,10 +11907,7 @@ spec:
 		return false
 	}, apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "hook", fmt.Errorf("admission webhook denied the request")))
 	r := &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
-	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 6, allSucceed)
 	require.True(t, r.woc.wf.Status.Phase.Completed(), "workflow %s", r.woc.wf.Status.Phase)
 	require.NotEqual(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
 	require.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "r4-hookerr-retry[0].b"), "b started")
@@ -11905,10 +11915,7 @@ spec:
 
 	r4RetryStored(t, ctx, r.controller, r.woc.wf)
 	r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
-	for i := 0; i < 8 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 8, allSucceed)
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-retry[0].a.hooks.running"))
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-retry[0].b"))
@@ -11983,10 +11990,7 @@ func r4HookErrFanOutRun(t *testing.T, kind string) (context.Context, *r4Run, str
 		assert.Equal(t, []string{prefix + "a", prefix + "fan(0:0)"}, r4PodNodeNames(ctx, t, r.woc), "an item was created after the hook errored")
 		assert.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, prefix+"fan(1:1)"), "an item got a node after the hook errored")
 	}
-	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 6, allSucceed)
 	for range 3 {
 		r.op(ctx)
 	}
@@ -12017,10 +12021,7 @@ func r4AssertHookErrFanOut(t *testing.T, ctx context.Context, r *r4Run, prefix s
 
 	r4RetryStored(t, ctx, r.controller, r.woc.wf)
 	r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
-	for i := 0; i < 10 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 10, allSucceed)
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	assert.Empty(t, r4Unfulfilled(r.woc))
 	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, prefix+"a.onExit"))
@@ -12077,10 +12078,7 @@ func TestRegressionR4_HookErrorFanOut_NoItemStarted(t *testing.T) {
 			r4DenyExitHookOnce(r.controller)
 			require.Equal(t, wfv1.NodeRunning, r4NodePhase(r.woc, prefix+"fan"), "the TaskGroup")
 			require.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, prefix+"fan(0:0)"), "the first item")
-			for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
-				setPodPhases(ctx, r.woc, allSucceed)
-				r.op(ctx)
-			}
+			r.drive(ctx, 6, allSucceed)
 			require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 			assert.Contains(t, r.woc.wf.Status.Message, "admission webhook denied the request")
 			assert.Empty(t, r4Unfulfilled(r.woc))
@@ -12092,10 +12090,7 @@ func TestRegressionR4_HookErrorFanOut_NoItemStarted(t *testing.T) {
 
 			r4RetryStored(t, ctx, r.controller, r.woc.wf)
 			r.woc = r4Operate(t, ctx, r.controller, r.woc.wf)
-			for i := 0; i < 16 && !r.woc.wf.Status.Phase.Completed(); i++ {
-				setPodPhases(ctx, r.woc, allSucceed)
-				r.op(ctx)
-			}
+			r.drive(ctx, 16, allSucceed)
 			assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 			for _, item := range []string{"fan", "fan(0:0)", "fan(1:1)", "fan(2:2)", "fan(3:3)"} {
 				assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, prefix+item), item)
@@ -12150,10 +12145,7 @@ spec:
 		r.op(ctx)
 	}
 	require.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, "r4-hookerr-param.a.onExit"))
-	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 6, allSucceed)
 	require.Equal(t, wfv1.WorkflowError, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	require.Equal(t, wfv1.NodePhase(""), r4NodePhase(r.woc, "r4-hookerr-param.fan(2:2)"))
 
@@ -12178,10 +12170,7 @@ spec:
 	retried, err = r.controller.wfclientset.ArgoprojV1alpha1().Workflows(retried.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
 	require.NoError(t, err)
 	r.woc = r4Operate(t, ctx, r.controller, retried)
-	for i := 0; i < 12 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, allSucceed)
-		r.op(ctx)
-	}
+	r.drive(ctx, 12, allSucceed)
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, r.woc.wf.Status.Message)
 	for _, item := range []string{"fan(0:0)", "fan(1:1)", "fan(2:2)", "fan(3:3)"} {
 		assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, "r4-hookerr-param."+item), item)
@@ -12386,15 +12375,12 @@ func r4HookLockAssertSameMutex(t *testing.T, name string, steps, retried bool, h
 	for range 2 {
 		r.r4SetPods(ctx, nil)
 	}
-	for i := 0; i < 12 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
-			if n.Fulfilled() {
-				return ""
-			}
-			return apiv1.PodSucceeded
-		})
-		r.op(ctx)
-	}
+	r.drive(ctx, 12, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.Fulfilled() {
+			return ""
+		}
+		return apiv1.PodSucceeded
+	})
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
 	hook := r4HookLockHookNode(r.woc)
 	require.NotNil(t, hook, "a's hook ran")
@@ -12427,15 +12413,12 @@ func r4HookLockAssertReleased(t *testing.T, name string, steps, retried bool, ho
 	assert.Nil(t, b.SynchronizationStatus, "b takes the mutex once a finished: %s", b.Message)
 	a := r.woc.wf.Status.Nodes.FindByDisplayName("a")
 	assert.NotContains(t, r4HookLockHolders(r.woc.wf), "default/"+name+"/"+a.ID, "a released the mutex")
-	for i := 0; i < 6 && !r.woc.wf.Status.Phase.Completed(); i++ {
-		setPodPhases(ctx, r.woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
-			if n.Fulfilled() {
-				return ""
-			}
-			return apiv1.PodSucceeded
-		})
-		r.op(ctx)
-	}
+	r.drive(ctx, 6, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if n.Fulfilled() {
+			return ""
+		}
+		return apiv1.PodSucceeded
+	})
 	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "unfulfilled: %v", r4Unfulfilled(r.woc))
 }
 

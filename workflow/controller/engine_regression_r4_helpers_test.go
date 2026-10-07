@@ -24,15 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	wfsync "github.com/argoproj/argo-workflows/v4/workflow/sync"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
-	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 // r4Operate re-reads the workflow's stored status from the fake clientset,
@@ -72,6 +69,32 @@ func r4ReconcileAllocs(t *testing.T, ctx context.Context, controller *WorkflowCo
 	return woc, fewest
 }
 
+// r4RequireCompleted fails the test if a drive loop of rounds reconciles
+// ran out before the workflow completed, rather than letting the test go on
+// to assert on a workflow left part-way through.
+func r4RequireCompleted(t *testing.T, woc *wfOperationCtx, rounds int) {
+	t.Helper()
+	if !woc.wf.Status.Phase.Completed() {
+		dumpNodes(t, "did not complete", woc.wf)
+		require.Failf(t, "workflow did not complete", "still %s after %d rounds; unfulfilled: %v", woc.wf.Status.Phase, rounds, r4Unfulfilled(woc))
+	}
+}
+
+// r4Drive sets each pod's phase with decide, then reconciles from the stored
+// status, until the workflow completes; it fails the test if rounds
+// reconciles are not enough.
+//
+//nolint:revive // t before ctx, as every r4 helper takes them, for its many callers
+func r4Drive(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx, rounds int, decide func(*wfv1.NodeStatus) apiv1.PodPhase, with ...with) *wfOperationCtx {
+	t.Helper()
+	for i := 0; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, woc, decide, with...)
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	r4RequireCompleted(t, woc, rounds)
+	return woc
+}
+
 // r4SetPodsPhase acts like makePodsPhase, but only touches pods for which
 // filter returns true, leaving the rest alone.
 //
@@ -105,21 +128,18 @@ func r4SetPodsPhase(t *testing.T, ctx context.Context, woc *wfOperationCtx, phas
 // Kubernetes would report Pending as soon as the kubelet accepts it); an
 // empty phase reaching the Engine is a harness artefact, not a real pod
 // state.
-func r4MoveNewPodsPending(ctx context.Context, woc *wfOperationCtx) {
+func r4MoveNewPodsPending(ctx context.Context, t *testing.T, woc *wfOperationCtx) {
+	t.Helper()
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	for _, pod := range pods.Items {
 		if pod.Status.Phase != "" {
 			continue
 		}
 		pod.Status.Phase = apiv1.PodPending
 		updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
 		waitForInformer(ctx, woc.controller.PodController.TestingPodInformer(), updatedPod, func(obj any) bool {
 			return obj.(*apiv1.Pod).Status.Phase == apiv1.PodPending
 		})
@@ -213,28 +233,12 @@ func r4DelayPodWatch(controller *WorkflowController, d time.Duration) {
 	})
 }
 
-// r4TaskResultOutputs writes a complete WorkflowTaskResult (Succeeded, with
-// the report-outputs-completed label) for the node named nodeName, as the
-// executor would after a successful run, and waits for the task result
-// informer to catch up.
+// r4TaskResultOutputs reports out as the outputs of the node named
+// nodeName, as withOutputs does for a pod's node: a complete, Succeeded
+// WorkflowTaskResult, once the task result informer has seen it.
 func r4TaskResultOutputs(ctx context.Context, woc *wfOperationCtx, nodeName string, out wfv1.Outputs) {
-	nodeID := woc.wf.NodeID(nodeName)
-	taskResult := &wfv1.WorkflowTaskResult{
-		TypeMeta: metav1.TypeMeta{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowTaskResultKind},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: nodeID,
-			Labels: map[string]string{
-				common.LabelKeyWorkflow:               woc.wf.Name,
-				common.LabelKeyReportOutputsCompleted: "true",
-			},
-		},
-		NodeResult: wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: out.DeepCopy()},
-	}
-	created, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).Create(ctx, taskResult, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
-	waitForInformer(ctx, woc.controller.taskResultInformer, created, func(any) bool { return true })
+	pod := &apiv1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{common.AnnotationKeyNodeName: nodeName}}}
+	withOutputs(ctx, *out.DeepCopy())(pod, woc)
 }
 
 // r4LegacyStepItem is one item of an expanded step in a legacy (pre-Engine)
@@ -304,19 +308,15 @@ func r4NamespacedMutex(name string) *wfv1.Synchronization {
 // taken and released as in production.
 func r4StartLocked(t *testing.T, manifest string, objects ...any) (context.Context, *r4Run) {
 	t.Helper()
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(manifest)
-	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
-	cancel, controller := newController(ctx, append([]any{wf}, objects...)...)
-	t.Cleanup(cancel)
-	var err error
-	controller.syncManager, err = wfsync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
-	require.NoError(t, err)
-	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal(configMap, &cm)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
-	require.NoError(t, err)
-	return ctx, &r4Run{t: t, controller: controller, woc: r4Operate(t, ctx, controller, wf)}
+	return r4Start(t, manifest, append(objects, func(ctx context.Context, controller *WorkflowController) {
+		var err error
+		controller.syncManager, err = wfsync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
+		require.NoError(t, err)
+		var cm apiv1.ConfigMap
+		wfv1.MustUnmarshal(configMap, &cm)
+		_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+		require.NoError(t, err)
+	})...)
 }
 
 // r4SetPods sets the pods of the nodes named by display name to their phase
@@ -369,21 +369,20 @@ func (r *r4Run) r4Resume(ctx context.Context) {
 }
 
 // r4MetricsRun drives manifest with every pod succeeding (with the outputs
-// of outputsFor, if it returns any) until the workflow completes, then
-// reconciles extra more times, so that a completion metric emitted twice
-// shows. setup runs on the controller before the first reconcile.
+// of outputsFor, if it returns any) until the workflow completes (failing
+// the test if 10 reconciles are not enough), then reconciles extra more
+// times, so that a completion metric emitted twice shows. setup runs on the
+// controller before the first reconcile.
 func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.Context, *WorkflowController), outputsFor func(*wfv1.NodeStatus) *wfv1.Outputs) *wfOperationCtx {
 	t.Helper()
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(manifest)
-	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
-	cancel, controller := newController(ctx, wf)
-	t.Cleanup(cancel)
+	var opts []any
 	if setup != nil {
-		setup(ctx, controller)
+		opts = append(opts, setup)
 	}
-	woc := r4Operate(t, ctx, controller, wf)
-	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
+	ctx, r := r4Start(t, manifest, opts...)
+	controller, woc := r.controller, r.woc
+	const rounds = 10
+	for i := 0; i < rounds && !woc.wf.Status.Phase.Completed(); i++ {
 		for _, n := range woc.wf.Status.Nodes {
 			if outputsFor == nil || n.Type != wfv1.NodeTypePod || n.Fulfilled() {
 				continue
@@ -400,6 +399,7 @@ func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.C
 		})
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
+	r4RequireCompleted(t, woc, rounds)
 	for range extra {
 		woc = r4Operate(t, ctx, controller, woc.wf)
 	}
@@ -407,7 +407,8 @@ func r4MetricsRun(t *testing.T, manifest string, extra int, setup func(context.C
 }
 
 // r4RunResults validates manifest and reconciles it until the workflow
-// completes or rounds run out, then extra more times. After each reconcile
+// completes (failing the test if rounds reconciles are not enough), then
+// extra more times. After each reconcile
 // every unfinished pod is succeeded, a pod of a template named in results
 // with that script result. setup, if not nil, runs on the controller before
 // the first reconcile. It reconciles from the in-memory status.
@@ -441,6 +442,7 @@ func r4RunResults(t *testing.T, manifest string, results map[string]string, roun
 		}, withResult)
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	}
+	r4RequireCompleted(t, woc, rounds)
 	for range extra {
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
@@ -452,7 +454,7 @@ func r4RunResults(t *testing.T, manifest string, results map[string]string, roun
 // r4MemoCache is a memoization cache ConfigMap holding a hit for key "hit"
 // with output p=value, exported as g (a cached output keeps its globalName,
 // as the node outputs it was saved from carry it).
-func r4MemoCache(name, value string) func(context.Context, *WorkflowController) {
+func r4MemoCache(t *testing.T, name, value string) func(context.Context, *WorkflowController) {
 	return func(ctx context.Context, controller *WorkflowController) {
 		_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -464,9 +466,7 @@ func r4MemoCache(name, value string) func(context.Context, *WorkflowController) 
 				"hit": `{"nodeID":"old","outputs":{"parameters":[{"name":"p","value":"` + value + `","globalName":"g"}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`,
 			},
 		}, metav1.CreateOptions{})
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
 	}
 }
 
@@ -495,12 +495,16 @@ func r4InputParam(wf *wfv1.Workflow, display string) string {
 	return "<missing>"
 }
 
-// r4GlobalOut is the output p, exported as the workflow output g.
 // r4Restart replaces the controller with a new one built only from the
 // cluster state, as after a controller restart: the workflow as stored, its
 // pods, task results and ConfigMaps (memoization caches). newController's
 // initManagers re-establishes recorded lock holders, as start-up does. The
 // old controller is stopped; nothing it held in memory is carried over.
+//
+// The objects are created before the new controller's informers start, so
+// their initial list holds them all and newController returns only once
+// they have synced: there is no informer to wait on, and so no timeout to
+// miss on a loaded machine.
 //
 //nolint:revive // matches the r4 harness convention (t before ctx)
 func r4Restart(t *testing.T, ctx context.Context, old *WorkflowController, stopOld context.CancelFunc, namespace, name string) (*WorkflowController, context.CancelFunc) {
@@ -516,82 +520,30 @@ func r4Restart(t *testing.T, ctx context.Context, old *WorkflowController, stopO
 	stopOld()
 
 	wf.ResourceVersion = ""
-	cancel, controller := newController(ctx, wf)
-	for i := range cms.Items {
-		cm := cms.Items[i]
-		cm.ResourceVersion = ""
-		created, err := controller.kubeclientset.CoreV1().ConfigMaps(namespace).Create(ctx, &cm, metav1.CreateOptions{})
-		require.NoError(t, err)
-		// typedConfigMapInformer only watches configmaps carrying the
-		// configmap-type label (memoization caches, and executor-plugin
-		// configmaps): waiting on it for one without the label would block
-		// until the timeout, since it would never appear in that informer's
-		// store.
-		if _, ok := created.Labels[common.LabelKeyConfigMapType]; ok {
-			r4WaitForInformer(ctx, controller.typedConfigMapInformer, created, func(any) bool { return true })
+	cancel, controller := newController(ctx, wf, func(c *WorkflowController) {
+		for i := range cms.Items {
+			cm := cms.Items[i]
+			cm.ResourceVersion = ""
+			_, err := c.kubeclientset.CoreV1().ConfigMaps(namespace).Create(ctx, &cm, metav1.CreateOptions{})
+			require.NoError(t, err)
 		}
-	}
-	for i := range pods.Items {
-		pod := pods.Items[i]
-		pod.ResourceVersion = ""
-		created, err := controller.kubeclientset.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
-		require.NoError(t, err)
-		r4WaitForInformer(ctx, controller.PodController.TestingPodInformer(), created, func(any) bool { return true })
-	}
-	for i := range trs.Items {
-		tr := trs.Items[i]
-		tr.ResourceVersion = ""
-		created, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(namespace).Create(ctx, &tr, metav1.CreateOptions{})
-		require.NoError(t, err)
-		r4WaitForInformer(ctx, controller.taskResultInformer, created, func(any) bool { return true })
-	}
+		for i := range pods.Items {
+			pod := pods.Items[i]
+			pod.ResourceVersion = ""
+			_, err := c.kubeclientset.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
+			require.NoError(t, err)
+		}
+		for i := range trs.Items {
+			tr := trs.Items[i]
+			tr.ResourceVersion = ""
+			_, err := c.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(namespace).Create(ctx, &tr, metav1.CreateOptions{})
+			require.NoError(t, err)
+		}
+	})
 	return controller, cancel
 }
 
-// r4WaitForInformer gives waitForInformer (controller_test.go) a longer
-// ceiling than its fixed 10s, for the restart helper above: r4Restart
-// rebuilds a whole controller and its informers from scratch on every
-// reconcile of TestRegressionR4_RestartBetweenReconciles, so it does many
-// times what a normal test's single waitForInformer call does. Under a
-// loaded machine (for example the full controller suite running
-// concurrently) that adds up and 10s was once not enough, panicking the
-// test.
-//
-// This file must still compile against the controller from before the
-// refactor, where waitForInformer has no timeout parameter and must stay that way for
-// every other caller, so this cannot add a parameter to it or call a
-// shared helper with a longer timeout baked in — either would be a symbol
-// this file depends on that the older controller_test.go does not have.
-// Instead of duplicating its poll loop, this just retries the unchanged
-// waitForInformer (recovering the panic it raises on its own timeout)
-// until a longer deadline. A synced informer still returns on
-// waitForInformer's first attempt, so this does not slow the normal case.
-func r4WaitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) {
-	deadline := time.Now().Add(time.Minute)
-	for {
-		if r4TryWaitForInformer(ctx, informer, obj, upToDate) {
-			return
-		}
-		if time.Now().After(deadline) {
-			waitForInformer(ctx, informer, obj, upToDate) // out of time: let it panic with its own message
-			return
-		}
-	}
-}
-
-// r4TryWaitForInformer runs waitForInformer once and reports whether it
-// caught up, recovering the panic it raises on its own 10s timeout instead
-// of failing the test.
-func r4TryWaitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) (ok bool) {
-	defer func() {
-		if recover() != nil {
-			ok = false
-		}
-	}()
-	waitForInformer(ctx, informer, obj, upToDate)
-	return true
-}
-
+// r4GlobalOut is the output p, exported as the workflow output g.
 func r4GlobalOut(value string) *wfv1.Outputs {
 	return &wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", GlobalName: "g", Value: wfv1.AnyStringPtr(value)}}}
 }
