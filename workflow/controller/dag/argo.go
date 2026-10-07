@@ -227,6 +227,11 @@ func (e *DAGEvaluator) GetTask(name string) Task {
 // GetAncestors returns all ancestor task names for a given task (transitive closure
 // of dependencies). This is needed because a task may reference outputs from any
 // ancestor, not just its direct dependencies (e.g., {{tasks.grandparent.ip}}).
+//
+// It does not use common.GetTaskAncestry, which works through a DagContext of
+// *wfv1.DAGTask and orders the ancestors by finish time: the evaluator also
+// holds Steps tasks, and the order of the ancestors changes no scope value
+// (each ancestor adds only its own {{tasks.<name>}} / {{steps.<name>}} keys).
 func (e *DAGEvaluator) GetAncestors(ctx context.Context, taskName string) ([]Key, error) {
 	visited := make(map[Key]bool)
 	var walk func(name Key) error

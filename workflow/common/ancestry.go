@@ -91,10 +91,12 @@ func RewriteDepends(depends string, refs []DependsRef, rewrite func(DependsRef) 
 	return depends
 }
 
-func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContext) (map[string]DependencyType, string) {
-	depends := getTaskDependsLogic(ctx, task, dctx)
+// GetTaskDependencies returns the tasks a task depends on, from its depends
+// expression or its legacy dependencies, and how each is depended on: a
+// task's AnySucceeded/AllFailed result depends on its items.
+func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContext) map[string]DependencyType {
 	// Invalid result qualifiers are reported by ValidateTaskResults.
-	refs, _ := ParseDepends(depends)
+	refs, _ := ParseDepends(getTaskDependsLogic(ctx, task, dctx))
 	dependencies := make(map[string]DependencyType)
 	for _, ref := range refs {
 		switch ref.Result {
@@ -108,15 +110,7 @@ func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContex
 			}
 		}
 	}
-	// For backwards compatibility, a bare task reference expands to the task
-	// having completed in any non-failing way (plus continueOn allowances).
-	expanded := RewriteDepends(depends, refs, func(ref DependsRef) string {
-		if ref.Result != "" {
-			return depends[ref.Start:ref.End]
-		}
-		return expandDependency(ref.Task, dctx.GetTask(ctx, ref.Task))
-	})
-	return dependencies, expanded
+	return dependencies
 }
 
 func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
