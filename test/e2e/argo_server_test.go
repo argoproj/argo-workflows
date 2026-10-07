@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -1951,6 +1952,25 @@ func (s *ArgoServerSuite) stream(url string, f func(t *testing.T, line string) (
 	}
 }
 
+// A bounded context is needed because an idle SSE stream otherwise never closes.
+func (s *ArgoServerSuite) streamExpectNoData(url string, wait time.Duration) {
+	ctx, cancel := context.WithTimeout(logging.TestContext(s.T().Context()), wait)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+url, nil)
+	s.Require().NoError(err)
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+	req.Close = true
+	resp, err := httpClient.Do(req)
+	s.Require().NoError(err)
+	defer func() { _ = resp.Body.Close() }()
+	s.Equal(200, resp.StatusCode)
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		s.NotContains(scanner.Text(), "data: ")
+	}
+}
+
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	var name string
@@ -1962,6 +1982,17 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
+		})
+
+	var otherName string
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			otherName = metadata.Name
 		})
 
 	// use the watch to make sure that the workflow has succeeded
@@ -2001,6 +2032,26 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 			})
 		})
 	}
+
+	// a single-pod workflow's pod is named after the workflow
+	s.Run("WatchWorkflowPod", func() {
+		s.stream("/api/v1/stream/workflows/argo/"+name+"/pods/"+name, func(t *testing.T, line string) (done bool) {
+			if strings.Contains(line, "data: ") {
+				assert.Contains(t, line, `"type":"ADDED"`)
+				assert.Contains(t, line, fmt.Sprintf(`"name":"%s"`, name))
+				return true
+			}
+			return false
+		})
+	})
+
+	s.Run("WatchWorkflowPodOfAnotherWorkflow", func() {
+		// the other pod does exist, so silence below is the selector's doing and not a missing pod
+		s.stream("/api/v1/stream/workflows/argo/"+otherName+"/pods/"+otherName, func(t *testing.T, line string) (done bool) {
+			return strings.Contains(line, "data: ")
+		})
+		s.streamExpectNoData("/api/v1/stream/workflows/argo/"+name+"/pods/"+otherName, 5*time.Second)
+	})
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
