@@ -6,7 +6,18 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-// validTransitions is the single authoritative table of all valid node phase transitions.
+// validTransitions governs the controller-driven node phase changes made
+// through markNodePhase, which refuses (and logs at Error) any transition not
+// listed here. It does not cover every phase write:
+//
+//   - markNodePhase itself lets a node that is not yet fulfilled (its task
+//     result has not arrived) change to Error, even from a phase whose row
+//     does not list Error, such as Succeeded.
+//   - Pod reconciliation (podReconciliation, from assessNodeStatus) records
+//     a pod's own result directly with Nodes.Set, so a finishing pod can
+//     replace a phase the controller recorded.
+//   - clearStaleDaemonedRetries writes a Retry node directly with Nodes.Set
+//     (it clears the Daemoned flag; the phase is unchanged).
 //
 // State legend:
 //
