@@ -4817,10 +4817,9 @@ func TestOperatorIntegration_DaemonDepExplicitSucceededOmitsB(t *testing.T) {
 
 	// B should be omitted — A.Succeeded is unsatisfiable for a running daemon
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.True(t, bNode.Phase == wfv1.NodeOmitted || bNode.Phase == wfv1.NodeSkipped,
-			"B should be Omitted/Skipped — A.Succeeded is unsatisfiable for a running daemon")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
+		"B should be Omitted — A.Succeeded is unsatisfiable for a running daemon")
 }
 
 // Test 4: Dead daemon (Failed+Daemoned cleared) retry
@@ -4975,10 +4974,9 @@ func TestOperatorIntegration_RetryExhaustedDownstreamOmitted(t *testing.T) {
 
 	// B should be Omitted (default depends = A.Succeeded, which is false)
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
-			"B should be Omitted when A.Succeeded is never satisfied")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
+		"B should be Omitted when A.Succeeded is never satisfied")
 
 	// DAG should fail
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -5256,10 +5254,9 @@ func TestOperatorIntegration_FailFastFalseChecksAllLeaves(t *testing.T) {
 
 	// C should be omitted (default depends on A && B succeeding)
 	cNode := woc.wf.Status.Nodes.FindByDisplayName("C")
-	if cNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, cNode.Phase,
-			"C should be Omitted since A && B both failed")
-	}
+	require.NotNil(t, cNode, "C")
+	assert.Equal(t, wfv1.NodeOmitted, cNode.Phase,
+		"C should be Omitted since A && B both failed")
 
 	// DAG should fail
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -5538,24 +5535,21 @@ func TestOperatorIntegration_CascadingOmissionDiamond(t *testing.T) {
 
 	// B should be Omitted
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
-			"B should be Omitted since A failed (default depends = A.Succeeded)")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
+		"B should be Omitted since A failed (default depends = A.Succeeded)")
 
 	// C should be Omitted
 	cNode := woc.wf.Status.Nodes.FindByDisplayName("C")
-	if cNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, cNode.Phase,
-			"C should be Omitted since A failed")
-	}
+	require.NotNil(t, cNode, "C")
+	assert.Equal(t, wfv1.NodeOmitted, cNode.Phase,
+		"C should be Omitted since A failed")
 
 	// D should be Omitted
 	dNode := woc.wf.Status.Nodes.FindByDisplayName("D")
-	if dNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, dNode.Phase,
-			"D should be Omitted since B and C are Omitted")
-	}
+	require.NotNil(t, dNode, "D")
+	assert.Equal(t, wfv1.NodeOmitted, dNode.Phase,
+		"D should be Omitted since B and C are Omitted")
 
 	// DAG should fail
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -6243,24 +6237,21 @@ func TestOperatorBugfix_CascadingOmissionChain(t *testing.T) {
 
 	// B should be Omitted
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
-			"B should be Omitted since A failed")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
+		"B should be Omitted since A failed")
 
 	// C should be Omitted
 	cNode := woc.wf.Status.Nodes.FindByDisplayName("C")
-	if cNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, cNode.Phase,
-			"C should be Omitted since B is Omitted")
-	}
+	require.NotNil(t, cNode, "C")
+	assert.Equal(t, wfv1.NodeOmitted, cNode.Phase,
+		"C should be Omitted since B is Omitted")
 
 	// D should be Omitted
 	dNode := woc.wf.Status.Nodes.FindByDisplayName("D")
-	if dNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, dNode.Phase,
-			"D should be Omitted since C is Omitted")
-	}
+	require.NotNil(t, dNode, "D")
+	assert.Equal(t, wfv1.NodeOmitted, dNode.Phase,
+		"D should be Omitted since C is Omitted")
 
 	// DAG should fail
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -6639,10 +6630,9 @@ func TestOperatorEdge_RetryDepFailedBlocksDependent(t *testing.T) {
 
 	// B should be Omitted (default depends = A.Succeeded which is false)
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
-			"B should be Omitted when retry dep A has failed")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
+		"B should be Omitted when retry dep A has failed")
 
 	// DAG should fail
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -6713,8 +6703,8 @@ func TestOperatorEdge_RetryDaemonDepFulfillsDefaultDepends(t *testing.T) {
 		"B should be scheduled when retry+daemon dep A is Running+Daemoned")
 }
 
-// Test 4: Retry daemon dep with explicit A.Succeeded waits
-var testOperatorEdgeRetryDaemonExplicitSucceededWaits = `
+// Test 4: Retry daemon dep with explicit A.Succeeded omits B
+var testOperatorEdgeRetryDaemonExplicitSucceededOmitsB = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -6743,16 +6733,18 @@ spec:
       command: [echo, hello]
 `
 
-// TestOperatorEdge_RetryDaemonDepExplicitSucceededWaits verifies that when
+// TestOperatorEdge_RetryDaemonDepExplicitSucceededOmitsB verifies that when
 // A(retry+daemon) is daemoned (Running+Daemoned) but B depends on "A.Succeeded",
-// B is NOT omitted — it waits because A.Succeeded is not yet true.
-func TestOperatorEdge_RetryDaemonDepExplicitSucceededWaits(t *testing.T) {
+// B is Omitted, as when A is not retried
+// (TestOperatorIntegration_DaemonDepExplicitSucceededOmitsB): A.Succeeded is
+// unsatisfiable for a running daemon, so waiting would deadlock.
+func TestOperatorEdge_RetryDaemonDepExplicitSucceededOmitsB(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := wfv1.MustUnmarshalWorkflow(testOperatorEdgeRetryDaemonExplicitSucceededWaits)
+	wf := wfv1.MustUnmarshalWorkflow(testOperatorEdgeRetryDaemonExplicitSucceededOmitsB)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -6775,10 +6767,9 @@ func TestOperatorEdge_RetryDaemonDepExplicitSucceededWaits(t *testing.T) {
 	woc.operate(ctx)
 
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.True(t, bNode.Phase == wfv1.NodeOmitted || bNode.Phase == wfv1.NodeSkipped,
-			"B should be Omitted/Skipped — A.Succeeded is unsatisfiable for a running daemon")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase,
+		"B should be Omitted — A.Succeeded is unsatisfiable for a running daemon")
 }
 
 // --- Boundary assessment edge cases ---
@@ -7029,13 +7020,11 @@ func TestOperatorEdge_OmittedLeafInheritsAncestorFailure(t *testing.T) {
 
 	// B and C should be Omitted
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, bNode.Phase, "B should be Omitted since A failed")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase, "B should be Omitted since A failed")
 	cNode := woc.wf.Status.Nodes.FindByDisplayName("C")
-	if cNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, cNode.Phase, "C should be Omitted since B is Omitted")
-	}
+	require.NotNil(t, cNode, "C")
+	assert.Equal(t, wfv1.NodeOmitted, cNode.Phase, "C should be Omitted since B is Omitted")
 
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
@@ -7095,9 +7084,8 @@ func TestOperatorEdge_AllTasksOmitted(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, aNode.Phase)
 
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	if bNode != nil {
-		assert.Equal(t, wfv1.NodeOmitted, bNode.Phase, "B should be Omitted")
-	}
+	require.NotNil(t, bNode, "B")
+	assert.Equal(t, wfv1.NodeOmitted, bNode.Phase, "B should be Omitted")
 
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
