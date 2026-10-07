@@ -15,6 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
+	argointstr "github.com/argoproj/argo-workflows/v4/util/intstr"
 )
 
 // ExpandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks.
@@ -131,40 +132,21 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 		return nil, nil
 	}
 
-	var start, end, count int64
-	var err error
-
-	if seq.Start != nil {
-		if seq.Start.Type == intstr.Int {
-			start = int64(seq.Start.IntValue())
-		} else {
-			start, err = strconv.ParseInt(seq.Start.String(), 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse sequence start: %w", err)
-			}
-		}
+	start, err := sequenceValue(seq.Start, "start")
+	if err != nil {
+		return nil, err
+	}
+	count, err := sequenceValue(seq.Count, "count")
+	if err != nil {
+		return nil, err
 	}
 
-	if seq.Count != nil {
-		if seq.Count.Type == intstr.Int {
-			count = int64(seq.Count.IntValue())
-		} else {
-			count, err = strconv.ParseInt(seq.Count.String(), 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse sequence count: %w", err)
-			}
-		}
-	}
-
+	var end int64
 	switch {
 	case seq.End != nil:
-		if seq.End.Type == intstr.Int {
-			end = int64(seq.End.IntValue())
-		} else {
-			end, err = strconv.ParseInt(seq.End.String(), 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse sequence end: %w", err)
-			}
+		end, err = sequenceValue(seq.End, "end")
+		if err != nil {
+			return nil, err
 		}
 	case seq.Count != nil:
 		end = start + count - 1
@@ -204,6 +186,18 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 
 	return items, nil
+}
+
+// sequenceValue parses one of a sequence's bounds; an unset bound is zero.
+func sequenceValue(v *intstr.IntOrString, field string) (int64, error) {
+	i, err := argointstr.Int64(v)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse sequence %s: %w", field, err)
+	}
+	if i == nil {
+		return 0, nil
+	}
+	return *i, nil
 }
 
 func abs64(x int64) int64 {
