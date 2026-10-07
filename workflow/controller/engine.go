@@ -1056,7 +1056,7 @@ func (e *Engine) taskNodeID(taskName string) string {
 func (e *Engine) getTaskNode(ctx context.Context, taskName string) *wfv1.NodeStatus {
 	node := dag.TaskNode(e.woc.wf, e.nodeName, taskName)
 	if node == nil {
-		e.log.WithFields(logging.Fields{"taskName": taskName}).Debug(ctx, "was unable to obtain the node")
+		e.log.WithFields(logging.Fields{"nodeID": e.taskNodeID(taskName), "taskName": taskName}).Debug(ctx, "was unable to obtain the node")
 	}
 	return node
 }
