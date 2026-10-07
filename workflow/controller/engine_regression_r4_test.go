@@ -1721,11 +1721,11 @@ func TestRegressionR4_P3_RetryParameterEmptiesFanOut(t *testing.T) {
 }
 
 // r4PodStartOrder drives the workflow to completion (failing the test if
-// rounds reconciles are not enough), one round at a time,
-// rebuilding the wfOperationCtx from stored status every round (r4Operate).
-// Each round it records the display names of pods created that round (sorted
-// within the round, since they started together), then sets pods named in
-// failing to Failed and everything else to Succeeded before re-operating.
+// rounds reconciles are not enough), one round at a time, rebuilding the
+// wfOperationCtx from stored status every round (r4Operate). Each round it
+// records the display names of pods created that round (sorted within the
+// round, since they started together), then sets pods named in failing to
+// Failed and everything else to Succeeded before re-operating.
 //
 //nolint:revive // matches the r4 harness convention (t before ctx)
 func r4PodStartOrder(t *testing.T, ctx context.Context, controller *WorkflowController, woc *wfOperationCtx, rounds int, failing map[string]bool) ([]string, *wfOperationCtx) {
@@ -3362,6 +3362,7 @@ func TestRegressionR4_C83_DAGInvalidWhenHint(t *testing.T) {
 		woc.operate(ctx)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, 6)
 	n := woc.wf.Status.Nodes.FindByDisplayName("tails")
 	require.NotNil(t, n)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
@@ -3391,6 +3392,7 @@ func TestRegressionR4_C83_StepsInvalidWhenHint(t *testing.T) {
 		woc.operate(ctx)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, 6)
 	all := woc.wf.Status.Message + "\n"
 	for _, n := range woc.wf.Status.Nodes {
 		all += n.Message + "\n"
@@ -3576,7 +3578,8 @@ spec:
 }
 
 // r4C7Drive runs the workflow to completion, succeeding every pod; it fails
-// the test if maxRounds reconciles are not enough. Pods of template "gen" report result and parameter out = genOut.
+// the test if maxRounds reconciles are not enough. Pods of template "gen"
+// report result and parameter out = genOut.
 func r4C7Drive(t *testing.T, manifest, genOut string, maxRounds int) *wfOperationCtx {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -3794,9 +3797,9 @@ func TestRegressionR4_C7_WhenFalseValidListSkipped(t *testing.T) {
 	assert.Equal(t, wfv1.NodeOmitted, onsucc.Phase)
 }
 
-// r4C8Run runs the workflow: the first pod succeeds with result, every
-// later pod succeeds with no outputs. It returns the final woc and the pods'
-// node names.
+// r4C8Run runs the workflow to completion (failing the test if 6 reconciles
+// are not enough): the first pod succeeds with result, every later pod
+// succeeds with no outputs. It returns the final woc and the pods' node names.
 func r4C8Run(t *testing.T, manifest, result string) (*wfOperationCtx, []string) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -3813,6 +3816,7 @@ func r4C8Run(t *testing.T, manifest, result string) (*wfOperationCtx, []string) 
 		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, 6)
 	return woc, r4PodNodeNames(ctx, t, woc)
 }
 
@@ -4190,7 +4194,8 @@ func TestRegressionR4_C45_ExprItem(t *testing.T) {
 }
 
 // r4C82Run drives a flip-coin workflow whose gen pod reports "heads" to
-// completion and returns the final workflow.
+// completion (failing the test if 8 reconciles are not enough) and returns
+// the final workflow.
 func r4C82Run(t *testing.T, manifest string) *wfv1.Workflow {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
@@ -4212,6 +4217,7 @@ func r4C82Run(t *testing.T, manifest string) *wfv1.Workflow {
 		woc.operate(ctx)
 	}
 	dumpNodes(t, "final", woc.wf)
+	r4RequireCompleted(t, woc, 8)
 	return woc.wf
 }
 
@@ -4294,10 +4300,9 @@ spec:
 
 // r4C43RunUntilDone operates woc until the workflow completes, succeeding
 // every unfulfilled pod each round; it fails the test if rounds reconciles
-// are not enough. The first round in
-// which the node named producerDisplayName exists, it reports producerOut for
-// that node via a WorkflowTaskResult, as the executor would once its pod
-// succeeds.
+// are not enough. The first round in which the node named
+// producerDisplayName exists, it reports producerOut for that node via a
+// WorkflowTaskResult, as the executor would once its pod succeeds.
 func r4C43RunUntilDone(ctx context.Context, t *testing.T, controller *WorkflowController, woc *wfOperationCtx, producerDisplayName string, producerOut wfv1.Outputs, rounds int) *wfOperationCtx {
 	t.Helper()
 	reported := false
@@ -7726,13 +7731,16 @@ func r4HookDenied(controller *WorkflowController) {
 }
 
 // r4C33Run starts manifest with every exit hook pod denied, then succeeds
-// every pod and reconciles until the workflow completes (at most rounds),
-// then three more times.
+// every pod and reconciles rounds times, by which the workflow must have
+// completed (the test fails otherwise), then three more times.
 func r4C33Run(t *testing.T, manifest string, rounds int) (context.Context, *r4Run) {
 	t.Helper()
 	ctx, r := r4Start(t, manifest)
 	r4HookDenied(r.controller)
 	for i := 0; i < rounds+3; i++ {
+		if i == rounds {
+			r4RequireCompleted(t, r.woc, rounds)
+		}
 		setPodPhases(ctx, r.woc, allSucceed)
 		r.op(ctx)
 	}
@@ -11034,31 +11042,36 @@ spec:
 `, n)
 }
 
-// r4ScaleHookedMaxGrowth bounds how much more work a reconcile of
-// TestRegressionR4_Scale_HookedFanOut may do for ten times the items: linear
-// growth is at most 10.
+// r4ScaleHookedMaxGrowth bounds how much more work (allocations, see
+// r4OperateAllocs) a reconcile of TestRegressionR4_Scale_HookedFanOut may do
+// for ten times the items: linear growth is at most 10. Before a459ad438 the
+// reconcile that creates the items grew about 85 times (O(n^2) re-expansion,
+// C19); the reconciles of running items and hooks grew linearly there too.
+// Work that does not allocate is not caught.
 const r4ScaleHookedMaxGrowth = 15
 
 // TestRegressionR4_Scale_HookedFanOut checks hook re-entry must not make a
 // wide fan-out expensive. A DAG fan-out whose items have exit hooks (one hook
-// per item) is reconciled while every item runs, and again while every item's
-// exit hook runs; the work of each of those reconciles (its allocations) must
-// grow linearly with the number of items, from 100 to 1,000. The consumer of
+// per item) is reconciled to create the items, while every item runs, and
+// while every item's exit hook runs; the work of each of those reconciles
+// (its allocations) must grow linearly with the number of items, from 100 to
+// 1,000. The consumer of
 // the fan-out must then run. Not a red test. Base grows linearly too but
 // creates the items' exit hooks one per reconcile, so it fails the "one exit
 // hook per item" check here, which allows five reconciles.
 func TestRegressionR4_Scale_HookedFanOut(t *testing.T) {
 	small, large := r4ScaleHookedRun(t, 100), r4ScaleHookedRun(t, 1000)
-	for i, what := range []string{"running items", "running item exit hooks"} {
+	for i, what := range []string{"created items", "running items", "running item exit hooks"} {
 		t.Logf("%s: a reconcile allocates %d times for 100 items, %d for 1,000", what, small[i], large[i])
 		assert.Less(t, float64(large[i]), r4ScaleHookedMaxGrowth*float64(small[i]), "reconciling 1,000 %s, against 100", what)
 	}
 }
 
 // r4ScaleHookedRun runs TestRegressionR4_Scale_HookedFanOut's workflow with
-// n items and returns the allocations of a reconcile while every item runs
-// and while every item's exit hook runs.
-func r4ScaleHookedRun(t *testing.T, n int) [2]uint64 {
+// n items and returns the allocations of the reconcile that creates the
+// items, of a reconcile while every item runs and of one while every item's
+// exit hook runs.
+func r4ScaleHookedRun(t *testing.T, n int) [3]uint64 {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(r4ScaleHookedFanOut(n))
@@ -11083,13 +11096,14 @@ func r4ScaleHookedRun(t *testing.T, n int) [2]uint64 {
 		}
 		return count
 	}
-	var allocs [2]uint64
+	var allocs [3]uint64
 
-	woc := r4Operate(t, ctx, controller, wf)
+	woc, created := r4OperateAllocs(t, ctx, controller, wf)
+	allocs[0] = created
 	require.Equal(t, n, countPods(woc, func(pod *apiv1.Pod) bool { return !isHook(pod) }), "one pod per item")
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, func(*apiv1.Pod) bool { return true })
 	woc = r4Operate(t, ctx, controller, woc.wf)
-	woc, allocs[0] = r4ReconcileAllocs(t, ctx, controller, woc)
+	woc, allocs[1] = r4ReconcileAllocs(t, ctx, controller, woc)
 
 	// Every item succeeds: each gets its exit hook.
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, func(*apiv1.Pod) bool { return true })
@@ -11099,7 +11113,7 @@ func r4ScaleHookedRun(t *testing.T, n int) [2]uint64 {
 	require.Equal(t, n, countPods(woc, isHook), "one exit hook per item")
 	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, isHook)
 	woc = r4Operate(t, ctx, controller, woc.wf)
-	woc, allocs[1] = r4ReconcileAllocs(t, ctx, controller, woc)
+	woc, allocs[2] = r4ReconcileAllocs(t, ctx, controller, woc)
 	_, err := woc.wf.GetNodeByName(wf.Name + ".consumer")
 	require.Error(t, err, "the consumer must wait for the items' exit hooks")
 
@@ -12769,8 +12783,11 @@ spec:
 
 // TestRegressionR4_B3_ItemIndexNotSubstituted: {{index}} is not a workflow
 // variable, so an expanded task's item body must not substitute it with the
-// item's index. On main it was a resolve error; HEAD substituted it, an
-// undocumented variable.
+// item's index (HEAD once did, an undocumented variable). On main the
+// expansion fails "failed to resolve {{index}}" and the workflow ends Error
+// (DAG) or Failed (Steps); HEAD (decided deviation, docs/upgrading.md)
+// leaves the text alone and runs both items with the literal {{index}}.
+// Either outcome passes; anything else fails.
 func TestRegressionR4_B3_ItemIndexNotSubstituted(t *testing.T) {
 	for _, steps := range []bool{false, true} {
 		t.Run(map[bool]string{false: "DAG", true: "Steps"}[steps], func(t *testing.T) {
@@ -12779,9 +12796,18 @@ func TestRegressionR4_B3_ItemIndexNotSubstituted(t *testing.T) {
 				makePodsPhase(ctx, r.woc, apiv1.PodSucceeded)
 				r.op(ctx)
 			}
-			for name, cmd := range r4MainCommands(ctx, t, r.woc) {
-				assert.NotRegexp(t, `-[0-9]+$`, cmd, "%s: {{index}} was substituted", name)
+			cmds := r4CommandsMatching(ctx, t, r.woc, "fan(")
+			if len(cmds) == 0 {
+				assert.Contains(t, []wfv1.WorkflowPhase{wfv1.WorkflowError, wfv1.WorkflowFailed}, r.woc.wf.Status.Phase, "no item ran, so the workflow must have failed")
+				// The workflow message (Steps) or the task node's (DAG) carries it.
+				all := r.woc.wf.Status.Message + "\n"
+				for _, n := range r.woc.wf.Status.Nodes {
+					all += n.Message + "\n"
+				}
+				assert.Contains(t, all, "failed to resolve {{index}}")
+				return
 			}
+			assert.Equal(t, []string{"echo a-{{index}}", "echo b-{{index}}"}, cmds, "both items run with the literal {{index}}")
 		})
 	}
 }
