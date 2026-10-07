@@ -523,7 +523,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		onExitNode, _ = woc.execWf.GetNodeByName(onExitNodeName)
 		if onExitNode != nil || woc.GetShutdownStrategy().ShouldExecute(true) {
 			exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
-			onExitNode, err = woc.reconcileTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, exitHook.Arguments, &executeTemplateOpts{
+			onExitNode, err = woc.reconcileTemplate(ctx, onExitNodeName, toTemplateReferenceHolder(exitHook), tmplCtx, exitHook.Arguments, &executeTemplateOpts{
 				onExitTemplate: true, nodeFlag: &wfv1.NodeFlag{Hooked: true},
 			})
 			if err != nil {
