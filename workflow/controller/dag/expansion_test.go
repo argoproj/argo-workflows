@@ -278,3 +278,21 @@ func TestExpandTaskWhenFalseLenient(t *testing.T) {
 	_, err = ExpandTask(ctx, unparsed, nil, templateSubstitutor(t))
 	require.ErrorContains(t, err, "withParam value could not be parsed as a JSON list")
 }
+
+// TestExpandTask_IndexNotAVariable: an item body substitutes {{item}} and
+// {{item.<key>}}, but not {{index}}, which is not a workflow variable (on
+// main it was a resolve error); it is left for a later pass to report.
+func TestExpandTask_IndexNotAVariable(t *testing.T) {
+	task := wfv1.DAGTask{
+		Name: "fan",
+		Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
+			{Name: "m", Value: wfv1.AnyStringPtr("{{item.k}}-{{index}}")},
+		}},
+		WithItems: []wfv1.Item{{Value: json.RawMessage(`{"k":"a"}`)}, {Value: json.RawMessage(`{"k":"b"}`)}},
+	}
+	expanded, err := ExpandTask(testCtx(t), task, nil, templateSubstitutor(t))
+	require.NoError(t, err)
+	require.Len(t, expanded, 2)
+	assert.Equal(t, "a-{{index}}", expanded[0].Arguments.Parameters[0].Value.String())
+	assert.Equal(t, "b-{{index}}", expanded[1].Arguments.Parameters[0].Value.String())
+}

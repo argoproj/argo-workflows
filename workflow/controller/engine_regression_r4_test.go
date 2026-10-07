@@ -12731,3 +12731,66 @@ func TestRegressionR4_ItemHookScope_StepsArgument(t *testing.T) {
               parameters: [{name: x, value: "{{steps.a.outputs.parameters.p}}"}]`)
 	assert.Equal(t, map[string]string{"zero": "zero", "one": "{{steps.a.outputs.parameters.p}}"}, inputs)
 }
+
+// r4B3IndexWorkflow is an expanded task (DAG or Steps) whose item argument
+// uses {{index}}, which is not a workflow variable.
+func r4B3IndexWorkflow(name string, steps bool) string {
+	body := `
+    dag:
+      tasks:
+      - name: fan
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}-{{index}}"
+        withItems: [a, b]`
+	if steps {
+		body = `
+    steps:
+    - - name: fan
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}-{{index}}"
+        withItems: [a, b]`
+	}
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main` + body + `
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+}
+
+// TestRegressionR4_B3_ItemIndexNotSubstituted: {{index}} is not a workflow
+// variable, so an expanded task's item body must not substitute it with the
+// item's index. On main it was a resolve error; HEAD substituted it, an
+// undocumented variable.
+func TestRegressionR4_B3_ItemIndexNotSubstituted(t *testing.T) {
+	for _, steps := range []bool{false, true} {
+		t.Run(map[bool]string{false: "DAG", true: "Steps"}[steps], func(t *testing.T) {
+			ctx, r := r4Start(t, r4B3IndexWorkflow("r4-b3-index", steps))
+			for range 3 {
+				makePodsPhase(ctx, r.woc, apiv1.PodSucceeded)
+				r.op(ctx)
+			}
+			for name, cmd := range r4MainCommands(ctx, t, r.woc) {
+				assert.NotRegexp(t, `-[0-9]+$`, cmd, "%s: {{index}} was substituted", name)
+			}
+		})
+	}
+}
