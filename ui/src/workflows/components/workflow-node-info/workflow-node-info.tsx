@@ -207,7 +207,7 @@ function WorkflowNodeSummary(props: Props) {
                         EVENTS
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && props.onShowPod && !props.archived && (
+                {props.node.type === 'Pod' && props.onShowPod && models.isWorkflowInCluster(props.workflow) && (
                     <Button icon='cube' onClick={() => props.onShowPod()}>
                         POD
                     </Button>
