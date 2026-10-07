@@ -2275,6 +2275,40 @@ type executeTemplateOpts struct {
 // reconcileTemplate resolves and processes a template for the given node and
 // arguments, then reconciles it as a single desired task, returning the
 // resulting NodeStatus.
+// prepareTemplate prepares the template of node nodeName to be reconciled, for
+// reconcileTemplate and for the Engine's tasks (Engine.desiredTask) alike: it
+// resolves orgTmpl in tmplCtx (recording a newly stored template), merges the
+// templateDefaults into it, and processes args into it. The local variables
+// are {{node.name}}, {{pod.name}} for a pod template without a retryStrategy,
+// and nameKey ({{tasks.name}} or {{steps.name}}; nil for neither) set to
+// name. It returns the template context the template resolved in, and the
+// processed template.
+func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, nameKey *variables.Key, name string) (*templateresolution.TemplateContext, *wfv1.Template, error) {
+	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(ctx, orgTmpl)
+	if err != nil {
+		return nil, nil, err
+	}
+	if templateStored {
+		woc.updated = true
+	}
+	if err = woc.mergedTemplateDefaultsInto(resolvedTmpl); err != nil {
+		return nil, nil, err
+	}
+	localParams := make(common.Parameters)
+	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
+		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
+	}
+	if nameKey != nil {
+		localParams[nameKey.Template()] = name
+	}
+	localParams[varkeys.NodeName.Template()] = nodeName
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
+	if err != nil {
+		return nil, nil, err
+	}
+	return newTmplCtx, processedTmpl, nil
+}
+
 func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	// Note: maxStackDepth is checked in executeProcessedTemplate (called via the reconciler)
 	// so that both the reconcileTemplate path and the Engine path get the check.
@@ -2287,32 +2321,15 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 	// run past its deadline, as main did. A gate here, before template
 	// resolution, would bail out before that fulfilled check ever runs.
 
-	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(ctx, orgTmpl)
-	if err != nil {
-		return woc.initializeNodeOrMarkError(ctx, nil, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+	// The name variable follows orgTmpl's own kind and name.
+	var nameKey *variables.Key
+	switch {
+	case orgTmpl.IsDAGTask():
+		nameKey = varkeys.TasksName
+	case orgTmpl.IsWorkflowStep():
+		nameKey = varkeys.StepsName
 	}
-	if templateStored {
-		woc.updated = true
-	}
-
-	err = woc.mergedTemplateDefaultsInto(resolvedTmpl)
-	if err != nil {
-		return woc.initializeNodeOrMarkError(ctx, nil, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
-	}
-
-	localParams := make(map[string]string)
-	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
-	}
-	if orgTmpl.IsDAGTask() {
-		localParams[varkeys.TasksName.Template()] = orgTmpl.GetName()
-	}
-	if orgTmpl.IsWorkflowStep() {
-		localParams[varkeys.StepsName.Template()] = orgTmpl.GetName()
-	}
-	localParams[varkeys.NodeName.Template()] = nodeName
-
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
+	newTmplCtx, processedTmpl, err := woc.prepareTemplate(ctx, nodeName, orgTmpl, tmplCtx, args, nameKey, orgTmpl.GetName())
 	if err != nil {
 		return woc.initializeNodeOrMarkError(ctx, nil, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
