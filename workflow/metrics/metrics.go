@@ -57,6 +57,7 @@ func New(ctx context.Context, serviceName, prometheusName string, config *teleme
 		addWorkflowTemplateCounter,
 		addWorkflowTemplateHistogram,
 		addOperationDurationHistogram,
+		addRetryStrategyTerminationsCounter,
 		addErrorCounter,
 		addLogCounter,
 		addK8sRequests,
