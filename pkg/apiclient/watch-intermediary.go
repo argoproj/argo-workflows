@@ -89,7 +89,7 @@ func (w workflowPodWatchIntermediary) Recv() (*workflowpkg.WorkflowPodWatchEvent
 }
 
 func (w *workflowPodWatchIntermediary) SendHeader(metadata.MD) error {
-	// SendHeader flushes headers eagerly so HTTP/1 SSE keepalives work; the metadata itself is unused.
+	// No-op: the server calls SendHeader to flush SSE headers early; there is nothing to flush in-process.
 	return nil
 }
 
