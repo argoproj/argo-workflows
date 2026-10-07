@@ -451,8 +451,14 @@ data:
   # You must also start argo server with `--auth-mode sso`.
   # https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/
   sso: |
-    # This is the root URL of the OIDC provider (required).
+    # This is the root URL of the OIDC provider (required, unless issuerSecret is set).
     issuer: https://issuer.root.url/
+    # Alternatively, the root URL of the OIDC provider can be read from a
+    # Secret (required, unless issuer is set). If both are set, issuer takes
+    # precedence.
+    # issuerSecret:
+    #   name: oidc-secret
+    #   key: issuer
     # Some OIDC providers have alternate root URLs that can be included. These should be reviewed carefully. (optional)
     issuerAlias: https://altissuer.root.url
     # This defines how long your login is valid for (in hours). (optional)
@@ -472,6 +478,11 @@ data:
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
+    # Alternatively, the redirect URL can be read from a Secret (optional).
+    # If both are set, redirectUrl takes precedence.
+    # redirectUrlSecret:
+    #   name: oidc-secret
+    #   key: redirectUrl
     # Absolute URL to redirect to after logout in SSO mode. It additionally enables
     # OIDC provider logout when the provider advertises an end_session_endpoint, and
     # must be registered with the provider as a post-logout redirect URI. The server
