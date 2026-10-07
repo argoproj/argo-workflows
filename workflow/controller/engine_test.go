@@ -259,13 +259,13 @@ func TestAssessDAGPhaseDoesNotHangOnOmittedTasks(t *testing.T) {
 // complete.
 func TestVisit_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	engine, fake, _, tasks := engineWithFakeReconciler(ctx, t)
+	engine, fake, _, _ := engineWithFakeReconciler(ctx, t)
 
 	result := dag.EvaluationResult{
 		TaskName: "client",
 		Error:    errors.New("depends expression failed to evaluate"),
 	}
-	task := engine.getTaskByName(tasks, "client")
+	task := engine.evaluator.GetTask("client")
 	fake.calls = nil
 	engine.visit(ctx, task, result, true)
 	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
@@ -325,12 +325,12 @@ spec:
 // of item order.
 func TestReconcileTaskGroup_WorstPhaseWins(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	engine, fake, woc, tasks := engineWithFakeReconciler(ctx, t)
+	engine, fake, woc, _ := engineWithFakeReconciler(ctx, t)
 	markChildPhase(t, woc, "client(0:0)", wfv1.NodeFailed)
 	markChildPhase(t, woc, "client(1:1)", wfv1.NodeError)
 	markChildPhase(t, woc, "client(2:2)", wfv1.NodeSucceeded)
 
-	engine.visit(ctx, engine.getTaskByName(tasks, "client"), engine.evaluator.Evaluate(ctx, "client"), true)
+	engine.visit(ctx, engine.evaluator.GetTask("client"), engine.evaluator.Evaluate(ctx, "client"), true)
 
 	assert.Empty(t, fake.calls, "finished items are not reconciled again")
 	tgNode, err := woc.wf.GetNodeByName(engine.taskNodeName("client"))
