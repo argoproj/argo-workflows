@@ -28,6 +28,7 @@ import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WidgetGallery} from '../../../widgets/widget-gallery';
 import {EventsPanel} from '../events-panel';
+import {PodPanel} from '../pod-panel';
 import {ResubmitWorkflowPanel} from '../resubmit-workflow-panel';
 import {RetryWorkflowNode} from '../retry-workflow-node-panel';
 import {RetryWorkflowPanel} from '../retry-workflow-panel';
@@ -567,6 +568,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                         links={links}
                                         onShowContainerLogs={(x, container) => setSidePanel(`logs:${x}:${container}`)}
                                         onShowEvents={() => setSidePanel(`events:${nodeId}`)}
+                                        onShowPod={() => setSidePanel(`pod:${nodeId}`)}
                                         onShowYaml={() => setSidePanel(`yaml:${nodeId}`)}
                                         onRetryNode={() => setShowRetryNode(true)}
                                         archived={archived}
@@ -592,6 +594,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                         />
                     )}
                     {parsedSidePanel.type === 'events' && <EventsPanel namespace={namespace} kind='Pod' name={podName} />}
+                    {parsedSidePanel.type === 'pod' && <PodPanel namespace={namespace} name={name} podName={podName} nodePhase={selectedNode?.phase} />}
                     {parsedSidePanel.type === 'share' && <WidgetGallery namespace={namespace} name={name} />}
                     {parsedSidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={workflow} selectedNode={selectedNode} />}
                     {parsedSidePanel.type === 'resubmit' && <ResubmitWorkflowPanel workflow={workflow} isArchived={isArchivedWorkflow(workflow)} />}
