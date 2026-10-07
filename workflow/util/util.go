@@ -1340,8 +1340,9 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 // phase rolled back by resetNode so the controller revisits them. A node in
 // both sets is deleted.
 type resetPlan struct {
-	toReset  map[string]bool
-	toDelete map[string]bool
+	toReset               map[string]bool
+	toDelete              map[string]bool
+	hookedNodesToReparent map[string]string
 }
 
 // planReset works out which nodes of wf a retry has to reset and which it has
@@ -1479,6 +1480,7 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 	// subtree too: otherwise surviving children would lose their only parent
 	// when applyResetPlan scrubs the deleted node's links.
 	var downstream []string
+	hookedNodesToReparent := make(map[string]string)
 	for nodeID := range toReset {
 		if toDelete[nodeID] || wf.Status.Nodes[nodeID].Name == wf.Name {
 			continue
@@ -1505,12 +1507,32 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 			continue
 		}
 		if node.Type == wfv1.NodeTypeSkipped && (node.Phase == wfv1.NodeOmitted || node.Phase == wfv1.NodeSkipped) {
-			markSubtree(wf.Status.Nodes, nodeID, toDelete)
+			markStaleSkippedSubtree(wf.Status.Nodes, nodeID, toDelete, hookedNodesToReparent)
 		}
 		downstream = append(downstream, node.Children...)
 	}
 
-	return resetPlan{toReset: toReset, toDelete: toDelete}, nil
+	return resetPlan{toReset: toReset, toDelete: toDelete, hookedNodesToReparent: hookedNodesToReparent}, nil
+}
+
+// markStaleSkippedSubtree deletes a stale skipped subtree while preserving lifecycle
+// hooks. The skipped parent is deleted so the controller can recreate it with its
+// new result; preserved hooks are attached to their boundary node until the parent
+// is recreated and the controller reconnects them.
+func markStaleSkippedSubtree(nodes wfv1.Nodes, id string, set map[string]bool, hookedNodesToReparent map[string]string) {
+	if node, ok := nodes[id]; ok && node.NodeFlag != nil && node.NodeFlag.Hooked {
+		hookedNodesToReparent[id] = node.BoundaryID
+		return
+	}
+	if set[id] {
+		return
+	}
+	set[id] = true
+	if node, ok := nodes[id]; ok {
+		for _, child := range node.Children {
+			markStaleSkippedSubtree(nodes, child, set, hookedNodesToReparent)
+		}
+	}
 }
 
 // FormulateRetryWorkflow attempts to retry a workflow in place, see planReset
@@ -1629,6 +1651,15 @@ func applyResetPlan(ctx context.Context, wf, dst *wfv1.Workflow, plan resetPlan,
 		node.Children = keepExistingNodeIDs(dst.Status.Nodes, node.Children)
 		node.OutboundNodes = keepExistingNodeIDs(dst.Status.Nodes, node.OutboundNodes)
 		dst.Status.Nodes.Set(ctx, id, node)
+	}
+	for hookedNodeID, boundaryID := range plan.hookedNodesToReparent {
+		_, hookedNodeExists := dst.Status.Nodes[hookedNodeID]
+		boundaryNode, boundaryNodeExists := dst.Status.Nodes[boundaryID]
+		if !hookedNodeExists || !boundaryNodeExists || slices.Contains(boundaryNode.Children, hookedNodeID) {
+			continue
+		}
+		boundaryNode.Children = append(boundaryNode.Children, hookedNodeID)
+		dst.Status.Nodes.Set(ctx, boundaryID, boundaryNode)
 	}
 }
 

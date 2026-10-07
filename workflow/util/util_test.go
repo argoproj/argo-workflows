@@ -1528,7 +1528,7 @@ func TestPlanResetReopensSkippedDependentsAfterNestedGroupRetry(t *testing.T) {
 	workID := workflowName + ".work"
 	aID := workID + ".a"
 	bID := workID + ".b"
-	hookID := aID + ".hook"
+	hookID := "stop-retry.after.hooks.completed"
 	hookedSkippedID := hookID + ".skipped"
 	afterID := workflowName + ".after"
 	after2ID := workflowName + ".after2"
@@ -1541,11 +1541,11 @@ func TestPlanResetReopensSkippedDependentsAfterNestedGroupRetry(t *testing.T) {
 			Nodes: wfv1.Nodes{
 				rootID:          {ID: rootID, Name: workflowName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, Children: []string{workID}},
 				workID:          {ID: workID, Name: workID, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, Children: []string{aID, bID}, OutboundNodes: []string{aID, "missing-outbound"}},
-				aID:             {ID: aID, Name: aID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, Children: []string{hookID, afterID}},
+				aID:             {ID: aID, Name: aID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, Children: []string{afterID}},
 				bID:             {ID: bID, Name: bID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID},
-				hookID:          {ID: hookID, Name: hookID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: aID, NodeFlag: &wfv1.NodeFlag{Hooked: true}, Children: []string{hookedSkippedID}},
+				hookID:          {ID: hookID, Name: hookID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: rootID, NodeFlag: &wfv1.NodeFlag{Hooked: true}, Children: []string{hookedSkippedID}},
 				hookedSkippedID: {ID: hookedSkippedID, Name: hookedSkippedID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: hookID},
-				afterID:         {ID: afterID, Name: afterID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, Children: []string{after2ID}},
+				afterID:         {ID: afterID, Name: afterID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, Children: []string{after2ID, hookID}},
 				after2ID:        {ID: after2ID, Name: after2ID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeSkipped, BoundaryID: rootID, Children: []string{after3ID}},
 				after3ID:        {ID: after3ID, Name: after3ID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: rootID},
 			},
@@ -1559,6 +1559,13 @@ func TestPlanResetReopensSkippedDependentsAfterNestedGroupRetry(t *testing.T) {
 	assert.True(t, plan.toDelete[after3ID], "results based on stale skipped nodes should be re-evaluated")
 	assert.False(t, plan.toDelete[hookID], "retry planning must stop at hooked nodes")
 	assert.False(t, plan.toDelete[hookedSkippedID], "nodes under a hook must be left to the hook retry path")
+	assert.Equal(t, rootID, plan.hookedNodesToReparent[hookID])
+
+	dst := wf.DeepCopy()
+	applyResetPlan(ctx, wf, dst, plan, nil, nil)
+	assert.Contains(t, dst.Status.Nodes[rootID].Children, hookID, "preserved hooks must retain a valid parent link")
+	_, err = newWorkflowsDag(dst)
+	require.NoError(t, err, "retry output must not leave preserved hooks orphaned")
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {
