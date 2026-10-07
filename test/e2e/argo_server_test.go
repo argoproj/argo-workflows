@@ -1974,7 +1974,7 @@ func (s *ArgoServerSuite) streamExpectNoData(url string, wait time.Duration) {
 	for scanner.Scan() {
 		s.NotContains(scanner.Text(), "data: ")
 	}
-	s.NotNil(ctx.Err(), "the stream ended before its context deadline")
+	s.Error(ctx.Err(), "the stream ended before its context deadline")
 	if err := scanner.Err(); err != nil {
 		s.True(errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled), "unexpected stream error: %v", err)
 	}
