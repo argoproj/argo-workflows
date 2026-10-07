@@ -1013,43 +1013,23 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, parents [
 }
 
 // desiredTask resolves task's template, with the templateDefaults merged in,
-// and processes its arguments into the DesiredTask the reconciler executes.
+// and processes its arguments into the DesiredTask the reconciler executes,
+// as reconcileTemplate does (prepareTemplate).
 // task is resolved already (see resolveTask), so its arguments are resolved
 // in one place, and a node is reconciled with the template it was created
 // from, whether it is being dispatched or finished
 // (reconcileFulfilledTasks).
 func (e *Engine) desiredTask(ctx context.Context, task dag.Task) (DesiredTask, error) {
 	taskNodeName := e.taskNodeName(task.GetName())
-	newTmplCtx, resolvedTmpl, templateStored, err := e.tmplCtx.ResolveTemplate(ctx, task.GetTemplateReferenceHolder())
-	if err != nil {
-		return DesiredTask{}, err
-	}
-	if templateStored {
-		e.woc.updated = true
-	}
-
-	// Merge templateDefaults (metrics, retryStrategy, synchronization, etc.)
-	// into the resolved template, as reconcileTemplate does for the entry
-	// template: the Engine's dispatch bypasses reconcileTemplate.
-	if err = e.woc.mergedTemplateDefaultsInto(resolvedTmpl); err != nil {
-		return DesiredTask{}, err
-	}
-
-	// Build minimal local params for ProcessArgs (matching reconcileTemplate behavior).
-	localParams := make(common.Parameters)
-	localParams["node.name"] = taskNodeName
+	// The name variable follows the boundary's kind and carries the task's
+	// display name, where reconcileTemplate follows the template holder's: an
+	// expanded step's items are DAG tasks named "[i].<item>", and see
+	// {{steps.name}} as the item name alone, as before the Engine.
+	nameKey := varkeys.TasksName
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		localParams["steps.name"] = task.GetDisplayName()
-	} else {
-		localParams["tasks.name"] = task.GetDisplayName()
+		nameKey = varkeys.StepsName
 	}
-	// Set pod.name for pod-type templates (matching reconcileTemplate behavior).
-	if resolvedTmpl.IsPodType() && e.woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[varkeys.PodName.Template()] = e.woc.getPodName(taskNodeName, resolvedTmpl.Name)
-	}
-
-	args := task.GetArguments()
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, e.woc.wf.Namespace, e.woc.controller.typedConfigMapInformer.GetIndexer())
+	newTmplCtx, processedTmpl, err := e.woc.prepareTemplate(ctx, taskNodeName, task.GetTemplateReferenceHolder(), e.tmplCtx, task.GetArguments(), nameKey, task.GetDisplayName())
 	if err != nil {
 		return DesiredTask{}, err
 	}
