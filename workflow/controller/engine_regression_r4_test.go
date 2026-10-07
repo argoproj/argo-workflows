@@ -12191,3 +12191,169 @@ func TestRegressionR4_DAGUnknownRuntimeTarget(t *testing.T) {
 		assert.NotEqual(t, "echo", woc.wf.Status.Nodes[woc.nodeID(&pod)].TemplateName, "no pod should ever be created for an undefined runtime target")
 	}
 }
+
+// r4ItemHookScopeRun runs a fan-out of work over [zero, one] (body is the
+// main template's dag or steps, with an exit hook on the fanned-out task a
+// that runs hook). Both items finish in the same reconcile: zero succeeds
+// with output p=zero, one fails without reporting any output. It returns,
+// for each item that has an exit hook node, that hook's input x.
+func r4ItemHookScopeRun(t *testing.T, body string) map[string]string {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-item-hook-scope
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    %s
+  - name: work
+    inputs:
+      parameters:
+      - name: i
+    container: {image: alpine, command: [echo, "{{inputs.parameters.i}}"]}
+    outputs:
+      parameters:
+      - name: p
+        valueFrom: {path: /tmp/p}
+  - name: hook
+    inputs:
+      parameters:
+      - name: x
+    container: {image: alpine, command: [echo, "{{inputs.parameters.x}}"]}
+`, body))
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	woc := r4Operate(t, ctx, controller, wf)
+	isItem := func(n *wfv1.NodeStatus, item string) bool {
+		return strings.Contains(n.Name, ":"+item+")") && !strings.HasSuffix(n.Name, ".onExit")
+	}
+	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			if n.Fulfilled() || !isItem(n, "zero") {
+				return ""
+			}
+			return apiv1.PodSucceeded
+		}, withOutputs(ctx, wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr("zero")}}}))
+		setPodPhases(ctx, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+			switch {
+			case n.Fulfilled() || isItem(n, "zero"):
+				return ""
+			case isItem(n, "one"):
+				return apiv1.PodFailed
+			}
+			return apiv1.PodSucceeded
+		})
+		woc = r4Operate(t, ctx, controller, woc.wf)
+	}
+	dumpNodes(t, "final", woc.wf)
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "item one fails the workflow")
+	inputs := map[string]string{}
+	for _, n := range woc.wf.Status.Nodes {
+		if !strings.HasSuffix(n.Name, ".onExit") {
+			continue
+		}
+		for _, item := range []string{"zero", "one"} {
+			if strings.Contains(n.Name, ":"+item+")") {
+				inputs[item] = "<missing>"
+				if n.Inputs != nil && len(n.Inputs.Parameters) > 0 && n.Inputs.Parameters[0].Value != nil {
+					inputs[item] = n.Inputs.Parameters[0].Value.String()
+				}
+			}
+		}
+	}
+	return inputs
+}
+
+// TestRegressionR4_ItemHookScope_DAGExpression: each item's exit hook runs
+// only while tasks.a has no output p in its scope, which it never has: the
+// task's own outputs enter its hooks' scope only as its hook arguments are
+// resolved, after the expression. Base's DAG built the hooks' scope afresh
+// for each item, so both hooks ran. On the branch the items shared one
+// scope, into which resolving zero's hook arguments had written p=zero, so
+// one's hook did not run.
+func TestRegressionR4_ItemHookScope_DAGExpression(t *testing.T) {
+	inputs := r4ItemHookScopeRun(t, `dag:
+      tasks:
+      - name: a
+        template: work
+        withItems: [zero, one]
+        arguments:
+          parameters: [{name: i, value: "{{item}}"}]
+        hooks:
+          exit:
+            template: hook
+            expression: tasks.a?.outputs?.parameters?.p == nil
+            arguments:
+              parameters: [{name: x, value: hooked}]`)
+	assert.Equal(t, map[string]string{"zero": "hooked", "one": "hooked"}, inputs)
+}
+
+// TestRegressionR4_ItemHookScope_StepsExpression is the Steps form of
+// TestRegressionR4_ItemHookScope_DAGExpression. The decided behaviour is
+// DAG's, each item with its own scope. Base's Steps shared one scope across
+// the items of a step (a bug on main), but wrote each item's outputs into it
+// under the item's own name (steps.a(0:zero)...), so the leak did not show
+// here and both hooks ran at base too.
+func TestRegressionR4_ItemHookScope_StepsExpression(t *testing.T) {
+	inputs := r4ItemHookScopeRun(t, `steps:
+    - - name: a
+        template: work
+        withItems: [zero, one]
+        arguments:
+          parameters: [{name: i, value: "{{item}}"}]
+        hooks:
+          exit:
+            template: hook
+            expression: steps.a?.outputs?.parameters?.p == nil
+            arguments:
+              parameters: [{name: x, value: hooked}]`)
+	assert.Equal(t, map[string]string{"zero": "hooked", "one": "hooked"}, inputs)
+}
+
+// TestRegressionR4_ItemHookScope_DAGArgument: an item's exit hook argument
+// {{tasks.a.outputs.parameters.p}} is that item's p. One's hook got zero's p
+// through the shared scope; with its own scope its reference to the p it
+// never reported is left unresolved, as main left it for a task that is not
+// expanded. Base cannot run this at all: its DAG and Steps resolved every
+// {{tasks.*}}/{{steps.*}} tag in an expanded task's hooks when expanding
+// it, so the task Errored with "failed to resolve". This test therefore
+// fails at base.
+func TestRegressionR4_ItemHookScope_DAGArgument(t *testing.T) {
+	inputs := r4ItemHookScopeRun(t, `dag:
+      tasks:
+      - name: a
+        template: work
+        withItems: [zero, one]
+        arguments:
+          parameters: [{name: i, value: "{{item}}"}]
+        hooks:
+          exit:
+            template: hook
+            arguments:
+              parameters: [{name: x, value: "{{tasks.a.outputs.parameters.p}}"}]`)
+	assert.Equal(t, map[string]string{"zero": "zero", "one": "{{tasks.a.outputs.parameters.p}}"}, inputs)
+}
+
+// TestRegressionR4_ItemHookScope_StepsArgument is the Steps form of
+// TestRegressionR4_ItemHookScope_DAGArgument, and fails at base for the same
+// reason.
+func TestRegressionR4_ItemHookScope_StepsArgument(t *testing.T) {
+	inputs := r4ItemHookScopeRun(t, `steps:
+    - - name: a
+        template: work
+        withItems: [zero, one]
+        arguments:
+          parameters: [{name: i, value: "{{item}}"}]
+        hooks:
+          exit:
+            template: hook
+            arguments:
+              parameters: [{name: x, value: "{{steps.a.outputs.parameters.p}}"}]`)
+	assert.Equal(t, map[string]string{"zero": "zero", "one": "{{steps.a.outputs.parameters.p}}"}, inputs)
+}

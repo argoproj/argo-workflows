@@ -238,15 +238,18 @@ func (e *Engine) itemHooksToReenter(tg *wfv1.NodeStatus) bool {
 // did. With existingOnly, or when the hooks' scope cannot be built, it only
 // re-enters the hook nodes that already exist (hookHandler.reenterHooks). The
 // hooks refer to the task by its own name and see its hookScope, built only
-// when there is a hook to drive. It reports whether every hook is done; a
-// node whose hooks errored is done once none of its hook nodes is still
-// running, its error recorded (markHookError), so that an error that recurs
-// does not hold its task back for good.
+// when there is a hook to drive, and copied for each node: driving a node's
+// hooks writes its status and outputs into the scope under the task's name,
+// and one item's hooks must not see another's (main's DAG built the scope
+// afresh for each item). It reports whether every hook is done; a node whose
+// hooks errored is done once none of its hook nodes is still running, its
+// error recorded (markHookError), so that an error that recurs does not hold
+// its task back for good.
 func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.Task, existingOnly bool) bool {
 	if !e.hooks.hasHooks(task) {
 		return true
 	}
-	var scope *wfScope
+	var taskScope *wfScope
 	var scopeErr error
 	done := true
 	for _, nodeTask := range nodeTasks {
@@ -254,8 +257,12 @@ func (e *Engine) driveHooks(ctx context.Context, task dag.Task, nodeTasks []dag.
 		if node == nil || !ran(node) || (existingOnly && len(e.hooks.hookNodesToReenter(node)) == 0) {
 			continue
 		}
-		if scope == nil && scopeErr == nil {
-			scope, scopeErr = e.hookScope(ctx, task)
+		if taskScope == nil && scopeErr == nil {
+			taskScope, scopeErr = e.hookScope(ctx, task)
+		}
+		var scope *wfScope
+		if taskScope != nil {
+			scope = taskScope.clone()
 		}
 		var nodeDone bool
 		var err error
