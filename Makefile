@@ -459,10 +459,16 @@ swagger: \
 	api/jsonschema/schema.json
 
 
+# Generated code must be what the go.mod toolchain produces, not whatever Go the host
+# has: Go releases change compress/flate output (embedded in every .pb.go descriptor)
+# and stdlib type aliases (encoding/json.RawMessage became jsontext.Value in Go 1.27,
+# which deepcopy-gen resolves). Build and run the affected codegen tools with it.
+GOMOD_TOOLCHAIN := go$(shell sed -n 's/^go //p' go.mod)
+
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.26.5 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.0
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -477,12 +483,12 @@ endif
 $(TOOL_PROTOC_GEN_GOGO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 endif
 $(TOOL_PROTOC_GEN_GOGOFAST): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
 endif
 $(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
@@ -883,6 +889,7 @@ ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
 endif
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) vendor/modules.txt
+	export GOTOOLCHAIN=$(GOMOD_TOOLCHAIN); \
 	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.1); \
 	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \
 		kube::codegen::gen_helpers \

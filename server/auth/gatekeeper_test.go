@@ -3,16 +3,22 @@ package auth
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	k8stesting "k8s.io/client-go/testing"
 
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	ssomocks "github.com/argoproj/argo-workflows/v4/server/auth/sso/mocks"
@@ -121,23 +127,23 @@ func TestServer_GetWFClient(t *testing.T) {
 	}
 	clients := &servertypes.Clients{Workflow: wfClient, Kubernetes: kubeClient}
 	t.Run("None", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache)
+		_, err := NewGatekeeper(Modes{}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache, time.Minute)
 		require.Error(t, err)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache)
+		g, err := NewGatekeeper(Modes{Client: true}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		_, err = g.Context(x(logging.TestContext(t.Context()), "invalid"))
 		require.Error(t, err)
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, clientForAuthorization, "", "", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer "))
 		require.Error(t, err)
 	})
 	t.Run("Client", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", "", true, resourceCache)
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", "", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer "))
 		require.NoError(t, err)
@@ -145,8 +151,55 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 		assert.Nil(t, GetClaims(ctx))
 	})
+	// reviewingClientForAuthorization returns a ClientForAuthorization whose kube client answers
+	// SelfSubjectReviews with reviewErr, and a counter of how many reviews were attempted.
+	reviewingClientForAuthorization := func(reviewErr error) (ClientForAuthorization, *int) {
+		reviews := 0
+		reviewingKubeClient := kubefake.NewClientset()
+		reviewingKubeClient.PrependReactor("create", "selfsubjectreviews", func(k8stesting.Action) (bool, runtime.Object, error) {
+			reviews++
+			return true, nil, reviewErr
+		})
+		return func(string, *rest.Config) (*rest.Config, *servertypes.Clients, error) {
+			return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: reviewingKubeClient}, nil
+		}, &reviews
+	}
+	t.Run("ClientTokenRejected", func(t *testing.T) {
+		rejecting, reviews := reviewingClientForAuthorization(apierrors.NewUnauthorized("Unauthorized"))
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, rejecting, "", "", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		for range 2 {
+			_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer fake"))
+			require.Error(t, err)
+			assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		}
+		assert.Equal(t, 2, *reviews, "failed reviews must not be cached")
+	})
+	t.Run("ClientTokenReviewCached", func(t *testing.T) {
+		accepting, reviews := reviewingClientForAuthorization(nil)
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, accepting, "", "", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		for range 2 {
+			_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer one"))
+			require.NoError(t, err)
+		}
+		assert.Equal(t, 1, *reviews, "a successful review is cached for the same token")
+		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer two"))
+		require.NoError(t, err)
+		assert.Equal(t, 2, *reviews, "a different token is reviewed")
+	})
+	t.Run("ClientTokenReviewCacheDisabled", func(t *testing.T) {
+		accepting, reviews := reviewingClientForAuthorization(nil)
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, accepting, "", "", true, resourceCache, 0)
+		require.NoError(t, err)
+		for range 2 {
+			_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer one"))
+			require.NoError(t, err)
+		}
+		assert.Equal(t, 2, *reviews, "a zero TTL disables the cache")
+	})
 	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", "", true, resourceCache)
+		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, clientForAuthorization, "", "", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), ""))
 		require.NoError(t, err)
@@ -158,7 +211,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.NoError(t, err)
@@ -171,7 +224,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.NoError(t, err)
@@ -188,7 +241,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 		require.NoError(t, err)
@@ -204,7 +257,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 		require.NoError(t, err)
@@ -221,7 +274,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("user2-ns"))
 		require.NoError(t, err)
@@ -238,7 +291,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("user3-ns"))
 		require.NoError(t, err)
@@ -258,7 +311,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"user1-only-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
 		require.NoError(t, err)
@@ -271,7 +324,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.NoError(t, err)
@@ -281,7 +334,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")

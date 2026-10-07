@@ -53,12 +53,17 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	// verify if we have permission to list Workflows
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
+	// A negated namespace selector returns every other namespace, so it needs cluster-wide permission
+	targetNamespace := options.Namespace
+	if options.NamespaceFilter == "NotEquals" {
+		targetNamespace = ""
+	}
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, targetNamespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", options.Namespace, options.Namespace))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", targetNamespace, targetNamespace))
 	}
 
 	limit := options.Limit
@@ -109,16 +114,23 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	if wf == nil {
-		// no need to call ToStatusError since it is already a status
-		return nil, status.Error(codes.NotFound, "not found")
+	// Authorize before revealing whether the workflow exists. Answering "not found" without an
+	// authorization check would let a caller without permission enumerate archived workflow
+	// names from the difference between "not found" and "permission denied".
+	namespace, name := req.Namespace, req.Name
+	if wf != nil {
+		namespace, name = wf.Namespace, wf.Name
 	}
-	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
+	if wf == nil {
+		// no need to call ToStatusError since it is already a status
+		return nil, status.Error(codes.NotFound, "not found")
 	}
 	return wf, nil
 }
@@ -130,7 +142,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if req.Name != "" {
 		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Name: req.Name, Namespace: req.Namespace})
 	} else {
-		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid, Namespace: req.Namespace})
 	}
 
 	if err != nil {
@@ -209,7 +221,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 	if req.Name != "" {
 		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Name: req.Name, Namespace: req.Namespace})
 	} else {
-		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid, Namespace: req.Namespace})
 	}
 
 	if err != nil {
@@ -239,7 +251,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	if req.Name != "" {
 		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Name: req.Name, Namespace: req.Namespace})
 	} else {
-		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+		wf, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid, Namespace: req.Namespace})
 	}
 
 	if err != nil {

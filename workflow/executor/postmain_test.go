@@ -23,19 +23,21 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 	tracingObj, err := tracing.New(ctx, `argoexec`)
 	require.NoError(t, err)
 	return &WorkflowExecutor{
-		PodName:            fakePodName,
-		podUID:             types.UID(fakePodUID),
-		workflow:           fakeWorkflow,
-		workflowUID:        types.UID(fakeWorkflowUID),
-		nodeID:             fakeNodeID,
-		Template:           tmpl,
-		ClientSet:          fake.NewClientset(),
-		Namespace:          fakeNamespace,
-		RuntimeExecutor:    mockRuntime,
-		taskResultClient:   argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
-		Tracing:            tracingObj,
-		memoizedConfigMaps: map[string]string{},
-		retryBackoff:       utilretry.ExecutorRetry(ctx),
+		Process: &Process{
+			PodName:            fakePodName,
+			podUID:             types.UID(fakePodUID),
+			ClientSet:          fake.NewClientset(),
+			Namespace:          fakeNamespace,
+			RuntimeExecutor:    mockRuntime,
+			taskResultClient:   argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
+			Tracing:            tracingObj,
+			memoizedConfigMaps: map[string]string{},
+			retryBackoff:       utilretry.ExecutorRetry(ctx),
+		},
+		workflow:    fakeWorkflow,
+		workflowUID: types.UID(fakeWorkflowUID),
+		nodeID:      fakeNodeID,
+		Template:    tmpl,
 	}
 }
 

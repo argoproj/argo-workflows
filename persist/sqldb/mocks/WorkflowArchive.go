@@ -20,10 +20,19 @@ func NewWorkflowArchive(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *WorkflowArchive {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &WorkflowArchive{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -66,7 +75,7 @@ type WorkflowArchive_ArchiveWorkflow_Call struct {
 // ArchiveWorkflow is a helper method to define mock.On call
 //   - ctx context.Context
 //   - wf *v1alpha1.Workflow
-func (_e *WorkflowArchive_Expecter) ArchiveWorkflow(ctx interface{}, wf interface{}) *WorkflowArchive_ArchiveWorkflow_Call {
+func (_e *WorkflowArchive_Expecter) ArchiveWorkflow(ctx any, wf any) *WorkflowArchive_ArchiveWorkflow_Call {
 	return &WorkflowArchive_ArchiveWorkflow_Call{Call: _e.mock.On("ArchiveWorkflow", ctx, wf)}
 }
 
@@ -132,7 +141,7 @@ type WorkflowArchive_CountWorkflows_Call struct {
 // CountWorkflows is a helper method to define mock.On call
 //   - ctx context.Context
 //   - options utils.ListOptions
-func (_e *WorkflowArchive_Expecter) CountWorkflows(ctx interface{}, options interface{}) *WorkflowArchive_CountWorkflows_Call {
+func (_e *WorkflowArchive_Expecter) CountWorkflows(ctx any, options any) *WorkflowArchive_CountWorkflows_Call {
 	return &WorkflowArchive_CountWorkflows_Call{Call: _e.mock.On("CountWorkflows", ctx, options)}
 }
 
@@ -189,7 +198,7 @@ type WorkflowArchive_DeleteExpiredWorkflows_Call struct {
 // DeleteExpiredWorkflows is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ttl time.Duration
-func (_e *WorkflowArchive_Expecter) DeleteExpiredWorkflows(ctx interface{}, ttl interface{}) *WorkflowArchive_DeleteExpiredWorkflows_Call {
+func (_e *WorkflowArchive_Expecter) DeleteExpiredWorkflows(ctx any, ttl any) *WorkflowArchive_DeleteExpiredWorkflows_Call {
 	return &WorkflowArchive_DeleteExpiredWorkflows_Call{Call: _e.mock.On("DeleteExpiredWorkflows", ctx, ttl)}
 }
 
@@ -246,7 +255,7 @@ type WorkflowArchive_DeleteWorkflow_Call struct {
 // DeleteWorkflow is a helper method to define mock.On call
 //   - ctx context.Context
 //   - uid string
-func (_e *WorkflowArchive_Expecter) DeleteWorkflow(ctx interface{}, uid interface{}) *WorkflowArchive_DeleteWorkflow_Call {
+func (_e *WorkflowArchive_Expecter) DeleteWorkflow(ctx any, uid any) *WorkflowArchive_DeleteWorkflow_Call {
 	return &WorkflowArchive_DeleteWorkflow_Call{Call: _e.mock.On("DeleteWorkflow", ctx, uid)}
 }
 
@@ -316,7 +325,7 @@ type WorkflowArchive_GetWorkflow_Call struct {
 //   - uid string
 //   - namespace string
 //   - name string
-func (_e *WorkflowArchive_Expecter) GetWorkflow(ctx interface{}, uid interface{}, namespace interface{}, name interface{}) *WorkflowArchive_GetWorkflow_Call {
+func (_e *WorkflowArchive_Expecter) GetWorkflow(ctx any, uid any, namespace any, name any) *WorkflowArchive_GetWorkflow_Call {
 	return &WorkflowArchive_GetWorkflow_Call{Call: _e.mock.On("GetWorkflow", ctx, uid, namespace, name)}
 }
 
@@ -395,7 +404,7 @@ type WorkflowArchive_GetWorkflowForEstimator_Call struct {
 //   - ctx context.Context
 //   - namespace string
 //   - requirements []labels.Requirement
-func (_e *WorkflowArchive_Expecter) GetWorkflowForEstimator(ctx interface{}, namespace interface{}, requirements interface{}) *WorkflowArchive_GetWorkflowForEstimator_Call {
+func (_e *WorkflowArchive_Expecter) GetWorkflowForEstimator(ctx any, namespace any, requirements any) *WorkflowArchive_GetWorkflowForEstimator_Call {
 	return &WorkflowArchive_GetWorkflowForEstimator_Call{Call: _e.mock.On("GetWorkflowForEstimator", ctx, namespace, requirements)}
 }
 
@@ -466,7 +475,7 @@ type WorkflowArchive_HasMoreWorkflows_Call struct {
 // HasMoreWorkflows is a helper method to define mock.On call
 //   - ctx context.Context
 //   - options utils.ListOptions
-func (_e *WorkflowArchive_Expecter) HasMoreWorkflows(ctx interface{}, options interface{}) *WorkflowArchive_HasMoreWorkflows_Call {
+func (_e *WorkflowArchive_Expecter) HasMoreWorkflows(ctx any, options any) *WorkflowArchive_HasMoreWorkflows_Call {
 	return &WorkflowArchive_HasMoreWorkflows_Call{Call: _e.mock.On("HasMoreWorkflows", ctx, options)}
 }
 
@@ -578,7 +587,7 @@ type WorkflowArchive_ListWorkflows_Call struct {
 // ListWorkflows is a helper method to define mock.On call
 //   - ctx context.Context
 //   - options utils.ListOptions
-func (_e *WorkflowArchive_Expecter) ListWorkflows(ctx interface{}, options interface{}) *WorkflowArchive_ListWorkflows_Call {
+func (_e *WorkflowArchive_Expecter) ListWorkflows(ctx any, options any) *WorkflowArchive_ListWorkflows_Call {
 	return &WorkflowArchive_ListWorkflows_Call{Call: _e.mock.On("ListWorkflows", ctx, options)}
 }
 
@@ -645,7 +654,7 @@ type WorkflowArchive_ListWorkflowsLabelKeys_Call struct {
 
 // ListWorkflowsLabelKeys is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *WorkflowArchive_Expecter) ListWorkflowsLabelKeys(ctx interface{}) *WorkflowArchive_ListWorkflowsLabelKeys_Call {
+func (_e *WorkflowArchive_Expecter) ListWorkflowsLabelKeys(ctx any) *WorkflowArchive_ListWorkflowsLabelKeys_Call {
 	return &WorkflowArchive_ListWorkflowsLabelKeys_Call{Call: _e.mock.On("ListWorkflowsLabelKeys", ctx)}
 }
 
@@ -708,7 +717,7 @@ type WorkflowArchive_ListWorkflowsLabelValues_Call struct {
 // ListWorkflowsLabelValues is a helper method to define mock.On call
 //   - ctx context.Context
 //   - key string
-func (_e *WorkflowArchive_Expecter) ListWorkflowsLabelValues(ctx interface{}, key interface{}) *WorkflowArchive_ListWorkflowsLabelValues_Call {
+func (_e *WorkflowArchive_Expecter) ListWorkflowsLabelValues(ctx any, key any) *WorkflowArchive_ListWorkflowsLabelValues_Call {
 	return &WorkflowArchive_ListWorkflowsLabelValues_Call{Call: _e.mock.On("ListWorkflowsLabelValues", ctx, key)}
 }
 

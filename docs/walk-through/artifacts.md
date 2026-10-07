@@ -368,6 +368,10 @@ If you don't use your own `ServiceAccount` and are just using `default` ServiceA
 If deletion of the artifact fails for some reason (other than the Artifact already having been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure.
 For additional debugging, the user should find 1 or more Pods named `<wfName>-artgc-*` and can view the logs.
 
+If the controller cannot start Artifact GC at all, for example because the GC Pod is rejected by an admission webhook or the Kubernetes API is unavailable, it records the same Condition and Event and retries on later reconciliations.
+It keeps retrying until the Workflow has been complete (or, for `OnWorkflowDeletion`, deleted) for longer than `ARGO_ARTIFACT_GC_RETRY_WINDOW` (default 60 minutes, see [environment variables](../environment-variables.md)), after which the strategy is abandoned and the Condition says so.
+The Workflow always gets at least one attempt, however old it is when the controller reaches it.
+
 If the user needs to delete the Workflow and its child CRD objects, they will need to patch the Workflow to remove the finalizer preventing the deletion:
 
 ```yaml
@@ -390,7 +394,8 @@ Or for simplicity use the Argo CLI `argo delete` command with flag `--force`, wh
 
 ### Release Versions >= 3.5
 
-A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails:
+A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails.
+This covers both a GC Pod that ran and failed and a strategy that was abandoned because the controller could not start it:
 
 ```yaml
 spec:

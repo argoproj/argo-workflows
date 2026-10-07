@@ -27,8 +27,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
+// InitProcess builds the process-wide executor state from the pod's
+// environment: API clients, tracing, namespace and pod-scoped settings.
+// It runs once per process; the per-task half is TaskConfigFromEnv.
+//
 //nolint:contextcheck
-func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
+func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *executor.Process {
 	version := argo.GetVersion()
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(version.Fields()).Info(ctx, "Starting Workflow Executor")
@@ -55,9 +59,46 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		os.Exit(1)
 	}
 
+	// errors ignored because values are set by the controller and checked there.
+	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
+	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
+
+	cre, err := emissary.New()
+	CheckErr(err)
+
+	process, err := executor.NewProcess(
+		ctx,
+		clientset,
+		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
+		restClient,
+		cre,
+		executor.ProcessConfig{
+			PodName:                      podName,
+			PodUID:                       types.UID(os.Getenv(common.EnvVarPodUID)),
+			Namespace:                    namespace,
+			AnnotationPatchTickDuration:  annotationPatchTickDuration,
+			ReadProgressFileTickDuration: progressFileTickDuration,
+			InstanceID:                   os.Getenv(common.EnvVarInstanceID),
+			TerminationGracePeriod:       TerminationGracePeriodDuration(),
+			ArtifactPluginNames:          os.Getenv(common.EnvVarArtifactPluginNames),
+			RemoveLocalArtPath:           os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
+			InitlessPod:                  common.IsInitlessPod(),
+			RetryBackoff:                 retry.ExecutorRetry(ctx),
+			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
+		},
+	)
+	CheckErr(err)
+	return process
+}
+
+// TaskConfigFromEnv reads the per-task values (template, node identity,
+// deadline) that the controller baked into the pod for the single task a
+// classic argoexec pod runs.
+func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 	tmpl := &wfv1.Template{}
 	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
 	var templateBytes []byte
+	var err error
 	if !ok {
 		// Wait container reads template from the file written by init container,
 		// not from the env var.
@@ -71,54 +112,41 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	}
 	CheckErr(json.Unmarshal(templateBytes, tmpl))
 
-	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
 	CheckErr(err)
 
-	// errors ignored because values are set by the controller and checked there.
-	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
-	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
+	raw := common.SplitPluginNames(os.Getenv(common.EnvVarInputArtifactPluginNames))
+	inputPlugins := make([]wfv1.ArtifactPluginName, 0, len(raw))
+	for _, p := range raw {
+		inputPlugins = append(inputPlugins, wfv1.ArtifactPluginName(p))
+	}
 
-	cre, err := emissary.New()
-	CheckErr(err)
+	return executor.TaskConfig{
+		WorkflowName:             os.Getenv(common.EnvVarWorkflowName),
+		WorkflowUID:              types.UID(os.Getenv(common.EnvVarWorkflowUID)),
+		NodeID:                   os.Getenv(common.EnvVarNodeID),
+		Template:                 *tmpl,
+		IncludeScriptOutput:      os.Getenv(common.EnvVarIncludeScriptOutput) == "true",
+		Deadline:                 deadline,
+		ProgressFile:             os.Getenv(common.EnvVarProgressFile),
+		InputArtifactPluginNames: inputPlugins,
+	}
+}
 
-	wfExecutor, err := executor.NewExecutor(
-		ctx,
-		clientset,
-		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
-		restClient,
-		cre,
-		executor.Config{
-			PodName:                      podName,
-			PodUID:                       types.UID(os.Getenv(common.EnvVarPodUID)),
-			WorkflowName:                 os.Getenv(common.EnvVarWorkflowName),
-			WorkflowUID:                  types.UID(os.Getenv(common.EnvVarWorkflowUID)),
-			NodeID:                       os.Getenv(common.EnvVarNodeID),
-			Namespace:                    namespace,
-			Template:                     *tmpl,
-			IncludeScriptOutput:          includeScriptOutput,
-			Deadline:                     deadline,
-			AnnotationPatchTickDuration:  annotationPatchTickDuration,
-			ReadProgressFileTickDuration: progressFileTickDuration,
-			ProgressFile:                 os.Getenv(common.EnvVarProgressFile),
-			InstanceID:                   os.Getenv(common.EnvVarInstanceID),
-			TerminationGracePeriod:       TerminationGracePeriodDuration(),
-			ArtifactPluginNames:          os.Getenv(common.EnvVarArtifactPluginNames),
-			RemoveLocalArtPath:           os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
-			InitlessPod:                  common.IsInitlessPod(),
-			RetryBackoff:                 retry.ExecutorRetry(ctx),
-			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
-		},
-	)
-	CheckErr(err)
+// Init builds the executor for the one task a classic argoexec pod runs:
+// process-wide setup followed by the single task described by the
+// environment.
+func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
+	process := InitProcess(ctx, clientConfig)
+	wfExecutor := process.NewExecutor(TaskConfigFromEnv(varRunArgo))
 
-	logger.
-		WithFields(version.Fields()).
-		WithField("namespace", namespace).
-		WithField("podName", podName).
+	logging.RequireLoggerFromContext(ctx).
+		WithFields(argo.GetVersion().Fields()).
+		WithField("namespace", wfExecutor.Namespace).
+		WithField("podName", wfExecutor.PodName).
 		WithField("templateName", wfExecutor.Template.Name).
-		WithField("includeScriptOutput", includeScriptOutput).
-		WithField("deadline", deadline).
+		WithField("includeScriptOutput", wfExecutor.IncludeScriptOutput).
+		WithField("deadline", wfExecutor.Deadline).
 		Info(ctx, "Executor initialized")
 	return wfExecutor
 }
