@@ -32,56 +32,33 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
 	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3.Succeeded"}
-	deps, logic := GetTaskDependencies(ctx, task, dctx)
+	deps := GetTaskDependencies(ctx, task, dctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
 	}
-	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.Succeeded) && !task-3.Succeeded", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1 || task-2.AnySucceeded) && !task-3.Succeeded"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
+	deps = GetTaskDependencies(ctx, task, dctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
 	}
-	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.AnySucceeded) && !task-3.Succeeded", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
+	deps = GetTaskDependencies(ctx, task, dctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
 	}
-	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned)||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1 || task-1.Succeeded) && !task-1.Failed"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
+	deps = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
-	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-1.Succeeded) && !task-1.Failed", logic)
 
 	task = &wfv1.DAGTask{Depends: "task-1.Succeeded && task-1.AnySucceeded"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
+	deps = GetTaskDependencies(ctx, task, dctx)
 	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeItems}, deps)
-	assert.Equal(t, "task-1.Succeeded && task-1.AnySucceeded", logic)
-
-	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true}
-	task = &wfv1.DAGTask{Depends: "task-1"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
-	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
-	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Failed)", logic)
-
-	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Error: true}
-	task = &wfv1.DAGTask{Depends: "task-1"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
-	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
-	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored)", logic)
-
-	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true, Error: true}
-	task = &wfv1.DAGTask{Depends: "task-1"}
-	deps, logic = GetTaskDependencies(ctx, task, dctx)
-	assert.Equal(t, map[string]DependencyType{"task-1": DependencyTypeTask}, deps)
-	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored || task-1.Failed)", logic)
 }
 
 func TestValidateTaskResults(t *testing.T) {
@@ -126,6 +103,15 @@ func TestGetTaskDependsLogic(t *testing.T) {
 	task = &wfv1.DAGTask{Dependencies: []string{"task-1", "task-2"}}
 	depends = getTaskDependsLogic(ctx, task, dctx)
 	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned) && (task-2.Succeeded || task-2.Skipped || task-2.Daemoned)", depends)
+
+	// A dependency's continueOn adds the results it continues on.
+	task = &wfv1.DAGTask{Dependencies: []string{"task-1"}}
+	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true}
+	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Failed)", getTaskDependsLogic(ctx, task, dctx))
+	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Error: true}
+	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored)", getTaskDependsLogic(ctx, task, dctx))
+	dctx.testTasks[0].ContinueOn = &wfv1.ContinueOn{Failed: true, Error: true}
+	assert.Equal(t, "(task-1.Succeeded || task-1.Skipped || task-1.Daemoned || task-1.Errored || task-1.Failed)", getTaskDependsLogic(ctx, task, dctx))
 }
 
 type testContext struct {

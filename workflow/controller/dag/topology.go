@@ -144,6 +144,11 @@ func resolveTaskDepends(task Task, taskProvider func(string) Task) ([]string, st
 	}
 
 	if task.GetDepends() == "" {
+		// Legacy dependencies, expanded here rather than through common's
+		// getTaskDependsLogic: that builds a depends expression from the raw
+		// names and parses it again, and the depends grammar cannot parse a
+		// Steps task's synthetic "[i].step" name. Here each name is expanded
+		// directly and rewritten to a safe identifier (normalizeTaskName).
 		deps := task.GetDependencies()
 		if len(deps) == 0 {
 			return nil, "", nil
