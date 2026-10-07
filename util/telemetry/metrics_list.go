@@ -428,6 +428,21 @@ var InstrumentResourceRateLimiterLatency = BuiltinInstrument{
 	},
 }
 
+var InstrumentRetryStrategyTerminationsTotal = BuiltinInstrument{
+	name:        "retry_strategy_terminations_total",
+	description: "Total number of otherwise eligible retries suppressed by a retryStrategy duration budget",
+	unit:        "{retry}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribRetryTerminationReason,
+		},
+		{
+			name: AttribWorkflowNamespace,
+		},
+	},
+}
+
 var InstrumentTotalCount = BuiltinInstrument{
 	name:        "total_count",
 	description: "A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace",
