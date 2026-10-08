@@ -1480,8 +1480,10 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 	if wfc.templateRepo != nil && wf.Spec.WorkflowTemplateRef == nil && len(wf.Spec.Templates) == 0 {
 		templates, hydrateErr := wfc.templateRepo.GetTemplates(ctx, string(wf.UID))
 		if hydrateErr != nil {
-			logger.WithError(hydrateErr).WithField("uid", wf.UID).Warn(ctx, "Failed to hydrate templates before archiving")
-		} else if len(templates) > 0 {
+			// Rows are the only copy: fail so the archive worker retries before any delete.
+			return fmt.Errorf("failed to hydrate templates before archiving: %w", hydrateErr)
+		}
+		if len(templates) > 0 {
 			wf.Spec.Templates = templates
 			// Make the archived record carry a consistent marker too (set even if the
 			// live marker was lost to the race) so archived-server reads don't re-probe.
