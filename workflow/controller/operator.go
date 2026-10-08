@@ -5014,19 +5014,11 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params common.Parameters) error {
 	execWfSpec := woc.execWf.Spec
 
-	// Preserve offloaded/hydrated templates to avoid "template not found" errors.
-	// Templates that were hydrated from the database only exist in woc.execWf.Spec.Templates,
-	// and removing them makes them inaccessible during template resolution.
-	// For non-offloaded workflows, templates remain in woc.wf.Spec.Templates and can be safely removed. // not-woc-misuse
-	isHydrated := woc.wf.Status.StoredTemplateSpecs != nil && woc.wf.Status.StoredTemplateSpecs.Hydrated
-	if !isHydrated {
-		// To Avoid the stale Global parameter value substitution to templates.
-		// Updated Global parameter values will be substituted in 'executetemplate' for templates.
-		execWfSpec.Templates = nil
-		woc.log.Debug(ctx, "Removed templates from execWfSpec for non-hydrated workflow")
-	} else {
-		woc.log.WithField("templateCount", len(execWfSpec.Templates)).Debug(ctx, "Preserved templates in execWfSpec for hydrated workflow")
-	}
+	// To Avoid the stale Global parameter value substitution to templates.
+	// Updated Global parameter values will be substituted in 'executetemplate' for templates.
+	// execWfSpec is a copy, so nil-ing templates keeps them out of the JSON round trip
+	// below without removing them from woc.execWf.Spec.
+	execWfSpec.Templates = nil
 
 	wfSpec, err := json.Marshal(execWfSpec)
 	if err != nil {

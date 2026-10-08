@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
@@ -907,4 +908,62 @@ func TestOperate_PendingHydrationRequeuesAfter(t *testing.T) {
 		"the pending workflow must be scheduled back onto the queue")
 	assert.Zero(t, controller.wfQueue.NumRequeues(key),
 		"a pending hydration must be scheduled with AddAfter, not AddRateLimited")
+}
+
+// TestSubstituteGlobalVariables_DoesNotSubstituteTemplates pins that templates are kept
+// out of the spec-wide substitution: global values are resolved later with a fresh scope,
+// and the JSON round trip must not rewrite the slice the template cache shares.
+func TestSubstituteGlobalVariables_DoesNotSubstituteTemplates(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.templateCache = newTemplateCache(1 << 20)
+
+	tmpl := wfv1.Template{
+		Name: "main",
+		Container: &v1.Container{
+			Args: []string{"{{workflow.parameters.foo}}"},
+		},
+	}
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-wf",
+			Namespace: "default",
+			UID:       "test-uid-123",
+		},
+		Status: wfv1.WorkflowStatus{
+			Phase: wfv1.WorkflowRunning,
+			StoredTemplateSpecs: &wfv1.TemplateSpecReference{
+				UID:      "test-uid-123",
+				Version:  "v1",
+				Hydrated: true,
+			},
+		},
+	}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	controller.templateCache.put("test-uid-123", "v1", []wfv1.Template{tmpl})
+	cached, ok := controller.templateCache.get("test-uid-123", "v1")
+	require.True(t, ok)
+	woc.execWf.Spec.Templates = cached
+	woc.execWf.Spec.NodeSelector = map[string]string{"zone": "{{workflow.parameters.foo}}"}
+
+	params := common.Parameters{"workflow.parameters.foo": "resolved"}
+	require.NoError(t, woc.substituteGlobalVariables(ctx, params))
+
+	// Non-template spec fields are still substituted.
+	assert.Equal(t, "resolved", woc.execWf.Spec.NodeSelector["zone"])
+
+	// Template bodies stay unresolved here; executeTemplate substitutes them later.
+	require.Len(t, woc.execWf.Spec.Templates, 1)
+	assert.Equal(t, []string{"{{workflow.parameters.foo}}"}, woc.execWf.Spec.Templates[0].Container.Args,
+		"template bodies must not be substituted by substituteGlobalVariables")
+
+	// The shared backing array of the template cache must not be rewritten.
+	stillCached, ok := controller.templateCache.get("test-uid-123", "v1")
+	require.True(t, ok)
+	require.Len(t, stillCached, 1)
+	assert.Equal(t, []string{"{{workflow.parameters.foo}}"}, stillCached[0].Container.Args,
+		"the version-keyed template cache must not be mutated")
 }
