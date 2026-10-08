@@ -4578,6 +4578,13 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 
 // hydrateTemplates loads templates from database if they were offloaded
 func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
+	// Inline templates are authoritative and need no database access. An archived
+	// retry can carry the original workflow's offload marker while the spec holds
+	// inline templates, so never probe the DB for a UID that has no rows.
+	if len(woc.wf.Spec.Templates) > 0 { //nolint:forbidigo // not-woc-misuse
+		return nil
+	}
+
 	// Skip if already hydrated AND templates are in memory (StoredTemplates populated)
 	// If Hydrated=true but StoredTemplates is empty, we need to re-hydrate (e.g., after dehydration)
 	if woc.wf.Status.StoredTemplateSpecs != nil && woc.wf.Status.StoredTemplateSpecs.Hydrated {
