@@ -305,6 +305,24 @@ type skipIfIndexExists struct {
 	inner sqldb.Change
 }
 
+// String renders this change as the SQL statement for its database type, so the generated
+// migration docs show that statement instead of the Go struct (which would also leak other
+// database types' SQL under the wrong heading). Database types without a statement get an
+// explicit note.
+func (s skipIfIndexExists) String() string {
+	switch inner := s.inner.(type) {
+	case sqldb.AnsiSQLChange:
+		return string(inner)
+	case sqldb.TypedChange:
+		if change, ok := inner.Changes[inner.DBType]; ok {
+			if sql, ok := change.(sqldb.AnsiSQLChange); ok {
+				return string(sql)
+			}
+		}
+	}
+	return "no statement for " + string(s.dbType)
+}
+
 func (s skipIfIndexExists) Apply(ctx context.Context, session db.Session) error {
 	exists, err := indexExists(session, s.dbType, s.tableName, s.indexName)
 	if err != nil {

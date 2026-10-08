@@ -267,10 +267,10 @@ create table if not exists argo_offloaded_workflow_templates (
 );
 
 -- Step 70
-— *Programmatic migration: {mysql argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_uid {mysql map[mysql:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid, namespace) postgres:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid)]}}*
+— *Programmatic migration: create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid, namespace)*
 
 -- Step 71
-— *Programmatic migration: {mysql argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_namespace {mysql map[postgres:create index idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace) sqlite:create index if not exists idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)]}}*
+— *Programmatic migration: no statement for mysql*
 
 ```
 
@@ -522,10 +522,10 @@ create table if not exists argo_offloaded_workflow_templates (
 );
 
 -- Step 70
-— *Programmatic migration: {postgres argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_uid {postgres map[mysql:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid, namespace) postgres:create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid)]}}*
+— *Programmatic migration: create index idx_argo_offloaded_wf_templates_uid on argo_offloaded_workflow_templates (uid)*
 
 -- Step 71
-— *Programmatic migration: {postgres argo_offloaded_workflow_templates idx_argo_offloaded_wf_templates_namespace {postgres map[postgres:create index idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace) sqlite:create index if not exists idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)]}}*
+— *Programmatic migration: create index idx_argo_offloaded_wf_templates_namespace on argo_offloaded_workflow_templates (clustername, namespace)*
 
 ```
 
