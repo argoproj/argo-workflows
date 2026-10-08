@@ -55,8 +55,7 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
             contents.push(
                 <div key='no-template' className='argo-field' style={{marginTop: '1em'}}>
                     <PhaseIcon value='Error' />
-                    Template not available: the template for this node could not be resolved.
-                    It may have been garbage-collected after the workflow was archived.
+                    Template not available: the template for this node could not be resolved. It may have been garbage-collected after the workflow was archived.
                 </div>
             );
         }
@@ -74,12 +73,12 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
         );
     }
 
-    // Show storedTemplates section only when templates are offloaded AND spec.templates is empty
-    // (e.g., list view where hydration hasn't happened).
-    // When spec.templates is already populated (server-side hydration), storedTemplates is redundant.
+    // Show the storedTemplates section when it has content and is not just the hydrated copy
+    // of spec.templates. Offloaded workflows carry the marker, and hydration fills the spec;
+    // templateRef workflows have no marker and hold their resolved templates only here.
     const isTemplatesOffloaded = props.workflow.status.storedTemplateSpecs?.uid != null;
     const storedTemplates = props.workflow.status.storedTemplates;
-    if (isTemplatesOffloaded && storedTemplates && Object.keys(storedTemplates).length && (!templates || Object.keys(templates).length === 0)) {
+    if (storedTemplates && Object.keys(storedTemplates).length && (!isTemplatesOffloaded || !templates || Object.keys(templates).length === 0)) {
         contents.push(
             <SlideContents
                 title='Stored Templates'
