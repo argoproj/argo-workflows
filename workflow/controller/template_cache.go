@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"slices"
 	"sync"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -105,6 +106,7 @@ func (c *templateCache) evict(uid string) {
 		c.bytes -= e.storedSize
 		delete(c.byUID, uid)
 	}
+	c.order = slices.DeleteFunc(c.order, func(u string) bool { return u == uid })
 }
 
 func (c *templateCache) size() int64 {

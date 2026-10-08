@@ -4703,7 +4703,7 @@ func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
 
 		if len(templates) > 0 {
 			woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Found offloaded templates in database (status not set), hydrating...")
-			woc.applyHydratedTemplates(templates)
+			woc.applyHydratedTemplates(templates, false)
 			woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully via fallback")
 			return nil
 		}
@@ -4724,10 +4724,12 @@ func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
 	// Version-keyed cache lookup: marker.Version is a content hash of the offloaded
 	// templates, so a hit proves the DB rows are byte-identical to the cached ones.
 	var templates []wfv1.Template
+	fromCache := false
 	if marker := woc.wf.Status.StoredTemplateSpecs; marker.Version != "" {
 		if cached, ok := woc.controller.templateCache.get(string(woc.wf.UID), marker.Version); ok {
 			woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Template cache hit (version match), skipping database fetch")
 			templates = cached
+			fromCache = true
 		}
 	}
 
@@ -4754,13 +4756,13 @@ func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
 		templates = fetched
 	}
 
-	woc.applyHydratedTemplates(templates)
+	woc.applyHydratedTemplates(templates, fromCache)
 	woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully")
 	return nil
 }
 
-// applyHydratedTemplates applies the hydrated templates to execWf and marks workflow as hydrated
-func (woc *wfOperationCtx) applyHydratedTemplates(templates []wfv1.Template) {
+// applyHydratedTemplates applies the hydrated templates to execWf and marks workflow as hydrated.
+func (woc *wfOperationCtx) applyHydratedTemplates(templates []wfv1.Template, fromCache bool) {
 	// Initialize execWf with a copy of the workflow if not already set
 	if woc.execWf == nil {
 		woc.execWf = woc.wf.DeepCopy()
@@ -4780,8 +4782,17 @@ func (woc *wfOperationCtx) applyHydratedTemplates(templates []wfv1.Template) {
 	// Mark as hydrated via transition-only dirtying: set woc.updated only on the
 	// nil/false->hydrated transition or a version change (re-hydration is otherwise
 	// content-identical, so flagging updated every cycle would sustain a requeue loop).
-	version := wfutil.ComputeTemplateVersion(templates)
 	prev := woc.wf.Status.StoredTemplateSpecs
+	var version string
+	if fromCache && prev != nil && prev.Version != "" {
+		// A cache hit only matches the marker's version, so the hash is known.
+		version = prev.Version
+	} else {
+		version = wfutil.ComputeTemplateVersion(templates)
+		// Warm the version-keyed controller cache so subsequent reconciles skip the
+		// database fetch entirely (hydrateTemplates consults it first).
+		woc.controller.templateCache.put(string(woc.wf.UID), version, templates)
+	}
 	firstHydration := prev == nil || !prev.Hydrated
 	versionChanged := prev == nil || prev.Version != version
 
@@ -4794,9 +4805,6 @@ func (woc *wfOperationCtx) applyHydratedTemplates(templates []wfv1.Template) {
 	if firstHydration || versionChanged {
 		woc.updated = true
 	}
-	// Warm the version-keyed controller cache so subsequent reconciles skip the
-	// database fetch entirely (hydrateTemplates consults it first).
-	woc.controller.templateCache.put(string(woc.wf.UID), version, templates)
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
