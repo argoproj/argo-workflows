@@ -203,7 +203,8 @@ sso:
 
 !!! Note
     The OIDC exchange happens once, at login.
-    Claims (including group membership used for [RBAC rules](#sso-rbac)) are fixed for the lifetime of the session and are not re-checked against the identity provider until the user logs in again.
+    Claims (including group membership used for [RBAC rules](#sso-rbac)) are fixed for the lifetime of the session.
+    Argo Server doesn't re-check them against the identity provider until the user logs in again.
     If a user's group membership changes at the IdP — for example they're removed from a group used to grant access — a session opened before that change keeps acting on the old claims until it naturally expires via `sessionExpiry`.
     A session token can also remain valid for up to one additional minute past that point, due to the default clock-skew leeway in the underlying JWT validation.
     Argo does not support refresh-token-based mid-session revalidation.
