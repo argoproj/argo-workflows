@@ -154,7 +154,7 @@ func (r *templateRepo) DeleteTemplates(ctx context.Context, uid string) error {
 	}, nil)
 }
 
-// ListOldOffloads returns UIDs with template offloads older than the given age.
+// ListOldOffloads returns the UIDs of workflows with template offloads older than the given
 func (r *templateRepo) ListOldOffloads(ctx context.Context, age time.Duration) ([]string, error) {
 	if !r.enabled {
 		return nil, fmt.Errorf("template offloading is disabled")
@@ -176,7 +176,7 @@ func (r *templateRepo) ListOldOffloads(ctx context.Context, age time.Duration) (
 			UID string `db:"uid"`
 		}
 		err := s.SQL().
-			Select("uid").
+			Select(db.Raw("distinct uid")).
 			From(r.tableName).
 			Where(db.Cond{"clustername": r.clusterName}).
 			And(fmt.Sprintf("createdat < current_timestamp - interval '%d' second", int(age.Seconds()))).
