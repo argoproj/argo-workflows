@@ -551,8 +551,8 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-Ta7ZOmyX8gG5tzWbY2oES70EJPfI90U7CIJS9EAce0s="
   [mod."github.com/klauspost/compress"]
-    version = "v1.19.2"
-    hash = "sha256-Q7taaWYa+O5MkhiGESFs4UdMba8cDGEROXU/Y+3M5vE="
+    version = "v1.20.1"
+    hash = "sha256-saWVNlxTAS7/lNaGght51onyIDaAFV1Kx11g3+vPuX4="
   [mod."github.com/klauspost/cpuid/v2"]
     version = "v2.4.0"
     hash = "sha256-nvTeRVxDekVNLd25aJ2NslBnG7nT25ewoSTk3iW5Xok="
@@ -710,8 +710,8 @@ schema = 3
     version = "v0.0.0-20240221224432-82ca36839d55"
     hash = "sha256-ujzuJ1ttQgjHQJEij4O/2+I8DZaUVZQCQgA4ysfqulI="
   [mod."github.com/prometheus/client_golang"]
-    version = "v1.24.1"
-    hash = "sha256-HAOFVYyPiU7hVS1XXMMjkbGgTT7/UN0zVHXYOnjr7is="
+    version = "v1.25.0"
+    hash = "sha256-PYAzSxsdlfkHDeLWtwTQriE43R1rZrHIl5nWJ9zeD9M="
   [mod."github.com/prometheus/client_model"]
     version = "v0.6.3"
     hash = "sha256-uYXpFkXMT4AXWJShrCRnu51vhGQAuAU3LFQhhGVJ+74="
@@ -722,8 +722,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
   [mod."github.com/prometheus/procfs"]
-    version = "v0.21.1"
-    hash = "sha256-5SpWprdX29oVntHJyadiICOk9UAP+hu+xJM51/A8Ig4="
+    version = "v0.22.0"
+    hash = "sha256-TRwVHKgW4NnPuC6Me38OD57ccM8AfnS7IxtcAx2TAH4="
   [mod."github.com/remyoudompheng/bigfft"]
     version = "v0.0.0-20230129092748-24d4a6f8daec"
     hash = "sha256-vYmpyCE37eBYP/navhaLV4oX4/nu0Z/StAocLIFqrmM="
