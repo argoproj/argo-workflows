@@ -24,14 +24,16 @@ Additionally, a container whose dependency is killed before it can report an exi
 
 ### Resource template output parameters no longer log the resource body at info level
 
-A resource template with output parameters previously ran `kubectl get` once per parameter, and logged each response body in the executor log at info level.
+A resource template with output parameters previously ran `kubectl get` once per parameter, and logged each response in the executor log at info level.
+For a `jqFilter` parameter that response was the whole resource as JSON; for a `jsonPath` parameter, `kubectl` evaluated the expression itself, so the response was only the selected value.
 It now reads the resource once for all of its output parameters, and logs only the arguments and the response size at info level ([#16602](https://github.com/argoproj/argo-workflows/pull/16602)).
 
-The body is still logged, at debug level, which matches how the resource JSON in `checkResourceState` has been logged since [#6100](https://github.com/argoproj/argo-workflows/pull/6100).
-If you relied on reading that body in executor logs at info level, raise the executor's log level to debug.
+The whole resource is now logged at debug level, which matches how the resource JSON in `checkResourceState` has been logged since [#6100](https://github.com/argoproj/argo-workflows/pull/6100).
+For templates with `jqFilter` parameters this moves the body from info to debug: if you relied on reading it in executor logs, raise the executor's log level to debug.
+For templates with only `jsonPath` parameters, the whole resource did not appear in the executor log before, and now does at debug level.
 
-Note that on earlier versions those info-level logs contained the whole resource, including the `data` or `stringData` of any `Secret` or `ConfigMap` a resource template read.
-If your log retention covers those versions, that content is in your stored executor logs.
+Note that on earlier versions, the info-level logs of templates with `jqFilter` output parameters contained the whole resource, including the `data` or `stringData` of any `Secret` or `ConfigMap` such a template read.
+If your log retention covers those versions, check the stored executor logs of those templates; templates with only `jsonPath` parameters logged just the selected values.
 
 Output parameter values are unchanged: `jsonPath` expressions still see `managedFields` and `jqFilter` still does not.
 
