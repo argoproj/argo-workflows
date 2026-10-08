@@ -83,7 +83,7 @@ func (r *templateRepo) SaveTemplates(ctx context.Context, uid, namespace string,
 	opCtx, cancel := context.WithTimeout(ctx, r.opTimeout)
 	defer cancel()
 	return r.sessionProxy.TxWith(opCtx, func(s *sqldb.SessionProxy) error {
-		sess := s.Session(ctx)
+		sess := s.Session(opCtx)
 
 		// Delete existing templates for this workflow
 		_, err := sess.SQL().
@@ -140,7 +140,7 @@ func (r *templateRepo) DeleteTemplates(ctx context.Context, uid string) error {
 	opCtx, cancel := context.WithTimeout(ctx, r.opTimeout)
 	defer cancel()
 	return r.sessionProxy.TxWith(opCtx, func(s *sqldb.SessionProxy) error {
-		sess := s.Session(ctx)
+		sess := s.Session(opCtx)
 		_, err := sess.SQL().
 			DeleteFrom(r.tableName).
 			Where(db.Cond{"clustername": r.clusterName}).
