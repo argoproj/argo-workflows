@@ -524,16 +524,9 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		wfc.wfQueue.AddAfter(key, wfc.semaphoreNotifyDelay)
 	}
 
-	workflowExists := func(key string) bool {
-		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
-		if err != nil {
-			logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
-			return false
-		}
-		return exists
-	}
+	workflowActive := func(key string) bool { return wfc.workflowActive(ctx, key) }
 
-	syncManager, err := sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists, true)
+	syncManager, err := sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowActive, true)
 	if err != nil {
 		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to create sync lock manager")
 		return
@@ -1575,6 +1568,46 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig
 		Temporality:  wfc.Config.MetricsConfig.GetTemporality(),
 	}
 	return &metricsConfig
+}
+
+// workflowActive reports whether a Workflow could still legitimately be holding a
+// synchronization lock.
+//
+// A completed Workflow cannot. The operator releases its locks the moment it is
+// fulfilled, and more decisively, operate() refuses to touch a Workflow carrying this
+// label at all ("we do not want to perform any more processing on a complete workflow
+// because we could corrupt it"). Nothing can still be running under it, exit handlers
+// included — the label is set in markWorkflowPhase only for Succeeded/Failed/Error,
+// alongside FinishedAt. So a lock still held by a completed Workflow is a leak, not a
+// hold.
+//
+// Treating mere existence as sufficient is what let #16772 persist. Every other
+// release path — on completion in operate, on delete in releaseAllWorkflowLocks, and
+// ReleaseAll itself — is gated on wf.Status.Synchronization being non-nil. A lock whose
+// status was never written (the database session broke between acquiring it and
+// recording it) is invisible to all three, and the reconciler then skipped it too
+// because a Failed Workflow still exists. The row stayed held until someone ran DELETE
+// by hand.
+func (wfc *WorkflowController) workflowActive(ctx context.Context, key string) bool {
+	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
+		return false
+	}
+	if !exists {
+		return false
+	}
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		// Not something we can judge. Leave the lock alone rather than release it on a
+		// guess: releasing a lock a live Workflow still holds would let a second one run
+		// concurrently, which is worse than leaking it.
+		return true
+	}
+	// The completed label is maintained alongside the phase and is far cheaper to read
+	// than converting the object, which matters here: this runs for every holder of
+	// every lock, once a minute.
+	return un.GetLabels()[common.LabelKeyCompleted] != "true"
 }
 
 func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj any) {
