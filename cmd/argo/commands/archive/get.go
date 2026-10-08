@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -61,7 +62,7 @@ func NewGetCommand() *cobra.Command {
 				return fmt.Errorf("resolve UID: %w", err)
 			}
 
-			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
+			wf, err := getArchivedWorkflow(ctx, serviceClient, uid, namespace)
 			if err != nil {
 				return err
 			}
@@ -74,6 +75,10 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().BoolVar(&forceUID, "uid", false, "force the argument to be treated as a UID")
 	command.MarkFlagsMutuallyExclusive("name", "uid")
 	return command
+}
+
+func getArchivedWorkflow(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, uid, namespace string) (*wfv1.Workflow, error) {
+	return serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid, Namespace: namespace})
 }
 
 func printWorkflow(wf *wfv1.Workflow, output string) {
