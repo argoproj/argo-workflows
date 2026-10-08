@@ -3,7 +3,7 @@ Authors: [Omkar Shendge](https://github.com/omkar619-dev)
 Component: General
 Issues: 14057
 
-Workflow defaults could previously only be set once per controller, in the `workflowDefaults` key of the workflow controller ConfigMap.
+You could previously only set Workflow defaults once per controller, in the `workflowDefaults` key of the workflow controller ConfigMap.
 A namespace can now supply its own defaults in a ConfigMap labelled `workflows.argoproj.io/configmap-type: WorkflowDefaults`.
 The controller finds the ConfigMap by that label rather than by a fixed name, so you can call it anything.
 The value under its `workflowDefaults` key has the same shape as the controller-level one, so the same document works in either place.
