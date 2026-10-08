@@ -128,11 +128,11 @@ schema = 3
     version = "v1.47.1"
     hash = "sha256-b6uaEXRUiHKqADXNDkJWt5w1sCsj6OwaQGbTKxdA/Hg="
   [mod."github.com/aws/aws-sdk-go-v2/config"]
-    version = "v1.33.6"
-    hash = "sha256-bQ30SzNYrU5KWynlN6v+PcrHhtSx5p7kEnyqPDZGPPk="
+    version = "v1.33.7"
+    hash = "sha256-ngFONjY26PObjPENavMM7iPITestuB74cBYISrgtPQY="
   [mod."github.com/aws/aws-sdk-go-v2/credentials"]
-    version = "v1.20.6"
-    hash = "sha256-EL0ar1ZP+ApWJxBVd2aZRKQbx8ae7YzJoD/J9gYnPS0="
+    version = "v1.20.7"
+    hash = "sha256-ZvtWgfWQMkUtkxe+6RXLCOfXqnFtc6H+R4zTS8QygYA="
   [mod."github.com/aws/aws-sdk-go-v2/feature/ec2/imds"]
     version = "v1.20.1"
     hash = "sha256-vtzYW/VyJB79OjVrIb/CBtjoCBW/eiafTjL99Vr8P0Q="
@@ -167,8 +167,8 @@ schema = 3
     version = "v1.14.4"
     hash = "sha256-xsYKYiZnt9pEvivxj50YtHHo8znZoqtV0Aez/+J1Hso="
   [mod."github.com/aws/aws-sdk-go-v2/service/signin"]
-    version = "v1.10.1"
-    hash = "sha256-VmbLKrQRnMl+2SlbJy/i8Ngm31vZIJ5bFhtA5E01TqA="
+    version = "v1.10.2"
+    hash = "sha256-rpGDwgXPwaQcmzssmy1WCKIIM9Uvmum/W3XbPrw3bQ0="
   [mod."github.com/aws/aws-sdk-go-v2/service/sns"]
     version = "v1.42.3"
     hash = "sha256-Pri3cqQ+c0OvmHb711D3gWXwbitulG/UbdCjLmo1AzA="
@@ -176,14 +176,14 @@ schema = 3
     version = "v1.46.3"
     hash = "sha256-nSg1kFNFlZEa4b5SFuErJk29MX1sW7SSIs/hlGImt1s="
   [mod."github.com/aws/aws-sdk-go-v2/service/sso"]
-    version = "v1.38.1"
-    hash = "sha256-BgwGLeeeUIA/beyk4DnLJ3HA70bUaO5fgTLhJ6xfJOw="
+    version = "v1.38.2"
+    hash = "sha256-PTh0u1NTEzK+NVi2cPG771eJc8apZ4t+QWe78StsZ1E="
   [mod."github.com/aws/aws-sdk-go-v2/service/ssooidc"]
-    version = "v1.43.1"
-    hash = "sha256-mj/7Tt1+L+FpvRLl/CC7kSiZPSE18lhi+iDGn2+wRvQ="
+    version = "v1.43.2"
+    hash = "sha256-S9jd3c2lqt5HQXCa8ZjPcw0XRUW3wAW2W9xAulIX45s="
   [mod."github.com/aws/aws-sdk-go-v2/service/sts"]
-    version = "v1.51.1"
-    hash = "sha256-Z3heejHlZSijeaj/3AHDVcEmC8387BDczbXDr34Gi7c="
+    version = "v1.51.2"
+    hash = "sha256-2DlQ5DLhjI4rubqy6e1mwTSVOBhHAyv6GpsWHmqEBbw="
   [mod."github.com/aws/smithy-go"]
     version = "v1.28.1"
     hash = "sha256-52wJGnuZVxhZtqgp4Gf7mgYrK6DOL8hFgtjo8e1NlCA="
