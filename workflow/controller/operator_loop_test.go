@@ -116,3 +116,26 @@ func TestTemplateCache_VersionKeyedLookup(t *testing.T) {
 	nilCache.evict("u")
 	require.Zero(t, nilCache.size())
 }
+
+// TestTemplateCache_IsolatesCallerSlices verifies get and put deep-copy, so neither the
+// caller's slice nor the returned slice can mutate a cached entry while the version matches.
+func TestTemplateCache_IsolatesCallerSlices(t *testing.T) {
+	c := newTemplateCache(1 << 20)
+	original := []wfv1.Template{{
+		Name:   "t1",
+		Inputs: wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "p1"}}},
+	}}
+	c.put("uid", "v1", original)
+
+	// Mutating the caller's slice after put must not change the cached entry.
+	original[0].Inputs.Parameters[0].Name = "mutated-after-put"
+	got, ok := c.get("uid", "v1")
+	require.True(t, ok)
+	require.Equal(t, "p1", got[0].Inputs.Parameters[0].Name)
+
+	// Mutating the returned slice must not change the cached entry either.
+	got[0].Inputs.Parameters[0].Name = "mutated-after-get"
+	got2, ok := c.get("uid", "v1")
+	require.True(t, ok)
+	require.Equal(t, "p1", got2[0].Inputs.Parameters[0].Name)
+}
