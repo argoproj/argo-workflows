@@ -225,10 +225,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	woc.log.WithFields(logging.Fields{"phase": woc.wf.Status.Phase, "resourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info(ctx, "Processing workflow")
 
-	// Hydrate templates from the database before execution. A transient DB error here must
-	// NOT fault the workflow: a failed hydrate is usually a temporary outage, so requeue
-	// rather than mark the workflow terminal — the reconcile loop retries on the next sync.
+	// Hydrate templates from the database before execution. A transient DB error or a
+	// not-yet-committed row must NOT fault or stall the workflow: the pending signal
+	// carries a backoff, so operate requeues without holding this worker under the
+	// workflow key lock.
 	if err := woc.hydrateTemplates(ctx); err != nil {
+		if pending, ok := errors.AsType[*templateHydrationPendingError](err); ok {
+			woc.log.WithError(err).Debug(ctx, "Templates not readable yet, requeuing")
+			woc.requeueAfter(pending.after)
+			return
+		}
 		woc.log.WithError(err).Error(ctx, "Failed to hydrate templates")
 		woc.requeue()
 		return
@@ -4576,7 +4582,67 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 	return woc.execWf.Spec.RetryStrategy
 }
 
-// hydrateTemplates loads templates from database if they were offloaded
+// templateHydrationPendingError signals that the offloaded templates are not readable
+// yet. operate requeues the workflow after the delay instead of the controller blocking
+// a worker in a sleep under the workflow key lock.
+type templateHydrationPendingError struct {
+	after time.Duration
+	cause error
+}
+
+func (e *templateHydrationPendingError) Error() string {
+	if e.cause != nil {
+		return fmt.Sprintf("templates not readable yet (%v), retrying in %s", e.cause, e.after)
+	}
+	return fmt.Sprintf("templates not readable yet, retrying in %s", e.after)
+}
+
+func (e *templateHydrationPendingError) Unwrap() error { return e.cause }
+
+// nextHydrationRetry maps the time already spent waiting for the offloaded rows to the
+// next backoff in the configured schedule: min(initial*2^i, maxBackoff) for i in
+// [0, attempts). The budget is measured from workflow creation because an attempt
+// counter cannot survive the requeue round trip. ok is false when the budget is spent.
+func nextHydrationRetry(elapsed, initial, maxBackoff time.Duration, attempts int) (time.Duration, bool) {
+	if attempts <= 0 {
+		return 0, false
+	}
+	// A zero backoff would otherwise form a schedule that is exhausted without waiting.
+	if initial < time.Millisecond {
+		initial = time.Millisecond
+	}
+	if maxBackoff < initial {
+		maxBackoff = initial
+	}
+	backoff := initial
+	for range attempts {
+		if elapsed < backoff {
+			return backoff, true
+		}
+		elapsed -= backoff
+		if backoff < maxBackoff {
+			if backoff > maxBackoff/2 {
+				backoff = maxBackoff
+			} else {
+				backoff *= 2
+			}
+		}
+	}
+	return 0, false
+}
+
+// hydrationElapsed is how long the workflow has existed. A zero creation timestamp
+// (fake or not-yet-persisted objects) counts as no time passed.
+func (woc *wfOperationCtx) hydrationElapsed() time.Duration {
+	if woc.wf.CreationTimestamp.IsZero() {
+		return 0
+	}
+	return max(time.Since(woc.wf.CreationTimestamp.Time), 0)
+}
+
+// hydrateTemplates loads templates from database if they were offloaded. It does at most
+// one fetch per reconcile: when the rows are not readable yet it returns a
+// templateHydrationPendingError, and operate schedules the next attempt with requeueAfter.
 func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
 	// Inline templates are authoritative and need no database access. An archived
 	// retry can carry the original workflow's offload marker while the spec holds
@@ -4603,144 +4669,94 @@ func (woc *wfOperationCtx) hydrateTemplates(ctx context.Context) error {
 		return nil
 	}
 
+	// Hydration retry settings; a nil Persistence gets zero-value getters (= the defaults).
+	cfg := woc.controller.Config.Persistence
+	if cfg == nil {
+		cfg = &config.PersistConfig{}
+	}
+
 	// Skip if templates were not offloaded for this workflow (small workflows)
 	// Templates are offloaded when StoredTemplateSpecs.UID is set
 	if woc.wf.Status.StoredTemplateSpecs == nil || woc.wf.Status.StoredTemplateSpecs.UID == "" { // not-woc-misuse
 		// WorkflowTemplate-referenced workflows carry no inline templates and have no
-		// offload record, so skip the DB lookup: probing here returns zero rows forever,
-		// wasting ~14 min in retry backoff and stalling the workflow.
+		// offload record, so skip the DB lookup: probing here returns zero rows forever.
 		if woc.wf.Spec.WorkflowTemplateRef != nil { //nolint:forbidigo // not-woc-misuse
 			woc.log.WithField("templateRef", woc.wf.Spec.WorkflowTemplateRef.Name).Debug(ctx, "Workflow references a template, skipping template hydration") //nolint:forbidigo // not-woc-misuse
 			return nil
 		}
-		// Fallback: Check if spec has no templates but workflow was submitted via API server
-		// In this case, templates might have been offloaded but status wasn't set yet
-		if len(woc.wf.Spec.Templates) == 0 && woc.controller.templateRepo != nil { //nolint:forbidigo // not-woc-misuse
-			woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Spec has no templates, checking database for offloaded templates")
-
-			templates, err := woc.hydrateTemplatesWithRetry(ctx, true)
-			if err != nil {
-				// A persistent error after all retries is a real DB connectivity issue, not
-				// "no rows found" — return it so the workflow fails clearly instead of proceeding.
-				return fmt.Errorf("failed to check for offloaded templates after retries: %w", err)
+		// Fallback: the spec has no templates but the workflow may have been submitted via
+		// the API server, which saves the rows just after creating the stub. Probe once and
+		// let operate requeue while the rows commit. A marker lost to a lost status update
+		// lands here too.
+		woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Spec has no templates, checking database for offloaded templates")
+		templates, err := woc.controller.templateRepo.GetTemplates(ctx, string(woc.wf.UID))
+		if err != nil {
+			after, ok := nextHydrationRetry(woc.hydrationElapsed(), cfg.GetTemplateHydrationFallbackBackoff(), cfg.GetTemplateHydrationFallbackBackoffMax(), cfg.GetTemplateHydrationFallbackRetries())
+			if ok {
+				woc.log.WithError(err).WithField("retryIn", after).Warn(ctx, "Failed to check for offloaded templates, retrying")
+				return &templateHydrationPendingError{after: after, cause: err}
 			}
+			// A persistent error after the whole retry budget is a real DB connectivity
+			// issue, not "no rows found" — return it so the workflow fails clearly.
+			return fmt.Errorf("failed to check for offloaded templates: %w", err)
+		}
 
-			if len(templates) > 0 {
-				woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Found offloaded templates in database (status not set), hydrating...")
-				woc.applyHydratedTemplates(templates)
-				woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully via fallback")
-				return nil
-			}
+		if len(templates) > 0 {
+			woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Found offloaded templates in database (status not set), hydrating...")
+			woc.applyHydratedTemplates(templates)
+			woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully via fallback")
+			return nil
+		}
+
+		after, ok := nextHydrationRetry(woc.hydrationElapsed(), cfg.GetTemplateHydrationFallbackBackoff(), cfg.GetTemplateHydrationFallbackBackoffMax(), cfg.GetTemplateHydrationFallbackRetries())
+		if ok {
+			woc.log.WithField("retryIn", after).Debug(ctx, "Offloaded templates not committed yet, retrying")
+			return &templateHydrationPendingError{after: after}
 		}
 
 		woc.log.Debug(ctx, "Templates were not offloaded for this workflow, using inline templates")
 		return nil
 	}
 
-	// Fetch templates from database with retry (race condition: workflow may be processed before templates are committed)
+	// Fetch templates from database (race condition: workflow may be processed before templates are committed).
 	woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Hydrating templates from database")
-	templates, err := woc.hydrateTemplatesWithRetry(ctx, false)
-	if err != nil {
-		return err
+
+	// Version-keyed cache lookup: marker.Version is a content hash of the offloaded
+	// templates, so a hit proves the DB rows are byte-identical to the cached ones.
+	var templates []wfv1.Template
+	if marker := woc.wf.Status.StoredTemplateSpecs; marker.Version != "" {
+		if cached, ok := woc.controller.templateCache.get(string(woc.wf.UID), marker.Version); ok {
+			woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Template cache hit (version match), skipping database fetch")
+			templates = cached
+		}
 	}
 
 	if len(templates) == 0 {
-		woc.log.WithField("uid", string(woc.wf.UID)).Error(ctx, "No templates found in database after retries")
-		return fmt.Errorf("no templates found in database for uid %s", woc.wf.UID)
+		fetched, err := woc.controller.templateRepo.GetTemplates(ctx, string(woc.wf.UID))
+		if err != nil {
+			after, ok := nextHydrationRetry(woc.hydrationElapsed(), cfg.GetTemplateHydrationBackoff(), cfg.GetTemplateHydrationBackoffMax(), cfg.GetTemplateHydrationRetries())
+			if ok {
+				woc.log.WithError(err).WithField("retryIn", after).Warn(ctx, "Failed to get templates from database, retrying")
+				return &templateHydrationPendingError{after: after, cause: err}
+			}
+			woc.log.WithError(err).Error(ctx, "Failed to get templates from database after the retry budget")
+			return fmt.Errorf("failed to hydrate templates: %w", err)
+		}
+		if len(fetched) == 0 {
+			after, ok := nextHydrationRetry(woc.hydrationElapsed(), cfg.GetTemplateHydrationBackoff(), cfg.GetTemplateHydrationBackoffMax(), cfg.GetTemplateHydrationRetries())
+			if ok {
+				woc.log.WithField("retryIn", after).Debug(ctx, "No templates found yet, retrying")
+				return &templateHydrationPendingError{after: after}
+			}
+			woc.log.WithField("uid", string(woc.wf.UID)).Error(ctx, "No templates found in database after the retry budget")
+			return fmt.Errorf("no templates found in database for uid %s", woc.wf.UID)
+		}
+		templates = fetched
 	}
 
 	woc.applyHydratedTemplates(templates)
 	woc.log.WithField("templateCount", len(templates)).Debug(ctx, "Templates hydrated successfully")
 	return nil
-}
-
-// hydrateTemplatesWithRetry fetches templates from database with configurable retry logic
-// isFallback determines whether to use fallback (more retries, longer backoff) or main hydration settings
-func (woc *wfOperationCtx) hydrateTemplatesWithRetry(ctx context.Context, isFallback bool) ([]wfv1.Template, error) {
-	var templates []wfv1.Template
-	var err error
-
-	// Version-keyed cache lookup (non-fallback only: fallback probing has no marker
-	// to key on). A hit — marker.Version is a content hash of the offloaded templates
-	// — proves the DB rows are byte-identical to the cached ones, skipping the fetch.
-	if !isFallback {
-		if marker := woc.wf.Status.StoredTemplateSpecs; marker != nil && marker.Version != "" { // not-woc-misuse
-			if cached, ok := woc.controller.templateCache.get(string(woc.wf.UID), marker.Version); ok {
-				woc.log.WithField("uid", string(woc.wf.UID)).Debug(ctx, "Template cache hit (version match), skipping database fetch")
-				return cached, nil
-			}
-		}
-	}
-
-	// Hydration retry settings; a nil Persistence gets zero-value getters (= the defaults),
-	// and fallback hydration gets more retries and longer backoff.
-	cfg := woc.controller.Config.Persistence
-	if cfg == nil {
-		cfg = &config.PersistConfig{}
-	}
-	var maxRetries int
-	var initialBackoff, maxBackoff time.Duration
-	if isFallback {
-		maxRetries = cfg.GetTemplateHydrationFallbackRetries()
-		initialBackoff = cfg.GetTemplateHydrationFallbackBackoff()
-		maxBackoff = cfg.GetTemplateHydrationFallbackBackoffMax()
-	} else {
-		maxRetries = cfg.GetTemplateHydrationRetries()
-		initialBackoff = cfg.GetTemplateHydrationBackoff()
-		maxBackoff = cfg.GetTemplateHydrationBackoffMax()
-	}
-	// Always attempt at least one fetch: retries counts re-attempts, and a zero-attempt
-	// fallback would silently treat offloaded workflows as template-less.
-	attempts := max(maxRetries, 1)
-
-	// Fallback empty-retry budget covers the submit race (stub created before DB rows
-	// commit); SaveTemplates can take 30s+ for large workflows, so 15 retries (~45
-	// min worst case) — but the first non-empty result breaks the loop immediately.
-	const fallbackMaxEmptyRetries = 15
-	fallbackEmptyRetries := 0
-
-	for i := range attempts {
-		templates, err = woc.controller.templateRepo.GetTemplates(ctx, string(woc.wf.UID))
-		if err != nil {
-			// Retry DB errors in BOTH fallback and non-fallback modes: transient DB
-			// restarts must not fault the workflow on the first error.
-			backoff := min(initialBackoff*time.Duration(1<<i), maxBackoff)
-			woc.log.WithField("attempt", i+1).WithError(err).WithField("backoff", backoff).Warn(ctx, "Failed to get templates from database, retrying...")
-			if i < attempts-1 {
-				time.Sleep(backoff)
-				continue
-			}
-			// Last attempt failed — propagate the error
-			woc.log.WithError(err).Error(ctx, "Failed to get templates from database after all retries")
-			return nil, fmt.Errorf("failed to hydrate templates after %d attempts: %w", attempts, err)
-		}
-		if len(templates) > 0 {
-			break
-		}
-		// On a clean empty result (no error, 0 rows) in fallback probing mode: the rows
-		// may not be committed yet (stub created BEFORE the DB write), so retry a bounded
-		// number of times, then zero out the budget so the loop exits promptly.
-		if isFallback {
-			if fallbackEmptyRetries < fallbackMaxEmptyRetries {
-				fallbackEmptyRetries++
-				if i < attempts-1 {
-					backoff := min(initialBackoff*time.Duration(1<<i), maxBackoff)
-					woc.log.WithFields(logging.Fields{"attempt": i + 1, "backoff": backoff}).Debug(ctx, "No templates found yet (fallback race window), retrying...")
-					time.Sleep(backoff)
-					continue
-				}
-			}
-			break
-		}
-		if i < attempts-1 {
-			// Exponential backoff: initialBackoff * 2^i, capped at maxBackoff
-			backoff := min(initialBackoff*time.Duration(1<<i), maxBackoff)
-			woc.log.WithFields(logging.Fields{"attempt": i + 1, "backoff": backoff}).Debug(ctx, "No templates found yet, retrying...")
-			time.Sleep(backoff)
-		}
-	}
-
-	return templates, nil
 }
 
 // applyHydratedTemplates applies the hydrated templates to execWf and marks workflow as hydrated
@@ -4779,7 +4795,7 @@ func (woc *wfOperationCtx) applyHydratedTemplates(templates []wfv1.Template) {
 		woc.updated = true
 	}
 	// Warm the version-keyed controller cache so subsequent reconciles skip the
-	// database fetch entirely (hydrateTemplatesWithRetry consults it first).
+	// database fetch entirely (hydrateTemplates consults it first).
 	woc.controller.templateCache.put(string(woc.wf.UID), version, templates)
 }
 

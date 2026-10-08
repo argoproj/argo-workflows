@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/workqueue"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -262,9 +263,50 @@ func TestHydrateTemplates_EmptyResult(t *testing.T) {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-wf",
-			Namespace: "default",
-			UID:       "test-uid-123",
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now()),
+		},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{},
+		},
+		Status: wfv1.WorkflowStatus{
+			StoredTemplateSpecs: &wfv1.TemplateSpecReference{
+				UID:      "test-uid-123",
+				Hydrated: false,
+			},
+		},
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.hydrateTemplates(ctx)
+
+	var pending *templateHydrationPendingError
+	require.ErrorAs(t, err, &pending)
+	assert.Equal(t, time.Millisecond, pending.after)
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
+}
+
+// TestHydrateTemplates_EmptyResultExhausted verifies the main path fails once the
+// workflow is older than the whole retry budget.
+func TestHydrateTemplates_EmptyResultExhausted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.Config.Persistence = smallBackoff(2)
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("GetTemplates", ctx, "test-uid-123").Return([]wfv1.Template{}, nil)
+	controller.templateRepo = mockRepo
+
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 		},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{},
@@ -282,7 +324,7 @@ func TestHydrateTemplates_EmptyResult(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no templates found in database")
-	mockRepo.AssertCalled(t, "GetTemplates", ctx, "test-uid-123")
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
 }
 
 func TestHydrateTemplates_Error(t *testing.T) {
@@ -296,9 +338,10 @@ func TestHydrateTemplates_Error(t *testing.T) {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-wf",
-			Namespace: "default",
-			UID:       "test-uid-123",
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 		},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{},
@@ -317,6 +360,47 @@ func TestHydrateTemplates_Error(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to hydrate templates")
 	mockRepo.AssertCalled(t, "GetTemplates", ctx, "test-uid-123")
+}
+
+// TestHydrateTemplates_ErrorRetries verifies a DB error inside the budget returns a
+// pending signal that wraps the cause, instead of blocking in a retry loop.
+func TestHydrateTemplates_ErrorRetries(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.Config.Persistence = smallBackoff(2)
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("GetTemplates", ctx, "test-uid-123").Return(nil, assert.AnError)
+	controller.templateRepo = mockRepo
+
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now()),
+		},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{},
+		},
+		Status: wfv1.WorkflowStatus{
+			StoredTemplateSpecs: &wfv1.TemplateSpecReference{
+				UID:      "test-uid-123",
+				Hydrated: false,
+			},
+		},
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.hydrateTemplates(ctx)
+
+	var pending *templateHydrationPendingError
+	require.ErrorAs(t, err, &pending)
+	require.ErrorIs(t, err, assert.AnError)
+	assert.Equal(t, time.Millisecond, pending.after)
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
 }
 
 // TestHydrateTemplates_FallbackPath_Success verifies the fallback hydration
@@ -360,8 +444,8 @@ func TestHydrateTemplates_FallbackPath_Success(t *testing.T) {
 	assert.True(t, woc.updated)
 }
 
-// TestHydrateTemplates_FallbackPath_Empty verifies the fallback path when
-// the DB returns no templates (best-effort: no error, no hydration).
+// TestHydrateTemplates_FallbackPath_Empty verifies the fallback path requeues while
+// waiting for rows that the API server may not have committed yet.
 func TestHydrateTemplates_FallbackPath_Empty(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -375,9 +459,47 @@ func TestHydrateTemplates_FallbackPath_Empty(t *testing.T) {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-wf",
-			Namespace: "default",
-			UID:       "test-uid-123",
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now()),
+		},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{},
+		},
+		Status: wfv1.WorkflowStatus{
+			// No StoredTemplateSpecs - triggers fallback
+		},
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.hydrateTemplates(ctx)
+
+	var pending *templateHydrationPendingError
+	require.ErrorAs(t, err, &pending)
+	assert.Equal(t, time.Millisecond, pending.after)
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
+}
+
+// TestHydrateTemplates_FallbackPath_EmptyExhausted verifies the fallback gives up once
+// the workflow is older than the whole retry budget, and treats it as not offloaded.
+func TestHydrateTemplates_FallbackPath_EmptyExhausted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.Config.Persistence = smallBackoff(2)
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("GetTemplates", ctx, "test-uid-123").Return([]wfv1.Template{}, nil)
+	controller.templateRepo = mockRepo
+
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 		},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{},
@@ -391,9 +513,8 @@ func TestHydrateTemplates_FallbackPath_Empty(t *testing.T) {
 	err := woc.hydrateTemplates(ctx)
 
 	require.NoError(t, err)
-	mockRepo.AssertCalled(t, "GetTemplates", ctx, "test-uid-123")
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
 	assert.Nil(t, woc.wf.Status.StoredTemplateSpecs)
-	assert.False(t, woc.updated)
 }
 
 // TestHydrateTemplates_FallbackPath_Error verifies the fallback path propagates persistent
@@ -432,8 +553,8 @@ func TestHydrateTemplates_FallbackPath_Error(t *testing.T) {
 	assert.Nil(t, woc.wf.Status.StoredTemplateSpecs)
 }
 
-// TestHydrateTemplates_RetryEventualConsistency verifies the retry loop
-// handles eventual consistency: first call returns empty, second succeeds.
+// TestHydrateTemplates_RetryEventualConsistency verifies the submit race is bridged
+// across reconciles: the first fetch signals pending, the next one succeeds.
 func TestHydrateTemplates_RetryEventualConsistency(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
@@ -449,9 +570,10 @@ func TestHydrateTemplates_RetryEventualConsistency(t *testing.T) {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-wf",
-			Namespace: "default",
-			UID:       "test-uid-123",
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now()),
 		},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{},
@@ -465,8 +587,14 @@ func TestHydrateTemplates_RetryEventualConsistency(t *testing.T) {
 	}
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.hydrateTemplates(ctx)
 
+	err := woc.hydrateTemplates(ctx)
+	var pending *templateHydrationPendingError
+	require.ErrorAs(t, err, &pending)
+	require.False(t, woc.wf.Status.StoredTemplateSpecs.Hydrated)
+
+	// Next reconcile: the rows are committed now.
+	err = woc.hydrateTemplates(ctx)
 	require.NoError(t, err)
 	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 2)
 	require.Len(t, woc.execWf.Spec.Templates, 1)
@@ -489,9 +617,10 @@ func TestHydrateTemplates_RetryExhaustion_Empty(t *testing.T) {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-wf",
-			Namespace: "default",
-			UID:       "test-uid-123",
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now().Add(-time.Hour)),
 		},
 		Spec: wfv1.WorkflowSpec{
 			Templates: []wfv1.Template{},
@@ -509,7 +638,7 @@ func TestHydrateTemplates_RetryExhaustion_Empty(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no templates found in database")
-	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 2)
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
 }
 
 // TestApplyHydratedTemplates verifies all side-effects of applyHydratedTemplates.
@@ -708,4 +837,74 @@ func TestSubstituteGlobalVariables_PreservesHydratedTemplates(t *testing.T) {
 	assert.Len(t, wocNonHydrated.execWf.Spec.Templates, 1, "templates surprise-survive the intended nil-out (omitempty drops the key on the JSON round-trip)")
 	assert.Equal(t, placeholderArgs, wocNonHydrated.execWf.Spec.Templates[0].Container.Args,
 		"unresolved placeholders survive the non-hydrated path too")
+}
+
+func TestNextHydrationRetry(t *testing.T) {
+	tests := []struct {
+		name     string
+		elapsed  time.Duration
+		initial  time.Duration
+		max      time.Duration
+		attempts int
+		want     time.Duration
+		wantOK   bool
+	}{
+		{"first attempt", 0, 500 * time.Millisecond, 120 * time.Second, 15, 500 * time.Millisecond, true},
+		{"after first backoff", 600 * time.Millisecond, 500 * time.Millisecond, 120 * time.Second, 15, time.Second, true},
+		{"mid schedule", 10 * time.Second, 500 * time.Millisecond, 120 * time.Second, 15, 8 * time.Second, true},
+		{"capped", 10 * time.Minute, 500 * time.Millisecond, 120 * time.Second, 15, 120 * time.Second, true},
+		{"exhausted", time.Hour, 500 * time.Millisecond, 120 * time.Second, 15, 0, false},
+		{"zero budget", 0, 500 * time.Millisecond, 120 * time.Second, 0, 0, false},
+		{"zero initial backoff", 0, 0, 0, 1, time.Millisecond, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := nextHydrationRetry(tc.elapsed, tc.initial, tc.max, tc.attempts)
+			assert.Equal(t, tc.wantOK, ok)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestOperate_PendingHydrationRequeuesAfter verifies operate turns a pending hydration
+// into a scheduled requeue (AddAfter) and returns, instead of blocking or rate-limiting.
+func TestOperate_PendingHydrationRequeuesAfter(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.Config.Persistence = smallBackoff(2)
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("GetTemplates", ctx, "test-uid-123").Return([]wfv1.Template{}, nil)
+	controller.templateRepo = mockRepo
+	controller.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+	defer controller.wfQueue.ShutDown()
+
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-wf",
+			Namespace:         "default",
+			UID:               "test-uid-123",
+			CreationTimestamp: metav1.NewTime(time.Now()),
+		},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{},
+		},
+		Status: wfv1.WorkflowStatus{
+			StoredTemplateSpecs: &wfv1.TemplateSpecReference{
+				UID:      "test-uid-123",
+				Hydrated: false,
+			},
+		},
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	key := "default/test-wf"
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 1 }, time.Second, time.Millisecond,
+		"the pending workflow must be scheduled back onto the queue")
+	assert.Zero(t, controller.wfQueue.NumRequeues(key),
+		"a pending hydration must be scheduled with AddAfter, not AddRateLimited")
 }
