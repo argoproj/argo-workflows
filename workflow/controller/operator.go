@@ -830,9 +830,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		cachedTemplates = make([]wfv1.Template, len(woc.execWf.Spec.Templates))
 		copy(cachedTemplates, woc.execWf.Spec.Templates)
 		woc.execWf.Spec.Templates = nil
-		// Also clear StoredTemplates to avoid persisting large template map to etcd
-		woc.wf.Status.StoredTemplates = nil
-		woc.log.Debug(ctx, "Templates removed from execWf spec and StoredTemplates cleared before persisting")
+		for _, tmpl := range cachedTemplates {
+			delete(woc.wf.Status.StoredTemplates, tmpl.Name)
+		}
 	}
 
 	nodes := woc.wf.Status.Nodes
