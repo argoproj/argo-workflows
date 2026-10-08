@@ -171,6 +171,42 @@ func TestHydrateTemplates_NotOffloaded(t *testing.T) {
 	assert.Equal(t, "inline-template", woc.execWf.Spec.Templates[0].Name)
 }
 
+// TestHydrateTemplates_InlineTemplatesWithStaleMarker covers an archived retry
+// that kept the original offload marker: inline templates must win, with no DB probe.
+func TestHydrateTemplates_InlineTemplatesWithStaleMarker(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	mockRepo := mocks.NewTemplateRepo(t)
+	controller.templateRepo = mockRepo
+
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-wf",
+			Namespace: "default",
+			UID:       "new-uid-456",
+		},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{{Name: "inline-template"}},
+		},
+		Status: wfv1.WorkflowStatus{
+			StoredTemplateSpecs: &wfv1.TemplateSpecReference{
+				UID:      "old-uid-123",
+				Hydrated: true,
+			},
+		},
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	err := woc.hydrateTemplates(ctx)
+
+	require.NoError(t, err)
+	mockRepo.AssertNotCalled(t, "GetTemplates", mock.Anything, mock.Anything)
+	require.Len(t, woc.execWf.Spec.Templates, 1)
+	assert.Equal(t, "inline-template", woc.execWf.Spec.Templates[0].Name)
+}
+
 func TestHydrateTemplates_Success(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)

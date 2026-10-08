@@ -373,6 +373,8 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 		wf.ResourceVersion = ""
 		wf.UID = ""
+		wf.Status.StoredTemplateSpecs = nil
+		wf.Status.StoredTemplates = nil
 		result, createErr := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepoForOffload(), wf, w.templateOffloadMinSize)
 		if createErr != nil {
 			return nil, sutils.ToStatusError(createErr, codes.Internal)
