@@ -66,12 +66,8 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		} else {
 			logger.Info(ctx, "Node status offloading is disabled")
 		}
-		if persistence.TemplateOffload {
-			wfc.templateRepo = persist.NewTemplateRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), "argo_offloaded_workflow_templates", persistence.GetOperationTimeout())
-			logger.Info(ctx, "Template offloading is enabled")
-		} else {
-			logger.Info(ctx, "Template offloading is disabled")
-		}
+		wfc.templateRepo = persist.NewTemplateRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), "argo_offloaded_workflow_templates", persistence.GetOperationTimeout())
+		logger.WithField("templateOffload", persistence.TemplateOffload).Info(ctx, "Template repository configured")
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
 

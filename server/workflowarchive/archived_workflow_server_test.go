@@ -36,7 +36,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo, nil, nil, 0)
+	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo, nil, nil, 0, false)
 	allowed := true
 	// when set, only access reviews for this namespace are allowed, whatever allowed says
 	allowedNamespace := ""
