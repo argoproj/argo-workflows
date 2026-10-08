@@ -117,6 +117,12 @@ This is an [expr expression](variables.md#expression) with access to the followi
     expression: lastRetry.message matches 'imminent node shutdown|pod deleted'
     ```
 
+- `node.type`: The type of the node being retried: `Pod`, `Steps`, `DAG`, etc. (see [all-template variables](variables.md#all-templates))
+
+    ```yaml
+    expression: node.type == "Pod" # only retry Pod nodes
+    ```
+
 If `expression` evaluates to false, the step will not be retried.
 
 The `expression` result will be logical *and* with the `retryPolicy`. Both must be true to retry.
