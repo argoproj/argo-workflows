@@ -581,14 +581,14 @@ schema = 3
     version = "v1.8.10"
     hash = "sha256-smE+l2A9yDnDJFI7iNCjjF9NQnPySxEFFnbRUHyCq7I="
   [mod."github.com/mattn/go-colorable"]
-    version = "v0.1.14"
-    hash = "sha256-JC60PjKj7MvhZmUHTZ9p372FV72I9Mxvli3fivTbxuA="
+    version = "v0.1.15"
+    hash = "sha256-hH+yMJHjboEDQbv399OEjfc50RgtO/edw0r2sJfxEJg="
   [mod."github.com/mattn/go-isatty"]
-    version = "v0.0.20"
-    hash = "sha256-qhw9hWtU5wnyFyuMbKx+7RB8ckQaFQ8D+8GKPkN3HHQ="
+    version = "v0.0.24"
+    hash = "sha256-pmq8KKIb2+qMF3E1cR2B7NAj5joF2tZduyXjIfIlkTk="
   [mod."github.com/mattn/go-runewidth"]
-    version = "v0.0.23"
-    hash = "sha256-SmChZ2U1aR8pW3LPhdM7KcVF5TO6VcHgRzBtUXbBWJA="
+    version = "v0.0.30"
+    hash = "sha256-2idyB8BVjqiwBOmBteKMTM9uBfr96g29k8hqJWjlndE="
   [mod."github.com/minio/crc64nvme"]
     version = "v1.1.1"
     hash = "sha256-RVVi/gWPBEQqcW4n+KIKxlA3uY5+77e2rhkVk8fFNUo="
@@ -656,8 +656,8 @@ schema = 3
     version = "v0.0.0-20140419014527-cca7078d478f"
     hash = "sha256-gRTfRfff/LRxC1SXXnQd2tV3UTcTx9qu90DJIVIaGn8="
   [mod."github.com/nao1215/markdown"]
-    version = "v0.13.0"
-    hash = "sha256-YakmT8Cw/WwJA9Fwx//6KN4h1QahByGvcK8H48GBFd4="
+    version = "v1.1.1"
+    hash = "sha256-O+6DEdPqZ3lnqLGxlHhCqyEJgS4RJSAfxFTXUS1YaHk="
   [mod."github.com/ncruces/go-strftime"]
     version = "v1.0.0"
     hash = "sha256-GYIwYDONuv/yTE0AEugCHQbtV3oiBaco93xUNYFcVBQ="
@@ -665,14 +665,14 @@ schema = 3
     version = "v0.0.0-20250911104152-50322a0618f6"
     hash = "sha256-zkV9QYPu+fXO90ARQ/gn+gDkngJbBFaPqbTU378ki1Y="
   [mod."github.com/olekukonko/errors"]
-    version = "v1.1.0"
-    hash = "sha256-XYJzcbMX5iQsQ5k122a0QeoL5wbcLgh+LklcLsa6cv4="
+    version = "v1.3.0"
+    hash = "sha256-e//bXtAyskC1o6hzfy3Zi9mOK8cmA5KxS9ItBPkBlyw="
   [mod."github.com/olekukonko/ll"]
-    version = "v0.1.4-0.20260115111900-9e59c2286df0"
-    hash = "sha256-bAzMGeDdOhZnE7bnz1dd/lrSlB8FXH+CR8F2xwwefKc="
+    version = "v0.1.8"
+    hash = "sha256-XvFOfgRmsJUy2RUjJ9MhNCclw0lCWxrBYlbv6plpD0c="
   [mod."github.com/olekukonko/tablewriter"]
-    version = "v1.1.3"
-    hash = "sha256-9doZFXVtyqPDC2H1Zjzx1m2XLDPQRc6EHxacf1uaHmM="
+    version = "v1.1.5"
+    hash = "sha256-LLGFe4s7DAvOJmqmgTDNOrZRlnVoFuN5tZOJn4wqkXs="
   [mod."github.com/onsi/ginkgo"]
     version = "v1.16.5"
     hash = "sha256-Q3CKWQyIJKOiX9cs4t5Nz4pYxj6CT3AWnMXRNiM71GQ="
