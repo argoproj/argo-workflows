@@ -29,6 +29,20 @@ type templateCache struct {
 	bytes    int64
 }
 
+// deepCopyTemplates returns an independent copy of a template set. The cache must
+// not share template bodies with callers in either direction: get and put are value
+// boundaries.
+func deepCopyTemplates(templates []wfv1.Template) []wfv1.Template {
+	if templates == nil {
+		return nil
+	}
+	out := make([]wfv1.Template, len(templates))
+	for i := range templates {
+		templates[i].DeepCopyInto(&out[i])
+	}
+	return out
+}
+
 func newTemplateCache(maxBytes int64) *templateCache {
 	return &templateCache{
 		byUID:    make(map[string]cacheEntry),
@@ -46,7 +60,7 @@ func (c *templateCache) get(uid, version string) ([]wfv1.Template, bool) {
 	if !ok || e.version != version {
 		return nil, false
 	}
-	return e.templates, true
+	return deepCopyTemplates(e.templates), true
 }
 
 func (c *templateCache) put(uid, version string, templates []wfv1.Template) {
@@ -59,7 +73,7 @@ func (c *templateCache) put(uid, version string, templates []wfv1.Template) {
 		// hydration simply re-fetches from the database.
 		return
 	}
-	entry := cacheEntry{version: version, templates: templates, storedSize: int64(len(stored))}
+	entry := cacheEntry{version: version, templates: deepCopyTemplates(templates), storedSize: int64(len(stored))}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
