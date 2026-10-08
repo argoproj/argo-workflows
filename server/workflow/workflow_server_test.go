@@ -3,7 +3,9 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
@@ -18,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
@@ -34,6 +37,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/fields"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
@@ -1809,4 +1813,116 @@ func TestCreateWorkflow_WithTemplateOffload_DBFailureDeletesWorkflow(t *testing.
 	require.Error(t, err)
 	assert.Nil(t, wf)
 	assert.Contains(t, err.Error(), "failed to save templates")
+}
+
+type recordingWatchWorkflowServer struct {
+	testServerStream
+	mu     sync.Mutex
+	events []*workflowpkg.WorkflowWatchEvent
+}
+
+func (r *recordingWatchWorkflowServer) Send(e *workflowpkg.WorkflowWatchEvent) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.events = append(r.events, e)
+	return nil
+}
+
+func (r *recordingWatchWorkflowServer) sent() []*workflowpkg.WorkflowWatchEvent {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]*workflowpkg.WorkflowWatchEvent(nil), r.events...)
+}
+
+func TestHydrationMemo(t *testing.T) {
+	m := newHydrationMemo()
+	wf := &v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "uid-1"},
+		Status: v1alpha1.WorkflowStatus{
+			StoredTemplateSpecs: &v1alpha1.TemplateSpecReference{UID: "uid-1", Version: "v1"},
+		},
+	}
+	templates := []v1alpha1.Template{{Name: "t1"}}
+
+	_, ok := m.get(wf)
+	require.False(t, ok, "empty memo must miss")
+
+	m.put(wf, "v1", templates)
+	got, ok := m.get(wf)
+	require.True(t, ok)
+	require.Equal(t, templates, got)
+
+	// A different version must miss, so a re-offload re-reads.
+	wf.Status.StoredTemplateSpecs.Version = "v2"
+	_, ok = m.get(wf)
+	require.False(t, ok)
+
+	// No version means no memo key: never stored, never returned.
+	wf.Status.StoredTemplateSpecs = nil
+	m.put(wf, "", templates)
+	_, ok = m.get(wf)
+	require.False(t, ok)
+
+	// Bounded: never grows past maxHydrationMemoEntries.
+	m = newHydrationMemo()
+	for i := range maxHydrationMemoEntries + 5 {
+		w := &v1alpha1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: apitypes.UID(fmt.Sprintf("uid-%d", i))}}
+		m.put(w, "v1", templates)
+	}
+	require.LessOrEqual(t, len(m.entries), maxHydrationMemoEntries)
+}
+
+func TestShouldHydrateTemplates(t *testing.T) {
+	// No fields: the response carries everything.
+	assert.True(t, shouldHydrateTemplates(fields.NewCleaner("")))
+	// The UI list watch field set: templates are dropped by the cleaner.
+	assert.False(t, shouldHydrateTemplates(fields.NewCleaner("result.object.metadata.name,result.object.status.phase,result.object.spec.arguments").WithoutPrefix("result.object.")))
+	// A client that asks for template fields still gets hydration.
+	assert.True(t, shouldHydrateTemplates(fields.NewCleaner("result.object.spec.templates").WithoutPrefix("result.object.")))
+	assert.True(t, shouldHydrateTemplates(fields.NewCleaner("result.object.status.storedTemplates").WithoutPrefix("result.object.")))
+}
+
+func TestWatchWorkflows_HydratesTemplatesOncePerVersion(t *testing.T) {
+	mockRepo := mocks.NewTemplateRepo(t)
+	mockRepo.On("IsEnabled").Return(true)
+	mockRepo.On("GetTemplates", mock.Anything, "watch-uid").Return([]v1alpha1.Template{{Name: "whalesay"}}, nil).Once()
+	server, ctx := newWorkflowServerWithTemplateRepo(t, mockRepo)
+
+	wfClient := ctx.Value(auth.WfKey).(*v1alpha.Clientset)
+	fakeWatcher := watch.NewFake()
+	wfClient.PrependWatchReactor("workflows", func(ktesting.Action) (bool, watch.Interface, error) {
+		return true, fakeWatcher, nil
+	})
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stream := &recordingWatchWorkflowServer{testServerStream: testServerStream{ctx}}
+	done := make(chan error, 1)
+	go func() { done <- server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, stream) }()
+
+	offloaded := &v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "watch-wf", Namespace: "workflows", UID: "watch-uid"},
+		Status: v1alpha1.WorkflowStatus{
+			Phase: v1alpha1.WorkflowRunning,
+			StoredTemplateSpecs: &v1alpha1.TemplateSpecReference{
+				UID:      "watch-uid",
+				Version:  "v1",
+				Hydrated: true,
+			},
+		},
+	}
+	// Two independent copies: hydration mutates the event object, so sharing one would
+	// leave the second event with templates already set and skip the hydration path.
+	fakeWatcher.Modify(offloaded.DeepCopy())
+	fakeWatcher.Modify(offloaded.DeepCopy())
+
+	require.Eventually(t, func() bool { return len(stream.sent()) == 2 }, 5*time.Second, 10*time.Millisecond)
+	cancel()
+	require.NoError(t, <-done)
+
+	// The second event must still carry the memoized templates, from one DB read.
+	events := stream.sent()
+	require.Len(t, events, 2)
+	assert.NotEmpty(t, events[1].Object.Spec.Templates)
+	mockRepo.AssertNumberOfCalls(t, "GetTemplates", 1)
 }

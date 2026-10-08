@@ -261,21 +261,18 @@ func (s *workflowServer) hydrateTemplates(ctx context.Context, wf *wfv1.Workflow
 	}
 
 	// Populate the spec and StoredTemplates so template lookup and the UI manifest view work.
-	wf.Spec.Templates = templates
-	if wf.Status.StoredTemplates == nil {
-		wf.Status.StoredTemplates = make(map[string]wfv1.Template)
-	}
-	for _, tmpl := range templates {
-		wf.Status.StoredTemplates[tmpl.Name] = tmpl
-	}
+	applyTemplates(wf, templates)
 
-	// Rebuild the marker so subsequent reads short-circuit as already hydrated.
-	if missingOffloadMarker {
+	// Keep the marker's content version current: watch streams memoize hydrated templates
+	// by (uid, version). Rebuild the marker when it was lost, or fill a missing version.
+	if wf.Status.StoredTemplateSpecs == nil {
 		wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
 			UID:      string(wf.UID),
 			Version:  util.ComputeTemplateVersion(templates),
 			Hydrated: true,
 		}
+	} else if wf.Status.StoredTemplateSpecs.Version == "" {
+		wf.Status.StoredTemplateSpecs.Version = util.ComputeTemplateVersion(templates)
 	}
 
 	return nil
@@ -438,6 +435,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	defer watch.Stop()
 	cleaner := fields.NewCleaner(req.Fields).WithoutPrefix("result.object.")
 
+	// One memo per stream: templates do not change for a workflow version, and the
+	// stream resends the full object on every event.
+	memo := newHydrationMemo()
+
 	clean := func(x *wfv1.Workflow) (*wfv1.Workflow, error) {
 		y := &wfv1.Workflow{}
 		if clean, cleanErr := cleaner.Clean(x, y); cleanErr != nil {
@@ -478,11 +479,18 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 					return sutils.ToStatusError(err, codes.Internal)
 				}
 			}
-			// Hydrate templates if they were offloaded. A transient DB error here must NOT
-			// tear down the client's watch stream: warn and emit the event un-hydrated so
-			// the controller can retry hydration on a later sync.
-			if err := s.hydrateTemplates(ctx, wf); err != nil {
-				logger.WithError(err).WithField("workflow", wf.Name).Warn(ctx, "Failed to hydrate offloaded templates; emitting event un-hydrated and retrying on a later sync")
+			// Hydrate templates only when the response will carry them, and memoize the
+			// result per (uid, version) so a stream reads each template version once.
+			// A transient DB error here must NOT tear down the client's watch stream:
+			// warn and emit the event un-hydrated so the controller can retry on a later sync.
+			if shouldHydrateTemplates(cleaner) {
+				if templates, ok := memo.get(wf); ok {
+					applyTemplates(wf, templates)
+				} else if err := s.hydrateTemplates(ctx, wf); err != nil {
+					logger.WithError(err).WithField("workflow", wf.Name).Warn(ctx, "Failed to hydrate offloaded templates; emitting event un-hydrated and retrying on a later sync")
+				} else if marker := wf.Status.StoredTemplateSpecs; marker != nil {
+					memo.put(wf, marker.Version, wf.Spec.Templates)
+				}
 			}
 			newWf, err := clean(wf)
 			if err != nil {
