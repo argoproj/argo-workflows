@@ -58,8 +58,14 @@ func TestHydrateTemplates_RehydrationCycleDoesNotDirtyWorkflow(t *testing.T) {
 	stripped.Status.StoredTemplates = nil
 
 	// ---- cycle 2: same informer object, nothing real changed ------------------
+	// Snapshot the cache entry: a hit must not re-put (re-hash/re-marshal) the templates.
+	cachedBefore := controller.templateCache.byUID["test-uid-123"].templates
+	require.NotEmpty(t, cachedBefore)
 	woc2 := newWorkflowOperationCtx(ctx, stripped, controller)
 	require.NoError(t, woc2.hydrateTemplates(ctx))
+	cachedAfter := controller.templateCache.byUID["test-uid-123"].templates
+	require.Same(t, &cachedBefore[0], &cachedAfter[0],
+		"a cache hit must not re-put the cached templates")
 	require.False(t, woc2.updated,
 		"steady-state re-hydration must not dirty the workflow (no etcd write, no self-sustaining requeue)")
 	require.NotEmpty(t, woc2.execWf.Spec.Templates, "templates must still hydrate for execution")
@@ -138,4 +144,21 @@ func TestTemplateCache_IsolatesCallerSlices(t *testing.T) {
 	got2, ok := c.get("uid", "v1")
 	require.True(t, ok)
 	require.Equal(t, "p1", got2[0].Inputs.Parameters[0].Name)
+}
+
+// TestTemplateCache_EvictDropsFIFOOrder verifies evict removes the UID from the FIFO order,
+// so stale entries cannot accumulate or evict a re-inserted UID early.
+func TestTemplateCache_EvictDropsFIFOOrder(t *testing.T) {
+	c := newTemplateCache(1 << 20)
+	c.put("uid-a", "v1", []wfv1.Template{{Name: "a"}})
+	require.Len(t, c.order, 1)
+
+	c.evict("uid-a")
+	require.Empty(t, c.order, "evict must drop the UID from the FIFO order")
+	require.Zero(t, c.size())
+	_, ok := c.get("uid-a", "v1")
+	require.False(t, ok)
+
+	c.put("uid-a", "v1", []wfv1.Template{{Name: "a"}})
+	require.Len(t, c.order, 1, "re-put after evict must not leave a duplicate FIFO entry")
 }

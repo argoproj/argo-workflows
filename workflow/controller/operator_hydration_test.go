@@ -668,7 +668,7 @@ func TestApplyHydratedTemplates(t *testing.T) {
 		{Name: "tmpl-1"},
 		{Name: "tmpl-2"},
 	}
-	woc.applyHydratedTemplates(templates)
+	woc.applyHydratedTemplates(templates, false)
 
 	require.NotNil(t, woc.execWf)
 	assert.Equal(t, templates, woc.execWf.Spec.Templates)
