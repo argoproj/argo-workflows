@@ -335,11 +335,11 @@ schema = 3
     version = "v1.5.1-0.20230307220236-3a3c6141e376"
     hash = "sha256-f4k0gSYuo0/q3WOoTxl2eFaj7WZpdz29ih6CKc8Ude8="
   [mod."github.com/go-git/go-billy/v5"]
-    version = "v5.9.0"
-    hash = "sha256-6+i1Xk8kR6EY8y6YSE9Oyj8ykcvyHUHZv04GfwOIzzs="
+    version = "v5.9.2"
+    hash = "sha256-VW8mfdLjvAuiooR2WV7P0IoOosAvtDZvFWcGQJJVSSY="
   [mod."github.com/go-git/go-git/v5"]
-    version = "v5.19.2"
-    hash = "sha256-2du2hn5JDTEEYTWuGX+heSftkmd7HoaJXyWJG4bZeSM="
+    version = "v5.19.3"
+    hash = "sha256-2rDnG8fGnBt7ZjcxG1/dEhhNgGq0RgQ450jajlHhvTU="
   [mod."github.com/go-jose/go-jose/v4"]
     version = "v4.1.5"
     hash = "sha256-GnRt1sMlr4qn9yJ3RCtZSezN+C9DXR+v5smzAKmi26M="
@@ -695,8 +695,8 @@ schema = 3
     version = "v4.1.28"
     hash = "sha256-LW93xi47P8vkHHRXuiB+4LYxX0Q+jA1DwXK0oKopXLA="
   [mod."github.com/pjbgf/sha1cd"]
-    version = "v0.6.0"
-    hash = "sha256-WC/sYIy9Iznlra87K9Gonn6/bo4a2aE+kvldecfBPfE="
+    version = "v0.7.0"
+    hash = "sha256-75OUdr6YfQWIHx3sdhUaXAfAo0Gwv0GVUvtT9aRQ/aQ="
   [mod."github.com/pkg/browser"]
     version = "v0.0.0-20240102092130-5ac0b6a4141c"
     hash = "sha256-9iaSHHpcA1fXVF5f8RlKyo1DSoHx7eGXIC2/4LFaoBY="
