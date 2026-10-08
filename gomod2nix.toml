@@ -758,8 +758,8 @@ schema = 3
     version = "v1.4.0"
     hash = "sha256-U36bC271jQsjuWFF8BfLz4WicxPJUcPHRGxLvTz4Mdw="
   [mod."github.com/sirupsen/logrus"]
-    version = "v1.9.4"
-    hash = "sha256-ltRvmtM3XTCAFwY0IesfRqYIivyXPPuvkFjL4ARh1wg="
+    version = "v1.10.2"
+    hash = "sha256-1BKin1NpY1kFawnHkY0FxQ152aeB82RRKIDWJLctZB4="
   [mod."github.com/skeema/knownhosts"]
     version = "v1.3.1"
     hash = "sha256-kjqQDzuncQNTuOYegqVZExwuOt/Z73m2ST7NZFEKixI="
