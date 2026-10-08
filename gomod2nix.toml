@@ -911,11 +911,11 @@ schema = 3
     version = "v1.47.0"
     hash = "sha256-ZKgYAoUSGUrI/u2qctou/GVlgJ0Kd9aMEVxudopPfFQ="
   [mod."go.opentelemetry.io/otel/sdk"]
-    version = "v1.46.0"
-    hash = "sha256-bDS4r1NfK2jZmTx5KUcrPJpPC2Men1lOuEKhy3vkMxc="
+    version = "v1.47.0"
+    hash = "sha256-f9JqSocWeQUExdeAcTvoGuJ9GeQ9KGyeDsLcsYRRu54="
   [mod."go.opentelemetry.io/otel/sdk/metric"]
-    version = "v1.46.0"
-    hash = "sha256-7HyWcBj0lBc9V29f14gPFS3mBPrHZmC3TFuRsfIo7mI="
+    version = "v1.47.0"
+    hash = "sha256-DOrHpQS/i8JmbK6NbfK9bjyYsq5AQ9cGfiQmSpBqV4A="
   [mod."go.opentelemetry.io/otel/trace"]
     version = "v1.47.0"
     hash = "sha256-W0eb1RPyxX7WUXrQIg9+da00P46fRUlL2S1kgFOvAM0="
