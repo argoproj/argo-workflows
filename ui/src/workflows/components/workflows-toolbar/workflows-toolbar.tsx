@@ -57,7 +57,8 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
 
                     props.clearSelection();
                     // each failure has already shown its own error, do not also report success
-                    if (succeeded.every(ok => ok)) {
+                    // nothing is attempted when only archived workflows are selected and deleting those was declined
+                    if (succeeded.length > 0 && succeeded.every(ok => ok)) {
                         notifications.show({
                             content: `Performed '${action.title}' on selected workflows.`,
                             type: NotificationType.Success

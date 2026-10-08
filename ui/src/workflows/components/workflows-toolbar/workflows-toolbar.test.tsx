@@ -26,8 +26,8 @@ function forbidden(message: string) {
 
 const deleted = {workflowName: 'a', status: 'Deleted'};
 
-function workflow(name: string): Workflow {
-    return {metadata: {name, namespace: 'argo', uid: name}, spec: {}} as Workflow;
+function workflow(name: string, labels?: {[key: string]: string}): Workflow {
+    return {metadata: {name, namespace: 'argo', uid: name, labels}, spec: {}} as Workflow;
 }
 
 describe('WorkflowsToolbar', () => {
@@ -35,12 +35,15 @@ describe('WorkflowsToolbar', () => {
     const clearSelection = jest.fn();
     const loadWorkflows = jest.fn();
 
-    function renderToolbar(...names: string[]) {
-        const apis = {popup: {confirm: jest.fn().mockResolvedValue(true)}, notifications: {show}} as unknown as ContextApis;
+    const confirm = jest.fn();
+
+    function renderToolbar(...selected: (string | Workflow)[]) {
+        const apis = {popup: {confirm}, notifications: {show}} as unknown as ContextApis;
+        const wfs = selected.map(wf => (typeof wf === 'string' ? workflow(wf) : wf));
         render(
             <Context.Provider value={apis}>
                 <WorkflowsToolbar
-                    selectedWorkflows={new Map(names.map(name => [name, workflow(name)]))}
+                    selectedWorkflows={new Map(wfs.map(wf => [wf.metadata.name, wf]))}
                     disabledActions={{} as OperationDisabled}
                     clearSelection={clearSelection}
                     loadWorkflows={loadWorkflows}
@@ -49,7 +52,10 @@ describe('WorkflowsToolbar', () => {
         );
     }
 
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        confirm.mockResolvedValue(true);
+    });
 
     it('reports success when every delete succeeds', async () => {
         workflows.delete.mockResolvedValue(deleted);
@@ -85,6 +91,18 @@ describe('WorkflowsToolbar', () => {
         await waitFor(() => expect(loadWorkflows).toHaveBeenCalled());
         expect(show).toHaveBeenCalledTimes(1);
         expect(show).toHaveBeenCalledWith({content: 'Unable to delete workflow b in the cluster: Forbidden: Permission denied', type: NotificationType.Error});
+    });
+
+    it('does not report success when nothing was deleted', async () => {
+        // confirm the delete, then decline to delete from the archive
+        confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+        renderToolbar(workflow('a', {'workflows.argoproj.io/workflow-archiving-status': 'Persisted'}));
+
+        fireEvent.click(screen.getByText('DELETE'));
+
+        await waitFor(() => expect(loadWorkflows).toHaveBeenCalled());
+        expect(workflows.delete).not.toHaveBeenCalled();
+        expect(show).not.toHaveBeenCalled();
     });
 
     it('reports the error when another action is denied', async () => {
