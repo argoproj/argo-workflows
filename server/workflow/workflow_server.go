@@ -69,12 +69,23 @@ type workflowServer struct {
 	artifactRepositories   artifactrepositories.Interface
 	templateRepo           sqldb.TemplateRepo
 	templateOffloadMinSize int
+	templateOffload        bool
 }
 
 var _ Server = &workflowServer{}
 
+// templateRepoForOffload returns the repository only when this server may create new
+// offloads. The repository itself stays available for hydration and cleanup when
+// templateOffLoad is disabled.
+func (s *workflowServer) templateRepoForOffload() sqldb.TemplateRepo {
+	if !s.templateOffload {
+		return nil
+	}
+	return s.templateRepo
+}
+
 // NewServer returns a new Server
-func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface, templateRepo sqldb.TemplateRepo, templateOffloadMinSize int) Server {
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface, templateRepo sqldb.TemplateRepo, templateOffloadMinSize int, templateOffload bool) Server {
 	ws := &workflowServer{
 		instanceIDService:      instanceIDService,
 		offloadNodeStatusRepo:  offloadNodeStatusRepo,
@@ -87,6 +98,7 @@ func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloa
 		artifactRepositories:   artifactRepositories,
 		templateRepo:           templateRepo,
 		templateOffloadMinSize: templateOffloadMinSize,
+		templateOffload:        templateOffload,
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
@@ -160,7 +172,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	// Create the workflow, offloading its templates to the database first when a templateRepo is
 	// configured and the spec is large enough. The strip -> create (with retry backoff) ->
 	// save-or-delete -> marker -> best-effort update sequence lives in workflow/util.
-	wf, err := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, s.templateRepo, req.Workflow, s.templateOffloadMinSize)
+	wf, err := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, s.templateRepoForOffload(), req.Workflow, s.templateOffloadMinSize)
 	if err != nil {
 		if apierr.IsServerTimeout(err) && req.Workflow.GenerateName != "" && req.Workflow.Name != "" {
 			errWithHint := fmt.Errorf(`create request failed due to timeout, but it's possible that workflow "%s" already exists. Original error: %w`, req.Workflow.Name, err)
@@ -620,8 +632,8 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	// the existing rows, and pushing the full template spec through the Update below would
 	// send a multi-MB object to etcd. Small workflows stay inline, honoring the same
 	// templateOffloadMinSize gate as the create path.
-	if s.templateRepo != nil && s.templateRepo.IsEnabled() && util.ShouldOffloadTemplates(wf.Spec.Templates, s.templateOffloadMinSize) {
-		err = s.templateRepo.SaveTemplates(ctx, string(wf.UID), wf.Namespace, wf.Spec.Templates)
+	if repo := s.templateRepoForOffload(); repo != nil && repo.IsEnabled() && util.ShouldOffloadTemplates(wf.Spec.Templates, s.templateOffloadMinSize) {
+		err = repo.SaveTemplates(ctx, string(wf.UID), wf.Namespace, wf.Spec.Templates)
 		if err != nil {
 			// Rows may already be gone (deleted after archiving). Fail soft: keep
 			// the templates in spec rather than losing the retry.
@@ -679,7 +691,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	}
 	creator.LabelCreator(ctx, newWF)
 
-	created, err := util.SubmitWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, s.templateRepo, req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{}, s.templateOffloadMinSize)
+	created, err := util.SubmitWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, s.templateRepoForOffload(), req.Namespace, newWF, s.wfDefaults, &wfv1.SubmitOpts{}, s.templateOffloadMinSize)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

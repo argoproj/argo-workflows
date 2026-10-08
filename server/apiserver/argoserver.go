@@ -272,10 +272,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
 		wfArchive = persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
-		// Enable template offloading if configured
+		// Always construct the repository: templateOffLoad gates new offloads only. The
+		// server must still hydrate and clean up rows written while it was enabled.
+		templateRepo = persist.NewTemplateRepo(ctx, log, sessionProxy, persistence.GetClusterName(), "argo_offloaded_workflow_templates", persistence.GetOperationTimeout())
 		if persistence.TemplateOffload {
-			templateRepo = persist.NewTemplateRepo(ctx, log, sessionProxy, persistence.GetClusterName(), "argo_offloaded_workflow_templates", persistence.GetOperationTimeout())
 			log.Info(ctx, "Template offloading is enabled for API server")
+		} else {
+			log.Info(ctx, "Template offloading is disabled for API server, existing offloaded templates will still be hydrated")
 		}
 	} else {
 		log.Debug(ctx, "Persistence not configured, template offloading not available")
@@ -305,14 +308,15 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if persistence != nil {
 		templateOffloadMinSize = persistence.GetTemplateOffloadMinSize()
 	}
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults, templateRepo, templateOffloadMinSize)
+	templateOffload := persistence != nil && persistence.TemplateOffload
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults, templateRepo, templateOffloadMinSize, templateOffload)
 
 	syncServer := serversync.NewSyncServer(ctx, as.clients.Kubernetes, as.namespace, config.Synchronization)
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories, templateRepo, templateOffloadMinSize)
+	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories, templateRepo, templateOffloadMinSize, templateOffload)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 

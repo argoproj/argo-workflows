@@ -36,11 +36,22 @@ type archivedWorkflowServer struct {
 	wfDefaults             *wfv1.Workflow
 	templateRepo           sqldb.TemplateRepo
 	templateOffloadMinSize int
+	templateOffload        bool
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfDefaults *wfv1.Workflow, templateRepo sqldb.TemplateRepo, templateOffloadMinSize int) workflowarchivepkg.ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfDefaults, templateRepo, templateOffloadMinSize}
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfDefaults *wfv1.Workflow, templateRepo sqldb.TemplateRepo, templateOffloadMinSize int, templateOffload bool) workflowarchivepkg.ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfDefaults, templateRepo, templateOffloadMinSize, templateOffload}
+}
+
+// templateRepoForOffload returns the repository only when this server may create new
+// offloads. The repository itself stays available for hydration and cleanup when
+// templateOffLoad is disabled.
+func (w *archivedWorkflowServer) templateRepoForOffload() sqldb.TemplateRepo {
+	if !w.templateOffload {
+		return nil
+	}
+	return w.templateRepo
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
@@ -311,7 +322,7 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 	}
 	creator.LabelCreator(ctx, newWF)
 
-	created, err := util.SubmitWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepo, req.Namespace, newWF, w.wfDefaults, &wfv1.SubmitOpts{}, w.templateOffloadMinSize)
+	created, err := util.SubmitWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepoForOffload(), req.Namespace, newWF, w.wfDefaults, &wfv1.SubmitOpts{}, w.templateOffloadMinSize)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -362,7 +373,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 		wf.ResourceVersion = ""
 		wf.UID = ""
-		result, createErr := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepo, wf, w.templateOffloadMinSize)
+		result, createErr := util.CreateWorkflowWithOffload(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, w.templateRepoForOffload(), wf, w.templateOffloadMinSize)
 		if createErr != nil {
 			return nil, sutils.ToStatusError(createErr, codes.Internal)
 		}
