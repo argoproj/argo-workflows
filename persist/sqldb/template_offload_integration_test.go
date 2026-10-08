@@ -189,6 +189,10 @@ func exerciseTemplateRepo(t *testing.T, proxy *usqldb.SessionProxy, dbType strin
 	require.NoError(t, err)
 	assert.Empty(t, uids, "just-written rows must not be reported as old")
 
+	// Re-add a second row so the GC query sees a multi-template workflow and must
+	// return its UID once.
+	require.NoError(t, repo.SaveTemplates(ctx, "uid-abc", "default", templates))
+
 	// Age 6h: clears any realistic app/DB zone skew (host UTC+2 vs container UTC).
 	if dbType == "mysql" {
 		_, err = proxy.Session(ctx).SQL().Exec(`update argo_offloaded_workflow_templates set createdat = createdat - interval 6 hour where uid = 'uid-abc'`)
@@ -199,7 +203,8 @@ func exerciseTemplateRepo(t *testing.T, proxy *usqldb.SessionProxy, dbType strin
 
 	uids, err = repo.ListOldOffloads(ctx, time.Hour)
 	require.NoError(t, err)
-	assert.Contains(t, uids, "uid-abc", "rows aged 6h must be reported for a 1h GC age")
+	assert.Equal(t, []string{"uid-abc"}, uids,
+		"rows aged 6h must be reported once per workflow, regardless of template count")
 
 	require.NoError(t, repo.DeleteTemplates(ctx, "uid-abc"))
 	got, err = repo.GetTemplates(ctx, "uid-abc")
