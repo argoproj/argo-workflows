@@ -159,6 +159,18 @@ func TestNamespaceDefaultsFailLoudly(t *testing.T) {
 		assert.Contains(t, err.Error(), "b-defaults")
 	})
 
+	t.Run("ControllerOwnedLabel", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cm := configMap("my-ns", "my-defaults", map[string]string{
+			Key: "metadata:\n  labels:\n    " + common.LabelKeyCompleted + ": \"true\"\n",
+		})
+
+		_, err := New(indexerFor(t, cm), indexes.ConfigMapLabelsIndex).Get(ctx, "my-ns")
+		require.Error(t, err, "a completed label from defaults would stop every workflow in the namespace running")
+		assert.Contains(t, err.Error(), common.LabelKeyCompleted)
+		assert.Contains(t, err.Error(), "my-defaults")
+	})
+
 	t.Run("InformerNotRunning", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 
@@ -225,6 +237,17 @@ func TestNamespaceDefaultsFromLister(t *testing.T) {
 
 		_, err := NewLister(k).Get(ctx, "my-ns")
 		require.Error(t, err, "the server must reject a misspelling exactly as the controller does")
+	})
+
+	t.Run("ControllerOwnedLabel", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		k := kubefake.NewClientset(configMap("my-ns", "any-name", map[string]string{
+			Key: "metadata:\n  labels:\n    " + common.LabelKeyCompleted + ": \"true\"\n",
+		}))
+
+		_, err := NewLister(k).Get(ctx, "my-ns")
+		require.Error(t, err, "the server must reject a controller-owned label exactly as the controller does")
+		assert.Contains(t, err.Error(), common.LabelKeyCompleted)
 	})
 	t.Run("EmptyNamespaceDoesNotListEveryNamespace", func(t *testing.T) {
 		// A List with an empty namespace spans the cluster, so without a guard a caller

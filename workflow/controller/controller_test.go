@@ -1877,6 +1877,33 @@ func TestNamespaceWorkflowDefaultsMoreThanOneConfigMap(t *testing.T) {
 	assert.Contains(t, err.Error(), "b-defaults")
 }
 
+// Namespace defaults keep their labels, but labels the controller owns must not come from
+// them: a completed label would make the operator treat every new workflow in the namespace
+// as already finished, so none of them would ever run. The document is rejected rather than
+// stripped, so the workflow fails loudly instead of silently never starting.
+func TestNamespaceWorkflowDefaultsCannotMarkWorkflowCompleted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Namespace = "default"
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, wf.Namespace, "my-defaults",
+		"metadata:\n  labels:\n    "+common.LabelKeyCompleted+": \"true\"\n")
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Error rather than Running: the document is rejected, so the workflow fails with a
+	// message naming the label instead of being quietly treated as already finished. The
+	// completed label is set on the workflow afterwards, but by the controller marking an
+	// errored workflow complete, which is why there is nothing useful to assert about it.
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase,
+		"a completed label from namespace defaults must be rejected, not applied")
+	assert.Contains(t, woc.wf.Status.Message, common.LabelKeyCompleted,
+		"the error must name the label that caused it")
+}
+
 // addNamespaceDefaults seeds a labelled workflow defaults ConfigMap into the controller's
 // typed ConfigMap informer. It writes to the indexer directly rather than through the
 // clientset, because the informer has already listed by the time a test runs and a later

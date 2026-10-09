@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -78,8 +79,11 @@ func Merged(ctx context.Context, i Interface, controllerDefaults *wfv1.Workflow,
 			return nil, err
 		}
 	}
-	if namespaceDefaults == nil && controllerDefaults == nil {
-		return nil, nil
+	// Nothing changes for namespaces that do not use this: the controller layer is returned
+	// as it is. That is what the old single MergeTo did, and it skips two marshal-and-merge
+	// passes on a path setWorkflowDefaults runs on every reconcile.
+	if namespaceDefaults == nil {
+		return controllerDefaults, nil
 	}
 
 	// MergeTo lets the target win, so merging the more specific layer first leaves the
@@ -186,6 +190,23 @@ func workflowFrom(ctx context.Context, namespace string, found []*v1.ConfigMap) 
 	// should be rejected rather than silently applying nothing.
 	if err := yaml.UnmarshalStrict([]byte(value), wf); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal key %q of ConfigMap %q in namespace %q: %w", Key, cm.Name, namespace, err)
+	}
+
+	// Labels under the workflows.argoproj.io/ prefix belong to the controller, and a
+	// defaults document must not supply them. A completed label would make the operator
+	// treat every new Workflow in the namespace as already finished, so none would run,
+	// and the creator labels could be faked on Workflows submitted without them. Rejected
+	// rather than stripped, to match how everything else wrong with this document behaves.
+	reserved := make([]string, 0, len(wf.Labels))
+	for k := range wf.Labels {
+		if strings.HasPrefix(k, workflow.WorkflowFullName+"/") {
+			reserved = append(reserved, k)
+		}
+	}
+	if len(reserved) > 0 {
+		sort.Strings(reserved)
+		return nil, fmt.Errorf("ConfigMap %q in namespace %q sets labels reserved for the controller (%s), which workflow defaults may not set",
+			cm.Name, namespace, strings.Join(reserved, ", "))
 	}
 
 	// MergeTo copies the whole object, not just the spec, so restrict what a defaults
