@@ -472,6 +472,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// we must delete this header for API request to prevent "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR" error
 		r.Header.Del("Connection")
+		// drop cookie pairs with non-printable ASCII characters (e.g. set by unrelated apps on the same host),
+		// which the grpc-gateway would otherwise forward as gRPC metadata and fail the request with an Internal error
+		grpcutil.SanitizeCookieHeader(r)
 		webhookInterceptor(w, r, gwmux)
 	})
 
