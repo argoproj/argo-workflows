@@ -45,9 +45,6 @@ func request_WorkflowService_CreateWorkflow_0(ctx context.Context, marshaler run
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -55,6 +52,9 @@ func request_WorkflowService_CreateWorkflow_0(ctx context.Context, marshaler run
 	protoReq.Namespace, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.CreateWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -89,9 +89,6 @@ func request_WorkflowService_GetWorkflow_0(ctx context.Context, marshaler runtim
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -113,6 +110,9 @@ func request_WorkflowService_GetWorkflow_0(ctx context.Context, marshaler runtim
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_GetWorkflow_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.GetWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -158,9 +158,6 @@ func request_WorkflowService_ListWorkflows_0(ctx context.Context, marshaler runt
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -174,6 +171,9 @@ func request_WorkflowService_ListWorkflows_0(ctx context.Context, marshaler runt
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_ListWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ListWorkflows(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -211,9 +211,6 @@ func request_WorkflowService_WatchWorkflows_0(ctx context.Context, marshaler run
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -227,6 +224,9 @@ func request_WorkflowService_WatchWorkflows_0(ctx context.Context, marshaler run
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_WatchWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	stream, err := client.WatchWorkflows(ctx, &protoReq)
 	if err != nil {
@@ -248,9 +248,6 @@ func request_WorkflowService_WatchEvents_0(ctx context.Context, marshaler runtim
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -264,6 +261,9 @@ func request_WorkflowService_WatchEvents_0(ctx context.Context, marshaler runtim
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_WatchEvents_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	stream, err := client.WatchEvents(ctx, &protoReq)
 	if err != nil {
@@ -285,9 +285,6 @@ func request_WorkflowService_DeleteWorkflow_0(ctx context.Context, marshaler run
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -309,6 +306,9 @@ func request_WorkflowService_DeleteWorkflow_0(ctx context.Context, marshaler run
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_DeleteWorkflow_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.DeleteWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -355,9 +355,6 @@ func request_WorkflowService_RetryWorkflow_0(ctx context.Context, marshaler runt
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -373,6 +370,9 @@ func request_WorkflowService_RetryWorkflow_0(ctx context.Context, marshaler runt
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.RetryWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -416,9 +416,6 @@ func request_WorkflowService_ResubmitWorkflow_0(ctx context.Context, marshaler r
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -434,6 +431,9 @@ func request_WorkflowService_ResubmitWorkflow_0(ctx context.Context, marshaler r
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ResubmitWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -477,9 +477,6 @@ func request_WorkflowService_ResumeWorkflow_0(ctx context.Context, marshaler run
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -495,6 +492,9 @@ func request_WorkflowService_ResumeWorkflow_0(ctx context.Context, marshaler run
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ResumeWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -538,9 +538,6 @@ func request_WorkflowService_SuspendWorkflow_0(ctx context.Context, marshaler ru
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -556,6 +553,9 @@ func request_WorkflowService_SuspendWorkflow_0(ctx context.Context, marshaler ru
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.SuspendWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -599,9 +599,6 @@ func request_WorkflowService_TerminateWorkflow_0(ctx context.Context, marshaler 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -617,6 +614,9 @@ func request_WorkflowService_TerminateWorkflow_0(ctx context.Context, marshaler 
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.TerminateWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -660,9 +660,6 @@ func request_WorkflowService_StopWorkflow_0(ctx context.Context, marshaler runti
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -678,6 +675,9 @@ func request_WorkflowService_StopWorkflow_0(ctx context.Context, marshaler runti
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.StopWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -721,9 +721,6 @@ func request_WorkflowService_SetWorkflow_0(ctx context.Context, marshaler runtim
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -739,6 +736,9 @@ func request_WorkflowService_SetWorkflow_0(ctx context.Context, marshaler runtim
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.SetWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -782,9 +782,6 @@ func request_WorkflowService_LintWorkflow_0(ctx context.Context, marshaler runti
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -792,6 +789,9 @@ func request_WorkflowService_LintWorkflow_0(ctx context.Context, marshaler runti
 	protoReq.Namespace, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.LintWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -826,9 +826,6 @@ func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Ma
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -859,6 +856,9 @@ func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Ma
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_PodLogs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	stream, err := client.PodLogs(ctx, &protoReq)
 	if err != nil {
 		return nil, metadata, err
@@ -879,9 +879,6 @@ func request_WorkflowService_WorkflowLogs_0(ctx context.Context, marshaler runti
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -904,6 +901,9 @@ func request_WorkflowService_WorkflowLogs_0(ctx context.Context, marshaler runti
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_WorkflowLogs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	stream, err := client.WorkflowLogs(ctx, &protoReq)
 	if err != nil {
 		return nil, metadata, err
@@ -925,9 +925,6 @@ func request_WorkflowService_SubmitWorkflow_0(ctx context.Context, marshaler run
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -935,6 +932,9 @@ func request_WorkflowService_SubmitWorkflow_0(ctx context.Context, marshaler run
 	protoReq.Namespace, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.SubmitWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err

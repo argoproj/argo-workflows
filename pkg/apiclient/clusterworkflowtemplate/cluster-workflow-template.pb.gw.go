@@ -71,9 +71,6 @@ func request_ClusterWorkflowTemplateService_GetClusterWorkflowTemplate_0(ctx con
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -87,6 +84,9 @@ func request_ClusterWorkflowTemplateService_GetClusterWorkflowTemplate_0(ctx con
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ClusterWorkflowTemplateService_GetClusterWorkflowTemplate_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.GetClusterWorkflowTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -123,14 +123,14 @@ func request_ClusterWorkflowTemplateService_ListClusterWorkflowTemplates_0(ctx c
 		protoReq ClusterWorkflowTemplateListRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ClusterWorkflowTemplateService_ListClusterWorkflowTemplates_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ListClusterWorkflowTemplates(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -160,9 +160,6 @@ func request_ClusterWorkflowTemplateService_UpdateClusterWorkflowTemplate_0(ctx 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -170,6 +167,9 @@ func request_ClusterWorkflowTemplateService_UpdateClusterWorkflowTemplate_0(ctx 
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.UpdateClusterWorkflowTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -204,9 +204,6 @@ func request_ClusterWorkflowTemplateService_DeleteClusterWorkflowTemplate_0(ctx 
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["name"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
@@ -220,6 +217,9 @@ func request_ClusterWorkflowTemplateService_DeleteClusterWorkflowTemplate_0(ctx 
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ClusterWorkflowTemplateService_DeleteClusterWorkflowTemplate_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.DeleteClusterWorkflowTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err

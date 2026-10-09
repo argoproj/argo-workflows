@@ -45,9 +45,6 @@ func request_CronWorkflowService_LintCronWorkflow_0(ctx context.Context, marshal
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -55,6 +52,9 @@ func request_CronWorkflowService_LintCronWorkflow_0(ctx context.Context, marshal
 	protoReq.Namespace, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.LintCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -90,9 +90,6 @@ func request_CronWorkflowService_CreateCronWorkflow_0(ctx context.Context, marsh
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -100,6 +97,9 @@ func request_CronWorkflowService_CreateCronWorkflow_0(ctx context.Context, marsh
 	protoReq.Namespace, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.CreateCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -134,9 +134,6 @@ func request_CronWorkflowService_ListCronWorkflows_0(ctx context.Context, marsha
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -150,6 +147,9 @@ func request_CronWorkflowService_ListCronWorkflows_0(ctx context.Context, marsha
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CronWorkflowService_ListCronWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ListCronWorkflows(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -187,9 +187,6 @@ func request_CronWorkflowService_GetCronWorkflow_0(ctx context.Context, marshale
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -211,6 +208,9 @@ func request_CronWorkflowService_GetCronWorkflow_0(ctx context.Context, marshale
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CronWorkflowService_GetCronWorkflow_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.GetCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -257,9 +257,6 @@ func request_CronWorkflowService_UpdateCronWorkflow_0(ctx context.Context, marsh
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -275,6 +272,9 @@ func request_CronWorkflowService_UpdateCronWorkflow_0(ctx context.Context, marsh
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.UpdateCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -317,9 +317,6 @@ func request_CronWorkflowService_DeleteCronWorkflow_0(ctx context.Context, marsh
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -341,6 +338,9 @@ func request_CronWorkflowService_DeleteCronWorkflow_0(ctx context.Context, marsh
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CronWorkflowService_DeleteCronWorkflow_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.DeleteCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -387,9 +387,6 @@ func request_CronWorkflowService_ResumeCronWorkflow_0(ctx context.Context, marsh
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -405,6 +402,9 @@ func request_CronWorkflowService_ResumeCronWorkflow_0(ctx context.Context, marsh
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ResumeCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -448,9 +448,6 @@ func request_CronWorkflowService_SuspendCronWorkflow_0(ctx context.Context, mars
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["namespace"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
@@ -466,6 +463,9 @@ func request_CronWorkflowService_SuspendCronWorkflow_0(ctx context.Context, mars
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.SuspendCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
