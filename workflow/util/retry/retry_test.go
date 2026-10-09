@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -410,5 +411,153 @@ func TestAddHostnamesToAffinity(t *testing.T) {
 		}
 		targetNode := AddHostnamesToAffinity(hostSelector, hostNames, existingNode)
 		assert.Equal(t, targetNode, mergedNode)
+	})
+}
+
+func TestAddHostnamesToPreferredAffinity(t *testing.T) {
+	hostNames := []string{"hostnameA", "hostnameB", "hostnameC"}
+	hostSelector := "kubernetes.io/hostname"
+
+	expectedRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   hostNames,
+	}
+
+	t.Run("NoHostNames", func(t *testing.T) {
+		assert.Nil(t, AddHostnamesToPreferredAffinity(hostSelector, nil, nil))
+	})
+	t.Run("EmptyAffinity", func(t *testing.T) {
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, nil)
+		preferred := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		require.Len(t, preferred, 1)
+		assert.Equal(t, PreferredHostAntiAffinityWeight, preferred[0].Weight)
+		assert.Equal(t, expectedRequirement, preferred[0].Preference.MatchExpressions[0])
+		// the required term must stay empty, otherwise this would still block scheduling
+		assert.Nil(t, targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+	})
+	t.Run("EmptyNodeAffinity", func(t *testing.T) {
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, &apiv1.Affinity{})
+		preferred := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		require.Len(t, preferred, 1)
+		assert.Equal(t, expectedRequirement, preferred[0].Preference.MatchExpressions[0])
+	})
+	t.Run("MergesIntoExistingTermForSameSelector", func(t *testing.T) {
+		existingAffinity := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{
+					{
+						Weight: PreferredHostAntiAffinityWeight,
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      hostSelector,
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"hostname1", "hostnameA"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, existingAffinity)
+		preferred := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		require.Len(t, preferred, 1, "an existing term for the same selector must be reused")
+		assert.Equal(t,
+			[]string{"hostname1", "hostnameA", "hostnameB", "hostnameC"},
+			preferred[0].Preference.MatchExpressions[0].Values,
+			"hostnameA was already present and must not be duplicated")
+		assert.Equal(t, PreferredHostAntiAffinityWeight, preferred[0].Weight)
+	})
+	t.Run("RaisesWeightOfExistingLowerWeightedTerm", func(t *testing.T) {
+		existingAffinity := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{
+					{
+						Weight: 1,
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      hostSelector,
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"hostname1"},
+								},
+							},
+						},
+					},
+					{
+						Weight: 50,
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      "topology.kubernetes.io/zone",
+									Operator: apiv1.NodeSelectorOpIn,
+									Values:   []string{"zone-a"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, existingAffinity)
+		preferred := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		require.Len(t, preferred, 2)
+		// merging into a term declared at weight 1 must not leave the retry hostnames
+		// ranked below the user's unrelated weight-50 preference
+		assert.Equal(t, PreferredHostAntiAffinityWeight, preferred[0].Weight,
+			"the merged term must carry the anti-affinity weight, not the weight it was declared with")
+		assert.Equal(t,
+			[]string{"hostname1", "hostnameA", "hostnameB", "hostnameC"},
+			preferred[0].Preference.MatchExpressions[0].Values)
+		assert.Equal(t, int32(50), preferred[1].Weight, "an unrelated preference must keep its own weight")
+	})
+	t.Run("AppendsAlongsideUnrelatedTerm", func(t *testing.T) {
+		unrelatedTerm := apiv1.PreferredSchedulingTerm{
+			Weight: 1,
+			Preference: apiv1.NodeSelectorTerm{
+				MatchExpressions: []apiv1.NodeSelectorRequirement{
+					{
+						Key:      "topology.kubernetes.io/zone",
+						Operator: apiv1.NodeSelectorOpIn,
+						Values:   []string{"zone-a"},
+					},
+				},
+			},
+		}
+		existingAffinity := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{unrelatedTerm},
+			},
+		}
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, existingAffinity)
+		preferred := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		require.Len(t, preferred, 2)
+		assert.Equal(t, unrelatedTerm, preferred[0], "the user's own preference must be preserved")
+		assert.Equal(t, expectedRequirement, preferred[1].Preference.MatchExpressions[0])
+	})
+	t.Run("LeavesExistingRequiredTermAlone", func(t *testing.T) {
+		requiredTerm := &apiv1.NodeSelector{
+			NodeSelectorTerms: []apiv1.NodeSelectorTerm{
+				{
+					MatchExpressions: []apiv1.NodeSelectorRequirement{
+						{
+							Key:      "kubernetes.io/os",
+							Operator: apiv1.NodeSelectorOpIn,
+							Values:   []string{"linux"},
+						},
+					},
+				},
+			},
+		}
+		existingAffinity := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: requiredTerm,
+			},
+		}
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, existingAffinity)
+		assert.Equal(t, requiredTerm, targetAffinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+		require.Len(t, targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution, 1)
 	})
 }
