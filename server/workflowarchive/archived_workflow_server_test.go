@@ -14,8 +14,10 @@ import (
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
@@ -36,7 +38,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo, nil)
+	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo, nil, nil, 0, false)
 	allowed := true
 	// when set, only access reviews for this namespace are allowed, whatever allowed says
 	allowedNamespace := ""
@@ -290,6 +292,40 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	t.Run("RetryArchivedWorkflow", func(t *testing.T) {
 		_, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: "failed-uid"})
 		assert.Equal(t, err, status.Error(codes.AlreadyExists, "Workflow already exists on cluster, use argo retry {name} instead"))
+	})
+	t.Run("RetryArchivedWorkflowClearsStaleOffloadFields", func(t *testing.T) {
+		staleUID := "stale-offloaded-uid"
+		repo.On("GetWorkflow", mock.Anything, staleUID, "", "").Return(&v1alpha1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "stale-offloaded-wf"},
+			Spec: v1alpha1.WorkflowSpec{
+				Entrypoint: "main",
+				Templates:  []v1alpha1.Template{{Name: "main", Container: &apiv1.Container{}}},
+			},
+			Status: v1alpha1.WorkflowStatus{
+				Phase: v1alpha1.WorkflowFailed,
+				StoredTemplateSpecs: &v1alpha1.TemplateSpecReference{
+					UID:      staleUID,
+					Version:  "sha256:stale",
+					Hydrated: true,
+				},
+				StoredTemplates: map[string]v1alpha1.Template{"main": {Name: "main"}},
+			},
+		}, nil)
+		wfClient.PrependReactor("get", "workflows", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewNotFound(schema.GroupResource{Resource: "workflows"}, "stale-offloaded-wf")
+		})
+		var created *v1alpha1.Workflow
+		wfClient.PrependReactor("create", "workflows", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			created = action.(k8stesting.CreateAction).GetObject().(*v1alpha1.Workflow)
+			return false, nil, nil
+		})
+
+		_, err := w.RetryArchivedWorkflow(ctx, &workflowarchivepkg.RetryArchivedWorkflowRequest{Uid: staleUID})
+		require.NoError(t, err)
+		require.NotNil(t, created)
+		assert.Nil(t, created.Status.StoredTemplateSpecs)
+		assert.Nil(t, created.Status.StoredTemplates)
+		assert.Len(t, created.Spec.Templates, 1)
 	})
 	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
 		wf, err := w.ResubmitArchivedWorkflow(ctx, &workflowarchivepkg.ResubmitArchivedWorkflowRequest{Uid: "resubmit-uid", Memoized: false})

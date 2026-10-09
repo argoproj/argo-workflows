@@ -263,6 +263,8 @@ func (*Template) ProtoMessage() {}
 
 func (*TemplateRef) ProtoMessage() {}
 
+func (*TemplateSpecReference) ProtoMessage() {}
+
 func (*TransformationStep) ProtoMessage() {}
 
 func (*UserContainer) ProtoMessage() {}

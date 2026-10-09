@@ -32,12 +32,12 @@ type OffloadNodeStatusRepo interface {
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(ctx context.Context, log logging.Logger, sessionProxy *sqldb.SessionProxy, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
+func NewOffloadNodeStatusRepo(ctx context.Context, log logging.Logger, sessionProxy *sqldb.SessionProxy, clusterName, tableName string, opTimeout time.Duration) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
 	ttl := env.LookupEnvDurationOr(ctx, "OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
 	log.WithField("ttl", ttl).Debug(ctx, "Node status offloading config")
-	return &nodeOffloadRepo{sessionProxy: sessionProxy, clusterName: clusterName, tableName: tableName, ttl: ttl, log: log}, nil
+	return &nodeOffloadRepo{sessionProxy: sessionProxy, clusterName: clusterName, tableName: tableName, ttl: ttl, opTimeout: opTimeout, log: log}, nil
 }
 
 type nodesRecord struct {
@@ -53,7 +53,9 @@ type nodeOffloadRepo struct {
 	tableName    string
 	// time to live - at what ttl an offload becomes old
 	ttl time.Duration
-	log logging.Logger
+	// per-operation timeout for database operations, bounded via context.WithTimeout
+	opTimeout time.Duration
+	log       logging.Logger
 }
 
 func (wdc *nodeOffloadRepo) IsEnabled() bool {
@@ -89,7 +91,9 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
 	logCtx.Debug(ctx, "Offloading nodes")
-	err = wdc.sessionProxy.With(ctx, func(s db.Session) error {
+	opCtx, cancel := context.WithTimeout(ctx, wdc.opTimeout)
+	defer cancel()
+	err = wdc.sessionProxy.With(opCtx, func(s db.Session) error {
 		_, insertErr := s.Collection(wdc.tableName).Insert(record)
 		if insertErr != nil {
 			// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
@@ -124,7 +128,9 @@ func isDuplicateKeyError(err error) bool {
 func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.Nodes, error) {
 	wdc.log.WithFields(logging.Fields{"uid": uid, "version": version}).Debug(ctx, "Getting offloaded nodes")
 	var nodes wfv1.Nodes
-	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+	opCtx, cancel := context.WithTimeout(ctx, wdc.opTimeout)
+	defer cancel()
+	err := wdc.sessionProxy.With(opCtx, func(s db.Session) error {
 		r := &nodesRecord{}
 		err := s.SQL().
 			SelectFrom(wdc.tableName).
@@ -152,7 +158,9 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
 	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing offloaded nodes")
 	var res map[UUIDVersion]wfv1.Nodes
-	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+	opCtx, cancel := context.WithTimeout(ctx, wdc.opTimeout)
+	defer cancel()
+	err := wdc.sessionProxy.With(opCtx, func(s db.Session) error {
 		var records []nodesRecord
 		err := s.SQL().
 			Select("uid", "version", "nodes").
@@ -184,7 +192,9 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 func (wdc *nodeOffloadRepo) ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error) {
 	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing old offloaded nodes")
 	var x map[string][]string
-	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+	opCtx, cancel := context.WithTimeout(ctx, wdc.opTimeout)
+	defer cancel()
+	err := wdc.sessionProxy.With(opCtx, func(s db.Session) error {
 		var records []UUIDVersion
 		err := s.SQL().
 			Select("uid", "version").
@@ -217,7 +227,9 @@ func (wdc *nodeOffloadRepo) Delete(ctx context.Context, uid, version string) err
 	}
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
 	logCtx.Debug(ctx, "Deleting offloaded nodes")
-	return wdc.sessionProxy.With(ctx, func(s db.Session) error {
+	opCtx, cancel := context.WithTimeout(ctx, wdc.opTimeout)
+	defer cancel()
+	return wdc.sessionProxy.With(opCtx, func(s db.Session) error {
 		rs, err := s.SQL().
 			DeleteFrom(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).

@@ -183,3 +183,46 @@ func TestPersistUpdatesMarksReapplyFailedOnNonConflictError(t *testing.T) {
 
 	assert.True(t, woc.reapplyFailed, "non-conflict persist error should mark reapply-failed to keep the throttler slot")
 }
+
+// TestPersistUpdatesKeepsScopedStoredTemplates verifies persistence drops only the hydrated
+// local templates from StoredTemplates: the scoped templateRef entries that pin the
+// WorkflowTemplate content for the run must stay in the persisted object.
+func TestPersistUpdatesKeepsScopedStoredTemplates(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
+	wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
+		UID:      "test-uid",
+		Version:  "v1",
+		Hydrated: true,
+	}
+	wf.Status.StoredTemplates = map[string]wfv1.Template{
+		"whalesay":                        {Name: "whalesay"},
+		"namespaced/my-wft/step-template": {Name: "step-template"},
+		"cluster/my-cwft/other-template":  {Name: "other-template"},
+	}
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, false)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.updated = true // force persistUpdates to attempt the Update
+	woc.persistUpdates(ctx)
+
+	persisted, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.NotContains(t, persisted.Status.StoredTemplates, "whalesay",
+		"the hydrated local template must not be persisted")
+	assert.Contains(t, persisted.Status.StoredTemplates, "namespaced/my-wft/step-template",
+		"namespaced templateRef entries must survive the persist")
+	assert.Contains(t, persisted.Status.StoredTemplates, "cluster/my-cwft/other-template",
+		"cluster templateRef entries must survive the persist")
+
+	// The in-memory workflow restores the hydrated local template for the rest of the cycle.
+	assert.Contains(t, woc.wf.Status.StoredTemplates, "whalesay")
+	assert.Contains(t, woc.wf.Status.StoredTemplates, "namespaced/my-wft/step-template")
+}
