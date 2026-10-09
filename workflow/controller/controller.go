@@ -67,6 +67,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/gccontroller"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -103,6 +104,8 @@ type WorkflowController struct {
 	Config config.Config
 	// get the artifact repository
 	artifactRepositories artifactrepositories.Interface
+	// get namespace-level workflow defaults
+	namespaceDefaults namespacedefaults.Interface
 	// get images
 	entrypoint entrypoint.Interface
 
@@ -323,7 +326,7 @@ func (wfc *WorkflowController) runPodController(ctx context.Context, podGCWorker
 func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer, wfc.Config.WorkflowDefaults)
+	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer, wfc.mergedWorkflowDefaults)
 	cronController.Run(ctx)
 }
 
@@ -1529,17 +1532,34 @@ func (wfc *WorkflowController) updateEstimatorFactory(ctx context.Context) {
 	wfc.estimatorFactory = estimation.NewEstimatorFactory(ctx, wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
-// setWorkflowDefaults sets values in the workflow.Spec with defaults from the
-// workflowController. Values in the workflow will be given the upper hand over the defaults.
-// The defaults for the workflow controller are set in the workflow-controller config map
-func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
-	if wfc.Config.WorkflowDefaults != nil {
-		err := util.MergeTo(wfc.Config.WorkflowDefaults, wf)
-		if err != nil {
-			return err
-		}
+// mergedWorkflowDefaults returns the defaults that apply to a workflow in namespace, with
+// namespace defaults taking precedence over controller defaults. It returns nil when neither
+// layer configures anything.
+//
+// The controller defaults come from the workflow-controller config map; the namespace defaults
+// from a ConfigMap in the workflow's own namespace labelled
+// workflows.argoproj.io/configmap-type: WorkflowDefaults.
+//
+// This is shared rather than layered at each call site because the defaults reach a workflow
+// by more than one route: setWorkflowDefaults for ordinary workflows, setStoredWfSpec for
+// workflowTemplateRef ones, and validate.Workflow for both.
+func (wfc *WorkflowController) mergedWorkflowDefaults(ctx context.Context, namespace string) (*wfv1.Workflow, error) {
+	return namespacedefaults.Merged(ctx, wfc.namespaceDefaults, wfc.Config.WorkflowDefaults, namespace)
+}
+
+// setWorkflowDefaults sets values in the workflow.Spec with defaults from the namespace the
+// workflow runs in and from the workflowController. Values in the workflow are given the
+// upper hand over both, and namespace defaults over controller defaults.
+func (wfc *WorkflowController) setWorkflowDefaults(ctx context.Context, wf *wfv1.Workflow) error {
+	defaults, err := wfc.mergedWorkflowDefaults(ctx, wf.Namespace)
+	if err != nil {
+		return err
 	}
-	return nil
+	if defaults == nil {
+		return nil
+	}
+	// MergeTo lets the target win, so the workflow's own values survive.
+	return util.MergeTo(defaults, wf)
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {

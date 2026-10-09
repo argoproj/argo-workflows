@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -814,4 +815,66 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	result, err := evalWhen(ctx, &cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
+}
+
+// Namespace defaults are looked up per namespace rather than fixed at controller startup,
+// so what matters is that the CronWorkflow's own namespace reaches the resolver.
+func TestCronWorkflowDefaultsResolvedPerNamespace(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+
+	t.Run("NilResolverIsTolerated", func(t *testing.T) {
+		woc := &cronWfOperationCtx{cronWf: &cronWf, log: logging.RequireLoggerFromContext(ctx)}
+		wfDefaults, err := woc.workflowDefaults(ctx)
+		require.NoError(t, err)
+		assert.Nil(t, wfDefaults)
+	})
+
+	t.Run("ResolvedForTheCronWorkflowsNamespace", func(t *testing.T) {
+		var asked string
+		woc := &cronWfOperationCtx{
+			cronWf: &cronWf,
+			log:    logging.RequireLoggerFromContext(ctx),
+			wfDefaults: func(_ context.Context, namespace string) (*v1alpha1.Workflow, error) {
+				asked = namespace
+				return &v1alpha1.Workflow{Spec: v1alpha1.WorkflowSpec{ServiceAccountName: "from-namespace"}}, nil
+			},
+		}
+		wfDefaults, err := woc.workflowDefaults(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, cronWf.Namespace, asked, "defaults must be resolved for the CronWorkflow's own namespace")
+		require.NotNil(t, wfDefaults)
+		assert.Equal(t, "from-namespace", wfDefaults.Spec.ServiceAccountName)
+	})
+}
+
+// A broken namespace defaults ConfigMap must surface on the CronWorkflow rather than being
+// skipped, which is the same fail-loudly behaviour ordinary workflows get.
+func TestCronWorkflowDefaultsErrorSurfacesOnValidate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+
+	cs := fake.NewClientset()
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
+	require.NoError(t, err)
+
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:      &cronWf,
+		log:         logging.RequireLoggerFromContext(ctx),
+		metrics:     testMetrics,
+		wfDefaults: func(context.Context, string) (*v1alpha1.Workflow, error) {
+			return nil, fmt.Errorf("namespace has 2 ConfigMaps labelled workflows.argoproj.io/configmap-type=WorkflowDefaults")
+		},
+	}
+
+	err = woc.validateCronWorkflow(ctx)
+	require.Error(t, err, "an unusable namespace defaults ConfigMap must not be silently skipped")
+	require.Len(t, woc.cronWf.Status.Conditions, 1)
+	assert.Equal(t, v1alpha1.ConditionTypeSpecError, woc.cronWf.Status.Conditions[0].Type)
+	assert.Contains(t, woc.cronWf.Status.Conditions[0].Message, "WorkflowDefaults")
 }

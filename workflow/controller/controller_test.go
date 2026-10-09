@@ -48,10 +48,12 @@ import (
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
@@ -156,6 +158,13 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		},
 		enableWorkflowLevelExecutorPlugins: true,
 	}
+
+	wfc.namespaceDefaults = namespacedefaults.New(func() cache.Indexer {
+		if wfc.typedConfigMapInformer == nil {
+			return nil
+		}
+		return wfc.typedConfigMapInformer.GetIndexer()
+	}, indexes.ConfigMapLabelsIndex)
 
 	for _, opt := range options {
 		// any post-processing
@@ -491,7 +500,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()))
 		defer cancel()
 		workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-		err := controller.setWorkflowDefaults(workflow)
+		err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 		require.NoError(t, err)
 		assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(helloWorldWf))
 	})
@@ -499,7 +508,7 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 		cancel, controller := newControllerWithDefaults(logging.TestContext(t.Context()))
 		defer cancel()
 		defaultWorkflowSpec := wfv1.MustUnmarshalWorkflow(helloWorldWf)
-		err := controller.setWorkflowDefaults(defaultWorkflowSpec)
+		err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), defaultWorkflowSpec)
 		require.NoError(t, err)
 		assert.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
 		assert.NotEqual(t, defaultWorkflowSpec, wfv1.MustUnmarshalWorkflow(helloWorldWf))
@@ -515,7 +524,7 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
 	assert.Nil(t, workflow.Spec.TTLStrategy)
 	assert.Contains(t, workflow.Labels, "foo")
-	err := controller.setWorkflowDefaults(workflow)
+	err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 	require.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWf))
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
@@ -532,7 +541,7 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWfTTL)
 	var ten int32 = 10
 	var five int32 = 5
-	err := controller.setWorkflowDefaults(workflow)
+	err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 	require.NoError(t, err)
 	assert.NotEqual(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultWfTTL))
 	assert.Equal(t, "whalesay", workflow.Spec.Entrypoint)
@@ -548,7 +557,7 @@ func TestAddingWorkflowDefaultVolumeClaimTemplate(t *testing.T) {
 	cancel, controller := newControllerWithDefaultsVolumeClaimTemplate(logging.TestContext(t.Context()))
 	defer cancel()
 	workflow := wfv1.MustUnmarshalWorkflow(testDefaultWf)
-	err := controller.setWorkflowDefaults(workflow)
+	err := controller.setWorkflowDefaults(logging.TestContext(t.Context()), workflow)
 	require.NoError(t, err)
 	assert.Equal(t, workflow, wfv1.MustUnmarshalWorkflow(testDefaultVolumeClaimTemplateWf))
 }
@@ -1773,4 +1782,142 @@ func TestExpireCompletedVersions(t *testing.T) {
 	assert.False(t, completedWf)
 	outdated, _ = controller.isOutdated(ctx, &metav1.ObjectMeta{UID: inFlight.UID, ResourceVersion: "99"})
 	assert.True(t, outdated, "in-flight records must not expire")
+}
+
+func TestNamespaceWorkflowDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// newControllerWithDefaults sets hostNetwork: true at the controller level. The
+	// namespace defaults below set it to false, so the assertion on it distinguishes
+	// which layer wins rather than merely proving that some default was applied.
+	cancel, controller := newControllerWithDefaults(ctx)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, "default", "my-defaults",
+		"spec:\n  serviceAccountName: from-namespace\n  entrypoint: from-namespace\n  hostNetwork: false\n")
+
+	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	workflow.Namespace = "default"
+	require.NoError(t, controller.setWorkflowDefaults(ctx, workflow))
+
+	// A field only the namespace sets is applied.
+	assert.Equal(t, "from-namespace", workflow.Spec.ServiceAccountName)
+
+	// A field both layers set takes the namespace value, not the controller one.
+	require.NotNil(t, workflow.Spec.HostNetwork)
+	assert.False(t, *workflow.Spec.HostNetwork, "namespace defaults must win over controller defaults")
+
+	// A field the workflow itself sets is untouched by either layer.
+	assert.Equal(t, wfv1.MustUnmarshalWorkflow(helloWorldWf).Spec.Entrypoint, workflow.Spec.Entrypoint,
+		"the workflow's own value must win over namespace defaults")
+}
+
+// newControllerWithDefaults only sets hostNetwork, which the namespace overrides, so it
+// cannot show that a controller-only default still applies. newControllerWithComplexDefaults
+// has a TTL, a label and an annotation the namespace layer leaves alone.
+func TestNamespaceWorkflowDefaultsKeepControllerDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newControllerWithComplexDefaults(ctx)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, "default", "my-defaults",
+		"spec:\n  serviceAccountName: from-namespace\n")
+
+	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	workflow.Namespace = "default"
+	require.NoError(t, controller.setWorkflowDefaults(ctx, workflow))
+
+	// The namespace layer wins where both set a field.
+	assert.Equal(t, "from-namespace", workflow.Spec.ServiceAccountName)
+
+	// Everything only the controller sets must still survive: namespace defaults layer
+	// on top of controller defaults, they do not replace them.
+	require.NotNil(t, workflow.Spec.TTLStrategy)
+	require.NotNil(t, workflow.Spec.TTLStrategy.SecondsAfterCompletion)
+	assert.Equal(t, int32(10), *workflow.Spec.TTLStrategy.SecondsAfterCompletion)
+	assert.Equal(t, "value", workflow.Labels["label"])
+	assert.Equal(t, "value", workflow.Annotations["annotation"])
+}
+
+// Workflows using workflowTemplateRef never reach setWorkflowDefaults - they go through
+// setStoredWfSpec instead - so this is the only thing proving namespace defaults reach them.
+func TestNamespaceWorkflowDefaultsWithWorkflowTemplateRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
+	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, wf.Namespace, "my-defaults",
+		"spec:\n  activeDeadlineSeconds: 5\n")
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.execWf.Spec.ActiveDeadlineSeconds,
+		"namespace defaults must reach workflows using workflowTemplateRef")
+	assert.Equal(t, int64(5), *woc.execWf.Spec.ActiveDeadlineSeconds)
+}
+
+// Which of two labelled ConfigMaps wins is not something the controller should arbitrate,
+// so every workflow in the namespace errors instead.
+func TestNamespaceWorkflowDefaultsMoreThanOneConfigMap(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newControllerWithDefaults(ctx)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, "default", "a-defaults",
+		"spec:\n  serviceAccountName: from-a\n")
+	addNamespaceDefaults(t, controller, "default", "b-defaults",
+		"spec:\n  serviceAccountName: from-b\n")
+
+	workflow := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	workflow.Namespace = "default"
+	err := controller.setWorkflowDefaults(ctx, workflow)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "a-defaults")
+	assert.Contains(t, err.Error(), "b-defaults")
+}
+
+// Namespace defaults keep their labels, but labels the controller owns must not come from
+// them: a completed label would make the operator treat every new workflow in the namespace
+// as already finished, so none of them would ever run. The document is rejected rather than
+// stripped, so the workflow fails loudly instead of silently never starting.
+func TestNamespaceWorkflowDefaultsCannotMarkWorkflowCompleted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Namespace = "default"
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	addNamespaceDefaults(t, controller, wf.Namespace, "my-defaults",
+		"metadata:\n  labels:\n    "+common.LabelKeyCompleted+": \"true\"\n")
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Error rather than Running: the document is rejected, so the workflow fails with a
+	// message naming the label instead of being quietly treated as already finished. The
+	// completed label is set on the workflow afterwards, but by the controller marking an
+	// errored workflow complete, which is why there is nothing useful to assert about it.
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase,
+		"a completed label from namespace defaults must be rejected, not applied")
+	assert.Contains(t, woc.wf.Status.Message, common.LabelKeyCompleted,
+		"the error must name the label that caused it")
+}
+
+// addNamespaceDefaults seeds a labelled workflow defaults ConfigMap into the controller's
+// typed ConfigMap informer. It writes to the indexer directly rather than through the
+// clientset, because the informer has already listed by the time a test runs and a later
+// Create would race the watch.
+func addNamespaceDefaults(t *testing.T, controller *WorkflowController, namespace, name, value string) {
+	t.Helper()
+	require.NoError(t, controller.typedConfigMapInformer.GetIndexer().Add(&apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapWorkflowDefaults,
+			},
+		},
+		Data: map[string]string{namespacedefaults.Key: value},
+	}))
 }
