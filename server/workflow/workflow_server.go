@@ -3,7 +3,6 @@ package workflow
 import (
 	"context"
 	"encoding/json"
-	stderrors "errors"
 	"fmt"
 	"io"
 	"sort"
@@ -585,6 +584,7 @@ func (s *workflowServer) performAction(ctx context.Context, wf *wfv1.Workflow, s
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	callerCtx := ctx
 	ctx, cancel := context.WithTimeout(ctx, workflowActionTimeout)
 	defer cancel()
 	w, err := wfClient.ArgoprojV1alpha1().WorkflowActions(wf.Namespace).Watch(ctx, metav1.ListOptions{
@@ -603,9 +603,9 @@ func (s *workflowServer) performAction(ctx context.Context, wf *wfv1.Workflow, s
 	for {
 		select {
 		case <-ctx.Done():
-			if !stderrors.Is(ctx.Err(), context.DeadlineExceeded) {
-				// the caller went away; do not report a controller timeout it did not have
-				return nil, status.FromContextError(ctx.Err()).Err()
+			if callerCtx.Err() != nil {
+				// the caller went away or hit its own deadline; do not report a controller timeout
+				return nil, status.FromContextError(callerCtx.Err()).Err()
 			}
 			return nil, status.Errorf(codes.DeadlineExceeded,
 				"timed out waiting for the workflow controller to perform %s; the request is recorded as WorkflowAction %q and may still be applied", spec.Action, created.Name)
@@ -669,9 +669,18 @@ func actionRef(wf *wfv1.Workflow) wfv1.WorkflowActionRef {
 	return wfv1.WorkflowActionRef{Name: wf.Name, UID: wf.UID}
 }
 
-// actionTarget fetches and validates the workflow an action endpoint was called for.
+// actionTarget fetches and validates the workflow an action endpoint was called for. Only live
+// workflows are considered: unlike getWorkflow it does not fall back to the archive, since the
+// controller can only act on a live workflow and would just fail the action as not found.
 func (s *workflowServer) actionTarget(ctx context.Context, namespace, name string) (*wfv1.Workflow, error) {
-	wf, err := s.getWorkflow(ctx, auth.GetWfClient(ctx), namespace, name, "", metav1.GetOptions{})
+	wfClient := auth.GetWfClient(ctx)
+	var wf *wfv1.Workflow
+	var err error
+	if name == latestAlias {
+		wf, err = getLatestWorkflow(ctx, wfClient, namespace)
+	} else {
+		wf, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, metav1.GetOptions{})
+	}
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

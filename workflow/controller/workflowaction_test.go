@@ -456,6 +456,50 @@ func TestSettlePendingActionsWorkflowDeleted(t *testing.T) {
 	assert.Contains(t, a.Status.Message, "deleted")
 }
 
+func TestSettlePendingActionsDeleteAfterRecreate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// the informer already holds a replacement workflow when the old one's delete event arrives
+	replacement := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	replacement.UID = "new-uid"
+	cancel, wfc := newController(ctx, replacement,
+		newTestAction("pinned-old", "suspend", wfv1.ActionTypeStop, func(a *wfv1.WorkflowAction) { a.Spec.WorkflowRef.UID = "old-uid" }),
+		newTestAction("pinned-new", "suspend", wfv1.ActionTypeStop, func(a *wfv1.WorkflowAction) { a.Spec.WorkflowRef.UID = "new-uid" }),
+		newTestAction("unpinned", "suspend", wfv1.ActionTypeStop))
+	defer cancel()
+
+	deleted := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	deleted.UID = "old-uid"
+	un, err := util.ToUnstructured(deleted)
+	require.NoError(t, err)
+	wfc.settlePendingActions(ctx, un, wfv1.WorkflowActionReasonWorkflowNotFound)
+
+	old := getTestAction(t, wfc, "pinned-old")
+	assert.Equal(t, wfv1.WorkflowActionFailed, old.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowNotFound, old.Status.Reason)
+	assert.Empty(t, getTestAction(t, wfc, "pinned-new").Status.Phase)
+	assert.Empty(t, getTestAction(t, wfc, "unpinned").Status.Phase)
+}
+
+func TestActionReconciliationUIDMismatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// the replacement reconciles before the binder has failed an action pinned to its predecessor
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.UID = "new-uid"
+	cancel, controller := newController(ctx, wf, newTestAction("t1", "suspend", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.Spec.WorkflowRef.UID = "old-uid"
+	}))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Empty(t, woc.wf.Status.Shutdown)
+	assert.NotContains(t, woc.wf.Status.AppliedActions, "uid-t1")
+	a := getTestAction(t, controller, "t1")
+	assert.Equal(t, wfv1.WorkflowActionFailed, a.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowNotFound, a.Status.Reason)
+}
+
 func TestPostponedWorkflowDrainsActions(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	// my-wf-1 is postponed by the parallelism limit and never reaches operate(); a Suspend

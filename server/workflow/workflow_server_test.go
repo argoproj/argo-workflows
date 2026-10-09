@@ -620,6 +620,14 @@ func newWorkflowServer(t *testing.T, withController bool) (workflowpkg.WorkflowS
 			},
 		},
 	}, nil)
+	archivedRepo.On("GetWorkflow", mock.Anything, "", "test", "archived-only").Return(&v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "archived-only",
+			Namespace: "test",
+			UID:       "archived-only-uid",
+			Labels:    map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"},
+		},
+	}, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "test", "not-found").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "workflows", "latest").Return(nil, nil)
@@ -1070,6 +1078,35 @@ func TestActionCancelledByCaller(t *testing.T) {
 	require.Error(t, err)
 	// a caller going away is not a controller timeout
 	assert.Equal(t, codes.Canceled, status.Code(err))
+}
+
+func TestActionCallerDeadline(t *testing.T) {
+	server, ctx := newWorkflowServer(t, false)
+	// the caller's own deadline is shorter than workflowActionTimeout
+	ctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
+	defer cancel()
+
+	_, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
+	require.Error(t, err)
+	assert.Equal(t, codes.DeadlineExceeded, status.Code(err))
+	// a caller deadline is not a controller timeout
+	assert.NotContains(t, err.Error(), "timed out waiting for the workflow controller")
+}
+
+func TestActionOnArchivedOnlyWorkflow(t *testing.T) {
+	previous := workflowActionTimeout
+	workflowActionTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { workflowActionTimeout = previous })
+	server, ctx := newWorkflowServer(t, false)
+
+	_, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "archived-only", Namespace: "test"})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+
+	// no action is created for a workflow the controller cannot act on
+	actions, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowActions("test").List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, actions.Items)
 }
 
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {

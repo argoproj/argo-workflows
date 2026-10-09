@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -124,10 +125,9 @@ func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 	}
 	// A pinned UID that no longer matches means the named workflow was recreated: the intended
 	// target is gone, so fail rather than act on its replacement.
-	if a.Spec.WorkflowRef.UID != "" && un.GetUID() != a.Spec.WorkflowRef.UID {
+	if !actionTargets(a, un.GetUID()) {
 		log.Info(ctx, "Failing workflow action: target workflow UID mismatch")
-		wfc.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowNotFound,
-			fmt.Sprintf("workflow %q with uid %q not found (current uid %q)", wfKey, a.Spec.WorkflowRef.UID, un.GetUID()))
+		wfc.failActionUIDMismatch(ctx, a, un.GetUID())
 		return true
 	}
 	// WAL recovery first: an already-applied action must succeed even if the workflow since completed
@@ -150,9 +150,15 @@ func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 // that can no longer be reconciled (it completed, or was deleted, after the binder enqueued it),
 // so they do not sit Pending until the next informer resync. An action whose UID is in the
 // workflow's write-ahead record already took effect and succeeds; the rest fail with reason.
+// Only actions aimed at this incarnation of the workflow are settled: a delete event can arrive
+// after a workflow of the same name was created, and actions for that one are left to the binder.
 func (wfc *WorkflowController) settlePendingActions(ctx context.Context, un *unstructured.Unstructured, reason string) {
 	applied, _, _ := unstructured.NestedStringSlice(un.Object, "status", "appliedActions")
+	replaced := wfc.nameReplaced(un)
 	for _, a := range wfc.pendingActionsFor(un.GetNamespace(), un.GetName()) {
+		if !actionTargets(a, un.GetUID()) || (replaced && a.Spec.WorkflowRef.UID == "") {
+			continue
+		}
 		if slices.Contains(applied, string(a.UID)) {
 			wfc.recordActionOutcome(ctx, a, wfv1.WorkflowActionSucceeded, "", "")
 			continue
@@ -163,6 +169,30 @@ func (wfc *WorkflowController) settlePendingActions(ctx context.Context, un *uns
 		}
 		wfc.failActionOutcome(ctx, a, reason, message)
 	}
+}
+
+// nameReplaced reports whether the informer now holds a different workflow under un's name.
+func (wfc *WorkflowController) nameReplaced(un *unstructured.Unstructured) bool {
+	obj, exists, err := wfc.wfInformer.GetStore().GetByKey(indexes.WorkflowIndexValue(un.GetNamespace(), un.GetName()))
+	if err != nil || !exists {
+		return false
+	}
+	current, ok := obj.(*unstructured.Unstructured)
+	return ok && current.GetUID() != un.GetUID()
+}
+
+// actionTargets reports whether an action is aimed at the workflow with the given UID: an
+// unpinned action targets whichever workflow holds the name.
+func actionTargets(a *wfv1.WorkflowAction, uid types.UID) bool {
+	return a.Spec.WorkflowRef.UID == "" || a.Spec.WorkflowRef.UID == uid
+}
+
+// failActionUIDMismatch fails an action pinned to a workflow that has since been replaced under
+// the same name: the intended target is gone, so it must not act on the replacement.
+func (wfc *WorkflowController) failActionUIDMismatch(ctx context.Context, a *wfv1.WorkflowAction, currentUID types.UID) {
+	wfKey := indexes.WorkflowIndexValue(a.Namespace, a.Spec.WorkflowRef.Name)
+	wfc.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowNotFound,
+		fmt.Sprintf("workflow %q with uid %q not found (current uid %q)", wfKey, a.Spec.WorkflowRef.UID, currentUID))
 }
 
 func completedWorkflowMessage(a *wfv1.WorkflowAction) string {
@@ -289,6 +319,11 @@ func (woc *wfOperationCtx) actionReconciliation(ctx context.Context) {
 	}
 	woc.pruneAppliedActions(actions)
 	for _, a := range actions {
+		if !actionTargets(a, woc.wf.UID) {
+			// the binder normally fails these first, but this workflow may reconcile before it does
+			woc.controller.failActionUIDMismatch(ctx, a, woc.wf.UID)
+			continue
+		}
 		if slices.Contains(woc.wf.Status.AppliedActions, string(a.UID)) {
 			// crash recovery: the effect is already persisted, only the action status is missing
 			woc.pendingActionResults = append(woc.pendingActionResults, actionResult{action: a, phase: wfv1.WorkflowActionSucceeded})
