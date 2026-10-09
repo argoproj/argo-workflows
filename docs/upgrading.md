@@ -22,18 +22,22 @@ If your `containerSet` relied on a failing container stopping its siblings early
 
 Additionally, a container whose dependency is killed before it can report an exit code now ends with exit code 64 and the message `died without reporting exit code`, and the node is marked `Error` rather than `Failed`.
 
-### Workflow actions go through a `WorkflowAction` resource
+### Workflow actions go through a WorkflowAction resource
 
-Stop, terminate, suspend and resume are now performed by the workflow controller from a new namespaced `WorkflowAction` custom resource ([#16920](https://github.com/argoproj/argo-workflows/pull/16920), see [Workflow Actions](workflow-actions.md)).
-Install the updated CRDs (they include `workflowactions.argoproj.io`) and upgrade the workflow controller before, or together with, the Argo Server: a new server against an old controller (or a cluster without the CRD) cannot perform these actions.
+Stop, terminate, suspend and resume are now performed by the workflow controller from a new namespaced WorkflowAction custom resource ([#16920](https://github.com/argoproj/argo-workflows/pull/16920)); see the Workflow Actions page for how to use it.
+Install the updated CRDs (they include `workflowactions.argoproj.io`) before upgrading the workflow controller.
+The controller waits for its WorkflowAction informer to sync before it processes anything, so without the CRD, or without `list` and `watch` on `workflowactions` in the controller's role, no workflows run at all.
+Upgrade the workflow controller before, or together with, the Argo Server: a new server against an old controller cannot perform these actions.
 The same applies to the `argo` CLI when used without an Argo Server, which now also needs a running controller for these four commands.
 
 If you maintain your own RBAC rather than using the bundled roles: the workflow controller needs `create`, `get`, `list`, `watch` and `delete` on `workflowactions` and `update` on `workflowactions/status`; the Argo Server needs `create`, `get` and `watch` on `workflowactions`.
 In `client` and `sso` auth modes the action is created with the caller's identity, so roles bound to users or SSO service accounts that could `patch` `workflows` need `create`, `get` and `watch` on `workflowactions` too, or the four endpoints fail with a permission error.
+Without an Argo Server, the credentials the `argo` CLI runs with need `create`, `get` and `watch` on `workflowactions` for `argo stop`, `argo terminate`, `argo suspend` and `argo resume`.
+That includes a workflow step that runs one of these commands under its pod's service account.
 Roles that use a resource wildcard in the `argoproj.io` group silently gain the ability to create actions.
 
 The four endpoints now wait up to 30 seconds for the controller to apply the action and return `DeadlineExceeded` if it has not; the action is still recorded and applied later.
-Setting `spec.shutdown` or `spec.suspend` on a running Workflow directly is [deprecated](deprecations.md).
+Setting `spec.shutdown` or `spec.suspend` on a running Workflow directly is deprecated.
 
 ## Upgrading to v4.1.2
 
