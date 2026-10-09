@@ -443,6 +443,61 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 	}
 }
 
+func (s *workflowServer) WatchWorkflowPod(req *workflowpkg.WatchWorkflowPodRequest, ws workflowpkg.WorkflowService_WatchWorkflowPodServer) error {
+	ctx := ws.Context()
+	wf, err := s.getWorkflow(ctx, auth.GetWfClient(ctx), req.Namespace, req.Name, "", metav1.GetOptions{})
+	if err != nil {
+		return sutils.ToStatusError(err, codes.Internal)
+	}
+	err = s.validateWorkflow(wf)
+	if err != nil {
+		return sutils.ToStatusError(err, codes.InvalidArgument)
+	}
+
+	// The selectors are the only check that the pod belongs to this workflow; in server auth mode the caller could otherwise read any pod.
+	podWatch, err := auth.GetKubeClient(ctx).CoreV1().Pods(wf.Namespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector: common.LabelKeyWorkflow + "=" + wf.Name,
+		FieldSelector: "metadata.name=" + req.PodName,
+	})
+	if err != nil {
+		return sutils.ToStatusError(err, codes.Internal)
+	}
+	defer podWatch.Stop()
+
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.Debug(ctx, "Piping pod events to channel")
+	defer logger.Debug(ctx, "Pod result channel done")
+
+	err = ws.SendHeader(metadata.MD{})
+	if err != nil {
+		return sutils.ToStatusError(err, codes.Internal)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event, open := <-podWatch.ResultChan():
+			if !open {
+				// The API server ends watches periodically; ResourceExhausted makes clients reconnect, as in WatchEvents.
+				return sutils.ToStatusError(io.EOF, codes.ResourceExhausted)
+			}
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				// object is probably metav1.Status, `FromObject` can deal with anything
+				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
+			}
+			// Strip managedFields from a copy: watch.Interface does not promise exclusive ownership of the objects it emits.
+			pod = pod.DeepCopy()
+			pod.ManagedFields = nil
+			err = ws.Send(&workflowpkg.WorkflowPodWatchEvent{Type: string(event.Type), Object: pod})
+			if err != nil {
+				return sutils.ToStatusError(err, codes.Internal)
+			}
+		}
+	}
+}
+
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})

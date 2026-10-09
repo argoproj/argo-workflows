@@ -62,6 +62,7 @@ interface Props {
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowEvents?: () => void;
+    onShowPod?: () => void;
     onShowYaml?: (nodeId: string) => any;
     onTabSelected?: (tabSelected: string) => void;
     selectedTabKey?: string;
@@ -204,6 +205,11 @@ function WorkflowNodeSummary(props: Props) {
                 {props.node.type === 'Pod' && props.onShowEvents && (
                     <Button icon='bell' onClick={() => props.onShowEvents()}>
                         EVENTS
+                    </Button>
+                )}{' '}
+                {props.node.type === 'Pod' && props.onShowPod && models.isWorkflowInCluster(props.workflow) && (
+                    <Button icon='cube' onClick={() => props.onShowPod()}>
+                        POD
                     </Button>
                 )}{' '}
                 {props.node.type === 'Container' && props.onShowContainerLogs && (

@@ -5,6 +5,7 @@ import {LoginPage} from '../pages/login-page';
 import {WorkflowDetailsPage} from '../pages/workflow-details-page';
 import {WorkflowListPage} from '../pages/workflow-list-page';
 import {WorkflowLogsPanel} from '../pages/workflow-logs-panel';
+import {WorkflowPodPanel} from '../pages/workflow-pod-panel';
 import {ApiClient} from './api';
 
 interface Fixtures {
@@ -14,6 +15,7 @@ interface Fixtures {
     workflowDetailsPage: WorkflowDetailsPage;
     workflowListPage: WorkflowListPage;
     workflowLogsPanel: WorkflowLogsPanel;
+    workflowPodPanel: WorkflowPodPanel;
 }
 
 export const test = base.extend<Fixtures>({
@@ -48,6 +50,9 @@ export const test = base.extend<Fixtures>({
     },
     workflowLogsPanel: async ({page}, use) => {
         await use(new WorkflowLogsPanel(page));
+    },
+    workflowPodPanel: async ({page}, use) => {
+        await use(new WorkflowPodPanel(page));
     }
 });
 

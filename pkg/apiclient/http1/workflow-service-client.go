@@ -42,6 +42,14 @@ func (h WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflowpkg.
 	return eventWatchClient{serverSentEventsClient{ctx, reader}}, nil
 }
 
+func (h WorkflowServiceClient) WatchWorkflowPod(ctx context.Context, in *workflowpkg.WatchWorkflowPodRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowPodClient, error) {
+	reader, err := h.EventStreamReader(ctx, in, "/api/v1/stream/workflows/{namespace}/{name}/pods/{podName}")
+	if err != nil {
+		return nil, err
+	}
+	return watchWorkflowPodClient{serverSentEventsClient{ctx, reader}}, nil
+}
+
 func (h WorkflowServiceClient) DeleteWorkflow(ctx context.Context, in *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
 	out := &workflowpkg.WorkflowDeleteResponse{}
 	return out, h.Delete(ctx, in, out, "/api/v1/workflows/{namespace}/{name}")
