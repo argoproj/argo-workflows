@@ -554,8 +554,8 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-Ta7ZOmyX8gG5tzWbY2oES70EJPfI90U7CIJS9EAce0s="
   [mod."github.com/klauspost/compress"]
-    version = "v1.19.2"
-    hash = "sha256-Q7taaWYa+O5MkhiGESFs4UdMba8cDGEROXU/Y+3M5vE="
+    version = "v1.20.1"
+    hash = "sha256-saWVNlxTAS7/lNaGght51onyIDaAFV1Kx11g3+vPuX4="
   [mod."github.com/klauspost/cpuid/v2"]
     version = "v2.4.0"
     hash = "sha256-nvTeRVxDekVNLd25aJ2NslBnG7nT25ewoSTk3iW5Xok="
@@ -563,8 +563,8 @@ schema = 3
     version = "v1.3.0"
     hash = "sha256-RsS/MDJbVzVB+i74whqABgwZJWMw+AutF6HhJBVgbag="
   [mod."github.com/klauspost/pgzip"]
-    version = "v1.2.6"
-    hash = "sha256-qA1hjnVW/tqxY48JIWQVulwEwY7fwyvnasymZk3mScg="
+    version = "v1.2.7"
+    hash = "sha256-HRAbr8J+vEOa3TB3ObAJyuMv13USdEONt+KHvzFxqkU="
   [mod."github.com/kylelemons/godebug"]
     version = "v1.1.0"
     hash = "sha256-DJ0re9mGqZb6PROQI8NPC0JVyDHdZ/y4uehNH7MbczY="
