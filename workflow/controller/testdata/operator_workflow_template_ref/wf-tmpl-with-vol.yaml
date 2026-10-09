@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template-with-volume
+  namespace: default
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  entrypoint: whalesay-template
+  templates:
+  - name: whalesay-template
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
