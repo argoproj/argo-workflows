@@ -1568,6 +1568,30 @@ func TestPlanResetReopensSkippedDependentsAfterNestedGroupRetry(t *testing.T) {
 	require.NoError(t, err, "retry output must not leave preserved hooks orphaned")
 }
 
+func TestApplyResetPlanDoesNotDuplicateHookAlreadyLinkedToBoundary(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	const (
+		workflowName = "hook-reparent"
+		boundaryID   = workflowName
+		hookID       = workflowName + ".after.hooks.completed"
+	)
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: workflowName},
+		Status: wfv1.WorkflowStatus{
+			Nodes: wfv1.Nodes{
+				boundaryID: {ID: boundaryID, Name: workflowName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeRunning, Children: []string{hookID}},
+				hookID:     {ID: hookID, Name: hookID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: boundaryID, NodeFlag: &wfv1.NodeFlag{Hooked: true}},
+			},
+		},
+	}
+	plan := resetPlan{hookedNodesToReparent: map[string]string{hookID: boundaryID}}
+	dst := wf.DeepCopy()
+
+	applyResetPlan(ctx, wf, dst, plan, nil, nil)
+
+	require.Equal(t, []string{hookID}, dst.Status.Nodes[boundaryID].Children)
+}
+
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wfClient := argofake.NewClientset().ArgoprojV1alpha1().Workflows("my-ns")
