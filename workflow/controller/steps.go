@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -48,8 +49,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	defer func() {
 		nodePhase, phaseErr := woc.wf.Status.Nodes.GetPhase(node.ID)
 		if phaseErr != nil {
-			woc.log.WithField("nodeID", node.ID).WithFatal().Error(ctx, "was unable to obtain nodePhase for nodeID")
-			panic(fmt.Sprintf("unable to obtain nodePhase for %s", node.ID))
+			woc.log.WithField("nodeID", node.ID).Error(ctx, "was unable to obtain nodePhase for nodeID")
+			os.Exit(1)
 		}
 		if nodePhase.Fulfilled(node.TaskResultSynced) {
 			woc.killDaemonedChildren(ctx, node.ID)
@@ -96,12 +97,12 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			} else {
 				for _, childID := range prevStepGroupNode.Children {
 					outboundNodeIDs := woc.getOutboundNodes(ctx, childID)
-					woc.log.WithFields(logging.Fields{"childID": childID, "outboundNodeIDs": outboundNodeIDs}).Info(ctx, "SG Outbound nodes")
+					woc.log.WithFields(logging.Fields{"childID": childID, "outboundNodeIDs": outboundNodeIDs}).Debug(ctx, "SG Outbound nodes")
 					for _, outNodeID := range outboundNodeIDs {
 						outNodeName, nameErr := woc.wf.Status.Nodes.GetName(outNodeID)
 						if nameErr != nil {
-							woc.log.WithField("nodeID", outNodeID).WithFatal().Error(ctx, "was not able to obtain node name for nodeID")
-							panic(fmt.Sprintf("could not obtain the out noden name for %s", outNodeID))
+							woc.log.WithField("nodeID", outNodeID).Error(ctx, "was not able to obtain node name for nodeID")
+							os.Exit(1)
 						}
 						woc.addChildNode(ctx, outNodeName, sgNodeName)
 					}
@@ -114,7 +115,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			return woc.markNodeError(ctx, sgNodeName, execErr), nil
 		}
 		if !sgNode.Fulfilled() {
-			woc.log.WithField("nodeID", sgNode.ID).Info(ctx, "Workflow step group node not yet completed")
+			woc.log.WithField("nodeID", sgNode.ID).Debug(ctx, "Workflow step group node not yet completed")
 			return node, nil
 		}
 
@@ -376,7 +377,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			return woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, failMessage), nil
 		}
 	}
-	woc.log.WithField("nodeID", node.ID).Info(ctx, "Step group node successful")
+	woc.log.WithField("nodeID", node.ID).Debug(ctx, "Step group node successful")
 	return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded), nil
 }
 
@@ -507,7 +508,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
-				woc.log.WithError(err).Warn(ctx, "was unable to find variable")
+				woc.log.WithError(err).Debug(ctx, "was unable to find variable")
 				return ErrRequeue
 			}
 			return err
@@ -534,6 +535,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 					continue
 				}
 				return fmt.Errorf("unable to resolve references: %w", err)
+			}
+			if art.Optional && !resolvedArt.HasLocationOrKey() {
+				continue
 			}
 			resolvedArt.Name = art.Name
 			artifacts = append(artifacts, *resolvedArt)

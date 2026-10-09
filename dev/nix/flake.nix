@@ -33,7 +33,7 @@
           # manual update in the same PR (Renovate cannot compute them).
           toolVersions = {
             kubeauto = "0.0.7";
-            mockery = "3.5.1";
+            mockery = "3.8.0";
             controllerTools = "0.18.0";
             # renovate: datasource=go depName=k8s.io/code-generator
             codeGenerator = "0.35.4";
@@ -42,7 +42,7 @@
             # renovate: datasource=go depName=google.golang.org/grpc/cmd/protoc-gen-go-grpc
             protocGenGoGrpc = "1.5.1";
             # renovate: datasource=go depName=github.com/grpc-ecosystem/grpc-gateway/v2
-            grpcGateway = "2.29.0";
+            grpcGateway = "2.30.0";
             kubeOpenapi = "0.0.0-20220124234850-424119656bbf";
             goSwagger = "0.33.1";
             goimports = "0.35.0";
@@ -218,9 +218,12 @@
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-x7WniZ4wpnuzUHM2ZC2P7Ns67bIp4V4F9f4xQEJONEk=";
+                sha256 = "sha256-T+z1IWpMUJr0729Q7bhHPu2hfxWxqjlUFLx143Ko58g=";
               };
-              vendorHash = "sha256-cNMknwlU7ENwN67CtyU1YgYIXCJbh4b7Z3oUK7kkEkk=";
+              vendorHash = "sha256-lNeRQwoCC3fOhF6uUhPZfccikzuPkRCXf0FkFaL9Gg4=";
+              # nixpkgs' prePatch rewrites Taskfile.yml test targets that no longer exist in v3.8.0;
+              # tests are disabled so the patching is unnecessary.
+              prePatch = "";
               doCheck = false;
             });
 
@@ -260,11 +263,11 @@
                 owner = "grpc-ecosystem";
                 repo = "grpc-gateway";
                 rev = "v${version}";
-                sha256 = "sha256-d9OIIGttyMBSNgpS6mbR5JEIm13qGu2gFHJazJAexdw=";
+                sha256 = "sha256-LoSfWF+bJ6p+XVdqauIcgESfse+F57aoADi3mYUf3lo=";
               };
               subPackages = [ "protoc-gen-grpc-gateway" "protoc-gen-openapiv2" ];
               doCheck = false;
-              vendorHash = "sha256-p51yD+v8+rPs+ztlX7r0VQ4XlwUkxu+PxgknKEvH00k=";
+              vendorHash = "sha256-e0CajogxQoHPanjek6nWebV2yHFja0QHHD57SNlLQDI=";
             };
 
             go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {

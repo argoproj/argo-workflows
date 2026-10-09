@@ -50,8 +50,7 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 		return nil
 	})
 	if err != nil {
-		var exErr *exec.ExitError
-		if errors.As(err, &exErr) {
+		if exErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
 			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
 		} else {
@@ -307,12 +306,13 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 // SaveResourceParameters will save any resource output parameters
 func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if len(we.Template.Outputs.Parameters) == 0 {
+	outputs := we.capturedOutputs()
+	if len(outputs.Parameters) == 0 {
 		logger.Info(ctx, "No output parameters")
 		return nil
 	}
 	logger.Info(ctx, "Saving resource output parameters")
-	for i, param := range we.Template.Outputs.Parameters {
+	for i, param := range outputs.Parameters {
 		if param.ValueFrom == nil {
 			continue
 		}
@@ -321,7 +321,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			if param.ValueFrom.Default != nil {
 				output = param.ValueFrom.Default.String()
 			}
-			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
+			outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
 		var outputFormat string
@@ -348,7 +348,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			}
 		}
 
-		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
+		outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
 	err := we.ReportOutputs(ctx, nil)

@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -45,11 +46,11 @@ const (
 	Backfill  = workflow.WorkflowFullName + "/backfill" // clean backfill workflows
 )
 
-var timeoutBias = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
+var timeoutBias = env.LookupEnvDurationOr(logging.TestContext(context.Background()), "E2E_WAIT_TIMEOUT_BIAS", 0*time.Second)
 
-var defaultTimeout = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
+var defaultTimeout = env.LookupEnvDurationOr(logging.TestContext(context.Background()), "E2E_WAIT_TIMEOUT", 60*time.Second) + timeoutBias
 
-var EnvFactor = env.LookupEnvIntOr(logging.InitLoggerInContext(), "E2E_ENV_FACTOR", 1)
+var EnvFactor = env.LookupEnvIntOr(logging.TestContext(context.Background()), "E2E_ENV_FACTOR", 1)
 
 // AuxContainerName returns the name of Argo's auxiliary executor container for
 // the pod layout under test: "supervisor" when the controller runs the init-less

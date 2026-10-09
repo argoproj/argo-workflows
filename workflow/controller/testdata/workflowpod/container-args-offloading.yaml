@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-large-args
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: ["/bin/sh"]

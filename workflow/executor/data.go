@@ -29,7 +29,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	we.Template.Outputs.Result = new(string(out))
+	we.capturedOutputs().Result = new(string(out))
 	err = we.ReportOutputs(ctx, nil)
 	if err != nil {
 		return err

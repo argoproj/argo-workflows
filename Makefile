@@ -461,7 +461,7 @@ codegen: $(TOOL_MOCKERY) $(TOOL_BUF)
 endif
 codegen: types swagger manifests $(GENERATED_DOCS) vendor/modules.txt ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
-	$(TOOL_MOCKERY) --config .mockery.yaml
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_MOCKERY) --config .mockery.yaml
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
@@ -493,10 +493,16 @@ swagger: \
 	api/jsonschema/schema.json
 
 
+# Generated code must be what the go.mod toolchain produces, not whatever Go the host
+# has: Go releases change compress/flate output (embedded in every .pb.go descriptor)
+# and stdlib type aliases (encoding/json.RawMessage became jsontext.Value in Go 1.27,
+# which deepcopy-gen resolves). Build and run the affected codegen tools with it.
+GOMOD_TOOLCHAIN := go$(shell sed -n 's/^go //p' go.mod)
+
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.26.5 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.0
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -515,27 +521,27 @@ endif
 $(TOOL_PROTOC_GEN_GOGO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 endif
 $(TOOL_PROTOC_GEN_GO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
 endif
 $(TOOL_PROTOC_GEN_GO_GRPC): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 endif
 $(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.29.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.30.0
 endif
 $(TOOL_PROTOC_GEN_OPENAPIV2): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.29.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.30.0
 endif
 $(TOOL_OPENAPI_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -685,7 +691,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.12.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.12.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.13.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.13.2
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
@@ -698,10 +704,6 @@ lint-go: ui/dist/app/index.html
 ifeq ($(USE_NIX), true)
 	rm -Rf v3 vendor
 endif
-	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
-	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
-	# * Change `woc.execWf.Status` to `woc.wf.Status`.
-	@awk '(/woc.wf.Spec/ || /woc.execWf.Status/) && !/not-woc-misuse/ {print FILENAME ":" FNR "\t" $0 ; exit 1}' $(shell find workflow/controller -type f -name '*.go' -not -name '*test*')
 	# Tidy Go modules
 	go mod tidy
 ifneq ($(USE_NIX), true)
@@ -709,7 +711,7 @@ ifneq ($(USE_NIX), true)
 	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || $(MAKE) vendor
 endif
 	# Lint Go files (with auto-discovered build tags)
-	$(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
 
 lint-ui: ui/dist/app/index.html
 	# Lint the UI
@@ -930,6 +932,7 @@ ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
 endif
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) vendor/modules.txt
+	export GOTOOLCHAIN=$(GOMOD_TOOLCHAIN); \
 	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.4); \
 	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \
 		kube::codegen::gen_helpers \

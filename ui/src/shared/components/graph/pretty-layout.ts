@@ -1,11 +1,11 @@
-import * as dagre from 'dagre';
+import * as dagre from '@dagrejs/dagre';
 
 import {Graph, Node} from './types';
 
 const minSize = 1;
 export function layoutGraphPretty(graph: Graph, nodeSize: number, horizontal: boolean, hidden: (id: Node) => boolean) {
     const gap = nodeSize * 1.25;
-    const g = new dagre.graphlib.Graph();
+    const g = new dagre.graphlib.Graph<dagre.GraphLabel, dagre.NodeLabel, dagre.EdgeLabel>();
     g.setGraph({rankdir: horizontal ? 'LR' : 'TB', ranksep: gap, nodesep: gap, edgesep: gap});
     g.setDefaultEdgeLabel(() => ({}));
     graph.nodes.forEach((label, id) =>

@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -39,8 +37,7 @@ func NewRootCommand() *cobra.Command {
 			initConfig()
 			ctx, logger, err := cmdutil.ContextWithLogger(cmd, logLevel, logFormat)
 			if err != nil {
-				logging.InitLogger().WithError(err).WithFatal().Error(cmd.Context(), "Failed to create argoexec pre-run logger")
-				os.Exit(1)
+				cmdutil.FatalBootstrap(logFormat, err, "Failed to create argoexec pre-run logger")
 			}
 
 			// Required: argo=true field for test filtering compatibility
@@ -76,8 +73,7 @@ func NewRootCommand() *cobra.Command {
 
 	ctx, logger, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create argoexec logger")
-		os.Exit(1)
+		cmdutil.FatalBootstrap(logFormat, err, "Failed to create argoexec logger")
 	}
 
 	// Required: argo=true field for test filtering compatibility

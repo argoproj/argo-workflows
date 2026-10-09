@@ -65,7 +65,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		kubeclientset: clientSet,
 		wfInformer:    wfInformer,
 		workqueue:     metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "pod_cleanup_queue"),
-		podInformer:   newInformer(ctx, clientSet, &config.InstanceID, &namespace),
+		podInformer:   newInformer(clientSet, &config.InstanceID, &namespace),
 		log:           log,
 		callBack:      callback,
 		restConfig:    restConfig,
@@ -91,7 +91,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 					return
 				}
 				if !significantPodChange(oldPod, newPod) {
-					log.WithField("key", key).Info(ctx, "insignificant pod change")
+					log.WithField("key", key).Debug(ctx, "insignificant pod change")
 					diff.LogChanges(ctx, oldPod, newPod)
 					return
 				}
@@ -238,7 +238,6 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 }
 
 func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
-	c.log.WithField("pod", pod.Name).Info(ctx, "add pod event")
 	err := c.callBack(pod)
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod add failed")
@@ -247,9 +246,8 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, newPod *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, _ *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
-	c.log.WithField("pod", old.Name).Info(ctx, "update pod event")
 	err := c.callBack(newPod)
 	if err != nil {
 		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
@@ -272,7 +270,6 @@ func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 			return
 		}
 	}
-	c.log.WithField("pod", pod.Name).Info(ctx, "delete pod event")
 	// enqueue the workflow for the deleted pod
 	err = c.callBack(pod)
 	if err != nil {
@@ -282,7 +279,7 @@ func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 	c.commonPodEvent(ctx, pod, true)
 }
 
-func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) *cache.ListWatch {
+func newWorkflowPodWatch(clientSet kubernetes.Interface, instanceID, namespace *string) *cache.ListWatch {
 	c := clientSet.CoreV1().Pods(*namespace)
 	// completed=false
 	labelSelector := labels.NewSelector().
@@ -291,7 +288,7 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(*instanceID))
 
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+	listFunc := func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
 		var allPods []apiv1.Pod
 		continueTok := ""
@@ -314,16 +311,16 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		}
 		return &apiv1.PodList{Items: allPods}, nil
 	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+	watchFunc := func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.LabelSelector = labelSelector.String()
 		return c.Watch(ctx, options)
 	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+	return &cache.ListWatch{ListWithContextFunc: listFunc, WatchFuncWithContext: watchFunc}
 }
 
-func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
-	source := newWorkflowPodWatch(ctx, clientSet, instanceID, namespace)
+func newInformer(clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
+	source := newWorkflowPodWatch(clientSet, instanceID, namespace)
 	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, clientSet), &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
