@@ -19,7 +19,7 @@
     "ghcr.io/devcontainers/features/node:2": {
       "version": "20"
     },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:4": {},
     "ghcr.io/devcontainers/features/python:1": {}
   }
 }
