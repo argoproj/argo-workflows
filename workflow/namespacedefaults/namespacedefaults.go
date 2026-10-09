@@ -89,10 +89,8 @@ func Merged(ctx context.Context, i Interface, controllerDefaults *wfv1.Workflow,
 	// MergeTo lets the target win, so merging the more specific layer first leaves the
 	// namespace values in place and lets the controller layer fill only what is still empty.
 	merged := &wfv1.Workflow{}
-	if namespaceDefaults != nil {
-		if err := util.MergeTo(namespaceDefaults, merged); err != nil {
-			return nil, err
-		}
+	if err := util.MergeTo(namespaceDefaults, merged); err != nil {
+		return nil, err
 	}
 	if controllerDefaults != nil {
 		if err := util.MergeTo(controllerDefaults, merged); err != nil {
