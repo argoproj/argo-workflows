@@ -43,14 +43,14 @@ func request_ArchivedWorkflowService_ListArchivedWorkflows_0(ctx context.Context
 		protoReq ListArchivedWorkflowsRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_ListArchivedWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ListArchivedWorkflows(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -79,9 +79,6 @@ func request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Context, 
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -95,6 +92,9 @@ func request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Context, 
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_GetArchivedWorkflow_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.GetArchivedWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -132,9 +132,6 @@ func request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.Contex
 		metadata runtime.ServerMetadata
 		err      error
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -148,6 +145,9 @@ func request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.Contex
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_DeleteArchivedWorkflow_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.DeleteArchivedWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -184,14 +184,14 @@ func request_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0(ctx context
 		protoReq ListArchivedWorkflowLabelKeysRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_ListArchivedWorkflowLabelKeys_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ListArchivedWorkflowLabelKeys(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -219,14 +219,14 @@ func request_ArchivedWorkflowService_ListArchivedWorkflowLabelValues_0(ctx conte
 		protoReq ListArchivedWorkflowLabelValuesRequest
 		metadata runtime.ServerMetadata
 	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ArchivedWorkflowService_ListArchivedWorkflowLabelValues_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ListArchivedWorkflowLabelValues(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -256,9 +256,6 @@ func request_ArchivedWorkflowService_RetryArchivedWorkflow_0(ctx context.Context
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -266,6 +263,9 @@ func request_ArchivedWorkflowService_RetryArchivedWorkflow_0(ctx context.Context
 	protoReq.Uid, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uid", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.RetryArchivedWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
@@ -301,9 +301,6 @@ func request_ArchivedWorkflowService_ResubmitArchivedWorkflow_0(ctx context.Cont
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
 	val, ok := pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -311,6 +308,9 @@ func request_ArchivedWorkflowService_ResubmitArchivedWorkflow_0(ctx context.Cont
 	protoReq.Uid, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "uid", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
 	}
 	msg, err := client.ResubmitArchivedWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return gateway.MessageV2Of(msg), metadata, err
