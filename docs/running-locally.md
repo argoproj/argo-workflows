@@ -215,7 +215,8 @@ yarn --cwd ui playwright install --with-deps chromium   # first run only
 make test-ui-e2e                            # or: yarn --cwd ui e2e
 ```
 
-To run them under a sub-path instead, start the stack with `BASE_HREF=/argo/` (argo-server and the webpack dev server both pick it up) and point the suite at it:
+Run them under a sub-path when the `E2E UI (base-href)` check fails, or when you change anything that builds URLs (links, routing, API paths or cookies).
+To do that, start the stack with `BASE_HREF=/argo/` (argo-server and the webpack dev server both pick it up) and point the suite at it:
 
 ```bash
 make start AUTH_MODE=client BASE_HREF=/argo/
