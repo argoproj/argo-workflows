@@ -725,8 +725,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
   [mod."github.com/prometheus/procfs"]
-    version = "v0.21.1"
-    hash = "sha256-5SpWprdX29oVntHJyadiICOk9UAP+hu+xJM51/A8Ig4="
+    version = "v0.22.0"
+    hash = "sha256-TRwVHKgW4NnPuC6Me38OD57ccM8AfnS7IxtcAx2TAH4="
   [mod."github.com/remyoudompheng/bigfft"]
     version = "v0.0.0-20230129092748-24d4a6f8daec"
     hash = "sha256-vYmpyCE37eBYP/navhaLV4oX4/nu0Z/StAocLIFqrmM="
@@ -905,8 +905,8 @@ schema = 3
     version = "v1.47.0"
     hash = "sha256-ufaKTLJEPrGJXhDL5SoZ6V/BDkV6LwiFq0Twmi5T048="
   [mod."go.opentelemetry.io/otel/exporters/prometheus"]
-    version = "v0.67.0"
-    hash = "sha256-YgvJVSuqeaqJCFYxilbxvFnbGWWHF6Xxi8eu0c/2afU="
+    version = "v0.69.0"
+    hash = "sha256-iwlj9pgiv2VW2c5S4r/x+y2D5w5KLzugLhKX7XXaxv8="
   [mod."go.opentelemetry.io/otel/log"]
     version = "v1.47.0"
     hash = "sha256-hYCHFuMmSSrMlyChIOEZMLuGYubF8IKkFLPC9yuVXdw="
