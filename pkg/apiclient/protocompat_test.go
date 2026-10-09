@@ -17,8 +17,12 @@ func TestProtoCompat_MarshalKubernetesTypes(t *testing.T) {
 	data, err := proto.Marshal(&workflowpkg.WorkflowGetRequest{
 		Name:       "wf",
 		Namespace:  "ns",
-		GetOptions: &metav1.GetOptions{},
+		GetOptions: &metav1.GetOptions{ResourceVersion: "rv"},
 	})
 	require.NoError(t, err)
-	require.NotEmpty(t, data)
+
+	var got workflowpkg.WorkflowGetRequest
+	require.NoError(t, proto.Unmarshal(data, &got))
+	require.NotNil(t, got.GetGetOptions())
+	require.Equal(t, "rv", got.GetGetOptions().ResourceVersion)
 }
