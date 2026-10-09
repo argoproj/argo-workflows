@@ -1,5 +1,45 @@
 # Changelog
 
+## v4.1.5 (2026-10-09)
+
+Full Changelog: [v4.1.4...v4.1.5](https://github.com/argoproj/argo-workflows/compare/v4.1.4...v4.1.5)
+
+### Selected Changes
+
+* [aa30942bd](https://github.com/argoproj/argo-workflows/commit/aa30942bdb308d2538bdcf9c65fce7f8b31161f5) fix(build): drop deprecated http2.Transport (cherry-pick #17182 for 4.1) (#17185)
+* [9f0d0e163](https://github.com/argoproj/argo-workflows/commit/9f0d0e1637a0a2913d6802fb59e8695c2fd06787) chore(deps): update module golang.org/x/net to v0.60.0 [security] (release-4.1) (#17179)
+* [0bdaeeeb9](https://github.com/argoproj/argo-workflows/commit/0bdaeeeb92cb3722b9ad8ffe82ec22107101e66c) fix: postrgesql use sslmode when configured (cherry-pick #17113 for 4.1) (#17143)
+* [e7fb498e1](https://github.com/argoproj/argo-workflows/commit/e7fb498e1551da6ab6b4fc183aa0d2030c0c0623) chore(deps): update dependency moment to v2.31.0 [security] (release-4.1) (#17121)
+* [d264a204e](https://github.com/argoproj/argo-workflows/commit/d264a204ebfd42c33cb5a5d9b82844ba714df279) fix: tie database queries to the caller's context (cherry-pick #17076 for 4.1) (#17102)
+* [4748d152e](https://github.com/argoproj/argo-workflows/commit/4748d152e5eba916b0f6f6e0aec2f1dce4e21a6a) fix: termination of suspended workflow (cherry-pick #17052 for 4.1) (#17100)
+* [7af1e72d6](https://github.com/argoproj/argo-workflows/commit/7af1e72d6be393ec98a156c353ce3523c12623f7) fix(controller): scope sync queue GC deletes to the owning controller. Fixes #16737 (cherry-pick #16768 for 4.1) (#17079)
+* [02bd780f7](https://github.com/argoproj/argo-workflows/commit/02bd780f7dfe7b8c4db7df703ad1d0b28d7f441d) fix: resolve node ID collisions made by a memoized resubmit (cherry-pick #17028 for 4.1) (#17072)
+* [08877fa03](https://github.com/argoproj/argo-workflows/commit/08877fa03da844924bc89ad5e8a9e0a23f871dca) fix: run the quick-start artifact repository on pgsty/silo. Fixes #17030 (cherry-pick #17073 for 4.1) (#17075)
+* [bf69815ba](https://github.com/argoproj/argo-workflows/commit/bf69815ba0e62adc453218e8ad9be5b239137fb4) fix: correctly parse custom headers containing colon (cherry-pick #17054 for 4.1) (#17055)
+* [a42c94938](https://github.com/argoproj/argo-workflows/commit/a42c9493850847accc6f3b462619876bddec5d19) fix(controller): remove and downgrade noisy log lines (cherry-pick #16955 for 4.1) (#17048)
+* [d17b13004](https://github.com/argoproj/argo-workflows/commit/d17b13004a2194841d98478d772c06fc3bb47ddc) fix(controller): retry failed artifact GC attempts. Fixes #16894 (cherry-pick #16897 for 4.1) (#17035)
+* [d7e6d61d2](https://github.com/argoproj/argo-workflows/commit/d7e6d61d261fe5c8324abe8dae0b12b820ea68e1) fix: deterministic span and trace ids (cherry-pick #15584 for 4.1) (#17037)
+* [ad183514a](https://github.com/argoproj/argo-workflows/commit/ad183514a159bf8a1314fce01f710b70e58de7e9) fix: make memoized resubmit reuse the retry reset logic (cherry-pick #16938 for 4.1) (#17033)
+* [40e2bb1f0](https://github.com/argoproj/argo-workflows/commit/40e2bb1f037891d4bc6c0aab03513b74d478dbd5) fix(controller): set ARGO_WORKFLOW_NAME once per container (cherry-pick #16946 for 4.1) (#17023)
+* [b5949dc23](https://github.com/argoproj/argo-workflows/commit/b5949dc23292d03694840c6ea9cec5014425ea51) fix(controller): don't end the node tracing span twice (cherry-pick #16945 for 4.1) (#17022)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Aleksa Majkić
+* Aswin Kumar
+* Claude Fable 5.1
+* Claude Opus 5
+* Claude Opus 5.5
+* Claude Opus 5.5 (1M context)
+* Claude Sonnet 5
+* gaurang_mishra
+* Gaurang Mishra
+* Martijn Remmen
+* Zain Qureshi
+
+</details>
+
 ## v4.1.4 (2026-09-18)
 
 Full Changelog: [v4.1.3...v4.1.4](https://github.com/argoproj/argo-workflows/compare/v4.1.3...v4.1.4)
@@ -177,7 +217,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.12...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.12...v4.1.0-rc1)
+Full Changelog: [v4.0.13...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.13...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -797,6 +837,37 @@ Full Changelog: [v4.0.12...v4.1.0-rc1](https://github.com/argoproj/argo-workflow
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.13 (2026-10-09)
+
+Full Changelog: [v4.0.12...v4.0.13](https://github.com/argoproj/argo-workflows/compare/v4.0.12...v4.0.13)
+
+### Selected Changes
+
+* [c6f31c89b](https://github.com/argoproj/argo-workflows/commit/c6f31c89be880a1d7426d9235e686b9541fa833c) chore(deps): update gcr.io/distroless/static-debian13:latest docker digest to 5813399 (release-4.0) (#17168)
+* [5d3923b3e](https://github.com/argoproj/argo-workflows/commit/5d3923b3e085763579caa92ad0cf739d45895947) chore(deps): update dependency moment to v2.31.0 [security] (release-4.0) (#17120)
+* [7f47b61bf](https://github.com/argoproj/argo-workflows/commit/7f47b61bf45e8fe5752e5f898cc58ab729255aa3) fix: termination of suspended workflow (cherry-pick #17052 for 4.0) (#17099)
+* [0b465e709](https://github.com/argoproj/argo-workflows/commit/0b465e7094c840c4a5fa345c3b8f4a6072a0a68b) fix(controller): scope sync queue GC deletes to the owning controller. Fixes #16737 (cherry-pick #16768 for 4.0) (#17080)
+* [423b9e37b](https://github.com/argoproj/argo-workflows/commit/423b9e37bcad08c356f3ab407b2bfb1c12636331) fix: resolve node ID collisions made by a memoized resubmit (cherry-pick #17028 for 4.0) (#17071)
+* [0274611ea](https://github.com/argoproj/argo-workflows/commit/0274611ead099811bab15031ae290453bd5c24e1) fix: run the quick-start artifact repository on pgsty/silo. Fixes #17030 (cherry-pick #17073 for 4.0) (#17078)
+* [05ca13e3b](https://github.com/argoproj/argo-workflows/commit/05ca13e3bad578d61e8354db1e6f0011585f2bc5) fix: correctly parse custom headers containing colon (cherry-pick #17054 for 4.0) (#17056)
+* [2ba05a1e5](https://github.com/argoproj/argo-workflows/commit/2ba05a1e5572455c17f530e4808f371589b9a4a6) fix: make memoized resubmit reuse the retry reset logic (cherry-pick #16938 for 4.0) (#17050)
+* [5a3c6e645](https://github.com/argoproj/argo-workflows/commit/5a3c6e64519a63d94fd9006ec12d664d5c335b1e) fix(controller): retry failed artifact GC attempts. Fixes #16894 (cherry-pick #16897 for 4.0) (#17036)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Aleksa Majkić
+* Aswin Kumar
+* Claude Fable 5.1
+* Claude Opus 5
+* Claude Opus 5.5
+* Claude Sonnet 5
+* gaurang_mishra
+* Gaurang Mishra
+* Zain Qureshi
 
 </details>
 
