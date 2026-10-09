@@ -19,7 +19,7 @@ More than one is an error for every Workflow in that namespace, because there is
 
 A namespace without a labelled ConfigMap has no namespace-level defaults.
 The controller treats a ConfigMap that exists but is missing the `workflowDefaults` key, whose value is not valid YAML, or which sets a field that is not recognized, as an error rather than ignoring it, so that defaults never silently fail to apply.
-It also rejects labels under the `workflows.argoproj.io/` prefix, because those belong to the controller: a completed label there would make every new Workflow in the namespace look already finished.
+A label under the `workflows.argoproj.io/` prefix is an error rather than something the controller ignores, because those labels belong to it: a completed label would make every new Workflow in the namespace look already finished.
 This also affects Workflows that are already running, not only new ones.
 The controller reads the defaults again on every reconcile, so a broken ConfigMap, or a second labelled one, puts every running Workflow in the namespace into `Error`.
 Under `templateReferencing: Secure` even a valid edit does this.

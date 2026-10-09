@@ -89,7 +89,7 @@ The controller merges the values rather than replacing them, and the more specif
 
 Namespace defaults may set `spec` fields, plus labels and annotations under `metadata`.
 The controller ignores anything else under `metadata`, and `status`, so a namespace ConfigMap cannot put finalizers or owner references on the Workflows of whoever uses that namespace.
-It also rejects labels under the `workflows.argoproj.io/` prefix, because those belong to the controller: a completed label there would make every new Workflow in the namespace look already finished.
+A label under the `workflows.argoproj.io/` prefix is an error rather than something the controller ignores, because those labels belong to it: a completed label would make every new Workflow in the namespace look already finished.
 
 A Workflow that references a ClusterWorkflowTemplate gets the defaults of the namespace it runs in, even though the template itself is cluster-scoped.
 
