@@ -416,7 +416,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		logger.WithError(err).Error(ctx, "Failed to add workflow informer handlers")
 		os.Exit(1)
 	}
-	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
+	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel, wfc.lookupWorkflowForPodCleanup)
+	wfc.PodController.SetWorkflowHydrator(wfc.hydrateWorkflowForPodCleanup)
+	wfc.PodController.SetLegacyPodRecapture(wfc.recaptureLegacyPod)
 
 	wfc.updateEstimatorFactory(ctx)
 
@@ -525,12 +527,19 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	workflowExists := func(key string) bool {
-		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+		obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
+			return true
+		}
+		if !exists {
 			return false
 		}
-		return exists
+		// A retained completed object no longer needs execution locks. This
+		// also lets the existing periodic database lock cleanup finish a
+		// release interrupted by a controller restart after persistence.
+		un, ok := obj.(*unstructured.Unstructured)
+		return !ok || !workflowExecutionCompleted(un)
 	}
 
 	syncManager, err := sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists, true)
@@ -1320,27 +1329,25 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 
-					// Remove finalizers from Pods if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
-					if err != nil {
-						logger.WithError(err).Error(ctx, "Failed to list pods")
+					// Filtering also calls DeleteFunc on completion, while the
+					// Workflow still exists. Queue reconciliation, not permission.
+					deleted := obj
+					if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+						deleted = tombstone.Obj
 					}
-					for _, p := range podList.Items {
-						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
-						}
+					un, ok := deleted.(*unstructured.Unstructured)
+					if !ok {
+						return
 					}
+					wfc.PodController.QueueWorkflowCleanup(ctx, un)
 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.releaseAllWorkflowLocks(ctx, obj)
+						wfc.releaseAllWorkflowLocks(ctx, un)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
-					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
+					wfc.recordWorkflowCompleted(un)
 				},
 			},
 		},
@@ -1382,6 +1389,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		return err
 	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			wfc.releaseCompletedWorkflowLocks(ctx, obj)
+		},
+		UpdateFunc: func(_, obj any) {
+			wfc.releaseCompletedWorkflowLocks(ctx, obj)
+		},
 		DeleteFunc: func(obj any) {
 			var wf *unstructured.Unstructured
 			switch x := obj.(type) {
@@ -1575,6 +1588,41 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig
 		Temporality:  wfc.Config.MetricsConfig.GetTemporality(),
 	}
 	return &metricsConfig
+}
+
+// Observe the new persisted completion, including startup and artifact GC.
+// The reconciliation filter's DeleteFunc receives the old object on filter
+// exit, which may lack locks acquired during the completing operation.
+func (wfc *WorkflowController) releaseCompletedWorkflowLocks(ctx context.Context, obj any) {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok || !workflowExecutionCompleted(un) {
+		return
+	}
+	if synchronization, found, err := unstructured.NestedFieldNoCopy(un.Object, "status", "synchronization"); err != nil || !found || synchronization == nil {
+		return
+	}
+	key, err := cache.MetaNamespaceKeyFunc(un)
+	if err != nil || un.GetUID() == "" {
+		return
+	}
+	// Event listeners can lag behind a retry or same-name replacement. Lock
+	// holder keys use namespace/name, so serialize with execution and verify
+	// the current cached identity before releasing any hold.
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
+	current, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
+	if err != nil || !exists {
+		return
+	}
+	latest, ok := current.(*unstructured.Unstructured)
+	if ok && latest.GetUID() == un.GetUID() && workflowExecutionCompleted(latest) {
+		wfc.releaseAllWorkflowLocks(ctx, latest)
+	}
+}
+
+func workflowExecutionCompleted(un *unstructured.Unstructured) bool {
+	phase, _, err := unstructured.NestedString(un.Object, "status", "phase")
+	return err == nil && un.GetLabels()[common.LabelKeyCompleted] == "true" && wfv1.WorkflowPhase(phase).Completed()
 }
 
 func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj any) {

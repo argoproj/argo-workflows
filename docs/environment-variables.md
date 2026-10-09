@@ -98,6 +98,12 @@ spec:
               value: 30s
 ```
 
+### Pod status capture
+
+`ARGO_POD_STATUS_CAPTURE_FINALIZER=true` keeps the `workflows.argoproj.io/status` finalizer on a finished Pod until the controller has saved that Pod's result in the Workflow status, so the Pod cannot be deleted before its result is recorded.
+Pod garbage collection then follows the configured strategy and delay as usual.
+See [Pod Status Capture and Retained Pods](status-capture.md) for what the controller records, what changes with the flag off, the upgrade and rollback order, and how to handle Pods that keep the finalizer.
+
 ## Executor
 
 | Name                                   | Type            | Default | Description                                                                                            |

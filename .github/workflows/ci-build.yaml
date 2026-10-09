@@ -27,6 +27,7 @@ jobs:
     outputs:
       # reference: https://github.com/tj-actions/changed-files#outputs-
       tests: ${{ steps.changed-files.outputs.tests_any_modified == 'true' }}
+      status-capture-tests: ${{ steps.changed-files.outputs.status-capture-tests_any_modified == 'true' }}
       e2e-tests: ${{ steps.changed-files.outputs.e2e-tests_any_modified == 'true' }}
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
@@ -54,6 +55,11 @@ jobs:
               - Tiltfile
               - Dockerfile
               - hack/tilt/**
+            status-capture-tests:
+              - .github/workflows/ci-build.yaml
+              - Makefile
+              - hack/status-capture.py
+              - hack/tests/test_status_capture.py
             tests: &tests
               - *common
               - cmd/**
@@ -138,6 +144,23 @@ jobs:
             ui:
               - *common
               - ui/**
+
+  status-capture-tests:
+    name: Status Capture Helper Tests
+    needs: [ changed-files ]
+    if: ${{ needs.changed-files.outputs.status-capture-tests == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test offline status-capture helper
+        run: make test-status-capture
 
   tests:
     name: Unit Tests

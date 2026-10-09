@@ -266,6 +266,7 @@ nav:
           - configure-archive-logs.md
           - links.md
           - environment-variables.md
+          - status-capture.md
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md

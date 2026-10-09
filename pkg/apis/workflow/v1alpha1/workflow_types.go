@@ -2656,6 +2656,12 @@ type NodeStatus struct {
 	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
 	// Cleared when the replacement pod starts running.
 	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
+
+	// CapturedPodUID identifies the Pod whose observed state produced this node status,
+	// or whose freshly verified result exactly matches a supported completed legacy node.
+	// It is persisted with the result and used to protect Pod cleanup. Pending automatic
+	// restarts use RestartingPodUID instead. Empty values do not prove status capture.
+	CapturedPodUID string `json:"capturedPodUID,omitempty" protobuf:"bytes,31,opt,name=capturedPodUID"`
 }
 
 // Completed is used to determine if this node can proceed

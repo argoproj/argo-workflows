@@ -2471,6 +2471,7 @@ NodeStatus contains status information about an individual node in the workflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`boundaryID`|`string`|BoundaryID indicates the node ID of the associated template root node in which this node belongs to|
+|`capturedPodUID`|`string`|CapturedPodUID identifies the Pod whose observed state produced this node status, or whose freshly verified result exactly matches a supported completed legacy node. It is persisted with the result and used to protect Pod cleanup. Pending automatic restarts use RestartingPodUID instead. Empty values do not prove status capture.|
 |`children`|`Array< string >`|Children is a list of child node IDs|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|

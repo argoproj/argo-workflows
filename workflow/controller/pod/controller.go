@@ -8,8 +8,8 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
@@ -21,7 +21,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	argoConfig "github.com/argoproj/argo-workflows/v4/config"
-	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/diff"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
@@ -44,31 +43,38 @@ var (
 )
 
 type podEventCallback func(pod *apiv1.Pod) error
+type workflowLookupCallback func(ctx context.Context, namespace, name string, hydrateNodes bool) (*wfv1.Workflow, error)
 
 // Controller is a controller for pods
 type Controller struct {
-	config        *argoConfig.Config
-	kubeclientset kubernetes.Interface
-	wfInformer    cache.SharedIndexInformer
-	workqueue     workqueue.TypedRateLimitingInterface[string]
-	podInformer   cache.SharedIndexInformer
-	callBack      podEventCallback
-	log           logging.Logger
-	restConfig    *rest.Config
+	config             *argoConfig.Config
+	kubeclientset      kubernetes.Interface
+	wfInformer         cache.SharedIndexInformer
+	workqueue          workqueue.TypedRateLimitingInterface[string]
+	podInformer        cache.SharedIndexInformer
+	callBack           podEventCallback
+	lookupWorkflow     workflowLookupCallback
+	hydrateWorkflow    func(context.Context, *wfv1.Workflow) error
+	signalContainer    containerSignalFunc
+	recaptureLegacy    LegacyPodRecapture
+	cleanupDiagnostics cleanupDiagnostics
+	log                logging.Logger
+	restConfig         *rest.Config
 }
 
 // NewController creates a pod controller
-func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback) *Controller {
+func NewController(ctx context.Context, config *argoConfig.Config, restConfig *rest.Config, namespace string, clientSet kubernetes.Interface, wfInformer cache.SharedIndexInformer, metrics *metrics.Metrics, callback podEventCallback, lookupWorkflow workflowLookupCallback) *Controller {
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "pod_controller").InContext(ctx)
 	podController := &Controller{
-		config:        config,
-		kubeclientset: clientSet,
-		wfInformer:    wfInformer,
-		workqueue:     metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "pod_cleanup_queue"),
-		podInformer:   newInformer(clientSet, &config.InstanceID, &namespace),
-		log:           log,
-		callBack:      callback,
-		restConfig:    restConfig,
+		config:         config,
+		kubeclientset:  clientSet,
+		wfInformer:     wfInformer,
+		workqueue:      metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "pod_cleanup_queue"),
+		podInformer:    newInformer(clientSet, &config.InstanceID, &namespace),
+		log:            log,
+		callBack:       callback,
+		lookupWorkflow: lookupWorkflow,
+		restConfig:     restConfig,
 	}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	podController.podInformer.AddEventHandler(
@@ -141,36 +147,6 @@ func (c *Controller) GetPodPhaseMetrics(ctx context.Context) map[string]int64 {
 	return result
 }
 
-// Check if owned pod's workflow no longer exists or workflow is in deletion
-func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
-	controllerRef := metav1.GetControllerOf(pod)
-	// Pod had no owner
-	if controllerRef == nil ||
-		controllerRef.Kind != workflow.WorkflowKind {
-		return false
-	}
-	wfOwnerKey := fmt.Sprintf("%s/%s", pod.Namespace, controllerRef.Name)
-	ctx, log := c.log.WithFields(logging.Fields{"wfOwnerKey": wfOwnerKey, "namespace": pod.Namespace, "pod": pod.Name}).InContext(ctx)
-	obj, wfExists, err := c.wfInformer.GetIndexer().GetByKey(wfOwnerKey)
-	if err != nil {
-		log.Warn(ctx, "failed to get workflow from informer")
-	}
-	if !wfExists {
-		return true
-	}
-	un, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		log.Warn(ctx, "workflow is not an unstructured")
-		return true
-	}
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		log.Warn(ctx, "workflow unstructured can't be converted to a workflow")
-		return true
-	}
-	return wf.DeletionTimestamp != nil
-}
-
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
 	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
 		strategy, delay, _ := strings.Cut(val, "/")
@@ -179,62 +155,10 @@ func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
 	return wfv1.PodGC{Strategy: wfv1.PodGCOnPodNone}
 }
 
-// Returns time.IsZero if no last transition
-func podLastTransition(pod *apiv1.Pod) time.Time {
-	lastTransition := time.Time{}
-	for _, condition := range pod.Status.Conditions {
-		if condition.LastTransitionTime.After(lastTransition) {
-			lastTransition = condition.LastTransitionTime.Time
-		}
-	}
-	return lastTransition
-}
-
-// A common handler for
-func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deleting bool) {
-	// All pods here are not marked completed
-	action := noAction
-	minimumDelay := time.Duration(0)
-	podGC := podGCFromPod(pod)
-	switch {
-	case deleting:
-		if hasOurFinalizer(pod.Finalizers) {
-			c.log.WithFields(logging.Fields{"pod.Finalizers": pod.Finalizers}).Info(ctx, "Removing finalizers during a delete")
-			action = removeFinalizer
-			minimumDelay = 2 * time.Minute
-		}
-	case c.podOrphaned(ctx, pod):
-		if hasOurFinalizer(pod.Finalizers) {
-			action = removeFinalizer
-		}
-		switch {
-		case podGC.Strategy == wfv1.PodGCOnWorkflowCompletion:
-		case podGC.Strategy == wfv1.PodGCOnPodCompletion:
-		case podGC.Strategy == wfv1.PodGCOnPodSuccess && pod.Status.Phase == apiv1.PodSucceeded:
-			action = deletePod
-		}
-	}
-	if action != noAction {
-		// The workflow is gone, we have no idea when that happened, so lets base around pod transiution
-		lastTransition := podLastTransition(pod)
-		// GetDeleteDelayDuration returns -1 if no duration, we don't care about failure to parse otherwise here
-		delay := time.Duration(0)
-		delayDuration, _ := podGC.GetDeleteDelayDuration()
-		// In the case of a raw delete make sure we've had some time to process it if there was a finalizer
-		if delayDuration < minimumDelay {
-			delayDuration = minimumDelay
-		}
-		if !lastTransition.IsZero() && delayDuration > 0 {
-			delay = time.Until(lastTransition.Add(delayDuration))
-		}
-		c.log.WithFields(logging.Fields{"action": action, "namespace": pod.Namespace, "podName": pod.Name, "podGC": podGC, "delay": delay}).Info(ctx, "queuing pod delay")
-		switch {
-		case delay > 0:
-			c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, action, delay)
-		default:
-			c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action)
-		}
-	}
+// Pod events are recovery hints; only the worker can authorize cleanup from
+// authoritative owner and node state. Startup Add events restore lost work.
+func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, _ bool) {
+	c.ReconcilePodCleanup(ctx, pod)
 }
 
 func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
@@ -246,11 +170,23 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, _ *apiv1.Pod, newPod *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, oldPod *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
 	err := c.callBack(newPod)
 	if err != nil {
 		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
+	}
+	if !terminalPod(newPod) && newPod.DeletionTimestamp == nil && oldPod.UID == newPod.UID &&
+		!significantMetadataChange(oldPod.Labels, newPod.Labels) &&
+		!significantMetadataChange(oldPod.Annotations, newPod.Annotations) &&
+		apiequality.Semantic.DeepEqual(oldPod.OwnerReferences, newPod.OwnerReferences) &&
+		hasOurFinalizer(oldPod.Finalizers) == hasOurFinalizer(newPod.Finalizers) {
+		// Ordinary live updates already notify the workflow controller above.
+		// Its explicit cleanup intents retain retries without Pod events. Add
+		// events still rebuild lost intents after restart, including stopped
+		// nodes whose Pods remain Running. Only disposition/identity changes
+		// need an additional authoritative cleanup read on this update path.
+		return
 	}
 	deleting := newPod.DeletionTimestamp != nil
 	c.commonPodEvent(ctx, newPod, deleting)
