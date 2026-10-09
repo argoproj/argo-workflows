@@ -1421,7 +1421,7 @@ func (d *dagValidationContext) GetTaskDependenciesWithDependencyTypes(ctx contex
 		return dependencies
 	}
 	task := d.GetTask(ctx, taskName)
-	dependencies, _ := common.GetTaskDependencies(ctx, task, d)
+	dependencies := common.GetTaskDependencies(ctx, task, d)
 	d.dependencies[taskName] = dependencies
 	return d.dependencies[taskName]
 }
@@ -1664,7 +1664,7 @@ func sortDAGTasks(ctx context.Context, tmpl *wfv1.Template, tctx *dagValidationC
 	for index := range tmpl.DAG.Tasks {
 		task := tmpl.DAG.Tasks[index]
 		taskMap[task.Name] = &task
-		dependenciesMap, _ := common.GetTaskDependencies(ctx, &task, tctx)
+		dependenciesMap := common.GetTaskDependencies(ctx, &task, tctx)
 		var dependencies []string
 		for taskName := range dependenciesMap {
 			dependencies = append(dependencies, taskName)
