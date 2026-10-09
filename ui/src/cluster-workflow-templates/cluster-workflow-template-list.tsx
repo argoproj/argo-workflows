@@ -34,10 +34,10 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
 
     const storage = new ScopedLocalStorage('ClusterWorkflowTemplateListOptions');
-    const savedOptions = storage.getItem('paginationLimit', 0);
+    const savedPaginationLimit = storage.getItem('paginationLimit', 0);
     const [pagination, setPagination] = useState<Pagination>({
         offset: queryParams.get('offset'),
-        limit: parseLimit(queryParams.get('limit')) || savedOptions.paginationLimit || 500
+        limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 500
     });
 
     useEffect(
