@@ -15,6 +15,13 @@ func TestUninitalized(t *testing.T) {
 	Record(ctx, Undefined)
 }
 
+func TestWorkflowSpecShutdownSlug(t *testing.T) {
+	var got string
+	Initialize(func(_ context.Context, deprecation, _ string) { got = deprecation })
+	Record(logging.TestContext(t.Context()), WorkflowSpecShutdown)
+	assert.Equal(t, "workflow spec.shutdown", got)
+}
+
 func TestInitalized(t *testing.T) {
 	count := 0
 	countUndefined := 0

@@ -951,7 +951,8 @@ WorkflowSpec is the specification of a Workflow.
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
-|`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
+|`startSuspended`|`boolean`|StartSuspended creates the workflow in the suspended state. It is honored exactly once, when the workflow is first reconciled, before anything has run; changing it on a started workflow has no effect. Resume the workflow with a WorkflowAction.|
+|`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in it. Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a WorkflowAction instead. Setting it at creation time ("start suspended") remains supported, as does startSuspended. It is still honored for now, and the controller keeps it in sync with status.suspended.|
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templateDefaults`|[`Template`](#template)|TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file|
@@ -970,6 +971,7 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`appliedActions`|`Array< string >`|AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this workflow but whose own status may not have been written yet (a write-ahead record for crash recovery). Entries are pruned once the action's status is recorded.|
 |`artifactGCStatus`|[`ArtGCStatus`](#artgcstatus)|ArtifactGCStatus maintains the status of Artifact Garbage Collection|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRefStatus`](#artifactrepositoryrefstatus)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
@@ -984,9 +986,11 @@ WorkflowStatus contains overall status information about a workflow
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded", "Failed" or "Error" once the workflow has completed.|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
+|`shutdown`|`string`|Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate WorkflowAction. When set it supersedes spec.shutdown.|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
+|`suspended`|`boolean`|Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends the workflow when its value is true; the workflow is suspended if either is in effect.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
 |`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.|
 

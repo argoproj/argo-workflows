@@ -22,6 +22,7 @@ var allowedUserOverrideFields = map[string]bool{
 	"Arguments":             true,
 	"Entrypoint":            true,
 	"Shutdown":              true,
+	"StartSuspended":        true,
 	"Suspend":               true,
 	"ActiveDeadlineSeconds": true,
 	"Priority":              true,

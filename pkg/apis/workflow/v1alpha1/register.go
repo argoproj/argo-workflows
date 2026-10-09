@@ -45,6 +45,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&WorkflowTaskResultList{},
 		&WorkflowArtifactGCTask{},
 		&WorkflowArtifactGCTaskList{},
+		&WorkflowAction{},
+		&WorkflowActionList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
