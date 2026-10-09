@@ -15,7 +15,7 @@ function toEpoch(datetime: string) {
 }
 
 function addEpochTimestamp(jsonObject: {metadata: ObjectMeta; workflow?: Workflow; status?: any}) {
-    if (jsonObject === undefined || jsonObject.status.startedAt === undefined) {
+    if (jsonObject?.status?.startedAt === undefined) {
         return;
     }
 
@@ -58,7 +58,27 @@ export function openLinkWithKey(url: string, target?: string) {
     }
 }
 
-export function Links({scope, object, button}: {scope: string; object: {metadata: ObjectMeta; workflow?: Workflow; status?: any}; button?: boolean}) {
+// linkTarget mirrors `openLinkWithKey`: the `''` sentinel means same tab, otherwise default to a new tab.
+export function linkTarget(target?: string) {
+    return target === `''` ? '_self' : target || '_blank';
+}
+
+type LinkObject = {metadata: ObjectMeta; workflow?: Workflow; status?: any};
+
+// LinkButtons renders links as anchors styled as buttons. URLs are only templated when an object is given.
+export function LinkButtons({links, object}: {links: Link[]; object?: LinkObject}) {
+    return (
+        <>
+            {links.map(({url, name, target}) => (
+                <Button href={object ? processURL(url, object) : url} target={linkTarget(target)} key={name} icon='external-link-alt'>
+                    {name}
+                </Button>
+            ))}
+        </>
+    );
+}
+
+export function Links({scope, object, button}: {scope: string; object: LinkObject; button?: boolean}) {
     const [links, setLinks] = useState<Link[]>();
     const [error, setError] = useState<Error>();
     useEffect(() => {
@@ -73,20 +93,15 @@ export function Links({scope, object, button}: {scope: string; object: {metadata
         <>
             {error && error.message}
             {links &&
-                links.map(({url, name, target}) => {
-                    if (button) {
-                        return (
-                            <Button onClick={() => openLinkWithKey(processURL(url, object), target)} key={name} icon='external-link-alt'>
-                                {name}
-                            </Button>
-                        );
-                    }
-                    return (
+                (button ? (
+                    <LinkButtons links={links} object={object} />
+                ) : (
+                    links.map(({url, name, target}) => (
                         <a key={name} href={processURL(url, object)} target={target} rel='noreferrer'>
                             {name} <i className='fa fa-external-link-alt' />
                         </a>
-                    );
-                })}
+                    ))
+                ))}
         </>
     );
 }
