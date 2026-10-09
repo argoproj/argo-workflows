@@ -32,13 +32,23 @@ data:
           def do_POST(self):
               if self.path == '/api/v1/template.execute':
                   args = self.args()
-                  if 'hello' in args['template'].get('plugin', {}):
+                  template = args['template']
+                  if 'hello' in template.get('plugin', {}):
                       if self.headers.get("Authorization") != "Bearer " + token:
                         self.forbidden()
                         return
+                      parameters = [{'name': 'foo', 'value': 'bar'}]
+                      # the agent loaded the input artifacts to their paths, and uploads
+                      # the output artifacts written to theirs
+                      for artifact in template.get('inputs', {}).get('artifacts', []):
+                          with open(artifact['path']) as f:
+                              parameters.append({'name': artifact['name'], 'value': f.read()})
+                      for artifact in template.get('outputs', {}).get('artifacts', []):
+                          with open(artifact['path'], 'w') as f:
+                              f.write('Hello ' + artifact['name'])
                       self.reply(
                           {'node': {'phase': 'Succeeded', 'message': 'Hello template!',
-                                    'outputs': {'parameters': [{'name': 'foo', 'value': 'bar'}]}}})
+                                    'outputs': {'parameters': parameters}}})
                   else:
                       self.reply(None)
               else:

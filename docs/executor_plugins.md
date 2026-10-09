@@ -298,6 +298,90 @@ When that happens, you return "Pending" or "Running" and a re-queue time:
 
 In this example, the task will be re-queued and `template.execute` will be called again in 2 minutes.
 
+### Artifacts
+
+A Plugin template can have input and output artifacts, as a container template can:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: plugin-artifacts-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: produce
+            template: produce
+        - - name: consume
+            template: consume
+            arguments:
+              artifacts:
+                - name: report
+                  from: "{{steps.produce.outputs.artifacts.report}}"
+    - name: produce
+      plugin:
+        hello: { }
+      outputs:
+        artifacts:
+          - name: report
+            path: /tmp/report.txt
+    - name: consume
+      plugin:
+        hello: { }
+      inputs:
+        artifacts:
+          - name: report
+            path: /tmp/report.txt
+```
+
+The Agent and its Executor Plugins share a workspace volume, mounted at `/argo/workspace` in each of their containers.
+A task with artifacts gets a directory of its own in the workspace, which its artifact paths are relative to.
+Before the Agent offers the task to the Executor Plugins, it loads the input artifacts into the directory.
+In the template it sends, each artifact's `path` is where that artifact is in the directory, e.g. `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
+The Executor Plugin reads its input artifacts from, and writes its output artifacts to, those paths:
+
+```python
+template = args['template']
+for artifact in template.get('inputs', {}).get('artifacts', []):
+    with open(artifact['path']) as f:
+        data = f.read()
+for artifact in template.get('outputs', {}).get('artifacts', []):
+    with open(artifact['path'], 'w') as f:
+        f.write('Hello')
+```
+
+When the Executor Plugin replies with a `Succeeded`, `Failed` or `Error` phase, the Agent uploads the output artifacts to the [artifact repository](configure-artifact-repository.md), as the `wait` container does for a container template.
+Archive strategies, keys, optional artifacts and [artifact garbage collection](walk-through/artifacts.md#artifact-garbage-collection) work as they do for container templates.
+A required output artifact that is missing turns a `Succeeded` node into an `Error` one.
+`{{pod.name}}` in the artifact repository's key format is the name the node's Pod would have had.
+
+An Executor Plugin can also store an output artifact itself, and reply with its location:
+
+```json
+{
+  "node": {
+    "phase": "Succeeded",
+    "outputs": {
+      "artifacts": [{"name": "report", "s3": {"key": "path/to/report.txt"}}]
+    }
+  }
+}
+```
+
+The Agent leaves an output artifact the Executor Plugin replied with a location or key for as it is.
+
+Some things to note here:
+
+- The Agent reads the secrets of the workflow's artifact repository from its Pod, where they are mounted.
+  It reads any other secret, such as one an artifact with a location of its own refers to, from the Kubernetes API, which needs a [Role](http-template.md#argo-agent-rbac) granting `get` on it.
+- [Artifact plugins](artifact-plugin.md) cannot store a Plugin template's artifacts.
+- The Agent archives and uploads artifacts within its resource limits, which [`ARGO_AGENT_CPU_LIMIT` and `ARGO_AGENT_MEMORY_LIMIT`](environment-variables.md) set.
+- The workspace is an `emptyDir` volume, which lasts as long as the Agent Pod.
+  The Agent removes a task's directory when the task is done, except for what an Executor Plugin running as another user made in it.
+- An Executor Plugin's container cannot mount a volume at `/argo/workspace`.
+
 ## Debugging
 
 You can find the Executor Plugin's log in the Agent pod's sidecar, e.g.:

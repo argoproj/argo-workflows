@@ -719,10 +719,25 @@ func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) w
 	var results wfv1.ArtifactSearchResults
 
 	for _, n := range woc.wf.Status.Nodes {
-		if n.Type != wfv1.NodeTypePod {
+		var declared wfv1.Artifacts
+		switch n.Type {
+		case wfv1.NodeTypePod:
+		case wfv1.NodeTypePlugin:
+			// A plugin may report artifacts it only refers to, which are
+			// not the workflow's to delete: only those its template declares are.
+			if tmpl := woc.wf.GetTemplateByName(util.GetTemplateFromNode(n)); tmpl != nil {
+				declared = tmpl.Outputs.Artifacts
+			}
+			if declared == nil {
+				continue
+			}
+		default:
 			continue
 		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
+			if declared != nil && declared.GetArtifactByName(a.Name) == nil {
+				continue
+			}
 			// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 			// if it's specified on the individual artifact level that takes priority
 			artifactStrategy := woc.execWf.GetArtifactGCStrategy(&a)

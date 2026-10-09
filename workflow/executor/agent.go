@@ -30,6 +30,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
@@ -44,9 +46,21 @@ type AgentExecutor struct {
 	plugins           []executorplugins.TemplateExecutor
 	taskWorkers       int
 	requeueTime       time.Duration
+
+	// workspace is the directory shared with the plugin sidecars that plugin
+	// tasks with artifacts run in, one directory per task.
+	workspace string
+	// outputsDir is where output artifacts are archived for upload, out of
+	// the plugins' reach.
+	outputsDir string
+	// preparedTasks holds the IDs of the plugin tasks whose directories are
+	// ready, so a requeued task does not load its input artifacts again.
+	preparedTasks *sync.Map
+	newDriver     artifacts.NewDriverFunc
+	resources     resource.Interface
 }
 
-type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
+type templateExecutor = func(ctx context.Context, nodeID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
 // NewAgentExecutor instantiates a new agent executor. taskWorkers and
 // requeueTime are parsed from the environment (ARGO_AGENT_TASK_WORKERS,
@@ -63,6 +77,11 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		plugins:           plugins,
 		taskWorkers:       taskWorkers,
 		requeueTime:       requeueTime,
+		workspace:         common.AgentWorkspacePath,
+		outputsDir:        tempOutArtDir,
+		preparedTasks:     &sync.Map{},
+		newDriver:         artifacts.NewDriver,
+		resources:         agentResources{clientSet: clientSet, namespace: namespace, secretDir: common.SecretVolMountPath},
 	}
 }
 
@@ -141,7 +160,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 
 		logger.Info(ctx, "Processing task")
-		result, requeue, err := ae.processTask(ctx, tmpl)
+		result, requeue, err := ae.processTask(ctx, nodeID, tmpl)
 		if err != nil {
 			logger.WithError(err).Error(ctx, "Error in agent task")
 			result = &wfv1.NodeResult{
@@ -230,7 +249,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 	}
 }
 
-func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
+func (ae *AgentExecutor) processTask(ctx context.Context, nodeID string, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
 	var executeTemplate templateExecutor
 	switch {
 	case tmpl.HTTP != nil:
@@ -241,7 +260,7 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 		return nil, 0, fmt.Errorf("agent cannot execute: unknown task type: %v", tmpl.GetType())
 	}
 	result := &wfv1.NodeResult{}
-	requeue, err := executeTemplate(ctx, tmpl, result)
+	requeue, err := executeTemplate(ctx, nodeID, tmpl, result)
 	if err != nil {
 		result.Phase = wfv1.NodeFailed
 		result.Message = err.Error()
@@ -249,7 +268,7 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 	return result, requeue, nil
 }
 
-func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, _ string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	if tmpl.HTTP == nil {
 		return 0, nil
 	}
@@ -363,7 +382,15 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	return response, nil
 }
 
-func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, nodeID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+	if hasArtifacts(&tmpl) {
+		return ae.executePluginTemplateWithArtifacts(ctx, nodeID, tmpl, result)
+	}
+	return ae.callPlugins(ctx, tmpl, result)
+}
+
+// callPlugins offers the template to each plugin in turn, until one executes it.
+func (ae *AgentExecutor) callPlugins(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
 			ObjectMeta: executorplugins.ObjectMeta{

@@ -2613,7 +2613,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	case wfv1.TemplateTypeHTTP:
 		node = woc.executeHTTPTemplate(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypePlugin:
-		node = woc.executePluginTemplate(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		node, err = woc.executePluginTemplate(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = argoerrors.Errorf(argoerrors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		_, errNode := woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, opts.nodeFlag, true, err.Error())
