@@ -22,17 +22,17 @@ func TestSwagger(t *testing.T) {
 	}
 	definitions := swagger["definitions"].(obj)
 	// one definition from each API
-	t.Run("io.argoproj.workflow.v1alpha1.CreateCronWorkflowRequest", func(t *testing.T) {
-		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.CreateCronWorkflowRequest")
+	t.Run("io.argoproj.workflow.v1alpha1.CreateCronWorkflowBody", func(t *testing.T) {
+		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.CreateCronWorkflowBody")
 	})
-	t.Run("io.argoproj.workflow.v1alpha1.WorkflowCreateRequest", func(t *testing.T) {
-		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest")
+	t.Run("io.argoproj.workflow.v1alpha1.CreateWorkflowBody", func(t *testing.T) {
+		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.CreateWorkflowBody")
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest", func(t *testing.T) {
 		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest")
 	})
-	t.Run("io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest", func(t *testing.T) {
-		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest")
+	t.Run("io.argoproj.workflow.v1alpha1.CreateWorkflowTemplateBody", func(t *testing.T) {
+		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.CreateWorkflowTemplateBody")
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.InfoResponse", func(t *testing.T) {
 		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.InfoResponse")

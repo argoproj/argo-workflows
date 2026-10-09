@@ -1019,7 +1019,7 @@ func TestPodLogs(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{
+		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{ //nolint:staticcheck // tests the deprecated RPC
 			Name:       "hello-world-9tql2",
 			Namespace:  "workflows",
 			LogOptions: &corev1.PodLogOptions{},

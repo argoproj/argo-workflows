@@ -435,7 +435,10 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 				return sutils.ToStatusError(apierr.FromObject(event.Object), codes.Internal)
 			}
 			logger.Debug(ctx, "Sending event")
-			err = ws.Send(e)
+			err = ws.Send(&workflowpkg.EventWatchEvent{
+				Type:   string(event.Type),
+				Object: e,
+			})
 			if err != nil {
 				return sutils.ToStatusError(err, codes.Internal)
 			}

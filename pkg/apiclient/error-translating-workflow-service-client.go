@@ -87,7 +87,7 @@ func (c *errorTranslatingWorkflowServiceClient) LintWorkflow(ctx context.Context
 }
 
 func (c *errorTranslatingWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
-	logs, err := c.delegate.PodLogs(ctx, req)
+	logs, err := c.delegate.PodLogs(ctx, req) //nolint:staticcheck // pass-through of the deprecated RPC
 	return logs, grpcutil.TranslateError(err)
 }
 
