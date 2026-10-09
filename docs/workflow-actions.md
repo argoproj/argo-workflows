@@ -2,7 +2,7 @@
 
 > v4.2 and after
 
-A `WorkflowAction` requests a lifecycle action on a Workflow: `Suspend`, `Resume`, `Stop` or `Terminate`.
+A WorkflowAction requests a lifecycle action on a Workflow: `Suspend`, `Resume`, `Stop` or `Terminate`.
 Instead of clients modifying the Workflow directly, the workflow controller performs the action inside its reconciliation loop and reports the outcome on the WorkflowAction's `status`.
 This makes actions serialized with reconciliation, observable when they fail, and available to `kubectl`-only users without the Argo Server.
 
@@ -19,13 +19,14 @@ metadata:
 spec:
   workflowRef:
     name: my-wf
-    uid: 9c1f4b2e-...  # optional: fail rather than act on a Workflow recreated under the same name
   action: Resume
   resume:
     nodeFieldSelector: displayName=approve
     outputParameters:
       approved: "true"
 ```
+
+`workflowRef` also takes an optional `uid`: set it to the target Workflow's `metadata.uid` and the action fails with `WorkflowNotFound`, rather than acting on a different Workflow recreated under the same name.
 
 Create it in the same namespace as the target Workflow:
 
@@ -35,7 +36,8 @@ kubectl get wfa
 kubectl describe wfa my-wf-resume-abcde  # the outcome is also recorded as an Event on the action
 ```
 
-`outputParameters` requires a `nodeFieldSelector`; the API rejects an action that sets one without the other.
+`outputParameters` requires a `nodeFieldSelector`: the API rejects an action that sets `outputParameters` without one.
+A `nodeFieldSelector` on its own is valid, and is what `argo resume --node-field-selector` sends.
 If the controller is configured with an [instance ID](scaling.md#declarative-usage), the action must carry the `workflows.argoproj.io/controller-instanceid` label, like every other resource that controller watches; without it the action is never processed.
 
 The `resume` parameter block is only valid with `action: Resume`, and `stop` only with `action: Stop`:
@@ -74,7 +76,8 @@ status:
 A Stop or Terminate accepted by the controller is recorded in the Workflow's `status.shutdown`, which supersedes `spec.shutdown`.
 The Workflow's `status.suspended` records the suspension state accepted by the controller, mirrored with the deprecated `spec.suspend` so older clients can still suspend and resume; Resume clears both.
 The requester's identity labels on the action (set by the Argo Server) are copied to the Workflow when the action is applied, replacing those of any earlier action.
-The controller emits an Event on the action and on the Workflow when it records the outcome.
+When an action is applied, the controller emits an Event on both the action and the Workflow.
+When an action fails, for example with `InvalidAction`, the only Event is on the action.
 Pending actions are applied in `creationTimestamp` order; two actions created within the same second have no defined order relative to each other.
 
 ## Garbage collection
@@ -86,8 +89,10 @@ The default is 24 hours.
 
 Creating an action with `kubectl` needs only `create` on `workflowactions`.
 Through the Argo Server the request is made with the caller's own identity (in `client` and `sso` [auth modes](argo-server-auth-mode.md)), and the server also `get`s and `watch`es the action to report its outcome, so the caller needs `create`, `get` and `watch` on `workflowactions`.
-Neither needs the `patch` on `workflows` that the old mechanism required.
-The bundled aggregate cluster roles grant `workflowactions` access alongside the other Argo resources; hand-written roles must be extended when upgrading (see the [upgrading guide](upgrading.md)).
+The `argo` CLI without an Argo Server creates and watches the action with the credentials it runs with, so they need `create`, `get` and `watch` on `workflowactions` too.
+That includes a workflow step that runs `argo stop`, `argo terminate`, `argo suspend` or `argo resume` under its pod's service account.
+None of these need the `patch` on `workflows` that the old mechanism required.
+The bundled aggregate cluster roles grant `workflowactions` access alongside the other Argo resources; hand-written roles must be extended when upgrading to v4.2.
 
 To allow some actions but not others, use a [ValidatingAdmissionPolicy](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/) — no webhook or policy engine required:
 
@@ -121,8 +126,8 @@ spec:
 
 ## Compatibility
 
-Directly setting `spec.shutdown` or `spec.suspend` on a running Workflow still works in this release, and is deprecated for removal in a later release; the [`deprecated_feature`](metrics.md#deprecated_feature) metric counts remaining uses.
+Directly setting `spec.shutdown` or `spec.suspend` on a running Workflow still works and is deprecated; the [`deprecated_feature`](metrics.md#deprecated_feature) metric counts remaining uses.
 Setting `spec.suspend` at creation time ("start suspended") remains supported; `spec.startSuspended: true` does the same and is preferred.
-An Argo Server from this release requires a workflow controller from this release to perform actions; against an older controller the action endpoints time out after 30 seconds.
-This applies to the `argo` CLI without an Argo Server too (the Kubernetes API mode): it creates a WorkflowAction and waits for the controller, so the controller must be running, and the `WorkflowAction` CRD installed, for `argo stop`, `argo terminate`, `argo suspend` and `argo resume` to work.
+An Argo Server v4.2 or later requires a workflow controller v4.2 or later to perform actions; against an older controller the action endpoints time out after 30 seconds.
+This applies to the `argo` CLI without an Argo Server too (the Kubernetes API mode): it creates a WorkflowAction and waits for the controller, so the controller must be running, and the WorkflowAction CRD installed, for `argo stop`, `argo terminate`, `argo suspend` and `argo resume` to work.
 When the endpoints do time out, the action has still been recorded and is applied once the controller gets to it; `kubectl get wfa` shows its outcome.
