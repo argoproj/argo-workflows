@@ -1324,6 +1324,9 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	b1, err := woc.wf.GetNodeByName(b1Name)
 	require.NoError(t, err, "retry should recreate the interrupted fan-out item")
 	assert.Equal(t, wfv1.NodePending, b1.Phase)
+	b1PodName := woc.getPodName(b1.Name, wfutil.GetTemplateFromNode(*b1))
+	_, err = getPod(ctx, woc, b1PodName)
+	require.NoError(t, err, "retry should create a Pod for the interrupted fan-out item")
 
 	_, err = woc.wf.GetNodeByName(afterName)
 	require.Error(t, err, "the stale Omitted dependent must be removed while its dependency is running")

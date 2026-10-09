@@ -1653,6 +1653,10 @@ func applyResetPlan(ctx context.Context, wf, dst *wfv1.Workflow, plan resetPlan,
 		dst.Status.Nodes.Set(ctx, id, node)
 	}
 	for hookedNodeID, boundaryID := range plan.hookedNodesToReparent {
+		if mapID != nil {
+			hookedNodeID = mapID(hookedNodeID)
+			boundaryID = mapID(boundaryID)
+		}
 		_, hookedNodeExists := dst.Status.Nodes[hookedNodeID]
 		boundaryNode, boundaryNodeExists := dst.Status.Nodes[boundaryID]
 		if !hookedNodeExists || !boundaryNodeExists || slices.Contains(boundaryNode.Children, hookedNodeID) {

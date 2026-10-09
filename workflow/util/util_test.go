@@ -286,6 +286,48 @@ func TestFormulateResubmitWorkflowMemoized(t *testing.T) {
 	})
 }
 
+func TestFormulateResubmitWorkflowMemoizedReparentsHookAfterMappingNodeIDs(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	const (
+		workflowName   = "wf"
+		rootID         = workflowName
+		workID         = workflowName + ".work"
+		aID            = workID + ".a"
+		bID            = workID + ".b"
+		afterID        = workflowName + ".after"
+		hookID         = "wf-after-hook"
+		hookNameSuffix = ".after.hooks.exit"
+	)
+	hookName := workflowName + hookNameSuffix
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: workflowName},
+		Status: wfv1.WorkflowStatus{
+			Phase: wfv1.WorkflowFailed,
+			Nodes: wfv1.Nodes{
+				rootID:  {ID: rootID, Name: workflowName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, Children: []string{workID}},
+				workID:  {ID: workID, Name: workID, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, Children: []string{aID, bID}, OutboundNodes: []string{aID}},
+				aID:     {ID: aID, Name: aID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, Children: []string{afterID}},
+				bID:     {ID: bID, Name: bID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID},
+				afterID: {ID: afterID, Name: afterID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, Children: []string{hookID}},
+				hookID:  {ID: hookID, Name: hookName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: rootID, NodeFlag: &wfv1.NodeFlag{Hooked: true}},
+			},
+		},
+	}
+	plan, err := planReset(ctx, wf, false, "", false)
+	require.NoError(t, err)
+	require.Equal(t, rootID, plan.hookedNodesToReparent[hookID])
+
+	newWF, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+
+	root, err := newWF.Status.Nodes.Get(newWF.NodeID(newWF.Name))
+	require.NoError(t, err)
+	hook, err := newWF.Status.Nodes.Get(newWF.NodeID(newWF.Name + hookNameSuffix))
+	require.NoError(t, err)
+	assert.Equal(t, root.ID, hook.BoundaryID)
+	assert.Contains(t, root.Children, hook.ID, "memoized resubmit must reparent preserved hooks using mapped node IDs")
+}
+
 func TestFormulateResubmitWorkflowMemoizedParameterOverride(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
