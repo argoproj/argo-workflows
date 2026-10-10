@@ -71,6 +71,12 @@ import (
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
+// childSet is one node's children as a lookup set, plus the child count it was built from.
+type childSet struct {
+	set map[string]struct{}
+	n   int
+}
+
 type wfOperationCtx struct {
 	// wf is the workflow object. It should not be used in execution logic. woc.execWf.Spec should be used instead
 	wf *wfv1.Workflow
@@ -127,6 +133,16 @@ type wfOperationCtx struct {
 	// currentStackDepth tracks the depth of the "stack", increased with every nested call to executeTemplate and decreased
 	// when such calls return. This is used to prevent infinite recursion
 	currentStackDepth int
+
+	// templateCache maps template names to templates for one reconcile cycle.
+	templateCache map[string]*wfv1.Template
+	// templateCtxCache memoises the local scope's TemplateContext, so GetTemplateByBoundaryID —
+	// called per pod — does not rebuild the template index.
+	templateCtxCache *templateresolution.TemplateContext
+	// childSets holds, per reconcile cycle, the set of children already recorded on each node, so
+	// repeated linking attempts do not rescan the list. The list only grows, and only in
+	// addChildNode, so the child count the set was built from is a sufficient staleness check.
+	childSets map[string]*childSet
 }
 
 var (
@@ -179,6 +195,7 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
 		taskSet:                  make(map[string]wfv1.Template),
 		currentStackDepth:        0,
+		templateCache:            make(map[string]*wfv1.Template),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -2205,6 +2222,16 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	return localScope
 }
 
+// operationGraceExpired reports whether this reconciliation has exhausted its
+// base MAX_OPERATION_TIME budget plus one grace period of the same length.
+// Node creation bypasses the deadline check inside executeTemplate (deliberate:
+// hydration may legitimately spend the base budget before scheduling starts), so
+// bypassed paths self-limit on this helper instead. Leftover work is resumed by
+// the queued re-reconcile, which starts with a fresh budget.
+func (woc *wfOperationCtx) operationGraceExpired() bool {
+	return time.Now().UTC().After(woc.deadline.Add(woc.controller.maxOperationTime))
+}
+
 type executeTemplateOpts struct {
 	// boundaryID is an ID for node grouping
 	boundaryID string
@@ -2215,6 +2242,9 @@ type executeTemplateOpts struct {
 	executionDeadline time.Time
 	// nodeFlag tracks node information such as hook or retry
 	nodeFlag *wfv1.NodeFlag
+	// bypassOperationDeadline exempts node creation from the per-cycle budget: a task left node-less
+	// by a budget break would never be scheduled. Set in executeDAGTask, read in executeTemplate.
+	bypassOperationDeadline bool
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -2315,8 +2345,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		woc.log.WithFields(logging.Fields{"nodeName": nodeName, "type": node.Type, "phase": node.Phase}).Debug(ctx, "Executing node")
 	}
 
-	// Check if we took too long operating on this workflow and immediately return if we did
-	if time.Now().UTC().After(woc.deadline) {
+	// Two kinds of work are exempt from the per-cycle budget, because exceeding them would stop the
+	// workflow making progress at all:
+	//  1) node creation (bypassOperationDeadline) - limited by parallelism
+	//  2) DAG templates - the dispatch path: the budget can be spent before it (hydration runs first),
+	//     and gating it then leaves every task without a node on every cycle.
+	if !opts.bypassOperationDeadline && processedTmpl.GetType() != wfv1.TemplateTypeDAG && time.Now().UTC().After(woc.deadline) {
 		woc.log.Warn(ctx, "Deadline exceeded")
 		woc.requeue()
 		return node, ErrDeadlineExceeded
@@ -2490,6 +2524,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		opts.nodeFlag.Retried = true
 		processedRetryParentNode, continueExecution, retryErr := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 		if retryErr != nil {
+			// Triggered when MAX_OPERATION_TIME was exceeded: requeue so it has a chance to
+			// finish in the next cycle.
+			if errors.Is(retryErr, ErrDeadlineExceeded) {
+				woc.requeue()
+				return retryParentNode, nil
+			}
 			return woc.markNodeError(ctx, retryNodeName, retryErr), retryErr
 		} else if !continueExecution {
 			// We are still waiting for a retry delay to finish
@@ -2669,6 +2709,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if !retryNode.Phase.Fulfilled(retryNode.TaskResultSynced) && node.Phase.Fulfilled(node.TaskResultSynced) { // if the retry child has completed we need to update the parent's status
 			retryNode, err = woc.executeTemplate(ctx, retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
+				// Triggered when MAX_OPERATION_TIME was exceeded: requeue so it has a chance to
+				// finish in the next cycle.
+				if errors.Is(err, ErrDeadlineExceeded) {
+					woc.requeue()
+					return retryNode, nil
+				}
 				return woc.markNodeError(ctx, node.Name, err), err
 			}
 		}
@@ -2976,7 +3022,14 @@ func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeS
 		}
 		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(node.TemplateName), nil
+	if cached, ok := woc.templateCache[node.TemplateName]; ok {
+		return cached, nil
+	}
+	tmpl := woc.wf.GetTemplateByName(node.TemplateName)
+	if tmpl != nil {
+		woc.templateCache[node.TemplateName] = tmpl
+	}
+	return tmpl, nil
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) context.Context {
@@ -3378,7 +3431,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 
 		// Check parallelism
 		if tmpl.HasParallelism() && woc.getActivePods(node.ID) >= *tmpl.Parallelism {
-			woc.log.WithFields(logging.Fields{"node": node.ID, "parallelism": *tmpl.Parallelism}).Info(ctx, "template active children parallelism exceeded")
+			woc.log.WithFields(logging.Fields{"node": node.ID, "parallelism": *tmpl.Parallelism}).Debug(ctx, "template active children parallelism exceeded")
 			return ErrParallelismReached
 		}
 	}
@@ -3414,7 +3467,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 
 		// Check parallelism
 		if boundaryTemplate != nil && boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
-			woc.log.WithFields(logging.Fields{"node": boundaryID, "parallelism": *boundaryTemplate.Parallelism}).Info(ctx, "template active children parallelism exceeded")
+			woc.log.WithFields(logging.Fields{"node": boundaryID, "parallelism": *boundaryTemplate.Parallelism}).Debug(ctx, "template active children parallelism exceeded")
 			return ErrParallelismReached
 		}
 	}
@@ -3973,12 +4026,25 @@ func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, chil
 	if err != nil {
 		woc.log.WithPanic().WithField("nodeID", parentID).Error(ctx, "was unable to obtain node for nodeID")
 	}
-	if slices.Contains(node.Children, childID) {
+	cs := woc.childSets[parentID]
+	if cs == nil || cs.n != len(node.Children) {
+		cs = &childSet{set: make(map[string]struct{}, len(node.Children)), n: len(node.Children)}
+		for _, c := range node.Children {
+			cs.set[c] = struct{}{}
+		}
+		if woc.childSets == nil {
+			woc.childSets = make(map[string]*childSet)
+		}
+		woc.childSets[parentID] = cs
+	}
+	if _, exists := cs.set[childID]; exists {
 		// already exists
 		return
 	}
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes.Set(ctx, parentID, *node)
+	cs.set[childID] = struct{}{}
+	cs.n++
 	woc.updated = true
 }
 
@@ -4304,6 +4370,11 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(ctx context.Context, params
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(ctx context.Context, scope wfv1.ResourceScope, resourceName string) (*templateresolution.TemplateContext, error) {
+	// Local scope (the common case) reuses a cached TemplateContext: GetTemplateByBoundaryID runs
+	// per pod, and rebuilding the template index on every call is what made it expensive.
+	if scope == wfv1.ResourceScopeLocal && woc.templateCtxCache != nil {
+		return woc.templateCtxCache, nil
+	}
 	var clusterWorkflowTemplateGetter templateresolution.ClusterWorkflowTemplateGetter
 	if woc.controller.cwftmplInformer != nil {
 		clusterWorkflowTemplateGetter = templateresolution.WrapClusterWorkflowTemplateLister(woc.controller.cwftmplInformer.Lister())
@@ -4318,6 +4389,7 @@ func (woc *wfOperationCtx) createTemplateContext(ctx context.Context, scope wfv1
 	case wfv1.ResourceScopeCluster:
 		return tplCtx.WithClusterWorkflowTemplate(ctx, resourceName)
 	default:
+		woc.templateCtxCache = tplCtx
 		return tplCtx, nil
 	}
 }

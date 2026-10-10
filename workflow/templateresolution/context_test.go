@@ -471,3 +471,33 @@ spec:
 	assert.Equal(t, "baz", tmpl.Metadata.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "hello", tmpl.Metadata.Annotations["template-level-pod-annotation"])
 }
+
+// TestGetTemplateByNameCacheHitReturnsCopy verifies that repeated by-name lookups
+// hand out isolated copies: neither the workflow spec element nor the cached
+// entry is exposed to caller mutation.
+func TestGetTemplateByNameCacheHitReturnsCopy(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata: {name: wf}
+spec:
+  entrypoint: big
+  templates:
+    - name: big
+      inputs:
+        parameters: [{name: p}]
+      container: {image: alpine}
+`)
+	log := logging.RequireLoggerFromContext(logging.TestContext(t.Context()))
+	tplCtx := NewContext(nil, nil, wf, wf, log)
+
+	t1, err := tplCtx.GetTemplateByName(context.TODO(), "big")
+	require.NoError(t, err)
+	t2, err := tplCtx.GetTemplateByName(context.TODO(), "big")
+	require.NoError(t, err)
+	assert.NotSame(t, t2, &wf.Spec.Templates[0], "hit path must not hand out the spec element")
+
+	t2.Inputs.Parameters[0].Value = wfv1.AnyStringPtr("caller-poison")
+	t3, err := tplCtx.GetTemplateByName(context.TODO(), "big")
+	require.NoError(t, err)
+	assert.Nil(t, t3.Inputs.Parameters[0].Value, "cache must survive caller mutation")
+	assert.NotSame(t, t1, t3, "successive lookups must be isolated")
+}

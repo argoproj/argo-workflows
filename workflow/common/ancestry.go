@@ -158,26 +158,19 @@ func GetTaskAncestry(ctx context.Context, dctx DagContext, taskName string) []st
 
 	getAncestry(taskName)
 
-	ancestry := make([]string, len(visited))
-	for newTask, newFinishedAt := range visited {
-		insertTask(visited, ancestry, newTask, newFinishedAt)
+	// Sort ascending by finished time. Ties (equal timestamps, e.g. during
+	// validation where nothing has finished yet) order by name for determinism.
+	ancestry := make([]string, 0, len(visited))
+	for taskName := range visited {
+		ancestry = append(ancestry, taskName)
 	}
+	sort.Slice(ancestry, func(i, j int) bool {
+		ti, tj := visited[ancestry[i]], visited[ancestry[j]]
+		if !ti.Equal(tj) {
+			return ti.Before(tj)
+		}
+		return ancestry[i] < ancestry[j]
+	})
 
 	return ancestry
-}
-
-// insertTask inserts the newTaskName at the right position ordered by time into the ancestry list.
-func insertTask(visited map[string]time.Time, ancestry []string, newTaskName string, finishedAt time.Time) {
-	for i, taskName := range ancestry {
-		if taskName == "" {
-			ancestry[i] = newTaskName
-			return
-		}
-		if finishedAt.Before(visited[taskName]) {
-			// insert at position i and shift others
-			copy(ancestry[i+1:], ancestry[i:])
-			ancestry[i] = newTaskName
-			return
-		}
-	}
 }
