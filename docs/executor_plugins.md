@@ -352,6 +352,8 @@ for artifact in template.get('outputs', {}).get('artifacts', []):
         f.write('Hello')
 ```
 
+See [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml) for a complete example.
+
 When the Executor Plugin replies with a `Succeeded`, `Failed` or `Error` phase, the Agent uploads the output artifacts to the [artifact repository](configure-artifact-repository.md), as the `wait` container does for a container template.
 Archive strategies, keys, optional artifacts and [artifact garbage collection](walk-through/artifacts.md#artifact-garbage-collection) work as they do for container templates.
 A required output artifact that is missing turns a `Succeeded` node into an `Error` one.

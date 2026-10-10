@@ -1,0 +1,128 @@
+# This example demonstrates an executor plugin reading an input artifact and
+# writing an output artifact, which a container then reads.
+# The Agent loads the plugin template's input artifacts into a workspace it
+# shares with the executor plugins, and sends the plugin the template with
+# each artifact's path in that workspace. Once the plugin replies, the Agent
+# saves the output artifacts the plugin wrote to their paths.
+# The workflow-controller must be started with
+# ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true, and the workflow needs an
+# artifact repository.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: executor-plugin-artifacts-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+spec:
+  entrypoint: main
+  executorPlugins:
+    - metadata:
+        name: uppercase-executor-plugin
+      spec:
+        sidecar:
+          container:
+            name: uppercase-executor-plugin
+            image: python:alpine3.23
+            command:
+              - python
+              - -c
+            args:
+              - |
+                import json
+                from http.server import BaseHTTPRequestHandler, HTTPServer
+
+                with open("/var/run/argo/token") as f:
+                    token = f.read().strip()
+
+                class Plugin(BaseHTTPRequestHandler):
+                    def args(self):
+                        return json.loads(self.rfile.read(int(self.headers.get("Content-Length"))))
+
+                    def reply(self, reply):
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(json.dumps(reply).encode("UTF-8"))
+
+                    def forbidden(self):
+                        self.send_response(403)
+                        self.end_headers()
+
+                    def unsupported(self):
+                        self.send_response(404)
+                        self.end_headers()
+
+                    def do_POST(self):
+                        if self.headers.get("Authorization") != "Bearer " + token:
+                            self.forbidden()
+                        elif self.path == "/api/v1/template.execute":
+                            template = self.args()["template"]
+                            if "uppercase" in template.get("plugin", {}):
+                                # each path is where the Agent loaded the input artifact to,
+                                # or where it saves the output artifact from
+                                inputs = {a["name"]: a["path"] for a in template["inputs"]["artifacts"]}
+                                outputs = {a["name"]: a["path"] for a in template["outputs"]["artifacts"]}
+                                with open(inputs["text"]) as text, open(outputs["uppercase-text"], "w") as uppercase:
+                                    uppercase.write(text.read().upper())
+                                self.reply({"node": {"phase": "Succeeded"}})
+                            else:
+                                self.reply({})
+                        else:
+                            self.unsupported()
+
+                if __name__ == "__main__":
+                    httpd = HTTPServer(("", 4356), Plugin)
+                    httpd.serve_forever()
+            ports:
+              - containerPort: 4356
+            resources:
+              limits:
+                cpu: 200m
+                memory: 64Mi
+              requests:
+                cpu: 100m
+                memory: 32Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+
+  templates:
+    - name: main
+      steps:
+        - - name: uppercase
+            template: uppercase
+            arguments:
+              artifacts:
+                - name: text
+                  raw:
+                    data: hello world
+        - - name: print
+            template: print
+            arguments:
+              artifacts:
+                - name: text
+                  from: "{{steps.uppercase.outputs.artifacts.uppercase-text}}"
+
+    - name: uppercase
+      inputs:
+        artifacts:
+          - name: text
+            path: /tmp/text.txt
+      plugin:
+        uppercase: {}
+      outputs:
+        artifacts:
+          - name: uppercase-text
+            path: /tmp/uppercase-text.txt
+
+    - name: print
+      inputs:
+        artifacts:
+          - name: text
+            path: /tmp/text.txt
+      container:
+        image: busybox
+        command: [cat, /tmp/text.txt]
