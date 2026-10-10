@@ -11,6 +11,7 @@ import (
 
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 )
 
 func TestEmissary(t *testing.T) {
@@ -49,5 +50,5 @@ func run(script string) error {
 	if err != nil {
 		return err
 	}
-	return runEmissary(ctx, "main", true, append([]string{"powershell", "-c"}, script))
+	return runEmissary(ctx, "main", newPodSource("main", true, append([]string{"powershell", "-c"}, script)), maindriver.Container{})
 }
