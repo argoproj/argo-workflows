@@ -300,6 +300,15 @@ func (m *Metrics) RecordResourceRateLimiterLatency(ctx context.Context, val floa
 	m.Record(ctx, InstrumentResourceRateLimiterLatency.Name(), val, Attributes{})
 }
 
+// AddRetryStrategyTerminationsTotal adds a value to the retry_strategy_terminations_total counter
+func (m *Metrics) AddRetryStrategyTerminationsTotal(ctx context.Context, val int64, retryTerminationReason string, workflowNamespace string) {
+	attribs := Attributes{
+		{Name: AttribRetryTerminationReason, Value: retryTerminationReason},
+		{Name: AttribWorkflowNamespace, Value: workflowNamespace},
+	}
+	m.AddInt(ctx, InstrumentRetryStrategyTerminationsTotal.Name(), val, attribs)
+}
+
 // AddTotalCount adds a value to the total_count counter
 func (m *Metrics) AddTotalCount(ctx context.Context, val int64, workflowPhase string, workflowNamespace string) {
 	attribs := Attributes{

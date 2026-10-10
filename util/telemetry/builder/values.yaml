@@ -104,6 +104,9 @@ attributes:
   - name: RequestVerb
     displayName: verb
     description: "The verb of the request, such as `Get` or `List`"
+  - name: RetryTerminationReason
+    displayName: reason
+    description: Why a retryStrategy duration budget suppressed an otherwise eligible retry
   - name: TaskResultCompleted
     displayName: completed
     description: "True if the task result is marked completed"
@@ -469,6 +472,25 @@ metrics:
     unit: s
     type: Float64Histogram
     defaultBuckets: [0.0, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
+  - name: RetryStrategyTerminationsTotal
+    description: "Total number of otherwise eligible retries suppressed by a retryStrategy duration budget"
+    extendedDescription: |
+      Each increment is a next attempt the controller would have made, stopped because of `retryStrategy.backoff.maxDuration`.
+    notes: |
+      `reason` will be one of:
+
+      - `MaxDurationExceeded`: the `maxDuration` deadline had already passed.
+      - `BackoffWouldExceedMaxDuration`: waiting for the next back-off would cross that deadline.
+
+      The counter does not increment when the retry would have been rejected anyway by
+      `retryPolicy`, `limit` or `expression`.
+      A termination is therefore attributed to the duration budget rather than to
+      whichever check the controller ran first.
+    attributes:
+      - name: RetryTerminationReason
+      - name: WorkflowNamespace
+    unit: "{retry}"
+    type: Int64Counter
   - name: TotalCount
     description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
     attributes:

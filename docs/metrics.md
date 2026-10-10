@@ -467,6 +467,26 @@ This metric has no attributes.
 
 Default bucket sizes: 0, 0.1, 0.5, 1, 5, 10, 30, 60, 180
 
+#### `retry_strategy_terminations_total`
+
+Total number of otherwise eligible retries suppressed by a retryStrategy duration budget.
+Each increment is a next attempt the controller would have made, stopped because of `retryStrategy.backoff.maxDuration`.
+
+|  attribute  |                                explanation                                 |
+|-------------|----------------------------------------------------------------------------|
+| `reason`    | Why a retryStrategy duration budget suppressed an otherwise eligible retry |
+| `namespace` | The namespace that the Workflow is in                                      |
+
+`reason` will be one of:
+
+- `MaxDurationExceeded`: the `maxDuration` deadline had already passed.
+- `BackoffWouldExceedMaxDuration`: waiting for the next back-off would cross that deadline.
+
+The counter does not increment when the retry would have been rejected anyway by
+`retryPolicy`, `limit` or `expression`.
+A termination is therefore attributed to the duration budget rather than to
+whichever check the controller ran first.
+
 #### `total_count`
 
 A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace.
