@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -288,6 +289,10 @@ func TestAgentPluginLoadsInputArtifacts(t *testing.T) {
 				return executorplugins.ExecuteTemplateReply{}, err
 			}
 			read = append(read, string(data))
+			if runtime.GOOS == "windows" {
+				// chmod does not work in windows
+				continue
+			}
 			info, err := os.Stat(art.Path)
 			if err != nil {
 				return executorplugins.ExecuteTemplateReply{}, err
@@ -448,10 +453,11 @@ func TestAgentPluginRequeuedTask(t *testing.T) {
 func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
 	outside := filepath.Join(t.TempDir(), "secret")
 	for _, tc := range []struct {
-		name   string
-		art    wfv1.Artifact
-		plugin func(t *testing.T, workspace, path string)
-		expect string
+		name     string
+		art      wfv1.Artifact
+		plugin   func(t *testing.T, workspace, path string)
+		symlinks bool
+		expect   string
 	}{
 		{
 			name: "relative path",
@@ -467,7 +473,8 @@ func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
 			plugin: func(t *testing.T, _, path string) {
 				require.NoError(t, os.Symlink(outside, path))
 			},
-			expect: "required artifact 'out' not found at /out.txt",
+			symlinks: true,
+			expect:   "required artifact 'out' not found at /out.txt",
 		},
 		{
 			name: "symlink in a directory uploaded with no archive",
@@ -476,10 +483,14 @@ func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
 				require.NoError(t, os.MkdirAll(path, 0o755))
 				require.NoError(t, os.Symlink(outside, filepath.Join(path, "link")))
 			},
-			expect: "is a symlink",
+			symlinks: true,
+			expect:   "is a symlink",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.symlinks && runtime.GOOS == "windows" {
+				t.Skip("creating symlinks needs a privilege in windows, where the agent does not run")
+			}
 			ctx := logging.TestContext(t.Context())
 			require.NoError(t, os.WriteFile(outside, []byte("secret"), 0o600))
 			driver := &bucketDriver{dir: t.TempDir()}
