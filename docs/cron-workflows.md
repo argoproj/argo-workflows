@@ -44,7 +44,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
-| `schedules`                  | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Required to be a non-empty list. |
+| `schedules`                  | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Required to be a non-empty list. v4.2 and after: also accepts [hashed schedules](#hashed-schedules) such as `H H * * *` |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
 | `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
 | `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
@@ -58,6 +58,58 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 The cron scheduler uses [standard cron syntax](https://en.wikipedia.org/wiki/Cron).
 The implementation is the same as `CronJobs`, using [`robfig/cron`](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format).
+
+#### Hashed Schedules
+
+> v4.2 and after
+
+If many `CronWorkflows` share a schedule such as `0 0 * * *`, they all start at the same time and create a load spike.
+To avoid this, a field can use `H` (hash), the same way [Jenkins](https://www.jenkins.io/doc/book/pipeline/syntax/#cron-syntax) does.
+`H` resolves to a value which is derived from `metadata.name` and `metadata.namespace`, so it is spread out over the field's range but never changes for a given `CronWorkflow`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: my-cron-wf
+  namespace: argo
+spec:
+  schedules:
+    - "H H * * *"   # once a day, at a fixed but arbitrary time, for example 06:09
+```
+
+| Syntax             | Meaning                                                                           | Example expansion |
+|:------------------:|-----------------------------------------------------------------------------------|-------------------|
+| `H`                | One value of the field's range                                                      | `H * * * *` → `9 * * * *` |
+| `H/<step>`         | Every `<step>`, starting at a hashed offset                                          | `H/15 * * * *` → `9-59/15 * * * *` |
+| `H(<min>-<max>)`   | One value of `<min>-<max>`                                                           | `0 H(9-17) * * *` → `0 9 * * *` |
+| `H(<min>-<max>)/<step>` | Every `<step>` within `<min>-<max>`, starting at a hashed offset               | `H(0-29)/10 * * * *` → `9-29/10 * * * *` |
+
+Notes:
+
+- `H` is resolved per position, so `H H * * *` does not use the same value for the minute and the hour.
+  Two `H` in the same field resolve to different values as well, so `H,H * * * *` resolves to something like `9,30 * * * *`, which spreads two runs across the hour.
+- A bare `H` in the day of month resolves within `1-28`, so that a schedule such as `H H H * *` runs in every month.
+  An explicit range may go beyond that, up to the `1-31` cron itself accepts.
+- `H` cannot be used in the `@daily` style descriptors or in `@every 1h`.
+- The hash is over `metadata.namespace` and `metadata.name` only.
+  Renaming a `CronWorkflow`, or applying the same manifest in another namespace, therefore resolves `H` to a different time.
+
+The `spec.schedules` you configure are never rewritten.
+
+`argo cron get` resolves `H` itself and shows the result under `ResolvedSchedules`, so it is correct as soon as the `CronWorkflow` exists and stays correct when you edit a schedule.
+
+`status.resolvedSchedules` records the same mapping on the object, for `kubectl` and GitOps tooling.
+The Controller writes it the first time it schedules the `CronWorkflow`, so it does not appear immediately:
+
+```bash
+$ kubectl get cronworkflow my-cron-wf -o jsonpath-as-json='{.status.resolvedSchedules}'
+[
+    {
+        "H H * * *": "9 6 * * *"
+    }
+]
+```
 
 ### Crash Recovery
 

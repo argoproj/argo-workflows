@@ -23,7 +23,7 @@ import (
 func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	var nextRunTime time.Time
 	now := time.Now().UTC()
-	for _, schedule := range cwf.Spec.GetSchedulesWithTimezone() {
+	for _, schedule := range cwf.GetSchedulesWithTimezone() {
 		cronSchedule, err := cron.ParseStandard(schedule)
 		if err != nil {
 			return time.Time{}, err
@@ -100,6 +100,11 @@ func getCronWorkflowGet(ctx context.Context, cwf *v1alpha1.CronWorkflow) string 
 	fmt.Fprintf(&out, fmtStr, "Namespace:", cwf.Namespace)
 	fmt.Fprintf(&out, fmtStr, "Created:", humanize.Timestamp(cwf.CreationTimestamp.Time))
 	fmt.Fprintf(&out, fmtStr, "Schedules:", cwf.Spec.GetScheduleString())
+	// resolving `H` (hash) tokens is deterministic, so resolve them here rather than reading
+	// status.resolvedSchedules, which is only as recent as the last time the controller scheduled
+	if s := strings.Join(cwf.GetSchedules(), ","); s != cwf.Spec.GetScheduleString() {
+		fmt.Fprintf(&out, fmtStr, "ResolvedSchedules:", s)
+	}
 	fmt.Fprintf(&out, fmtStr, "Suspended:", cwf.Spec.Suspend)
 	if cwf.Spec.Timezone != "" {
 		fmt.Fprintf(&out, fmtStr, "Timezone:", cwf.Spec.Timezone)

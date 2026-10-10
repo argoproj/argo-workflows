@@ -5,24 +5,26 @@ import {MemoryRouter} from 'react-router-dom';
 import {Condition, CronWorkflow} from '../shared/models';
 import {CronWorkflowRow} from './cron-workflow-row';
 
-function workflow(conditions?: Condition[], suspend = false): CronWorkflow {
+function workflow(conditions?: Condition[], suspend = false, schedules = ['0 * * * *'], resolvedSchedules?: {[schedule: string]: string}): CronWorkflow {
     return {
         metadata: {
             name: 'my-cron-workflow',
             namespace: 'default'
         },
         spec: {
-            schedules: ['0 * * * *'],
+            schedules,
             suspend,
             workflowSpec: {}
         },
-        status: conditions
-            ? {
-                  active: [],
-                  conditions,
-                  lastScheduledTime: null
-              }
-            : undefined
+        status:
+            conditions || resolvedSchedules
+                ? {
+                      active: [],
+                      conditions,
+                      lastScheduledTime: null,
+                      resolvedSchedules
+                  }
+                : undefined
     };
 }
 
@@ -56,6 +58,26 @@ describe('CronWorkflowRow', () => {
 
         expect(container.querySelector('.fa-clock')).toBeInTheDocument();
         expect(container.querySelector('.status-icon--error')).not.toBeInTheDocument();
+    });
+
+    it('describes the schedule a hashed schedule resolved to', () => {
+        renderRow(workflow(undefined, false, ['H H * * *'], {'H H * * *': '9 6 * * *'}));
+
+        // the schedule is shown as configured, but described as it runs
+        expect(screen.getByText('H H * * *')).toBeInTheDocument();
+        expect(screen.getByTitle('At 06:09 AM')).toBeInTheDocument();
+    });
+
+    it('marks a hashed schedule which is not resolved yet', () => {
+        renderRow(workflow(undefined, false, ['H H * * *']));
+
+        expect(screen.getByText('hashed schedule')).toBeInTheDocument();
+    });
+
+    it('ignores the resolution of a schedule which has since been edited', () => {
+        renderRow(workflow(undefined, false, ['H H * * *'], {'0 0 * * *': '9 6 * * *'}));
+
+        expect(screen.getByText('hashed schedule')).toBeInTheDocument();
     });
 
     it('keeps the pause icon for a suspended workflow without errors', () => {

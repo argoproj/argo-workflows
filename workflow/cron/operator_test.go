@@ -815,3 +815,52 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result)
 }
+
+var hashedScheduleWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: my-cron-wf
+  namespace: argo
+spec:
+  schedules:
+    - "H H * * *"
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: alpine:3.6
+          command: [sh, -c]
+          args: ["echo hello"]
+`
+
+func TestPersistResolvedSchedules(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(hashedScheduleWf), &cronWf)
+
+	cs := fake.NewClientset(&cronWf)
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(cronWf.Namespace),
+		cronWf:      &cronWf,
+		log:         logging.RequireLoggerFromContext(ctx),
+		ctx:         ctx,
+	}
+	woc.persistResolvedSchedules(ctx)
+
+	persisted, err := cs.ArgoprojV1alpha1().CronWorkflows(cronWf.Namespace).Get(ctx, cronWf.Name, v1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"H H * * *": "9 6 * * *"}, persisted.Status.ResolvedSchedules)
+	// the schedule the user configured is never rewritten
+	assert.Equal(t, []string{"H H * * *"}, persisted.Spec.Schedules)
+
+	// editing the schedule drops the resolution of the one it replaced, a merge patch would keep it
+	woc.cronWf.Spec.Schedules = []string{"H(0-29)/10 * * * *"}
+	woc.persistResolvedSchedules(ctx)
+
+	persisted, err = cs.ArgoprojV1alpha1().CronWorkflows(cronWf.Namespace).Get(ctx, cronWf.Name, v1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"H(0-29)/10 * * * *": "9-29/10 * * * *"}, persisted.Status.ResolvedSchedules)
+}
