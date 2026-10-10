@@ -102,11 +102,6 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 }
 
 func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
-	// No need to queue the workflow if the retention policy is not set
-	if c.retentionPolicy == nil {
-		return
-	}
-
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		c.log.WithField("obj", obj).Warn(ctx, "is not an unstructured")
@@ -116,9 +111,42 @@ func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
 	switch phase := wfv1.WorkflowPhase(un.GetLabels()[common.LabelKeyPhase]); phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		c.orderedQueueLock.Lock()
+		defer c.orderedQueueLock.Unlock()
+		// No need to queue the workflow if the retention policy is not set
+		if c.retentionPolicy == nil {
+			return
+		}
 		heap.Push(c.orderedQueue[phase], un)
 		c.runGC(ctx, phase)
-		c.orderedQueueLock.Unlock()
+	}
+}
+
+// UpdateRetentionPolicy replaces the retention policy when the controller configuration is
+// reloaded, and applies it to the workflows that have already completed.
+func (c *Controller) UpdateRetentionPolicy(ctx context.Context, retentionPolicy *config.RetentionPolicy) {
+	c.orderedQueueLock.Lock()
+	defer c.orderedQueueLock.Unlock()
+	c.retentionPolicy = retentionPolicy
+	for phase := range c.orderedQueue {
+		c.orderedQueue[phase] = NewHeap()
+	}
+	if retentionPolicy == nil {
+		return
+	}
+	// Rebuild the queues from the informer, as workflows that completed while no
+	// policy was set were never queued.
+	for _, obj := range c.wfInformer.GetIndexer().List() {
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok || !common.IsDone(un) {
+			continue
+		}
+		phase := wfv1.WorkflowPhase(un.GetLabels()[common.LabelKeyPhase])
+		if q, ok := c.orderedQueue[phase]; ok {
+			heap.Push(q, un)
+		}
+	}
+	for phase := range c.orderedQueue {
+		c.runGC(ctx, phase)
 	}
 }
 

@@ -2,6 +2,7 @@ package gccontroller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,10 +14,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	testingclock "k8s.io/utils/clock/testing"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
@@ -575,5 +578,85 @@ func TestGetTTLStrategy(t *testing.T) {
 		wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
 		ttl = wf1.GetTTLStrategy()
 		assert.Nil(t, ttl)
+	})
+}
+
+func newRetentionController(t *testing.T, retentionPolicy *config.RetentionPolicy, completed int) *Controller {
+	t.Helper()
+	controller := newTTLController(t)
+	controller.retentionPolicy = retentionPolicy
+	controller.orderedQueue = map[wfv1.WorkflowPhase]Heap{
+		wfv1.WorkflowFailed:    NewHeap(),
+		wfv1.WorkflowError:     NewHeap(),
+		wfv1.WorkflowSucceeded: NewHeap(),
+	}
+	ctx := logging.TestContext(t.Context())
+	for i := range completed {
+		un := &unstructured.Unstructured{}
+		un.SetNamespace("argo")
+		un.SetName(fmt.Sprintf("wf-%d", i))
+		un.SetCreationTimestamp(metav1.NewTime(time.Unix(int64(i), 0)))
+		un.SetLabels(map[string]string{
+			common.LabelKeyCompleted: "true",
+			common.LabelKeyPhase:     string(wfv1.WorkflowSucceeded),
+		})
+		require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+		controller.retentionEnqueue(ctx, un)
+	}
+	return controller
+}
+
+func TestUpdateRetentionPolicy(t *testing.T) {
+	t.Run("PolicySetAfterStart", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, nil, 3)
+		require.Equal(t, 0, controller.workqueue.Len())
+
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
+		assert.Equal(t, 2, controller.workqueue.Len())
+	})
+	t.Run("LimitRaised", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 1}, 1)
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 5})
+
+		// workflows completing after the reload are kept under the new limit
+		for i := range 2 {
+			un := &unstructured.Unstructured{}
+			un.SetNamespace("argo")
+			un.SetName(fmt.Sprintf("wf-new-%d", i))
+			un.SetCreationTimestamp(metav1.NewTime(time.Unix(int64(10+i), 0)))
+			un.SetLabels(map[string]string{
+				common.LabelKeyCompleted: "true",
+				common.LabelKeyPhase:     string(wfv1.WorkflowSucceeded),
+			})
+			require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+			controller.retentionEnqueue(ctx, un)
+		}
+		assert.Equal(t, 0, controller.workqueue.Len())
+	})
+	t.Run("LimitLowered", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 5}, 3)
+		require.Equal(t, 0, controller.workqueue.Len())
+
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
+		assert.Equal(t, 2, controller.workqueue.Len())
+	})
+	t.Run("PolicyRemoved", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 5}, 3)
+		controller.UpdateRetentionPolicy(ctx, nil)
+
+		un := &unstructured.Unstructured{}
+		un.SetNamespace("argo")
+		un.SetName("wf-new")
+		un.SetLabels(map[string]string{
+			common.LabelKeyCompleted: "true",
+			common.LabelKeyPhase:     string(wfv1.WorkflowSucceeded),
+		})
+		require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+		assert.NotPanics(t, func() { controller.retentionEnqueue(ctx, un) })
+		assert.Equal(t, 0, controller.workqueue.Len())
 	})
 }
