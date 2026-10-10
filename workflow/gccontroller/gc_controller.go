@@ -126,6 +126,9 @@ func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
 func (c *Controller) UpdateRetentionPolicy(ctx context.Context, retentionPolicy *config.RetentionPolicy) {
 	c.orderedQueueLock.Lock()
 	defer c.orderedQueueLock.Unlock()
+	if sameRetentionPolicy(c.retentionPolicy, retentionPolicy) {
+		return
+	}
 	c.retentionPolicy = retentionPolicy
 	for phase := range c.orderedQueue {
 		c.orderedQueue[phase] = NewHeap()
@@ -145,9 +148,25 @@ func (c *Controller) UpdateRetentionPolicy(ctx context.Context, retentionPolicy 
 			heap.Push(q, un)
 		}
 	}
-	for phase := range c.orderedQueue {
-		c.runGC(ctx, phase)
+	// runGC is throttled per deletion, so apply the policy without holding up the
+	// configuration reload.
+	go func() {
+		c.orderedQueueLock.Lock()
+		defer c.orderedQueueLock.Unlock()
+		if c.retentionPolicy == nil {
+			return
+		}
+		for phase := range c.orderedQueue {
+			c.runGC(ctx, phase)
+		}
+	}()
+}
+
+func sameRetentionPolicy(a, b *config.RetentionPolicy) bool {
+	if a == nil || b == nil {
+		return a == b
 	}
+	return *a == *b
 }
 
 func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {

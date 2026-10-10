@@ -185,7 +185,9 @@ type WorkflowController struct {
 	wfTaskSetInformer          wfextvv1alpha1.WorkflowTaskSetInformer
 	artGCTaskInformer          wfextvv1alpha1.WorkflowArtifactGCTaskInformer
 	taskResultInformer         cache.SharedIndexInformer
-	gcController               atomic.Pointer[gccontroller.Controller] // set once leading, so that configuration reloads reach the retention policy
+
+	// gcController is set once leading, so that configuration reloads reach its retention policy
+	gcController atomic.Pointer[gccontroller.Controller]
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -474,6 +476,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	gcCtrl := gccontroller.NewController(ctx, wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
 	wfc.gcController.Store(gcCtrl)
+	// pick up a reload that happened before the store above
+	gcCtrl.UpdateRetentionPolicy(ctx, wfc.Config.RetentionPolicy)
 	go wfc.runGCcontroller(ctx, gcCtrl, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
 
