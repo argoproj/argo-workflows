@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -80,7 +79,7 @@ func TestRetryAllowedIgnoringDurationBudget_AgreesWithRetryPath(t *testing.T) {
 			lastChild, err := woc.wf.Status.Nodes.Get(childIDs[len(childIDs)-1])
 			require.NoError(t, err)
 
-			predicted := woc.retryAllowedIgnoringDurationBudget(node, lastChild, childIDs, tc.strategy)
+			predicted := woc.retryAllowedIgnoringDurationBudget(logging.TestContext(t.Context()), node, lastChild, childIDs, tc.strategy)
 
 			// No Backoff => no duration budget => the real path's verdict is purely
 			// policy/retryability/limit/expression, the same question the predicate asks.
@@ -105,7 +104,7 @@ func TestRetryAllowedIgnoringDurationBudget_FalseWhenLimitExhausted(t *testing.T
 	require.NoError(t, err)
 
 	strategy := wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2"), RetryPolicy: wfv1.RetryPolicyOnFailure}
-	assert.False(t, woc.retryAllowedIgnoringDurationBudget(node, lastChild, childIDs, strategy),
+	assert.False(t, woc.retryAllowedIgnoringDurationBudget(logging.TestContext(t.Context()), node, lastChild, childIDs, strategy),
 		"limit is already exhausted, so the duration budget is not the reason this retry stops")
 }
 
@@ -115,8 +114,6 @@ func TestRetryAllowedIgnoringDurationBudget_TrueWhenOnlyTheBudgetStopsIt(t *test
 	require.NoError(t, err)
 
 	strategy := wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("5"), RetryPolicy: wfv1.RetryPolicyOnFailure}
-	assert.True(t, woc.retryAllowedIgnoringDurationBudget(node, lastChild, childIDs, strategy),
+	assert.True(t, woc.retryAllowedIgnoringDurationBudget(logging.TestContext(t.Context()), node, lastChild, childIDs, strategy),
 		"nothing but the duration budget stands in the way, so this is a budget termination")
 }
-
-var _ = intstr.Int32 // keep the intstr import honest if helpers change

@@ -1085,7 +1085,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Info(ctx, "Max duration limit exceeded. Failing...")
-				if woc.retryAllowedIgnoringDurationBudget(node, lastChildNode, childNodeIds, retryStrategy) {
+				if woc.retryAllowedIgnoringDurationBudget(ctx, node, lastChildNode, childNodeIds, retryStrategy) {
 					woc.controller.metrics.RetryStrategyTerminated(ctx, metrics.RetryTerminationMaxDurationExceeded, woc.wf.Namespace)
 				}
 				return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
@@ -1132,7 +1132,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
 		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
 			woc.log.Info(ctx, "Backoff would exceed max duration limit. Failing...")
-			if woc.retryAllowedIgnoringDurationBudget(node, lastChildNode, childNodeIds, retryStrategy) {
+			if woc.retryAllowedIgnoringDurationBudget(ctx, node, lastChildNode, childNodeIds, retryStrategy) {
 				woc.controller.metrics.RetryStrategyTerminated(ctx, metrics.RetryTerminationBackoffWouldExceedMaxDuration, woc.wf.Namespace)
 			}
 			return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Backoff would exceed max duration limit"), true, nil
@@ -1212,9 +1212,9 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 // if backoff.maxDuration did not exist.
 //
 // It exists only to attribute a duration-budget termination correctly. The two
-// maxDuration checks run before the policy, retryability, limit and expression
-// checks, so a retry that any of those would have rejected anyway still reaches the
-// duration check first. Counting that as a duration-budget termination would record
+// maxDuration checks run before the retryPolicy, limit and expression checks, so a
+// retry that any of those would have rejected anyway still reaches the duration check
+// first. Counting that as a duration-budget termination would record
 // which check the controller happened to evaluate earliest rather than the reason the
 // retry did not happen.
 //
@@ -1222,10 +1222,14 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 // cannot evaluate — an unparseable limit, an expression that fails — is treated as not
 // eligible, so an ambiguous case is left uncounted rather than counted wrongly.
 //
+// lastChildNode.CanRetry() is deliberately not checked: it is FailedOrError(), and
+// processNodeRetries returns early above unless that already holds, so it can never be
+// false here.
+//
 // This duplicates the conditions below rather than restructuring the live retry path,
 // which is the riskier change for a metric. TestRetryAllowedIgnoringDurationBudget_AgreesWithRetryPath
 // fails if the two ever disagree.
-func (woc *wfOperationCtx) retryAllowedIgnoringDurationBudget(node *wfv1.NodeStatus, lastChildNode *wfv1.NodeStatus, childNodeIds []string, retryStrategy wfv1.RetryStrategy) bool {
+func (woc *wfOperationCtx) retryAllowedIgnoringDurationBudget(ctx context.Context, node *wfv1.NodeStatus, lastChildNode *wfv1.NodeStatus, childNodeIds []string, retryStrategy wfv1.RetryStrategy) bool {
 	var retryOnFailed, retryOnError bool
 	switch retryStrategy.RetryPolicyActual() {
 	case wfv1.RetryPolicyAlways:
@@ -1234,7 +1238,7 @@ func (woc *wfOperationCtx) retryAllowedIgnoringDurationBudget(node *wfv1.NodeSta
 		retryOnFailed, retryOnError = false, true
 	case wfv1.RetryPolicyOnTransientError:
 		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) &&
-			errorsutil.IsTransientErr(context.Background(), argoerrors.InternalError(lastChildNode.Message)) {
+			errorsutil.IsTransientErr(ctx, argoerrors.InternalError(lastChildNode.Message)) {
 			retryOnFailed, retryOnError = true, true
 		}
 	case wfv1.RetryPolicyOnFailure:
@@ -1245,10 +1249,6 @@ func (woc *wfOperationCtx) retryAllowedIgnoringDurationBudget(node *wfv1.NodeSta
 
 	if ((lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.IsDaemoned() && (lastChildNode.Phase == wfv1.NodeSucceeded)) && !retryOnFailed) ||
 		(lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
-		return false
-	}
-
-	if !lastChildNode.CanRetry() {
 		return false
 	}
 
