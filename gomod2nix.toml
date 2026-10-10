@@ -32,8 +32,8 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-VOgoreEdslftsR/MyEnZAlutqvph4T57NR1mT9+APfg="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azcore"]
-    version = "v1.23.2"
-    hash = "sha256-DpiBtAxlHfWlsgVs2C+dbTwXuCeWFnJyF8+nApNAIss="
+    version = "v1.23.3"
+    hash = "sha256-lAIm7S5QMPxE910PvJUecFhFIls8WtCDqJnv5jxfaa4="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
     version = "v1.14.1"
     hash = "sha256-CD1NctWJC+HajfOPgV/9V6lLcVdPbJs+Lpp9woKq96c="
@@ -41,11 +41,14 @@ schema = 3
     version = "v0.2.3"
     hash = "sha256-CWJLUdzbAwvZmTTRr/VTVoneIo3nOnDJyjYmhEuZnkA="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/internal"]
-    version = "v1.12.0"
-    hash = "sha256-jX/JR3WToz0vEWowfDBVjpul9EE2V2xGF1EfckrhDus="
+    version = "v1.13.0"
+    hash = "sha256-LLNsMKACy5SK5tZ+CC+jgN4eN0cGWNI/fD4bV3wkGJM="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"]
-    version = "v1.8.1"
-    hash = "sha256-0ARLNHm4hSFykXL71oTz/SlbGpxKAkBuhsjdJNnpsbg="
+    version = "v1.8.2"
+    hash = "sha256-hrv1mdT6gsBVxln57d8JD5wAvuRSllq6LpMeQorCedA="
+  [mod."github.com/Azure/azure-sdk-for-go/sdk/storage/internal"]
+    version = "v0.1.0"
+    hash = "sha256-7+CxuCxeHdtixlWB+CfY1lFA5eBpS5iFuqJEfx9b5WY="
   [mod."github.com/Azure/go-ansiterm"]
     version = "v0.0.0-20250102033503-faa5f7b0171c"
     hash = "sha256-4WYKJtxjnm3egDAh9ocTR+gy5UUqVoY3knHy9c17XIY="
@@ -107,8 +110,8 @@ schema = 3
     version = "v1.4.13"
     hash = "sha256-q6jzIuVZM23R4JSQfuBB0U4jRJAEdgexpunzhYpZ6Hw="
   [mod."github.com/andybalholm/brotli"]
-    version = "v1.2.5"
-    hash = "sha256-4Az9n3VpIZAP7yBSZNEH49ddwIBKVa3PVo7TT8cswac="
+    version = "v1.2.6"
+    hash = "sha256-t3Z1bHg8mRr7cEdTbffO6f2ppPSaXK7IiaVEnjC8TuQ="
   [mod."github.com/antlr4-go/antlr/v4"]
     version = "v4.13.1"
     hash = "sha256-beAuxHNRUuhzcSJUh/8ztVf1zCUiaT72fg2Jvx0AuNQ="
@@ -125,29 +128,29 @@ schema = 3
     version = "v2.0.3+incompatible"
     hash = "sha256-NLQtom5/csYWGUq3IMds0OI69S+/VDalAYccExFJ7Qc="
   [mod."github.com/aws/aws-sdk-go-v2"]
-    version = "v1.47.1"
-    hash = "sha256-b6uaEXRUiHKqADXNDkJWt5w1sCsj6OwaQGbTKxdA/Hg="
+    version = "v1.47.2"
+    hash = "sha256-3HeCsqDrRkpVevTezgND2qTaGKW/bWBkBIzG5WXjdfo="
   [mod."github.com/aws/aws-sdk-go-v2/config"]
-    version = "v1.33.6"
-    hash = "sha256-bQ30SzNYrU5KWynlN6v+PcrHhtSx5p7kEnyqPDZGPPk="
+    version = "v1.33.7"
+    hash = "sha256-ngFONjY26PObjPENavMM7iPITestuB74cBYISrgtPQY="
   [mod."github.com/aws/aws-sdk-go-v2/credentials"]
-    version = "v1.20.6"
-    hash = "sha256-EL0ar1ZP+ApWJxBVd2aZRKQbx8ae7YzJoD/J9gYnPS0="
+    version = "v1.20.8"
+    hash = "sha256-zK03HHLTJvzX4S8Ik+NNR4N5mp1qFygj90e5RxrTGOY="
   [mod."github.com/aws/aws-sdk-go-v2/feature/ec2/imds"]
-    version = "v1.20.1"
-    hash = "sha256-vtzYW/VyJB79OjVrIb/CBtjoCBW/eiafTjL99Vr8P0Q="
+    version = "v1.20.2"
+    hash = "sha256-hOynuFFSc0DDxjeQgzYU62n9e/nIYZcVZjvS4Dh6DtE="
   [mod."github.com/aws/aws-sdk-go-v2/feature/rds/auth"]
     version = "v1.7.4"
     hash = "sha256-AGBrv4ddtoUoo3aEE1VXUGMZHzbQlPt31LC1a5ehRbo="
   [mod."github.com/aws/aws-sdk-go-v2/internal/configsources"]
-    version = "v1.5.4"
-    hash = "sha256-Z/IRWok8Zj9QPhLCngCG9r9XU1PwR5acdoaDhlV9F28="
+    version = "v1.5.5"
+    hash = "sha256-TYY2Jg1Dtww40drFG/hzQy5m3XrON45hCJ17rAKFJVE="
   [mod."github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"]
-    version = "v2.8.4"
-    hash = "sha256-ODz5Bi7ai4hWU79g09F4w4C4LKirIe5z4TkqORTU4XE="
+    version = "v2.8.5"
+    hash = "sha256-duW9ksKrKAE4kBbGGV4aTBNdNSNhjWwZEe5Y82yJbkU="
   [mod."github.com/aws/aws-sdk-go-v2/internal/v4a"]
-    version = "v1.5.4"
-    hash = "sha256-Alq2DdjWQlRf9eXoAsc93ZZ5freI75j3174JQvVHWM4="
+    version = "v1.5.5"
+    hash = "sha256-d8XpfPhNMrGW+1rjHX9hx4IEBqUWnpCan2rNVP8aIck="
   [mod."github.com/aws/aws-sdk-go-v2/service/dynamodb"]
     version = "v1.62.3"
     hash = "sha256-4uPHOtvtHvSgmqzYktx5q1zjYs81eRaH6ymra/VrlBo="
@@ -158,17 +161,17 @@ schema = 3
     version = "v1.38.10"
     hash = "sha256-uJtfhtkG4pfehKHyc2dsqafvt6fKMnMgMe/uPemJrPY="
   [mod."github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding"]
-    version = "v1.13.19"
-    hash = "sha256-LfifyqFh49PPH0asF1TJz3QJYHTwxQttthUD5p4z2YM="
+    version = "v1.13.20"
+    hash = "sha256-3maodYTN/kANYSiKoCxoNY1xmyEs4/G+BHLF2a4Vxg0="
   [mod."github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery"]
     version = "v1.12.11"
     hash = "sha256-2z745rW+jMacE2qsarSDCCXL9n9x9uoWcliBs4S0czw="
   [mod."github.com/aws/aws-sdk-go-v2/service/internal/presigned-url"]
-    version = "v1.14.4"
-    hash = "sha256-xsYKYiZnt9pEvivxj50YtHHo8znZoqtV0Aez/+J1Hso="
+    version = "v1.14.5"
+    hash = "sha256-vrMbtKdC/yMsaVlgNyLkDAomaCRvXmuWzLGLeCeMnoI="
   [mod."github.com/aws/aws-sdk-go-v2/service/signin"]
-    version = "v1.10.1"
-    hash = "sha256-VmbLKrQRnMl+2SlbJy/i8Ngm31vZIJ5bFhtA5E01TqA="
+    version = "v1.10.3"
+    hash = "sha256-kSpaFjCM9vBAIEK6Pje8utHVtXr1BGF7Jpg5Lqj4KHo="
   [mod."github.com/aws/aws-sdk-go-v2/service/sns"]
     version = "v1.42.3"
     hash = "sha256-Pri3cqQ+c0OvmHb711D3gWXwbitulG/UbdCjLmo1AzA="
@@ -176,17 +179,17 @@ schema = 3
     version = "v1.46.3"
     hash = "sha256-nSg1kFNFlZEa4b5SFuErJk29MX1sW7SSIs/hlGImt1s="
   [mod."github.com/aws/aws-sdk-go-v2/service/sso"]
-    version = "v1.38.1"
-    hash = "sha256-BgwGLeeeUIA/beyk4DnLJ3HA70bUaO5fgTLhJ6xfJOw="
+    version = "v1.38.3"
+    hash = "sha256-CBo67ARoww+8I9vv6yZw5JrgHaoHPZNl4yEGfXBWS+I="
   [mod."github.com/aws/aws-sdk-go-v2/service/ssooidc"]
-    version = "v1.43.1"
-    hash = "sha256-mj/7Tt1+L+FpvRLl/CC7kSiZPSE18lhi+iDGn2+wRvQ="
+    version = "v1.43.3"
+    hash = "sha256-dLSbxsqjVAK6YoOXzU2cWqvkNvjilZdB9ylLw3AU9wc="
   [mod."github.com/aws/aws-sdk-go-v2/service/sts"]
-    version = "v1.51.1"
-    hash = "sha256-Z3heejHlZSijeaj/3AHDVcEmC8387BDczbXDr34Gi7c="
+    version = "v1.51.3"
+    hash = "sha256-nCQmOqt+buEuQhpYu7sJdxJoAKjz1fy3QiI6gwdscEY="
   [mod."github.com/aws/smithy-go"]
-    version = "v1.28.1"
-    hash = "sha256-52wJGnuZVxhZtqgp4Gf7mgYrK6DOL8hFgtjo8e1NlCA="
+    version = "v1.28.4"
+    hash = "sha256-9faJActQPrK8Pofa/2nl4pTHUEOK1WqId+KMCEMdvbU="
   [mod."github.com/awslabs/amazon-ecr-credential-helper/ecr-login"]
     version = "v0.12.0"
     hash = "sha256-PHoHWGX9RVkAQNQF2fz5Hv4JEaGBvLhcuUwlu5IQjU0="
@@ -335,11 +338,11 @@ schema = 3
     version = "v1.5.1-0.20230307220236-3a3c6141e376"
     hash = "sha256-f4k0gSYuo0/q3WOoTxl2eFaj7WZpdz29ih6CKc8Ude8="
   [mod."github.com/go-git/go-billy/v5"]
-    version = "v5.9.0"
-    hash = "sha256-6+i1Xk8kR6EY8y6YSE9Oyj8ykcvyHUHZv04GfwOIzzs="
+    version = "v5.9.2"
+    hash = "sha256-VW8mfdLjvAuiooR2WV7P0IoOosAvtDZvFWcGQJJVSSY="
   [mod."github.com/go-git/go-git/v5"]
-    version = "v5.19.2"
-    hash = "sha256-2du2hn5JDTEEYTWuGX+heSftkmd7HoaJXyWJG4bZeSM="
+    version = "v5.19.3"
+    hash = "sha256-2rDnG8fGnBt7ZjcxG1/dEhhNgGq0RgQ450jajlHhvTU="
   [mod."github.com/go-jose/go-jose/v4"]
     version = "v4.1.5"
     hash = "sha256-GnRt1sMlr4qn9yJ3RCtZSezN+C9DXR+v5smzAKmi26M="
@@ -359,41 +362,41 @@ schema = 3
     version = "v1.0.3"
     hash = "sha256-50z6EJ4vivQBJtJYj/PX2+947WQL6CSyUYWqjQHRgio="
   [mod."github.com/go-openapi/swag"]
-    version = "v0.27.1"
-    hash = "sha256-fnQYC3SKQX1aCG3KNDSqfAmuw9ThzOrvCshsnKKqNjI="
+    version = "v0.28.0"
+    hash = "sha256-vy1WptgaNKFuFsIUql81L5MOwUmLoFlYvpRwnq/LES0="
   [mod."github.com/go-openapi/swag/cmdutils"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-YaE9Sv3b/AMELBYnjcsfe9QtKlyye88OmHTHN8cUn/8="
   [mod."github.com/go-openapi/swag/conv"]
-    version = "v0.27.1"
-    hash = "sha256-Z3iJurP1+GTQ3jZll6I628x8zitd/e9ezW9V7lNh6Uk="
+    version = "v0.28.0"
+    hash = "sha256-mw69Q9DexkTxdyjSAwzXmNXl3dIRY6hs+JB4ZUKHxAQ="
   [mod."github.com/go-openapi/swag/fileutils"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-v/dkW9DeKAI4RAySe6sXedPQcVks6k1RnXii1+NSQGk="
   [mod."github.com/go-openapi/swag/jsonutils"]
-    version = "v0.27.1"
-    hash = "sha256-wbTCIpFUusWT0daDu+We4MJ5MABMNHe/vzgJQ0WPpSg="
+    version = "v0.28.0"
+    hash = "sha256-LXV3FdT20rFhRcdofe6amug18XoP8lc36faDQ2fKN/8="
   [mod."github.com/go-openapi/swag/loading"]
-    version = "v0.27.1"
-    hash = "sha256-ZMYEEdxlDjiPkQoivRT1z/P0JNF+AdQzT8dpS1YUvVI="
+    version = "v0.28.0"
+    hash = "sha256-R4Mjsx2hm2nknukMVRaAdCogoCjywMIZysRSce1HiZQ="
   [mod."github.com/go-openapi/swag/mangling"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-7G229jLKn8PITP8r1uE9FClAnALKQM7GVn6jXi4bv6Q="
   [mod."github.com/go-openapi/swag/netutils"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-c5F5kVtDfHy4V6fnMpyt8QgFsj7EEzb4kEHp16gJcp8="
   [mod."github.com/go-openapi/swag/pools"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-v6e+U41LGxzT1aT4KV6PQvowY3N0Y6Z2zCItIpAuoG0="
   [mod."github.com/go-openapi/swag/stringutils"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-QnCMIHYGwrMMzZBRFz3zvOoQWPgzToMIMRCfujww8Vw="
   [mod."github.com/go-openapi/swag/typeutils"]
-    version = "v0.27.1"
+    version = "v0.28.0"
     hash = "sha256-7DkJz+zFA2Zu6iIkoExf2H3gKKRg47KfzGE2aSXiehs="
   [mod."github.com/go-openapi/swag/yamlutils"]
-    version = "v0.27.1"
-    hash = "sha256-5u/USJQRwcGNSWn5BYDgFuCQLD09vjOWE+gZ7S0TQoo="
+    version = "v0.28.0"
+    hash = "sha256-9zf9imt97E/PAyD7ow06kMrEJwdEi4otlApcra3Kccc="
   [mod."github.com/go-playground/webhooks/v6"]
     version = "v6.4.0"
     hash = "sha256-kii4Lhr2JYfBb+iInphVi6ThpctpGivWF2rG5DN4hLQ="
@@ -479,8 +482,8 @@ schema = 3
     version = "v1.16.0"
     hash = "sha256-wLymGic7wZ6fSiBYDAaGqnQ9Ste1fUWeqXeolZXCHvI="
   [mod."github.com/grpc-ecosystem/grpc-gateway/v2"]
-    version = "v2.29.0"
-    hash = "sha256-a/J/iffTIqbKXIBGGKfPIjgfyb2F05jw3Au8f1q6yEk="
+    version = "v2.30.0"
+    hash = "sha256-SKvojuMn48wxg9Dd8D0BcS4PZO3OHIFOJEMYlpvgLsk="
   [mod."github.com/hashicorp/go-uuid"]
     version = "v1.0.3"
     hash = "sha256-8893qBbaug2yhxElowSrl3PrfhYlQ7cZ71QBgZWqpHE="
@@ -551,8 +554,8 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-Ta7ZOmyX8gG5tzWbY2oES70EJPfI90U7CIJS9EAce0s="
   [mod."github.com/klauspost/compress"]
-    version = "v1.19.2"
-    hash = "sha256-Q7taaWYa+O5MkhiGESFs4UdMba8cDGEROXU/Y+3M5vE="
+    version = "v1.20.1"
+    hash = "sha256-saWVNlxTAS7/lNaGght51onyIDaAFV1Kx11g3+vPuX4="
   [mod."github.com/klauspost/cpuid/v2"]
     version = "v2.4.0"
     hash = "sha256-nvTeRVxDekVNLd25aJ2NslBnG7nT25ewoSTk3iW5Xok="
@@ -560,8 +563,8 @@ schema = 3
     version = "v1.3.0"
     hash = "sha256-RsS/MDJbVzVB+i74whqABgwZJWMw+AutF6HhJBVgbag="
   [mod."github.com/klauspost/pgzip"]
-    version = "v1.2.6"
-    hash = "sha256-qA1hjnVW/tqxY48JIWQVulwEwY7fwyvnasymZk3mScg="
+    version = "v1.2.7"
+    hash = "sha256-HRAbr8J+vEOa3TB3ObAJyuMv13USdEONt+KHvzFxqkU="
   [mod."github.com/kylelemons/godebug"]
     version = "v1.1.0"
     hash = "sha256-DJ0re9mGqZb6PROQI8NPC0JVyDHdZ/y4uehNH7MbczY="
@@ -581,14 +584,14 @@ schema = 3
     version = "v1.8.10"
     hash = "sha256-smE+l2A9yDnDJFI7iNCjjF9NQnPySxEFFnbRUHyCq7I="
   [mod."github.com/mattn/go-colorable"]
-    version = "v0.1.14"
-    hash = "sha256-JC60PjKj7MvhZmUHTZ9p372FV72I9Mxvli3fivTbxuA="
+    version = "v0.1.15"
+    hash = "sha256-hH+yMJHjboEDQbv399OEjfc50RgtO/edw0r2sJfxEJg="
   [mod."github.com/mattn/go-isatty"]
-    version = "v0.0.20"
-    hash = "sha256-qhw9hWtU5wnyFyuMbKx+7RB8ckQaFQ8D+8GKPkN3HHQ="
+    version = "v0.0.24"
+    hash = "sha256-pmq8KKIb2+qMF3E1cR2B7NAj5joF2tZduyXjIfIlkTk="
   [mod."github.com/mattn/go-runewidth"]
-    version = "v0.0.23"
-    hash = "sha256-SmChZ2U1aR8pW3LPhdM7KcVF5TO6VcHgRzBtUXbBWJA="
+    version = "v0.0.30"
+    hash = "sha256-2idyB8BVjqiwBOmBteKMTM9uBfr96g29k8hqJWjlndE="
   [mod."github.com/minio/crc64nvme"]
     version = "v1.1.1"
     hash = "sha256-RVVi/gWPBEQqcW4n+KIKxlA3uY5+77e2rhkVk8fFNUo="
@@ -596,8 +599,8 @@ schema = 3
     version = "v1.1.2"
     hash = "sha256-vykcXvy2VBBAXnJott/XsGTT0gk2UL36JzZKfJ1KAUY="
   [mod."github.com/minio/minio-go/v7"]
-    version = "v7.2.1"
-    hash = "sha256-P0DMI8oXFq/l1gKn8tx4AzLtkcR9Cmn84BIWNHYDdzM="
+    version = "v7.3.0"
+    hash = "sha256-vshAV9zETYUb9ucAJhmdMzNNFdLwUkp9lKVI6RpWVJ4="
   [mod."github.com/mitchellh/copystructure"]
     version = "v1.2.0"
     hash = "sha256-VR9cPZvyW62IHXgmMw8ee+hBDThzd2vftgPksQYR/Mc="
@@ -656,8 +659,8 @@ schema = 3
     version = "v0.0.0-20140419014527-cca7078d478f"
     hash = "sha256-gRTfRfff/LRxC1SXXnQd2tV3UTcTx9qu90DJIVIaGn8="
   [mod."github.com/nao1215/markdown"]
-    version = "v0.13.0"
-    hash = "sha256-YakmT8Cw/WwJA9Fwx//6KN4h1QahByGvcK8H48GBFd4="
+    version = "v1.1.1"
+    hash = "sha256-O+6DEdPqZ3lnqLGxlHhCqyEJgS4RJSAfxFTXUS1YaHk="
   [mod."github.com/ncruces/go-strftime"]
     version = "v1.0.0"
     hash = "sha256-GYIwYDONuv/yTE0AEugCHQbtV3oiBaco93xUNYFcVBQ="
@@ -665,14 +668,14 @@ schema = 3
     version = "v0.0.0-20250911104152-50322a0618f6"
     hash = "sha256-zkV9QYPu+fXO90ARQ/gn+gDkngJbBFaPqbTU378ki1Y="
   [mod."github.com/olekukonko/errors"]
-    version = "v1.1.0"
-    hash = "sha256-XYJzcbMX5iQsQ5k122a0QeoL5wbcLgh+LklcLsa6cv4="
+    version = "v1.3.0"
+    hash = "sha256-e//bXtAyskC1o6hzfy3Zi9mOK8cmA5KxS9ItBPkBlyw="
   [mod."github.com/olekukonko/ll"]
-    version = "v0.1.4-0.20260115111900-9e59c2286df0"
-    hash = "sha256-bAzMGeDdOhZnE7bnz1dd/lrSlB8FXH+CR8F2xwwefKc="
+    version = "v0.1.8"
+    hash = "sha256-XvFOfgRmsJUy2RUjJ9MhNCclw0lCWxrBYlbv6plpD0c="
   [mod."github.com/olekukonko/tablewriter"]
-    version = "v1.1.3"
-    hash = "sha256-9doZFXVtyqPDC2H1Zjzx1m2XLDPQRc6EHxacf1uaHmM="
+    version = "v1.1.5"
+    hash = "sha256-LLGFe4s7DAvOJmqmgTDNOrZRlnVoFuN5tZOJn4wqkXs="
   [mod."github.com/onsi/ginkgo"]
     version = "v1.16.5"
     hash = "sha256-Q3CKWQyIJKOiX9cs4t5Nz4pYxj6CT3AWnMXRNiM71GQ="
@@ -695,8 +698,8 @@ schema = 3
     version = "v4.1.28"
     hash = "sha256-LW93xi47P8vkHHRXuiB+4LYxX0Q+jA1DwXK0oKopXLA="
   [mod."github.com/pjbgf/sha1cd"]
-    version = "v0.6.0"
-    hash = "sha256-WC/sYIy9Iznlra87K9Gonn6/bo4a2aE+kvldecfBPfE="
+    version = "v0.7.0"
+    hash = "sha256-75OUdr6YfQWIHx3sdhUaXAfAo0Gwv0GVUvtT9aRQ/aQ="
   [mod."github.com/pkg/browser"]
     version = "v0.0.0-20240102092130-5ac0b6a4141c"
     hash = "sha256-9iaSHHpcA1fXVF5f8RlKyo1DSoHx7eGXIC2/4LFaoBY="
@@ -713,17 +716,17 @@ schema = 3
     version = "v1.24.1"
     hash = "sha256-HAOFVYyPiU7hVS1XXMMjkbGgTT7/UN0zVHXYOnjr7is="
   [mod."github.com/prometheus/client_model"]
-    version = "v0.6.2"
-    hash = "sha256-q6Fh6v8iNJN9ypD47LjWmx66YITa3FyRjZMRsuRTFeQ="
+    version = "v0.6.3"
+    hash = "sha256-uYXpFkXMT4AXWJShrCRnu51vhGQAuAU3LFQhhGVJ+74="
   [mod."github.com/prometheus/common"]
-    version = "v0.70.1"
-    hash = "sha256-xlhVEswCWaBnAXn53KOUzquoDEnZVd/NcTbj52EJ6rE="
+    version = "v0.72.0"
+    hash = "sha256-OXi+GGzrV31yeKtel2bImkF7PW4tKWyOcyTZB5WbkDI="
   [mod."github.com/prometheus/otlptranslator"]
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
   [mod."github.com/prometheus/procfs"]
-    version = "v0.21.1"
-    hash = "sha256-5SpWprdX29oVntHJyadiICOk9UAP+hu+xJM51/A8Ig4="
+    version = "v0.22.0"
+    hash = "sha256-TRwVHKgW4NnPuC6Me38OD57ccM8AfnS7IxtcAx2TAH4="
   [mod."github.com/remyoudompheng/bigfft"]
     version = "v0.0.0-20230129092748-24d4a6f8daec"
     hash = "sha256-vYmpyCE37eBYP/navhaLV4oX4/nu0Z/StAocLIFqrmM="
@@ -758,8 +761,8 @@ schema = 3
     version = "v1.4.0"
     hash = "sha256-U36bC271jQsjuWFF8BfLz4WicxPJUcPHRGxLvTz4Mdw="
   [mod."github.com/sirupsen/logrus"]
-    version = "v1.9.4"
-    hash = "sha256-ltRvmtM3XTCAFwY0IesfRqYIivyXPPuvkFjL4ARh1wg="
+    version = "v1.10.2"
+    hash = "sha256-1BKin1NpY1kFawnHkY0FxQ152aeB82RRKIDWJLctZB4="
   [mod."github.com/skeema/knownhosts"]
     version = "v1.3.1"
     hash = "sha256-kjqQDzuncQNTuOYegqVZExwuOt/Z73m2ST7NZFEKixI="
@@ -809,8 +812,8 @@ schema = 3
     version = "v1.2.1"
     hash = "sha256-S0uTDDGD8qr415Ut7QinyXljCp0TkL4zOIrlJ+9OMl8="
   [mod."github.com/tinylib/msgp"]
-    version = "v1.6.1"
-    hash = "sha256-R2LutHQFZ7HAqeyzHqzMeyAJHxcYc+n1x7ysyrXefmQ="
+    version = "v1.6.4"
+    hash = "sha256-obRMzgNod1WvJCEquhze0v3Yu9L+6uSnXA5ogTCw3gc="
   [mod."github.com/tklauser/go-sysconf"]
     version = "v0.4.0"
     hash = "sha256-8zTRLfBMOenFqvpMuZOkRERAFN3r7C2Jjvr7sh5andY="
@@ -872,47 +875,53 @@ schema = 3
     version = "v0.70.0"
     hash = "sha256-H8UEoecwEy6E0emDapu51yC7r+zuvc919MLp53BC9Ps="
   [mod."go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"]
-    version = "v0.70.0"
-    hash = "sha256-XqsiMDG7h1XgVuOR0x36ZgboMOjsVaXU4C2GyNn95+0="
+    version = "v0.72.0"
+    hash = "sha256-VrHgwDwPBZJi9QFcnAJAA90HpCvmN92YcIl3rkMm3jg="
   [mod."go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"]
     version = "v0.70.0"
     hash = "sha256-jJfTEztGWbxltg3yHD3AqjMc91tw7iSj/FgV+zvMjjM="
   [mod."go.opentelemetry.io/contrib/instrumentation/runtime"]
     version = "v0.70.0"
     hash = "sha256-N6TsUbaJghFvP6Snk4voebP6ZyQcu/lG7Oxmqd7BgVI="
+  [mod."go.opentelemetry.io/contrib/propagators/envcar"]
+    version = "v0.70.0"
+    hash = "sha256-CuDOtdMNKRgqfxtMYYDO6a8XWRiqW8dGWEmb/8YRBjo="
   [mod."go.opentelemetry.io/otel"]
-    version = "v1.46.0"
-    hash = "sha256-2+xTacXn22hsJuMGGgXwazMbP/ZW5gkPRnf+rNUZgvQ="
+    version = "v1.47.0"
+    hash = "sha256-D4dSqVH4J9tKmnQWZFANTZ3+frHUjFIgcsvJWPSwuU4="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"]
-    version = "v1.45.0"
-    hash = "sha256-Iq87V3l7dDM0MVcRGzBVvm9mHGLuegxFBR4Y4cKyDz4="
+    version = "v1.47.0"
+    hash = "sha256-Yj9DuOROQ5f35XcAtPzr5AyI0EXVcCvGkFX/OdRMJ9k="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"]
-    version = "v1.45.0"
-    hash = "sha256-ZQh1RpHTH2IZT5g3O4hI364nN5qW1vkTk/oMKRwUolI="
+    version = "v1.47.0"
+    hash = "sha256-eMRVBc2PWsyX83ysN08H8Zlo+cD9rwQAS1t+DDO4Nu0="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace"]
-    version = "v1.45.0"
-    hash = "sha256-+q9AqsCDxlrXTmELo5IJwR5yNiHzCk/dk7mtxxmqCf8="
+    version = "v1.47.0"
+    hash = "sha256-upPAkVlbXKHWBritk71OSRcSCbEI7ffueMkGewtcRq4="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"]
-    version = "v1.45.0"
-    hash = "sha256-fqrhkxeR2Go6sA9W9xKRYpXQfHBZ78/7MVWnyuRpWSU="
+    version = "v1.47.0"
+    hash = "sha256-z/LRxCuScyH5m2mthWcCVMuaanayEPJNIfz4qQBHreg="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"]
-    version = "v1.45.0"
-    hash = "sha256-GT6dy7rdPY6WK3aByofcuWkMHuT5IhULkiisuzStqag="
+    version = "v1.47.0"
+    hash = "sha256-ufaKTLJEPrGJXhDL5SoZ6V/BDkV6LwiFq0Twmi5T048="
   [mod."go.opentelemetry.io/otel/exporters/prometheus"]
-    version = "v0.67.0"
-    hash = "sha256-YgvJVSuqeaqJCFYxilbxvFnbGWWHF6Xxi8eu0c/2afU="
+    version = "v0.69.0"
+    hash = "sha256-iwlj9pgiv2VW2c5S4r/x+y2D5w5KLzugLhKX7XXaxv8="
+  [mod."go.opentelemetry.io/otel/log"]
+    version = "v1.47.0"
+    hash = "sha256-hYCHFuMmSSrMlyChIOEZMLuGYubF8IKkFLPC9yuVXdw="
   [mod."go.opentelemetry.io/otel/metric"]
-    version = "v1.46.0"
-    hash = "sha256-cY1DXXzRfcP0kKh7oBzowbu6kbFr3jANiEVyMlD5Bt8="
+    version = "v1.47.0"
+    hash = "sha256-ZKgYAoUSGUrI/u2qctou/GVlgJ0Kd9aMEVxudopPfFQ="
   [mod."go.opentelemetry.io/otel/sdk"]
-    version = "v1.46.0"
-    hash = "sha256-bDS4r1NfK2jZmTx5KUcrPJpPC2Men1lOuEKhy3vkMxc="
+    version = "v1.47.0"
+    hash = "sha256-f9JqSocWeQUExdeAcTvoGuJ9GeQ9KGyeDsLcsYRRu54="
   [mod."go.opentelemetry.io/otel/sdk/metric"]
-    version = "v1.46.0"
-    hash = "sha256-7HyWcBj0lBc9V29f14gPFS3mBPrHZmC3TFuRsfIo7mI="
+    version = "v1.47.0"
+    hash = "sha256-DOrHpQS/i8JmbK6NbfK9bjyYsq5AQ9cGfiQmSpBqV4A="
   [mod."go.opentelemetry.io/otel/trace"]
-    version = "v1.46.0"
-    hash = "sha256-zfj85gCR5Z3v1N+8nlOO+6+FVShaL/7Vb/3lXjdXnnw="
+    version = "v1.47.0"
+    hash = "sha256-W0eb1RPyxX7WUXrQIg9+da00P46fRUlL2S1kgFOvAM0="
   [mod."go.opentelemetry.io/proto/otlp"]
     version = "v1.11.0"
     hash = "sha256-jBcVUiab9mWgLmPsrCYK7sC2j15AJ47QJM4prnqGGkE="
@@ -926,29 +935,29 @@ schema = 3
     version = "v3.0.5"
     hash = "sha256-ygho+GU5kE7vPMx+dZYyNfCaeMjNxj66XmrcVf3afFE="
   [mod."golang.org/x/crypto"]
-    version = "v0.56.0"
-    hash = "sha256-B4el+S5mIq9f5uvCjMQ4Fh3EAxxo7Cb0yeXoxJXuyF8="
+    version = "v0.57.0"
+    hash = "sha256-3/hkB+mZVBKnoxUaJv7DOzvxaL+8uQ7V6ofW4JiHhz4="
   [mod."golang.org/x/exp"]
     version = "v0.0.0-20260813180055-c1d0aacb2297"
     hash = "sha256-0tPDTSYvSnHQZHt8ekiEhMy1s1DXtzehjOX7gK84EPQ="
   [mod."golang.org/x/net"]
-    version = "v0.58.0"
-    hash = "sha256-fDOkQJXURrbq2dBGa91bCUsXknCZlo3ru2JIofSOGRo="
+    version = "v0.60.0"
+    hash = "sha256-Xxed9Zp1f2+e8Gsrz8OQ4hI/Xo8+2RfwaV3+aaykvro="
   [mod."golang.org/x/oauth2"]
-    version = "v0.36.0"
-    hash = "sha256-evS7WkMrpgonmTcqtWFpC5rSKZN8O+vnAhNUs1MS9kw="
+    version = "v0.37.0"
+    hash = "sha256-CbL8ICe9yooSIiVL8F3UnYY/NayjpI2C7sueOauW2EI="
   [mod."golang.org/x/sync"]
-    version = "v0.22.0"
-    hash = "sha256-VZjl0fAM0p/nI81zh+pdBjzxFupx0UcKYXBBpL2ZS7k="
+    version = "v0.23.0"
+    hash = "sha256-nF8YZFVC+TitjkderlqgGwJkuMqJCxI+fIElVLjBT2M="
   [mod."golang.org/x/sys"]
-    version = "v0.47.0"
-    hash = "sha256-TpbRyWWqHjddP6QzUgAbaLd2EE0S+GYNRUIDJd18r98="
+    version = "v0.48.0"
+    hash = "sha256-u+LwI76YIeg1asQKZItD2mnL4Yvx8veLhBuL8wv60Ls="
   [mod."golang.org/x/term"]
-    version = "v0.45.0"
-    hash = "sha256-vPBeJkepEZ1D9k4oaV20IuQlVmfAFv15KQgnhl9MNgw="
+    version = "v0.46.0"
+    hash = "sha256-w/LexmQ91G8N1zdjIujuaEIONVfAg7U/DciHVYp0+QY="
   [mod."golang.org/x/text"]
-    version = "v0.41.0"
-    hash = "sha256-22nHcolG87qSPahT2Ey8S5iGlCLAglE9ObYXO6XZ3ZY="
+    version = "v0.42.0"
+    hash = "sha256-bviKbNmkN4Yf2dpgwmP6yNcZEakCcv1R+YyAxCdJGkY="
   [mod."golang.org/x/time"]
     version = "v0.15.0"
     hash = "sha256-5D24A65wn7k93Jj3+918UKjB9ccmGHPBEqjD2XDB92E="
@@ -962,7 +971,7 @@ schema = 3
     version = "v0.0.0-20260928230214-8a89bd6388cc"
     hash = "sha256-3DgHu8gZYFpwX6UXEh1vZdKUrdCsGAkTBtslaphAcFM="
   [mod."google.golang.org/genproto/googleapis/rpc"]
-    version = "v0.0.0-20260921155816-b14227669459"
+    version = "v0.0.0-20260928230214-8a89bd6388cc"
     hash = "sha256-qBJJ3Go2HqyEE+jp6FMafhXbMBbA/PIXvbdROnLPAYA="
   [mod."google.golang.org/grpc"]
     version = "v1.83.2"
@@ -977,8 +986,8 @@ schema = 3
     version = "v0.9.1"
     hash = "sha256-z84XlyeWLcoYOvWLxPkPFgLkpjyb2Y4pdeGMyySOZQI="
   [mod."gopkg.in/ini.v1"]
-    version = "v1.67.2"
-    hash = "sha256-fvrkZDKE3sx3zwXDs8gZzL/9fARfLza5Mo7DAm3S4Vc="
+    version = "v1.67.3"
+    hash = "sha256-5IJdzJ11xCVYvto/qX/ktx/vI9Sa6UhdkpXeoQRpntU="
   [mod."gopkg.in/warnings.v0"]
     version = "v0.1.2"
     hash = "sha256-ATVL9yEmgYbkJ1DkltDGRn/auGAjqGOfjQyBYyUo8s8="
