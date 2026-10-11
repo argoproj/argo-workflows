@@ -270,7 +270,9 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 			// in order to break out of the wait and release the container from
 			// the debugging state.
 			if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/after"); waitErr != nil {
-				return code, fmt.Errorf("failed waiting for debug-pause-after marker: %w", waitErr)
+				// An aborted pause must not release dependents as successful,
+				// even when the command itself succeeded.
+				return 64, fmt.Errorf("failed waiting for debug-pause-after marker: %w", waitErr)
 			}
 		}
 
