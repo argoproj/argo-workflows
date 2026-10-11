@@ -453,7 +453,7 @@ data:
   sso: |
     # This is the root URL of the OIDC provider (required, unless issuerSecret is set).
     issuer: https://issuer.root.url/
-    # Alternatively, the root URL of the OIDC provider can be read from a
+    # Alternatively, you can read the root URL of the OIDC provider from a
     # Secret (required, unless issuer is set). If both are set, issuer takes
     # precedence.
     # issuerSecret:
@@ -478,7 +478,7 @@ data:
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
-    # Alternatively, the redirect URL can be read from a Secret (optional).
+    # Alternatively, you can read the redirect URL from a Secret (optional).
     # If both are set, redirectUrl takes precedence.
     # redirectUrlSecret:
     #   name: oidc-secret
