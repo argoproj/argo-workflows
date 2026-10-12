@@ -42,6 +42,17 @@ export function getResolvedTemplates(workflow: models.Workflow, node: models.Nod
     return resolvedTemplate;
 }
 
+export function getMainContainerNames(workflow: models.Workflow, node?: models.NodeStatus): string[] {
+    if (!node) {
+        return ['main'];
+    }
+    const template = getResolvedTemplates(workflow, node);
+    if (template?.containerSet) {
+        return template.containerSet.containers.map(container => container.name);
+    }
+    return ['main'];
+}
+
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored
 function resolveTemplateReference(
