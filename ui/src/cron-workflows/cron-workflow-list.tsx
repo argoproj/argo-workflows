@@ -139,7 +139,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                         <>
                             <div className='argo-table-list'>
                                 <div className='row argo-table-list__head'>
-                                    <div className='columns small-1' />
+                                    <div className='columns small-1'>STATE</div>
                                     <div className='columns small-2'>NAME</div>
                                     <div className='columns small-2'>NAMESPACE</div>
                                     <div className='columns small-1'>TimeZone</div>
