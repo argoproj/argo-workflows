@@ -3,8 +3,10 @@
 package versioned
 
 import (
-	"fmt"
+	fmt "fmt"
+	http "net/http"
 
+	parametersv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/parameterization/v1alpha1"
 	argoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -13,14 +15,20 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	ParametersV1alpha1() parametersv1alpha1.ParametersV1alpha1Interface
 	ArgoprojV1alpha1() argoprojv1alpha1.ArgoprojV1alpha1Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	argoprojV1alpha1 *argoprojv1alpha1.ArgoprojV1alpha1Client
+	parametersV1alpha1 *parametersv1alpha1.ParametersV1alpha1Client
+	argoprojV1alpha1   *argoprojv1alpha1.ArgoprojV1alpha1Client
+}
+
+// ParametersV1alpha1 retrieves the ParametersV1alpha1Client
+func (c *Clientset) ParametersV1alpha1() parametersv1alpha1.ParametersV1alpha1Interface {
+	return c.parametersV1alpha1
 }
 
 // ArgoprojV1alpha1 retrieves the ArgoprojV1alpha1Client
@@ -39,7 +47,29 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 // NewForConfig creates a new Clientset for the given config.
 // If config's RateLimiter is not set and QPS and Burst are acceptable,
 // NewForConfig will generate a rate-limiter in configShallowCopy.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*Clientset, error) {
+	configShallowCopy := *c
+
+	if configShallowCopy.UserAgent == "" {
+		configShallowCopy.UserAgent = rest.DefaultKubernetesUserAgent()
+	}
+
+	// share the transport between all clients
+	httpClient, err := rest.HTTPClientFor(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewForConfigAndClient(&configShallowCopy, httpClient)
+}
+
+// NewForConfigAndClient creates a new Clientset for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
+// If config's RateLimiter is not set and QPS and Burst are acceptable,
+// NewForConfigAndClient will generate a rate-limiter in configShallowCopy.
+func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
 		if configShallowCopy.Burst <= 0 {
@@ -47,14 +77,19 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
+
 	var cs Clientset
 	var err error
-	cs.argoprojV1alpha1, err = argoprojv1alpha1.NewForConfig(&configShallowCopy)
+	cs.parametersV1alpha1, err = parametersv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	cs.argoprojV1alpha1, err = argoprojv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
 
-	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
+	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -64,16 +99,17 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // NewForConfigOrDie creates a new Clientset for the given config and
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
-	var cs Clientset
-	cs.argoprojV1alpha1 = argoprojv1alpha1.NewForConfigOrDie(c)
-
-	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
-	return &cs
+	cs, err := NewForConfig(c)
+	if err != nil {
+		panic(err)
+	}
+	return cs
 }
 
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.parametersV1alpha1 = parametersv1alpha1.New(c)
 	cs.argoprojV1alpha1 = argoprojv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

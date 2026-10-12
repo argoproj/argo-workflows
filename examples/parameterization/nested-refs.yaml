@@ -1,0 +1,97 @@
+# Install only in the isolated parameterization laboratory.
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: nested-library-v1
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    additionalProperties: false
+    required: [items]
+    properties:
+      items:
+        type: array
+        minItems: 1
+        maxItems: 12
+        default: [alpha, beta]
+        items: {type: string, minLength: 1}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: parameterization-demo-echo
+  labels: {workflows.argoproj.io/controller-instanceid: parameterization-lab}
+spec:
+  templates:
+  - name: emit
+    inputs:
+      parameters: [{name: value}]
+    container:
+      image: alpine:3.22
+      command: [sh, -ec]
+      args: ['printf "%s" "$VALUE" > /tmp/result']
+      env: [{name: VALUE, value: '{{inputs.parameters.value}}'}]
+    outputs:
+      parameters:
+      - name: echoed
+        valueFrom: {path: /tmp/result}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: parameterization-demo-library
+  namespace: argo-parameterization-lab
+  labels: {workflows.argoproj.io/controller-instanceid: parameterization-lab}
+spec:
+  templates:
+  - name: sequence
+    inputs:
+      parameters: [{name: value}]
+    steps:
+    - - name: emit
+        templateRef: {name: parameterization-demo-echo, template: emit, clusterScope: true}
+        arguments:
+          parameters: [{name: value, value: '{{inputs.parameters.value}}'}]
+    outputs:
+      parameters:
+      - name: echoed
+        valueFrom: {parameter: '{{steps.emit.outputs.parameters.echoed}}'}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: parameterization-demo-nested
+  namespace: argo-parameterization-lab
+  labels: {workflows.argoproj.io/controller-instanceid: parameterization-lab}
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters: [{name: items}]
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: invoke
+        depends: approve.Succeeded
+        templateRef: {name: parameterization-demo-library, template: sequence}
+        withParam: '{{workflow.parameters.items}}'
+        arguments:
+          parameters: [{name: value, value: '{{item}}'}]
+  - name: approve
+    suspend: {}
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: nested-library-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: parameterization-demo-nested
+  parameterTemplate: nested-library-v1
+  mappings:
+  - {path: /items, parameter: items, encoding: json}

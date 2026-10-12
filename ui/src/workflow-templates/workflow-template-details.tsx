@@ -5,6 +5,7 @@ import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
+import {BindingLinks} from '../parameterization/binding-links';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
@@ -135,6 +136,7 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
             }}>
             <>
                 <ErrorNotice error={error} />
+                {template && !edited && <BindingLinks namespace={namespace} workflowTemplate={name} />}
                 {!template ? (
                     <Loading />
                 ) : (

@@ -184,3 +184,12 @@ spec:
           ports:
           # ...
 ```
+
+## Experimental parameterization server
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `ARGO_PARAMETERIZATION_ENABLED` | `bool` | `false` | Enable the opt-in parameterization API. |
+| `ARGO_PARAMETERIZATION_SECRET_BACKEND` | `string` | empty | Set to `kubernetes-encrypted` only with cluster encryption at rest configured. |
+| `ARGO_PARAMETERIZATION_ALLOW_LOOPBACK_SECRET_INPUT` | `bool` | `false` | Permit plaintext HTTP secret input only on the isolated loopback lab transport. |
+| `ARGO_PARAMETERIZATION_HISTORY_KEY_FILE` | `string` | empty | Mounted file containing exactly 32 random bytes shared by replicas serving one history endpoint. If absent, a process-local key is generated and restart expires history cursors. Never log or check in the key. |

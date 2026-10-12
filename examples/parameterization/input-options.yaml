@@ -1,0 +1,120 @@
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: input-options-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - environment
+    - region
+    additionalProperties: false
+    properties:
+      environment:
+        type: string
+        enum:
+        - test
+        - production
+      region:
+        type: string
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowForm
+metadata:
+  name: input-options-demo
+  namespace: argo-parameterization-lab
+spec:
+  parameterTemplate: input-options-demo
+  options:
+    regions:
+      kind: configmap
+      name: input-options-demo
+      key: choices
+      dependsOn:
+      - /environment
+  fields:
+  - path: /environment
+    widget: select
+  - path: /region
+    widget: select
+    optionSource: regions
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input-options-demo
+  namespace: argo-parameterization-lab
+data:
+  choices: '[{"value": "east", "label": "Test East", "when": {"/environment": "test"}},
+    {"value": "west", "label": "Production West", "when": {"/environment": "production"}}]'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: input-options-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  serviceAccountName: workflow-executor
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: choose
+        template: choose
+      - name: consume
+        template: consume
+        dependencies:
+        - choose
+        arguments:
+          parameters:
+          - name: region
+            value: '{{tasks.choose.outputs.parameters.region}}'
+  - name: choose
+    suspend: {}
+    outputs:
+      parameters:
+      - name: region
+        valueFrom:
+          supplied: {}
+  - name: consume
+    inputs:
+      parameters:
+      - name: region
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$REGION" = west; printf "%s" "$REGION" > /tmp/region
+      env:
+      - name: REGION
+        value: '{{inputs.parameters.region}}'
+    outputs:
+      parameters:
+      - name: region
+        valueFrom:
+          path: /tmp/region
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: input-options-demo
+  namespace: argo-parameterization-lab
+spec:
+  parameterTemplate: empty-v1
+  workflowTemplate: input-options-demo
+  mappings: []
+  inputs:
+  - template: choose
+    parameterTemplate: input-options-demo
+    form: input-options-demo
+    mappings:
+    - path: /region
+      parameter: region
+      encoding: string
