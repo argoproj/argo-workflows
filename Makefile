@@ -427,7 +427,7 @@ codegen: $(TOOL_MOCKERY) $(TOOL_BUF)
 endif
 codegen: types swagger manifests $(GENERATED_DOCS) vendor/modules.txt ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
-	$(TOOL_MOCKERY) --config .mockery.yaml
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_MOCKERY) --config .mockery.yaml
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
@@ -668,7 +668,7 @@ ifneq ($(USE_NIX), true)
 	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || go mod vendor
 endif
 	# Lint Go files (with auto-discovered build tags)
-	$(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
 
 lint-ui: ui/dist/app/index.html
 	# Lint the UI
