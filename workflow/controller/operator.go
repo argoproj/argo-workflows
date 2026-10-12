@@ -234,7 +234,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// For new workflows, create the workflow span first to ensure reconcileWorkflow
 	// is a child of the workflow span (traceWorkflowPhaseChange handles phase changes later)
 	if woc.wf.Status.Phase == "" || woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		ctx = woc.controller.tracing.RecordStartWorkflow(ctx, woc.wf.Name, woc.wf.Namespace)
+		ctx = woc.controller.tracing.RecordStartWorkflow(ctx, woc.wf.Name, woc.wf.Namespace, woc.wf.Annotations)
 	}
 	ctx = woc.controller.tracing.RecoverWorkflowContext(ctx, woc.wf.Namespace+"/"+woc.wf.Name)
 	reconcileCtx, span := woc.controller.tracing.StartReconcileWorkflow(ctx)

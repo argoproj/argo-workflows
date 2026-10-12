@@ -18,6 +18,33 @@ There is ongoing work to define how to manage long-running spans like this.
 Tracing is configured via OpenTelemetry environment variables.
 See [Telemetry Configuration](telemetry-configuration.md#tracing) for setup details.
 
+## Continuing an existing trace
+
+By default each workflow starts a new trace.
+To make a workflow part of an existing trace, for example the trace of the request that submitted it, set the [W3C trace context](https://www.w3.org/TR/trace-context/) as annotations on the workflow, one annotation per field, prefixed with `opentelemetry.io/`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: traced-
+  annotations:
+    opentelemetry.io/traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+```
+
+When the workflow controller starts the `workflow` span, it reads `opentelemetry.io/traceparent`.
+If it is valid, the `workflow` span becomes a child of that span, and everything below it (nodes, pods, the executor) is in the caller's trace.
+If it is missing or malformed, the workflow starts a new trace as usual.
+
+The workflow's trace ID is recorded in the `workflows.argoproj.io/trace-id` annotation, so it then matches the caller's trace ID.
+
+Sampling follows the caller: if `traceparent` marks the trace as not sampled, the workflow's spans are not recorded either.
+
+A submitting application can produce these annotations with its OpenTelemetry SDK's propagator, by injecting the current context into a map and prefixing each key with `opentelemetry.io/`.
+
+Every workflow pod gets a `TRACEPARENT` environment variable for its part of the trace.
+A step can pass it on as the `traceparent` HTTP header to the services it calls, or read it as the parent of its own spans, following the OpenTelemetry [environment variable carrier](https://opentelemetry.io/docs/specs/otel/context/env-carriers/) convention.
+
 ## Spans
 
 <!-- Generated documentation BEGIN -->
