@@ -79,9 +79,9 @@ func (ae *AgentExecutor) executePluginTemplateWithArtifacts(ctx context.Context,
 
 // prepareTask sets a plugin task's directory up on the task's first run, and
 // returns the template to offer the plugins, whose artifact paths point into
-// the directory. A task that is set up is marked so in its staging directory,
-// which a restarted agent finds as it finds the workspace: both outlive the
-// agent's container.
+// the directory. It marks a task it set up in the task's staging directory,
+// which, like the workspace, outlives the agent's container, so a restarted
+// agent does not set the task up again.
 func (ae *AgentExecutor) prepareTask(ctx context.Context, nodeID string, tmpl *wfv1.Template) (*wfv1.Template, error) {
 	marker := filepath.Join(ae.stagingDir, nodeID, "prepared")
 	_, err := os.Stat(marker)
@@ -284,12 +284,12 @@ func (ae *AgentExecutor) saveOutputArtifacts(ctx context.Context, nodeID string,
 // saveOutputArtifact copies an output artifact from its path in a plugin
 // task's directory to staging, archives it there as its archive strategy
 // asks, and uploads it, keying it under the archive location unless it has a
-// key of its own. It reports whether it uploaded the artifact: one that may be
-// missing and is, is not.
+// key of its own. It reports whether it uploaded the artifact, which it does
+// not when the artifact is missing and allowed to be.
 func (ae *AgentExecutor) saveOutputArtifact(ctx context.Context, nodeID, staging string, archiveLocation *wfv1.ArtifactLocation, art *wfv1.Artifact, mayBeMissing bool) (bool, error) {
 	logger := logging.RequireLoggerFromContext(ctx).WithField("name", art.Name)
 	name := taskPath(art.Path)
-	// named as it is in the task's directory, which an archive keeps
+	// the copy keeps the artifact's base name, which its archive records
 	copied := filepath.Join(staging, "files", filepath.Base(filepath.Join(nodeID, name)))
 	if err := os.MkdirAll(filepath.Dir(copied), 0o700); err != nil {
 		return false, err
@@ -309,7 +309,7 @@ func (ae *AgentExecutor) saveOutputArtifact(ctx context.Context, nodeID, staging
 		return false, err
 	}
 	if localArtPath != copied {
-		// archived, the copy only takes up space
+		// the archive is what gets uploaded, so free the copy's space
 		if err = os.RemoveAll(copied); err != nil {
 			logger.WithError(err).Warn(ctx, "Failed to remove the copied output artifact")
 		}
@@ -358,10 +358,10 @@ func (ae *AgentExecutor) openTask(nodeID string) (*os.Root, error) {
 	return workspace.OpenRoot(nodeID)
 }
 
-// removeTask removes what a plugin task that is done leaves: the agent's
+// removeTask removes what a finished plugin task leaves behind: the agent's
 // staging directory for it, marker included, then the task's directory.
-// Whatever a plugin running as another user made in that may not be
-// removable; that goes with the agent pod.
+// Files a plugin running as another user made in the task's directory may
+// not be removable; those go when the agent pod does.
 func (ae *AgentExecutor) removeTask(ctx context.Context, nodeID string) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if err := os.RemoveAll(filepath.Join(ae.stagingDir, nodeID)); err != nil {
@@ -483,8 +483,7 @@ func copyIn(src string, dir *os.Root, name string, mode func(top bool, mode fs.F
 			return dir.Symlink(target, dst)
 		case m.IsDir():
 			dirModes = append(dirModes, dirMode{dst, mode(p == src, m)})
-			// for the agent to read the directory, and write to its copy,
-			// until the files are in
+			// readable and writable by the agent until everything is copied in
 			if err = os.Chmod(p, 0o700); err != nil {
 				return err
 			}
@@ -498,7 +497,7 @@ func copyIn(src string, dir *os.Root, name string, mode func(top bool, mode fs.F
 	if err != nil {
 		return err
 	}
-	// the files are in once the directories in them are
+	// deepest first, now that everything is copied in
 	for _, d := range slices.Backward(dirModes) {
 		if err = chmodDir(dir, d.name, d.perm); err != nil {
 			return err
@@ -510,7 +509,7 @@ func copyIn(src string, dir *os.Root, name string, mode func(top bool, mode fs.F
 // copyFileIn copies the file at src, out of the plugins' reach, to a new file
 // name in dir with the mode perm.
 func copyFileIn(src string, dir *os.Root, name string, perm fs.FileMode) error {
-	// for the agent to read, whatever mode the file was loaded with
+	// readable by the agent, whatever mode the file was loaded with
 	if err := os.Chmod(src, 0o600); err != nil {
 		return err
 	}
@@ -519,7 +518,7 @@ func copyFileIn(src string, dir *os.Root, name string, perm fs.FileMode) error {
 		return err
 	}
 	defer in.Close()
-	// not following whatever a plugin may have put there since
+	// O_EXCL fails, rather than follow anything a plugin put there since
 	out, err := dir.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
@@ -563,7 +562,7 @@ func copyListedOut(dir *os.Root, name string, listed fs.FileInfo, dst string, no
 		if out, err = os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600); err != nil {
 			return err
 		}
-		// archived with its mode, which the agent must be able to read it with
+		// keep its mode for the archive, as long as the agent can read it
 		return copyFile(out, f, mode.Perm()|0o400)
 	case !mode.IsDir():
 		return argoerrs.Errorf(argoerrs.CodeBadRequest, "%s is not a regular file, directory or symlink", pluginPath(name))
@@ -588,7 +587,7 @@ func copyListedOut(dir *os.Root, name string, listed fs.FileInfo, dst string, no
 			err = argoerrs.Errorf(argoerrs.CodeBadRequest, "%s is a symlink, which an artifact with archive none cannot hold", pluginPath(child))
 		default:
 			var target string
-			// fails for anything a plugin swapped the symlink for since
+			// fails if a plugin swapped the symlink for something else since
 			if target, err = dir.Readlink(child); err == nil {
 				err = os.Symlink(target, childDst)
 			}
