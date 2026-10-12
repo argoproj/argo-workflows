@@ -35,34 +35,21 @@ import (
 // varRunArgo is a var, not a const, so tests can point it at a temp dir.
 var varRunArgo = common.VarRunArgoPath
 
-// injectTraceParent returns env with the W3C trace context of ctx set,
-// replacing any value inherited from the pod spec. The controller injects a
-// TRACEPARENT naming the pod-level span; the user command should instead see
-// the main-container span started here as its parent.
+// injectTraceParent returns env with the W3C trace context of ctx appended.
+// The controller injects a TRACEPARENT naming the pod-level span; the user
+// command should instead see the main-container span started here as its
+// parent. exec.Cmd uses the last value of a duplicated key, so appending
+// overrides the inherited one.
 //
 // This only rewrites the environment handed to the child. argoexec does not
 // touch its own context variables, which the OpenTelemetry environment carrier
 // specification asks to be treated as immutable process-startup input.
 func injectTraceParent(ctx context.Context, env []string) []string {
 	carrier := &envcar.Carrier{SetEnvFunc: func(key, value string) {
-		env = setEnvVar(env, key, value)
+		env = append(env, key+"="+value)
 	}}
 	propagation.TraceContext{}.Inject(ctx, carrier)
 	return env
-}
-
-// setEnvVar replaces the value of key in env, or appends the pair if key is
-// absent. env is in the "KEY=value" form of os.Environ, and is modified in
-// place.
-func setEnvVar(env []string, key, value string) []string {
-	prefix := key + "="
-	for i, kv := range env {
-		if strings.HasPrefix(kv, prefix) {
-			env[i] = prefix + value
-			return env
-		}
-	}
-	return append(env, prefix+value)
 }
 
 func NewEmissaryCommand() *cobra.Command {

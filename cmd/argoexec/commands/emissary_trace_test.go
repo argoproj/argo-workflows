@@ -33,14 +33,13 @@ func TestInjectTraceParent(t *testing.T) {
 		assert.Equal(t, []string{"FOO=bar", wantTraceParent}, env)
 	})
 
-	t.Run("ReplacesPodTraceParent", func(t *testing.T) {
+	t.Run("OverridesPodTraceParent", func(t *testing.T) {
 		// The controller injects a pod-level traceparent into every container.
-		// The child must see this process's span instead, exactly once.
-		env := injectTraceParent(ctxWithSpan(t), []string{
-			"FOO=bar",
-			"TRACEPARENT=00-00000000000000000000000000000001-0000000000000002-01",
-		})
-		assert.Equal(t, []string{"FOO=bar", wantTraceParent}, env)
+		// The child must see this process's span instead: exec.Cmd uses the
+		// last value of a duplicated key, so ours must come after it.
+		podTraceParent := "TRACEPARENT=00-00000000000000000000000000000001-0000000000000002-01"
+		env := injectTraceParent(ctxWithSpan(t), []string{"FOO=bar", podTraceParent})
+		assert.Equal(t, []string{"FOO=bar", podTraceParent, wantTraceParent}, env)
 	})
 
 	t.Run("NoSpanLeavesEnvAlone", func(t *testing.T) {
@@ -54,24 +53,5 @@ func TestInjectTraceParent(t *testing.T) {
 		t.Setenv("TRACEPARENT", "00-00000000000000000000000000000001-0000000000000002-01")
 		injectTraceParent(ctxWithSpan(t), []string{})
 		assert.Equal(t, "00-00000000000000000000000000000001-0000000000000002-01", os.Getenv("TRACEPARENT"))
-	})
-}
-
-func TestSetEnvVar(t *testing.T) {
-	t.Run("AppendsWhenAbsent", func(t *testing.T) {
-		assert.Equal(t, []string{"FOO=bar", "BAZ=qux"}, setEnvVar([]string{"FOO=bar"}, "BAZ", "qux"))
-	})
-
-	t.Run("ReplacesInPlace", func(t *testing.T) {
-		assert.Equal(t, []string{"FOO=new", "BAZ=qux"}, setEnvVar([]string{"FOO=old", "BAZ=qux"}, "FOO", "new"))
-	})
-
-	t.Run("EmptyValue", func(t *testing.T) {
-		assert.Equal(t, []string{"FOO="}, setEnvVar([]string{"FOO=old"}, "FOO", ""))
-	})
-
-	t.Run("DoesNotMatchLongerName", func(t *testing.T) {
-		// TRACEPARENT_EXTRA must not be mistaken for TRACEPARENT.
-		assert.Equal(t, []string{"FOOBAR=keep", "FOO=new"}, setEnvVar([]string{"FOOBAR=keep"}, "FOO", "new"))
 	})
 }
