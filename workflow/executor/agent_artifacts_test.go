@@ -597,7 +597,8 @@ func TestAgentPluginSavesOutputArtifactsOutOfPluginsReach(t *testing.T) {
 }
 
 // A plugin can swap an entry of a directory the agent copies for a symlink,
-// once the agent has listed the entry: the agent does not follow it.
+// once the agent has listed the entry: the agent copies nothing but what it
+// listed.
 func TestCopyOutEntrySwappedForSymlink(t *testing.T) {
 	skipSymlinksOnWindows(t)
 	for _, tc := range []struct {
@@ -632,8 +633,36 @@ func TestCopyOutEntrySwappedForSymlink(t *testing.T) {
 	}
 }
 
-// Archived, a symlink under an output artifact stays a symlink: the agent
-// never reads what it points to.
+// A plugin can rename an entry of a directory the agent copies, once the
+// agent has listed it, and put a symlink to it in its place: the agent copies
+// the file it listed, as it is, under the name it listed.
+func TestCopyOutEntryRenamedBehindSymlink(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "out"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "out", "file.txt"), []byte("file"), 0o644))
+	root, err := os.OpenRoot(dir)
+	require.NoError(t, err)
+	defer root.Close()
+	entry := filepath.Join("out", "file.txt")
+	listed, err := root.Lstat(entry)
+	require.NoError(t, err)
+	require.NoError(t, os.Rename(filepath.Join(dir, entry), filepath.Join(dir, "out", "moved.txt")))
+	require.NoError(t, os.Symlink("moved.txt", filepath.Join(dir, entry)))
+
+	dst := filepath.Join(t.TempDir(), "file.txt")
+	require.NoError(t, copyListedOut(root, entry, listed, dst, true))
+	info, err := os.Lstat(dst)
+	require.NoError(t, err)
+	assert.True(t, info.Mode().IsRegular(), "the copy holds no symlink")
+	data, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "file", string(data))
+}
+
+// Archived, a symlink under an output artifact stays a symlink, even one to
+// a file only the agent can read: the archive holds where it points, never
+// what it points to.
 func TestAgentPluginArchivesSymlinksAsSymlinks(t *testing.T) {
 	skipSymlinksOnWindows(t)
 	ctx := logging.TestContext(t.Context())

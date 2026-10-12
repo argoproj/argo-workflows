@@ -530,18 +530,19 @@ func copyFileIn(src string, dir *os.Root, name string, perm fs.FileMode) error {
 // copyOut copies the file or directory at name in dir to dst, out of the
 // plugins' reach, keeping modes as far as the agent can read the copy with
 // them. A symlink at name is followed, within dir, as the plugin's own path
-// would be, but none under it, even one a plugin swaps in while the agent
-// copies: those are copied as they are, unless noSymlinks, as an artifact
-// uploaded with no archive cannot hold them, the artifact driver following
-// them.
+// would be. Under name, the agent copies the files and directories it lists,
+// failing if one changes into anything else meanwhile, and the symlinks it
+// lists as they are, unless noSymlinks: an artifact uploaded with no archive
+// cannot hold them, as the artifact driver would follow them.
 func copyOut(dir *os.Root, name, dst string, noSymlinks bool) error {
 	return copyListedOut(dir, name, nil, dst, noSymlinks)
 }
 
 // copyListedOut copies name in dir as copyOut does. Unless listed is nil,
-// name is an entry of a directory being copied, and listed what was there
-// when the agent looked, which the file it opens must still be: opening
-// follows a symlink a plugin may have swapped in since.
+// name is an entry of a directory being copied, and listed what the agent
+// found there. Opening name follows any symlink a plugin swapped in since:
+// the file it opens must be the one listed, which a symlink to it, say once
+// the plugin renamed it, still is.
 func copyListedOut(dir *os.Root, name string, listed fs.FileInfo, dst string, noSymlinks bool) error {
 	f, err := openNoBlock(dir, name)
 	if err != nil {
