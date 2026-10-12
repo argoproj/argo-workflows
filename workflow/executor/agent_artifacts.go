@@ -529,11 +529,20 @@ func copyFileIn(src string, dir *os.Root, name string, perm fs.FileMode) error {
 
 // copyOut copies the file or directory at name in dir to dst, out of the
 // plugins' reach, keeping modes as far as the agent can read the copy with
-// them. A symlink at name is followed, within dir,
-// as the plugin's own path would be. Symlinks under it are copied as they
-// are, unless noSymlinks: an artifact uploaded with no archive cannot hold
-// them, as the artifact driver would follow them.
+// them. A symlink at name is followed, within dir, as the plugin's own path
+// would be, but none under it, even one a plugin swaps in while the agent
+// copies: those are copied as they are, unless noSymlinks, as an artifact
+// uploaded with no archive cannot hold them, the artifact driver following
+// them.
 func copyOut(dir *os.Root, name, dst string, noSymlinks bool) error {
+	return copyListedOut(dir, name, nil, dst, noSymlinks)
+}
+
+// copyListedOut copies name in dir as copyOut does. Unless listed is nil,
+// name is an entry of a directory being copied, and listed what was there
+// when the agent looked, which the file it opens must still be: opening
+// follows a symlink a plugin may have swapped in since.
+func copyListedOut(dir *os.Root, name string, listed fs.FileInfo, dst string, noSymlinks bool) error {
 	f, err := openNoBlock(dir, name)
 	if err != nil {
 		return err
@@ -542,6 +551,9 @@ func copyOut(dir *os.Root, name, dst string, noSymlinks bool) error {
 	info, err := f.Stat()
 	if err != nil {
 		return err
+	}
+	if listed != nil && !os.SameFile(listed, info) {
+		return argoerrs.Errorf(argoerrs.CodeBadRequest, "%s changed while the agent copied it", pluginPath(name))
 	}
 	mode := info.Mode()
 	switch {
@@ -564,13 +576,18 @@ func copyOut(dir *os.Root, name, dst string, noSymlinks bool) error {
 	}
 	for _, e := range entries {
 		child, childDst := filepath.Join(name, e.Name()), filepath.Join(dst, e.Name())
+		var childInfo fs.FileInfo
+		if childInfo, err = dir.Lstat(child); err != nil {
+			return err
+		}
 		switch {
-		case e.Type()&fs.ModeSymlink == 0:
-			err = copyOut(dir, child, childDst, noSymlinks)
+		case childInfo.Mode()&fs.ModeSymlink == 0:
+			err = copyListedOut(dir, child, childInfo, childDst, noSymlinks)
 		case noSymlinks:
 			err = argoerrs.Errorf(argoerrs.CodeBadRequest, "%s is a symlink, which an artifact with archive none cannot hold", pluginPath(child))
 		default:
 			var target string
+			// fails for anything a plugin swapped the symlink for since
 			if target, err = dir.Readlink(child); err == nil {
 				err = os.Symlink(target, childDst)
 			}

@@ -596,6 +596,84 @@ func TestAgentPluginSavesOutputArtifactsOutOfPluginsReach(t *testing.T) {
 	}
 }
 
+// A plugin can swap an entry of a directory the agent copies for a symlink,
+// once the agent has listed the entry: the agent does not follow it.
+func TestCopyOutEntrySwappedForSymlink(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	for _, tc := range []struct {
+		name       string
+		entry      string
+		target     string
+		noSymlinks bool
+	}{
+		// followed, it would have the agent copy the directory into itself,
+		// again and again
+		{name: "directory for a symlink to its parent", entry: "out/sub", target: "."},
+		// followed, it would have the agent copy another file, where an
+		// artifact with archive none cannot hold a symlink
+		{name: "file for a symlink, with archive none", entry: "out/file.txt", target: "../other.txt", noSymlinks: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, "out", "sub"), 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "out", "file.txt"), []byte("file"), 0o644))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "other.txt"), []byte("other"), 0o644))
+			root, err := os.OpenRoot(dir)
+			require.NoError(t, err)
+			defer root.Close()
+			listed, err := root.Lstat(tc.entry)
+			require.NoError(t, err)
+			require.NoError(t, os.RemoveAll(filepath.Join(dir, tc.entry)))
+			require.NoError(t, os.Symlink(tc.target, filepath.Join(dir, tc.entry)))
+
+			err = copyListedOut(root, tc.entry, listed, filepath.Join(t.TempDir(), "copy"), tc.noSymlinks)
+			require.ErrorContains(t, err, "/"+tc.entry+" changed while the agent copied it")
+		})
+	}
+}
+
+// Archived, a symlink under an output artifact stays a symlink: the agent
+// never reads what it points to.
+func TestAgentPluginArchivesSymlinksAsSymlinks(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	ctx := logging.TestContext(t.Context())
+	secret := filepath.Join(t.TempDir(), "secret")
+	require.NoError(t, os.WriteFile(secret, []byte("secret"), 0o600))
+	driver := &bucketDriver{dir: t.TempDir()}
+	ae := newArtifactAgent(t, driver, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		out := tmpl.Outputs.Artifacts[0].Path
+		if err := os.MkdirAll(out, 0o755); err != nil {
+			return executorplugins.ExecuteTemplateReply{}, err
+		}
+		return succeeded(nil), os.Symlink(secret, filepath.Join(out, "link"))
+	}))
+
+	result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(nil, wfv1.Artifacts{{Name: "out", Path: "/out"}}))
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeSucceeded, result.Phase, result.Message)
+	f, err := os.Open(filepath.Join(driver.dir, testArchiveKey, "out.tgz"))
+	require.NoError(t, err)
+	defer f.Close()
+	gzr, err := file.GetGzipReader(f)
+	require.NoError(t, err)
+	tr := tar.NewReader(gzr)
+	links := map[string]string{}
+	for {
+		header, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		require.NoError(t, err)
+		data, err := io.ReadAll(tr)
+		require.NoError(t, err)
+		assert.NotContains(t, string(data), "secret")
+		if header.Typeflag == tar.TypeSymlink {
+			links[header.Name] = header.Linkname
+		}
+	}
+	assert.Equal(t, map[string]string{"out/link": secret}, links)
+}
+
 // A plugin can put a symlink where the agent is to load an input artifact: the
 // agent downloads it out of the plugins' reach, and replaces the symlink.
 func TestAgentPluginLoadsInputArtifactsOutOfPluginsReach(t *testing.T) {
