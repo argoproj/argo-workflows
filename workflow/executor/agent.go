@@ -50,14 +50,12 @@ type AgentExecutor struct {
 	// workspace is the directory shared with the plugin sidecars that plugin
 	// tasks with artifacts run in, one directory per task.
 	workspace string
-	// outputsDir is where output artifacts are archived for upload, out of
-	// the plugins' reach.
-	outputsDir string
-	// preparedTasks holds the IDs of the plugin tasks whose directories are
-	// ready, so a requeued task does not load its input artifacts again.
-	preparedTasks *sync.Map
-	newDriver     artifacts.NewDriverFunc
-	resources     resource.Interface
+	// stagingDir is where the agent downloads, archives and uploads plugin
+	// tasks' artifacts, and marks the tasks it set up, out of the plugins'
+	// reach, one directory per task.
+	stagingDir string
+	newDriver  artifacts.NewDriverFunc
+	resources  resource.Interface
 }
 
 type templateExecutor = func(ctx context.Context, nodeID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
@@ -78,8 +76,7 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		taskWorkers:       taskWorkers,
 		requeueTime:       requeueTime,
 		workspace:         common.AgentWorkspacePath,
-		outputsDir:        tempOutArtDir,
-		preparedTasks:     &sync.Map{},
+		stagingDir:        agentStagingDir,
 		newDriver:         artifacts.NewDriver,
 		resources:         agentResources{clientSet: clientSet, namespace: namespace, secretDir: common.SecretVolMountPath},
 	}

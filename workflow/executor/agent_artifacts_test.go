@@ -16,8 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -32,12 +35,15 @@ import (
 const testArchiveKey = "my-wf/my-wf-plugin-1234"
 
 // bucketDriver is an artifact driver that stores artifacts under a directory,
-// by key.
+// by key. onLoad and onSave, if set, are called with the local path of each
+// artifact it loads or saves, first.
 type bucketDriver struct {
-	dir   string
-	mu    sync.Mutex
-	loads int
-	saves int
+	dir    string
+	mu     sync.Mutex
+	loads  int
+	saves  int
+	onLoad func(path string)
+	onSave func(path string)
 }
 
 func (d *bucketDriver) path(art *wfv1.Artifact) (string, error) {
@@ -52,6 +58,9 @@ func (d *bucketDriver) Load(_ context.Context, art *wfv1.Artifact, path string) 
 	d.mu.Lock()
 	d.loads++
 	d.mu.Unlock()
+	if d.onLoad != nil {
+		d.onLoad(path)
+	}
 	src, err := d.path(art)
 	if err != nil {
 		return err
@@ -66,6 +75,9 @@ func (d *bucketDriver) Save(_ context.Context, path string, art *wfv1.Artifact) 
 	d.mu.Lock()
 	d.saves++
 	d.mu.Unlock()
+	if d.onSave != nil {
+		d.onSave(path)
+	}
 	dst, err := d.path(art)
 	if err != nil {
 		return err
@@ -149,16 +161,36 @@ func writeOutputs(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, er
 }
 
 func newArtifactAgent(t *testing.T, driver *bucketDriver, plugin executorplugins.TemplateExecutor) *AgentExecutor {
+	return artifactAgent(t.TempDir(), t.TempDir(), driver, plugin)
+}
+
+// artifactAgent returns an agent with the workspace and staging directory
+// given, as an agent that restarted has those of the agent before it.
+func artifactAgent(workspace, stagingDir string, driver *bucketDriver, plugin executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		consideredTasks: &sync.Map{},
 		plugins:         []executorplugins.TemplateExecutor{plugin},
-		workspace:       t.TempDir(),
-		outputsDir:      t.TempDir(),
-		preparedTasks:   &sync.Map{},
+		workspace:       workspace,
+		stagingDir:      stagingDir,
 		newDriver: func(context.Context, *wfv1.Artifact, resource.Interface) (artifactcommon.ArtifactDriver, error) {
 			return driver, nil
 		},
 	}
+}
+
+func skipSymlinksOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs a privilege in windows, where the agent does not run")
+	}
+}
+
+// requireUnder fails unless path is in dir.
+func requireUnder(t *testing.T, dir, path string) {
+	t.Helper()
+	rel, err := filepath.Rel(dir, path)
+	require.NoError(t, err)
+	require.True(t, filepath.IsLocal(rel), "%s is not in %s", path, dir)
 }
 
 func pluginTemplate(inputs, outputs wfv1.Artifacts) wfv1.Template {
@@ -238,7 +270,7 @@ func TestAgentPluginSavesOutputArtifacts(t *testing.T) {
 
 	// the task is done with
 	assert.NoDirExists(t, taskDir)
-	assert.NoDirExists(t, filepath.Join(ae.outputsDir, "my-wf-1"))
+	assert.NoDirExists(t, filepath.Join(ae.stagingDir, "my-wf-1"))
 }
 
 func TestAgentPluginSavesDirectoryOutputArtifact(t *testing.T) {
@@ -474,7 +506,16 @@ func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
 				require.NoError(t, os.Symlink(outside, path))
 			},
 			symlinks: true,
-			expect:   "required artifact 'out' not found at /out.txt",
+			expect:   "failed to read artifact 'out' at /out.txt",
+		},
+		{
+			name: "symlink to a directory with archive none",
+			art:  wfv1.Artifact{Name: "out", Path: "/out", Archive: archiveNone},
+			plugin: func(t *testing.T, _, path string) {
+				require.NoError(t, os.Symlink(filepath.Dir(outside), path))
+			},
+			symlinks: true,
+			expect:   "failed to read artifact 'out' at /out",
 		},
 		{
 			name: "symlink in a directory uploaded with no archive",
@@ -488,8 +529,8 @@ func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.symlinks && runtime.GOOS == "windows" {
-				t.Skip("creating symlinks needs a privilege in windows, where the agent does not run")
+			if tc.symlinks {
+				skipSymlinksOnWindows(t)
 			}
 			ctx := logging.TestContext(t.Context())
 			require.NoError(t, os.WriteFile(outside, []byte("secret"), 0o600))
@@ -509,6 +550,214 @@ func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
 	}
 }
 
+// A plugin can swap an output artifact for a symlink at any time, such as once
+// the agent has looked at it: the agent uploads a copy of its own.
+func TestAgentPluginSavesOutputArtifactsOutOfPluginsReach(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	secret := filepath.Join(t.TempDir(), "secret")
+	require.NoError(t, os.WriteFile(secret, []byte("secret"), 0o600))
+	for _, tc := range []struct {
+		name    string
+		archive *wfv1.ArchiveStrategy
+		stored  func(t *testing.T, dir string) string
+	}{
+		{
+			name: "tar",
+			stored: func(t *testing.T, dir string) string {
+				return untarFile(t, filepath.Join(dir, testArchiveKey, "out.tgz"))
+			},
+		},
+		{
+			name:    "none",
+			archive: archiveNone,
+			stored: func(t *testing.T, dir string) string {
+				data, err := os.ReadFile(filepath.Join(dir, testArchiveKey, "out.txt"))
+				require.NoError(t, err)
+				return string(data)
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			driver := &bucketDriver{dir: t.TempDir()}
+			ae := newArtifactAgent(t, driver, pluginFunc(writeOutputs))
+			driver.onSave = func(path string) {
+				requireUnder(t, ae.stagingDir, path)
+				out := filepath.Join(ae.workspace, "my-wf-1", "out.txt")
+				require.NoError(t, os.Remove(out))
+				require.NoError(t, os.Symlink(secret, out))
+			}
+
+			result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(nil, wfv1.Artifacts{{Name: "out", Path: "/out.txt", Archive: tc.archive}}))
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeSucceeded, result.Phase, result.Message)
+			assert.Equal(t, "out", tc.stored(t, driver.dir))
+		})
+	}
+}
+
+// A plugin can put a symlink where the agent is to load an input artifact: the
+// agent downloads it out of the plugins' reach, and replaces the symlink.
+func TestAgentPluginLoadsInputArtifactsOutOfPluginsReach(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	ctx := logging.TestContext(t.Context())
+	outside := filepath.Join(t.TempDir(), "outside")
+	require.NoError(t, os.WriteFile(outside, []byte("outside"), 0o600))
+	driver := &bucketDriver{dir: t.TempDir()}
+	require.NoError(t, os.WriteFile(filepath.Join(driver.dir, "input.txt"), []byte("input"), 0o600))
+	var read string
+	ae := newArtifactAgent(t, driver, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		data, err := os.ReadFile(tmpl.Inputs.Artifacts[0].Path)
+		read = string(data)
+		return succeeded(nil), err
+	}))
+	driver.onLoad = func(path string) {
+		requireUnder(t, ae.stagingDir, path)
+		in := filepath.Join(ae.workspace, "my-wf-1", "in")
+		require.NoError(t, os.MkdirAll(in, 0o777))
+		require.NoError(t, os.Symlink(outside, filepath.Join(in, "input.txt")))
+		require.NoError(t, os.Symlink(outside, filepath.Join(in, "input.txt.tmp")))
+	}
+
+	result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(wfv1.Artifacts{
+		{Name: "input", Path: "/in/input.txt", ArtifactLocation: s3Key("input.txt")},
+	}, nil))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, result.Phase, result.Message)
+	assert.Equal(t, "input", read)
+	data, err := os.ReadFile(outside)
+	require.NoError(t, err)
+	assert.Equal(t, "outside", string(data))
+}
+
+func TestAgentPluginInputArtifactDirectoryIsSymlink(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	ctx := logging.TestContext(t.Context())
+	outside := t.TempDir()
+	driver := &bucketDriver{dir: t.TempDir()}
+	require.NoError(t, os.WriteFile(filepath.Join(driver.dir, "input.txt"), []byte("input"), 0o600))
+	called := false
+	ae := newArtifactAgent(t, driver, pluginFunc(func(*wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		called = true
+		return succeeded(nil), nil
+	}))
+	driver.onLoad = func(string) {
+		require.NoError(t, os.Symlink(outside, filepath.Join(ae.workspace, "my-wf-1", "in")))
+	}
+
+	result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(wfv1.Artifacts{
+		{Name: "input", Path: "/in/input.txt", ArtifactLocation: s3Key("input.txt")},
+	}, nil))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, result.Phase)
+	assert.Contains(t, result.Message, "failed to prepare artifacts")
+	assert.False(t, called)
+	entries, err := os.ReadDir(outside)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+// A plugin can replace a task's directory with a symlink, before the task
+// starts or once the plugin is done with it.
+func TestAgentPluginTaskDirectoryIsSymlink(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	outside := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(outside, "out.txt"), []byte("secret"), 0o600))
+	outputs := wfv1.Artifacts{{Name: "out", Path: "/out.txt", Archive: archiveNone}}
+
+	t.Run("before the task starts", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		driver := &bucketDriver{dir: t.TempDir()}
+		ae := newArtifactAgent(t, driver, pluginFunc(writeOutputs))
+		require.NoError(t, os.Symlink(outside, filepath.Join(ae.workspace, "my-wf-1")))
+
+		result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(nil, outputs))
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeSucceeded, result.Phase, result.Message)
+		data, err := os.ReadFile(filepath.Join(driver.dir, testArchiveKey, "out.txt"))
+		require.NoError(t, err)
+		assert.Equal(t, "out", string(data))
+		data, err = os.ReadFile(filepath.Join(outside, "out.txt"))
+		require.NoError(t, err)
+		assert.Equal(t, "secret", string(data), "the plugin wrote to a directory of the task's own")
+	})
+
+	t.Run("once the plugin is done", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		driver := &bucketDriver{dir: t.TempDir()}
+		var ae *AgentExecutor
+		ae = newArtifactAgent(t, driver, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+			if _, err := writeOutputs(tmpl); err != nil {
+				return executorplugins.ExecuteTemplateReply{}, err
+			}
+			dir := filepath.Join(ae.workspace, "my-wf-1")
+			if err := os.Rename(dir, dir+"-moved"); err != nil {
+				return executorplugins.ExecuteTemplateReply{}, err
+			}
+			return succeeded(nil), os.Symlink(outside, dir)
+		}))
+
+		result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(nil, outputs))
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeError, result.Phase)
+		assert.Contains(t, result.Message, "failed to read artifact 'out' at /out.txt")
+		assert.Zero(t, driver.saves)
+		assert.FileExists(t, filepath.Join(outside, "out.txt"), "removing the task's directory removes the symlink alone")
+	})
+}
+
+// An agent that restarts finds the tasks it set up as it left them, and
+// plugins still running them carry on.
+func TestAgentPluginRestartedAgentKeepsTasks(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	driver := &bucketDriver{dir: t.TempDir()}
+	require.NoError(t, os.WriteFile(filepath.Join(driver.dir, "input.txt"), []byte("input"), 0o600))
+	workspace, stagingDir := t.TempDir(), t.TempDir()
+	tmpl := pluginTemplate(
+		wfv1.Artifacts{{Name: "input", Path: "/input.txt", ArtifactLocation: s3Key("input.txt")}},
+		wfv1.Artifacts{{Name: "output", Path: "/output.txt", Archive: archiveNone}},
+	)
+	agent := artifactAgent(workspace, stagingDir, driver, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		return executorplugins.ExecuteTemplateReply{
+			Node:    &wfv1.NodeResult{Phase: wfv1.NodeRunning},
+			Requeue: &metav1.Duration{Duration: 1},
+		}, os.WriteFile(tmpl.Outputs.Artifacts[0].Path, []byte("half"), 0o644)
+	}))
+	result, _, err := agent.processTask(ctx, "my-wf-1", tmpl)
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeRunning, result.Phase, result.Message)
+
+	restarted := artifactAgent(workspace, stagingDir, driver, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		input, readErr := os.ReadFile(tmpl.Inputs.Artifacts[0].Path)
+		if readErr != nil {
+			return executorplugins.ExecuteTemplateReply{}, readErr
+		}
+		output, readErr := os.ReadFile(tmpl.Outputs.Artifacts[0].Path)
+		if readErr != nil {
+			return executorplugins.ExecuteTemplateReply{}, readErr
+		}
+		return succeeded(nil), os.WriteFile(tmpl.Outputs.Artifacts[0].Path, append(output, input...), 0o644)
+	}))
+	result, _, err = restarted.processTask(ctx, "my-wf-1", tmpl)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, result.Phase, result.Message)
+	assert.Equal(t, 1, driver.loads, "input artifacts are loaded once")
+	data, err := os.ReadFile(filepath.Join(driver.dir, testArchiveKey, "output.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "halfinput", string(data))
+	assert.NoDirExists(t, filepath.Join(workspace, "my-wf-1"))
+	assert.NoDirExists(t, filepath.Join(stagingDir, "my-wf-1"))
+}
+
+func TestAgentPluginInvalidNodeID(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	ae := newArtifactAgent(t, &bucketDriver{dir: t.TempDir()}, pluginFunc(writeOutputs))
+	result, _, err := ae.processTask(ctx, "..", pluginTemplate(nil, wfv1.Artifacts{{Name: "out", Path: "/out.txt"}}))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, result.Phase)
+	assert.Contains(t, result.Message, `invalid node ID ".."`)
+}
+
 func TestAgentPluginArtifactPluginsUnsupported(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	ae := newArtifactAgent(t, &bucketDriver{dir: t.TempDir()}, pluginFunc(writeOutputs))
@@ -526,11 +775,18 @@ func TestAgentResources(t *testing.T) {
 	secretDir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(secretDir, "mounted"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(secretDir, "mounted", "key"), []byte("from file"), 0o600))
+	clientSet := fake.NewClientset(
+		&apiv1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "unmounted", Namespace: "my-ns"}, Data: map[string][]byte{"key": []byte("from api")}},
+		&apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "my-cm", Namespace: "my-ns"}, Data: map[string]string{"key": "value"}},
+	)
+	clientSet.PrependReactor("get", "secrets", func(action k8stesting.Action) (bool, kruntime.Object, error) {
+		if name := action.(k8stesting.GetAction).GetName(); name == "forbidden" {
+			return true, nil, apierrors.NewForbidden(apiv1.Resource("secrets"), name, errors.New("no role allows it"))
+		}
+		return false, nil, nil
+	})
 	r := agentResources{
-		clientSet: fake.NewClientset(
-			&apiv1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "unmounted", Namespace: "my-ns"}, Data: map[string][]byte{"key": []byte("from api")}},
-			&apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "my-cm", Namespace: "my-ns"}, Data: map[string]string{"key": "value"}},
-		),
+		clientSet: clientSet,
 		namespace: "my-ns",
 		secretDir: secretDir,
 	}
@@ -545,6 +801,9 @@ func TestAgentResources(t *testing.T) {
 
 	_, err = r.GetSecret(ctx, "missing", "key")
 	require.ErrorContains(t, err, `secret "missing" is not mounted in the agent pod`)
+
+	_, err = r.GetSecret(ctx, "forbidden", "key")
+	require.ErrorContains(t, err, "grant it a Role allowing get on secrets in namespace my-ns")
 
 	_, err = r.GetSecret(ctx, "..", "mounted/key")
 	require.ErrorContains(t, err, "invalid secret name")
