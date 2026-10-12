@@ -36,14 +36,15 @@ const testArchiveKey = "my-wf/my-wf-plugin-1234"
 
 // bucketDriver is an artifact driver that stores artifacts under a directory,
 // by key. onLoad and onSave, if set, are called with the local path of each
-// artifact it loads or saves, first.
+// artifact it loads or saves, first. Saving fails with saveErr, if set.
 type bucketDriver struct {
-	dir    string
-	mu     sync.Mutex
-	loads  int
-	saves  int
-	onLoad func(path string)
-	onSave func(path string)
+	dir     string
+	mu      sync.Mutex
+	loads   int
+	saves   int
+	onLoad  func(path string)
+	onSave  func(path string)
+	saveErr error
 }
 
 func (d *bucketDriver) path(art *wfv1.Artifact) (string, error) {
@@ -77,6 +78,9 @@ func (d *bucketDriver) Save(_ context.Context, path string, art *wfv1.Artifact) 
 	d.mu.Unlock()
 	if d.onSave != nil {
 		d.onSave(path)
+	}
+	if d.saveErr != nil {
+		return d.saveErr
 	}
 	dst, err := d.path(art)
 	if err != nil {
@@ -369,6 +373,66 @@ func TestAgentPluginRequiredInputArtifactMissing(t *testing.T) {
 	assert.NoDirExists(t, filepath.Join(ae.workspace, "my-wf-1"))
 }
 
+// An input artifact the artifact repository does not have fails its task,
+// unless it is optional, as for a container template.
+func TestAgentPluginInputArtifactNotFound(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		optional    bool
+		expectPhase wfv1.NodePhase
+	}{
+		{name: "required", expectPhase: wfv1.NodeError},
+		{name: "optional", optional: true, expectPhase: wfv1.NodeSucceeded},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			called := false
+			ae := newArtifactAgent(t, &bucketDriver{dir: t.TempDir()}, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+				called = true
+				assert.NoFileExists(t, tmpl.Inputs.Artifacts[0].Path)
+				return succeeded(nil), nil
+			}))
+
+			result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(wfv1.Artifacts{
+				{Name: "missing", Path: "/in/missing.txt", ArtifactLocation: s3Key("missing.txt"), Optional: tc.optional},
+			}, nil))
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectPhase, result.Phase, result.Message)
+			assert.Equal(t, tc.optional, called, "the plugin is offered the task unless a required input artifact is missing")
+			if !tc.optional {
+				assert.Contains(t, result.Message, "artifact missing failed to load")
+			}
+		})
+	}
+}
+
+// The task's directory stands for the root of the plugin's file system, so an
+// input artifact cannot be loaded at it, or above it.
+func TestAgentPluginInputArtifactAtTaskDirectory(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		path string
+	}{
+		{name: "root", path: "/"},
+		{name: "above the root", path: "../.."},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			driver := &bucketDriver{dir: t.TempDir()}
+			require.NoError(t, os.WriteFile(filepath.Join(driver.dir, "input.txt"), []byte("input"), 0o600))
+			ae := newArtifactAgent(t, driver, pluginFunc(writeOutputs))
+
+			result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(wfv1.Artifacts{
+				{Name: "input", Path: tc.path, ArtifactLocation: s3Key("input.txt")},
+			}, nil))
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeError, result.Phase)
+			assert.Contains(t, result.Message, "input artifact 'input' cannot be loaded at "+tc.path+", which is the whole task's directory")
+			assert.Zero(t, driver.loads)
+		})
+	}
+}
+
 func TestAgentPluginOutputArtifactMissing(t *testing.T) {
 	outputs := wfv1.Artifacts{
 		{Name: "required", Path: "/out/required.txt"},
@@ -419,6 +483,19 @@ func TestAgentPluginFailedTaskSavesOutputArtifacts(t *testing.T) {
 	require.NotNil(t, result.Outputs)
 	require.Len(t, result.Outputs.Artifacts, 1)
 	assert.FileExists(t, filepath.Join(driver.dir, testArchiveKey, "debug.txt"))
+}
+
+func TestAgentPluginOutputArtifactSaveFails(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	driver := &bucketDriver{dir: t.TempDir(), saveErr: errors.New("the bucket is unavailable")}
+	ae := newArtifactAgent(t, driver, pluginFunc(writeOutputs))
+
+	result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(nil, wfv1.Artifacts{{Name: "out", Path: "/out.txt"}}))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, result.Phase)
+	assert.Equal(t, "failed to save output artifacts: failed to save artifact 'out': the bucket is unavailable", result.Message)
+	assert.Nil(t, result.Outputs)
+	assert.NoDirExists(t, filepath.Join(ae.workspace, "my-wf-1"))
 }
 
 func TestAgentPluginReportedArtifacts(t *testing.T) {
@@ -480,6 +557,28 @@ func TestAgentPluginRequeuedTask(t *testing.T) {
 	require.NotNil(t, result.Outputs)
 	assert.Len(t, result.Outputs.Artifacts, 1)
 	assert.NoDirExists(t, taskDir)
+}
+
+// A plugin that fails to execute a task fails it, and the agent removes what
+// the task left, as it does once a task is done.
+func TestAgentPluginErrorRemovesTask(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	driver := &bucketDriver{dir: t.TempDir()}
+	require.NoError(t, os.WriteFile(filepath.Join(driver.dir, "input.txt"), []byte("input"), 0o600))
+	ae := newArtifactAgent(t, driver, pluginFunc(func(*wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		return executorplugins.ExecuteTemplateReply{}, errors.New("the plugin crashed")
+	}))
+
+	result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(
+		wfv1.Artifacts{{Name: "input", Path: "/input.txt", ArtifactLocation: s3Key("input.txt")}},
+		wfv1.Artifacts{{Name: "output", Path: "/output.txt"}},
+	))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, result.Phase)
+	assert.Equal(t, "the plugin crashed", result.Message)
+	assert.Zero(t, driver.saves)
+	assert.NoDirExists(t, filepath.Join(ae.workspace, "my-wf-1"))
+	assert.NoDirExists(t, filepath.Join(ae.stagingDir, "my-wf-1"))
 }
 
 func TestAgentPluginArtifactsStayInTaskDirectory(t *testing.T) {
@@ -703,6 +802,39 @@ func TestAgentPluginArchivesSymlinksAsSymlinks(t *testing.T) {
 	assert.Equal(t, map[string]string{"out/link": secret}, links)
 }
 
+// A symlink in an input artifact stays a symlink in the task's directory.
+func TestAgentPluginLoadsSymlinksAsSymlinks(t *testing.T) {
+	skipSymlinksOnWindows(t)
+	ctx := logging.TestContext(t.Context())
+	src := filepath.Join(t.TempDir(), "in")
+	require.NoError(t, os.MkdirAll(src, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "file.txt"), []byte("file"), 0o644))
+	require.NoError(t, os.Symlink("file.txt", filepath.Join(src, "link")))
+	var tarball bytes.Buffer
+	require.NoError(t, archive.TarGzToWriter(ctx, src, 6, &tarball))
+	driver := &bucketDriver{dir: t.TempDir()}
+	require.NoError(t, os.WriteFile(filepath.Join(driver.dir, "in.tgz"), tarball.Bytes(), 0o600))
+	var target, read string
+	ae := newArtifactAgent(t, driver, pluginFunc(func(tmpl *wfv1.Template) (executorplugins.ExecuteTemplateReply, error) {
+		link := filepath.Join(tmpl.Inputs.Artifacts[0].Path, "link")
+		var err error
+		if target, err = os.Readlink(link); err != nil {
+			return executorplugins.ExecuteTemplateReply{}, err
+		}
+		data, err := os.ReadFile(link)
+		read = string(data)
+		return succeeded(nil), err
+	}))
+
+	result, _, err := ae.processTask(ctx, "my-wf-1", pluginTemplate(wfv1.Artifacts{
+		{Name: "in", Path: "/in", ArtifactLocation: s3Key("in.tgz")},
+	}, nil))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, result.Phase, result.Message)
+	assert.Equal(t, "file.txt", target)
+	assert.Equal(t, "file", read)
+}
+
 // A plugin can put a symlink where the agent is to load an input artifact: the
 // agent downloads it out of the plugins' reach, and replaces the symlink.
 func TestAgentPluginLoadsInputArtifactsOutOfPluginsReach(t *testing.T) {
@@ -918,4 +1050,10 @@ func TestAgentResources(t *testing.T) {
 	val, err = r.GetConfigMapKey(ctx, "my-cm", "key")
 	require.NoError(t, err)
 	assert.Equal(t, "value", val)
+
+	_, err = r.GetConfigMapKey(ctx, "my-cm", "missing")
+	require.ErrorContains(t, err, "configmap 'my-cm' does not have the key 'missing'")
+
+	_, err = r.GetConfigMapKey(ctx, "missing", "key")
+	require.True(t, apierrors.IsNotFound(err), err)
 }

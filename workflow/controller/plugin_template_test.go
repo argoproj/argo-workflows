@@ -113,6 +113,35 @@ func TestPluginTemplateArchiveLocationUnresolved(t *testing.T) {
 	assert.Contains(t, node.Message, "failed to resolve {{node.unknown}}")
 }
 
+// The archive location's key can use the template's input parameters.
+func TestPluginTemplateArchiveLocationInputParameter(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(pluginArtifactsWorkflow)
+	tmpl := &wf.Spec.Templates[1]
+	require.Equal(t, "with-artifacts", tmpl.Name)
+	tmpl.Inputs.Parameters = []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr("my-value")}}
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	controller.artifactRepositories = armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket:  wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+			KeyFormat: "{{workflow.name}}/{{inputs.parameters.p}}",
+		},
+	})
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	taskSet, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	node, err := woc.wf.GetNodeByName("plugin-artifacts[0].with-artifacts")
+	require.NoError(t, err)
+	require.Contains(t, taskSet.Spec.Tasks, node.ID)
+	location := taskSet.Spec.Tasks[node.ID].ArchiveLocation
+	require.NotNil(t, location)
+	require.NotNil(t, location.S3)
+	assert.Equal(t, "plugin-artifacts/my-value", location.S3.Key)
+}
+
 func TestAgentPodPluginWorkspace(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(pluginArtifactsWorkflow)
@@ -287,7 +316,9 @@ func TestAllArtifactsDeletedPluginNodes(t *testing.T) {
 }
 
 // Templates of the same name in different WorkflowTemplates, and in the
-// workflow itself, declare different artifacts.
+// workflow itself, declare different artifacts. Artifact GC leaves alone the
+// artifacts of a node whose template the workflow did not store, as it cannot
+// tell which of them the template declares.
 func TestFindArtifactsToGCPluginNodesTemplateRef(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	outputs := `
@@ -358,6 +389,14 @@ status:
       type: Plugin
       templateName: plugin
       templateScope: namespaced/wt-a
+      phase: Succeeded` + outputs + `
+    unstored:
+      id: unstored
+      name: unstored
+      type: Plugin
+      templateRef:
+        name: wt-c
+        template: plugin
       phase: Succeeded` + outputs + `
 `)
 	cancel, controller := newController(ctx, wf)
