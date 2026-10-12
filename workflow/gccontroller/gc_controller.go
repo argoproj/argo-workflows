@@ -111,12 +111,13 @@ func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
 	switch phase := wfv1.WorkflowPhase(un.GetLabels()[common.LabelKeyPhase]); phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		c.orderedQueueLock.Lock()
-		defer c.orderedQueueLock.Unlock()
 		// No need to queue the workflow if the retention policy is not set
 		if c.retentionPolicy == nil {
+			c.orderedQueueLock.Unlock()
 			return
 		}
 		heap.Push(c.orderedQueue[phase], un)
+		c.orderedQueueLock.Unlock()
 		c.runGC(ctx, phase)
 	}
 }
@@ -151,12 +152,7 @@ func (c *Controller) UpdateRetentionPolicy(ctx context.Context, retentionPolicy 
 	// runGC is throttled per deletion, so apply the policy without holding up the
 	// configuration reload.
 	go func() {
-		c.orderedQueueLock.Lock()
-		defer c.orderedQueueLock.Unlock()
-		if c.retentionPolicy == nil {
-			return
-		}
-		for phase := range c.orderedQueue {
+		for _, phase := range []wfv1.WorkflowPhase{wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError} {
 			c.runGC(ctx, phase)
 		}
 	}()
@@ -198,9 +194,29 @@ func (c *Controller) runWorker(ctx context.Context) {
 	}
 }
 
-// retentionGC queues workflows for deletion based upon the retention policy.
+// runGC queues workflows for deletion based upon the retention policy. The lock is
+// only held while popping, so that a policy reload can take effect mid-drain.
 func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+	for {
+		c.orderedQueueLock.Lock()
+		key, maxWorkflows, ok := c.popOverRetention(phase)
+		c.orderedQueueLock.Unlock()
+		if !ok {
+			return
+		}
+		c.log.WithFields(logging.Fields{"phase": phase, "key": key, "maxWorkflows": maxWorkflows}).Info(ctx, "Queueing workflow for delete due to max retention")
+		c.workqueue.Add(key)
+		<-ticker.C
+	}
+}
+
+// popOverRetention pops the oldest workflow of the phase if the phase is over its
+// retention limit. orderedQueueLock must be held.
+func (c *Controller) popOverRetention(phase wfv1.WorkflowPhase) (string, int, bool) {
+	if c.retentionPolicy == nil {
+		return "", 0, false
+	}
 	var maxWorkflows int
 	switch phase {
 	case wfv1.WorkflowSucceeded:
@@ -210,15 +226,13 @@ func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 	case wfv1.WorkflowError:
 		maxWorkflows = c.retentionPolicy.Errored
 	default:
-		return
+		return "", 0, false
 	}
-
-	for c.orderedQueue[phase].Len() > maxWorkflows {
-		key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
-		c.log.WithFields(logging.Fields{"phase": phase, "key": key, "maxWorkflows": maxWorkflows}).Info(ctx, "Queueing workflow for delete due to max retention")
-		c.workqueue.Add(key)
-		<-ticker.C
+	if c.orderedQueue[phase].Len() <= maxWorkflows {
+		return "", 0, false
 	}
+	key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
+	return key, maxWorkflows, true
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
