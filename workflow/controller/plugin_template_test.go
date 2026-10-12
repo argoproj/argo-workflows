@@ -263,3 +263,88 @@ status:
 	assert.Equal(t, "plugin-artifacts", results[0].NodeID)
 	assert.Equal(t, "declared", results[0].Name)
 }
+
+// Templates of the same name in different WorkflowTemplates, and in the
+// workflow itself, declare different artifacts.
+func TestFindArtifactsToGCPluginNodesTemplateRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	outputs := `
+      outputs:
+        artifacts:
+          - name: local
+            s3:
+              key: local
+          - name: a
+            s3:
+              key: a
+          - name: b
+            s3:
+              key: b`
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: plugin-artifacts
+  namespace: default
+spec:
+  entrypoint: plugin
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  templates:
+    - name: plugin
+      plugin:
+        hello: {}
+      outputs:
+        artifacts:
+          - name: local
+            path: /local.txt
+status:
+  storedTemplates:
+    namespaced/wt-a/plugin:
+      name: plugin
+      plugin:
+        hello: {}
+      outputs:
+        artifacts:
+          - name: a
+            path: /a.txt
+    namespaced/wt-b/plugin:
+      name: plugin
+      plugin:
+        hello: {}
+      outputs:
+        artifacts:
+          - name: b
+            path: /b.txt
+  nodes:
+    local:
+      id: local
+      name: local
+      type: Plugin
+      templateName: plugin
+      phase: Succeeded` + outputs + `
+    ref:
+      id: ref
+      name: ref
+      type: Plugin
+      templateRef:
+        name: wt-b
+        template: plugin
+      phase: Succeeded` + outputs + `
+    scoped:
+      id: scoped
+      name: scoped
+      type: Plugin
+      templateName: plugin
+      templateScope: namespaced/wt-a
+      phase: Succeeded` + outputs + `
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	gc := map[string]string{}
+	for _, r := range woc.findArtifactsToGC(wfv1.ArtifactGCOnWorkflowDeletion) {
+		gc[r.NodeID] += r.Name
+	}
+	assert.Equal(t, map[string]string{"local": "local", "ref": "b", "scoped": "a"}, gc)
+}

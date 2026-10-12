@@ -715,6 +715,21 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 	return true
 }
 
+// storedNodeTemplate returns the template a node ran, as the workflow stores
+// it, or nil if the workflow does not. Unlike GetNodeTemplate, it tells apart
+// templates of the same name in different WorkflowTemplates, and never
+// fetches a template or marks the node failed.
+func (woc *wfOperationCtx) storedNodeTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	scope, name := node.GetTemplateScope()
+	if tmpl := woc.wf.GetStoredTemplate(scope, name, node); tmpl != nil {
+		return tmpl
+	}
+	if node.TemplateRef != nil || scope != wfv1.ResourceScopeLocal {
+		return nil
+	}
+	return woc.wf.GetTemplateByName(node.TemplateName)
+}
+
 func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
 	var results wfv1.ArtifactSearchResults
 
@@ -725,7 +740,7 @@ func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) w
 		case wfv1.NodeTypePlugin:
 			// A plugin may report artifacts it only refers to, which are
 			// not the workflow's to delete: only those its template declares are.
-			if tmpl := woc.wf.GetTemplateByName(util.GetTemplateFromNode(n)); tmpl != nil {
+			if tmpl := woc.storedNodeTemplate(&n); tmpl != nil {
 				declared = tmpl.Outputs.Artifacts
 			}
 			if declared == nil {
