@@ -207,7 +207,11 @@ func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 		}
 		c.log.WithFields(logging.Fields{"phase": phase, "key": key, "maxWorkflows": maxWorkflows}).Info(ctx, "Queueing workflow for delete due to max retention")
 		c.workqueue.Add(key)
-		<-ticker.C
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

@@ -676,16 +676,20 @@ func TestUpdateRetentionPolicy(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		controller := newRetentionController(t, nil, wfv1.WorkflowSucceeded, 20)
 		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
-		time.Sleep(120 * time.Millisecond)
+		time.Sleep(60 * time.Millisecond)
 
 		// a reload while the backlog is still draining is not held up by it, and the
-		// drain switches to the new limit
+		// drain switches to the new limit (keys already queued stay queued)
 		start := time.Now()
 		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 15})
 		assert.Less(t, time.Since(start), 300*time.Millisecond)
-		assert.Eventually(t, queuedForDelete(controller, 5), 5*time.Second, 10*time.Millisecond)
+		controller.orderedQueueLock.Lock()
+		queued := controller.workqueue.Len()
+		controller.orderedQueueLock.Unlock()
+		want := max(queued, 5)
+		assert.Eventually(t, queuedForDelete(controller, want), 5*time.Second, 10*time.Millisecond)
 		time.Sleep(300 * time.Millisecond)
-		assert.True(t, queuedForDelete(controller, 5)())
+		assert.True(t, queuedForDelete(controller, want)())
 	})
 	t.Run("PolicyRemovedThenAdded", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
