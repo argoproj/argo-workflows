@@ -10,6 +10,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
+// TestWFDefaultsWithWorkflow checks that the configured workflow defaults are merged into a
+// submitted Workflow, both when it sets its own entrypoint and when it leaves it to the default.
 func TestWFDefaultsWithWorkflow(t *testing.T) {
 	assert := assert.New(t)
 
@@ -36,6 +38,9 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	assert.Contains(woc.wf.Annotations, "testAnnotation")
 }
 
+// TestWFDefaultWithWFTAndWf checks that the workflow defaults are merged into the spec stored for
+// a Workflow that only references a WorkflowTemplate, and that fields the Workflow sets itself
+// still win over the defaults.
 func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	assert := assert.New(t)
 	wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/operator_wfdefault/workflow-defaults.yaml")
