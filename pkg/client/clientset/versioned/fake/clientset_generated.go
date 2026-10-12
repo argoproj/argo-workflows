@@ -4,6 +4,8 @@ package fake
 
 import (
 	clientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	parametersv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/parameterization/v1alpha1"
+	fakeparametersv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/parameterization/v1alpha1/fake"
 	argoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	fakeargoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,6 +84,11 @@ var (
 	_ clientset.Interface = &Clientset{}
 	_ testing.FakeClient  = &Clientset{}
 )
+
+// ParametersV1alpha1 retrieves the ParametersV1alpha1Client
+func (c *Clientset) ParametersV1alpha1() parametersv1alpha1.ParametersV1alpha1Interface {
+	return &fakeparametersv1alpha1.FakeParametersV1alpha1{Fake: &c.Fake}
+}
 
 // ArgoprojV1alpha1 retrieves the ArgoprojV1alpha1Client
 func (c *Clientset) ArgoprojV1alpha1() argoprojv1alpha1.ArgoprojV1alpha1Interface {

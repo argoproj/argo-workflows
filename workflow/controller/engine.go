@@ -101,6 +101,7 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 			phase, _, _ := e.assessStepGroup(ctx, group)
 			groupFailed = groupFailed || phase.FailedOrError()
 		}
+		e.restoreRetainedTaskEdges(ctx, task)
 		result := e.evaluator.Evaluate(ctx, name)
 		if groupFailed && result.ShouldRun && e.getTaskNode(ctx, name) == nil {
 			result = dag.EvaluationResult{TaskName: name, Skipped: true, SkipReason: "an earlier step group failed"}
@@ -114,6 +115,32 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 
 	if err := e.finalize(ctx, tasks, exitHooksDone); err != nil {
 		e.markBoundaryError(ctx, err)
+	}
+}
+
+// restoreRetainedTaskEdges reconnects completed DAG and Steps invocations after a checked
+// retry reopens their boundary. The engine still schedules every ancestor in
+// dependency order; retained completion is never a reason to skip that walk.
+func (e *Engine) restoreRetainedTaskEdges(ctx context.Context, task dag.Task) {
+	if e.woc.wf.Annotations["parameters.workflows.example.io/retry"] == "" {
+		return
+	}
+	node := e.getTaskNode(ctx, task.GetName())
+	if node == nil || !node.Fulfilled() {
+		return
+	}
+	dependencies, err := e.evaluator.GetDependencies(ctx, task.GetName())
+	if err != nil {
+		return
+	}
+	for _, name := range dependencies {
+		dependency := e.getTaskNode(ctx, name)
+		if dependency == nil || !dependency.Fulfilled() {
+			return
+		}
+	}
+	for _, parent := range e.parentsFor(ctx, task.GetName()) {
+		e.woc.addChildNode(ctx, parent, node.Name)
 	}
 }
 
@@ -1082,7 +1109,29 @@ func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, isShutdow
 	failFast := e.tmpl.DAG.FailFast == nil || *e.tmpl.DAG.FailFast
 	phase := wfv1.NodeSucceeded
 	memo := make(map[string]wfv1.NodePhase)
-	for _, name := range e.evaluator.GetTargetTasks(ctx) {
+	targets := append([]string(nil), e.evaluator.GetTargetTasks(ctx)...)
+	// A retained ordering-only decision can be Succeeded even if its retried
+	// ancestor now fails. Include its dependencies when assessing this attempt.
+	if e.woc.wf.Annotations["parameters.workflows.example.io/retry"] != "" {
+		seen := make(map[string]bool, len(targets))
+		for _, name := range targets {
+			seen[name] = true
+		}
+		for _, task := range tasks {
+			node := e.getTaskNode(ctx, task.GetName())
+			if node == nil || !node.Fulfilled() {
+				continue
+			}
+			dependencies, _ := e.evaluator.GetDependencies(ctx, task.GetName())
+			for _, name := range dependencies {
+				if !seen[name] {
+					targets = append(targets, name)
+					seen[name] = true
+				}
+			}
+		}
+	}
+	for _, name := range targets {
 		if e.getTaskNode(ctx, name) == nil {
 			phase = wfv1.NodeRunning
 			if !failFast {
@@ -1212,9 +1261,14 @@ func (e *Engine) parentsFor(ctx context.Context, taskName string) []string {
 // never exists.
 func (e *Engine) startStepGroup(ctx context.Context, i int) string {
 	name := e.stepGroupNodeNameAt(i)
-	if _, err := e.woc.wf.GetNodeByName(name); err == nil {
+	_, err := e.woc.wf.GetNodeByName(name)
+	exists := err == nil
+	if exists && e.woc.wf.Annotations["parameters.workflows.example.io/retry"] == "" {
 		return name
 	}
+	// A checked retry can recreate the Steps boundary while retaining an
+	// earlier completed group. Restore its incoming edge without replacing
+	// the group or changing its execution evidence.
 	parents := []string{e.nodeName}
 	if i > 0 {
 		prevName := e.startStepGroup(ctx, i-1)
@@ -1233,7 +1287,9 @@ func (e *Engine) startStepGroup(ctx context.Context, i int) string {
 			}
 		}
 	}
-	e.woc.initializeNode(ctx, name, wfv1.NodeTypeStepGroup, e.tmplCtx.GetTemplateScope(), &wfv1.WorkflowStep{}, e.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	if !exists {
+		e.woc.initializeNode(ctx, name, wfv1.NodeTypeStepGroup, e.tmplCtx.GetTemplateScope(), &wfv1.WorkflowStep{}, e.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	}
 	for _, parent := range parents {
 		e.woc.addChildNode(ctx, parent, name)
 	}

@@ -1,0 +1,5 @@
+FROM alpine:3.22
+RUN apk add --no-cache ca-certificates
+COPY parameterization-admission /bin/parameterization-admission
+USER 8737
+ENTRYPOINT ["/bin/parameterization-admission"]

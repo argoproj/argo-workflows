@@ -1,0 +1,51 @@
+# Install after demo.yaml; only the dedicated local parameterization cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-training-demo
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: train
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: dataset
+    - name: epochs
+    - name: shuffle
+  templates:
+  - name: train
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "Dataset=%s epochs=%s shuffle=%s\n" "$DATASET" "$EPOCHS" "$SHUFFLE"
+      env:
+      - name: DATASET
+        value: '{{workflow.parameters.dataset}}'
+      - name: EPOCHS
+        value: '{{workflow.parameters.epochs}}'
+      - name: SHUFFLE
+        value: '{{workflow.parameters.shuffle}}'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: cluster-training
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: cluster-training-demo
+  parameterTemplate: training-v1
+  mappings:
+  - path: /dataset
+    parameter: dataset
+    encoding: string
+  - path: /epochs
+    parameter: epochs
+    encoding: decimal
+  - path: /shuffle
+    parameter: shuffle
+    encoding: boolean
+  clusterScope: true

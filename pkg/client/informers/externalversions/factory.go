@@ -9,6 +9,7 @@ import (
 
 	versioned "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/internalinterfaces"
+	parameterization "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/parameterization"
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -239,7 +240,12 @@ type SharedInformerFactory interface {
 	// client.
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
+	Parameters() parameterization.Interface
 	Argoproj() workflow.Interface
+}
+
+func (f *sharedInformerFactory) Parameters() parameterization.Interface {
+	return parameterization.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Argoproj() workflow.Interface {
