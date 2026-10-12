@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -19,6 +20,15 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	// If the node is already fulfilled (e.g. memoization cache hit), skip DAG execution
 	if node.Fulfilled() {
 		return node, nil
+	}
+
+	// A checked parameter retry can reopen this boundary while retaining its
+	// completed children. Record the current arguments without rewriting the
+	// input evidence of any completed invocation.
+	if !node.Fulfilled() && !reflect.DeepEqual(node.Inputs, &tmpl.Inputs) {
+		node.Inputs = tmpl.Inputs.DeepCopy()
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
 	}
 
 	defer func() {

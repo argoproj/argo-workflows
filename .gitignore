@@ -65,3 +65,7 @@ proto_vendor
 .go/
 .goenv/
 .gocache/
+
+# Python test caches
+__pycache__/
+*.pyc

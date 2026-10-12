@@ -4542,7 +4542,17 @@ func r4RetryStored(t *testing.T, ctx context.Context, controller *WorkflowContro
 	retried, podsToDelete, err := wfutil.FormulateRetryWorkflow(ctx, wf.DeepCopy(), false, "", nil)
 	require.NoError(t, err, "argo retry")
 	for _, p := range podsToDelete {
-		_ = controller.kubeclientset.CoreV1().Pods(wf.Namespace).Delete(ctx, p, metav1.DeleteOptions{})
+		deleteErr := controller.kubeclientset.CoreV1().Pods(wf.Namespace).Delete(ctx, p, metav1.DeleteOptions{})
+		if !apierr.IsNotFound(deleteErr) {
+			require.NoError(t, deleteErr)
+		}
+		// Deliver the fake client's deletion before immediately reconciling the
+		// retry, just as the phase helpers wait for their informer updates.
+		// Otherwise the harness can reuse a stale failed Pod from the cache.
+		require.NoError(t, kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
+			_, exists, cacheErr := controller.PodController.TestingPodInformer().GetStore().GetByKey(wf.Namespace + "/" + p)
+			return !exists, cacheErr
+		}))
 	}
 	retried, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, retried, metav1.UpdateOptions{})
 	require.NoError(t, err)

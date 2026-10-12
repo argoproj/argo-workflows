@@ -47,6 +47,7 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
@@ -658,6 +659,11 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 		if getErr != nil {
 			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		}
+		if proof, ok := parameterization.InputProof(ctx); ok {
+			if string(wf.UID) != proof.UID || wf.ResourceVersion != proof.ResourceVersion || nodeFieldSelector != "id="+proof.NodeID {
+				return true, apierr.NewConflict(schema.GroupResource{Group: "argoproj.io", Resource: "workflows"}, workflowName, fmt.Errorf("workflow changed before input could be applied"))
+			}
+		}
 
 		hydrateErr := hydrator.Hydrate(ctx, wf)
 		if hydrateErr != nil {
@@ -715,6 +721,12 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 		if !nodeUpdated {
 			return true, fmt.Errorf("currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
+		}
+		if proof, ok := parameterization.InputProof(ctx); ok {
+			if wf.Annotations == nil {
+				wf.Annotations = map[string]string{}
+			}
+			wf.Annotations[parameterization.Group+"/input-"+parameterization.Digest(proof.NodeID)[:16]] = proof.Receipt
 		}
 
 		err = hydrator.Dehydrate(ctx, wf)
@@ -1032,6 +1044,38 @@ func createNewRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, parameters [
 		err := overrideParameters(newWF, parameters)
 		if err != nil {
 			return nil, err
+		}
+		if _, checked := parameterization.RetryProof(ctx); checked {
+			// Native CLI overrides prepend changed parameters. A checked retry
+			// must preserve the frozen binding's declaration order and metadata;
+			// otherwise changing a later argument no longer matches its preview.
+			overridden := newWF.Spec.Arguments.Parameters
+			values := make(map[string]*wfv1.AnyString, len(overridden))
+			for _, param := range newWF.Spec.Arguments.Parameters {
+				values[param.Name] = param.Value
+			}
+			newWF.Spec.Arguments.Parameters = make([]wfv1.Parameter, 0, len(overridden))
+			for _, param := range wf.Spec.Arguments.Parameters {
+				value, exists := values[param.Name]
+				if !exists {
+					continue
+				}
+				param.Value = value
+				newWF.Spec.Arguments.Parameters = append(newWF.Spec.Arguments.Parameters, param)
+				delete(values, param.Name)
+			}
+			// The native helper also serves non-parameterized retries. Preserve
+			// its ability to add arguments; the checked binding's own planner
+			// validates whether argument identities may change.
+			for _, param := range overridden {
+				if _, added := values[param.Name]; added {
+					newWF.Spec.Arguments.Parameters = append(newWF.Spec.Arguments.Parameters, param)
+					delete(values, param.Name)
+				}
+			}
+			if newWF.Status.StoredWorkflowSpec != nil {
+				newWF.Status.StoredWorkflowSpec.Arguments = newWF.Spec.Arguments
+			}
 		}
 	}
 	return newWF, nil
@@ -1396,6 +1440,11 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 
 	failed := make(map[string]bool)
 	for nodeID, node := range wf.Status.Nodes {
+		if proof, checked := parameterization.RetryProof(ctx); checked && proof.UID != "" && proof.UID == string(wf.UID) && proof.ResourceVersion == wf.ResourceVersion && !deleteNodesMap[nodeID] {
+			if digest, retained := proof.RetainedNodes[nodeID]; retained && digest == parameterization.ResultFingerprint(node) {
+				continue
+			}
+		}
 		// A failure belongs to the node that actually failed, not to the group
 		// nodes above it, which only fail because a descendant did. That is an
 		// execution node, or a node with no child that ran: a template that
@@ -1490,6 +1539,15 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
 				if dagNode, okNode := nodesMap[nodeID]; okNode {
 					for childID := range getChildren(dagNode) {
+						// The parameterization API has checked the full dependency
+						// closure against this exact Workflow version. Preserve only
+						// those proven records during the conservative group expansion;
+						// ordinary native retries keep the default expansion behavior.
+						if proof, checked := parameterization.RetryProof(ctx); checked && proof.UID != "" && proof.UID == string(wf.UID) && proof.ResourceVersion == wf.ResourceVersion {
+							if fingerprint, retained := proof.RetainedNodes[childID]; retained && fingerprint == parameterization.ResultFingerprint(wf.Status.Nodes[childID]) {
+								continue
+							}
+						}
 						toDelete[childID] = true
 					}
 				}
@@ -1497,6 +1555,19 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 		}
 	}
 
+	// resetPath conservatively includes every observed descendant, including
+	// completed ordering-only decisions. A checked parameterization plan has
+	// already proved which invocations retain identical inputs and results.
+	// Keep only those exact-version records; directly selected nodes can never
+	// be shielded by a retention proof. Ordinary native retries are unchanged.
+	if proof, checked := parameterization.RetryProof(ctx); checked && proof.UID != "" && proof.UID == string(wf.UID) && proof.ResourceVersion == wf.ResourceVersion {
+		for id, digest := range proof.RetainedNodes {
+			if node, exists := wf.Status.Nodes[id]; exists && !deleteNodesMap[id] && digest == parameterization.ResultFingerprint(node) {
+				delete(toReset, id)
+				delete(toDelete, id)
+			}
+		}
+	}
 	return resetPlan{toReset: toReset, toDelete: toDelete}, nil
 }
 
@@ -1593,7 +1664,19 @@ func applyResetPlan(ctx context.Context, wf, dst *wfv1.Workflow, plan resetPlan,
 		if rewrite != nil {
 			newNode = rewrite(newNode)
 		}
-		if plan.toReset[id] {
+		// Retry preserves a completed predecessor fan-out group when none of its
+		// actual children will be reset. Memoized resubmit has separate rewrite
+		// semantics and deliberately does not use this preservation rule. A group
+		// stopped by a failed hook still has undispatched items, even when all of
+		// its recorded children succeeded, so it must reopen on native retry.
+		retainedGroup := rewrite == nil && mapID == nil && (node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.Phase == wfv1.NodeSucceeded && len(node.Children) > 0 && !strings.HasPrefix(node.Message, common.TaskGroupHookStoppedMessage)
+		for _, child := range node.Children {
+			if plan.toDelete[child] || plan.toReset[child] {
+				retainedGroup = false
+				break
+			}
+		}
+		if plan.toReset[id] && !retainedGroup {
 			newNode = resetNode(newNode)
 		}
 		newID := id

@@ -17,6 +17,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 )
@@ -222,6 +223,18 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.Phase = taskResult.Phase
 			node.Message = taskResult.Message
 			node.FinishedAt = metav1.Now()
+
+			if node.Phase == wfv1.NodeSucceeded {
+				tmpl, contractErr := woc.GetNodeTemplate(ctx, node)
+				if contractErr == nil {
+					contractErr = parameterization.ValidateActionOutputs(tmpl, node.Outputs)
+				}
+				if contractErr != nil {
+					node.Phase = wfv1.NodeError
+					node.Message = contractErr.Error()
+					node.Outputs = nil
+				}
+			}
 
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 			// The node is finished with the template it was dispatched with
