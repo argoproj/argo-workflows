@@ -213,6 +213,7 @@ else
 endif
 
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
+PARAMETERIZATION_TYPES := $(shell find pkg/apis/parameterization -type f -name '*.go' -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
@@ -360,6 +361,7 @@ argo-workflows-crdinstaller-image: ## Build the CRD installer image
 .PHONY: codegen
 codegen: types swagger manifests $(TOOL_MOCKERY) $(GENERATED_DOCS) ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
+	./hack/parameterization-codegen.sh
 	$(TOOL_MOCKERY) --config .mockery.yaml
  	# The generated markdown contains links to nowhere for interfaces, so remove them
 	sed -i.bak 's/\[any\](#any)/`any`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
@@ -771,18 +773,24 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
 
 # generates many other files (listers, informers, client etc).
 .PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF) $(TYPES)
-	# These files are generated on a v4/ folder by the tool. Link them to the root folder
-	[ -e ./v4 ] || ln -s . v4
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
-	    "deepcopy,client,informer,lister" \
-	    github.com/argoproj/argo-workflows/v4/pkg/client github.com/argoproj/argo-workflows/v4/pkg/apis \
-	    workflow:v1alpha1 \
-	    --go-header-file ./hack/custom-boilerplate.go.txt
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) $(PARAMETERIZATION_TYPES) go.mod go.sum
+	go mod download k8s.io/code-generator@v0.33.1; \
+	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.33.1); \
+	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \
+		kube::codegen::gen_helpers \
+			--boilerplate ./hack/custom-boilerplate.go.txt \
+			./pkg/apis && \
+		kube::codegen::gen_client \
+			--boilerplate ./hack/custom-boilerplate.go.txt \
+			--output-dir ./pkg/client \
+			--output-pkg github.com/argoproj/argo-workflows/v4/pkg/client \
+			--with-watch \
+			./pkg/apis"
 	# Force the timestamp to be up to date
 	touch $@
 	# Delete the link
-	[ -e ./v4 ] && rm -rf v4
+	if [ -e ./v4 ]; then rm -rf v4; fi
 
 dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist

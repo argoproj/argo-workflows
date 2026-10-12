@@ -1,0 +1,157 @@
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: optional-options-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - count
+    additionalProperties: false
+    properties:
+      count:
+        type: integer
+        minimum: 1
+      environment:
+        type: string
+      region:
+        type: string
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowForm
+metadata:
+  name: optional-options-demo
+  namespace: argo-parameterization-lab
+spec:
+  parameterTemplate: optional-options-demo
+  options:
+    /region:
+      kind: configmap
+      name: optional-options-demo-absent
+      key: choices
+      dependsOn:
+      - /environment
+  fields:
+  - path: /region
+    widget: select
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: optional-options-demo-input
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - approved
+    additionalProperties: false
+    properties:
+      approved:
+        type: boolean
+        const: true
+      environment:
+        type: string
+      region:
+        type: string
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowForm
+metadata:
+  name: optional-options-demo-input
+  namespace: argo-parameterization-lab
+spec:
+  parameterTemplate: optional-options-demo-input
+  options:
+    /region:
+      kind: configmap
+      name: optional-options-demo-absent
+      key: choices
+      dependsOn:
+      - /environment
+  fields:
+  - path: /region
+    widget: select
+  - path: /approved
+    widget: checkbox
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: optional-options-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  serviceAccountName: workflow-executor
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: count
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: choose
+        template: choose
+      - name: consume
+        dependencies:
+        - choose
+        template: consume
+        arguments:
+          parameters:
+          - name: approved
+            value: '{{tasks.choose.outputs.parameters.approved}}'
+  - name: choose
+    suspend: {}
+    outputs:
+      parameters:
+      - name: approved
+        valueFrom:
+          supplied: {}
+  - name: consume
+    inputs:
+      parameters:
+      - name: approved
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$COUNT:$APPROVED" = 2:true; printf "%s" "$COUNT:$APPROVED" >/tmp/result
+      env:
+      - name: COUNT
+        value: '{{workflow.parameters.count}}'
+      - name: APPROVED
+        value: '{{inputs.parameters.approved}}'
+    outputs:
+      parameters:
+      - name: observed
+        valueFrom:
+          path: /tmp/result
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: optional-options-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: optional-options-demo
+  parameterTemplate: optional-options-demo
+  form: optional-options-demo
+  mappings:
+  - path: /count
+    parameter: count
+    encoding: decimal
+  inputs:
+  - template: choose
+    parameterTemplate: optional-options-demo-input
+    form: optional-options-demo-input
+    mappings:
+    - path: /approved
+      parameter: approved
+      encoding: boolean

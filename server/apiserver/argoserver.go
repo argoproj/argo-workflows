@@ -57,6 +57,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/event"
 	"github.com/argoproj/argo-workflows/v4/server/eventsource"
 	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/parameterization"
 	"github.com/argoproj/argo-workflows/v4/server/sensor"
 	"github.com/argoproj/argo-workflows/v4/server/static"
 	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
@@ -83,7 +84,8 @@ import (
 var MaxGRPCMessageSize int
 
 type argoServer struct {
-	baseHRef string
+	parameterizationHandler http.Handler
+	baseHRef                string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig                *tls.Config
 	hsts                     bool
@@ -284,6 +286,27 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		log.WithFatal().Error(ctx, err.Error())
 	}
 	workflowServer := workflow.NewWorkflowServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
+	if os.Getenv("ARGO_PARAMETERIZATION_ENABLED") == "true" {
+		handler := parameterization.Handler{Gatekeeper: as.gatekeeper, Workflows: workflowServer, Namespace: resourceCacheNamespace}
+		var historyKey []byte
+		if keyFile := os.Getenv("ARGO_PARAMETERIZATION_HISTORY_KEY_FILE"); keyFile != "" {
+			historyKey, err = os.ReadFile(keyFile)
+			if err != nil {
+				log.Error(ctx, "Unable to read parameter history cursor key file")
+				os.Exit(1)
+			}
+		}
+		handler.HistoryPager, err = parameterization.NewHistoryPager(historyKey)
+		if err != nil {
+			log.Error(ctx, err.Error())
+			os.Exit(1)
+		}
+		if os.Getenv("ARGO_PARAMETERIZATION_SECRET_BACKEND") == "kubernetes-encrypted" {
+			handler.SecretWriter = parameterization.EncryptedKubernetesSecrets{}
+			handler.AllowLoopbackSecretInput = os.Getenv("ARGO_PARAMETERIZATION_ALLOW_LOOPBACK_SECRET_INPUT") == "true"
+		}
+		as.parameterizationHandler = handler
+	}
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -447,6 +470,12 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(syncpkg.RegisterSyncServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
+	if as.parameterizationHandler != nil {
+		mux.Handle(parameterization.Prefix, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requestContext, _ := log.InContext(r.Context())
+			as.parameterizationHandler.ServeHTTP(w, r.WithContext(requestContext))
+		}))
+	}
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// we must delete this header for API request to prevent "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR" error
 		r.Header.Del("Connection")
