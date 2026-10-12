@@ -140,8 +140,8 @@ schema = 3
     version = "v1.20.3"
     hash = "sha256-hx0cERL+oUvCNFZhFQ4ZqstGOT+4pCOrfJsufJpw3QI="
   [mod."github.com/aws/aws-sdk-go-v2/feature/rds/auth"]
-    version = "v1.7.4"
-    hash = "sha256-AGBrv4ddtoUoo3aEE1VXUGMZHzbQlPt31LC1a5ehRbo="
+    version = "v1.7.6"
+    hash = "sha256-yfFlZqCjd9Or9jKXWj7snr0kB1RKNxmHb39HBbthHgM="
   [mod."github.com/aws/aws-sdk-go-v2/internal/configsources"]
     version = "v1.5.6"
     hash = "sha256-dtlxyWuXd8KWqZnuuOO40mN9xRJsR7WBW3OXhCcNd+g="
