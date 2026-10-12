@@ -370,6 +370,10 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		groups = filteredGroups
 	}
 
+	if groups == nil {
+		groups = []string{}
+	}
+
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
@@ -424,6 +428,10 @@ func isValidFinalRedirectURL(redirect string) bool {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
+	if authorization == "" {
+		return nil, types.ErrNoCredentials
+	}
+
 	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix), []jose.KeyAlgorithm{jose.DIRECT}, []jose.ContentEncryption{jose.A256GCM})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)

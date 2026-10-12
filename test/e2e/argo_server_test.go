@@ -64,6 +64,33 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			}
 		})
 }
+func (s *ArgoServerSuite) headerAuthE(proxySecret, username string) *httpexpect.Expect {
+	return httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  baseURL,
+			Reporter: httpexpect.NewRequireReporter(s.T()),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(s.T(), true),
+			},
+			Client: httpClient,
+		}).
+		Builder(func(req *httpexpect.Request) {
+			req.WithHeader("X-Proxy-Auth", proxySecret)
+			req.WithHeader("X-Forwarded-User", username)
+		})
+}
+func (s *ArgoServerSuite) TestHeaderAuthentication() {
+	s.headerAuthE("e2e-secret", "pradeep").
+		GET("/api/v1/info").
+		Expect().
+		Status(200)
+}
+func (s *ArgoServerSuite) TestHeaderAuthenticationRejected() {
+	s.headerAuthE("wrong-secret", "pradeep").
+		GET("/api/v1/info").
+		Expect().
+		Status(401)
+}
 func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
