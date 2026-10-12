@@ -47,6 +47,7 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
@@ -651,6 +652,11 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 		if getErr != nil {
 			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		}
+		if proof, ok := parameterization.InputProof(ctx); ok {
+			if string(wf.UID) != proof.UID || wf.ResourceVersion != proof.ResourceVersion || nodeFieldSelector != "id="+proof.NodeID {
+				return true, apierr.NewConflict(schema.GroupResource{Group: "argoproj.io", Resource: "workflows"}, workflowName, fmt.Errorf("workflow changed before input could be applied"))
+			}
+		}
 
 		hydrateErr := hydrator.Hydrate(ctx, wf)
 		if hydrateErr != nil {
@@ -708,6 +714,12 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 		if !nodeUpdated {
 			return true, fmt.Errorf("currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
+		}
+		if proof, ok := parameterization.InputProof(ctx); ok {
+			if wf.Annotations == nil {
+				wf.Annotations = map[string]string{}
+			}
+			wf.Annotations[parameterization.Group+"/input-"+parameterization.Digest(proof.NodeID)[:16]] = proof.Receipt
 		}
 
 		err = hydrator.Dehydrate(ctx, wf)
@@ -1464,6 +1476,15 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
 				if dagNode, okNode := nodesMap[nodeID]; okNode {
 					for childID := range getChildren(dagNode) {
+						// The parameterization API has checked the full dependency
+						// closure against this exact Workflow version. Preserve only
+						// those proven records during the conservative group expansion;
+						// ordinary native retries keep the default expansion behavior.
+						if proof, checked := parameterization.RetryProof(ctx); checked && proof.UID != "" && proof.UID == string(wf.UID) && proof.ResourceVersion == wf.ResourceVersion {
+							if fingerprint, retained := proof.RetainedNodes[childID]; retained && fingerprint == parameterization.ResultFingerprint(wf.Status.Nodes[childID]) {
+								continue
+							}
+						}
 						toDelete[childID] = true
 					}
 				}
@@ -1567,7 +1588,17 @@ func applyResetPlan(ctx context.Context, wf, dst *wfv1.Workflow, plan resetPlan,
 		if rewrite != nil {
 			newNode = rewrite(newNode)
 		}
-		if plan.toReset[id] {
+		// Retry preserves a completed predecessor fan-out group when none of its
+		// actual children will be reset. Memoized resubmit has separate rewrite
+		// semantics and deliberately does not use this preservation rule.
+		retainedGroup := rewrite == nil && mapID == nil && (node.Type == wfv1.NodeTypeTaskGroup || node.Type == wfv1.NodeTypeStepGroup) && node.Phase == wfv1.NodeSucceeded && len(node.Children) > 0
+		for _, child := range node.Children {
+			if plan.toDelete[child] || plan.toReset[child] {
+				retainedGroup = false
+				break
+			}
+		}
+		if plan.toReset[id] && !retainedGroup {
 			newNode = resetNode(newNode)
 		}
 		newID := id

@@ -5,6 +5,7 @@ import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
+import {BindingLinks} from '../parameterization/binding-links';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
@@ -66,18 +67,20 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     useEffect(() => {
         (async () => {
             try {
-                const workflowList = await services.workflows.list('', null, [`${models.labels.clusterWorkflowTemplate}=${name}`], {limit: 50});
                 const info = await services.info.getInfo();
-
-                setWorkflows(workflowList.items);
                 setColumns(info.columns);
                 setNamespace(nsUtils.getNamespaceWithDefault(info.managedNamespace));
+                // Binding discovery and submission need their namespace even if
+                // the caller cannot list historical executions. A namespaced
+                // server must not receive a cluster-wide Workflow list request.
+                const workflowList = await services.workflows.list(info.managedNamespace || '', null, [`${models.labels.clusterWorkflowTemplate}=${name}`], {limit: 50});
+                setWorkflows(workflowList.items);
                 setError(null);
             } catch (err) {
                 setError(err);
             }
         })();
-    }, []);
+    }, [name]);
 
     useCollectEvent('openedClusterWorkflowTemplateDetails');
 
@@ -134,7 +137,8 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                 }
             }}>
             <>
-                <ErrorNotice error={error} />
+                {error && <ErrorNotice error={error} />}
+                {template && !edited && namespace && <BindingLinks namespace={namespace} workflowTemplate={name} clusterScope={true} />}
                 {!template ? (
                     <Loading />
                 ) : (
@@ -155,7 +159,6 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                     <SubmitWorkflowPanel
                         kind='ClusterWorkflowTemplate'
                         namespace={namespace}
-                        onNamespaceChange={setNamespace}
                         name={template.metadata.name}
                         entrypoint={template.spec.entrypoint}
                         templates={template.spec.templates || []}
@@ -165,7 +168,7 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                 </SlidingPanel>
             )}
             <>
-                <ErrorNotice error={error} />
+                {error && <ErrorNotice error={error} />}
                 {!workflows ? (
                     <ZeroState title='No completed cluster workflow templates'>
                         <p> You can create new cluster workflow templates here or using the CLI. </p>

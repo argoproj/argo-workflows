@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -279,6 +280,15 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+	}
+
+	// A native parameter retry can reopen a DAG boundary while preserving its
+	// completed children. Reflect the processed arguments used for this attempt;
+	// completed boundaries and leaf input evidence remain untouched.
+	if !node.Fulfilled() && !reflect.DeepEqual(node.Inputs, &tmpl.Inputs) {
+		node.Inputs = tmpl.Inputs.DeepCopy()
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
 	}
 
 	defer func() {

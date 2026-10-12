@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	http "net/http"
 
+	parametersv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/parameterization/v1alpha1"
 	argoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -14,13 +15,20 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	ParametersV1alpha1() parametersv1alpha1.ParametersV1alpha1Interface
 	ArgoprojV1alpha1() argoprojv1alpha1.ArgoprojV1alpha1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	argoprojV1alpha1 *argoprojv1alpha1.ArgoprojV1alpha1Client
+	parametersV1alpha1 *parametersv1alpha1.ParametersV1alpha1Client
+	argoprojV1alpha1   *argoprojv1alpha1.ArgoprojV1alpha1Client
+}
+
+// ParametersV1alpha1 retrieves the ParametersV1alpha1Client
+func (c *Clientset) ParametersV1alpha1() parametersv1alpha1.ParametersV1alpha1Interface {
+	return c.parametersV1alpha1
 }
 
 // ArgoprojV1alpha1 retrieves the ArgoprojV1alpha1Client
@@ -72,6 +80,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
+	cs.parametersV1alpha1, err = parametersv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.argoprojV1alpha1, err = argoprojv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -97,6 +109,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.parametersV1alpha1 = parametersv1alpha1.New(c)
 	cs.argoprojV1alpha1 = argoprojv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
