@@ -204,9 +204,9 @@ spec:
 	}
 }
 
-func TestFindArtifactsToGCPluginNodes(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+// pluginArtifactGCWorkflow has a plugin node with an artifact its template
+// declares, and one the plugin reported that it only refers to.
+const pluginArtifactGCWorkflow = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: plugin-artifacts
@@ -253,7 +253,11 @@ status:
           - name: other
             s3:
               key: other
-`)
+`
+
+func TestFindArtifactsToGCPluginNodes(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(pluginArtifactGCWorkflow)
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -262,6 +266,24 @@ status:
 	require.Len(t, results, 1)
 	assert.Equal(t, "plugin-artifacts", results[0].NodeID)
 	assert.Equal(t, "declared", results[0].Name)
+}
+
+// The artifact GC finalizer stays until the artifacts a plugin's template
+// declares are deleted, and no longer waits on those it only refers to.
+func TestAllArtifactsDeletedPluginNodes(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(pluginArtifactGCWorkflow)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	assert.False(t, woc.allArtifactsDeleted())
+
+	node, err := woc.wf.Status.Nodes.Get("plugin-artifacts")
+	require.NoError(t, err)
+	require.Equal(t, "declared", node.Outputs.Artifacts[0].Name)
+	node.Outputs.Artifacts[0].Deleted = true
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+	assert.True(t, woc.allArtifactsDeleted())
 }
 
 // Templates of the same name in different WorkflowTemplates, and in the

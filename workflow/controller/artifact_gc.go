@@ -703,10 +703,7 @@ func (woc *wfOperationCtx) artifactGCAwaitingDeletion() bool {
 
 func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 	for _, n := range woc.wf.Status.Nodes {
-		if n.Type != wfv1.NodeTypePod {
-			continue
-		}
-		for _, a := range n.GetOutputs().GetArtifacts() {
+		for _, a := range woc.artifactsToGC(&n) {
 			if !a.Deleted && woc.execWf.GetArtifactGCStrategy(&a) != wfv1.ArtifactGCNever && woc.execWf.GetArtifactGCStrategy(&a) != wfv1.ArtifactGCStrategyUndefined {
 				return false
 			}
@@ -730,29 +727,36 @@ func (woc *wfOperationCtx) storedNodeTemplate(node *wfv1.NodeStatus) *wfv1.Templ
 	return woc.wf.GetTemplateByName(node.TemplateName)
 }
 
+// artifactsToGC returns the output artifacts of a node that are artifact GC's
+// to delete: all of a pod's, and those a plugin's template declares. A plugin
+// may also report artifacts it only refers to, which are not the workflow's
+// to delete.
+func (woc *wfOperationCtx) artifactsToGC(node *wfv1.NodeStatus) wfv1.Artifacts {
+	switch node.Type {
+	case wfv1.NodeTypePod:
+		return node.GetOutputs().GetArtifacts()
+	case wfv1.NodeTypePlugin:
+		tmpl := woc.storedNodeTemplate(node)
+		if tmpl == nil {
+			return nil
+		}
+		var artifacts wfv1.Artifacts
+		for _, a := range node.GetOutputs().GetArtifacts() {
+			if tmpl.Outputs.Artifacts.GetArtifactByName(a.Name) != nil {
+				artifacts = append(artifacts, a)
+			}
+		}
+		return artifacts
+	default:
+		return nil
+	}
+}
+
 func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
 	var results wfv1.ArtifactSearchResults
 
 	for _, n := range woc.wf.Status.Nodes {
-		var declared wfv1.Artifacts
-		switch n.Type {
-		case wfv1.NodeTypePod:
-		case wfv1.NodeTypePlugin:
-			// A plugin may report artifacts it only refers to, which are
-			// not the workflow's to delete: only those its template declares are.
-			if tmpl := woc.storedNodeTemplate(&n); tmpl != nil {
-				declared = tmpl.Outputs.Artifacts
-			}
-			if declared == nil {
-				continue
-			}
-		default:
-			continue
-		}
-		for _, a := range n.GetOutputs().GetArtifacts() {
-			if declared != nil && declared.GetArtifactByName(a.Name) == nil {
-				continue
-			}
+		for _, a := range woc.artifactsToGC(&n) {
 			// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 			// if it's specified on the individual artifact level that takes priority
 			artifactStrategy := woc.execWf.GetArtifactGCStrategy(&a)
