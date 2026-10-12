@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -348,7 +349,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {Name: d.taskNodeName("A"),
+				d.taskNodeID("A"): {
+					Name:     d.taskNodeName("A"),
 					Phase:    wfv1.NodeRunning,
 					Type:     wfv1.NodeTypeTaskGroup,
 					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -366,7 +368,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Task A succeeded
-	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"),
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+		Name:     d.taskNodeName("A"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -388,7 +391,8 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 
 	// Task B succeeds and B-1 fails
-	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Name: d.taskNodeName("B"),
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+		Name:     d.taskNodeName("B"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
@@ -1311,4 +1315,190 @@ func TestDAGTaskGroupWithDeferredItems(t *testing.T) {
 			assert.Equal(t, wfv1.NodeSucceeded, node.Phase, item)
 		}
 	}
+}
+
+func TestTruncateForError(t *testing.T) {
+	short := "A.Succeeded && B.Succeeded"
+	assert.Equal(t, short, truncateForError(short))
+
+	long := ""
+	for range 50 {
+		long += "A.Succeeded && "
+	}
+	long += "B.Succeeded"
+	got := truncateForError(long)
+	assert.Equal(t, long[:maxErrorExpressionLen]+" ... [50 operators total, truncated]", got)
+	// utf8 test
+	runes := strings.Repeat("𝄞€ä", 500) + ".Succeeded && B.Succeeded"
+	assert.True(t, utf8.ValidString(truncateForError(runes)))
+}
+
+// newDependsTestDagContext builds a bare dagContext for the evaluateDependsLogic tests:
+// no cached dependencies/logic, a placeholder wf (each test overwrites d.wf with a
+// workflow carrying the node statuses it needs).
+func newDependsTestDagContext(ctx context.Context, tasks []wfv1.DAGTask) *dagContext {
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        tasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+		log:          logging.RequireLoggerFromContext(ctx),
+	}
+	return d
+}
+
+// newSucceededTestNodes returns a node-status map marking every named task's node
+// Succeeded; tests then flip individual entries as needed.
+func newSucceededTestNodes(d *dagContext, names []string) map[string]wfv1.NodeStatus {
+	nodes := make(map[string]wfv1.NodeStatus, len(names))
+	for _, name := range names {
+		nodes[d.taskNodeID(name)] = wfv1.NodeStatus{Name: d.taskNodeName(name), Phase: wfv1.NodeSucceeded}
+	}
+	return nodes
+}
+
+// TestEvaluateDependsLogicNonConjunctionForms verifies that non-pure-conjunction
+// depends strings still produce correct results through the single-eval path. These
+// nodes have few deps and therefore never enter the chunked path.
+func TestEvaluateDependsLogicNonConjunctionForms(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{Name: "A"},
+		{Name: "B"},
+		{Name: "C"},
+		{Name: "andWithNestedOr", Depends: "A && (B || C)"},
+		{Name: "topLevelOr", Depends: "A || B"},
+	}
+	ctx := logging.TestContext(t.Context())
+	d := newDependsTestDagContext(ctx, testTasks)
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Name: d.taskNodeName("A"), Phase: wfv1.NodeSucceeded},
+				d.taskNodeID("B"): {Name: d.taskNodeName("B"), Phase: wfv1.NodeFailed},
+				d.taskNodeID("C"): {Name: d.taskNodeName("C"), Phase: wfv1.NodeSucceeded},
+			},
+		},
+	}
+
+	// "A && (B || C)" => A succeeded and (B failed || C succeeded) => true.
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "andWithNestedOr")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// "A || B" => A succeeded || B failed => true.
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "topLevelOr")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// Flip A to failed: both expressions become false, but both still proceed.
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"), Phase: wfv1.NodeFailed}
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "andWithNestedOr")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "topLevelOr")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+}
+
+// TestEvaluateDependsLogicManyDependencies verifies that a pure conjunction with more
+// dependencies than one chunk holds is evaluated correctly by the chunked path.
+func TestEvaluateDependsLogicManyDependencies(t *testing.T) {
+	// 1005 dependencies, observed to exceed expr's node limit, so the single-eval path
+	// cannot evaluate this.
+	numDeps := 2*maxDependsChunkOperands + 5
+	names := make([]string, numDeps)
+	for i := range numDeps {
+		names[i] = fmt.Sprintf("t%d", i)
+	}
+
+	testTasks := make([]wfv1.DAGTask, 0, numDeps+1)
+	for _, name := range names {
+		testTasks = append(testTasks, wfv1.DAGTask{Name: name})
+	}
+	testTasks = append(testTasks, wfv1.DAGTask{Name: "sink", Dependencies: names})
+
+	ctx := logging.TestContext(t.Context())
+	d := newDependsTestDagContext(ctx, testTasks)
+
+	nodes := newSucceededTestNodes(d, names)
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status:     wfv1.WorkflowStatus{Nodes: nodes},
+	}
+
+	// Every dependency fulfilled => proceed and execute.
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "sink")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// A failed dependency in the first chunk => proceed but do not execute.
+	d.wf.Status.Nodes[d.taskNodeID(names[0])] = wfv1.NodeStatus{Name: d.taskNodeName(names[0]), Phase: wfv1.NodeFailed}
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "sink")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	// A failed dependency in the last chunk must short-circuit too, i.e. the loop must
+	// not stop looking after the chunk that holds the first dependency.
+	d.wf.Status.Nodes[d.taskNodeID(names[0])] = wfv1.NodeStatus{Name: d.taskNodeName(names[0]), Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID(names[numDeps-1])] = wfv1.NodeStatus{Name: d.taskNodeName(names[numDeps-1]), Phase: wfv1.NodeFailed}
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "sink")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+}
+
+// TestEvaluateDependsLogicManyDependenciesWithContinueOn covers the legacy Dependencies
+// form, which expands to 5-result operands when the task sets continueOn.error and
+// continueOn.failed, so the chunked path must still accept an expression that the
+// single-eval path cannot evaluate.
+func TestEvaluateDependsLogicManyDependenciesWithContinueOn(t *testing.T) {
+	// 1005 dependencies, observed to exceed expr's node limit, so the single-eval path
+	// cannot evaluate this.
+	numDeps := 2*maxDependsChunkOperands + 5
+	names := make([]string, numDeps)
+	for i := range names {
+		names[i] = fmt.Sprintf("t%d", i)
+	}
+
+	testTasks := make([]wfv1.DAGTask, 0, numDeps+1)
+	for _, name := range names {
+		task := wfv1.DAGTask{Name: name}
+		if name == names[0] {
+			task.ContinueOn = &wfv1.ContinueOn{Error: true, Failed: true}
+		}
+		testTasks = append(testTasks, task)
+	}
+	testTasks = append(testTasks, wfv1.DAGTask{Name: "sink", Dependencies: names})
+
+	ctx := logging.TestContext(t.Context())
+	d := newDependsTestDagContext(ctx, testTasks)
+
+	nodes := newSucceededTestNodes(d, names)
+	// The continueOn dependency failed, which its 5-result operand tolerates:
+	// `(t0.Succeeded || t0.Skipped || t0.Daemoned || t0.Errored || t0.Failed)`.
+	nodes[d.taskNodeID(names[0])] = wfv1.NodeStatus{Name: d.taskNodeName(names[0]), Phase: wfv1.NodeFailed}
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status:     wfv1.WorkflowStatus{Nodes: nodes},
+	}
+
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "sink")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+
+	// A dependency without continueOn still short-circuits the conjunction.
+	d.wf.Status.Nodes[d.taskNodeID(names[1])] = wfv1.NodeStatus{Name: d.taskNodeName(names[1]), Phase: wfv1.NodeFailed}
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "sink")
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
 }
