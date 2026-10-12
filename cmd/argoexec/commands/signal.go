@@ -15,23 +15,44 @@ import (
 )
 
 // forwardSignals starts a goroutine that forwards OS signals received on the
-// given channel to the process with the given pid. Signals that can be ignored
-// are dropped; when ignoreTerm is true SIGTERM is dropped as well (artifact
-// sidecars stay alive to assist the aux container and are terminated only via
-// the file-signal mechanism). The caller owns the channel's lifecycle
-// (signal.Notify / signal.Reset / close).
-func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) {
+// given channel to the process with the given pid, until the channel is closed
+// or the returned stop function is called. Parent cancellation must not stop
+// forwarding: signal.NotifyContext can cancel ctx before signal.Notify delivers
+// the same SIGTERM to signals. Stop waits for the goroutine to exit and must be
+// called before starting another attempt. Signals that can be ignored are
+// dropped. When ignoreTerm is true, SIGTERM is also dropped: artifact sidecars
+// stay alive to assist the aux container and are terminated via file signals.
+// The caller owns the channel's lifecycle (signal.Notify / signal.Reset / close).
+func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) func() {
+	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	done := make(chan struct{})
 	logger := logging.RequireLoggerFromContext(ctx)
+	forward := func(s os.Signal) {
+		if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
+			logger.WithField("signal", s).Debug(ctx, "ignore signal")
+			return
+		}
+		logger.WithField("signal", s).Debug(ctx, "forwarding signal")
+		_ = osspecific.Kill(pid, s.(syscall.Signal))
+	}
 	go func() {
-		for s := range signals {
-			if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
-				logger.WithField("signal", s).Debug(ctx, "ignore signal")
-				continue
+		defer close(done)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case s, ok := <-signals:
+				if !ok {
+					return
+				}
+				forward(s)
 			}
-			logger.WithField("signal", s).Debug(ctx, "forwarding signal")
-			_ = osspecific.Kill(pid, s.(syscall.Signal))
 		}
 	}()
+	return func() {
+		cancel()
+		<-done
+	}
 }
 
 // startFileSignalHandler starts a goroutine that watches a signal file via
