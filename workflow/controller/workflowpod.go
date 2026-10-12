@@ -390,6 +390,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		// already passed). Nothing to submit.
 		return nil, nil
 	}
+	if err = woc.validateParameterPodSecrets(ctx, result.Pod); err != nil {
+		return nil, err
+	}
 	return woc.submitPod(ctx, result, pb.in.nodeName, pb.in.nodeID, pb.in.log)
 }
 

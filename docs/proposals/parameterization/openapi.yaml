@@ -1,0 +1,1144 @@
+openapi: 3.0.3
+info:
+  title: Argo parameterization experimental extension
+  version: 0.1.0
+  description: Local prototype API contract. Existing Argo APIs continue to own Workflow
+    lifecycle. Separate from upstream stable API; generated gRPC/CLI integration remains work in progress. Native admission
+    and typed Kubernetes clients are available in the isolated installation.
+security:
+- Bearer: []
+paths:
+  /api/v1/parameterization/{namespace}/node-results/{name}:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema: {type: string}
+    - name: name
+      in: path
+      required: true
+      schema: {type: string}
+    get:
+      operationId: get_node_results
+      summary: Read the frozen result contract for one native node invocation
+      description: Uses caller RBAC to read saved outputs or the exact Workflow-owned result resource. Never dispatches queries or retries. A retained successful node uses its originating receipt. External observations remain separate from execution outcomes. Historical receipts are never replaced with current mutable definitions.
+      parameters:
+      - name: uid
+        in: query
+        required: true
+        schema: {type: string}
+      - name: nodeId
+        in: query
+        required: true
+        schema: {type: string}
+      - name: history
+        in: query
+        schema: {type: string}
+        description: Optional ParameterRetry name selecting its previous Workflow snapshot.
+      responses:
+        '200':
+          description: Result contract, invocation fingerprint and per-result availability, errors and freshness. Resource-backed results are current observations, including when viewing historical attempts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [workflow, uid, nodeId, invocation, contractDigest, items]
+                properties:
+                  workflow: {type: string}
+                  uid: {type: string}
+                  nodeId: {type: string}
+                  invocation: {type: string}
+                  contractDigest: {type: string}
+                  history: {type: string}
+                  items:
+                    type: array
+                    maxItems: 16
+                    items:
+                      type: object
+                      required: [name, title, scope, views, available]
+                      properties:
+                        name: {type: string}
+                        title: {type: string}
+                        scope: {type: string, enum: [ExecutionSnapshot, LiveObservation]}
+                        views: {type: array, items: {type: object}}
+                        value: {}
+                        available: {type: boolean}
+                        error: {type: string}
+                        observedAt: {type: string}
+                        stale: {type: boolean}
+        '400': {$ref: '#/components/responses/Rejected'}
+        '403': {$ref: '#/components/responses/Rejected'}
+        '404': {$ref: '#/components/responses/Rejected'}
+  /api/v1/parameterization/{namespace}/action-reviews/{name}:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema: {type: string}
+    - name: name
+      in: path
+      required: true
+      schema: {type: string}
+    get:
+      operationId: get_action_review
+      summary: Resolve an action for explicit workflow-author review
+      description: Uses caller permissions to read the action and native references. Returns the complete resolved template and schemas, declared execution contract, implementation digest and definition versions. Does not approve, execute, grant permissions or prove arbitrary program behavior. A source leaf action-replacement-policy must approve this digest before a contracted replacement can run.
+      responses:
+        '200':
+          description: Review material including source metadata; contains no resolved secret values.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [implementationDigest, definition, versions, verification]
+                properties:
+                  implementationDigest: {type: string, pattern: '^[a-f0-9]{64}$'}
+                  definition: {type: object, additionalProperties: true}
+                  versions: {type: object, additionalProperties: {type: string}}
+                  verification: {type: string}
+        '400': {$ref: '#/components/responses/Rejected'}
+        '403': {$ref: '#/components/responses/Rejected'}
+        '404': {$ref: '#/components/responses/Rejected'}
+  /api/v1/parameterization/{namespace}/definition-publications/{resource}:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema: {type: string}
+    - name: resource
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [parametertemplates, workflowforms, workflowparameterbindings, actiondefinitions, actionresulttemplates, workflowactionbindings]
+    get:
+      summary: List immutable named versions of one definition family
+      operationId: list_definition_publications
+      parameters:
+      - name: family
+        in: query
+        required: true
+        schema: {type: string}
+        description: Original definition UID, retained in the publication family label.
+      - name: continue
+        in: query
+        schema: {type: string}
+      responses:
+        '200':
+          description: Kubernetes page of metadata and publication provenance; spec bodies are fetched on demand.
+          content:
+            application/json:
+              schema: {type: object}
+        '403': {$ref: '#/components/responses/Rejected'}
+    post:
+      summary: Publish a reviewed definition as a new immutable object of the same kind
+      operationId: publish_definition
+      description: Does not mutate the source, update bindings or execute a Workflow. The source UID and spec are preconditions. Repeating the same named request recovers the original publication. References are frozen separately at execution submission.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [source, uid, sourceSpec, name]
+              properties:
+                source: {type: string}
+                uid: {type: string}
+                sourceSpec: {type: object, additionalProperties: true}
+                name: {type: string}
+                message: {type: string, maxLength: 2048}
+                validateOnly: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Published definition, or dry-run result.
+          content:
+            application/json:
+              schema: {type: object}
+        '400': {$ref: '#/components/responses/Rejected'}
+        '403': {$ref: '#/components/responses/Rejected'}
+        '409': {$ref: '#/components/responses/Rejected'}
+  /api/v1/parameterization/{namespace}/definition-diff/{resource}:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema: {type: string}
+    - name: resource
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [parametertemplates, workflowforms, workflowparameterbindings, actiondefinitions, actionresulttemplates, workflowactionbindings]
+    post:
+      summary: Compare two definition specs with caller-scoped reads and bounded pagination
+      operationId: compare_definition_versions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [left, right]
+              properties:
+                left: {type: string}
+                right: {type: string}
+                limit: {type: integer, minimum: 1, maximum: 200, default: 100}
+                continue: {type: string}
+      responses:
+        '200':
+          description: Structured changes, source content identities and pagination. A changed definition invalidates continuation.
+          content:
+            application/json:
+              schema: {type: object}
+        '400': {$ref: '#/components/responses/Rejected'}
+        '403': {$ref: '#/components/responses/Rejected'}
+  /api/v1/parameterization/{namespace}/capabilities:
+    parameters:
+    - &id001
+      name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Discover configured features and explicit execution boundaries
+      description: Named native action parameter/artifact mappings, fixed and latest-at-submit credentials, optional Vault materialization, and checked DAG/Steps retry with author-approved loop replacement are opt-in. A concrete preview still validates the frozen graph and caller permissions. Original retry retains the pinned credential; reviewed parameter retry can resolve its latest-version index again.
+      operationId: get_capabilities
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [experimental, schemaDialect, nativeWorkflowOwner, features, unsupported, encryptedSecretInput, actionCallScopes, secretVersionPolicy, partialRetryScopes]
+                properties:
+                  experimental: {type: boolean}
+                  schemaDialect: {type: string}
+                  nativeWorkflowOwner: {type: string, enum: [Argo]}
+                  features: {type: array, items: {type: string}}
+                  unsupported: {type: array, items: {type: string}}
+                  encryptedSecretInput: {type: boolean}
+                  actionCallScopes: {type: array, items: {type: string}}
+                  secretVersionPolicy: {type: string}
+                  partialRetryScopes: {type: array, items: {type: string}}
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/bindings:
+    parameters:
+    - *id001
+    get:
+      summary: List bindings
+      operationId: get_bindings
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      parameters:
+      - name: continue
+        in: query
+        schema:
+          type: string
+  /api/v1/parameterization/{namespace}/bindings/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read binding
+      operationId: get_bindings_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/models/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read parameter model
+      operationId: get_models_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/forms/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read presentation definition
+      operationId: get_forms_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/sets/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read current committed draft
+      operationId: get_sets_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+    put:
+      summary: Save with resourceVersion CAS
+      operationId: put_sets_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveRequest'
+  /api/v1/parameterization/{namespace}/history/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read committed revision history
+      operationId: get_history_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '410':
+          description: History cursor expired or its identity changed; restart from the first page.
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      parameters:
+      - name: view
+        in: query
+        description: Summary omits values and model; read revisions/{name} to restore the full immutable document.
+        schema:
+          type: string
+          enum: [full, summary]
+      - name: continue
+        in: query
+        schema:
+          type: string
+  /api/v1/parameterization/{namespace}/revisions/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read immutable parameter revision
+      operationId: get_revisions_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/diff:
+    parameters:
+    - *id001
+    post:
+      summary: Compare immutable revisions with bounded change pages
+      operationId: post_diff
+      responses:
+        '200':
+          description: One page across value, model and source changes, with per-layer totals and an opaque continuation position. Every page rechecks read permissions and sensitivity; never includes secret plaintext.
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiffRequest'
+  /api/v1/parameterization/{namespace}/preview:
+    parameters:
+    - *id001
+    post:
+      summary: Resolve and freeze native execution
+      operationId: post_preview
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRequest'
+  /api/v1/parameterization/{namespace}/edit-context/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: uid
+      in: query
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Load the execution revision and current draft for explicit new submission
+      operationId: get_edit_context
+      responses:
+        '200':
+          description: Verified source execution, original binding and revision, and
+            current CAS-protected ParameterSet
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '404':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/submit:
+    parameters:
+    - *id001
+    post:
+      summary: Create one native Workflow per submission intent
+      operationId: post_submit
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+  /api/v1/parameterization/{namespace}/retry:
+    parameters:
+    - *id001
+    post:
+      summary: Retry original parameters, or a previewed changed revision, in the
+        same native Workflow
+      operationId: post_retry
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetryRequest'
+  /api/v1/parameterization/{namespace}/options:
+    parameters:
+    - *id001
+    post:
+      summary: Query a registered caller-scoped option provider
+      operationId: post_options
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptionsRequest'
+  /api/v1/parameterization/{namespace}/secrets:
+    parameters:
+    - *id001
+    post:
+      summary: Write a version to a configured encrypted backend
+      operationId: post_secrets
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretWriteRequest'
+      description: HTTPS required. The local loopback exception is explicitly configured.
+        Plaintext must be excluded from access/audit body logs. No unconfigured encryption
+        claim is made.
+  /api/v1/parameterization/{namespace}/inputs/{name}:
+    parameters:
+    - *id001
+    - name: name
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read active native suspend forms
+      operationId: get_inputs_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+    post:
+      summary: Validate input and complete one native suspend node
+      operationId: post_inputs_name
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeInputRequest'
+  /api/v1/parameterization/{namespace}/definitions/{resource}:
+    parameters:
+    - *id001
+    - name: resource
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [parametertemplates, workflowforms, workflowparameterbindings, actiondefinitions, actionresulttemplates, workflowactionbindings]
+    - name: name
+      in: query
+      required: true
+      schema:
+        type: string
+    put:
+      summary: Create or update a definition spec with Kubernetes concurrency checks
+      description: Uses caller Kubernetes permissions and strict CRD field validation. validateOnly performs server dry-run without writing. Updates require both UID and resourceVersion. Published named definitions and action bindings are immutable; create a new name. Status and metadata cannot be supplied. Execution preview separately validates actual references and values.
+      operationId: put_definition_spec
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [spec]
+              properties:
+                spec:
+                  type: object
+                  additionalProperties: true
+                uid:
+                  type: string
+                resourceVersion:
+                  type: string
+                validateOnly:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Persisted definition or server dry-run result
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/catalog:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read caller-authorized parameter resources
+      operationId: get_catalog
+      responses:
+        '200':
+          description: Namespaced resource definitions or immutable records; Secret
+            contents are never exposed
+        '403':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/catalog/{resource}:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: resource
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: name
+      in: query
+      schema:
+        type: string
+    - name: continue
+      in: query
+      schema:
+        type: string
+    - name: view
+      in: query
+      description: Metadata uses caller-authorized Kubernetes metadata pagination and omits annotations and bodies; name selects the full document.
+      schema:
+        type: string
+        enum: [full, metadata]
+    get:
+      summary: Read caller-authorized parameter resources
+      operationId: get_catalog_resource
+      responses:
+        '200':
+          description: Namespaced resource definitions or immutable records; Secret
+            contents are never exposed
+        '403':
+          $ref: '#/components/responses/Rejected'
+  /api/v1/parameterization/{namespace}/retry-preview:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Preview checked native partial retry without mutation
+      operationId: post_retry_preview
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - workflow
+              - uid
+              properties:
+                workflow:
+                  type: string
+                uid:
+                  type: string
+                revision:
+                  type: string
+                  description: New immutable parameter revision; omit for selected original-input retry
+                binding:
+                  type: string
+                  description: Optional target binding for an explicit new revision; only unvisited template implementations may change
+                callPaths:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: {type: string}
+                  description: Declared invocation paths, relative to the entrypoint; required when revision is omitted
+  /api/v1/parameterization/{namespace}/execution-diff:
+    parameters:
+    - name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Compare saved execution against a revision and current definitions
+        without submitting
+      operationId: post_execution_diff
+      responses:
+        '200':
+          description: Result; never includes secret plaintext
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionComparison'
+        '400':
+          $ref: '#/components/responses/Rejected'
+        '403':
+          $ref: '#/components/responses/Rejected'
+        '409':
+          $ref: '#/components/responses/Rejected'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionDiffRequest'
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+  responses:
+    Rejected:
+      description: Request rejected without performing the requested workflow action
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+  schemas:
+    SaveRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - template
+      - values
+      - resourceVersion
+      properties:
+        template:
+          type: string
+        values: {}
+        resourceVersion:
+          type: string
+        message:
+          type: string
+        restoredFrom:
+          type: string
+    DiffRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - left
+      - right
+      properties:
+        left:
+          type: string
+        right:
+          type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 100
+        continue:
+          type: string
+          description: Continuation position returned by pagination.continue for the same immutable pair. A changed pair or comparison is rejected.
+    PreviewRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - binding
+      - revision
+      properties:
+        binding:
+          type: string
+        revision:
+          type: string
+    SubmitRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - binding
+      - revision
+      - executionDigest
+      - idempotencyKey
+      properties:
+        binding:
+          type: string
+        revision:
+          type: string
+        executionDigest:
+          type: string
+        idempotencyKey:
+          type: string
+        sourceExecution:
+          type: object
+          additionalProperties: false
+          required:
+          - workflow
+          - uid
+          properties:
+            workflow:
+              type: string
+            uid:
+              type: string
+    RetryRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - workflow
+      - uid
+      - resourceVersion
+      - idempotencyKey
+      properties:
+        workflow:
+          type: string
+        uid:
+          type: string
+        resourceVersion:
+          type: string
+        idempotencyKey:
+          type: string
+        revision:
+          type: string
+          description: Optional new immutable revision; requires planDigest
+        binding:
+          type: string
+          description: Optional target binding, identical to the reviewed retry-preview request
+        callPaths:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {type: string}
+          description: Explicit invocation selection; requires planDigest from retry-preview
+        planDigest:
+          type: string
+          description: Digest from retry-preview; rejects changed execution context
+    OptionsRequest:
+      type: object
+      additionalProperties: false
+      required: [path, values]
+      oneOf:
+      - required: [binding]
+        not: {required: [input]}
+      - required: [input]
+        not: {required: [binding]}
+      properties:
+        binding: {type: string}
+        input:
+          type: object
+          additionalProperties: false
+          required: [workflow, uid, nodeId, contractDigest]
+          properties:
+            workflow: {type: string}
+            uid: {type: string}
+            nodeId: {type: string}
+            contractDigest: {type: string}
+        path: {type: string}
+        values: {}
+    SecretWriteRequest:
+      type: object
+      additionalProperties: false
+      required: [path, requestId, value]
+      oneOf:
+      - required: [template]
+        not:
+          required: [input]
+      - required: [input]
+        not:
+          required: [template]
+      properties:
+        template:
+          type: string
+        input:
+          type: object
+          additionalProperties: false
+          required: [workflow, uid, nodeId, contractDigest]
+          properties:
+            workflow:
+              type: string
+            uid:
+              type: string
+            nodeId:
+              type: string
+            contractDigest:
+              type: string
+        path:
+          type: string
+        requestId:
+          type: string
+        value:
+          type: string
+          writeOnly: true
+          maxLength: 65536
+    NodeInputRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - uid
+      - resourceVersion
+      - nodeId
+      - requestId
+      - values
+      properties:
+        uid:
+          type: string
+        resourceVersion:
+          type: string
+        nodeId:
+          type: string
+        requestId:
+          type: string
+        values: {}
+    ExecutionDiffRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - source
+      - revision
+      properties:
+        source:
+          type: object
+          additionalProperties: false
+          required:
+          - workflow
+          - uid
+          properties:
+            workflow:
+              type: string
+            uid:
+              type: string
+        revision:
+          type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 100
+        continue:
+          type: string
+          description: Position bound to the complete execution comparison.
+        snapshot:
+          type: string
+          description: Comparison fingerprint; send on every subsequent page, including a return to the first page.
+    ExecutionComparison:
+      type: object
+      required:
+      - source
+      - resourceVersion
+      - executionDigest
+      - parameters
+      - layers
+      - definitionVersions
+      - notices
+      properties:
+        source:
+          $ref: '#/components/schemas/ExecutionDiffRequest/properties/source'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+            offset:
+              type: integer
+            limit:
+              type: integer
+            continue:
+              type: string
+            snapshot:
+              type: string
+        resourceVersion:
+          type: string
+        executionDigest:
+          type: string
+        parameters:
+          type: object
+          description: Semantic parameter value, model and source comparison; sensitive
+            values are references only.
+        layers:
+          type: array
+          items:
+            type: object
+            required:
+            - name
+            - available
+            - changes
+            properties:
+              name:
+                type: string
+              available:
+                type: boolean
+              notice:
+                type: string
+              total:
+                type: integer
+                description: Full layer count across all pages, not only visible changes.
+              changes:
+                type: array
+                items:
+                  type: object
+        definitionVersions:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+        notices:
+          type: array
+          items:
+            type: string

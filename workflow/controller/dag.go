@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -22,6 +24,8 @@ import (
 
 // dagContext holds context information about this context's DAG
 type dagContext struct {
+	// Completed retained descendants must not hide an ancestor re-executed by a checked retry.
+	retryDependencyTargets map[string]bool
 	// boundaryName is the node name of the boundary node to this DAG.
 	// This is used to incorporate into each of the task's node names.
 	boundaryName string
@@ -152,6 +156,14 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 	if isShutdown {
 		return wfv1.NodeFailed, nil
 	}
+	if len(d.retryDependencyTargets) > 0 {
+		targetTasks = append([]string{}, targetTasks...)
+		for name := range d.retryDependencyTargets {
+			if !slices.Contains(targetTasks, name) {
+				targetTasks = append(targetTasks, name)
+			}
+		}
+	}
 	// targetTaskPhases keeps track of all the phases of the target tasks. This is necessary because some target tasks may
 	// be omitted and will not have an explicit phase. We would still like to deduce a phase for those tasks in order to
 	// determine the overall phase of the DAG. To do so, an omitted task always inherits the phase of its parents, with
@@ -279,6 +291,15 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+	}
+
+	// A native parameter retry can reopen a DAG boundary while preserving its
+	// completed children. Reflect the processed arguments used for this attempt;
+	// completed boundaries and leaf input evidence remain untouched.
+	if !node.Fulfilled() && !reflect.DeepEqual(node.Inputs, &tmpl.Inputs) {
+		node.Inputs = tmpl.Inputs.DeepCopy()
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
 	}
 
 	defer func() {
@@ -480,6 +501,39 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(ctx, taskName)
 	ctx, log := woc.log.WithField("taskName", taskName).InContext(ctx)
+	// A checked parameter retry can preserve a completed ordering-only
+	// descendant while deleting its ancestor's old attempt. Native traversal
+	// otherwise reads the absent ancestor before scheduling it, or treats the
+	// retained descendant as proof that the ancestor need not execute again.
+	if node != nil && node.Fulfilled() && woc.wf.Annotations["parameters.workflows.example.io/retry"] != "" {
+		ready := true
+		dependencies := dagCtx.GetTaskDependencies(ctx, taskName)
+		if len(dependencies) == 0 {
+			// A reopened boundary has no child edges yet. Its retained root
+			// tasks still need to be reachable for DAG completion assessment.
+			woc.addChildNode(ctx, dagCtx.boundaryName, node.Name)
+		}
+		for _, dependency := range dependencies {
+			if dagCtx.retryDependencyTargets == nil {
+				dagCtx.retryDependencyTargets = map[string]bool{}
+			}
+			dagCtx.retryDependencyTargets[dependency] = true
+			woc.executeDAGTask(ctx, dagCtx, dependency)
+			parent := dagCtx.getTaskNode(dependency)
+			if parent == nil || !parent.Fulfilled() {
+				ready = false
+				continue
+			}
+			for _, outbound := range woc.getOutboundNodes(ctx, parent.ID) {
+				if previous, err := woc.wf.Status.Nodes.Get(outbound); err == nil {
+					woc.addChildNode(ctx, previous.Name, node.Name)
+				}
+			}
+		}
+		if !ready {
+			return
+		}
+	}
 	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
 		scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 		if err != nil {

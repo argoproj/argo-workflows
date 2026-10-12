@@ -92,6 +92,9 @@ func TestExampleWorkflows(t *testing.T) {
 							Force:        true,
 						})
 			} else {
+				// Examples may declare a documentation namespace; install their
+				// dependencies in the same namespace as the test Workflows.
+				obj.SetNamespace(fixtures.Namespace)
 				_, err = dyn.Resource(gvr).
 					Namespace(fixtures.Namespace).
 					Apply(

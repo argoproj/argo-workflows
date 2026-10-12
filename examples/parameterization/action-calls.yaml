@@ -1,0 +1,199 @@
+# Isolated local synthetic acceptance demo. No business services or real credentials.
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: action-calls-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    properties:
+      message:
+        type: string
+    required:
+    - message
+    additionalProperties: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: action-calls-demo-impl
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  templates:
+  - name: implementation
+    inputs:
+      parameters:
+      - name: value
+    metadata:
+      annotations:
+        parameters.workflows.example.io/result-reuse: same-inputs
+        parameters.workflows.example.io/retry-safe: idempotent
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$VALUE" != invalid; printf "action:%s" "$VALUE" >/tmp/result
+      env:
+      - name: VALUE
+        value: '{{inputs.parameters.value}}'
+    outputs:
+      parameters:
+      - name: answer
+        valueFrom:
+          path: /tmp/result
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: action-calls-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: message
+  templates:
+  - name: main
+    dag:
+      failFast: false
+      tasks:
+      - name: approve
+        template: approve
+      - name: east
+        dependencies:
+        - approve
+        template: group
+        arguments:
+          parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      - name: west
+        dependencies:
+        - approve
+        template: group
+        arguments:
+          parameters:
+          - name: message
+            value: unchanged
+      - name: report
+        dependencies:
+        - east
+        template: base
+        arguments:
+          parameters:
+          - name: message
+            value: '{{tasks.east.outputs.parameters.reply}}'
+  - name: approve
+    suspend: {}
+  - name: group
+    inputs:
+      parameters:
+      - name: message
+    metadata:
+      annotations:
+        parameters.workflows.example.io/bindable-calls: '["emit"]'
+    outputs:
+      parameters:
+      - name: reply
+        valueFrom:
+          parameter: '{{tasks.emit.outputs.parameters.reply}}'
+    dag:
+      tasks:
+      - name: emit
+        template: base
+        arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.message}}'
+  - name: base
+    inputs:
+      parameters:
+      - name: message
+    metadata:
+      annotations:
+        parameters.workflows.example.io/result-reuse: same-inputs
+        parameters.workflows.example.io/retry-safe: idempotent
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$VALUE" != invalid; printf "base:%s" "$VALUE" >/tmp/result
+      env:
+      - name: VALUE
+        value: '{{inputs.parameters.message}}'
+    outputs:
+      parameters:
+      - name: reply
+        valueFrom:
+          path: /tmp/result
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ActionDefinition
+metadata:
+  name: action-calls-demo
+  namespace: argo-parameterization-lab
+spec:
+  inputSchema:
+    type: object
+    properties:
+      value:
+        type: string
+    required:
+    - value
+    additionalProperties: false
+  outputSchema:
+    type: object
+    properties:
+      answer:
+        type: string
+    required:
+    - answer
+    additionalProperties: false
+  implementationRef:
+    name: action-calls-demo-impl
+    template: implementation
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowActionBinding
+metadata:
+  name: action-calls-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: action-calls-demo
+  calls:
+  - callPath:
+    - main
+    - east
+    - emit
+    actionDefinition: action-calls-demo
+    inputMappings:
+    - from: message
+      to: value
+    outputMappings:
+    - from: answer
+      to: reply
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: action-calls-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: action-calls-demo
+  parameterTemplate: action-calls-demo
+  actionBinding: action-calls-demo
+  mappings:
+  - path: /message
+    parameter: message
+    encoding: string
