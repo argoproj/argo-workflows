@@ -1,0 +1,6 @@
+FROM alpine:3.22
+RUN apk add --no-cache ca-certificates
+COPY argo /bin/argo
+COPY workflow-controller /bin/workflow-controller
+USER 8737
+ENTRYPOINT ["/bin/argo"]
