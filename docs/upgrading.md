@@ -64,7 +64,7 @@ A fan-out (`withItems`, `withParam` or `withSequence`) that has already started 
 Its `TaskGroup` node completes from the items it has created, or ends `Omitted` if it has created none, with the message `items not started because a hook errored: <count>`, and `argo retry` creates the remaining items.
 A task or step that is already being retried keeps making attempts.
 Tasks and steps that are already running finish, and then the template ends `Error` with the hook's message.
-The exception is a task or step whose lifecycle hook errors while it is still running: it is marked `Error` at once, and its pod is not waited for.
+The exception is a task or step whose lifecycle hook errors while it is still running: the controller marks it `Error` at once, and the template does not wait for its pod to finish.
 The template then fails as it does for any task that errored: a DAG ends `Error` with `child '<node ID>' failed`, and a Steps template ends `Failed` with its step group's message.
 If the template is still waiting for a sibling that had already started, that task's pod can finish in the meantime, and the pod's phase replaces the `Error`; the template then ends `Error` with the hook's message.
 So which siblings start, and the template's final phase and message, can depend on the order in which DAG tasks are named or steps are listed, as a DAG's already could.
@@ -89,8 +89,8 @@ A DAG task's lifecycle hooks now always run before its exit hook, as they alread
 Previously a task that finished in the same reconciliation that started it (for example a memoization cache hit, or a retried task whose attempt had already succeeded) ran its exit hook alongside its lifecycle hooks.
 Its exit hook, and so its dependants, now wait for the lifecycle hooks; the final result is the same.
 
-A task's or step's mutex or semaphore lock is released when the task finishes, in DAG and Steps templates, whether or not it was retried, even while its lifecycle or exit hooks are still running.
-A DAG task's completion metrics and `globalName` outputs are likewise exported as soon as the task itself finishes.
+The controller releases a task's or step's mutex or semaphore lock when the task finishes, in DAG and Steps templates, whether or not it was retried, even while its lifecycle or exit hooks are still running.
+It likewise exports a DAG task's completion metrics and `globalName` outputs as soon as the task itself finishes.
 Previously a DAG task held its lock, and delayed its metrics and `globalName` export, until its lifecycle hooks had finished, so a lifecycle hook that needed the same lock (for example through `templateDefaults.synchronization`) waited for it forever; that no longer happens.
 A Steps step already released its lock when it finished.
 Dependants of the task, and the DAG or Steps template itself, still wait for the hooks to finish.
