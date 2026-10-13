@@ -75,6 +75,11 @@ func TestIsTransientErr(t *testing.T) {
 		assert.False(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New(""))))
 		assert.True(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New("resource quota evaluation timed out"))))
 	})
+	t.Run("TransientWebhookErr", func(t *testing.T) {
+		assert.True(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New(`failed calling webhook "x": context deadline exceeded`))))
+		assert.False(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New("some other internal error"))))
+		assert.False(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New(`admission webhook "x" denied the request`))))
+	})
 	t.Run("ExceededQuotaErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(ctx, apierr.NewForbidden(schema.GroupResource{}, "", nil)))
 		assert.True(t, IsTransientErr(ctx, apierr.NewForbidden(schema.GroupResource{Group: "v1", Resource: "pods"}, "", errors.New("exceeded quota"))))
