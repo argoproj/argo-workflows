@@ -153,6 +153,7 @@ func TestCommonPodEventDeletingPod(t *testing.T) {
 		{name: "running pod of a running workflow", workflow: testWorkflow(nil), pod: func(pod *apiv1.Pod) { pod.Status.Phase = apiv1.PodRunning }, want: held},
 		{name: "pending pod", workflow: testWorkflow(nil), pod: func(pod *apiv1.Pod) { pod.Status.Phase = apiv1.PodPending }, want: timed},
 		{name: "no workflow", want: timed},
+		{name: "not owned by a workflow", workflow: testWorkflow(nil), pod: func(pod *apiv1.Pod) { pod.OwnerReferences = nil }, want: timed},
 		{name: "workflow replaced by one with the same name", workflow: testWorkflow(func(wf *unstructured.Unstructured) { wf.SetUID("other-uid") }), want: timed},
 		{name: "workflow being deleted", workflow: testWorkflow(func(wf *unstructured.Unstructured) { wf.SetDeletionTimestamp(new(metav1.Now())) }), want: timed},
 		// completed workflows stay in the informer, but are not reconciled any more
@@ -211,6 +212,41 @@ func TestRecheckHeldPod(t *testing.T) {
 			} else {
 				assert.Contains(t, pod.Finalizers, common.FinalizerPodStatus)
 				assert.Equal(t, []string{"test/my-pod/recheckHeldPod after 1m0s"}, queue.queued, "not rechecked again")
+			}
+		})
+	}
+}
+
+func TestRecheckHeldPodStopsWhenNoLongerHeld(t *testing.T) {
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+	}{
+		{name: "pod gone"},
+		{name: "pod not being deleted", pod: func() *apiv1.Pod {
+			pod := deletingPod(apiv1.PodSucceeded, time.Now())
+			pod.DeletionTimestamp = nil
+			return pod
+		}()},
+		{name: "finalizer already removed", pod: func() *apiv1.Pod {
+			pod := deletingPod(apiv1.PodSucceeded, time.Now())
+			pod.Finalizers = nil
+			return pod
+		}()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var pods []*apiv1.Pod
+			if tt.pod != nil {
+				pods = append(pods, tt.pod)
+			}
+			c, queue := newTestController(t, testWorkflow(nil), pods...)
+			queue.Add("test/my-pod/recheckHeldPod")
+			require.True(t, c.processNextPodCleanupItem(logging.TestContext(t.Context())))
+			assert.Empty(t, queue.queued, "not rechecked again")
+			for _, action := range c.kubeclientset.(*fake.Clientset).Actions() {
+				assert.NotEqual(t, "patch", action.GetVerb())
 			}
 		})
 	}
