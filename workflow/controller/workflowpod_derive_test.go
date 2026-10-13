@@ -47,6 +47,7 @@ func TestTaskDeadline(t *testing.T) {
 
 func TestTaskActiveDeadlineSeconds(t *testing.T) {
 	inAMinute := deriveTestNow.Add(time.Minute)
+	underASecond := deriveTestNow.Add(500 * time.Millisecond)
 	passed := deriveTestNow.Add(-time.Second)
 	tests := []struct {
 		name             string
@@ -63,6 +64,7 @@ func TestTaskActiveDeadlineSeconds(t *testing.T) {
 		{name: "workflow deadline lowers template", tmplADS: "120", workflowDeadline: &inAMinute, want: new(int64(60)), wantStart: true},
 		{name: "template below workflow deadline", tmplADS: "30", workflowDeadline: &inAMinute, want: new(int64(30)), wantStart: true},
 		{name: "workflow deadline passed", tmplADS: "30", workflowDeadline: &passed},
+		{name: "workflow deadline under a second away", tmplADS: "30", workflowDeadline: &underASecond},
 		{name: "exit handler ignores passed workflow deadline", tmplADS: "30", workflowDeadline: &passed, onExit: true, want: new(int64(30)), wantStart: true},
 		{name: "invalid template value", tmplADS: "not-a-number", wantErr: true},
 	}
@@ -109,8 +111,14 @@ func TestTemplateTimeoutDeadlines(t *testing.T) {
 		assert.Nil(t, pendingDeadline)
 	})
 	t.Run("pending past pending timeout", func(t *testing.T) {
+		// past the pendingTimeout (now+20s) but not the timeout (now+50s)
 		node := &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: startedAt}
-		_, _, err := templateTimeoutDeadlines(tmpl, node, deriveTestNow.Add(time.Minute))
+		_, _, err := templateTimeoutDeadlines(tmpl, node, deriveTestNow.Add(25*time.Second))
+		require.ErrorIs(t, err, ErrTimeout)
+	})
+	t.Run("pending past timeout, no pendingTimeout", func(t *testing.T) {
+		node := &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: startedAt}
+		_, _, err := templateTimeoutDeadlines(&wfv1.Template{Timeout: "60s"}, node, deriveTestNow.Add(time.Minute))
 		require.ErrorIs(t, err, ErrTimeout)
 	})
 	t.Run("running past timeout still returns the deadline", func(t *testing.T) {
@@ -157,34 +165,40 @@ func TestApplyTemplateDeadline(t *testing.T) {
 	}
 }
 
-// TestBuild_DeadlinesMatchDerivation checks that a pod's activeDeadlineSeconds
-// and ARGO_DEADLINE are what the extracted deadline functions compute, so
-// anything else using them bounds a task as a pod would be.
-func TestBuild_DeadlinesMatchDerivation(t *testing.T) {
+// TestBuild_Deadlines checks a built pod's activeDeadlineSeconds and
+// ARGO_DEADLINE against hard-coded values for each source of a deadline.
+// ARGO_DEADLINE comes from the operation's workflowDeadline and
+// activeDeadlineSeconds from computedWorkflowDeadline, so cases where the two
+// differ catch the sources being swapped.
+func TestBuild_Deadlines(t *testing.T) {
 	wfDeadline := deriveTestNow.Add(10 * time.Minute)
+	laterWfDeadline := deriveTestNow.Add(20 * time.Minute)
 	passed := deriveTestNow.Add(-time.Second)
 	executionDeadline := deriveTestNow.Add(5 * time.Minute)
 	templateDeadline := deriveTestNow.Add(2 * time.Minute)
 	tests := []struct {
-		name              string
-		tmplADS           string
-		workflowDeadline  *time.Time
-		executionDeadline time.Time
-		templateDeadline  *time.Time
-		onExit            bool
-		debugPause        bool
-		wantNoPod         bool
-		wantADS           *int64
-		wantDeadline      time.Time
+		name                     string
+		tmplADS                  string
+		workflowDeadline         *time.Time
+		computedWorkflowDeadline *time.Time
+		executionDeadline        time.Time
+		templateDeadline         *time.Time
+		onExit                   bool
+		debugPauseEnv            string
+		wantNoPod                bool
+		wantADS                  *int64
+		wantDeadline             time.Time
 	}{
 		{name: "no deadlines"},
 		{name: "template activeDeadlineSeconds", tmplADS: "30", wantADS: new(int64(30))},
-		{name: "workflow deadline", workflowDeadline: &wfDeadline, wantADS: new(int64(600)), wantDeadline: wfDeadline},
-		{name: "workflow deadline passed", workflowDeadline: &passed, wantNoPod: true},
-		{name: "exit handler", tmplADS: "30", workflowDeadline: &passed, onExit: true, wantADS: new(int64(30))},
-		{name: "execution deadline", workflowDeadline: &wfDeadline, executionDeadline: executionDeadline, wantADS: new(int64(600)), wantDeadline: executionDeadline},
-		{name: "template timeout", tmplADS: "300", workflowDeadline: &wfDeadline, templateDeadline: &templateDeadline, wantADS: new(int64(120)), wantDeadline: wfDeadline},
-		{name: "debug pause clears activeDeadlineSeconds", tmplADS: "30", debugPause: true},
+		{name: "workflow deadline", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, wantADS: new(int64(600)), wantDeadline: wfDeadline},
+		{name: "workflow deadlines differ", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &laterWfDeadline, wantADS: new(int64(1200)), wantDeadline: wfDeadline},
+		{name: "workflow deadline passed", workflowDeadline: &passed, computedWorkflowDeadline: &passed, wantNoPod: true},
+		{name: "exit handler", tmplADS: "30", workflowDeadline: &passed, computedWorkflowDeadline: &passed, onExit: true, wantADS: new(int64(30))},
+		{name: "execution deadline", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, executionDeadline: executionDeadline, wantADS: new(int64(600)), wantDeadline: executionDeadline},
+		{name: "template timeout", tmplADS: "300", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, templateDeadline: &templateDeadline, wantADS: new(int64(120)), wantDeadline: wfDeadline},
+		{name: "debug pause before clears activeDeadlineSeconds", tmplADS: "30", debugPauseEnv: "ARGO_DEBUG_PAUSE_BEFORE"},
+		{name: "debug pause after clears activeDeadlineSeconds", tmplADS: "30", debugPauseEnv: "ARGO_DEBUG_PAUSE_AFTER"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,8 +208,8 @@ func TestBuild_DeadlinesMatchDerivation(t *testing.T) {
 				tmpl.ActiveDeadlineSeconds = intstr.ParsePtr(tt.tmplADS)
 			}
 			main := tmpl.Container.DeepCopy()
-			if tt.debugPause {
-				main.Env = append(main.Env, apiv1.EnvVar{Name: "ARGO_DEBUG_PAUSE_BEFORE", Value: "true"})
+			if tt.debugPauseEnv != "" {
+				main.Env = append(main.Env, apiv1.EnvVar{Name: tt.debugPauseEnv, Value: "true"})
 			}
 			deps := newStubDeps()
 			if tt.templateDeadline != nil {
@@ -206,38 +220,40 @@ func TestBuild_DeadlinesMatchDerivation(t *testing.T) {
 			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
 			pb.in.now = deriveTestNow
 			pb.in.workflowDeadline = tt.workflowDeadline
-			pb.in.computedWorkflowDeadline = tt.workflowDeadline
+			pb.in.computedWorkflowDeadline = tt.computedWorkflowDeadline
 			pb.in.opts = &createWorkflowPodOpts{onExitPod: tt.onExit, executionDeadline: tt.executionDeadline}
 
 			result, err := pb.build(ctx)
 			require.NoError(t, err)
-
-			ads, start, err := taskActiveDeadlineSeconds(tmpl, tt.workflowDeadline, tt.onExit, deriveTestNow)
-			require.NoError(t, err)
 			if tt.wantNoPod {
 				assert.Nil(t, result)
-				assert.False(t, start)
 				return
 			}
 			require.NotNil(t, result)
-			if tt.debugPause {
-				ads = nil
-			}
-			ads, err = applyTemplateDeadline("node", ads, tt.templateDeadline, deriveTestNow)
-			require.NoError(t, err)
 
 			assert.Equal(t, tt.wantADS, result.Pod.Spec.ActiveDeadlineSeconds)
-			assert.Equal(t, ads, result.Pod.Spec.ActiveDeadlineSeconds)
-
-			deadline := taskDeadline(tt.workflowDeadline, tt.executionDeadline, tt.onExit)
-			assert.Equal(t, tt.wantDeadline, deadline)
 			mainCtr := containerByName(result.Pod.Spec.Containers, common.MainContainerName)
 			require.NotNil(t, mainCtr)
 			got, ok := envValue(mainCtr, common.EnvVarDeadline)
 			require.True(t, ok)
-			assert.Equal(t, deadline.Format(time.RFC3339), got)
+			assert.Equal(t, tt.wantDeadline.Format(time.RFC3339), got)
 		})
 	}
+}
+
+func TestDebugPauseRequested(t *testing.T) {
+	withEnv := func(names ...string) apiv1.Container {
+		var c apiv1.Container
+		for _, n := range names {
+			c.Env = append(c.Env, apiv1.EnvVar{Name: n, Value: "true"})
+		}
+		return c
+	}
+	assert.False(t, debugPauseRequested(nil))
+	assert.False(t, debugPauseRequested([]apiv1.Container{withEnv("OTHER")}))
+	assert.True(t, debugPauseRequested([]apiv1.Container{withEnv("ARGO_DEBUG_PAUSE_BEFORE")}))
+	assert.True(t, debugPauseRequested([]apiv1.Container{withEnv("ARGO_DEBUG_PAUSE_AFTER")}))
+	assert.True(t, debugPauseRequested([]apiv1.Container{withEnv("OTHER"), withEnv("OTHER", "ARGO_DEBUG_PAUSE_AFTER")}), "any container can ask")
 }
 
 func TestApplyMainContainerDefaults(t *testing.T) {
@@ -267,8 +283,6 @@ func TestApplyMainContainerDefaults(t *testing.T) {
 }
 
 func TestDerivePodServiceAccount(t *testing.T) {
-	falseVal := false
-	trueVal := true
 	tests := []struct {
 		name    string
 		tmpl    wfv1.Template
@@ -290,17 +304,17 @@ func TestDerivePodServiceAccount(t *testing.T) {
 		},
 		{
 			name:   "automount true is left to the default",
-			wfSpec: wfv1.WorkflowSpec{AutomountServiceAccountToken: &trueVal},
+			wfSpec: wfv1.WorkflowSpec{AutomountServiceAccountToken: new(true)},
 		},
 		{
 			name:   "automount false with executor account",
-			wfSpec: wfv1.WorkflowSpec{AutomountServiceAccountToken: &falseVal, Executor: &wfv1.ExecutorConfig{ServiceAccountName: "wf-exec"}},
-			want:   podServiceAccount{automountServiceAccountToken: &falseVal, executorServiceAccountName: "wf-exec"},
+			wfSpec: wfv1.WorkflowSpec{AutomountServiceAccountToken: new(false), Executor: &wfv1.ExecutorConfig{ServiceAccountName: "wf-exec"}},
+			want:   podServiceAccount{automountServiceAccountToken: new(false), executorServiceAccountName: "wf-exec"},
 		},
 		{
 			name:    "automount false needs an executor account",
-			tmpl:    wfv1.Template{AutomountServiceAccountToken: &falseVal},
-			wfSpec:  wfv1.WorkflowSpec{AutomountServiceAccountToken: &trueVal},
+			tmpl:    wfv1.Template{AutomountServiceAccountToken: new(false)},
+			wfSpec:  wfv1.WorkflowSpec{AutomountServiceAccountToken: new(true)},
 			wantErr: "executor.serviceAccountName must not be empty if automountServiceAccountToken is false",
 		},
 	}
@@ -340,10 +354,28 @@ func TestBuildExecContainer(t *testing.T) {
 	assert.True(t, hasMount(ctr, common.KubeConfigDefaultVolumeName))
 	assert.True(t, hasMount(ctr, common.ServiceAccountTokenVolumeName))
 
-	resourceCtr := buildExecContainer(common.MainContainerName, &wfv1.Template{Resource: &wfv1.ResourceTemplate{}}, execContainerConfig{executor: &apiv1.Container{}})
+	resourceTmpl := &wfv1.Template{Resource: &wfv1.ResourceTemplate{}}
+	resourceCtr := buildExecContainer(common.MainContainerName, resourceTmpl, execContainerConfig{executor: &apiv1.Container{}})
 	require.NotNil(t, resourceCtr.SecurityContext)
 	assert.Equal(t, new(true), resourceCtr.SecurityContext.ReadOnlyRootFilesystem)
 	assert.False(t, hasMount(resourceCtr, common.ServiceAccountTokenVolumeName))
+	for _, name := range []string{common.InitContainerName, common.WaitContainerName, common.SupervisorContainerName} {
+		ctr := buildExecContainer(name, resourceTmpl, execContainerConfig{executor: &apiv1.Container{}})
+		require.NotNil(t, ctr.SecurityContext, name)
+		assert.Nil(t, ctr.SecurityContext.ReadOnlyRootFilesystem, "%s needs a writable root filesystem (#10787)", name)
+	}
+
+	// the executor's resources and security context pass through, and a
+	// configured security context replaces the resource template lock-down
+	executor := &apiv1.Container{
+		Resources:       apiv1.ResourceRequirements{Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("100m")}},
+		SecurityContext: &apiv1.SecurityContext{RunAsUser: new(int64(1000))},
+	}
+	for _, tmpl := range []*wfv1.Template{{Container: &apiv1.Container{}}, resourceTmpl} {
+		ctr := buildExecContainer(common.MainContainerName, tmpl, execContainerConfig{executor: executor})
+		assert.Equal(t, executor.Resources, ctr.Resources)
+		assert.Equal(t, executor.SecurityContext, ctr.SecurityContext)
+	}
 }
 
 func TestApplySchedulingConstraints(t *testing.T) {
