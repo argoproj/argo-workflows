@@ -75,13 +75,13 @@ var SpanCreateTaskResult = Span{
 	name: "createTaskResult",
 	attributes: []BuiltinAttribute{
 		{
-			name: AttribTaskResultCompleted,
+			name: AttribTaskResultMarksCompleted,
 		},
 	},
 }
 
 // StartCreateTaskResult starts a create_task_result span
-func (t *Tracing) StartCreateTaskResult(ctx context.Context, taskResultCompleted bool) (context.Context, trace.Span) {
+func (t *Tracing) StartCreateTaskResult(ctx context.Context, taskResultMarksCompleted bool) (context.Context, trace.Span) {
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
@@ -90,7 +90,7 @@ func (t *Tracing) StartCreateTaskResult(ctx context.Context, taskResultCompleted
 		}
 	}
 	attribs := []attribute.KeyValue{
-		attribute.Bool(AttribTaskResultCompleted, taskResultCompleted),
+		attribute.Bool(AttribTaskResultMarksCompleted, taskResultMarksCompleted),
 	}
 	return t.tracer.Start(ctx, "createTaskResult", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
 }
@@ -240,13 +240,13 @@ var SpanPatchTaskResult = Span{
 	name: "patchTaskResult",
 	attributes: []BuiltinAttribute{
 		{
-			name: AttribTaskResultCompleted,
+			name: AttribTaskResultMarksCompleted,
 		},
 	},
 }
 
 // StartPatchTaskResult starts a patch_task_result span
-func (t *Tracing) StartPatchTaskResult(ctx context.Context, taskResultCompleted bool) (context.Context, trace.Span) {
+func (t *Tracing) StartPatchTaskResult(ctx context.Context, taskResultMarksCompleted bool) (context.Context, trace.Span) {
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
@@ -255,7 +255,7 @@ func (t *Tracing) StartPatchTaskResult(ctx context.Context, taskResultCompleted 
 		}
 	}
 	attribs := []attribute.KeyValue{
-		attribute.Bool(AttribTaskResultCompleted, taskResultCompleted),
+		attribute.Bool(AttribTaskResultMarksCompleted, taskResultMarksCompleted),
 	}
 	return t.tracer.Start(ctx, "patchTaskResult", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
 }

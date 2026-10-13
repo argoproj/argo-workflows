@@ -124,9 +124,9 @@ This span has no attributes.
 
 Creating the WorkflowTaskResult.
 
-|  attribute  |                 explanation                 |
-|-------------|---------------------------------------------|
-| `completed` | True if the task result is marked completed |
+|     attribute     |                        explanation                        |
+|-------------------|-----------------------------------------------------------|
+| `marks_completed` | True if this write sets the task result's completed label |
 
 #### `create_workflow_pod`
 
@@ -175,9 +175,9 @@ The phase of one node as observed by the controller in the DAG of a workflow.
 
 Patching the WorkflowTaskResult.
 
-|  attribute  |                 explanation                 |
-|-------------|---------------------------------------------|
-| `completed` | True if the task result is marked completed |
+|     attribute     |                        explanation                        |
+|-------------------|-----------------------------------------------------------|
+| `marks_completed` | True if this write sets the task result's completed label |
 
 #### `persist_updates`
 
