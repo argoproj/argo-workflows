@@ -28,7 +28,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     if: github.repository == 'argoproj/argo-workflows'
     permissions:
       contents: read

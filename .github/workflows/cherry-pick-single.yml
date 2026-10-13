@@ -35,7 +35,7 @@ env:
 jobs:
   cherry-pick:
     name: Cherry Pick to ${{ inputs.version_number }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     # Inputs originate from a pull_request_target event, so they are passed
     # through env rather than interpolated into `run:` scripts, where they
     # would be a shell injection.
