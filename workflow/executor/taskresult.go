@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"encoding/json"
+	"maps"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,20 +14,23 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+// upsertTaskResult writes result to the task result, creating it if
+// needed. labels are merged into the task result's labels in the same
+// write, so outputs and the completed label land together.
+func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
 	if !we.taskResultCreated {
-		err := we.createTaskResult(ctx, result)
+		err := we.createTaskResult(ctx, result, labels)
 		if apierr.IsAlreadyExists(err) {
-			return we.patchTaskResult(ctx, result)
+			return we.patchTaskResult(ctx, result, labels)
 		}
 		if err != nil {
 			return err
 		}
 	} else {
-		err := we.patchTaskResult(ctx, result)
+		err := we.patchTaskResult(ctx, result, labels)
 		if err != nil {
 			if apierr.IsNotFound(err) {
-				return we.createTaskResult(ctx, result)
+				return we.createTaskResult(ctx, result, labels)
 			}
 			return err
 		}
@@ -34,29 +38,12 @@ func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.No
 	return nil
 }
 
-func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	ctx, span := we.Tracing.StartPatchTaskResult(ctx)
-	defer span.End()
-	data, err := json.Marshal(&wfv1.WorkflowTaskResult{NodeResult: result})
-	if err != nil {
-		return err
-	}
-	_, err = we.taskResultClient.Patch(ctx,
-		we.nodeID,
-		types.MergePatchType,
-		data,
-		metav1.PatchOptions{},
-	)
-	return err
-}
-
-func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels map[string]string) error {
-	ctx, span := we.Tracing.StartPatchTaskResultLabels(ctx)
+func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	ctx, span := we.Tracing.StartPatchTaskResult(ctx, labels[common.LabelKeyReportOutputsCompleted] == "true")
 	defer span.End()
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
-		},
+		ObjectMeta: metav1.ObjectMeta{Labels: labels},
+		NodeResult: result,
 	})
 	if err != nil {
 		return err
@@ -70,8 +57,8 @@ func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels ma
 	return err
 }
 
-func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	ctx, span := we.Tracing.StartCreateTaskResult(ctx)
+func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	ctx, span := we.Tracing.StartCreateTaskResult(ctx, labels[common.LabelKeyReportOutputsCompleted] == "true")
 	defer span.End()
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
@@ -87,6 +74,7 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		common.LabelKeyWorkflow:               we.workflow,
 		common.LabelKeyReportOutputsCompleted: "false",
 	})
+	maps.Copy(taskResult.Labels, labels)
 	taskResult.SetOwnerReferences([]metav1.OwnerReference{{
 		APIVersion: workflow.APIVersion,
 		Kind:       workflow.WorkflowKind,
@@ -103,4 +91,10 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 	)
 	we.taskResultCreated = err == nil || apierr.IsAlreadyExists(err)
 	return err
+}
+
+// outputsCompletedLabels tells the controller that every output has been
+// reported to the task result.
+func outputsCompletedLabels() map[string]string {
+	return map[string]string{common.LabelKeyReportOutputsCompleted: "true"}
 }

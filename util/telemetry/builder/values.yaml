@@ -546,6 +546,8 @@ spans:
     parents: [RunWaitContainer, RunSupervisorContainer]
   - name: CreateTaskResult
     description: Creating the WorkflowTaskResult
+    attributes:
+      - name: TaskResultCompleted
     parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: CreateWorkflowPod
     description: Creating a workflow pod for a node
@@ -581,9 +583,8 @@ spans:
     deterministic: true
   - name: PatchTaskResult
     description: Patching the WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
-  - name: PatchTaskResultLabels
-    description: Patching the labels of WorkflowTaskResult
+    attributes:
+      - name: TaskResultCompleted
     parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: PersistUpdates
     description: Persisting workflow status updates to Kubernetes

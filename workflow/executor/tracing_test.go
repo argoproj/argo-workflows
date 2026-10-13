@@ -145,7 +145,7 @@ func TestTracingArtifactSaveSpans(t *testing.T) {
 }
 
 // TestTracingWaitContainerChildSpans verifies all spans that are direct children of runWaitContainer:
-// createTaskResult, patchTaskResult, patchTaskResultLabels, waitWorkload
+// createTaskResult, patchTaskResult, waitWorkload
 func TestTracingWaitContainerChildSpans(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
@@ -156,14 +156,11 @@ func TestTracingWaitContainerChildSpans(t *testing.T) {
 	ctx, waitSpan := tr.StartRunWaitContainer(ctx, fakeWorkflow, fakeNamespace)
 
 	// Create all child spans
-	_, createSpan := tr.StartCreateTaskResult(ctx)
+	_, createSpan := tr.StartCreateTaskResult(ctx, false)
 	createSpan.End()
 
-	_, patchSpan := tr.StartPatchTaskResult(ctx)
+	_, patchSpan := tr.StartPatchTaskResult(ctx, true)
 	patchSpan.End()
-
-	_, patchLabelsSpan := tr.StartPatchTaskResultLabels(ctx)
-	patchLabelsSpan.End()
 
 	_, workloadSpan := tr.StartWaitWorkload(ctx)
 	workloadSpan.End()
@@ -189,13 +186,6 @@ func TestTracingWaitContainerChildSpans(t *testing.T) {
 	assert.Equal(t, trace.SpanKindInternal, patchCollected.SpanKind())
 	assert.Equal(t, parentSpanID, patchCollected.Parent().SpanID(), "patchTaskResult parent should be runWaitContainer")
 	assert.Equal(t, traceID, patchCollected.SpanContext().TraceID())
-
-	// Verify patchTaskResultLabels
-	patchLabelsCollected, err := exporter.GetSpanByName("patchTaskResultLabels")
-	require.NoError(t, err)
-	assert.Equal(t, trace.SpanKindInternal, patchLabelsCollected.SpanKind())
-	assert.Equal(t, parentSpanID, patchLabelsCollected.Parent().SpanID(), "patchTaskResultLabels parent should be runWaitContainer")
-	assert.Equal(t, traceID, patchLabelsCollected.SpanContext().TraceID())
 
 	// Verify waitWorkload
 	workloadCollected, err := exporter.GetSpanByName("waitWorkload")

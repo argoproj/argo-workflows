@@ -56,7 +56,9 @@ var (
 )
 
 // Collect-phase stages. save-artifacts and save-logs hand what they saved
-// to report-outputs through the task's savedArtifacts.
+// to report-outputs through the task's savedArtifacts. report-outputs and
+// report-logs are final reports: they mark the task result complete in the
+// same write as the outputs, so a plan has one of them, last.
 var (
 	captureScriptResult = Stage{Name: "capture-script-result", NeedsMainOutputs: true, Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.CaptureScriptResult(ctx)
