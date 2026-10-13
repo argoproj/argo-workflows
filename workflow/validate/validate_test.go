@@ -1488,6 +1488,10 @@ spec:
             key: secretKey
 `
 
+// TestNodeTaskNameVariable records that a template using {{node.taskName}}
+// passes lint. It can't fail yet: lint skips variables whose root isn't in
+// common.GlobalVarValidWorkflowVariablePrefix, which has no node. entry. It
+// guards against lint rejecting the variable once node. variables are checked.
 func TestNodeTaskNameVariable(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), nodeTaskNameVariable)
 	require.NoError(t, err)
