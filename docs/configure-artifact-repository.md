@@ -677,7 +677,10 @@ endpoint and access/secret keys for your repository.
 
 The key format (`keyFormat`, `blobNameFormat` for Azure, `pathFormat` for HDFS) can reference workflow variables.
 If you don't set one, artifacts are stored under `{{workflow.name}}/{{node.taskName}}`.
-`{{node.taskName}}` is the name of the task's pod, the same value as `{{pod.name}}`, so each pod gets its own key.
+For S3, `keyPrefix` is put in front of this default if you set it.
+For Artifactory, the repository URL is always put in front of the key.
+`{{node.taskName}}` names the attempt: for pod templates it is the pod name, the same value as `{{pod.name}}`, so each attempt gets its own key.
+A key format that uses `{{node.taskName}}` needs a v4.2 or later controller, so don't set one in the shared configmap if you might roll the controller back to an earlier version.
 
 ### S3 compatible artifact repository bucket (such as AWS, GCS, MinIO, and Alibaba Cloud OSS)
 
@@ -785,7 +788,7 @@ data:
   artifactRepository: |
     azure:
       container: my-container
-      blobNameFormat: prefix/in/container     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{node.taskName}}"
+      blobNameFormat: prefix/in/container     #it should reference workflow variables, such as "{{workflow.name}}/{{node.taskName}}"
       accountKeySecret:
         name: my-azure-storage-credentials
         key: account-access-key
