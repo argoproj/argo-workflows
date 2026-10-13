@@ -1527,6 +1527,91 @@ func TestPodSpecPatchPodName(t *testing.T) {
 	}
 }
 
+var nodeTaskNameWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: task-name
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: produce
+  - name: produce
+    %s
+    outputs:
+      parameters:
+      - name: task-name
+        value: "{{node.taskName}}"
+      - name: pod-name
+        value: "{{pod.name}}"
+      artifacts:
+      - name: out
+        path: /tmp/out
+    container:
+      image: argoproj/argosay:v2
+      args: ["{{node.taskName}}"]
+`
+
+// TestNodeTaskNameIsPodName checks that {{node.taskName}} is the pod's name for
+// both pod name formats, with and without a retry strategy, and that the
+// default archive key format resolves to the key pods have always used,
+// workflow name then pod name, which artifact GC keeps when it relocates the
+// task's artifacts onto the unresolved repository location.
+func TestNodeTaskNameIsPodName(t *testing.T) {
+	tests := []struct {
+		name           string
+		podNameVersion string
+		retryStrategy  string
+		wantPodName    string
+	}{
+		{name: "v1", podNameVersion: "v1", wantPodName: "task-name-819054678"},
+		{name: "v2", podNameVersion: "v2", wantPodName: "task-name-produce-819054678"},
+		{name: "v1 retry", podNameVersion: "v1", retryStrategy: "retryStrategy: {limit: 1}", wantPodName: "task-name-453092565"},
+		{name: "v2 retry", podNameVersion: "v2", retryStrategy: "retryStrategy: {limit: 1}", wantPodName: "task-name-produce-453092565"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("POD_NAMES", tt.podNameVersion)
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(nodeTaskNameWf, tt.retryStrategy))
+			woc := newWoc(ctx, *wf)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			pod := pods.Items[0]
+			assert.Equal(t, tt.wantPodName, pod.Name)
+
+			tmpl, err := getPodTemplate(&pod)
+			require.NoError(t, err)
+			assert.Equal(t, pod.Name, tmpl.Outputs.Parameters[0].Value.String())
+			assert.Equal(t, pod.Name, tmpl.Outputs.Parameters[1].Value.String())
+			assert.Equal(t, []string{pod.Name}, tmpl.Container.Args)
+			mainCtr := containerByName(pod.Spec.Containers, common.MainContainerName)
+			require.NotNil(t, mainCtr)
+			assert.Equal(t, []string{pod.Name}, mainCtr.Args)
+
+			require.NotNil(t, tmpl.ArchiveLocation)
+			require.NotNil(t, tmpl.ArchiveLocation.S3)
+			assert.Equal(t, "task-name/"+pod.Name, tmpl.ArchiveLocation.S3.Key)
+
+			// The executor keys an output artifact under the resolved archive
+			// location, and artifact GC relocates it onto the repository's
+			// location, whose key format is still unresolved.
+			art := wfv1.Artifact{Name: "out", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: path.Join(tmpl.ArchiveLocation.S3.Key, "out.tgz")}}}
+			gcLocation := woc.artifactRepository.ToArtifactLocation()
+			assert.Equal(t, "{{workflow.name}}/{{node.taskName}}", gcLocation.S3.Key)
+			require.NoError(t, art.Relocate(gcLocation))
+			assert.Equal(t, "task-name/"+pod.Name+"/out.tgz", art.S3.Key)
+			assert.Equal(t, "my-bucket", art.S3.Bucket)
+		})
+	}
+}
+
 func TestMainContainerCustomization(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	mainCtrSpec := &apiv1.Container{

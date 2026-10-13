@@ -2274,7 +2274,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		podName := woc.getPodName(nodeName, resolvedTmpl.Name)
+		localParams[varkeys.PodName.Template()] = podName
+		localParams[varkeys.NodeTaskName.Template()] = podName
 	}
 	if orgTmpl.IsDAGTask() {
 		localParams[varkeys.TasksName.Template()] = orgTmpl.GetName()
@@ -2546,9 +2548,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 
 		localParams = make(map[string]string)
-		// Change the `pod.name` variable to the new retry node name
+		// Change the `pod.name` and `node.taskName` variables to the new retry node name
 		if processedTmpl.IsPodType() {
-			localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, processedTmpl.Name)
+			podName := woc.getPodName(nodeName, processedTmpl.Name)
+			localParams[varkeys.PodName.Template()] = podName
+			localParams[varkeys.NodeTaskName.Template()] = podName
 		}
 		// Inject the retryAttempt number
 		localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
