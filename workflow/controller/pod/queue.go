@@ -114,6 +114,13 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	ctx, log := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName}).InContext(ctx)
 	log.Info(ctx, "cleaning up pod")
 	err := func() error {
+		if uid != "" {
+			// a pod with the same name may have replaced the one this item is for
+			if pod, _ := c.GetPod(namespace, podName); pod != nil && string(pod.UID) != uid {
+				log.Info(ctx, "ignoring cleanup of a replaced pod")
+				return nil
+			}
+		}
 		switch action {
 		case terminateContainers:
 			pod, err := c.GetPod(namespace, podName)
