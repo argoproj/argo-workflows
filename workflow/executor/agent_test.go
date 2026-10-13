@@ -76,7 +76,7 @@ func TestAgentPluginExecuteTaskSet(t *testing.T) {
 				consideredTasks: &sync.Map{},
 				plugins:         []executorplugins.TemplateExecutor{tc.plugin},
 			}
-			_, requeue, err := ae.processTask(ctx, *tc.template)
+			_, requeue, err := ae.processTask(ctx, "node", *tc.template)
 			if err != nil {
 				t.Errorf("expect nil, but got %v", err)
 			}
