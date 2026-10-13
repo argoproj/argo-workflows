@@ -46,7 +46,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/operator_wfdefault/workflow-defaults.yaml")
 	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_wfdefault/simple-workflow-template.yaml")
 	var resultSpec wfv1.WorkflowSpec
-	wfv1.MustUnmarshal("@testdata/operator_wfdefault/stored-workflow-spec.json", &resultSpec)
+	wfv1.MustUnmarshal("@testdata/operator_wfdefault/stored-workflow-spec.yaml", &resultSpec)
 
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
