@@ -954,13 +954,16 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		return nil, scheduleErr
 	}
 
-	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || templateDeadline.Sub(pb.in.now).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
-		newActiveDeadlineSeconds := int64(templateDeadline.Sub(pb.in.now).Seconds())
-		if newActiveDeadlineSeconds <= 1 {
-			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+	if templateDeadline != nil {
+		remaining := templateDeadline.Sub(pb.in.now)
+		if pod.Spec.ActiveDeadlineSeconds == nil || remaining.Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds) {
+			newActiveDeadlineSeconds := int64(remaining.Seconds())
+			if newActiveDeadlineSeconds <= 1 {
+				return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+			}
+			log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
+			pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 		}
-		log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
-		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
 	// build is pure: the pod is fully constructed but not yet created. submitPod
