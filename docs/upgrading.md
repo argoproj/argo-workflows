@@ -151,6 +151,9 @@ A `retryStrategy.expression` on a DAG template that tests `lastRetry.message` no
 
 When a `retryStrategy.expression` fails to evaluate, the retried node still ends `Error` as before, with the expression's error as its message; its last attempt keeps its own phase (for example `Failed`) instead of also becoming `Error`.
 
+A retry attempt that finishes just as the controller's reconciliation runs past its time limit now keeps its own phase and message, and the controller starts the next attempt in a later reconciliation.
+Previously the attempt was marked `Error` with the message `Deadline exceeded`.
+
 A DAG task node whose task fails before it runs (for example because its pod is rejected) now shows the cause without the `task '<node name>' errored:` prefix, as step nodes already did.
 
 When the entrypoint DAG or Steps template ends `Error` because of its own error (for example its outputs cannot be resolved), the workflow message is now that error, without the `error in entry template execution:` prefix.
