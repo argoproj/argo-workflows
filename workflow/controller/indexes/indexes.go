@@ -18,4 +18,5 @@ const (
 	ConditionsIndex              = "status.conditions"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
 	UIDIndex                     = "uid"
+	WorkflowActionIndex          = "workflowaction.workflow"
 )

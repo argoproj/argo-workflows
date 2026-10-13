@@ -3,7 +3,6 @@ package cron
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -290,19 +289,34 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy(ctx context.Context) (bool, 
 	return true, nil
 }
 
+// terminateOutstandingWorkflows requests a Terminate WorkflowAction for each active workflow.
+// The workflow controller applies it inside its reconcile loop, so the cron controller is not a
+// second writer of the workflow; the action settles on its own (a workflow that already completed
+// or was deleted fails it, one already terminating succeeds as a no-op), so the outcome is not
+// awaited here.
 func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context) error {
 	for _, wfObjectRef := range woc.cronWf.Status.Active {
 		woc.log.WithField("name", wfObjectRef.Name).Info(ctx, "stopping")
-		err := util.TerminateWorkflow(ctx, woc.wfClient, wfObjectRef.Name)
+		action := &v1alpha1.WorkflowAction{
+			ObjectMeta: v1.ObjectMeta{
+				GenerateName: fmt.Sprintf("%s-terminate-", wfObjectRef.Name),
+				Namespace:    woc.cronWf.Namespace,
+				Labels: map[string]string{
+					common.LabelKeyAction:       string(v1alpha1.ActionTypeTerminate),
+					common.LabelKeyCronWorkflow: woc.cronWf.Name,
+				},
+			},
+			Spec: v1alpha1.WorkflowActionSpec{
+				WorkflowRef: v1alpha1.WorkflowActionRef{Name: wfObjectRef.Name, UID: wfObjectRef.UID},
+				Action:      v1alpha1.ActionTypeTerminate,
+			},
+		}
+		// the controller's action informer is filtered by instance ID, like its workflows
+		if instanceID, ok := woc.cronWf.GetLabels()[common.LabelKeyControllerInstanceID]; ok {
+			action.Labels[common.LabelKeyControllerInstanceID] = instanceID
+		}
+		_, err := woc.wfClientset.ArgoprojV1alpha1().WorkflowActions(woc.cronWf.Namespace).Create(ctx, action, v1.CreateOptions{})
 		if err != nil {
-			if apierrors.IsNotFound(err) {
-				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
-				continue
-			}
-			if alreadyShutdownErr, ok := errors.AsType[util.AlreadyShutdownError](err); ok {
-				woc.log.Warn(ctx, alreadyShutdownErr.Error())
-				continue
-			}
 			return fmt.Errorf("error stopping workflow %s: %w", wfObjectRef.Name, err)
 		}
 	}

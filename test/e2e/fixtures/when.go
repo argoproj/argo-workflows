@@ -42,11 +42,13 @@ type When struct {
 	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
+	actionClient      v1alpha1.WorkflowActionInterface
 	hydrator          hydrator.Interface
 	kubeClient        kubernetes.Interface
 	bearerToken       string
 	restConfig        *rest.Config
 	config            *config.Config
+	actionName        string
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -883,6 +885,50 @@ func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 		w.t.Fatal(err)
 	}
 	return w
+}
+
+// CreateWorkflowAction creates a WorkflowAction. When spec.workflowRef.name is empty it targets
+// the workflow last submitted by this When. The created action's name is remembered for
+// WaitForWorkflowAction.
+func (w *When) CreateWorkflowAction(spec wfv1.WorkflowActionSpec) *When {
+	w.t.Helper()
+	ctx := logging.TestContext(w.t.Context())
+	if spec.WorkflowRef.Name == "" && w.wf != nil {
+		spec.WorkflowRef.Name = w.wf.Name
+	}
+	a := &wfv1.WorkflowAction{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "e2e-action-",
+			Labels:       map[string]string{Label: "true", common.LabelKeyWorkflow: spec.WorkflowRef.Name},
+		},
+		Spec: spec,
+	}
+	created, err := w.actionClient.Create(ctx, a, metav1.CreateOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.actionName = created.Name
+	return w
+}
+
+// WaitForWorkflowAction polls the last created WorkflowAction until condition is met.
+func (w *When) WaitForWorkflowAction(timeout time.Duration, condition func(a *wfv1.WorkflowAction) bool) *When {
+	w.t.Helper()
+	ctx := logging.TestContext(w.t.Context())
+	deadline := time.Now().Add(timeout)
+	for {
+		a, err := w.actionClient.Get(ctx, w.actionName, metav1.GetOptions{})
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		if condition(a) {
+			return w
+		}
+		if time.Now().After(deadline) {
+			w.t.Fatalf("timed out after %v waiting for WorkflowAction %q to meet condition, last status: %+v", timeout, w.actionName, a.Status)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }
 
 func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {

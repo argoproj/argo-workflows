@@ -151,6 +151,7 @@ func TestExampleWorkflows(t *testing.T) {
 					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().WorkflowTaskSets(fixtures.Namespace),
 					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates(),
 					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().CronWorkflows(fixtures.Namespace),
+					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().WorkflowActions(fixtures.Namespace),
 					hydrator.New(persistence.OffloadNodeStatusRepo),
 					kubeClient,
 					string(sec.Data["token"]),

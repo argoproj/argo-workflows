@@ -137,6 +137,8 @@ Deprecated features are [explained here](deprecations.md).
 - [`synchronization mutex`](deprecations.md#synchronization-mutex)
 - [`synchronization semaphore`](deprecations.md#synchronization-semaphore)
 - [`workflow podpriority`](deprecations.md#workflow-podpriority)
+- [`workflow spec.shutdown`](deprecations.md#workflow-specshutdown)
+- [`workflow spec.suspend`](deprecations.md#workflow-specsuspend)
 
 #### `error_count`
 
@@ -518,6 +520,17 @@ This will tell you the number of workflows with running pods.
 |-----------|----------------------------------------------------|
 | `type`    | The type of condition, currently only `PodRunning` |
 | `status`  | Boolean: `true` or `false`                         |
+
+#### `workflowactions_processed_total`
+
+A counter of the total number of WorkflowActions processed by the controller.
+`outcome` is the action's terminal phase: `Succeeded` if the controller applied it, `Failed` if it could not be applied.
+
+|  attribute  |                               explanation                               |
+|-------------|-------------------------------------------------------------------------|
+| `action`    | The requested action, one of `Suspend`, `Resume`, `Stop` or `Terminate` |
+| `outcome`   | The terminal phase of the WorkflowAction, `Succeeded` or `Failed`       |
+| `namespace` | The namespace that the Workflow is in                                   |
 
 #### `workflowtemplate_runtime`
 
