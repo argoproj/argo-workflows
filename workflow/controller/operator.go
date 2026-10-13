@@ -2299,9 +2299,7 @@ func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string,
 	}
 	localParams := make(common.Parameters)
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		podName := woc.getPodName(nodeName, resolvedTmpl.Name)
-		localParams[varkeys.PodName.Template()] = podName
-		localParams[varkeys.NodeTaskName.Template()] = podName
+		setPodNameParams(localParams, woc.getPodName(nodeName, resolvedTmpl.Name))
 	}
 	if nameKey != nil {
 		localParams[nameKey.Template()] = name
@@ -4486,6 +4484,15 @@ func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
 	return wfutil.GeneratePodName(woc.wf.Name, nodeName, templateName, woc.wf.ResolveNodeID(nodeName), version)
+}
+
+// setPodNameParams sets pod.name and node.taskName in params from a pod name.
+// For a task that runs in its own pod they are the same, but they will diverge
+// for tasks run in a pool of hot workers (#16530), so set them together: here
+// for template parameters, and in prepareMetricScope for metric labels.
+func setPodNameParams(params map[string]string, podName string) {
+	params[varkeys.PodName.Template()] = podName
+	params[varkeys.NodeTaskName.Template()] = podName
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {
