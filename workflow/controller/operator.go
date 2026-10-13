@@ -4053,38 +4053,43 @@ func (woc *wfOperationCtx) createTemplateContext(ctx context.Context, scope wfv1
 }
 
 func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]any, realTimeScope map[string]func() float64, realTimeOnly bool) {
-	for _, metricTmpl := range metricList {
+	for _, unsubstituted := range metricList {
 		// Don't process real time metrics after execution
-		if realTimeOnly && !metricTmpl.IsRealtime() {
+		if realTimeOnly && !unsubstituted.IsRealtime() {
 			continue
 		}
 
-		if metricTmpl.Help == "" {
-			woc.reportMetricEmissionError(ctx, fmt.Sprintf("metric '%s' must contain a help string under 'help: ' field", metricTmpl.Name))
+		if unsubstituted.Help == "" {
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("metric '%s' must contain a help string under 'help: ' field", unsubstituted.Name))
 			continue
 		}
 
 		// Substitute parameters in non-value fields of the template to support variables in places such as labels,
 		// name, and help. We do not substitute value fields here (i.e. gauge, histogram, counter) here because they
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
-		metricTmplBytes, err := json.Marshal(metricTmpl)
+		metricTmplBytes, err := json.Marshal(unsubstituted)
 		if err != nil {
-			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", unsubstituted.Name, err))
 			continue
 		}
 		replacedValue, err := template.Replace(ctx, string(metricTmplBytes), localScope, false)
 		if err != nil {
-			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s': %s", unsubstituted.Name, err))
 			continue
 		}
 
 		var metricTmplSubstituted wfv1.Prometheus
 		err = json.Unmarshal([]byte(replacedValue), &metricTmplSubstituted)
 		if err != nil {
-			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err))
+			woc.reportMetricEmissionError(ctx, fmt.Sprintf("unable to substitute parameters for metric '%s' (unmarshal): %s", unsubstituted.Name, err))
 			continue
 		}
-		// Only substitute non-value fields here. Value field substitution happens below
+		// Only substitute non-value fields here. Value field substitution happens below.
+		// They are substituted into a copy: metricList belongs to the caller's
+		// template (or the workflow's spec), whose metrics are emitted again,
+		// for another node or with another status (a retry's attempts and its
+		// Retry node share one template), and must keep their variables.
+		metricTmpl := unsubstituted.DeepCopy()
 		metricTmpl.Name = metricTmplSubstituted.Name
 		metricTmpl.Help = metricTmplSubstituted.Help
 		metricTmpl.Labels = metricTmplSubstituted.Labels

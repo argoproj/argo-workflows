@@ -13016,3 +13016,94 @@ func TestRegressionR4_S11_RetryReentryCountsStackDepth(t *testing.T) {
 		})
 	}
 }
+
+// TestRegressionR4_S11_RetryMetricNotFrozenByPassedAttempt (isubasinghe,
+// round 11): computeMetrics wrote the labels, name and when it substituted
+// for a passed attempt back into the template's metrics, and handleRetries
+// hands that template on to its re-entry, so a Retry node completed there
+// emitted the passed attempt's {{status}}: a retry that ended Succeeded was
+// counted Failed, and a `when: "{{status}} == Succeeded"` metric was skipped.
+// Here attempt 0 runs a step whose pod create is rejected, so it fails as it
+// is dispatched, and attempt 1 skips that step, so it succeeds at once and
+// the Retry node completes in the same operation.
+func TestRegressionR4_S11_RetryMetricNotFrozenByPassedAttempt(t *testing.T) {
+	for _, entry := range []string{"work", "maindag"} {
+		t.Run(entry, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			name := "r4-s11-frozen-" + entry
+			metric := "r4_s11_frozen_" + entry
+			wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+  namespace: default
+spec:
+  entrypoint: ` + entry + `
+  templates:
+  - name: maindag
+    dag:
+      tasks:
+      - name: A
+        template: work
+  - name: work
+    retryStrategy:
+      limit: "2"
+      retryPolicy: Always
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: count by status
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+      - name: ` + metric + `_succeeded
+        help: count of successes
+        when: "{{status}} == Succeeded"
+        counter:
+          value: "1"
+    steps:
+    - - name: first
+        template: pod
+        when: "{{retries}} == 0"
+  - name: pod
+    container:
+      image: alpine
+      command: [echo, hi]
+`)
+			require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			r4RejectPodCreate(controller, func(*apiv1.Pod) bool { return true }, r4S11Denied)
+
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			retryNode := name
+			if entry == "maindag" {
+				retryNode = name + ".A"
+			}
+			retry, err := woc.wf.GetNodeByName(retryNode)
+			require.NoError(t, err)
+			require.Equal(t, wfv1.NodeSucceeded, retry.Phase, "the Retry node completes in the first operation")
+			attempts := r4S11Attempts(woc, retryNode)
+			require.Len(t, attempts, 2)
+			passed, err := woc.wf.GetNodeByName(attempts[0])
+			require.NoError(t, err)
+			require.True(t, passed.FailedOrError(), "attempt 0 fails: %s", passed.Phase)
+			for range 2 {
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+			}
+			require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+			assert.InDelta(t, 1, r4C65Counter(t, metric, "status", string(passed.Phase)), 0.001, "the passed attempt, counted with its own status")
+			assert.InDelta(t, 1, r4C65Counter(t, metric, "status", string(wfv1.NodeSucceeded)), 0.001, "the Retry node, counted with its own status")
+			assert.InDelta(t, 1, r4C65Counter(t, metric+"_succeeded"), 0.001, "the Retry node passes its own when")
+			for _, c := range woc.wf.Status.Conditions {
+				assert.NotEqual(t, wfv1.ConditionTypeMetricsError, c.Type, c.Message)
+			}
+		})
+	}
+}
