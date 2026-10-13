@@ -798,6 +798,7 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, templateDeadline: &inAMinute, wantADS: 30},
 		{name: "timeout nearly expired", tmplADS: "30", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
 		{name: "timeout passed", tmplADS: "30", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
+		{name: "timeout passed longer ago than activeDeadlineSeconds", tmplADS: "5", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
