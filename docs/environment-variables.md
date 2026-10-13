@@ -23,7 +23,7 @@ This document outlines environment variables that can be used to customize behav
 | `ARGO_AGENT_PATCH_RATE`                  | `time.Duration`     | `DEFAULT_REQUEUE_TIME`                                                                      | Rate that the Argo Agent will patch the workflow task-set.                                                                                                                                                                                                               |
 | `ARGO_AGENT_CPU_LIMIT`                   | `resource.Quantity` | `100m`                                                                                      | CPU resource limit for the agent.                                                                                                                                                                                                                                        |
 | `ARGO_AGENT_MEMORY_LIMIT`                | `resource.Quantity` | `256m`                                                                                      | Memory resource limit for the agent.                                                                                                                                                                                                                                     |
-| `ARGO_POD_STATUS_CAPTURE_FINALIZER`      | `bool`              | `false`                                                                                     | The finalizer blocks the deletion of pods until the controller captures their status. While its workflow runs, a deleted pod that is not `Pending` keeps the finalizer until the controller has recorded the pod's result in the workflow: for at most `TASK_RESULT_TIMEOUT_DURATION` after its `deletionTimestamp` or the controller's start, whichever is later, or, if no kubelet finished the pod (for example it was force deleted, or marked `Failed` by Kubernetes after its node was lost), for 2 to 3 minutes after its `deletionTimestamp`. So a running pod that is deleted and stops in that time is recorded with its exit status (for example exit code 143 after `SIGTERM`), not as `pod deleted`. To remove it by hand, losing any result not recorded yet: `kubectl patch pod <pod> --type json -p '[{"op":"test","path":"/metadata/uid","value":"<pod uid>"},{"op":"test","path":"/metadata/finalizers/0","value":"workflows.argoproj.io/status"},{"op":"remove","path":"/metadata/finalizers/0"}]'`.
+| `ARGO_POD_STATUS_CAPTURE_FINALIZER`      | `bool`              | `false`                                                                                     | The finalizer blocks the deletion of pods until the controller captures their status. See [Pod status capture finalizer](#pod-status-capture-finalizer). |
 | `BUBBLE_ENTRY_TEMPLATE_ERR`              | `bool`              | `true`                                                                                      | Whether to bubble up template errors to workflow.                                                                                                                                                                                                                        |
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
 | `CACHE_GC_AFTER_NOT_HIT_DURATION`        | `time.Duration`     | `30s`                                                                                       | When a memoization cache has not been hit after this duration, it will be deleted.                                                                                                                                                                                       |
@@ -96,6 +96,19 @@ spec:
         - env:
             - name: WORKFLOW_GC_PERIOD
               value: 30s
+```
+
+### Pod status capture finalizer
+
+With `ARGO_POD_STATUS_CAPTURE_FINALIZER=true`, a deleted pod that is not `Pending` keeps the finalizer while its workflow runs, until the controller has recorded the pod's result in the workflow.
+If the kubelet finished the pod, the controller keeps it for at most `TASK_RESULT_TIMEOUT_DURATION` after its `deletionTimestamp` or the controller's start, whichever is later.
+If no kubelet finished the pod, for example because it was force deleted on an unreachable node or Kubernetes marked it `Failed` after its node was lost, the controller keeps it for 2 to 3 minutes after its `deletionTimestamp`.
+A running pod that is deleted and stops in that time is recorded with its exit status, for example exit code 143 after `SIGTERM`, not as `pod deleted`.
+
+To remove the finalizer by hand, losing any result that is not recorded yet:
+
+```bash
+kubectl patch pod <pod> --type json -p '[{"op":"test","path":"/metadata/uid","value":"<pod uid>"},{"op":"test","path":"/metadata/finalizers/0","value":"workflows.argoproj.io/status"},{"op":"remove","path":"/metadata/finalizers/0"}]'
 ```
 
 ## Executor
