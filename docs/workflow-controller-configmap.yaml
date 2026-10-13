@@ -127,7 +127,7 @@ data:
       # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
       # node.taskName (the pod name, also available as pod.name). Can also use strftime formatting
       # of workflow.creationTimestamp so that workflow artifacts can be organized by date.
-      # If omitted, will use `{{workflow.name}}/{{node.taskName}}`, which has potential for have collisions.
+      # If omitted, uses `{{workflow.name}}/{{node.taskName}}`, which has potential for collisions.
       # The following example pattern organizes workflow artifacts under a "my-artifacts" sub dir,
       # then sub dirs for year, month, date and finally workflow name and pod.
       # e.g.: my-artifacts/2018/08/23/my-workflow-abc123/my-workflow-abc123-1234567890

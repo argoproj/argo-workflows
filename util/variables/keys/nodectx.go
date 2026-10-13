@@ -19,7 +19,7 @@ var (
 	// node.taskName names one attempt of a pod-producing node: the name of the
 	// pod it runs in, from the same generator as pod.name. The default artifact
 	// repository key format uses it.
-	NodeTaskName = nodeCtx("node.taskName", "Task name of the node: the same as pod.name for pod-producing templates", podKindsOnExit)
+	NodeTaskName = nodeCtx("node.taskName", "Name of this attempt of the node, the same as pod.name for pod-producing templates", podKindsOnExit)
 	NodeName     = nodeCtx("node.name", "Full node name", anyTmpl)
 	StepsName    = nodeCtx("steps.name", "Name of the current step (inside a Steps template body)", []v.TemplateKind{v.TmplSteps})
 	TasksName    = nodeCtx("tasks.name", "Name of the current task (inside a DAG template body)", []v.TemplateKind{v.TmplDAG})
