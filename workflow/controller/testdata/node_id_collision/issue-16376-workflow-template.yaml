@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-debug
+  namespace: default
+spec:
+  templates:
+    - name: custom-job
+      inputs:
+        parameters:
+          - name: message
+      steps:
+      - - name: custom-job-main
+          template: custom-job-main
+          arguments:
+            parameters:
+            - name: message
+              value: "{{inputs.parameters.message}}"
+    - name: custom-job-main
+      inputs:
+        parameters:
+        - name: message
+      container:
+        image: argoproj/argosay:v2
+        command: [echo]
+        args: ["{{inputs.parameters.message}}"]
