@@ -821,7 +821,7 @@ func TestTaskResultRetries(t *testing.T) {
 		we, _ := newFlakyTaskResultExecutor(t, -1, 100*time.Millisecond)
 
 		start := time.Now()
-		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}, nil)
 		require.Error(t, err)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
 		require.ErrorContains(t, err, "gave up writing task result after 100ms: ")
@@ -846,7 +846,7 @@ func TestTaskResultRetries(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		we, clientset := newFlakyTaskResultExecutor(t, 200*time.Millisecond, time.Minute)
 
-		require.NoError(t, we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}))
+		require.NoError(t, we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}, nil))
 		result, err := clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace).Get(ctx, fakeNodeID, metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, wfv1.Progress("1/2"), result.Progress)
@@ -857,7 +857,7 @@ func TestTaskResultRetries(t *testing.T) {
 		time.AfterFunc(50*time.Millisecond, cancel)
 
 		start := time.Now()
-		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}, nil)
 		assert.Less(t, time.Since(start), 10*time.Second)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
 		assert.NotContains(t, err.Error(), "gave up", "the limit didn't run out")
@@ -927,7 +927,7 @@ func TestTaskResultRetries(t *testing.T) {
 			return true, nil, apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, nil)
 		})
 
-		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}, nil)
 		assert.True(t, apierr.IsForbidden(err), "got %v", err)
 		assert.Equal(t, 1, attempts)
 	})
