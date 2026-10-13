@@ -4,14 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"time"
-
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
@@ -24,7 +20,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
-	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
@@ -203,7 +198,6 @@ type podBuilderDeps interface {
 
 	// workflow-pod-only helpers reaching live state / controller config
 	IsArchiveLogs(tmpl *wfv1.Template) bool
-	executorServiceAccountName(tmpl *wfv1.Template) string
 	createArtifactVolumeMounts(ctx context.Context, tmpl *wfv1.Template) []apiv1.Volume
 	addInputArtifactsVolumes(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error
 	newInitContainers(ctx context.Context, tmpl *wfv1.Template) ([]apiv1.Container, error)
@@ -419,65 +413,21 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	// it, so use it directly rather than allocating a second full-spec copy.
 	wfSpec := pb.in.execWfSpec
 
-	for i, c := range mainCtrs {
-		if c.Name == "" || tmpl.GetType() != wfv1.TemplateTypeContainerSet {
-			c.Name = common.MainContainerName
-		}
-		// Allow customization of main container resources.
-		if ctrDefaults := pb.in.mainContainerDefaults; ctrDefaults != nil {
-			// essentially merge the defaults, then the template, into the container
-			var a []byte
-			a, err = json.Marshal(ctrDefaults)
-			if err != nil {
-				return nil, err
-			}
-			var b []byte
-			b, err = json.Marshal(c)
-			if err != nil {
-				return nil, err
-			}
-
-			var mergedContainerByte []byte
-			mergedContainerByte, err = strategicpatch.StrategicMergePatch(a, b, apiv1.Container{})
-			if err != nil {
-				return nil, err
-			}
-			c = apiv1.Container{}
-			if unmarshalErr := json.Unmarshal(mergedContainerByte, &c); unmarshalErr != nil {
-				return nil, unmarshalErr
-			}
-		}
-
-		mainCtrs[i] = c
+	if err = applyMainContainerDefaults(mainCtrs, tmpl, pb.in.mainContainerDefaults); err != nil {
+		return nil, err
 	}
 
-	var activeDeadlineSeconds *int64
-	wfDeadline := pb.in.computedWorkflowDeadline
-	tmplActiveDeadlineSeconds, err := intstr.Int64(tmpl.ActiveDeadlineSeconds)
+	activeDeadlineSeconds, start, err := taskActiveDeadlineSeconds(tmpl, pb.in.computedWorkflowDeadline, opts.onExitPod, pb.in.now)
 	if err != nil {
 		return nil, err
 	}
-	if wfDeadline == nil || opts.onExitPod { // ignore the workflow deadline for exit handler so they still run if the deadline has passed
-		activeDeadlineSeconds = tmplActiveDeadlineSeconds
-	} else {
-		wfActiveDeadlineSeconds := int64(wfDeadline.Sub(pb.in.now).Seconds())
-		switch {
-		case wfActiveDeadlineSeconds <= 0:
-			return nil, nil
-		case tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmplActiveDeadlineSeconds:
-			activeDeadlineSeconds = &wfActiveDeadlineSeconds
-		default:
-			activeDeadlineSeconds = tmplActiveDeadlineSeconds
-		}
+	if !start {
+		return nil, nil
 	}
 
 	// If the template is marked for debugging no deadline will be set
-	for _, c := range mainCtrs {
-		for _, env := range c.Env {
-			if env.Name == "ARGO_DEBUG_PAUSE_BEFORE" || env.Name == "ARGO_DEBUG_PAUSE_AFTER" {
-				activeDeadlineSeconds = nil
-			}
-		}
+	if debugPauseRequested(mainCtrs) {
+		activeDeadlineSeconds = nil
 	}
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -524,10 +474,10 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		pod.Labels[common.LabelKeyControllerInstanceID] = pb.in.instanceID
 	}
 
-	pb.addArchiveLocation(ctx, tmpl)
+	addArchiveLocation(ctx, tmpl, pb.in.artifactRepository, pb.deps.IsArchiveLogs(tmpl))
 
 	// Populate plugin artifact connection timeouts for all input and output artifacts
-	pb.populateAllPluginArtifactTimeouts(tmpl)
+	populateAllPluginArtifactTimeouts(tmpl, pb.in.config)
 
 	err = pb.setupServiceAccount(ctx, pod, tmpl)
 	if err != nil {
@@ -535,16 +485,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	}
 
 	hasAuxCtr := false
-	// We do not need the aux (wait/supervisor) container for data templates because
-	// argoexec runs as the main container and will perform the job of annotating the
-	// outputs or errors, making it redundant. For resource templates we add one to
-	// collect logs.
-	needsAuxCtr := (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact())
-	// The layout may require the aux container for templates the base rule
-	// skips (e.g. init-less `manifestFrom` resources, which need the supervisor
-	// to stage the manifest artifact pre-main).
-	needsAuxCtr = needsAuxCtr || pb.layout.templateRequiresAuxContainer(tmpl)
-	if needsAuxCtr {
+	if needsAuxContainer(pb.layout, tmpl) {
 		auxCtr := pb.layout.auxContainer(ctx, pb, tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *auxCtr)
 		hasAuxCtr = true
@@ -583,24 +524,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	pb.deps.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, pb.in.boundaryTemplate)
 	pb.deps.addMetadata(pod, tmpl)
 
-	// Set pod-level resources, the template level overriding the workflow level.
-	// This is deliberately not in addSchedulingConstraints: the agent pod also calls
-	// that, and its containers have fixed sizing a task-sized budget would violate.
-	if tmpl.PodResources != nil {
-		pod.Spec.Resources = tmpl.PodResources
-	} else if wfSpec.PodResources != nil {
-		pod.Spec.Resources = wfSpec.PodResources
-	}
-
-	// Set the DRA resource claims, the template level replacing the workflow level
-	// rather than merging with it. The list is cloned so the pod does not share the
-	// slice with the spec the builder was handed. podSpecPatch is applied after this
-	// and keeps its precedence, merging over these entries by claim name.
-	if len(tmpl.ResourceClaims) > 0 {
-		pod.Spec.ResourceClaims = slices.Clone(tmpl.ResourceClaims)
-	} else if len(wfSpec.ResourceClaims) > 0 {
-		pod.Spec.ResourceClaims = slices.Clone(wfSpec.ResourceClaims)
-	}
+	applyPodResources(&pod.Spec, wfSpec, tmpl)
 
 	// Collect initial progress from pod metadata if exists. submitPod applies it
 	// to the node status after a successful pod create.
@@ -638,12 +562,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		pod.Spec.InitContainers[i] = c
 	}
 
-	// simplify template by clearing useless `inputs.parameters` and preserving `inputs.artifacts`.
-	simplifiedTmpl := tmpl.DeepCopy()
-	simplifiedTmpl.Inputs = wfv1.Inputs{
-		Artifacts: simplifiedTmpl.Inputs.Artifacts,
-	}
-	envVarTemplateValue := wfv1.MustMarshallJSON(simplifiedTmpl)
+	envVarTemplateValue := executorTemplate(tmpl)
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
@@ -954,13 +873,13 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		return nil, scheduleErr
 	}
 
-	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || pb.in.now.Sub(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
-		newActiveDeadlineSeconds := int64(templateDeadline.Sub(pb.in.now).Seconds())
-		if newActiveDeadlineSeconds <= 1 {
-			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
-		}
-		log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
-		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+	newActiveDeadlineSeconds, err := applyTemplateDeadline(nodeName, pod.Spec.ActiveDeadlineSeconds, templateDeadline, pb.in.now)
+	if err != nil {
+		return nil, err
+	}
+	if newActiveDeadlineSeconds != pod.Spec.ActiveDeadlineSeconds {
+		log.WithFields(logging.Fields{"newActiveDeadlineSeconds": *newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
+		pod.Spec.ActiveDeadlineSeconds = newActiveDeadlineSeconds
 	}
 
 	// build is pure: the pod is fully constructed but not yet created. submitPod
@@ -996,13 +915,7 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 }
 
 func (pb *podBuilder) getDeadline(opts *createWorkflowPodOpts) *time.Time {
-	deadline := time.Time{}
-	if pb.in.workflowDeadline != nil && !opts.onExitPod {
-		deadline = *pb.in.workflowDeadline
-	}
-	if !opts.executionDeadline.IsZero() && (deadline.IsZero() || opts.executionDeadline.Before(deadline)) {
-		deadline = opts.executionDeadline
-	}
+	deadline := taskDeadline(pb.in.workflowDeadline, opts.executionDeadline, opts.onExitPod)
 	return &deadline
 }
 
@@ -1145,15 +1058,7 @@ func (woc *wfOperationCtx) newSupervisorContainer(ctx context.Context, tmpl *wfv
 // into `main` for init-less pods. Reuses the executor image/pullPolicy so
 // the mounted binary matches the running supervisor.
 func (woc *wfOperationCtx) buildArgoBinVolume() apiv1.Volume {
-	return apiv1.Volume{
-		Name: argoBinVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			Image: &apiv1.ImageVolumeSource{
-				Reference:  woc.controller.executorImage(),
-				PullPolicy: woc.controller.executorImagePullPolicy(),
-			},
-		},
-	}
+	return argoBinVolume(woc.controller.executorImage(), woc.controller.executorImagePullPolicy())
 }
 
 // argoBinVolumeMount is the read-only mount of the argoexec-bin image volume so
@@ -1213,40 +1118,17 @@ func (woc *wfOperationCtx) getExecutorLogOpts(ctx context.Context) []string {
 	return []string{"--loglevel", string(log.Level()), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
 }
 
-func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
-	execEnvVars := []apiv1.EnvVar{
-		{
-			Name: common.EnvVarPodName,
-			ValueFrom: &apiv1.EnvVarSource{
-				FieldRef: &apiv1.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.name",
-				},
-			},
-		},
-		{
-			Name: common.EnvVarPodUID,
-			ValueFrom: &apiv1.EnvVarSource{
-				FieldRef: &apiv1.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.uid",
-				},
-			},
-		},
-		{
-			Name:  common.EnvVarWorkflowUID,
-			Value: string(woc.wf.UID),
-		},
+// execContainerConfig gathers the configuration argoexec containers are built
+// from for this workflow.
+func (woc *wfOperationCtx) execContainerConfig() execContainerConfig {
+	return execContainerConfig{
+		image:           woc.controller.executorImage(),
+		imagePullPolicy: woc.controller.executorImagePullPolicy(),
+		executor:        woc.controller.Config.GetExecutor(),
+		kubeConfig:      woc.controller.Config.KubeConfig,
+		instanceID:      woc.controller.Config.InstanceID,
+		workflowUID:     woc.wf.UID,
 	}
-	if v := woc.controller.Config.InstanceID; v != "" {
-		execEnvVars = append(execEnvVars,
-			apiv1.EnvVar{Name: common.EnvVarInstanceID, Value: v},
-		)
-	}
-	if woc.controller.Config.Executor != nil {
-		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
-	}
-	return execEnvVars
 }
 
 // kubeConfigVolumeName returns the configured kubeconfig volume name, or the
@@ -1259,89 +1141,21 @@ func kubeConfigVolumeName(kc *config.KubeConfig) string {
 }
 
 func (pb *podBuilder) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
-	var volumes []apiv1.Volume
-	if pb.in.kubeConfig != nil {
-		name := kubeConfigVolumeName(pb.in.kubeConfig)
-		volumes = append(volumes, apiv1.Volume{
-			Name: name,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{
-					SecretName: pb.in.kubeConfig.SecretName,
-				},
-			},
-		})
-	}
-
-	volumes = append(volumes, volumeVarArgo, volumeTmpDir)
-	volumes = append(volumes, tmpl.Volumes...)
-	return volumes
+	return podVolumes(pb.in.kubeConfig, tmpl)
 }
 
 func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
-	exec := apiv1.Container{
-		Name:            name,
-		Image:           woc.controller.executorImage(),
-		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-		Env:             woc.createEnvVars(),
-		Resources:       woc.controller.Config.GetExecutor().Resources,
-		SecurityContext: woc.controller.Config.GetExecutor().SecurityContext,
-		Args:            woc.controller.Config.GetExecutor().Args,
-	}
-	// lock down resource pods by default
-	if tmpl.GetType() == wfv1.TemplateTypeResource && exec.SecurityContext == nil {
-		exec.SecurityContext = common.MinimalCtrSC()
-		// TODO: always set RO FS once #10787 is fixed
-		exec.SecurityContext.ReadOnlyRootFilesystem = nil
-		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName && exec.Name != common.SupervisorContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = new(true)
-		}
-	}
-	if woc.controller.Config.KubeConfig != nil {
-		path := woc.controller.Config.KubeConfig.MountPath
-		if path == "" {
-			path = common.KubeConfigDefaultMountPath
-		}
-		name := kubeConfigVolumeName(woc.controller.Config.KubeConfig)
-		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
-			Name:      name,
-			MountPath: path,
-			ReadOnly:  true,
-			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
-		})
-		exec.Args = append(exec.Args, "--kubeconfig="+path)
-	}
-
-	if woc.executorServiceAccountName(tmpl) != "" {
-		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
-			Name:      common.ServiceAccountTokenVolumeName,
-			MountPath: common.ServiceAccountTokenMountPath,
-			ReadOnly:  true,
-		})
-	}
-	return &exec
+	return buildExecContainer(name, tmpl, woc.execContainerConfig(), executorServiceAccountName(tmpl, &woc.execWf.Spec))
 }
 
 // addMetadata applies metadata specified in the template
 func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	if woc.execWf.Spec.PodMetadata != nil {
-		// add workflow-level pod annotations and labels
-		maps.Copy(pod.Annotations, woc.execWf.Spec.PodMetadata.Annotations)
-		maps.Copy(pod.Labels, woc.execWf.Spec.PodMetadata.Labels)
-	}
-
-	maps.Copy(pod.Annotations, tmpl.Metadata.Annotations)
-	maps.Copy(pod.Labels, tmpl.Metadata.Labels)
+	applyPodMetadata(&pod.ObjectMeta, &woc.execWf.Spec, tmpl)
 }
 
 // addDNSConfig applies DNSConfig to the pod
 func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
-	if woc.execWf.Spec.DNSPolicy != nil {
-		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
-	}
-
-	if woc.execWf.Spec.DNSConfig != nil {
-		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
-	}
+	applyDNSConfig(&pod.Spec, &woc.execWf.Spec)
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
@@ -1351,57 +1165,7 @@ func (woc *wfOperationCtx) addSchedulingConstraints(_ context.Context, pod *apiv
 	// createAgentPod passes nil (agent pods have no boundary node) — so this
 	// function performs no live woc.wf reads and stays consistent with the rest
 	// of the pure pod builder.
-	// Set nodeSelector (if specified)
-	switch {
-	case len(tmpl.NodeSelector) > 0:
-		pod.Spec.NodeSelector = tmpl.NodeSelector
-	case boundaryTemplate != nil && len(boundaryTemplate.NodeSelector) > 0:
-		pod.Spec.NodeSelector = boundaryTemplate.NodeSelector
-	case len(wfSpec.NodeSelector) > 0:
-		pod.Spec.NodeSelector = wfSpec.NodeSelector
-	}
-	// Set affinity (if specified)
-	switch {
-	case tmpl.Affinity != nil:
-		pod.Spec.Affinity = tmpl.Affinity
-	case boundaryTemplate != nil && boundaryTemplate.Affinity != nil:
-		pod.Spec.Affinity = boundaryTemplate.Affinity
-	case wfSpec.Affinity != nil:
-		pod.Spec.Affinity = wfSpec.Affinity
-	}
-	// Set tolerations (if specified)
-	switch {
-	case len(tmpl.Tolerations) > 0:
-		pod.Spec.Tolerations = tmpl.Tolerations
-	case boundaryTemplate != nil && len(boundaryTemplate.Tolerations) > 0:
-		pod.Spec.Tolerations = boundaryTemplate.Tolerations
-	case len(wfSpec.Tolerations) > 0:
-		pod.Spec.Tolerations = wfSpec.Tolerations
-	}
-
-	// Set scheduler name (if specified)
-	if tmpl.SchedulerName != "" {
-		pod.Spec.SchedulerName = tmpl.SchedulerName
-	} else if wfSpec.SchedulerName != "" {
-		pod.Spec.SchedulerName = wfSpec.SchedulerName
-	}
-	// Set priorityClass (if specified)
-	if tmpl.PriorityClassName != "" {
-		pod.Spec.PriorityClassName = tmpl.PriorityClassName
-	} else if wfSpec.PodPriorityClassName != "" {
-		pod.Spec.PriorityClassName = wfSpec.PodPriorityClassName
-	}
-
-	// set hostaliases
-	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
-	pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
-
-	// set pod security context
-	if tmpl.SecurityContext != nil {
-		pod.Spec.SecurityContext = tmpl.SecurityContext
-	} else if wfSpec.SecurityContext != nil {
-		pod.Spec.SecurityContext = wfSpec.SecurityContext
-	}
+	applySchedulingConstraints(&pod.Spec, wfSpec, tmpl, boundaryTemplate)
 }
 
 // GetBoundaryTemplate get a template through the nodeName
@@ -1735,125 +1499,25 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	}
 }
 
-// addArchiveLocation conditionally updates the template with the default artifact repository
-// information configured in the controller, for the purposes of archiving outputs. This is skipped
-// for templates which do not need to archive anything, or have explicitly set an archive location
-// in the template.
-func (pb *podBuilder) addArchiveLocation(ctx context.Context, tmpl *wfv1.Template) {
-	if tmpl.ArchiveLocation.HasLocation() {
-		// User explicitly set the location. nothing else to do.
-		return
-	}
-	archiveLogs := pb.deps.IsArchiveLogs(tmpl)
-	needLocation := archiveLogs
-	artifacts := slices.Concat(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts)
-	if tmpl.Data != nil {
-		if art, exist := tmpl.Data.Source.GetArtifactIfNeeded(); exist {
-			artifacts = append(artifacts, *art)
-		}
-	}
-	for _, art := range artifacts {
-		if !art.HasLocation() {
-			needLocation = true
-		}
-	}
-	logging.RequireLoggerFromContext(ctx).WithField("needLocation", needLocation).Debug(ctx, "addArchiveLocation")
-	if !needLocation {
-		return
-	}
-	tmpl.ArchiveLocation = pb.in.artifactRepository.ToArtifactLocation()
-	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
-}
-
-// populateAllPluginArtifactTimeouts populates connection timeouts for all plugin artifacts in the template
-func (pb *podBuilder) populateAllPluginArtifactTimeouts(tmpl *wfv1.Template) {
-	populateTimeout := func(plugin *wfv1.PluginArtifact) {
-		if plugin != nil && plugin.ConnectionTimeoutSeconds == 0 {
-			driver, err := pb.in.config.GetArtifactDriver(plugin.Name)
-			if err == nil {
-				plugin.ConnectionTimeoutSeconds = driver.ConnectionTimeoutSeconds
-			}
-		}
-	}
-
-	// Populate timeout for archive location
-	if tmpl.ArchiveLocation != nil {
-		populateTimeout(tmpl.ArchiveLocation.Plugin)
-	}
-
-	// Populate timeouts for input artifacts
-	for i := range tmpl.Inputs.Artifacts {
-		populateTimeout(tmpl.Inputs.Artifacts[i].Plugin)
-	}
-
-	// Populate timeouts for output artifacts
-	for i := range tmpl.Outputs.Artifacts {
-		populateTimeout(tmpl.Outputs.Artifacts[i].Plugin)
-	}
-}
-
 // IsArchiveLogs determines if container should archive logs
 // priorities: controller(on) > template > workflow > controller(off)
 func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
-	archiveLogs := woc.artifactRepository.IsArchiveLogs()
-	if !archiveLogs {
-		if woc.execWf.Spec.ArchiveLogs != nil {
-			archiveLogs = *woc.execWf.Spec.ArchiveLogs
-		}
-		if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.ArchiveLogs != nil {
-			archiveLogs = *tmpl.ArchiveLocation.ArchiveLogs
-		}
-	}
-	return archiveLogs
-}
-
-// executorServiceAccountName resolves the service account the executor
-// containers run as: the template's executor SA takes precedence over the
-// workflow-level executor SA. Returns "" when neither is set.
-func (woc *wfOperationCtx) executorServiceAccountName(tmpl *wfv1.Template) string {
-	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
-		return tmpl.Executor.ServiceAccountName
-	}
-	if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
-		return woc.execWf.Spec.Executor.ServiceAccountName
-	}
-	return ""
+	return isArchiveLogs(woc.artifactRepository, &woc.execWf.Spec, tmpl)
 }
 
 // setupServiceAccount sets up service account and token.
 func (pb *podBuilder) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	if tmpl.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
-	} else if pb.in.execWfSpec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = pb.in.execWfSpec.ServiceAccountName
+	sa, err := derivePodServiceAccount(tmpl, pb.in.execWfSpec)
+	if err != nil {
+		return err
 	}
-
-	var automountServiceAccountToken *bool
-	if tmpl.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
-	} else if pb.in.execWfSpec.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = pb.in.execWfSpec.AutomountServiceAccountToken
-	}
-	if automountServiceAccountToken != nil && !*automountServiceAccountToken {
-		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
-	}
-
-	executorServiceAccountName := pb.deps.executorServiceAccountName(tmpl)
-	if executorServiceAccountName != "" {
-		tokenName, err := pb.deps.getServiceAccountTokenName(ctx, executorServiceAccountName)
+	sa.applyTo(&pod.Spec)
+	if sa.executorServiceAccountName != "" {
+		tokenName, err := pb.deps.getServiceAccountTokenName(ctx, sa.executorServiceAccountName)
 		if err != nil {
 			return err
 		}
-		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
-			Name: common.ServiceAccountTokenVolumeName,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{
-					SecretName: tokenName,
-				},
-			},
-		})
-	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
-		return errors.Errorf(errors.CodeBadRequest, "executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
+		pod.Spec.Volumes = append(pod.Spec.Volumes, executorTokenVolume(tokenName))
 	}
 	return nil
 }

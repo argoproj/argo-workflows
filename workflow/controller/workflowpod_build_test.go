@@ -79,8 +79,7 @@ func (s *stubPodBuilderDeps) addDNSConfig(_ *apiv1.Pod)                  {}
 func (s *stubPodBuilderDeps) addSchedulingConstraints(_ context.Context, _ *apiv1.Pod, _ *wfv1.WorkflowSpec, _ *wfv1.Template, _ *wfv1.Template) {
 }
 
-func (s *stubPodBuilderDeps) IsArchiveLogs(_ *wfv1.Template) bool                { return s.archiveLogs }
-func (s *stubPodBuilderDeps) executorServiceAccountName(_ *wfv1.Template) string { return "" }
+func (s *stubPodBuilderDeps) IsArchiveLogs(_ *wfv1.Template) bool { return s.archiveLogs }
 func (s *stubPodBuilderDeps) createArtifactVolumeMounts(_ context.Context, _ *wfv1.Template) []apiv1.Volume {
 	return nil
 }
