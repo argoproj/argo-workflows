@@ -675,6 +675,10 @@ In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
 endpoint and access/secret keys for your repository.
 
+The key format (`keyFormat`, `blobNameFormat` for Azure, `pathFormat` for HDFS) can reference workflow variables.
+If you don't set one, artifacts are stored under `{{workflow.name}}/{{node.taskName}}`.
+`{{node.taskName}}` is the name of the task's pod, the same value as `{{pod.name}}`, so each pod gets its own key.
+
 ### S3 compatible artifact repository bucket (such as AWS, GCS, MinIO, and Alibaba Cloud OSS)
 
 Use the `endpoint` corresponding to your provider:
@@ -759,7 +763,7 @@ data:
   artifactRepository: |
     gcs:
       bucket: my-bucket
-      keyFormat: prefix/in/bucket/{{workflow.name}}/{{pod.name}}     #it should reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      keyFormat: prefix/in/bucket/{{workflow.name}}/{{node.taskName}}     #it should reference workflow variables, such as "{{workflow.name}}/{{node.taskName}}"
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey
@@ -781,7 +785,7 @@ data:
   artifactRepository: |
     azure:
       container: my-container
-      blobNameFormat: prefix/in/container     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      blobNameFormat: prefix/in/container     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{node.taskName}}"
       accountKeySecret:
         name: my-azure-storage-credentials
         key: account-access-key

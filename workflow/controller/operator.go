@@ -2299,7 +2299,9 @@ func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string,
 	}
 	localParams := make(common.Parameters)
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		podName := woc.getPodName(nodeName, resolvedTmpl.Name)
+		localParams[varkeys.PodName.Template()] = podName
+		localParams[varkeys.NodeTaskName.Template()] = podName
 	}
 	if nameKey != nil {
 		localParams[nameKey.Template()] = name
