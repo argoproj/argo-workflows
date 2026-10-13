@@ -954,7 +954,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		return nil, scheduleErr
 	}
 
-	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || pb.in.now.Sub(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || templateDeadline.Sub(pb.in.now).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
 		newActiveDeadlineSeconds := int64(templateDeadline.Sub(pb.in.now).Seconds())
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
