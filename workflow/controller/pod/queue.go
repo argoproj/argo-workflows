@@ -168,6 +168,19 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case recheckHeldPod:
+			pod, err := c.GetPod(namespace, podName)
+			if err != nil || pod == nil || pod.DeletionTimestamp == nil || !hasOurFinalizer(pod.Finalizers) {
+				return err
+			}
+			if !c.heldPodReleasable(pod) {
+				c.queuePodForCleanupAfter(ctx, namespace, podName, recheckHeldPod, c.recheckPeriod)
+				return nil
+			}
+			pods := c.kubeclientset.CoreV1().Pods(namespace)
+			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+				return err
+			}
 		case removeFinalizer:
 			pods := c.kubeclientset.CoreV1().Pods(namespace)
 			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
@@ -201,7 +214,7 @@ func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace stri
 	}
 }
 
-func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, uid string) {
-	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": deletePodByUID}).Info(ctx, "queueing pod for cleanup by UID")
-	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid))
+func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, action podCleanupAction, uid string) {
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": action}).Info(ctx, "queueing pod for cleanup by UID")
+	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, action, uid))
 }

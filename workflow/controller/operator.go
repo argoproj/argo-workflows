@@ -1242,6 +1242,20 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 		defer wfNodesLock.Unlock()
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err == nil {
+			// the pod controller leaves the status finalizer of a deleting pod to us while this workflow is active
+			if pod.DeletionTimestamp != nil && slices.Contains(pod.Finalizers, common.FinalizerPodStatus) &&
+				os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
+				if node.RestartingPodUID != "" && node.RestartingPodUID == string(pod.UID) {
+					// the node is reset to restart this pod and takes no status from it, and the DeletePodByUID
+					// that removes the finalizer may have been lost
+					woc.controller.PodController.RemoveFinalizerByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+				}
+				if node.Phase.Fulfilled(node.TaskResultSynced) {
+					// the node was persisted but the pod kept its finalizer (e.g. a restart between the workflow
+					// update and the pod patch), so persist again for queuePodsForCleanup to remove it
+					woc.updated = true
+				}
+			}
 			if newState := woc.assessNodeStatus(ctx, pod, node); newState != nil {
 				// update if a pod deletion timestamp exists on a completed workflow, ensures this pod is always looked at
 				// in the pod cleanup process

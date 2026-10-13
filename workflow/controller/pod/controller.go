@@ -4,6 +4,7 @@ package pod
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -33,8 +34,9 @@ import (
 )
 
 const (
-	podResyncPeriod    = 30 * time.Minute
-	podPaginationLimit = 500
+	podResyncPeriod      = 30 * time.Minute
+	podPaginationLimit   = 500
+	heldPodRecheckPeriod = time.Minute
 )
 
 var (
@@ -55,6 +57,8 @@ type Controller struct {
 	callBack      podEventCallback
 	log           logging.Logger
 	restConfig    *rest.Config
+	// how often recheckHeldPod looks at a deleting pod held for its workflow
+	recheckPeriod time.Duration
 }
 
 // NewController creates a pod controller
@@ -69,6 +73,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		log:           log,
 		callBack:      callback,
 		restConfig:    restConfig,
+		recheckPeriod: heldPodRecheckPeriod,
 	}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	podController.podInformer.AddEventHandler(
@@ -171,6 +176,35 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 	return wf.DeletionTimestamp != nil
 }
 
+// ownerWorkflowActive reports whether the pod's owning workflow (same UID) is in the informer, not being
+// deleted and not completed, i.e. it will still reconcile this pod. Reads metadata only.
+func (c *Controller) ownerWorkflowActive(pod *apiv1.Pod) bool {
+	controllerRef := metav1.GetControllerOf(pod)
+	if controllerRef == nil || controllerRef.Kind != workflow.WorkflowKind {
+		return false
+	}
+	obj, exists, err := c.wfInformer.GetIndexer().GetByKey(pod.Namespace + "/" + controllerRef.Name)
+	if err != nil || !exists {
+		return false
+	}
+	wf, ok := obj.(metav1.Object)
+	return ok && wf.GetUID() == controllerRef.UID && wf.GetDeletionTimestamp() == nil &&
+		wf.GetLabels()[common.LabelKeyCompleted] != "true"
+}
+
+// heldPodReleasable reports whether a deleting pod held for its workflow may lose its status finalizer: its
+// workflow is no longer active, or the pod is still not terminal 2m after its deletionTimestamp, so no kubelet
+// is left to report a result. A terminal pod of an active workflow is released only by the workflow.
+func (c *Controller) heldPodReleasable(pod *apiv1.Pod) bool {
+	if !c.ownerWorkflowActive(pod) {
+		return true
+	}
+	if pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed {
+		return false
+	}
+	return time.Now().After(pod.DeletionTimestamp.Add(2 * time.Minute))
+}
+
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
 	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
 		strategy, delay, _ := strings.Cut(val, "/")
@@ -199,6 +233,15 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 	switch {
 	case deleting:
 		if hasOurFinalizer(pod.Finalizers) {
+			if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" && pod.Status.Phase != apiv1.PodPending && c.ownerWorkflowActive(pod) {
+				// The workflow removes the finalizer once it has persisted the pod's node (persistUpdates ->
+				// queuePodsForCleanup), so a timer here could race that write. A Pending pod has no result to
+				// wait for. recheckHeldPod releases the pod if its workflow stops reconciling, or if the pod is
+				// still not terminal 2m after its deletionTimestamp (e.g. force deleted on an unreachable node).
+				c.log.WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name}).Info(ctx, "Leaving finalizer for the workflow to remove")
+				c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, recheckHeldPod, c.recheckPeriod)
+				return
+			}
 			c.log.WithFields(logging.Fields{"pod.Finalizers": pod.Finalizers}).Info(ctx, "Removing finalizers during a delete")
 			action = removeFinalizer
 			minimumDelay = 2 * time.Minute

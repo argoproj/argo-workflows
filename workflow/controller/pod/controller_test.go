@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -103,6 +104,10 @@ func newTestController(t *testing.T, wf *unstructured.Unstructured, pods ...*api
 	return c, queue
 }
 
+func completed(wf *unstructured.Unstructured) {
+	wf.SetLabels(map[string]string{common.LabelKeyCompleted: "true"})
+}
+
 func testWorkflow(mutate func(wf *unstructured.Unstructured)) *unstructured.Unstructured {
 	wf := &unstructured.Unstructured{}
 	wf.SetNamespace("test")
@@ -131,5 +136,73 @@ func deletingPod(phase apiv1.PodPhase, deleted time.Time) *apiv1.Pod {
 			Phase:      phase,
 			Conditions: []apiv1.PodCondition{{Type: apiv1.PodReady, LastTransitionTime: metav1.NewTime(time.Now().Add(-10 * time.Minute))}},
 		},
+	}
+}
+
+func TestCommonPodEventDeletingPod(t *testing.T) {
+	held := []string{"test/my-pod/recheckHeldPod after 1m0s"}
+	timed := []string{"test/my-pod/removeFinalizer"}
+	tests := []struct {
+		name     string
+		flagOff  bool
+		workflow *unstructured.Unstructured
+		pod      func(pod *apiv1.Pod)
+		want     []string
+	}{
+		{name: "succeeded pod of a running workflow", workflow: testWorkflow(nil), want: held},
+		{name: "running pod of a running workflow", workflow: testWorkflow(nil), pod: func(pod *apiv1.Pod) { pod.Status.Phase = apiv1.PodRunning }, want: held},
+		{name: "pending pod", workflow: testWorkflow(nil), pod: func(pod *apiv1.Pod) { pod.Status.Phase = apiv1.PodPending }, want: timed},
+		{name: "no workflow", want: timed},
+		{name: "workflow replaced by one with the same name", workflow: testWorkflow(func(wf *unstructured.Unstructured) { wf.SetUID("other-uid") }), want: timed},
+		{name: "workflow being deleted", workflow: testWorkflow(func(wf *unstructured.Unstructured) { wf.SetDeletionTimestamp(new(metav1.Now())) }), want: timed},
+		// completed workflows stay in the informer, but are not reconciled any more
+		{name: "completed workflow", workflow: testWorkflow(completed), want: timed},
+		{name: "flag off", flagOff: true, workflow: testWorkflow(nil), want: timed},
+		{name: "no status finalizer", workflow: testWorkflow(nil), pod: func(pod *apiv1.Pod) { pod.Finalizers = nil }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(common.EnvVarPodStatusCaptureFinalizer, strconv.FormatBool(!tt.flagOff))
+			pod := deletingPod(apiv1.PodSucceeded, time.Now())
+			if tt.pod != nil {
+				tt.pod(pod)
+			}
+			c, queue := newTestController(t, tt.workflow)
+			c.commonPodEvent(logging.TestContext(t.Context()), pod, true)
+			assert.Equal(t, tt.want, queue.queued)
+		})
+	}
+}
+
+func TestRecheckHeldPod(t *testing.T) {
+	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
+	tests := []struct {
+		name     string
+		workflow *unstructured.Unstructured
+		pod      *apiv1.Pod
+		released bool
+	}{
+		{name: "terminal pod of a running workflow", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodSucceeded, time.Now().Add(-time.Hour))},
+		{name: "running pod deleted 1m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodRunning, time.Now().Add(-time.Minute))},
+		{name: "running pod deleted 3m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodRunning, time.Now().Add(-3*time.Minute)), released: true},
+		{name: "completed workflow", workflow: testWorkflow(completed), pod: deletingPod(apiv1.PodSucceeded, time.Now()), released: true},
+		{name: "no workflow", pod: deletingPod(apiv1.PodSucceeded, time.Now()), released: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			c, queue := newTestController(t, tt.workflow, tt.pod)
+			queue.Add("test/my-pod/recheckHeldPod")
+			require.True(t, c.processNextPodCleanupItem(ctx))
+			pod, err := c.kubeclientset.CoreV1().Pods("test").Get(ctx, "my-pod", metav1.GetOptions{})
+			require.NoError(t, err)
+			if tt.released {
+				assert.NotContains(t, pod.Finalizers, common.FinalizerPodStatus)
+				assert.Empty(t, queue.queued)
+			} else {
+				assert.Contains(t, pod.Finalizers, common.FinalizerPodStatus)
+				assert.Equal(t, []string{"test/my-pod/recheckHeldPod after 1m0s"}, queue.queued, "not rechecked again")
+			}
+		})
 	}
 }
