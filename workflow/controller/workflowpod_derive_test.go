@@ -157,21 +157,6 @@ func TestApplyTemplateDeadline(t *testing.T) {
 	}
 }
 
-// deadlineStubDeps is the build-test stub with a node and a template timeout
-// deadline, so build applies the template deadline.
-type deadlineStubDeps struct {
-	*stubPodBuilderDeps
-	templateDeadline *time.Time
-}
-
-func (d *deadlineStubDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) {
-	return &wfv1.NodeStatus{}, nil
-}
-
-func (d *deadlineStubDeps) checkTemplateTimeouts(_ *wfv1.Template, _ *wfv1.NodeStatus, _ time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	return d.templateDeadline, nil, nil
-}
-
 // TestBuild_DeadlinesMatchDerivation checks that a pod's activeDeadlineSeconds
 // and ARGO_DEADLINE are what the extracted deadline functions compute, so
 // anything else using them bounds a task as a pod would be.
@@ -212,7 +197,12 @@ func TestBuild_DeadlinesMatchDerivation(t *testing.T) {
 			if tt.debugPause {
 				main.Env = append(main.Env, apiv1.EnvVar{Name: "ARGO_DEBUG_PAUSE_BEFORE", Value: "true"})
 			}
-			deps := &deadlineStubDeps{stubPodBuilderDeps: newStubDeps(), templateDeadline: tt.templateDeadline}
+			deps := newStubDeps()
+			if tt.templateDeadline != nil {
+				// a pending node started now, whose template times out at templateDeadline
+				tmpl.Timeout = tt.templateDeadline.Sub(deriveTestNow).String()
+				deps.node = &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: metav1.NewTime(deriveTestNow)}
+			}
 			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
 			pb.in.now = deriveTestNow
 			pb.in.workflowDeadline = tt.workflowDeadline
@@ -329,14 +319,15 @@ func TestDerivePodServiceAccount(t *testing.T) {
 
 func TestBuildExecContainer(t *testing.T) {
 	cfg := execContainerConfig{
-		image:           "argoexec:test",
-		imagePullPolicy: apiv1.PullAlways,
-		executor:        &apiv1.Container{Env: []apiv1.EnvVar{{Name: "EXTRA", Value: "x"}}},
-		kubeConfig:      &config.KubeConfig{SecretName: "kc", SecretKey: "kubeconfig"},
-		instanceID:      "instance",
-		workflowUID:     "wf-uid",
+		image:                      "argoexec:test",
+		imagePullPolicy:            apiv1.PullAlways,
+		executor:                   &apiv1.Container{Env: []apiv1.EnvVar{{Name: "EXTRA", Value: "x"}}},
+		kubeConfig:                 &config.KubeConfig{SecretName: "kc", SecretKey: "kubeconfig"},
+		instanceID:                 "instance",
+		workflowUID:                "wf-uid",
+		executorServiceAccountName: "exec-sa",
 	}
-	ctr := buildExecContainer(common.WaitContainerName, &wfv1.Template{Container: &apiv1.Container{}}, cfg, "exec-sa")
+	ctr := buildExecContainer(common.WaitContainerName, &wfv1.Template{Container: &apiv1.Container{}}, cfg)
 	assert.Equal(t, "argoexec:test", ctr.Image)
 	assert.Equal(t, apiv1.PullAlways, ctr.ImagePullPolicy)
 	assert.Equal(t, []string{"--kubeconfig=" + common.KubeConfigDefaultMountPath}, ctr.Args)
@@ -349,7 +340,7 @@ func TestBuildExecContainer(t *testing.T) {
 	assert.True(t, hasMount(ctr, common.KubeConfigDefaultVolumeName))
 	assert.True(t, hasMount(ctr, common.ServiceAccountTokenVolumeName))
 
-	resourceCtr := buildExecContainer(common.MainContainerName, &wfv1.Template{Resource: &wfv1.ResourceTemplate{}}, execContainerConfig{executor: &apiv1.Container{}}, "")
+	resourceCtr := buildExecContainer(common.MainContainerName, &wfv1.Template{Resource: &wfv1.ResourceTemplate{}}, execContainerConfig{executor: &apiv1.Container{}})
 	require.NotNil(t, resourceCtr.SecurityContext)
 	assert.Equal(t, new(true), resourceCtr.SecurityContext.ReadOnlyRootFilesystem)
 	assert.False(t, hasMount(resourceCtr, common.ServiceAccountTokenVolumeName))

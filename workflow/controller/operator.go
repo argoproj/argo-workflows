@@ -2595,18 +2595,6 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 	return &tmplDeadline, nil
 }
 
-// checkTemplateTimeouts checks if the template has exceeded its Timeout or PendingTimeout.
-// It returns the deadline computed from Timeout (enforced via the pod's activeDeadlineSeconds)
-// and the deadline computed from PendingTimeout (only set while the node is pending).
-// ErrTimeout is returned if the node is pending past either deadline as of now.
-// now is supplied by the caller rather than read from time.Now here so the
-// caller controls which clock is used: the pure pod builder passes pb.in.now (the
-// captured snapshot time) to keep build() deterministic for a given snapshot,
-// while checkConstraints passes the current wall-clock.
-func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	return templateTimeoutDeadlines(tmpl, node, now)
-}
-
 // recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing
 func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 	phase := metrics.ConvertWorkflowPhase(woc.wf.Status.Phase)

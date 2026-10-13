@@ -38,25 +38,16 @@ const testStubExecutorImage = "argoproj/argoexec:build-unit-test"
 // stubPodBuilderDeps is a tiny hand-written implementation of podBuilderDeps.
 // It does the minimum work each method must do for build to produce a
 // representative pod, with NO fake.NewSimpleClientset and NO informer/cluster.
-// Where a dep mutates the pod (init/supervisor/exec containers, scheduling,
-// metadata, DNS), it reproduces just enough of the real behaviour to let the
-// assertions below distinguish the two layouts.
+// Everything build derives from the snapshot (exec containers, scheduling,
+// metadata, DNS, archive logs, template timeouts) runs for real; tests set
+// those inputs on pb.in.
 type stubPodBuilderDeps struct {
-	executorImage     string
-	archiveLogs       bool
-	initContainerName string // name of the init container legacyLayout asks for
-
-	// gotTimeoutNow records the now value build threads into checkTemplateTimeouts,
-	// so a test can assert build uses the captured snapshot time rather than the
-	// live wall-clock.
-	gotTimeoutNow time.Time
+	// node is what getNodeByName returns for any name.
+	node *wfv1.NodeStatus
 }
 
 func newStubDeps() *stubPodBuilderDeps {
-	return &stubPodBuilderDeps{
-		executorImage:     testStubExecutorImage,
-		initContainerName: common.InitContainerName,
-	}
+	return &stubPodBuilderDeps{}
 }
 
 // lookupImage returns a fixed entrypoint so build never reaches the network.
@@ -64,65 +55,27 @@ func (s *stubPodBuilderDeps) lookupImage(_ context.Context, _ string, _ entrypoi
 	return &entrypoint.Image{Entrypoint: []string{"/stub-entrypoint"}, Cmd: []string{"stub-cmd"}}, nil
 }
 
-// newExecContainer mirrors the real helper's essentials: an argoexec-image
-// container carrying the executor image (so build's "mount /tmp on the
-// executor container" branch fires).
-func (s *stubPodBuilderDeps) newExecContainer(name string, _ *wfv1.Template) *apiv1.Container {
-	return &apiv1.Container{Name: name, Image: s.executorImage}
-}
-
 func (s *stubPodBuilderDeps) getExecutorLogOpts(_ context.Context) []string {
 	return []string{"--loglevel", "info"}
 }
 
-func (s *stubPodBuilderDeps) addMetadata(_ *apiv1.Pod, _ *wfv1.Template) {}
-func (s *stubPodBuilderDeps) addDNSConfig(_ *apiv1.Pod)                  {}
-func (s *stubPodBuilderDeps) addSchedulingConstraints(_ context.Context, _ *apiv1.Pod, _ *wfv1.WorkflowSpec, _ *wfv1.Template, _ *wfv1.Template) {
-}
-
-func (s *stubPodBuilderDeps) IsArchiveLogs(_ *wfv1.Template) bool { return s.archiveLogs }
 func (s *stubPodBuilderDeps) createArtifactVolumeMounts(_ context.Context, _ *wfv1.Template) []apiv1.Volume {
 	return nil
 }
 func (s *stubPodBuilderDeps) addInputArtifactsVolumes(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template) error {
 	return nil
 }
-
-// newInitContainers reproduces the legacy layout's single standard init
-// container (argoexec init). This is what build copies the var-argo mount onto.
-func (s *stubPodBuilderDeps) newInitContainers(_ context.Context, _ *wfv1.Template) ([]apiv1.Container, error) {
-	return []apiv1.Container{{Name: s.initContainerName, Image: s.executorImage, Command: []string{"argoexec", "init"}}}, nil
+func (s *stubPodBuilderDeps) newArtifactPluginInitContainers(_ context.Context, _ *wfv1.Template, _ execContainerConfig) ([]apiv1.Container, error) {
+	return nil, nil
 }
-
-// newSupervisorContainer reproduces the init-less supervisor: an argoexec-image
-// container running `argoexec supervisor` and carrying ARGO_INITLESS_POD.
-func (s *stubPodBuilderDeps) newSupervisorContainer(_ context.Context, _ *wfv1.Template) *apiv1.Container {
-	return &apiv1.Container{
-		Name:    common.SupervisorContainerName,
-		Image:   s.executorImage,
-		Command: []string{"argoexec", "supervisor"},
-		Env:     []apiv1.EnvVar{{Name: common.EnvVarInitlessPod, Value: "true"}},
-	}
-}
-
-// buildArgoBinVolume reproduces the argoexec-bin image volume.
-func (s *stubPodBuilderDeps) buildArgoBinVolume() apiv1.Volume {
-	return apiv1.Volume{
-		Name: argoBinVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			Image: &apiv1.ImageVolumeSource{Reference: s.executorImage, PullPolicy: apiv1.PullIfNotPresent},
-		},
-	}
-}
-
-func (s *stubPodBuilderDeps) addArtifactPluginsLegacy(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template, _ *config.Config) error {
+func (s *stubPodBuilderDeps) addArtifactPluginsLegacy(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template, _ *config.Config, _ execContainerConfig) error {
 	return nil
 }
-func (s *stubPodBuilderDeps) addArtifactPluginsInitless(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template) error {
+func (s *stubPodBuilderDeps) addArtifactPluginsInitless(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template, _ execContainerConfig) error {
 	return nil
 }
 
-func (s *stubPodBuilderDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) { return nil, nil }
+func (s *stubPodBuilderDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) { return s.node, nil }
 func (s *stubPodBuilderDeps) findRetryNode(_ string) *wfv1.NodeStatus          { return nil }
 func (s *stubPodBuilderDeps) retryStrategyForTemplate(_ *wfv1.Template) *wfv1.RetryStrategy {
 	return nil
@@ -131,10 +84,6 @@ func (s *stubPodBuilderDeps) retryNodeTemplate(_ context.Context, _ *wfv1.NodeSt
 	return fallback, nil
 }
 func (s *stubPodBuilderDeps) applyRetryOnDifferentHost(_ string, _ wfv1.RetryStrategy, _ *apiv1.Pod) {
-}
-func (s *stubPodBuilderDeps) checkTemplateTimeouts(_ *wfv1.Template, _ *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	s.gotTimeoutNow = now
-	return nil, nil, nil
 }
 func (s *stubPodBuilderDeps) getServiceAccountTokenName(_ context.Context, _ string) (string, error) {
 	return "", nil
@@ -146,24 +95,25 @@ func (s *stubPodBuilderDeps) persistentVolumeClaims() []apiv1.Volume { return ni
 
 // TestBuild_ThreadsSnapshotNowIntoTimeout asserts build() drives the template
 // timeout determination off the captured snapshot time (pb.in.now) rather than
-// the live wall-clock — a live time.Now() read inside checkTemplateTimeouts
-// would leak a clock into the otherwise-pure build via the deps boundary and
-// break determinism for a given snapshot.
+// the live wall-clock, which would break determinism for a given snapshot.
 func TestBuild_ThreadsSnapshotNowIntoTimeout(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	tmpl := simpleContainerTemplate()
+	tmpl.Timeout = "60s"
 	main := tmpl.Container.DeepCopy()
 
-	deps := newStubDeps()
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
-	// Pin the snapshot clock to a fixed instant well away from real time.Now().
+	// Pin the snapshot clock to a fixed instant well away from real time.Now():
+	// against the live clock the node would be long past its timeout.
 	snapshotNow := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	deps := newStubDeps()
+	deps.node = &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: metav1.NewTime(snapshotNow.Add(-10 * time.Second))}
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
 	pb.in.now = snapshotNow
 
-	_, err := pb.build(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, snapshotNow, deps.gotTimeoutNow,
-		"build must pass the captured snapshot time into checkTemplateTimeouts, not the live wall-clock")
+	result, err := pb.build(ctx)
+	require.NoError(t, err, "build must use the captured snapshot time for the template timeout, not the live wall-clock")
+	require.NotNil(t, result)
+	assert.Equal(t, new(int64(50)), result.Pod.Spec.ActiveDeadlineSeconds)
 }
 
 // newTestPodBuilder constructs a podBuilder entirely from literals — no woc, no
@@ -186,6 +136,7 @@ func newTestPodBuilder(tmpl *wfv1.Template, mainCtrs []apiv1.Container, initless
 			artifactRepository: &wfv1.ArtifactRepository{},
 			config:             &config.Config{},
 			executorImage:      testStubExecutorImage,
+			workflowUID:        wf.UID,
 			now:                time.Now().UTC(),
 			podNameVersion:     util.PodNameV2,
 			log:                logging.RequireLoggerFromContext(logging.TestContext(context.Background())),
@@ -417,9 +368,8 @@ func TestBuild_InitlessLayout_NoAuxContainer(t *testing.T) {
 		Command: []string{"argoexec", "resource", "get"},
 	}
 
-	deps := newStubDeps()
-	deps.archiveLogs = false // resource-without-logs: no aux container
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, deps)
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, newStubDeps())
+	pb.in.execWfSpec.ArchiveLogs = new(false) // resource-without-logs: no aux container
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -465,9 +415,8 @@ func TestBuild_InitlessResourceManifestFrom_SchedulesSupervisor(t *testing.T) {
 		Command: []string{"argoexec", "resource", "create"},
 	}
 
-	deps := newStubDeps()
-	deps.archiveLogs = false // would be supervisor-less were it not for manifestFrom
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, deps)
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, newStubDeps())
+	pb.in.execWfSpec.ArchiveLogs = new(false) // would be supervisor-less were it not for manifestFrom
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -500,9 +449,8 @@ func TestBuild_LegacyResourceManifestFrom_NoAuxContainer(t *testing.T) {
 		Command: []string{"argoexec", "resource", "create"},
 	}
 
-	deps := newStubDeps()
-	deps.archiveLogs = false
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, deps)
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, newStubDeps())
+	pb.in.execWfSpec.ArchiveLogs = new(false)
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, result)

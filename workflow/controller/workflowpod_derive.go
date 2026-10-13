@@ -472,7 +472,7 @@ func executorTemplate(tmpl *wfv1.Template) string {
 }
 
 // execContainerConfig is the controller and workflow configuration every
-// argoexec container is built from.
+// argoexec container of a pod is built from.
 type execContainerConfig struct {
 	// image and imagePullPolicy are the effective executor image settings
 	// (command-line flags first, then Config.Executor).
@@ -483,6 +483,9 @@ type execContainerConfig struct {
 	kubeConfig  *config.KubeConfig
 	instanceID  string
 	workflowUID types.UID
+	// executorServiceAccountName is the account whose token the containers
+	// mount, which must be on the pod as executorTokenVolume; empty when unset.
+	executorServiceAccountName string
 }
 
 // executorEnvVars is the environment every argoexec container gets.
@@ -521,9 +524,8 @@ func executorEnvVars(cfg execContainerConfig) []apiv1.EnvVar {
 }
 
 // buildExecContainer builds an argoexec container named name. When
-// executorServiceAccountName is set it mounts that account's token, which
-// must be on the pod as executorTokenVolume.
-func buildExecContainer(name string, tmpl *wfv1.Template, cfg execContainerConfig, executorServiceAccountName string) *apiv1.Container {
+// cfg.executorServiceAccountName is set it mounts that account's token.
+func buildExecContainer(name string, tmpl *wfv1.Template, cfg execContainerConfig) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           cfg.image,
@@ -557,7 +559,7 @@ func buildExecContainer(name string, tmpl *wfv1.Template, cfg execContainerConfi
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
 
-	if executorServiceAccountName != "" {
+	if cfg.executorServiceAccountName != "" {
 		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      common.ServiceAccountTokenVolumeName,
 			MountPath: common.ServiceAccountTokenMountPath,

@@ -66,7 +66,7 @@ func TestBuildPluginSidecarsDedup(t *testing.T) {
 	}
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	sidecars, inputPlugins, err := woc.buildPluginSidecars(ctx, tmpl)
+	sidecars, inputPlugins, err := woc.buildPluginSidecars(ctx, tmpl, woc.execContainerConfig(tmpl))
 	require.NoError(t, err)
 
 	// Expect 3 unique plugins: shared-plugin, only-input, only-output — not 4.
@@ -110,7 +110,7 @@ func TestBuildPluginSidecarsEmpty(t *testing.T) {
 	}
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	sidecars, inputPlugins, err := woc.buildPluginSidecars(ctx, tmpl)
+	sidecars, inputPlugins, err := woc.buildPluginSidecars(ctx, tmpl, woc.execContainerConfig(tmpl))
 	require.NoError(t, err)
 	assert.Empty(t, sidecars)
 	assert.Empty(t, inputPlugins)
@@ -135,7 +135,8 @@ func TestNewSupervisorContainer(t *testing.T) {
 	}
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	ctr := woc.newSupervisorContainer(ctx, tmpl)
+	pb := woc.newPodBuilder(ctx, "wf", nil, tmpl, &createWorkflowPodOpts{})
+	ctr := pb.newSupervisorContainer(ctx, tmpl, pb.execContainerConfig(""))
 
 	assert.Equal(t, common.SupervisorContainerName, ctr.Name)
 	require.NotEmpty(t, ctr.Command)
@@ -169,7 +170,8 @@ func TestBuildArgoBinVolume(t *testing.T) {
 	}
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	vol := woc.buildArgoBinVolume()
+	pb := woc.newPodBuilder(ctx, "wf", nil, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	vol := initlessLayout{}.extraVolumes(pb)[0]
 	assert.Equal(t, argoBinVolumeName, vol.Name)
 	require.NotNil(t, vol.Image, "volume source must be Image (KEP-4639)")
 	assert.Equal(t, "quay.io/argoproj/argoexec:testtag", vol.Image.Reference)
@@ -644,7 +646,7 @@ func TestAddArtifactPluginsInitless_SupervisorWiring(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, woc.addArtifactPluginsInitless(ctx, pod, tmpl))
+	require.NoError(t, woc.addArtifactPluginsInitless(ctx, pod, tmpl, woc.execContainerConfig(tmpl)))
 
 	// Two plugin sidecars appended (one in, one out — no dedup possible).
 	var inSidecar, outSidecar, supervisor *apiv1.Container
@@ -735,7 +737,7 @@ func TestAddArtifactPluginsInitless_NoSupervisor(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, woc.addArtifactPluginsInitless(ctx, pod, tmpl))
+	require.NoError(t, woc.addArtifactPluginsInitless(ctx, pod, tmpl, woc.execContainerConfig(tmpl)))
 	// No orphan sidecars added (no supervisor to drive them) and no panic.
 	assert.Len(t, pod.Spec.Containers, 1)
 	for _, c := range pod.Spec.Containers {
@@ -794,7 +796,7 @@ func TestAddArtifactPluginsInitless_NoDuplicateSupervisorMounts(t *testing.T) {
 	}
 
 	require.NoError(t, woc.addInputArtifactsVolumes(ctx, pod, tmpl))
-	require.NoError(t, woc.addArtifactPluginsInitless(ctx, pod, tmpl))
+	require.NoError(t, woc.addArtifactPluginsInitless(ctx, pod, tmpl, woc.execContainerConfig(tmpl)))
 
 	var supervisor *apiv1.Container
 	for i, c := range pod.Spec.Containers {

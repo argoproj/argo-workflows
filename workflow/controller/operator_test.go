@@ -13984,7 +13984,10 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 	})
 }
 
-func TestCheckTemplateTimeouts(t *testing.T) {
+// TestExecuteTemplatePendingTimeout checks that executeTemplate fails a node pending
+// past its pendingTimeout but not yet past its timeout. The deadline branches
+// themselves are covered by TestTemplateTimeoutDeadlines.
+func TestExecuteTemplatePendingTimeout(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
@@ -13994,61 +13997,21 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	wf = woc.wf
 	makePodsPhase(ctx, woc, apiv1.PodPending)
-	woc = newWorkflowOperationCtx(ctx, wf, controller)
+
+	// pendingTimeout is 2s and timeout 4s: start the node 3s ago rather than sleeping
+	node, err := woc.wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	node.StartedAt = metav1.NewTime(time.Now().Add(-3 * time.Second))
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
-	wf = woc.wf
 
-	node, err := wf.GetNodeByName("hello-world-dag.dag1")
+	node, err = woc.wf.GetNodeByName("hello-world-dag.dag1")
 	require.NoError(t, err)
-	assert.NotNil(t, node)
-	tmpl, err := woc.GetNodeTemplate(ctx, node)
-	require.NoError(t, err)
-
-	// both deadlines are returned while the node is pending
-	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
-
-	require.NoError(t, err)
-	deadlineUntil := time.Until(*deadline)
-	assert.True(t, 0 <= deadlineUntil && deadlineUntil <= (time.Second*4))
-	pendingUntil := time.Until(*pendingDeadline)
-	assert.True(t, 0 <= pendingUntil && pendingUntil <= (time.Second*2))
-	assert.True(t, pendingDeadline.Before(*deadline))
-
-	// pending timeout
-	pendingUntil += 1 * time.Millisecond
-	time.Sleep(pendingUntil)
-	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
-	assert.Nil(t, deadline)
-	assert.Nil(t, pendingDeadline)
-	require.ErrorIs(t, err, ErrTimeout)
-
-	makePodsPhase(ctx, woc, apiv1.PodRunning)
-	woc = newWorkflowOperationCtx(ctx, wf, controller)
-	woc.operate(ctx)
-	wf = woc.wf
-
-	node, err = wf.GetNodeByName("hello-world-dag.dag1")
-	require.NoError(t, err)
-
-	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
-	require.NoError(t, err)
-	assert.Nil(t, pendingDeadline)
-	deadlineUntil = time.Duration(0)
-	if deadline != nil {
-		deadlineUntil = time.Until(*deadline)
-	}
-	assert.True(t, 0 < deadlineUntil && deadlineUntil < (time.Second*4))
-
-	// general timeout is not enforced by the controller for running nodes;
-	// the deadline is still returned so it can be set as activeDeadlineSeconds
-	deadlineUntil += 1 * time.Millisecond
-	time.Sleep(deadlineUntil)
-	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
-	assert.NotNil(t, deadline)
-	assert.Nil(t, pendingDeadline)
-	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, ErrTimeout.Error(), node.Message)
 }
 
 // TestInferFailedReasonArtifactPluginSidecar ensures that a non-zero exit from
