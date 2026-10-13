@@ -2571,10 +2571,15 @@ func (woc *wfOperationCtx) exportCompletedNodes(ctx context.Context) {
 }
 
 // exportNodeOutputs exports node's globalName outputs to the workflow, once
-// per operation. A Retry node is not exported: its outputs are a copy of its
-// last attempt's, which was exported when it finished.
+// per operation. A Retry node that ran attempts is not exported: its outputs
+// are a copy of its last attempt's, which was exported when it finished. A
+// memoize cache hit's Retry node ran none and holds the cached outputs
+// itself, so it is exported like any other node.
 func (woc *wfOperationCtx) exportNodeOutputs(ctx context.Context, node *wfv1.NodeStatus) {
-	if node.Type == wfv1.NodeTypeRetry || woc.exportedNodes[node.ID] {
+	if woc.exportedNodes[node.ID] {
+		return
+	}
+	if node.Type == wfv1.NodeTypeRetry && (node.MemoizationStatus == nil || !node.MemoizationStatus.Hit) {
 		return
 	}
 	woc.exportedNodes[node.ID] = true

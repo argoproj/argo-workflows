@@ -13107,3 +13107,88 @@ spec:
 		})
 	}
 }
+
+// TestRegressionR4_S11_MemoHitRetryExportsGlobal (isubasinghe, round 11): a
+// memoize cache hit on a template with a retryStrategy creates a Retry node
+// holding the cached outputs and no attempt. exportNodeOutputs skipped every
+// Retry node, on the grounds that its last attempt had been exported, so the
+// hit's globalName output never reached wf.status.outputs. Main's DAG
+// exports it ("dag" passes at base). Where c reads the hit's output through
+// {{tasks.a...}} / {{steps.a...}}, which takes the Retry node's own outputs
+// when it has no attempt, base fails: its DAG never links c below a Retry
+// node with no attempt, so it stays Running, and its Steps exported only pod
+// outputs (the P9 deviation).
+func TestRegressionR4_S11_MemoHitRetryExportsGlobal(t *testing.T) {
+	for _, tc := range []struct{ name, entry string }{
+		{"dag", `
+    dag:
+      tasks:
+      - name: a
+        template: memo`},
+		{"dag-consumer", `
+    dag:
+      tasks:
+      - name: a
+        template: memo
+      - name: c
+        depends: a
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{tasks.a.outputs.parameters.p}}"`},
+		{"steps", `
+    steps:
+    - - name: a
+        template: memo
+    - - name: c
+        template: consume
+        arguments:
+          parameters:
+          - name: x
+            value: "{{steps.a.outputs.parameters.p}}"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cache := "r4-s11-memo-retry-" + tc.name
+			woc := r4MetricsRun(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: r4-s11-memo-retry-`+tc.name+`
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry`+tc.entry+`
+  - name: memo
+    retryStrategy:
+      limit: "2"
+    memoize:
+      key: hit
+      cache:
+        configMap:
+          name: `+cache+`
+    container:
+      image: alpine
+      command: [echo, hi]
+    outputs:
+      parameters:
+      - name: p
+        globalName: g
+        valueFrom:
+          path: /tmp/p
+`+r4GlobalTemplates, 0, r4MemoCache(t, cache, "M"), nil)
+			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+			a := woc.wf.Status.Nodes.FindByDisplayName("a")
+			require.NotNil(t, a)
+			require.Equal(t, wfv1.NodeTypeRetry, a.Type, "a memoized template with a retryStrategy gets a Retry node")
+			require.NotNil(t, a.MemoizationStatus)
+			require.True(t, a.MemoizationStatus.Hit)
+			assert.Empty(t, a.Children, "a cache hit runs no attempt")
+			if tc.name != "dag" {
+				assert.Equal(t, "M", r4InputParam(woc.wf, "c"), "c reads a's output")
+			}
+			assert.Equal(t, "M", r4GlobalParam(woc.wf), "wf.status.outputs g")
+		})
+	}
+}
