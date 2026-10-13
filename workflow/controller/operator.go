@@ -686,6 +686,19 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	return &deadline
 }
 
+// setGlobalOutputParameters exposes the workflow's global output parameters, as recorded in
+// status.outputs, as workflow.outputs.parameters.* in the global scope.
+func (woc *wfOperationCtx) setGlobalOutputParameters() {
+	if woc.wf.Status.Outputs == nil {
+		return
+	}
+	for _, param := range woc.wf.Status.Outputs.Parameters {
+		if param.HasValue() {
+			varkeys.WorkflowOutputsParameterByName.Set(woc.scope, param.GetValue(), param.Name)
+		}
+	}
+}
+
 // setGlobalParameters sets the globalParam map with global parameters
 func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
 	varkeys.WorkflowName.Set(woc.scope, woc.wf.Name)
@@ -736,13 +749,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
 		}
 	}
-	if woc.wf.Status.Outputs != nil {
-		for _, param := range woc.wf.Status.Outputs.Parameters {
-			if param.HasValue() {
-				varkeys.WorkflowOutputsParameterByName.Set(woc.scope, param.GetValue(), param.Name)
-			}
-		}
-	}
+	woc.setGlobalOutputParameters()
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Set global parameters based on Labels and Annotations, both those that are defined in the execWf.ObjectMeta

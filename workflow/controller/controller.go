@@ -1041,6 +1041,18 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 			// runs, so no pods are created for the postponed workflow.
 			woc := newWorkflowOperationCtx(ctx, wf, wfc)
 			ctx = logging.WithLogger(ctx, woc.log)
+			// Resolve execWf as operate() does: startSuspended may come from a
+			// workflowTemplateRef or the controller's workflowDefaults, and this may be the
+			// reconcile that moves the workflow out of Unknown, so the one-time validation and
+			// workflowMetadata update must happen here too. On failure, persist what it recorded
+			// and stop, as operate() does; a workflow it marked completed leaves the informer's
+			// filter, which releases its throttler entry.
+			ctx, err = woc.setExecWorkflow(ctx)
+			if err != nil {
+				woc.log.WithError(err).Error(ctx, "Unable to set ExecWorkflow")
+				woc.persistUpdates(ctx)
+				return true
+			}
 			woc.suspendReconciliation(ctx)
 			woc.actionReconciliation(ctx)
 			if wf.Status.Phase == wfv1.WorkflowUnknown {

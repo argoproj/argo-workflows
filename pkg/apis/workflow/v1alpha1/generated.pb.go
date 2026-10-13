@@ -8693,16 +8693,18 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	i--
-	if m.StartSuspended {
-		dAtA[i] = 1
-	} else {
-		dAtA[i] = 0
+	if m.StartSuspended != nil {
+		i--
+		if *m.StartSuspended {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x3
+		i--
+		dAtA[i] = 0x80
 	}
-	i--
-	dAtA[i] = 0x3
-	i--
-	dAtA[i] = 0x80
 	if len(m.ResourceClaims) > 0 {
 		for iNdEx := len(m.ResourceClaims) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -13332,7 +13334,9 @@ func (m *WorkflowSpec) Size() (n int) {
 			n += 2 + l + sovGenerated(uint64(l))
 		}
 	}
-	n += 3
+	if m.StartSuspended != nil {
+		n += 3
+	}
 	return n
 }
 
@@ -15977,7 +15981,7 @@ func (this *WorkflowSpec) String() string {
 		`ExecutorPlugins:` + repeatedStringForExecutorPlugins + `,`,
 		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
 		`ResourceClaims:` + repeatedStringForResourceClaims + `,`,
-		`StartSuspended:` + fmt.Sprintf("%v", this.StartSuspended) + `,`,
+		`StartSuspended:` + valueToStringGenerated(this.StartSuspended) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -43829,7 +43833,8 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.StartSuspended = bool(v != 0)
+			b := bool(v != 0)
+			m.StartSuspended = &b
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

@@ -1483,6 +1483,45 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.Status.Shutdown)
 		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.EffectiveShutdown())
 	})
+	t.Run("StartSuspendedCleared", func(t *testing.T) {
+		// startSuspended is honoured once; retry resets the phase to Unknown, so it must be an
+		// explicit false (an unset field would take a true from workflowDefaults again)
+		newWf := func(spec, stored *bool) *wfv1.Workflow {
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-start-suspended-wf", Labels: map[string]string{}},
+				Spec:       wfv1.WorkflowSpec{StartSuspended: spec},
+				Status: wfv1.WorkflowStatus{
+					Phase: wfv1.WorkflowFailed,
+					Nodes: map[string]wfv1.NodeStatus{
+						"my-start-suspended-wf": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Name: "my-start-suspended-wf", ID: "my-start-suspended-wf"}},
+				},
+			}
+			if stored != nil {
+				wf.Status.StoredWorkflowSpec = &wfv1.WorkflowSpec{StartSuspended: stored}
+			}
+			return wf
+		}
+		t.Run("Spec", func(t *testing.T) {
+			wf, _, err := FormulateRetryWorkflow(ctx, newWf(new(true), nil), false, "", nil)
+			require.NoError(t, err)
+			require.NotNil(t, wf.Spec.StartSuspended)
+			assert.False(t, *wf.Spec.StartSuspended)
+		})
+		t.Run("StoredWorkflowSpec", func(t *testing.T) {
+			// from a workflowTemplateRef
+			wf, _, err := FormulateRetryWorkflow(ctx, newWf(nil, new(true)), false, "", nil)
+			require.NoError(t, err)
+			require.NotNil(t, wf.Spec.StartSuspended)
+			assert.False(t, *wf.Spec.StartSuspended)
+			require.NotNil(t, wf.Status.StoredWorkflowSpec.StartSuspended)
+			assert.False(t, *wf.Status.StoredWorkflowSpec.StartSuspended)
+		})
+		t.Run("Unset", func(t *testing.T) {
+			wf, _, err := FormulateRetryWorkflow(ctx, newWf(nil, nil), false, "", nil)
+			require.NoError(t, err)
+			assert.Nil(t, wf.Spec.StartSuspended)
+		})
+	})
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{

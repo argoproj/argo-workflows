@@ -406,6 +406,10 @@ func (woc *wfOperationCtx) applyNodeSet(ctx context.Context, a *wfv1.WorkflowAct
 	}
 	woc.commitWorkflowCopy(wfCopy)
 	if changed {
+		// output parameters with a globalName were written to status.outputs after
+		// setExecWorkflow built the global scope; refresh it so pods created later in this
+		// reconcile see them as workflow.outputs.parameters.*
+		woc.setGlobalOutputParameters()
 		woc.copyActorLabels(a)
 	}
 	return changed, nil
@@ -429,12 +433,14 @@ func (woc *wfOperationCtx) commitWorkflowCopy(wfCopy *wfv1.Workflow) {
 // spec.suspend (an old client's resume) unsuspends the workflow, preserving compatibility.
 // spec.startSuspended is honoured exactly once, on the reconcile that first moves the workflow
 // out of the Unknown phase: every path that leaves Unknown (operate, or the parallelism
-// postponement in processNextItem) runs this first. StartedAt cannot serve as the marker
-// because a workflow parked Pending on a synchronization lock has none, and a Resume in that
-// state must not be undone on the next reconcile.
+// postponement in processNextItem) runs this first, after setExecWorkflow, as the field may come
+// from a workflowTemplateRef or the controller's workflowDefaults. StartedAt cannot serve as the
+// marker because a workflow parked Pending on a synchronization lock has none, and a Resume in
+// that state must not be undone on the next reconcile. Retry turns startSuspended off, as it
+// returns the workflow to Unknown.
 func (woc *wfOperationCtx) suspendReconciliation(ctx context.Context) {
 	firstReconcile := woc.wf.Status.Phase == wfv1.WorkflowUnknown
-	if firstReconcile && woc.execWf.Spec.StartSuspended && !woc.ShouldSuspend() {
+	if firstReconcile && woc.execWf.Spec.StartSuspendedRequested() && !woc.ShouldSuspend() {
 		woc.setSuspended()
 		return
 	}

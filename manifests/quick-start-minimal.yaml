@@ -5961,7 +5961,9 @@ spec:
                 description: |-
                   StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
                   the workflow is first reconciled, before anything has run; changing it on a started workflow
-                  has no effect. Resume the workflow with a WorkflowAction.
+                  has no effect, and retrying the workflow sets it to false. Resume the workflow with a
+                  WorkflowAction. Setting it to false overrides a true from workflowDefaults or a
+                  WorkflowTemplate.
                 type: boolean
               suspend:
                 description: |-
@@ -49019,7 +49021,9 @@ spec:
                     description: |-
                       StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
                       the workflow is first reconciled, before anything has run; changing it on a started workflow
-                      has no effect. Resume the workflow with a WorkflowAction.
+                      has no effect, and retrying the workflow sets it to false. Resume the workflow with a
+                      WorkflowAction. Setting it to false overrides a true from workflowDefaults or a
+                      WorkflowTemplate.
                     type: boolean
                   suspend:
                     description: |-
@@ -95146,7 +95150,9 @@ spec:
                 description: |-
                   StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
                   the workflow is first reconciled, before anything has run; changing it on a started workflow
-                  has no effect. Resume the workflow with a WorkflowAction.
+                  has no effect, and retrying the workflow sets it to false. Resume the workflow with a
+                  WorkflowAction. Setting it to false overrides a true from workflowDefaults or a
+                  WorkflowTemplate.
                 type: boolean
               suspend:
                 description: |-
@@ -155139,7 +155145,9 @@ spec:
                 description: |-
                   StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
                   the workflow is first reconciled, before anything has run; changing it on a started workflow
-                  has no effect. Resume the workflow with a WorkflowAction.
+                  has no effect, and retrying the workflow sets it to false. Resume the workflow with a
+                  WorkflowAction. Setting it to false overrides a true from workflowDefaults or a
+                  WorkflowTemplate.
                 type: boolean
               suspend:
                 description: |-

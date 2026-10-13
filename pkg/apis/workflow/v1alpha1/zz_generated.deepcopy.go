@@ -4088,6 +4088,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.StartSuspended != nil {
+		in, out := &in.StartSuspended, &out.StartSuspended
+		*out = new(bool)
+		**out = **in
+	}
 	if in.NodeSelector != nil {
 		in, out := &in.NodeSelector, &out.NodeSelector
 		*out = make(map[string]string, len(*in))

@@ -8377,7 +8377,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"startSuspended": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StartSuspended creates the workflow in the suspended state. It is honored exactly once, when the workflow is first reconciled, before anything has run; changing it on a started workflow has no effect. Resume the workflow with a WorkflowAction.",
+							Description: "StartSuspended creates the workflow in the suspended state. It is honored exactly once, when the workflow is first reconciled, before anything has run; changing it on a started workflow has no effect, and retrying the workflow sets it to false. Resume the workflow with a WorkflowAction. Setting it to false overrides a true from workflowDefaults or a WorkflowTemplate.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

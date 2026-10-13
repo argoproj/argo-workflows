@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -624,7 +626,7 @@ func deprecationCount(t *testing.T) (int64, error) {
 func TestStartSuspended(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(freshWf)
-	wf.Spec.StartSuspended = true
+	wf.Spec.StartSuspended = new(true)
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	deprecation.Initialize(controller.metrics.DeprecatedFeature)
@@ -648,7 +650,7 @@ func TestStartSuspendedNotReappliedWhilePending(t *testing.T) {
 	// StartedAt; after a Resume cleared the suspension, the next reconcile must not re-apply
 	// startSuspended, which is honoured only on the reconcile that leaves the Unknown phase.
 	wf := wfv1.MustUnmarshalWorkflow(freshWf)
-	wf.Spec.StartSuspended = true
+	wf.Spec.StartSuspended = new(true)
 	wf.Status.Phase = wfv1.WorkflowPending
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -682,7 +684,7 @@ func TestCreationTimeSpecSuspendNotCountedAsDeprecated(t *testing.T) {
 func TestStartSuspendedIgnoredAfterStart(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
-	wf.Spec.StartSuspended = true
+	wf.Spec.StartSuspended = new(true)
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
@@ -692,6 +694,181 @@ func TestStartSuspendedIgnoredAfterStart(t *testing.T) {
 	// the workflow already started, so flipping startSuspended does nothing
 	assert.False(t, woc.wf.Status.Suspended)
 	assert.Nil(t, woc.wf.Spec.Suspend)
+}
+
+const queuedWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: queued
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`
+
+// postponeAndAdmit runs fresh (taking the only parallelism slot) and postpones queued, then
+// admits queued, returning queued's persisted state after each step.
+func postponeAndAdmit(t *testing.T, objs ...any) (postponed, admitted *wfv1.Workflow) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	objs = append(objs, wfv1.MustUnmarshalWorkflow(freshWf), func(x *WorkflowController) { x.Config.Parallelism = 1 })
+	cancel, controller := newController(ctx, objs...)
+	defer cancel()
+
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+	expectNamespacedWorkflow(ctx, controller, "argo", "queued", func(wf *wfv1.Workflow) {
+		postponed = wf
+	})
+	require.Equal(t, wfv1.WorkflowPending, postponed.Status.Phase)
+
+	woc := newWorkflowOperationCtx(ctx, postponed, controller)
+	woc.operate(ctx)
+	return postponed, woc.wf
+}
+
+func TestPostponedStartSuspendedFromTemplateRef(t *testing.T) {
+	// startSuspended set on a WorkflowTemplate is only visible once execWf is resolved, which
+	// the parallelism-postponed path must do before it moves the workflow out of Unknown
+	tmpl := wfv1.MustUnmarshalWorkflowTemplate(`
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: start-suspended
+  namespace: argo
+spec:
+  startSuspended: true
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`)
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: queued
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: start-suspended
+`)
+	postponed, admitted := postponeAndAdmit(t, tmpl, wf)
+
+	assert.True(t, postponed.Status.Suspended)
+	assert.Empty(t, postponed.Status.Nodes)
+	assert.True(t, admitted.Status.Suspended)
+	assert.Empty(t, admitted.Status.Nodes, "an admitted startSuspended workflow must not start")
+}
+
+func TestPostponedStartSuspendedFromDefaults(t *testing.T) {
+	postponed, admitted := postponeAndAdmit(t,
+		wfv1.MustUnmarshalWorkflow(queuedWf),
+		func(x *WorkflowController) {
+			x.Config.WorkflowDefaults = &wfv1.Workflow{Spec: wfv1.WorkflowSpec{StartSuspended: new(true)}}
+		},
+	)
+
+	assert.True(t, postponed.Status.Suspended)
+	assert.Empty(t, postponed.Status.Nodes)
+	assert.True(t, admitted.Status.Suspended)
+	assert.Empty(t, admitted.Status.Nodes, "an admitted startSuspended workflow must not start")
+}
+
+func TestStartSuspendedFalseOverridesDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	defaults := func(x *WorkflowController) {
+		x.Config.WorkflowDefaults = &wfv1.Workflow{Spec: wfv1.WorkflowSpec{StartSuspended: new(true)}}
+	}
+
+	// the default is merged into, and persisted with, the workflow's spec, which is what lets a
+	// retry find and turn it off
+	wf := wfv1.MustUnmarshalWorkflow(freshWf)
+	cancel, controller := newController(ctx, wf, defaults)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	assert.True(t, woc.wf.Status.Suspended)
+	assert.True(t, woc.wf.Spec.StartSuspendedRequested())
+
+	// an explicit false, as a retry writes, survives the defaults merge
+	wf = wfv1.MustUnmarshalWorkflow(freshWf)
+	wf.Spec.StartSuspended = new(false)
+	cancel2, controller2 := newController(ctx, wf, defaults)
+	defer cancel2()
+	woc = newWorkflowOperationCtx(ctx, wf, controller2)
+	woc.operate(ctx)
+	assert.False(t, woc.wf.Status.Suspended)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
+}
+
+func TestResumeGlobalOutputVisibleInSameReconcile(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// a Resume's output parameter with a globalName lands in status.outputs; the pod for the
+	// next step, created in the same reconcile, must see it as workflow.outputs.parameters.*
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-out
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: approve
+            template: approve
+        - - name: use
+            template: use
+    - name: approve
+      suspend: {}
+      outputs:
+        parameters:
+          - name: message
+            globalName: msg
+            valueFrom:
+              supplied: {}
+    - name: use
+      container:
+        image: argoproj/argosay:v2
+        args: ["{{workflow.outputs.parameters.msg}}"]
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes.FindByDisplayName("approve").Phase)
+
+	resume := newTestAction("r-global", "global-out", wfv1.ActionTypeResume, func(a *wfv1.WorkflowAction) {
+		a.Spec.Resume = &wfv1.ResumeAction{
+			NodeFieldSelector: "displayName=approve",
+			OutputParameters:  map[string]string{"message": "hello"},
+		}
+	})
+	cancel2, controller2 := newController(ctx, woc.wf, resume)
+	defer cancel2()
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller2)
+	woc.operate(ctx)
+
+	require.Equal(t, wfv1.WorkflowActionSucceeded, getTestAction(t, controller2, "r-global").Status.Phase)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+	var args []string
+	for _, c := range pods.Items[0].Spec.Containers {
+		if c.Name == "main" {
+			args = slices.Concat(c.Command, c.Args)
+		}
+	}
+	joined := strings.Join(args, " ")
+	assert.Contains(t, joined, "hello")
+	assert.NotContains(t, joined, "{{workflow.outputs.parameters.msg}}")
 }
 
 func TestSpecSuspendDeprecationCounted(t *testing.T) {

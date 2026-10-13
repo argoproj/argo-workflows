@@ -966,6 +966,15 @@ func createNewRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, parameters [
 		newWF.Status.StoredWorkflowSpec.Shutdown = ""
 	}
 	newWF.Spec.Shutdown = ""
+	// startSuspended was honoured when the workflow first ran; the retry goes back to Unknown, so
+	// leaving it on would suspend the workflow again. It must be an explicit false, as an unset
+	// field would have a true from the controller's workflowDefaults merged back in.
+	if newWF.Spec.StartSuspendedRequested() || (newWF.Status.StoredWorkflowSpec != nil && newWF.Status.StoredWorkflowSpec.StartSuspendedRequested()) {
+		newWF.Spec.StartSuspended = new(false)
+		if newWF.Status.StoredWorkflowSpec != nil {
+			newWF.Status.StoredWorkflowSpec.StartSuspended = new(false)
+		}
+	}
 	// a shutdown accepted from a WorkflowAction is recorded in status and supersedes spec, so it
 	// must be cleared too or the retried workflow will immediately shut itself down again
 	newWF.Status.Shutdown = ""

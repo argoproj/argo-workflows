@@ -351,8 +351,10 @@ type WorkflowSpec struct {
 
 	// StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
 	// the workflow is first reconciled, before anything has run; changing it on a started workflow
-	// has no effect. Resume the workflow with a WorkflowAction.
-	StartSuspended bool `json:"startSuspended,omitempty" protobuf:"varint,48,opt,name=startSuspended"`
+	// has no effect, and retrying the workflow sets it to false. Resume the workflow with a
+	// WorkflowAction. Setting it to false overrides a true from workflowDefaults or a
+	// WorkflowTemplate.
+	StartSuspended *bool `json:"startSuspended,omitempty" protobuf:"varint,48,opt,name=startSuspended"`
 
 	// NodeSelector is a selector which will result in all pods of the workflow
 	// to be scheduled on the selected node(s). This is able to be overridden by
@@ -710,6 +712,11 @@ func (p ParallelSteps) OpenAPISchemaFormat() string { return "" }
 // SuspendRequested reports whether spec.suspend is set.
 func (wfs *WorkflowSpec) SuspendRequested() bool {
 	return wfs.Suspend != nil && *wfs.Suspend
+}
+
+// StartSuspendedRequested reports whether spec.startSuspended is set.
+func (wfs *WorkflowSpec) StartSuspendedRequested() bool {
+	return wfs.StartSuspended != nil && *wfs.StartSuspended
 }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {

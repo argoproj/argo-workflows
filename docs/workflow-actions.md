@@ -26,7 +26,7 @@ spec:
       approved: "true"
 ```
 
-`workflowRef` also takes an optional `uid`: set it to the target Workflow's `metadata.uid` and the action fails with `WorkflowNotFound`, rather than acting on a different Workflow recreated under the same name.
+`workflowRef` also takes an optional `uid`: set it to the target Workflow's `metadata.uid`, and if that Workflow has been deleted and recreated under the same name, the action fails with `WorkflowNotFound` instead of acting on the new one.
 
 Create it in the same namespace as the target Workflow:
 
@@ -128,6 +128,7 @@ spec:
 
 Directly setting `spec.shutdown` or `spec.suspend` on a running Workflow still works and is deprecated; the [`deprecated_feature`](metrics.md#deprecated_feature) metric counts remaining uses.
 Setting `spec.suspend` at creation time ("start suspended") remains supported; `spec.startSuspended: true` does the same and is preferred.
+`spec.startSuspended` is honored once, before anything has run: retrying the Workflow sets it to `false`, so the retry does not suspend again.
 An Argo Server v4.2 or later requires a workflow controller v4.2 or later to perform actions; against an older controller the action endpoints time out after 30 seconds.
 This applies to the `argo` CLI without an Argo Server too (the Kubernetes API mode): it creates a WorkflowAction and waits for the controller, so the controller must be running, and the WorkflowAction CRD installed, for `argo stop`, `argo terminate`, `argo suspend` and `argo resume` to work.
 When the endpoints do time out, the action has still been recorded and is applied once the controller gets to it; `kubectl get wfa` shows its outcome.
