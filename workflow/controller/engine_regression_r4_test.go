@@ -12811,3 +12811,208 @@ func TestRegressionR4_B3_ItemIndexNotSubstituted(t *testing.T) {
 		})
 	}
 }
+
+// r4S11RetryWorkflow is a workflow whose retried template "work" (retried
+// on any outcome, up to limit times, with a realtime gauge named metric)
+// runs as the entrypoint (entry "work") or as task A of a DAG (entry
+// "maindag").
+func r4S11RetryWorkflow(name, entry, limit, metric string) *wfv1.Workflow {
+	return wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ` + name + `
+  namespace: default
+spec:
+  entrypoint: ` + entry + `
+  templates:
+  - name: maindag
+    dag:
+      tasks:
+      - name: A
+        template: work
+  - name: work
+    retryStrategy:
+      limit: "` + limit + `"
+      retryPolicy: Always
+    metrics:
+      prometheus:
+      - name: ` + metric + `
+        help: g
+        labels:
+        - key: status
+          value: "{{status}}"
+        gauge:
+          realtime: true
+          value: "{{duration}}"
+    container:
+      image: alpine
+      command: [echo, hi]
+`)
+}
+
+// r4S11Denied is the pod-create rejection r4S11 tests use to make every
+// attempt fail as it is dispatched.
+var r4S11Denied = apierr.NewForbidden(schema.GroupResource{Resource: "pods"}, "denied",
+	fmt.Errorf(`admission webhook "validation.gatekeeper.sh" denied the request: image not allowed`))
+
+// r4S11Attempts lists the names of retryNode's attempts, "<retryNode>(N)",
+// that exist, in order.
+func r4S11Attempts(woc *wfOperationCtx, retryNode string) []string {
+	var out []string
+	for i := 0; ; i++ {
+		name := fmt.Sprintf("%s(%d)", retryNode, i)
+		if _, err := woc.wf.GetNodeByName(name); err != nil {
+			return out
+		}
+		out = append(out, name)
+	}
+}
+
+// r4S11OperateRetryDeadline rejects every pod create of name's workflow
+// (see r4S11RetryWorkflow) and operates it twice with the deadline
+// moved into the past by the operation's first pod create, then once more
+// without. It returns the operation contexts and the Retry node's name.
+//
+//nolint:revive // matches the r4 harness convention (t before ctx)
+func r4S11OperateRetryDeadline(t *testing.T, ctx context.Context, name, entry, metric string) ([]*wfOperationCtx, string) {
+	t.Helper()
+	wf := r4S11RetryWorkflow(name, entry, "3", metric)
+	require.NoError(t, validate.Workflow(ctx, nil, nil, wf.DeepCopy(), nil, validate.Opts{}))
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+	r4RejectPodCreate(controller, func(*apiv1.Pod) bool { return true }, r4S11Denied)
+	var cur *wfOperationCtx
+	armed := true
+	r4ArmDeadlineOnPodCreate(controller, &cur, &armed)
+
+	var wocs []*wfOperationCtx
+	for i := range 3 {
+		armed = i < 2
+		cur = newWorkflowOperationCtx(ctx, wf, controller)
+		cur.operate(ctx)
+		wf = cur.wf
+		wocs = append(wocs, cur)
+	}
+	retryNode := name
+	if entry == "maindag" {
+		retryNode = name + ".A"
+	}
+	return wocs, retryNode
+}
+
+// TestRegressionR4_S11_RetryReentryStopsAtDeadline (isubasinghe, round
+// 11): handleRetries re-entered itself for the next attempt of a retry
+// whose attempt finished during dispatch, so the attempts skipped the
+// operation-deadline check executeProcessedTemplate makes before any
+// template runs, and attempts that fail at once all ran in one operation
+// that never yielded. Main re-enters through executeTemplate, which checks
+// the deadline before each attempt. An operation that has run past its
+// deadline starts no further attempt and leaves the Retry node Running; the
+// next operation starts the next attempt.
+func TestRegressionR4_S11_RetryReentryStopsAtDeadline(t *testing.T) {
+	for _, entry := range []string{"work", "maindag"} {
+		t.Run(entry, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			name := "r4-s11-deadline-" + entry
+			wocs, retryNode := r4S11OperateRetryDeadline(t, ctx, name, entry, "r4_s11_deadline_"+entry)
+
+			for i, want := range [][]string{{retryNode + "(0)"}, {retryNode + "(0)", retryNode + "(1)"}} {
+				woc := wocs[i]
+				assert.Equal(t, want, r4S11Attempts(woc, retryNode), "operation %d past its deadline starts one attempt", i+1)
+				retry, err := woc.wf.GetNodeByName(retryNode)
+				require.NoError(t, err)
+				assert.Equal(t, wfv1.NodeRunning, retry.Phase, "Retry node after operation %d", i+1)
+				for _, a := range want {
+					n, err := woc.wf.GetNodeByName(a)
+					require.NoError(t, err)
+					assert.Equal(t, wfv1.NodeError, n.Phase, "%s after operation %d", a, i+1)
+				}
+				assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow after operation %d", i+1)
+			}
+
+			last := wocs[2]
+			for range 3 {
+				if last.wf.Status.Phase.Completed() {
+					break
+				}
+				last = newWorkflowOperationCtx(ctx, last.wf, last.controller)
+				last.operate(ctx)
+			}
+			assert.Len(t, r4S11Attempts(last, retryNode), 4, "limit 3: four attempts in all")
+			retry, err := last.wf.GetNodeByName(retryNode)
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeError, retry.Phase, "Retry node once its attempts are exhausted")
+			assert.Equal(t, wfv1.WorkflowError, last.wf.Status.Phase)
+		})
+	}
+}
+
+// TestRegressionR4_S11_RetryDeadlineKeepsAttemptAndMetric: a retry that
+// stops at the operation deadline between attempts does not touch the
+// attempt that has just finished, and its Retry node, created in that
+// operation, still registers its realtime metric. (Decided deviation from
+// main, whose re-entry error path marks the finished attempt Error again
+// with "Deadline exceeded" in place of its own message, and returns before
+// registering the Retry node's realtime metric.)
+func TestRegressionR4_S11_RetryDeadlineKeepsAttemptAndMetric(t *testing.T) {
+	for _, entry := range []string{"work", "maindag"} {
+		t.Run(entry, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			metric := "r4_s11_keep_" + entry
+			wocs, retryNode := r4S11OperateRetryDeadline(t, ctx, "r4-s11-keep-"+entry, entry, metric)
+
+			attempt, err := wocs[0].wf.GetNodeByName(retryNode + "(0)")
+			require.NoError(t, err)
+			assert.Contains(t, attempt.Message, "admission webhook", "the finished attempt keeps its own message")
+			_, running := r4GaugeStatuses(ctx, metric)["Running"]
+			assert.True(t, running, "status=Running series from the Retry node")
+		})
+	}
+}
+
+// TestRegressionR4_S11_RetryReentryCountsStackDepth (isubasinghe, round
+// 11): handleRetries re-entered itself for the next attempt without
+// counting it against the controller's maxStackDepth, so a retry whose
+// attempts fail at once ran up to its limit regardless. Main re-enters
+// through executeTemplate, so each attempt after the first is one level
+// deeper, and the Retry node ends Error with ErrMaxDepthExceeded once the
+// limit is reached. With maxStackDepth 3 the entrypoint's retry (at depth 1)
+// gets two attempts; task A of a DAG (at depth 2) gets one.
+func TestRegressionR4_S11_RetryReentryCountsStackDepth(t *testing.T) {
+	for _, tc := range []struct {
+		entry    string
+		attempts int
+	}{{"work", 2}, {"maindag", 1}} {
+		t.Run(tc.entry, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			name := "r4-s11-depth-" + tc.entry
+			wf := r4S11RetryWorkflow(name, tc.entry, "10", "r4_s11_depth_"+tc.entry)
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			controller.maxStackDepth = 3
+			r4RejectPodCreate(controller, func(*apiv1.Pod) bool { return true }, r4S11Denied)
+
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			for range 3 {
+				if woc.wf.Status.Phase.Completed() {
+					break
+				}
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+			}
+
+			retryNode := name
+			if tc.entry == "maindag" {
+				retryNode = name + ".A"
+			}
+			assert.Len(t, r4S11Attempts(woc, retryNode), tc.attempts)
+			retry, err := woc.wf.GetNodeByName(retryNode)
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeError, retry.Phase)
+			assert.Contains(t, retry.Message, "Maximum recursion depth exceeded")
+			assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		})
+	}
+}

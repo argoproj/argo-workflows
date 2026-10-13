@@ -39,12 +39,22 @@ func (woc *wfOperationCtx) prepareNode(ctx context.Context, nodeName string, tmp
 	return node, nil
 }
 
+// checkDeadline returns ErrDeadlineExceeded, and requeues the workflow, once
+// this operation has run past its deadline, so the operation yields before
+// starting more work.
+func (woc *wfOperationCtx) checkDeadline(ctx context.Context) error {
+	if !woc.deadlineExceeded() {
+		return nil
+	}
+	woc.log.Warn(ctx, "Deadline exceeded")
+	woc.requeue()
+	return ErrDeadlineExceeded
+}
+
 // checkConstraints checks deadline and parallelism.
 func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template, boundaryID string) error {
-	if woc.deadlineExceeded() {
-		woc.log.Warn(ctx, "Deadline exceeded")
-		woc.requeue()
-		return ErrDeadlineExceeded
+	if err := woc.checkDeadline(ctx); err != nil {
+		return err
 	}
 
 	// Check the timeout and pendingTimeout deadlines for Pending nodes.
@@ -359,9 +369,23 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	// Re-entering when a retry child completes lets retries progress within a
 	// single operate cycle. This covers both cases: re-executing an existing child
 	// that transitions to a terminal phase, and new children that complete instantly.
+	//
+	// The re-entry is a nested template call, so it gets the checks
+	// executeProcessedTemplate makes before any template runs: it counts
+	// against the stack depth, and it stops at the operation deadline.
+	// Neither touches the attempt just finished. Past the deadline the Retry
+	// node stays as it is, and the next operation starts the next attempt.
 	if childNode.Phase.Fulfilled(childNode.TaskResultSynced) {
 		retryParentNode, _ = woc.wf.GetNodeByName(retryParentNode.Name)
 		if retryParentNode != nil && !retryParentNode.Phase.Fulfilled(retryParentNode.TaskResultSynced) {
+			woc.currentStackDepth++
+			defer func() { woc.currentStackDepth-- }()
+			if woc.stackDepthExceeded() {
+				return woc.markNodeError(ctx, retryNodeName, ErrMaxDepthExceeded), ErrMaxDepthExceeded
+			}
+			if err := woc.checkDeadline(ctx); err != nil {
+				return retryParentNode, err
+			}
 			return woc.handleRetries(ctx, retryParentNode, retryNodeName, unsubstitutedTmpl, templateScope, orgTmpl, opts, next)
 		}
 	}

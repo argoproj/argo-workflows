@@ -1048,6 +1048,13 @@ func (woc *wfOperationCtx) deadlineExceeded() bool {
 	return !woc.deadline.IsZero() && time.Now().UTC().After(woc.deadline)
 }
 
+// stackDepthExceeded reports whether this operation's template nesting
+// (currentStackDepth) has reached the controller's maxStackDepth, unless
+// DISABLE_MAX_RECURSION turns the limit off.
+func (woc *wfOperationCtx) stackDepthExceeded() bool {
+	return woc.currentStackDepth >= woc.controller.maxStackDepth && os.Getenv("DISABLE_MAX_RECURSION") != "true"
+}
+
 // requeue this workflow onto the workqueue for later processing
 func (woc *wfOperationCtx) requeueAfter(afterDuration time.Duration) {
 	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
@@ -2376,7 +2383,7 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 	woc.currentStackDepth++
 	defer func() { woc.currentStackDepth-- }()
 
-	if woc.currentStackDepth >= woc.controller.maxStackDepth && os.Getenv("DISABLE_MAX_RECURSION") != "true" {
+	if woc.stackDepthExceeded() {
 		return woc.initializeNodeOrMarkError(ctx, nil, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, ErrMaxDepthExceeded), ErrMaxDepthExceeded
 	}
 
@@ -2477,9 +2484,11 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 
 	// The node returned is the one whose realtime metric matters: the Retry
 	// node when the template is retried (handleRetries always returns it,
-	// never an attempt), the template's own node otherwise.
+	// never an attempt), the template's own node otherwise. A retry stopped
+	// at the operation deadline between attempts returns its Retry node, still
+	// running and perhaps created in this operation, so it is registered too.
 	node, err = woc.handleRetries(ctx, node, nodeName, processedTmpl, nodeScope, orgTmpl, opts, dispatch)
-	if err == nil && node != nil {
+	if (err == nil || errors.Is(err, ErrDeadlineExceeded)) && node != nil {
 		woc.emitNodeMetrics(ctx, node, processedTmpl)
 	}
 	return node, err
