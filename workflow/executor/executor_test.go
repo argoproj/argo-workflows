@@ -824,6 +824,7 @@ func TestTaskResultRetries(t *testing.T) {
 		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
 		require.Error(t, err)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
+		require.ErrorContains(t, err, "gave up writing task result after 100ms: ")
 		assert.GreaterOrEqual(t, time.Since(start), 100*time.Millisecond)
 
 		we.InitializeOutput(ctx)
@@ -857,8 +858,65 @@ func TestTaskResultRetries(t *testing.T) {
 
 		start := time.Now()
 		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
-		require.Error(t, err)
 		assert.Less(t, time.Since(start), 10*time.Second)
+		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
+		assert.NotContains(t, err.Error(), "gave up", "the limit didn't run out")
+	})
+	t.Run("AttemptInFlightIsCutOff", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+
+		start := time.Now()
+		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+			select {
+			case <-ctx.Done():
+			case <-time.After(10 * time.Second):
+			}
+			return apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, ctx.Err())
+		})
+		elapsed := time.Since(start)
+		assert.GreaterOrEqual(t, elapsed, 50*time.Millisecond)
+		assert.Less(t, elapsed, 10*time.Second)
+		require.EqualError(t, err, "gave up writing task result after 50ms: context deadline exceeded")
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+	})
+	t.Run("AttemptInFlightIsCutOffAfterTransientError", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+
+		attempts := 0
+		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+			attempts++
+			if attempts == 1 {
+				return apierr.NewServiceUnavailable("API server unavailable")
+			}
+			select {
+			case <-ctx.Done():
+			case <-time.After(10 * time.Second):
+			}
+			return apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, ctx.Err())
+		})
+		assert.Equal(t, 2, attempts)
+		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last transient error, got %v", err)
+		assert.ErrorContains(t, err, "gave up writing task result after 50ms: ")
+	})
+	t.Run("NonTransientContextErrorIsNotReplaced", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, 0, time.Minute)
+
+		// The op's error wraps a context error, but the retries' own ctx is
+		// still live, so this isn't giving up: the error comes back as is.
+		failure := fmt.Errorf("reading response: %w", context.Canceled)
+		attempts := 0
+		err := we.retryTaskResult(ctx, time.Minute, func(context.Context) error {
+			attempts++
+			if attempts == 1 {
+				return apierr.NewServiceUnavailable("API server unavailable")
+			}
+			return failure
+		})
+		assert.Equal(t, 2, attempts)
+		assert.Equal(t, failure, err)
 	})
 	t.Run("NonTransientErrorIsNotRetried", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())

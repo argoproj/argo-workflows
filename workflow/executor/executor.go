@@ -1137,15 +1137,17 @@ func (we *WorkflowExecutor) reportResultWithin(ctx context.Context, limit time.D
 	})
 }
 
-// retryTaskResult calls op until it succeeds or fails with an error that
-// isn't transient. It gives up with the last error once ctx is done or
-// limit has passed; op's ctx carries that deadline, so an attempt in
-// flight is cut off too.
+// retryTaskResult calls op until it succeeds, and returns nil, or fails
+// with an error that isn't transient, and returns that error. op's ctx
+// ends once limit has passed or ctx is done, cutting off an attempt in
+// flight; retryTaskResult then returns the last transient error, or the
+// ctx error if there was none, wrapped to say it gave up if it was limit
+// that ran out.
 func (we *WorkflowExecutor) retryTaskResult(ctx context.Context, limit time.Duration, op func(ctx context.Context) error) error {
-	ctx, cancel := context.WithTimeout(ctx, limit)
+	retryCtx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
 	var lastErr error
-	err := we.taskResultBackoff.DelayFunc().Until(ctx, true, true, func(ctx context.Context) (bool, error) {
+	err := we.taskResultBackoff.DelayFunc().Until(retryCtx, true, true, func(ctx context.Context) (bool, error) {
 		err := op(ctx)
 		switch {
 		case err == nil:
@@ -1159,8 +1161,14 @@ func (we *WorkflowExecutor) retryTaskResult(ctx context.Context, limit time.Dura
 			return false, err
 		}
 	})
-	if wait.Interrupted(err) && lastErr != nil {
-		return lastErr
+	if retryCtx.Err() == nil {
+		return err
+	}
+	if lastErr != nil {
+		err = lastErr
+	}
+	if ctx.Err() == nil {
+		return fmt.Errorf("gave up writing task result after %s: %w", limit, err)
 	}
 	return err
 }
