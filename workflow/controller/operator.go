@@ -2604,31 +2604,7 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 // captured snapshot time) to keep build() deterministic for a given snapshot,
 // while checkConstraints passes the current wall-clock.
 func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	if node == nil {
-		return nil, nil, nil
-	}
-
-	if tmpl.Timeout != "" {
-		deadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.Timeout)
-		if err != nil {
-			return nil, nil, err
-		}
-		if node.Phase == wfv1.NodePending && now.After(*deadline) {
-			return nil, nil, ErrTimeout
-		}
-	}
-
-	if tmpl.PendingTimeout != "" && node.Phase == wfv1.NodePending {
-		pendingDeadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
-		if err != nil {
-			return nil, nil, err
-		}
-		if now.After(*pendingDeadline) {
-			return nil, nil, ErrTimeout
-		}
-	}
-
-	return deadline, pendingDeadline, nil
+	return templateTimeoutDeadlines(tmpl, node, now)
 }
 
 // recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing
