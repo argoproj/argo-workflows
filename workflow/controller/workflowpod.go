@@ -295,8 +295,7 @@ func (pb *podBuilder) processPodSpecPatch(ctx context.Context, tmpl *wfv1.Templa
 	podSpecPatches := []string{}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[varkeys.PodName.Template()] = pod.Name
-		localParams[varkeys.NodeTaskName.Template()] = pod.Name
+		setPodNameParams(localParams, pod.Name)
 	}
 	toProcess := []string{}
 	if pb.in.execWfSpec.HasPodSpecPatch() {
@@ -933,8 +932,7 @@ func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams commo
 	for _, inParam := range tmpl.Inputs.Parameters {
 		podParams[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
 	}
-	podParams[varkeys.PodName.Template()] = pod.Name
-	podParams[varkeys.NodeTaskName.Template()] = pod.Name
+	setPodNameParams(podParams, pod.Name)
 	specBytes, err := json.Marshal(pod)
 	if err != nil {
 		return nil, err

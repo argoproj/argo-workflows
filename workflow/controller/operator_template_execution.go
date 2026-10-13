@@ -286,9 +286,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 
 	localParams := make(map[string]string)
 	if processedTmpl.IsPodType() {
-		podName := woc.getPodName(nodeName, processedTmpl.Name)
-		localParams[varkeys.PodName.Template()] = podName
-		localParams[varkeys.NodeTaskName.Template()] = podName
+		setPodNameParams(localParams, woc.getPodName(nodeName, processedTmpl.Name))
 	}
 	localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
 
