@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/config"
@@ -141,17 +142,24 @@ type podBuilderInputs struct {
 	configMapIndexer   cache.Indexer
 
 	// controller-derived configuration (immutable for the duration of build)
-	config                    *config.Config
-	instanceID                string
-	mainContainerDefaults     *apiv1.Container
-	kubeConfig                *config.KubeConfig
+	config                *config.Config
+	instanceID            string
+	mainContainerDefaults *apiv1.Container
+	// kubeConfig is the single source of the kubeconfig for both the pod's
+	// kubeconfig volume and every argoexec container's mount of it.
+	kubeConfig *config.KubeConfig
+	// executorImage and executorImagePullPolicy are the effective executor image
+	// settings (command-line flags first, then Config.Executor), shared by the
+	// argoexec containers and the init-less argoexec image volume.
 	executorImage             string
+	executorImagePullPolicy   apiv1.PullPolicy
+	workflowUID               types.UID
 	progressPatchTickDuration time.Duration
 	progressFileTickDuration  time.Duration
 
 	// deadlines
 	// workflowDeadline is woc.workflowDeadline, the operation-cached terminate
-	// deadline read by getDeadline.
+	// deadline that feeds ARGO_DEADLINE (see taskDeadline).
 	workflowDeadline *time.Time
 	// computedWorkflowDeadline is the result of woc.getWorkflowDeadline() (derived
 	// from execWf.Spec.ActiveDeadlineSeconds and the workflow StartedAt), used to
@@ -159,10 +167,9 @@ type podBuilderInputs struct {
 	computedWorkflowDeadline *time.Time
 
 	// now is a single wall-clock reading captured at newPodBuilder time. build
-	// uses it for every relative-deadline computation so the build is
-	// deterministic for a given snapshot: build never calls time.Now/Until/Since
-	// itself, and it also threads now into the one dep that would otherwise read
-	// the live clock (checkTemplateTimeouts) so no live wall-clock leaks in.
+	// uses it for every relative-deadline computation, including the template
+	// timeout (templateTimeoutDeadlines), so the build is deterministic for a
+	// given snapshot: build never calls time.Now/Until/Since itself.
 	now time.Time
 
 	// podStatusCaptureFinalizer is the value of the
@@ -189,22 +196,17 @@ type podBuilderDeps interface {
 	// read-only entrypoint/image lookup for emissary command injection
 	lookupImage(ctx context.Context, image string, opts entrypoint.Options) (*entrypoint.Image, error)
 
-	// shared container/decorator helpers (also used by agent.go / artifact_gc.go)
-	newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container
+	// executor log flags, from the controller's command line and process state
 	getExecutorLogOpts(ctx context.Context) []string
-	addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template)
-	addDNSConfig(pod *apiv1.Pod)
-	addSchedulingConstraints(ctx context.Context, pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, boundaryTemplate *wfv1.Template)
 
-	// workflow-pod-only helpers reaching live state / controller config
-	IsArchiveLogs(tmpl *wfv1.Template) bool
+	// workflow-pod-only helpers reaching live state / controller config. The
+	// artifact plugin containers look up their plugin image's entrypoint; they
+	// are built from the execContainerConfig build passes in.
 	createArtifactVolumeMounts(ctx context.Context, tmpl *wfv1.Template) []apiv1.Volume
 	addInputArtifactsVolumes(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error
-	newInitContainers(ctx context.Context, tmpl *wfv1.Template) ([]apiv1.Container, error)
-	newSupervisorContainer(ctx context.Context, tmpl *wfv1.Template) *apiv1.Container
-	buildArgoBinVolume() apiv1.Volume
-	addArtifactPluginsLegacy(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error
-	addArtifactPluginsInitless(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error
+	newArtifactPluginInitContainers(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error)
+	addArtifactPluginsLegacy(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error
+	addArtifactPluginsInitless(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, execCfg execContainerConfig) error
 
 	// live workflow-status / template resolution reads
 	getNodeByName(nodeName string) (*wfv1.NodeStatus, error)
@@ -212,7 +214,6 @@ type podBuilderDeps interface {
 	retryStrategyForTemplate(tmpl *wfv1.Template) *wfv1.RetryStrategy
 	retryNodeTemplate(ctx context.Context, retryNode *wfv1.NodeStatus, fallback *wfv1.Template) (*wfv1.Template, error)
 	applyRetryOnDifferentHost(retryNodeID string, retryStrategy wfv1.RetryStrategy, pod *apiv1.Pod)
-	checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error)
 	getServiceAccountTokenName(ctx context.Context, name string) (string, error)
 	getPodGCDelay(ctx context.Context, podGC *wfv1.PodGC) time.Duration
 	persistentVolumeClaims() []apiv1.Volume
@@ -274,6 +275,8 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 			mainContainerDefaults:     wfc.Config.MainContainer,
 			kubeConfig:                wfc.Config.KubeConfig,
 			executorImage:             wfc.executorImage(),
+			executorImagePullPolicy:   wfc.executorImagePullPolicy(),
+			workflowUID:               woc.wf.UID,
 			progressPatchTickDuration: wfc.progressPatchTickDuration,
 			progressFileTickDuration:  wfc.progressFileTickDuration,
 			workflowDeadline:          woc.workflowDeadline,
@@ -409,8 +412,8 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	ctx = logging.WithLogger(ctx, log)
 	tmpl = tmpl.DeepCopy()
 	// pb.in.execWfSpec is already an immutable snapshot (DeepCopy'd at capture in
-	// newPodBuilder) that nothing mutates, and addSchedulingConstraints only reads
-	// it, so use it directly rather than allocating a second full-spec copy.
+	// newPodBuilder) that nothing mutates, and the derivations only read it, so
+	// use it directly rather than allocating a second full-spec copy.
 	wfSpec := pb.in.execWfSpec
 
 	if err = applyMainContainerDefaults(mainCtrs, tmpl, pb.in.mainContainerDefaults); err != nil {
@@ -447,7 +450,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
-			Volumes:               pb.createVolumes(tmpl),
+			Volumes:               podVolumes(pb.in.kubeConfig, tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      pb.in.execWfSpec.ImagePullSecrets,
 		},
@@ -468,25 +471,32 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		pod.Spec.HostNetwork = *pb.in.execWfSpec.HostNetwork
 	}
 
-	pb.deps.addDNSConfig(pod)
+	applyDNSConfig(&pod.Spec, wfSpec)
 
 	if pb.in.instanceID != "" {
 		pod.Labels[common.LabelKeyControllerInstanceID] = pb.in.instanceID
 	}
 
-	addArchiveLocation(ctx, tmpl, pb.in.artifactRepository, pb.deps.IsArchiveLogs(tmpl))
+	addArchiveLocation(ctx, tmpl, pb.in.artifactRepository, isArchiveLogs(pb.in.artifactRepository, wfSpec, tmpl))
 
 	// Populate plugin artifact connection timeouts for all input and output artifacts
 	populateAllPluginArtifactTimeouts(tmpl, pb.in.config)
 
-	err = pb.setupServiceAccount(ctx, pod, tmpl)
+	sa, err := derivePodServiceAccount(tmpl, wfSpec)
 	if err != nil {
 		return nil, err
 	}
+	err = pb.setupServiceAccount(ctx, pod, sa)
+	if err != nil {
+		return nil, err
+	}
+	// Every argoexec container mounts the token of the executor service account
+	// whose token volume was just added, so both come from this one resolution.
+	execCfg := pb.execContainerConfig(sa.executorServiceAccountName)
 
 	hasAuxCtr := false
 	if needsAuxContainer(pb.layout, tmpl) {
-		auxCtr := pb.layout.auxContainer(ctx, pb, tmpl)
+		auxCtr := pb.layout.auxContainer(ctx, pb, tmpl, execCfg)
 		pod.Spec.Containers = append(pod.Spec.Containers, *auxCtr)
 		hasAuxCtr = true
 	}
@@ -515,14 +525,14 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	// script templates (which needs to populate the script).
 	// In init-less pod mode the supervisor performs these responsibilities as a
 	// regular container, so pods are scheduled with zero init containers.
-	initContainers, initErr := pb.layout.initContainers(ctx, pb, tmpl)
+	initContainers, initErr := pb.layout.initContainers(ctx, pb, tmpl, execCfg)
 	if initErr != nil {
 		return nil, initErr
 	}
 	pod.Spec.InitContainers = initContainers
 
-	pb.deps.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, pb.in.boundaryTemplate)
-	pb.deps.addMetadata(pod, tmpl)
+	applySchedulingConstraints(&pod.Spec, wfSpec, tmpl, pb.in.boundaryTemplate)
+	applyPodMetadata(&pod.ObjectMeta, wfSpec, tmpl)
 
 	applyPodResources(&pod.Spec, wfSpec, tmpl)
 
@@ -551,7 +561,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	// addInitContainers, addSidecars and addOutputArtifactsVolumes should be called after all
 	// volumes have been manipulated in the main container since volumeMounts are mirrored
 	addInitContainers(ctx, pod, tmpl)
-	err = pb.addSidecars(ctx, pod, tmpl, pb.in.config)
+	err = pb.addSidecars(ctx, pod, tmpl, pb.in.config, execCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -563,12 +573,13 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	}
 
 	envVarTemplateValue := executorTemplate(tmpl)
+	deadline := taskDeadline(pb.in.workflowDeadline, opts.executionDeadline, opts.onExitPod)
 
 	// Add standard environment variables, making pod spec larger
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
-		{Name: common.EnvVarDeadline, Value: pb.getDeadline(opts).Format(time.RFC3339)},
+		{Name: common.EnvVarDeadline, Value: deadline.Format(time.RFC3339)},
 		{Name: common.EnvVarWorkflowName, Value: pb.in.wfName},
 	}
 
@@ -859,12 +870,12 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds.
 	// pb.in.now (the captured snapshot time) is passed so the timeout determination
 	// uses the same frozen clock as the rest of build, keeping build deterministic
-	// for a given snapshot rather than leaking the live wall-clock in via deps.
+	// for a given snapshot.
 	node, err := pb.deps.getNodeByName(nodeName)
 	if err != nil {
 		log.Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
 	}
-	templateDeadline, _, err := pb.deps.checkTemplateTimeouts(tmpl, node, pb.in.now)
+	templateDeadline, _, err := templateTimeoutDeadlines(tmpl, node, pb.in.now)
 	if err != nil {
 		return nil, err
 	}
@@ -914,11 +925,6 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 	return nil, false, nil
 }
 
-func (pb *podBuilder) getDeadline(opts *createWorkflowPodOpts) *time.Time {
-	deadline := taskDeadline(pb.in.workflowDeadline, opts.executionDeadline, opts.onExitPod)
-	return &deadline
-}
-
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
 func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
@@ -942,9 +948,11 @@ func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams commo
 	return &newSpec, nil
 }
 
-func (woc *wfOperationCtx) standardInitContainer(ctx context.Context, tmpl *wfv1.Template) *apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
-	ctr.Command = append([]string{"argoexec", "init"}, woc.getExecutorLogOpts(ctx)...)
+// standardInitContainer builds the legacy `init` container, which stages the
+// template, script and input artifacts before main starts.
+func standardInitContainer(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) *apiv1.Container {
+	ctr := buildExecContainer(common.InitContainerName, tmpl, execCfg)
+	ctr.Command = append([]string{"argoexec", "init"}, logOpts...)
 	return ctr
 }
 
@@ -954,9 +962,9 @@ func (woc *wfOperationCtx) standardInitContainer(ctx context.Context, tmpl *wfv1
 // plugin sidecars reach it through the argoexec-bin image volume (see
 // argoBinExecutorPath) since they run the plugin's own image and are skipped by
 // the main image-volume mount loop.
-func (woc *wfOperationCtx) artifactContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver, prefix, binaryPath string, execCmd []string) (*apiv1.Container, error) {
+func (woc *wfOperationCtx) artifactContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig, driver config.ArtifactDriver, prefix, binaryPath string, execCmd []string) (*apiv1.Container, error) {
 	name := prefix + string(driver.Name)
-	ctr := woc.newExecContainer(name, tmpl)
+	ctr := buildExecContainer(name, tmpl, execCfg)
 	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: name})
 	ctr.Image = driver.Image
 	x, err := woc.controller.entrypoint.Lookup(ctx, driver.Image, entrypoint.Options{
@@ -979,7 +987,7 @@ func (woc *wfOperationCtx) artifactContainer(ctx context.Context, tmpl *wfv1.Tem
 
 func (woc *wfOperationCtx) artifactSidecarGCContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver) (*apiv1.Container, error) {
 	execCmd := []string{"emissary"}
-	ctr, err := woc.artifactContainer(ctx, tmpl, driver, common.ArtifactPluginSidecarPrefix, legacyArgoexecBinaryPath, execCmd)
+	ctr, err := woc.artifactContainer(ctx, tmpl, woc.execContainerConfig(tmpl), driver, common.ArtifactPluginSidecarPrefix, legacyArgoexecBinaryPath, execCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -994,9 +1002,9 @@ func (woc *wfOperationCtx) artifactSidecarGCContainer(ctx context.Context, tmpl 
 // plugin sidecars run the plugin's own image and are skipped by the main
 // image-volume mount loop, so buildPluginSidecars passes argoBinExecutorPath
 // (the argoexec-bin image volume, mounted in addArtifactPluginsInitless).
-func (woc *wfOperationCtx) artifactSidecarContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver, binaryPath string) (*apiv1.Container, error) {
+func (woc *wfOperationCtx) artifactSidecarContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig, driver config.ArtifactDriver, binaryPath string) (*apiv1.Container, error) {
 	execCmd := []string{"artifact-plugin-sidecar"}
-	ctr, err := woc.artifactContainer(ctx, tmpl, driver, common.ArtifactPluginSidecarPrefix, binaryPath, execCmd)
+	ctr, err := woc.artifactContainer(ctx, tmpl, execCfg, driver, common.ArtifactPluginSidecarPrefix, binaryPath, execCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -1004,18 +1012,30 @@ func (woc *wfOperationCtx) artifactSidecarContainer(ctx context.Context, tmpl *w
 	return ctr, nil
 }
 
-func (woc *wfOperationCtx) artifactInitContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver) (*apiv1.Container, error) {
+func (woc *wfOperationCtx) artifactInitContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig, driver config.ArtifactDriver) (*apiv1.Container, error) {
 	execCmd := []string{"artifact-plugin-init", "--plugin-name", string(driver.Name)}
-	return woc.artifactContainer(ctx, tmpl, driver, common.ArtifactPluginInitPrefix, legacyArgoexecBinaryPath, execCmd)
+	return woc.artifactContainer(ctx, tmpl, execCfg, driver, common.ArtifactPluginInitPrefix, legacyArgoexecBinaryPath, execCmd)
 }
 
-func (woc *wfOperationCtx) newInitContainers(ctx context.Context, tmpl *wfv1.Template) ([]apiv1.Container, error) {
+// newInitContainers builds the legacy layout's init containers: the standard
+// init container, then one per input artifact plugin.
+func (pb *podBuilder) newInitContainers(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error) {
+	initCtr := standardInitContainer(tmpl, execCfg, pb.deps.getExecutorLogOpts(ctx))
+	pluginCtrs, err := pb.deps.newArtifactPluginInitContainers(ctx, tmpl, execCfg)
+	if err != nil {
+		return nil, err
+	}
+	return append([]apiv1.Container{*initCtr}, pluginCtrs...), nil
+}
+
+// newArtifactPluginInitContainers builds one init container per plugin used by
+// the template's input artifacts, for the legacy layout.
+func (woc *wfOperationCtx) newArtifactPluginInitContainers(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	plugins := tmpl.Inputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.ExcludeLogs, tmpl.ArchiveLocation)
 
-	log.WithFields(logging.Fields{"plugins": plugins, "pluginLen": len(plugins)}).Debug(ctx, "newInitContainers")
-	initContainers := make([]apiv1.Container, len(plugins)+1)
-	initContainers[0] = *woc.standardInitContainer(ctx, tmpl)
+	log.WithFields(logging.Fields{"plugins": plugins, "pluginLen": len(plugins)}).Debug(ctx, "newArtifactPluginInitContainers")
+	initContainers := make([]apiv1.Container, len(plugins))
 
 	drivers, err := woc.controller.Config.GetArtifactDrivers(plugins)
 	if err != nil {
@@ -1023,18 +1043,18 @@ func (woc *wfOperationCtx) newInitContainers(ctx context.Context, tmpl *wfv1.Tem
 	}
 	for i, driver := range drivers {
 		log.WithFields(logging.Fields{"plugin": driver.Name, "i": i}).Debug(ctx, "adding init container")
-		ctr, err := woc.artifactInitContainer(ctx, tmpl, driver)
+		ctr, err := woc.artifactInitContainer(ctx, tmpl, execCfg, driver)
 		if err != nil {
 			return nil, err
 		}
 
-		initContainers[i+1] = *ctr
+		initContainers[i] = *ctr
 	}
 	return initContainers, nil
 }
 
-func (pb *podBuilder) newWaitContainer(ctx context.Context, tmpl *wfv1.Template) *apiv1.Container {
-	ctr := pb.deps.newExecContainer(common.WaitContainerName, tmpl)
+func (pb *podBuilder) newWaitContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
+	ctr := buildExecContainer(common.WaitContainerName, tmpl, execCfg)
 	ctr.Command = append([]string{"argoexec", "wait"}, pb.deps.getExecutorLogOpts(ctx)...)
 	return ctr
 }
@@ -1044,21 +1064,14 @@ func (pb *podBuilder) newWaitContainer(ctx context.Context, tmpl *wfv1.Template)
 // responsibilities of the legacy init container (template write, script
 // staging, input artifact download, readiness signaling) and the post-main
 // responsibilities of `wait` (observe main, collect outputs/logs/artifacts).
-func (woc *wfOperationCtx) newSupervisorContainer(ctx context.Context, tmpl *wfv1.Template) *apiv1.Container {
-	ctr := woc.newExecContainer(common.SupervisorContainerName, tmpl)
-	ctr.Command = append([]string{"argoexec", "supervisor"}, woc.getExecutorLogOpts(ctx)...)
+func (pb *podBuilder) newSupervisorContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
+	ctr := buildExecContainer(common.SupervisorContainerName, tmpl, execCfg)
+	ctr.Command = append([]string{"argoexec", "supervisor"}, pb.deps.getExecutorLogOpts(ctx)...)
 	// Tell the executor it's running in init-less mode so init-less-only
 	// code paths (e.g. the input-artifacts overlap fallback in stageArchiveFile)
 	// activate. Without this, those paths would not run.
 	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarInitlessPod, Value: "true"})
 	return ctr
-}
-
-// buildArgoBinVolume builds the ImageVolume that mounts the argoexec binary
-// into `main` for init-less pods. Reuses the executor image/pullPolicy so
-// the mounted binary matches the running supervisor.
-func (woc *wfOperationCtx) buildArgoBinVolume() apiv1.Volume {
-	return argoBinVolume(woc.controller.executorImage(), woc.controller.executorImagePullPolicy())
 }
 
 // argoBinVolumeMount is the read-only mount of the argoexec-bin image volume so
@@ -1079,7 +1092,7 @@ func argoBinVolumeMount() apiv1.VolumeMount {
 // init-less mode has a single sidecar per plugin that supervisor drives
 // for both directions. Dedup by plugin identity: a plugin referenced by
 // both inputs and outputs produces exactly one container.
-func (woc *wfOperationCtx) buildPluginSidecars(ctx context.Context, tmpl *wfv1.Template) ([]apiv1.Container, []wfv1.ArtifactPluginName, error) {
+func (woc *wfOperationCtx) buildPluginSidecars(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, []wfv1.ArtifactPluginName, error) {
 	inputPlugins := tmpl.Inputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.ExcludeLogs, tmpl.ArchiveLocation)
 	outputPlugins := tmpl.Outputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.IncludeLogs, tmpl.ArchiveLocation)
 
@@ -1104,7 +1117,7 @@ func (woc *wfOperationCtx) buildPluginSidecars(ctx context.Context, tmpl *wfv1.T
 	}
 	containers := make([]apiv1.Container, 0, len(drivers))
 	for _, driver := range drivers {
-		ctr, err := woc.artifactSidecarContainer(ctx, tmpl, driver, argoBinExecutorPath)
+		ctr, err := woc.artifactSidecarContainer(ctx, tmpl, execCfg, driver, argoBinExecutorPath)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1118,16 +1131,37 @@ func (woc *wfOperationCtx) getExecutorLogOpts(ctx context.Context) []string {
 	return []string{"--loglevel", string(log.Level()), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
 }
 
-// execContainerConfig gathers the configuration argoexec containers are built
-// from for this workflow.
-func (woc *wfOperationCtx) execContainerConfig() execContainerConfig {
+// execContainerConfig gathers the configuration the argoexec containers of a
+// pod running tmpl are built from, read from the live controller and workflow.
+// It is for argoexec containers built outside podBuilder.build (the resource
+// and data templates' main containers, artifact GC pods); build uses
+// podBuilder.execContainerConfig.
+func (woc *wfOperationCtx) execContainerConfig(tmpl *wfv1.Template) execContainerConfig {
 	return execContainerConfig{
-		image:           woc.controller.executorImage(),
-		imagePullPolicy: woc.controller.executorImagePullPolicy(),
-		executor:        woc.controller.Config.GetExecutor(),
-		kubeConfig:      woc.controller.Config.KubeConfig,
-		instanceID:      woc.controller.Config.InstanceID,
-		workflowUID:     woc.wf.UID,
+		image:                      woc.controller.executorImage(),
+		imagePullPolicy:            woc.controller.executorImagePullPolicy(),
+		executor:                   woc.controller.Config.GetExecutor(),
+		kubeConfig:                 woc.controller.Config.KubeConfig,
+		instanceID:                 woc.controller.Config.InstanceID,
+		workflowUID:                woc.wf.UID,
+		executorServiceAccountName: executorServiceAccountName(tmpl, &woc.execWf.Spec),
+	}
+}
+
+// execContainerConfig is the configuration every argoexec container of the pod
+// is built from, taken once per build from the snapshot so the containers share
+// the pod volumes' kubeconfig and the argoexec image volume's image.
+// executorServiceAccountName must be the account the pod's token volume was
+// added for (see setupServiceAccount).
+func (pb *podBuilder) execContainerConfig(executorServiceAccountName string) execContainerConfig {
+	return execContainerConfig{
+		image:                      pb.in.executorImage,
+		imagePullPolicy:            pb.in.executorImagePullPolicy,
+		executor:                   pb.in.config.GetExecutor(),
+		kubeConfig:                 pb.in.kubeConfig,
+		instanceID:                 pb.in.instanceID,
+		workflowUID:                pb.in.workflowUID,
+		executorServiceAccountName: executorServiceAccountName,
 	}
 }
 
@@ -1140,32 +1174,10 @@ func kubeConfigVolumeName(kc *config.KubeConfig) string {
 	return common.KubeConfigDefaultVolumeName
 }
 
-func (pb *podBuilder) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
-	return podVolumes(pb.in.kubeConfig, tmpl)
-}
-
+// newExecContainer builds an argoexec container from the live controller and
+// workflow configuration (see wfOperationCtx.execContainerConfig).
 func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
-	return buildExecContainer(name, tmpl, woc.execContainerConfig(), executorServiceAccountName(tmpl, &woc.execWf.Spec))
-}
-
-// addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	applyPodMetadata(&pod.ObjectMeta, &woc.execWf.Spec, tmpl)
-}
-
-// addDNSConfig applies DNSConfig to the pod
-func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
-	applyDNSConfig(&pod.Spec, &woc.execWf.Spec)
-}
-
-// addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
-func (woc *wfOperationCtx) addSchedulingConstraints(_ context.Context, pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, boundaryTemplate *wfv1.Template) {
-	// boundaryTemplate (the boundary node's template, if any) is supplied by the
-	// caller — pb.build passes the snapshot's pb.in.boundaryTemplate, and
-	// createAgentPod passes nil (agent pods have no boundary node) — so this
-	// function performs no live woc.wf reads and stays consistent with the rest
-	// of the pure pod builder.
-	applySchedulingConstraints(&pod.Spec, wfSpec, tmpl, boundaryTemplate)
+	return buildExecContainer(name, tmpl, woc.execContainerConfig(tmpl))
 }
 
 // GetBoundaryTemplate get a template through the nodeName
@@ -1499,18 +1511,9 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	}
 }
 
-// IsArchiveLogs determines if container should archive logs
-// priorities: controller(on) > template > workflow > controller(off)
-func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
-	return isArchiveLogs(woc.artifactRepository, &woc.execWf.Spec, tmpl)
-}
-
-// setupServiceAccount sets up service account and token.
-func (pb *podBuilder) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	sa, err := derivePodServiceAccount(tmpl, pb.in.execWfSpec)
-	if err != nil {
-		return err
-	}
+// setupServiceAccount applies the resolved service accounts to the pod and
+// adds the executor token volume, looking up the token's Secret.
+func (pb *podBuilder) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, sa podServiceAccount) error {
 	sa.applyTo(&pod.Spec)
 	if sa.executorServiceAccountName != "" {
 		tokenName, err := pb.deps.getServiceAccountTokenName(ctx, sa.executorServiceAccountName)
@@ -1586,7 +1589,7 @@ func addInitContainers(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template)
 
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
-func (pb *podBuilder) addSidecars(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error {
+func (pb *podBuilder) addSidecars(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error {
 	mainCtr := findMainContainer(pod)
 	for _, sidecar := range tmpl.Sidecars {
 		logging.RequireLoggerFromContext(ctx).WithField("name", sidecar.Name).Debug(ctx, "Adding sidecar container")
@@ -1595,13 +1598,13 @@ func (pb *podBuilder) addSidecars(ctx context.Context, pod *apiv1.Pod, tmpl *wfv
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
-	return pb.layout.wireArtifactPlugins(ctx, pb, pod, tmpl, config)
+	return pb.layout.wireArtifactPlugins(ctx, pb, pod, tmpl, config, execCfg)
 }
 
 // addArtifactPluginsLegacy wires output-artifact plugin sidecars for the
 // legacy layout. Layout dispatch happens in podLayout.wireArtifactPlugins, so
 // this must not re-check the init-less flag itself.
-func (woc *wfOperationCtx) addArtifactPluginsLegacy(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error {
+func (woc *wfOperationCtx) addArtifactPluginsLegacy(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error {
 	plugins := tmpl.Outputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.IncludeLogs, tmpl.ArchiveLocation)
 	drivers, err := config.GetArtifactDrivers(plugins)
 	if err != nil {
@@ -1612,7 +1615,7 @@ func (woc *wfOperationCtx) addArtifactPluginsLegacy(ctx context.Context, pod *ap
 	for i, driver := range drivers {
 		logging.RequireLoggerFromContext(ctx).WithField("name", driver.Name).Debug(ctx, "Adding artifact plugin")
 		var ctr *apiv1.Container
-		ctr, err = woc.artifactSidecarContainer(ctx, tmpl, driver, legacyArgoexecBinaryPath)
+		ctr, err = woc.artifactSidecarContainer(ctx, tmpl, execCfg, driver, legacyArgoexecBinaryPath)
 		if err != nil {
 			return err
 		}
@@ -1639,8 +1642,8 @@ func (woc *wfOperationCtx) addArtifactPluginsLegacy(ctx context.Context, pod *ap
 // plugin identity. Unlike legacy mode (input plugins → init containers,
 // output plugins → sidecars), init-less mode has a single sidecar that
 // the supervisor drives for both Load (pre-main) and Save (post-main).
-func (woc *wfOperationCtx) addArtifactPluginsInitless(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	sidecars, inputPlugins, err := woc.buildPluginSidecars(ctx, tmpl)
+func (woc *wfOperationCtx) addArtifactPluginsInitless(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, execCfg execContainerConfig) error {
+	sidecars, inputPlugins, err := woc.buildPluginSidecars(ctx, tmpl, execCfg)
 	if err != nil {
 		return err
 	}
