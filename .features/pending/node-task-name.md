@@ -9,3 +9,7 @@ For these templates it has the same value as `{{pod.name}}`: the name of the nod
 The default artifact repository key format is now `{{workflow.name}}/{{node.taskName}}`.
 It resolves to the same key as the previous default of `{{workflow.name}}/{{pod.name}}`, so existing artifacts and logs keep their keys.
 You can use `{{node.taskName}}` in place of `{{pod.name}}` in your own key formats, for example `keyFormat: "my-artifacts/{{workflow.name}}/{{node.taskName}}"`.
+
+`{{node.taskName}}` names the attempt however it runs, while `{{pod.name}}` names its pod.
+Prefer it in key formats so they stay valid for tasks that won't run in their own pod, such as the upcoming hot workers.
+Existing templates that run in pods don't need to change.
