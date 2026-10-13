@@ -108,6 +108,10 @@ attributes:
     displayName: completed
     description: "True if the task result is marked completed"
     type: bool
+  - name: TaskResultMarksCompleted
+    displayName: marks_completed
+    description: "True if this write sets the task result's completed label"
+    type: bool
   - name: TaskResultName
     displayName: name
     description: The name of the task result
@@ -547,7 +551,7 @@ spans:
   - name: CreateTaskResult
     description: Creating the WorkflowTaskResult
     attributes:
-      - name: TaskResultCompleted
+      - name: TaskResultMarksCompleted
     parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: CreateWorkflowPod
     description: Creating a workflow pod for a node
@@ -584,7 +588,7 @@ spans:
   - name: PatchTaskResult
     description: Patching the WorkflowTaskResult
     attributes:
-      - name: TaskResultCompleted
+      - name: TaskResultMarksCompleted
     parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: PersistUpdates
     description: Persisting workflow status updates to Kubernetes
