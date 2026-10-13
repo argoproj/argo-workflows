@@ -177,12 +177,17 @@ func TestCommonPodEventDeletingPod(t *testing.T) {
 func TestRecheckHeldPod(t *testing.T) {
 	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
 	tests := []struct {
-		name     string
-		workflow *unstructured.Unstructured
-		pod      *apiv1.Pod
-		released bool
+		name       string
+		workflow   *unstructured.Unstructured
+		pod        *apiv1.Pod
+		startedAgo time.Duration
+		released   bool
 	}{
-		{name: "terminal pod of a running workflow", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodSucceeded, time.Now().Add(-time.Hour))},
+		{name: "finished pod deleted 9m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodSucceeded, time.Now().Add(-9*time.Minute))},
+		{name: "finished pod deleted 11m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodFailed, time.Now().Add(-11*time.Minute)), released: true},
+		{name: "finished pod deleted 11m ago, controller started 9m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodSucceeded, time.Now().Add(-11*time.Minute)), startedAgo: 9 * time.Minute},
+		{name: "pod failed by PodGC deleted 1m ago", workflow: testWorkflow(nil), pod: withWaitRunning(deletingPod(apiv1.PodFailed, time.Now().Add(-time.Minute)))},
+		{name: "pod failed by PodGC deleted 3m ago", workflow: testWorkflow(nil), pod: withWaitRunning(deletingPod(apiv1.PodFailed, time.Now().Add(-3*time.Minute))), released: true},
 		{name: "running pod deleted 1m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodRunning, time.Now().Add(-time.Minute))},
 		{name: "running pod deleted 3m ago", workflow: testWorkflow(nil), pod: deletingPod(apiv1.PodRunning, time.Now().Add(-3*time.Minute)), released: true},
 		{name: "completed workflow", workflow: testWorkflow(completed), pod: deletingPod(apiv1.PodSucceeded, time.Now()), released: true},
@@ -192,6 +197,10 @@ func TestRecheckHeldPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
 			c, queue := newTestController(t, tt.workflow, tt.pod)
+			c.startedAt = time.Now().Add(-time.Hour)
+			if tt.startedAgo != 0 {
+				c.startedAt = time.Now().Add(-tt.startedAgo)
+			}
 			queue.Add("test/my-pod/recheckHeldPod")
 			require.True(t, c.processNextPodCleanupItem(ctx))
 			pod, err := c.kubeclientset.CoreV1().Pods("test").Get(ctx, "my-pod", metav1.GetOptions{})
@@ -205,4 +214,10 @@ func TestRecheckHeldPod(t *testing.T) {
 			}
 		})
 	}
+}
+
+// withWaitRunning reports the pod's wait container as still running.
+func withWaitRunning(pod *apiv1.Pod) *apiv1.Pod {
+	pod.Status.ContainerStatuses = []apiv1.ContainerStatus{{Name: common.WaitContainerName, State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}}}
+	return pod
 }

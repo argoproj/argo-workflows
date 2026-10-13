@@ -298,6 +298,37 @@ func TestStatusFinalizerReleasedForForceDeletedPod(t *testing.T) {
 	assertReleasedBy(ctx, t, controller, podA, "recheckHeldPod")
 }
 
+// The node of a running pod was lost: PodGC marked the pod Failed and deleted it 3m ago, with its containers still
+// reported running. Its task result, which the wait container created at start, will never complete, so the
+// workflow never takes the pod's result.
+func TestStatusFinalizerReleasedForLostNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	controller, podA := startWorkflow(ctx, t)
+	nodeID := podA.Annotations[common.AnnotationKeyNodeID]
+	_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults("test").Create(ctx, &wfv1.WorkflowTaskResult{ObjectMeta: metav1.ObjectMeta{
+		Name: nodeID, Namespace: "test", Labels: map[string]string{common.LabelKeyWorkflow: "my-wf", common.LabelKeyReportOutputsCompleted: "false"},
+	}}, metav1.CreateOptions{})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		_, exists, err := controller.taskResultInformer.GetIndexer().GetByKey("test/" + nodeID)
+		return exists && err == nil
+	}, 5*time.Second, time.Millisecond)
+	podA.Status.Phase = apiv1.PodRunning
+	podA.Status.ContainerStatuses = []apiv1.ContainerStatus{
+		{Name: common.MainContainerName, State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}},
+		{Name: common.WaitContainerName, State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}},
+	}
+	updatePod(ctx, t, controller, podA)
+	reconcile(ctx, t, controller)
+
+	podA.Status.Phase = apiv1.PodFailed
+	podA.DeletionTimestamp = new(metav1.NewTime(time.Now().Add(-3 * time.Minute)))
+	updatePod(ctx, t, controller, podA)
+	node := reconcile(ctx, t, controller).Status.Nodes.FindByName("my-wf[0].a")
+	require.False(t, node.Fulfilled(), "node a is %s, task result synced: %v", node.Phase, *node.TaskResultSynced)
+	assertReleasedBy(ctx, t, controller, podA, "recheckHeldPod")
+}
+
 // failedPodRestart reset node a to Pending to re-create its failed pod and queued that pod's deletion, which the
 // controller lost by restarting. Someone else deleted the pod (e.g. PodGC after a node shutdown).
 func TestStatusFinalizerReleasedForRestartingPod(t *testing.T) {

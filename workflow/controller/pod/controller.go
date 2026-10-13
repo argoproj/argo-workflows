@@ -25,6 +25,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/diff"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -59,6 +60,10 @@ type Controller struct {
 	restConfig    *rest.Config
 	// how often recheckHeldPod looks at a deleting pod held for its workflow
 	recheckPeriod time.Duration
+	// how long a deleting pod that finished is held for its workflow at most, counted from its deletion or
+	// from startedAt, whichever is later
+	heldPodTimeout time.Duration
+	startedAt      time.Time
 }
 
 // NewController creates a pod controller
@@ -74,6 +79,9 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		callBack:      callback,
 		restConfig:    restConfig,
 		recheckPeriod: heldPodRecheckPeriod,
+		// the time the workflow waits for a task result, see taskResultReconciliation
+		heldPodTimeout: envutil.LookupEnvDurationOr(ctx, "TASK_RESULT_TIMEOUT_DURATION", 10*time.Minute),
+		startedAt:      time.Now(),
 	}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	podController.podInformer.AddEventHandler(
@@ -193,16 +201,38 @@ func (c *Controller) ownerWorkflowActive(pod *apiv1.Pod) bool {
 }
 
 // heldPodReleasable reports whether a deleting pod held for its workflow may lose its status finalizer: its
-// workflow is no longer active, or the pod is still not terminal 2m after its deletionTimestamp, so no kubelet
-// is left to report a result. A terminal pod of an active workflow is released only by the workflow.
+// workflow is no longer active; or no kubelet finished the pod 2m after its deletionTimestamp, so none is left
+// to report a result; or the workflow still has not taken the result of the finished pod after heldPodTimeout
+// (e.g. its task result never completes).
 func (c *Controller) heldPodReleasable(pod *apiv1.Pod) bool {
 	if !c.ownerWorkflowActive(pod) {
 		return true
 	}
-	if pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed {
-		return false
+	if !podFinished(pod) {
+		return time.Now().After(pod.DeletionTimestamp.Add(2 * time.Minute))
 	}
-	return time.Now().After(pod.DeletionTimestamp.Add(2 * time.Minute))
+	since := pod.DeletionTimestamp.Time
+	if c.startedAt.After(since) {
+		since = c.startedAt
+	}
+	return time.Now().After(since.Add(c.heldPodTimeout))
+}
+
+// podFinished reports whether the kubelet finished the pod. PodGC marks the pod of a lost node Failed while its
+// containers are still reported running.
+func podFinished(pod *apiv1.Pod) bool {
+	switch pod.Status.Phase {
+	case apiv1.PodSucceeded:
+		return true
+	case apiv1.PodFailed:
+		for _, c := range pod.Status.ContainerStatuses {
+			if (c.Name == common.WaitContainerName || c.Name == common.SupervisorContainerName) && c.State.Terminated == nil {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
@@ -236,8 +266,9 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 			if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" && pod.Status.Phase != apiv1.PodPending && c.ownerWorkflowActive(pod) {
 				// The workflow removes the finalizer once it has persisted the pod's node (persistUpdates ->
 				// queuePodsForCleanup), so a timer here could race that write. A Pending pod has no result to
-				// wait for. recheckHeldPod releases the pod if its workflow stops reconciling, or if the pod is
-				// still not terminal 2m after its deletionTimestamp (e.g. force deleted on an unreachable node).
+				// wait for. recheckHeldPod releases the pod if its workflow is deleted, completed or replaced, if
+				// no kubelet finished it 2m after its deletionTimestamp (e.g. force deleted on an unreachable
+				// node), or if the workflow has not taken its result after heldPodTimeout.
 				c.log.WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name}).Info(ctx, "Leaving finalizer for the workflow to remove")
 				c.queuePodForCleanupAfter(ctx, pod.Namespace, pod.Name, recheckHeldPod, c.recheckPeriod)
 				return
