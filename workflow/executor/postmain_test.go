@@ -33,6 +33,9 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 			Tracing:            tracingObj,
 			memoizedConfigMaps: map[string]string{},
 			retryBackoff:       utilretry.ExecutorRetry(ctx),
+			// The defaults NewProcess would set.
+			taskResultRetryTimeout: utilretry.DefaultExecutorTaskResultRetryTimeout,
+			taskResultBackoff:      defaultTaskResultBackoff,
 		},
 		workflow:    fakeWorkflow,
 		workflowUID: types.UID(fakeWorkflowUID),

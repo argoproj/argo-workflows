@@ -655,9 +655,12 @@ func TestMonitorProgress(t *testing.T) {
 			Namespace:                    fakeNamespace,
 			AnnotationPatchTickDuration:  annotationPackTickDuration,
 			ReadProgressFileTickDuration: readProgressFileTickDuration,
+			TaskResultRetryTimeout:       90 * time.Second,
 		},
 	)
 	require.NoError(t, err)
+	assert.Equal(t, 90*time.Second, process.taskResultRetryTimeout)
+	assert.Equal(t, defaultTaskResultBackoff, process.taskResultBackoff)
 	we := process.NewExecutor(TaskConfig{
 		WorkflowName:        fakeWorkflow,
 		WorkflowUID:         fakeWorkflowUID,
@@ -754,9 +757,11 @@ func TestReportOutputs(t *testing.T) {
 		require.NoError(t, err)
 		we := WorkflowExecutor{
 			Process: &Process{
-				RuntimeExecutor:  &mockRuntimeExecutor,
-				taskResultClient: mockTaskResultClient,
-				Tracing:          tracing,
+				RuntimeExecutor:        &mockRuntimeExecutor,
+				taskResultClient:       mockTaskResultClient,
+				Tracing:                tracing,
+				taskResultRetryTimeout: time.Minute,
+				taskResultBackoff:      defaultTaskResultBackoff,
 			},
 			Template: templateWithArtifacts,
 		}

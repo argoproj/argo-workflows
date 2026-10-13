@@ -97,7 +97,7 @@ type Process struct {
 	retryBackoff                 wait.Backoff
 	resourceStateCheckInterval   time.Duration
 	// taskResultRetryTimeout and taskResultBackoff govern retryTaskResult;
-	// zero values mean the defaults.
+	// NewProcess resolves their defaults.
 	taskResultRetryTimeout time.Duration
 	taskResultBackoff      wait.Backoff
 }
@@ -279,7 +279,8 @@ func NewProcess(
 		initlessPod:                  cfg.InitlessPod,
 		retryBackoff:                 cfg.RetryBackoff,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
-		taskResultRetryTimeout:       cfg.TaskResultRetryTimeout,
+		taskResultRetryTimeout:       cmp.Or(cfg.TaskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout),
+		taskResultBackoff:            defaultTaskResultBackoff,
 	}, nil
 }
 
@@ -1078,19 +1079,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 }
 
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	var count uint64
-	err := we.retryTaskResult(ctx, func(ctx context.Context) error {
-		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
-		if apierr.IsForbidden(err) {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		} else if err != nil && count%20 == 0 {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
-		}
-		count++
-		return err
-	})
-	if err != nil {
+	if err := we.reportResult(ctx, wfv1.NodeResult{}); err != nil {
 		we.AddError(ctx, err)
 	}
 }
@@ -1132,10 +1121,10 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 // the retry timeout has passed; op's ctx carries that deadline, so an
 // attempt in flight is cut off too.
 func (we *WorkflowExecutor) retryTaskResult(ctx context.Context, op func(ctx context.Context) error) error {
-	ctx, cancel := context.WithTimeout(ctx, cmp.Or(we.taskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout))
+	ctx, cancel := context.WithTimeout(ctx, we.taskResultRetryTimeout)
 	defer cancel()
 	var lastErr error
-	err := cmp.Or(we.taskResultBackoff, defaultTaskResultBackoff).DelayFunc().Until(ctx, true, true, func(ctx context.Context) (bool, error) {
+	err := we.taskResultBackoff.DelayFunc().Until(ctx, true, true, func(ctx context.Context) (bool, error) {
 		err := op(ctx)
 		switch {
 		case err == nil:
