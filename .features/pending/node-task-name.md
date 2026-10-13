@@ -11,5 +11,6 @@ It resolves to the same key as the previous default of `{{workflow.name}}/{{pod.
 You can use `{{node.taskName}}` in place of `{{pod.name}}` in your own key formats, for example `keyFormat: "my-artifacts/{{workflow.name}}/{{node.taskName}}"`.
 
 `{{node.taskName}}` names the attempt however it runs, while `{{pod.name}}` names its pod.
-Prefer it in key formats so they stay valid for tasks that won't run in their own pod, such as the upcoming hot workers.
+Hot worker pools, proposed in #16530, would reject `{{pod.name}}` in pooled templates.
+Use `{{node.taskName}}` in templates you may want to run pooled, for example in template-level `archiveLocation` keys, artifact keys and args.
 Existing templates that run in pods don't need to change.
