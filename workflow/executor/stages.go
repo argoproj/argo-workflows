@@ -76,7 +76,7 @@ var (
 		return nil
 	}}
 	reportOutputs = Stage{Name: "report-outputs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
-		return we.ReportOutputs(ctx, we.savedArtifacts)
+		return we.ReportOutputs(ctx, we.savedArtifacts, true)
 	}}
 	// reportLogs is the resource template's whole Collect phase: its output
 	// parameters were already reported by `argoexec resource`, and a full

@@ -755,7 +755,7 @@ func TestReportOutputs(t *testing.T) {
 			Template: templateWithArtifacts,
 		}
 
-		err = we.ReportOutputs(ctx, artifacts)
+		err = we.ReportOutputs(ctx, artifacts, true)
 
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)

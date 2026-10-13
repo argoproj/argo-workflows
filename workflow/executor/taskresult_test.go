@@ -198,7 +198,7 @@ func TestTaskResultWrites_Resource(t *testing.T) {
 		we := newTaskResultTestExecutor(t, tmpl, &mocks.ContainerRuntimeExecutor{}, clientset)
 
 		we.InitializeOutput(ctx)
-		require.NoError(t, we.SaveResourceParameters(ctx, "", ""))
+		require.NoError(t, we.SaveResourceParameters(ctx, "", "", true))
 		we.FinalizeOutput(ctx)
 
 		writes := taskResultWrites(t, clientset)
@@ -212,7 +212,7 @@ func TestTaskResultWrites_Resource(t *testing.T) {
 		we := newTaskResultTestExecutor(t, wfv1.Template{Resource: &wfv1.ResourceTemplate{Action: "create"}}, &mocks.ContainerRuntimeExecutor{}, clientset)
 
 		we.InitializeOutput(ctx)
-		require.NoError(t, we.SaveResourceParameters(ctx, "", ""))
+		require.NoError(t, we.SaveResourceParameters(ctx, "", "", true))
 		we.FinalizeOutput(ctx)
 
 		assert.Equal(t, []string{"create:false", "patch:true"}, verbs(taskResultWrites(t, clientset)), "nothing to report, so FinalizeOutput sets the label")
@@ -227,10 +227,11 @@ func TestTaskResultWrites_Resource(t *testing.T) {
 			ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)},
 		}
 
-		// main: `argoexec resource`, which doesn't defer FinalizeOutput here.
+		// main: `argoexec resource`, which leaves completion to wait here, so
+		// its report isn't final and it doesn't defer FinalizeOutput.
 		main := newTaskResultTestExecutor(t, tmpl, &mocks.ContainerRuntimeExecutor{}, clientset)
 		main.InitializeOutput(ctx)
-		require.NoError(t, main.SaveResourceParameters(ctx, "", ""))
+		require.NoError(t, main.SaveResourceParameters(ctx, "", "", false))
 		assert.Equal(t, []string{"create:false", "patch:"}, verbs(taskResultWrites(t, clientset)), "main must not complete the result")
 		assert.Equal(t, "false", getTaskResult(t, clientset).Labels[common.LabelKeyReportOutputsCompleted])
 
@@ -264,7 +265,7 @@ func TestTaskResultWrites_Data(t *testing.T) {
 		we.capturedOutputs().Result = new("[]")
 
 		// the tail of Data(), after the data is processed
-		require.NoError(t, we.ReportOutputs(ctx, nil))
+		require.NoError(t, we.ReportOutputs(ctx, nil, true))
 		we.FinalizeOutput(ctx)
 
 		writes := taskResultWrites(t, clientset)
