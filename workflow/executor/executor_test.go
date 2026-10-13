@@ -792,10 +792,11 @@ func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration
 	})
 	return &WorkflowExecutor{
 		Process: &Process{
-			taskResultClient:       clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
-			Tracing:                tr,
-			taskResultRetryTimeout: retryTimeout,
-			taskResultBackoff:      wait.Backoff{Duration: time.Millisecond, Factor: 2, Steps: math.MaxInt32, Cap: 10 * time.Millisecond},
+			taskResultClient:          clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
+			Tracing:                   tr,
+			taskResultRetryTimeout:    retryTimeout,
+			interimResultRetryTimeout: retryTimeout,
+			taskResultBackoff:         wait.Backoff{Duration: time.Millisecond, Factor: 2, Steps: math.MaxInt32, Cap: 10 * time.Millisecond},
 		},
 		workflow: fakeWorkflow,
 		nodeID:   fakeNodeID,
@@ -828,6 +829,17 @@ func TestTaskResultRetries(t *testing.T) {
 		we.InitializeOutput(ctx)
 		we.FinalizeOutput(ctx)
 		assert.Len(t, we.errors, 2)
+	})
+	t.Run("InterimWritesUseTheirOwnLimit", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, -1, time.Minute)
+		we.interimResultRetryTimeout = 50 * time.Millisecond
+
+		start := time.Now()
+		we.InitializeOutput(ctx)
+		assert.Less(t, time.Since(start), 10*time.Second)
+		require.Len(t, we.errors, 1)
+		assert.True(t, apierr.IsServiceUnavailable(we.errors[0]), "got %v", we.errors[0])
 	})
 	t.Run("OutagePastBackoffCapButShorterThanTimeoutSucceeds", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
