@@ -2,13 +2,10 @@
   "$id": "https://raw.githubusercontent.com/argoproj/argo-workflows/HEAD/api/jsonschema/schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "definitions": {
-    "eventsource.CreateEventSourceRequest": {
+    "eventsource.CreateEventSourceBody": {
       "properties": {
         "eventSource": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource"
-        },
-        "namespace": {
-          "type": "string"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSource"
         }
       },
       "type": "object"
@@ -19,7 +16,7 @@
     "eventsource.EventSourceWatchEvent": {
       "properties": {
         "object": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSource"
         },
         "type": {
           "type": "string"
@@ -56,21 +53,45 @@
       "title": "structured log entry",
       "type": "object"
     },
-    "eventsource.UpdateEventSourceRequest": {
+    "eventsource.UpdateEventSourceBody": {
       "properties": {
         "eventSource": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource"
-        },
-        "name": {
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSource"
+        }
+      },
+      "type": "object"
+    },
+    "google.protobuf.Any": {
+      "properties": {
+        "type_url": {
           "type": "string"
         },
-        "namespace": {
+        "value": {
+          "format": "byte",
           "type": "string"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPConsumeConfig": {
+    "google.rpc.Status": {
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "details": {
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.events.v1alpha1.AMQPConsumeConfig": {
       "properties": {
         "autoAck": {
           "title": "AutoAck when true, the server will acknowledge deliveries to this consumer prior to writing\nthe delivery to the network\n+optional",
@@ -96,22 +117,22 @@
       "title": "AMQPConsumeConfig holds the configuration to immediately starts delivering queued messages\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPEventSource": {
+    "io.argoproj.events.v1alpha1.AMQPEventSource": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
           "title": "Auth hosts secret selectors for username and password\n+optional"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "consume": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPConsumeConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPConsumeConfig",
           "title": "Consume holds the configuration to immediately starts delivering queued messages\nFor more information, visit https://pkg.go.dev/github.com/rabbitmq/amqp091-go#Channel.Consume\n+optional"
         },
         "exchangeDeclare": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPExchangeDeclareConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPExchangeDeclareConfig",
           "title": "ExchangeDeclare holds the configuration for the exchange on the server\nFor more information, visit https://pkg.go.dev/github.com/rabbitmq/amqp091-go#Channel.ExchangeDeclare\n+optional"
         },
         "exchangeName": {
@@ -123,7 +144,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -138,11 +159,11 @@
           "type": "object"
         },
         "queueBind": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPQueueBindConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPQueueBindConfig",
           "title": "QueueBind holds the configuration that binds an exchange to a queue so that publishings to the\nexchange will be routed to the queue when the publishing routing key matches the binding routing key\nFor more information, visit https://pkg.go.dev/github.com/rabbitmq/amqp091-go#Channel.QueueBind\n+optional"
         },
         "queueDeclare": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPQueueDeclareConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPQueueDeclareConfig",
           "title": "QueueDeclare holds the configuration of a queue to hold messages and deliver to consumers.\nDeclaring creates a queue if it doesn't already exist, or ensures that an existing queue matches\nthe same parameters\nFor more information, visit https://pkg.go.dev/github.com/rabbitmq/amqp091-go#Channel.QueueDeclare\n+optional"
         },
         "routingKey": {
@@ -150,7 +171,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the amqp client.\n+optional"
         },
         "url": {
@@ -165,7 +186,7 @@
       "title": "AMQPEventSource refers to an event-source for AMQP stream events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPExchangeDeclareConfig": {
+    "io.argoproj.events.v1alpha1.AMQPExchangeDeclareConfig": {
       "properties": {
         "autoDelete": {
           "title": "AutoDelete removes the exchange when no bindings are active\n+optional",
@@ -187,7 +208,7 @@
       "title": "AMQPExchangeDeclareConfig holds the configuration for the exchange on the server\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPQueueBindConfig": {
+    "io.argoproj.events.v1alpha1.AMQPQueueBindConfig": {
       "properties": {
         "noWait": {
           "title": "NowWait false and the queue could not be bound, the channel will be closed with an error\n+optional",
@@ -197,7 +218,7 @@
       "title": "AMQPQueueBindConfig holds the configuration that binds an exchange to a queue so that publishings to the\nexchange will be routed to the queue when the publishing routing key matches the binding routing key\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPQueueDeclareConfig": {
+    "io.argoproj.events.v1alpha1.AMQPQueueDeclareConfig": {
       "properties": {
         "arguments": {
           "title": "Arguments of a queue (also known as \"x-arguments\") used for optional features and plugins\n+optional",
@@ -227,7 +248,7 @@
       "title": "AMQPQueueDeclareConfig holds the configuration of a queue to hold messages and deliver to consumers.\nDeclaring creates a queue if it doesn't already exist, or ensures that an existing queue matches\nthe same parameters\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AWSLambdaTrigger": {
+    "io.argoproj.events.v1alpha1.AWSLambdaTrigger": {
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -243,7 +264,8 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
@@ -251,7 +273,8 @@
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -271,7 +294,7 @@
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Amount": {
+    "io.argoproj.events.v1alpha1.Amount": {
       "description": "Amount represent a numeric amount.",
       "properties": {
         "value": {
@@ -281,7 +304,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ArgoWorkflowTrigger": {
+    "io.argoproj.events.v1alpha1.ArgoWorkflowTrigger": {
       "properties": {
         "args": {
           "items": {
@@ -296,31 +319,32 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of parameters to pass to resolved Argo Workflow object",
           "type": "array"
         },
         "source": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ArtifactLocation",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArtifactLocation",
           "title": "Source of the K8s resource file(s)"
         }
       },
       "title": "ArgoWorkflowTrigger is the trigger for the Argo Workflow",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ArtifactLocation": {
+    "io.argoproj.events.v1alpha1.ArtifactLocation": {
       "properties": {
         "configmap": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
           "title": "Configmap that stores the artifact"
         },
         "file": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.FileArtifact",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.FileArtifact",
           "title": "File artifact is artifact stored in a file"
         },
         "git": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitArtifact",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GitArtifact",
           "title": "Git repository hosting the artifact"
         },
         "inline": {
@@ -328,22 +352,22 @@
           "type": "string"
         },
         "resource": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.K8SResource",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.K8SResource",
           "title": "Resource is generic template for K8s resource"
         },
         "s3": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Artifact",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.S3Artifact",
           "title": "S3 compliant artifact"
         },
         "url": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.URLArtifact",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.URLArtifact",
           "title": "URL to fetch the artifact from"
         }
       },
       "title": "ArtifactLocation describes the source location for an external artifact",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureEventHubsTrigger": {
+    "io.argoproj.events.v1alpha1.AzureEventHubsTrigger": {
       "properties": {
         "fqdn": {
           "title": "FQDN refers to the namespace dns of Azure Event Hubs to be used i.e. \u003cnamespace\u003e.servicebus.windows.net",
@@ -355,7 +379,8 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
@@ -363,7 +388,8 @@
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -379,10 +405,10 @@
       "title": "AzureEventHubsTrigger refers to specification of the Azure Event Hubs Trigger",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureEventsHubEventSource": {
+    "io.argoproj.events.v1alpha1.AzureEventsHubEventSource": {
       "properties": {
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "fqdn": {
@@ -412,7 +438,7 @@
       "title": "AzureEventsHubEventSource describes the event source for azure events hub\nMore info at https://docs.microsoft.com/en-us/azure/event-hubs/",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureQueueStorageEventSource": {
+    "io.argoproj.events.v1alpha1.AzureQueueStorageEventSource": {
       "properties": {
         "connectionString": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -427,7 +453,7 @@
           "type": "boolean"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -457,7 +483,7 @@
       "title": "AzureQueueStorageEventSource describes the event source for azure queue storage\nmore info at https://learn.microsoft.com/en-us/azure/storage/queues/",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureServiceBusEventSource": {
+    "io.argoproj.events.v1alpha1.AzureServiceBusEventSource": {
       "properties": {
         "connectionString": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -468,7 +494,7 @@
           "type": "boolean"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "fullyQualifiedNamespace": {
@@ -495,7 +521,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the service bus client\n+optional"
         },
         "topicName": {
@@ -506,7 +532,7 @@
       "title": "AzureServiceBusEventSource describes the event source for azure service bus\nMore info at https://docs.microsoft.com/en-us/azure/service-bus-messaging/",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureServiceBusTrigger": {
+    "io.argoproj.events.v1alpha1.AzureServiceBusTrigger": {
       "properties": {
         "connectionString": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -514,7 +540,8 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
@@ -522,7 +549,8 @@
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -535,7 +563,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the service bus client\n+optional"
         },
         "topicName": {
@@ -545,18 +573,18 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff": {
+    "io.argoproj.events.v1alpha1.Backoff": {
       "properties": {
         "duration": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Int64OrString",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Int64OrString",
           "title": "The initial duration in nanoseconds or strings like \"1s\", \"3m\"\n+optional"
         },
         "factor": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Amount",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Amount",
           "title": "Duration is multiplied by factor each iteration\n+optional"
         },
         "jitter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Amount",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Amount",
           "title": "The amount of jitter applied each iteration\n+optional"
         },
         "steps": {
@@ -567,7 +595,7 @@
       "title": "Backoff for an operation",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth": {
+    "io.argoproj.events.v1alpha1.BasicAuth": {
       "properties": {
         "password": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -581,10 +609,10 @@
       "title": "BasicAuth contains the reference to K8s secrets that holds the username and password",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketAuth": {
+    "io.argoproj.events.v1alpha1.BitbucketAuth": {
       "properties": {
         "basic": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketBasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketBasicAuth",
           "title": "Basic is BasicAuth auth strategy.\n+optional"
         },
         "oauthToken": {
@@ -595,7 +623,7 @@
       "title": "BitbucketAuth holds the different auth strategies for connecting to Bitbucket",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketBasicAuth": {
+    "io.argoproj.events.v1alpha1.BitbucketBasicAuth": {
       "properties": {
         "password": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -609,10 +637,10 @@
       "title": "BitbucketBasicAuth holds the information required to authenticate user via basic auth mechanism",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketEventSource": {
+    "io.argoproj.events.v1alpha1.BitbucketEventSource": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketAuth",
           "description": "Auth information required to connect to Bitbucket."
         },
         "deleteHookOnFinish": {
@@ -627,7 +655,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "metadata": {
@@ -647,7 +675,8 @@
         },
         "repositories": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketRepository"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketRepository",
+            "type": "object"
           },
           "title": "Repositories holds a list of repositories for which integration needs to set up\n+optional",
           "type": "array"
@@ -657,14 +686,14 @@
           "type": "string"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook refers to the configuration required to run an http server"
         }
       },
       "title": "BitbucketEventSource describes the event source for Bitbucket",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketRepository": {
+    "io.argoproj.events.v1alpha1.BitbucketRepository": {
       "properties": {
         "owner": {
           "title": "Owner is the owner of the repository",
@@ -677,7 +706,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketServerEventSource": {
+    "io.argoproj.events.v1alpha1.BitbucketServerEventSource": {
       "properties": {
         "accessToken": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -703,7 +732,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "metadata": {
@@ -730,7 +759,8 @@
         },
         "repositories": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketServerRepository"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerRepository",
+            "type": "object"
           },
           "title": "Repositories holds a list of repositories for which integration needs to set up.\n+optional",
           "type": "array"
@@ -744,11 +774,11 @@
           "type": "boolean"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the bitbucketserver client.\n+optional"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "description": "Webhook holds configuration to run a http server."
         },
         "webhookSecret": {
@@ -759,7 +789,7 @@
       "title": "BitbucketServerEventSource refers to event-source related to Bitbucket Server events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketServerRepository": {
+    "io.argoproj.events.v1alpha1.BitbucketServerRepository": {
       "properties": {
         "projectKey": {
           "description": "ProjectKey is the key of project for which integration needs to set up.",
@@ -772,7 +802,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.CalendarEventSource": {
+    "io.argoproj.events.v1alpha1.CalendarEventSource": {
       "properties": {
         "exclusionDates": {
           "description": "ExclusionDates defines the list of DATE-TIME exceptions for recurring events.",
@@ -782,7 +812,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "interval": {
@@ -797,7 +827,7 @@
           "type": "object"
         },
         "persistence": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventPersistence",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventPersistence",
           "title": "Persistence hold the configuration for event persistence"
         },
         "schedule": {
@@ -812,7 +842,7 @@
       "title": "CalendarEventSource describes a time based dependency. One of the fields (schedule, interval, or recurrence) must be passed.\nSchedule takes precedence over interval; interval takes precedence over recurrence",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.CatchupConfiguration": {
+    "io.argoproj.events.v1alpha1.CatchupConfiguration": {
       "properties": {
         "enabled": {
           "title": "Enabled enables to triggered the missed schedule when eventsource restarts",
@@ -825,7 +855,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Condition": {
+    "io.argoproj.events.v1alpha1.Condition": {
       "properties": {
         "lastTransitionTime": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
@@ -851,7 +881,7 @@
       "title": "Condition contains details about resource state",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConditionsResetByTime": {
+    "io.argoproj.events.v1alpha1.ConditionsResetByTime": {
       "properties": {
         "cron": {
           "title": "Cron is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron",
@@ -864,16 +894,16 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConditionsResetCriteria": {
+    "io.argoproj.events.v1alpha1.ConditionsResetCriteria": {
       "properties": {
         "byTime": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConditionsResetByTime",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetByTime",
           "title": "Schedule is a cron-like expression. For reference, see: https://en.wikipedia.org/wiki/Cron"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConfigMapPersistence": {
+    "io.argoproj.events.v1alpha1.ConfigMapPersistence": {
       "properties": {
         "createIfNotExist": {
           "title": "CreateIfNotExist will create configmap if it doesn't exists",
@@ -886,18 +916,20 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Container": {
+    "io.argoproj.events.v1alpha1.Container": {
       "properties": {
         "env": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar",
+            "type": "object"
           },
           "title": "+optional",
           "type": "array"
         },
         "envFrom": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource"
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource",
+            "type": "object"
           },
           "title": "+optional",
           "type": "array"
@@ -916,7 +948,8 @@
         },
         "volumeMounts": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount",
+            "type": "object"
           },
           "title": "+optional",
           "type": "array"
@@ -925,7 +958,7 @@
       "title": "Container defines customized spec for a container",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.CustomTrigger": {
+    "io.argoproj.events.v1alpha1.CustomTrigger": {
       "description": "CustomTrigger refers to the specification of the custom trigger.",
       "properties": {
         "certSecret": {
@@ -935,14 +968,16 @@
         "parameters": {
           "description": "Parameters is the list of parameters that is applied to resolved custom trigger trigger object.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -968,7 +1003,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.DataFilter": {
+    "io.argoproj.events.v1alpha1.DataFilter": {
       "description": "DataFilter describes constraints and filters for event data.",
       "properties": {
         "comparator": {
@@ -997,7 +1032,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EmailTrigger": {
+    "io.argoproj.events.v1alpha1.EmailTrigger": {
       "description": "EmailTrigger refers to the specification of the email notification trigger.",
       "properties": {
         "body": {
@@ -1014,7 +1049,8 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
@@ -1045,7 +1081,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EmitterEventSource": {
+    "io.argoproj.events.v1alpha1.EmitterEventSource": {
       "properties": {
         "broker": {
           "description": "Broker URI to connect to.",
@@ -1060,11 +1096,11 @@
           "type": "string"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -1083,7 +1119,7 @@
           "title": "Password to use to connect to broker\n+optional"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the emitter client.\n+optional"
         },
         "username": {
@@ -1094,7 +1130,7 @@
       "title": "EmitterEventSource describes the event source for emitter\nMore info at https://emitter.io/develop/getting-started/",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventContext": {
+    "io.argoproj.events.v1alpha1.EventContext": {
       "properties": {
         "datacontenttype": {
           "description": "DataContentType - A MIME (RFC2046) string describing the media type of `data`.",
@@ -1128,7 +1164,7 @@
       "title": "EventContext holds the context of the cloudevent received from an event source.\n+protobuf.options.(gogoproto.goproto_stringer)=false",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventDependency": {
+    "io.argoproj.events.v1alpha1.EventDependency": {
       "properties": {
         "eventName": {
           "title": "EventName is the name of the event",
@@ -1139,7 +1175,7 @@
           "type": "string"
         },
         "filters": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventDependencyFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyFilter",
           "title": "Filters and rules governing toleration of success and constraints on the context and data of an event"
         },
         "filtersLogicalOperator": {
@@ -1151,23 +1187,24 @@
           "type": "string"
         },
         "transform": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventDependencyTransformer",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependencyTransformer",
           "title": "Transform transforms the event data"
         }
       },
       "title": "EventDependency describes a dependency",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventDependencyFilter": {
+    "io.argoproj.events.v1alpha1.EventDependencyFilter": {
       "description": "EventDependencyFilter defines filters and constraints for a io.argoproj.workflow.v1alpha1.",
       "properties": {
         "context": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventContext",
           "title": "Context filter constraints"
         },
         "data": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.DataFilter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.DataFilter",
+            "type": "object"
           },
           "title": "Data filter constraints with escalation",
           "type": "array"
@@ -1183,7 +1220,8 @@
         "exprs": {
           "description": "Exprs contains the list of expressions evaluated against the event payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ExprFilter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ExprFilter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -1192,13 +1230,13 @@
           "type": "string"
         },
         "time": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TimeFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TimeFilter",
           "title": "Time filter on the event with escalation"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventDependencyTransformer": {
+    "io.argoproj.events.v1alpha1.EventDependencyTransformer": {
       "properties": {
         "jq": {
           "title": "JQ holds the jq command applied for transformation\n+optional",
@@ -1212,36 +1250,36 @@
       "title": "EventDependencyTransformer transforms the event",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventPersistence": {
+    "io.argoproj.events.v1alpha1.EventPersistence": {
       "properties": {
         "catchup": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.CatchupConfiguration",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.CatchupConfiguration",
           "title": "Catchup enables to triggered the missed schedule when eventsource restarts"
         },
         "configMap": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConfigMapPersistence",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConfigMapPersistence",
           "title": "ConfigMap holds configmap details for persistence"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource": {
+    "io.argoproj.events.v1alpha1.EventSource": {
       "properties": {
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceSpec"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceSpec"
         },
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceStatus",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceStatus",
           "title": "+optional"
         }
       },
       "title": "EventSource is the definition of a eventsource resource\n+genclient\n+kubebuilder:resource:shortName=es\n+kubebuilder:subresource:status\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter": {
+    "io.argoproj.events.v1alpha1.EventSourceFilter": {
       "properties": {
         "expression": {
           "type": "string"
@@ -1249,11 +1287,12 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceList": {
+    "io.argoproj.events.v1alpha1.EventSourceList": {
       "properties": {
         "items": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSource",
+            "type": "object"
           },
           "type": "array"
         },
@@ -1264,60 +1303,60 @@
       "title": "EventSourceList is the list of eventsource resources\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceSpec": {
+    "io.argoproj.events.v1alpha1.EventSourceSpec": {
       "properties": {
         "amqp": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AMQPEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.AMQPEventSource"
           },
           "title": "AMQP event sources",
           "type": "object"
         },
         "azureEventsHub": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureEventsHubEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventsHubEventSource"
           },
           "title": "AzureEventsHub event sources",
           "type": "object"
         },
         "azureQueueStorage": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureQueueStorageEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureQueueStorageEventSource"
           },
           "title": "AzureQueueStorage event source",
           "type": "object"
         },
         "azureServiceBus": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureServiceBusEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureServiceBusEventSource"
           },
           "title": "Azure Service Bus event source",
           "type": "object"
         },
         "bitbucket": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketEventSource"
           },
           "title": "Bitbucket event sources",
           "type": "object"
         },
         "bitbucketserver": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BitbucketServerEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.BitbucketServerEventSource"
           },
           "title": "Bitbucket Server event sources",
           "type": "object"
         },
         "calendar": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.CalendarEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.CalendarEventSource"
           },
           "title": "Calendar event sources",
           "type": "object"
         },
         "emitter": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EmitterEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.EmitterEventSource"
           },
           "title": "Emitter event source",
           "type": "object"
@@ -1328,112 +1367,112 @@
         },
         "file": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.FileEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.FileEventSource"
           },
           "title": "File event sources",
           "type": "object"
         },
         "generic": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GenericEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.GenericEventSource"
           },
           "title": "Generic event source",
           "type": "object"
         },
         "gerrit": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GerritEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.GerritEventSource"
           },
           "title": "Gerrit event source",
           "type": "object"
         },
         "github": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GithubEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.GithubEventSource"
           },
           "title": "Github event sources",
           "type": "object"
         },
         "gitlab": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitlabEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.GitlabEventSource"
           },
           "title": "Gitlab event sources",
           "type": "object"
         },
         "hdfs": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.HDFSEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.HDFSEventSource"
           },
           "title": "HDFS event sources",
           "type": "object"
         },
         "kafka": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.KafkaEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.KafkaEventSource"
           },
           "title": "Kafka event sources",
           "type": "object"
         },
         "minio": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Artifact"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.S3Artifact"
           },
           "title": "Minio event sources",
           "type": "object"
         },
         "mns": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MNSEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.MNSEventSource"
           },
           "title": "MNS event sources",
           "type": "object"
         },
         "mqtt": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MQTTEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.MQTTEventSource"
           },
           "title": "MQTT event sources",
           "type": "object"
         },
         "nats": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSEventsSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.NATSEventsSource"
           },
           "title": "NATS event sources",
           "type": "object"
         },
         "nsq": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NSQEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.NSQEventSource"
           },
           "title": "NSQ event source",
           "type": "object"
         },
         "pubSub": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PubSubEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.PubSubEventSource"
           },
           "title": "PubSub event sources",
           "type": "object"
         },
         "pulsar": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PulsarEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.PulsarEventSource"
           },
           "title": "Pulsar event source",
           "type": "object"
         },
         "redis": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.RedisEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.RedisEventSource"
           },
           "title": "Redis event source",
           "type": "object"
         },
         "redisStream": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.RedisStreamEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.RedisStreamEventSource"
           },
           "title": "Redis stream source",
           "type": "object"
@@ -1444,64 +1483,64 @@
         },
         "resource": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ResourceEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ResourceEventSource"
           },
           "title": "Resource event sources",
           "type": "object"
         },
         "service": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Service",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Service",
           "title": "Service is the specifications of the service to expose the event source\n+optional"
         },
         "sftp": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SFTPEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SFTPEventSource"
           },
           "title": "SFTP event sources",
           "type": "object"
         },
         "slack": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackEventSource"
           },
           "title": "Slack event sources",
           "type": "object"
         },
         "sns": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SNSEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SNSEventSource"
           },
           "title": "SNS event sources",
           "type": "object"
         },
         "sqs": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SQSEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SQSEventSource"
           },
           "title": "SQS event sources",
           "type": "object"
         },
         "storageGrid": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StorageGridEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.StorageGridEventSource"
           },
           "title": "StorageGrid event sources",
           "type": "object"
         },
         "stripe": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StripeEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.StripeEventSource"
           },
           "title": "Stripe event sources",
           "type": "object"
         },
         "template": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Template",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Template",
           "title": "Template is the pod specification for the event source\n+optional"
         },
         "webhook": {
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookEventSource"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookEventSource"
           },
           "title": "Webhook event sources",
           "type": "object"
@@ -1510,16 +1549,16 @@
       "title": "EventSourceSpec refers to specification of event-source resource",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceStatus": {
+    "io.argoproj.events.v1alpha1.EventSourceStatus": {
       "properties": {
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Status"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Status"
         }
       },
       "title": "EventSourceStatus holds the status of the event-source resource",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ExprFilter": {
+    "io.argoproj.events.v1alpha1.ExprFilter": {
       "properties": {
         "expr": {
           "description": "Expr refers to the expression that determines the outcome of the filter.",
@@ -1528,14 +1567,15 @@
         "fields": {
           "description": "Fields refers to set of keys that refer to the paths within event payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PayloadField"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.PayloadField",
+            "type": "object"
           },
           "type": "array"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.FileArtifact": {
+    "io.argoproj.events.v1alpha1.FileArtifact": {
       "properties": {
         "path": {
           "type": "string"
@@ -1544,7 +1584,7 @@
       "title": "FileArtifact contains information about an artifact in a filesystem",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.FileEventSource": {
+    "io.argoproj.events.v1alpha1.FileEventSource": {
       "description": "FileEventSource describes an event-source for file related events.",
       "properties": {
         "eventType": {
@@ -1552,7 +1592,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "metadata": {
@@ -1567,13 +1607,13 @@
           "type": "boolean"
         },
         "watchPathConfig": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WatchPathConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WatchPathConfig",
           "title": "WatchPathConfig contains configuration about the file path to watch"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GenericEventSource": {
+    "io.argoproj.events.v1alpha1.GenericEventSource": {
       "description": "GenericEventSource refers to a generic event source. It can be used to implement a custom event source.",
       "properties": {
         "authSecret": {
@@ -1585,7 +1625,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "insecure": {
@@ -1610,10 +1650,10 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GerritEventSource": {
+    "io.argoproj.events.v1alpha1.GerritEventSource": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
           "title": "Auth hosts secret selectors for username and password\n+optional"
         },
         "deleteHookOnFinish": {
@@ -1628,7 +1668,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "gerritBaseURL": {
@@ -1662,14 +1702,14 @@
           "type": "boolean"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook holds configuration to run a http server"
         }
       },
       "title": "GerritEventSource refers to event-source related to gerrit events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitArtifact": {
+    "io.argoproj.events.v1alpha1.GitArtifact": {
       "properties": {
         "branch": {
           "title": "Branch to use to pull trigger resource\n+optional",
@@ -1680,7 +1720,7 @@
           "type": "string"
         },
         "creds": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitCreds",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GitCreds",
           "title": "Creds contain reference to git username and password\n+optional"
         },
         "filePath": {
@@ -1696,7 +1736,7 @@
           "type": "string"
         },
         "remote": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitRemoteConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GitRemoteConfig",
           "title": "Remote to manage set of tracked repositories. Defaults to \"origin\".\nRefer https://git-scm.com/docs/git-remote\n+optional"
         },
         "sshKeySecret": {
@@ -1715,7 +1755,7 @@
       "title": "GitArtifact contains information about an artifact stored in git",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitCreds": {
+    "io.argoproj.events.v1alpha1.GitCreds": {
       "properties": {
         "password": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -1727,7 +1767,7 @@
       "title": "GitCreds contain reference to git username and password",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitRemoteConfig": {
+    "io.argoproj.events.v1alpha1.GitRemoteConfig": {
       "properties": {
         "name": {
           "description": "Name of the remote to fetch from.",
@@ -1744,7 +1784,7 @@
       "title": "GitRemoteConfig contains the configuration of a Git remote",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GithubAppCreds": {
+    "io.argoproj.events.v1alpha1.GithubAppCreds": {
       "properties": {
         "appID": {
           "title": "AppID refers to the GitHub App ID for the application you created",
@@ -1761,7 +1801,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GithubEventSource": {
+    "io.argoproj.events.v1alpha1.GithubEventSource": {
       "properties": {
         "active": {
           "title": "Active refers to status of the webhook for event deliveries.\nhttps://developer.github.com/webhooks/creating/#active\n+optional",
@@ -1787,11 +1827,11 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "githubApp": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GithubAppCreds",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.GithubAppCreds",
           "title": "GitHubApp holds the GitHub app credentials\n+optional"
         },
         "githubBaseURL": {
@@ -1831,7 +1871,8 @@
         "repositories": {
           "description": "Repositories holds the information of repositories, which uses repo owner as the key,\nand list of repo names as the value. Not required if Organizations is set.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.OwnedRepositories"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.OwnedRepositories",
+            "type": "object"
           },
           "type": "array"
         },
@@ -1840,7 +1881,7 @@
           "type": "string"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook refers to the configuration required to run a http server"
         },
         "webhookSecret": {
@@ -1851,7 +1892,7 @@
       "title": "GithubEventSource refers to event-source for github related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.GitlabEventSource": {
+    "io.argoproj.events.v1alpha1.GitlabEventSource": {
       "properties": {
         "accessToken": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -1873,7 +1914,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "gitlabBaseURL": {
@@ -1910,14 +1951,14 @@
           "title": "SecretToken references to k8 secret which holds the Secret Token used by webhook config"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook holds configuration to run a http server"
         }
       },
       "title": "GitlabEventSource refers to event-source related to Gitlab events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.HDFSEventSource": {
+    "io.argoproj.events.v1alpha1.HDFSEventSource": {
       "properties": {
         "addresses": {
           "items": {
@@ -1930,7 +1971,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "hdfsUser": {
@@ -1973,21 +2014,22 @@
           "type": "string"
         },
         "watchPathConfig": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WatchPathConfig"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WatchPathConfig"
         }
       },
       "title": "HDFSEventSource refers to event-source for HDFS related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.HTTPTrigger": {
+    "io.argoproj.events.v1alpha1.HTTPTrigger": {
       "properties": {
         "basicAuth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
           "title": "BasicAuth configuration for the http request.\n+optional"
         },
         "dynamicHeaders": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Dynamic Headers for the request, sourced from the io.argoproj.workflow.v1alpha1. Same spec as Parameters.\n+optional",
           "type": "array"
@@ -2010,19 +2052,22 @@
         "parameters": {
           "description": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe HTTP trigger resource.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
         "payload": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
         "secureHeaders": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SecureHeader"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SecureHeader",
+            "type": "object"
           },
           "title": "Secure Headers stored in Kubernetes Secrets for the HTTP requests.\n+optional",
           "type": "array"
@@ -2032,7 +2077,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the HTTP client.\n+optional"
         },
         "url": {
@@ -2043,7 +2088,7 @@
       "title": "HTTPTrigger is the trigger for the HTTP request",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Int64OrString": {
+    "io.argoproj.events.v1alpha1.Int64OrString": {
       "properties": {
         "int64Val": {
           "type": "string"
@@ -2057,7 +2102,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.K8SResource": {
+    "io.argoproj.events.v1alpha1.K8SResource": {
       "description": "K8SResource represent arbitrary structured data.",
       "properties": {
         "value": {
@@ -2067,10 +2112,10 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.K8SResourcePolicy": {
+    "io.argoproj.events.v1alpha1.K8SResourcePolicy": {
       "properties": {
         "backoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff before checking resource state"
         },
         "errorOnBackoffTimeout": {
@@ -2088,7 +2133,7 @@
       "title": "K8SResourcePolicy refers to the policy used to check the state of K8s based triggers using labels",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.KafkaConsumerGroup": {
+    "io.argoproj.events.v1alpha1.KafkaConsumerGroup": {
       "properties": {
         "groupName": {
           "title": "The name for the consumer group to use",
@@ -2105,22 +2150,22 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.KafkaEventSource": {
+    "io.argoproj.events.v1alpha1.KafkaEventSource": {
       "properties": {
         "config": {
           "description": "Yaml format Sarama config for Kafka connection.\nIt follows the struct of sarama.Config. See https://github.com/IBM/sarama/blob/main/config.go\ne.g.\n\nconsumer:\n  fetch:\n    min: 1\nnet:\n  MaxOpenRequests: 5\n\n+optional",
           "type": "string"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "Backoff holds parameters applied to connection."
         },
         "consumerGroup": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.KafkaConsumerGroup",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.KafkaConsumerGroup",
           "title": "Consumer group for kafka client\n+optional"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -2143,15 +2188,15 @@
           "type": "string"
         },
         "sasl": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SASLConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SASLConfig",
           "title": "SASL configuration for the kafka client\n+optional"
         },
         "schemaRegistry": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SchemaRegistryConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SchemaRegistryConfig",
           "title": "Schema Registry configuration for consumer message with Avro format\n+optional"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the kafka client.\n+optional"
         },
         "topic": {
@@ -2170,7 +2215,7 @@
       "title": "KafkaEventSource refers to event-source for Kafka related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.KafkaTrigger": {
+    "io.argoproj.events.v1alpha1.KafkaTrigger": {
       "description": "KafkaTrigger refers to the specification of the Kafka trigger.",
       "properties": {
         "compress": {
@@ -2191,7 +2236,8 @@
         "parameters": {
           "description": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -2206,7 +2252,8 @@
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -2215,22 +2262,23 @@
           "type": "integer"
         },
         "sasl": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SASLConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SASLConfig",
           "title": "SASL configuration for the kafka client\n+optional"
         },
         "schemaRegistry": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SchemaRegistryConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SchemaRegistryConfig",
           "title": "Schema Registry configuration to producer message with avro format\n+optional"
         },
         "secureHeaders": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SecureHeader"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.SecureHeader",
+            "type": "object"
           },
           "title": "Secure Headers stored in Kubernetes Secrets for the Kafka messages.\n+optional",
           "type": "array"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the Kafka producer.\n+optional"
         },
         "topic": {
@@ -2248,7 +2296,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.LogTrigger": {
+    "io.argoproj.events.v1alpha1.LogTrigger": {
       "properties": {
         "intervalSeconds": {
           "format": "uint64",
@@ -2258,7 +2306,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MNSEventSource": {
+    "io.argoproj.events.v1alpha1.MNSEventSource": {
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -2269,7 +2317,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -2288,10 +2336,10 @@
       "title": "MNSEventSource refers to event-source for AlibabaCloud MNS related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.MQTTEventSource": {
+    "io.argoproj.events.v1alpha1.MQTTEventSource": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
           "title": "Auth hosts secret selectors for username and password\n+optional"
         },
         "clientId": {
@@ -2299,11 +2347,11 @@
           "type": "string"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -2318,7 +2366,7 @@
           "type": "object"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the mqtt client.\n+optional"
         },
         "topic": {
@@ -2333,7 +2381,7 @@
       "title": "MQTTEventSource refers to event-source for MQTT related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Metadata": {
+    "io.argoproj.events.v1alpha1.Metadata": {
       "properties": {
         "annotations": {
           "additionalProperties": {
@@ -2351,10 +2399,10 @@
       "title": "Metadata holds the annotations and labels of an event source pod",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSAuth": {
+    "io.argoproj.events.v1alpha1.NATSAuth": {
       "properties": {
         "basic": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
           "title": "Baisc auth with username and password\n+optional"
         },
         "credential": {
@@ -2373,18 +2421,18 @@
       "title": "NATSAuth refers to the auth info for NATS EventSource",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSEventsSource": {
+    "io.argoproj.events.v1alpha1.NATSEventsSource": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.NATSAuth",
           "title": "Auth information\n+optional"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "description": "ConnectionBackoff holds backoff applied to connection."
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -2407,7 +2455,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the nats client.\n+optional"
         },
         "url": {
@@ -2418,22 +2466,24 @@
       "title": "NATSEventsSource refers to event-source for NATS related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSTrigger": {
+    "io.argoproj.events.v1alpha1.NATSTrigger": {
       "description": "NATSTrigger refers to the specification of the NATS trigger.",
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.NATSAuth",
           "title": "AuthInformation\n+optional"
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
         "payload": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -2442,7 +2492,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the NATS producer.\n+optional"
         },
         "url": {
@@ -2452,18 +2502,18 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NSQEventSource": {
+    "io.argoproj.events.v1alpha1.NSQEventSource": {
       "properties": {
         "channel": {
           "title": "Channel used for subscription",
           "type": "string"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "hostAddress": {
@@ -2482,7 +2532,7 @@
           "type": "object"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the nsq client.\n+optional"
         },
         "topic": {
@@ -2493,7 +2543,7 @@
       "title": "NSQEventSource describes the event source for NSQ PubSub\nMore info at https://godoc.org/github.com/nsqio/go-nsq",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.OpenWhiskTrigger": {
+    "io.argoproj.events.v1alpha1.OpenWhiskTrigger": {
       "description": "OpenWhiskTrigger refers to the specification of the OpenWhisk trigger.",
       "properties": {
         "actionName": {
@@ -2514,7 +2564,8 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
@@ -2522,7 +2573,8 @@
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -2533,7 +2585,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.OwnedRepositories": {
+    "io.argoproj.events.v1alpha1.OwnedRepositories": {
       "properties": {
         "names": {
           "items": {
@@ -2549,7 +2601,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PayloadField": {
+    "io.argoproj.events.v1alpha1.PayloadField": {
       "description": "PayloadField binds a value at path within the event payload against a name.",
       "properties": {
         "name": {
@@ -2563,7 +2615,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PubSubEventSource": {
+    "io.argoproj.events.v1alpha1.PubSubEventSource": {
       "description": "PubSubEventSource refers to event-source for GCP PubSub related events.",
       "properties": {
         "credentialSecret": {
@@ -2575,7 +2627,7 @@
           "type": "boolean"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -2608,7 +2660,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PulsarEventSource": {
+    "io.argoproj.events.v1alpha1.PulsarEventSource": {
       "properties": {
         "authAthenzParams": {
           "additionalProperties": {
@@ -2626,11 +2678,11 @@
           "title": "Authentication token for the pulsar client.\nEither token or athenz can be set to use auth.\n+optional"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -2645,7 +2697,7 @@
           "type": "object"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the pulsar client.\n+optional"
         },
         "tlsAllowInsecureConnection": {
@@ -2679,7 +2731,7 @@
       "title": "PulsarEventSource describes the event source for Apache Pulsar",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PulsarTrigger": {
+    "io.argoproj.events.v1alpha1.PulsarTrigger": {
       "description": "PulsarTrigger refers to the specification of the Pulsar trigger.",
       "properties": {
         "authAthenzParams": {
@@ -2698,25 +2750,27 @@
           "title": "Authentication token for the pulsar client.\nEither token or athenz can be set to use auth.\n+optional"
         },
         "connectionBackoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Backoff holds parameters applied to connection.\n+optional"
         },
         "parameters": {
           "description": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
         "payload": {
           "description": "Payload is the list of key-value extracted from an event payload to construct the request payload.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the pulsar client.\n+optional"
         },
         "tlsAllowInsecureConnection": {
@@ -2742,7 +2796,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.RateLimit": {
+    "io.argoproj.events.v1alpha1.RateLimit": {
       "properties": {
         "requestsPerUnit": {
           "type": "integer"
@@ -2754,7 +2808,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.RedisEventSource": {
+    "io.argoproj.events.v1alpha1.RedisEventSource": {
       "properties": {
         "channels": {
           "items": {
@@ -2767,7 +2821,7 @@
           "type": "integer"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "hostAddress": {
@@ -2794,7 +2848,7 @@
           "title": "Password required for authentication if any.\n+optional"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the redis client.\n+optional"
         },
         "username": {
@@ -2805,7 +2859,7 @@
       "title": "RedisEventSource describes an event source for the Redis PubSub.\nMore info at https://godoc.org/github.com/go-redis/redis#example-PubSub",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.RedisStreamEventSource": {
+    "io.argoproj.events.v1alpha1.RedisStreamEventSource": {
       "properties": {
         "consumerGroup": {
           "title": "ConsumerGroup refers to the Redis stream consumer group that will be\ncreated on all redis streams. Messages are read through this group. Defaults to 'argo-events-cg'\n+optional",
@@ -2816,7 +2870,7 @@
           "type": "integer"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "hostAddress": {
@@ -2846,7 +2900,7 @@
           "type": "array"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the redis client.\n+optional"
         },
         "username": {
@@ -2857,7 +2911,7 @@
       "title": "RedisStreamEventSource describes an event source for\nRedis streams (https://redis.io/topics/streams-intro)",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ResourceEventSource": {
+    "io.argoproj.events.v1alpha1.ResourceEventSource": {
       "description": "ResourceEventSource refers to a event-source for K8s resource related events.",
       "properties": {
         "eventTypes": {
@@ -2868,7 +2922,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ResourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ResourceFilter",
           "title": "Filter is applied on the metadata of the resource\nIf you apply filter, then the internal event informer will only monitor objects that pass the filter.\n+optional"
         },
         "groupVersionResource": {
@@ -2889,7 +2943,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ResourceFilter": {
+    "io.argoproj.events.v1alpha1.ResourceFilter": {
       "properties": {
         "afterStart": {
           "title": "If the resource is created after the start time then the event is treated as valid.\n+optional",
@@ -2901,14 +2955,16 @@
         },
         "fields": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Selector"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.Selector",
+            "type": "object"
           },
           "title": "Fields provide field filters similar to K8s field selector\n(see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/).\nUnlike K8s field selector, it supports arbitrary fileds like \"spec.serviceAccountName\",\nand the value could be a string or a regex.\nSame as K8s field selector, operator \"=\", \"==\" and \"!=\" are supported.\n+optional",
           "type": "array"
         },
         "labels": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Selector"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.Selector",
+            "type": "object"
           },
           "title": "Labels provide listing options to K8s API to watch resource/s.\nRefer https://kubernetes.io/docs/concepts/overview/working-with-objects/label-selectors/ for more io.argoproj.workflow.v1alpha1.\nUnlike K8s field selector, multiple values are passed as comma separated values instead of list of values.\nEg: value: value1,value2.\nSame as K8s label selector, operator \"=\", \"==\", \"!=\", \"exists\", \"!\", \"notin\", \"in\", \"gt\" and \"lt\"\nare supported\n+optional",
           "type": "array"
@@ -2921,13 +2977,13 @@
       "title": "ResourceFilter contains K8s ObjectMeta information to further filter resource event objects",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Artifact": {
+    "io.argoproj.events.v1alpha1.S3Artifact": {
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "bucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Bucket"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.S3Bucket"
         },
         "caCertificate": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -2942,7 +2998,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Filter"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.S3Filter"
         },
         "insecure": {
           "type": "boolean"
@@ -2963,7 +3019,7 @@
       "title": "S3Artifact contains information about an S3 connection and bucket",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Bucket": {
+    "io.argoproj.events.v1alpha1.S3Bucket": {
       "properties": {
         "key": {
           "type": "string"
@@ -2975,7 +3031,7 @@
       "title": "S3Bucket contains information to describe an S3 Bucket",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.S3Filter": {
+    "io.argoproj.events.v1alpha1.S3Filter": {
       "properties": {
         "prefix": {
           "type": "string"
@@ -2987,7 +3043,7 @@
       "title": "S3Filter represents filters to apply to bucket notifications for specifying constraints on objects",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SASLConfig": {
+    "io.argoproj.events.v1alpha1.SASLConfig": {
       "properties": {
         "mechanism": {
           "title": "SASLMechanism is the name of the enabled SASL mechanism.\nPossible values: OAUTHBEARER, PLAIN (defaults to PLAIN).\n+optional",
@@ -3005,7 +3061,7 @@
       "title": "SASLConfig refers to SASL configuration for a client",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SFTPEventSource": {
+    "io.argoproj.events.v1alpha1.SFTPEventSource": {
       "description": "SFTPEventSource describes an event-source for sftp related events.",
       "properties": {
         "address": {
@@ -3017,7 +3073,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "metadata": {
@@ -3044,13 +3100,13 @@
           "description": "Username required for authentication if any."
         },
         "watchPathConfig": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WatchPathConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WatchPathConfig",
           "title": "WatchPathConfig contains configuration about the file path to watch"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SNSEventSource": {
+    "io.argoproj.events.v1alpha1.SNSEventSource": {
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -3061,7 +3117,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "metadata": {
@@ -3092,14 +3148,14 @@
           "type": "boolean"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook configuration for http server"
         }
       },
       "title": "SNSEventSource refers to event-source for AWS SNS related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SQSEventSource": {
+    "io.argoproj.events.v1alpha1.SQSEventSource": {
       "properties": {
         "accessKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -3114,7 +3170,7 @@
           "type": "string"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "jsonBody": {
@@ -3160,10 +3216,10 @@
       "title": "SQSEventSource refers to event-source for AWS SQS related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SchemaRegistryConfig": {
+    "io.argoproj.events.v1alpha1.SchemaRegistryConfig": {
       "properties": {
         "auth": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.BasicAuth",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.BasicAuth",
           "title": "SchemaRegistry - basic authentication\n+optional"
         },
         "schemaId": {
@@ -3178,20 +3234,20 @@
       "title": "SchemaRegistryConfig refers to configuration for a client",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SecureHeader": {
+    "io.argoproj.events.v1alpha1.SecureHeader": {
       "properties": {
         "name": {
           "type": "string"
         },
         "valueFrom": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ValueFromSource",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ValueFromSource",
           "title": "Values can be read from either secrets or configmaps"
         }
       },
       "title": "SecureHeader refers to HTTP Headers with auth tokens as values",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Selector": {
+    "io.argoproj.events.v1alpha1.Selector": {
       "description": "Selector represents conditional operation to select K8s objects.",
       "properties": {
         "key": {
@@ -3209,27 +3265,28 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor": {
+    "io.argoproj.events.v1alpha1.Sensor": {
       "properties": {
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SensorSpec"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SensorSpec"
         },
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SensorStatus",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SensorStatus",
           "title": "+optional"
         }
       },
       "title": "Sensor is the definition of a sensor resource\n+genclient\n+genclient:noStatus\n+kubebuilder:resource:shortName=sn\n+kubebuilder:subresource:status\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SensorList": {
+    "io.argoproj.events.v1alpha1.SensorList": {
       "properties": {
         "items": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.Sensor",
+            "type": "object"
           },
           "type": "array"
         },
@@ -3240,12 +3297,13 @@
       "title": "SensorList is the list of Sensor resources\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SensorSpec": {
+    "io.argoproj.events.v1alpha1.SensorSpec": {
       "properties": {
         "dependencies": {
           "description": "Dependencies is a list of the events that this sensor is dependent on.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventDependency"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventDependency",
+            "type": "object"
           },
           "type": "array"
         },
@@ -3273,13 +3331,14 @@
           "type": "integer"
         },
         "template": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Template",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Template",
           "title": "Template is the pod specification for the sensor\n+optional"
         },
         "triggers": {
           "description": "Triggers is a list of the things that this sensor evokes. These are the outputs from this sensor.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Trigger"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.Trigger",
+            "type": "object"
           },
           "type": "array"
         }
@@ -3287,28 +3346,29 @@
       "title": "SensorSpec represents desired sensor state",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SensorStatus": {
+    "io.argoproj.events.v1alpha1.SensorStatus": {
       "description": "SensorStatus contains information about the status of a sensor.",
       "properties": {
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Status"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Status"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Service": {
+    "io.argoproj.events.v1alpha1.Service": {
       "properties": {
         "clusterIP": {
           "title": "clusterIP is the IP address of the service and is usually assigned\nrandomly by the master. If an address is specified manually and is not in\nuse by others, it will be allocated to the service; otherwise, creation\nof the service will fail. This field can not be changed through updates.\nValid values are \"None\", empty string (\"\"), or a valid IP address. \"None\"\ncan be specified for headless services when proxying is not required.\nMore info: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies\n+optional",
           "type": "string"
         },
         "metadata": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Metadata",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Metadata",
           "title": "Metadata sets the pods's metadata, i.e. annotations and labels\ndefault={annotations: {}, labels: {}}"
         },
         "ports": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.ServicePort"
+            "$ref": "#/definitions/io.k8s.api.core.v1.ServicePort",
+            "type": "object"
           },
           "title": "The list of ports that are exposed by this ClusterIP service.\n+patchMergeKey=port\n+patchStrategy=merge\n+listType=map\n+listMapKey=port\n+listMapKey=protocol",
           "type": "array"
@@ -3317,10 +3377,10 @@
       "title": "Service holds the service information eventsource exposes",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackEventSource": {
+    "io.argoproj.events.v1alpha1.SlackEventSource": {
       "properties": {
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "metadata": {
@@ -3339,14 +3399,14 @@
           "title": "Token for URL verification handshake"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook holds configuration for a REST endpoint"
         }
       },
       "title": "SlackEventSource refers to event-source for Slack related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackSender": {
+    "io.argoproj.events.v1alpha1.SlackSender": {
       "properties": {
         "icon": {
           "title": "Icon is the Slack application's icon, e.g. :robot_face: or https://example.com/image.png\n+optional",
@@ -3359,7 +3419,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackThread": {
+    "io.argoproj.events.v1alpha1.SlackThread": {
       "properties": {
         "broadcastMessageToChannel": {
           "title": "BroadcastMessageToChannel allows to also broadcast the message from the thread to the channel\n+optional",
@@ -3372,7 +3432,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackTrigger": {
+    "io.argoproj.events.v1alpha1.SlackTrigger": {
       "description": "SlackTrigger refers to the specification of the slack notification trigger.",
       "properties": {
         "attachments": {
@@ -3393,13 +3453,14 @@
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+optional",
           "type": "array"
         },
         "sender": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackSender",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackSender",
           "title": "Sender refers to additional configuration of the Slack application that sends the message.\n+optional"
         },
         "slackToken": {
@@ -3407,13 +3468,13 @@
           "description": "SlackToken refers to the Kubernetes secret that holds the slack token required to send messages."
         },
         "thread": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackThread",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackThread",
           "title": "Thread refers to additional options for sending messages to a Slack thread.\n+optional"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StandardK8STrigger": {
+    "io.argoproj.events.v1alpha1.StandardK8STrigger": {
       "properties": {
         "liveObject": {
           "title": "LiveObject specifies whether the resource should be directly fetched from K8s instead\nof being marshaled from the resource artifact. If set to true, the resource artifact\nmust contain the information required to uniquely identify the resource in the cluster,\nthat is, you must specify \"apiVersion\", \"kind\" as well as \"name\" and \"namespace\" meta\ndata.\nOnly valid for operation type `update`\n+optional",
@@ -3426,7 +3487,8 @@
         "parameters": {
           "description": "Parameters is the list of parameters that is applied to resolved K8s trigger object.",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "type": "array"
         },
@@ -3435,19 +3497,20 @@
           "type": "string"
         },
         "source": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ArtifactLocation",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArtifactLocation",
           "title": "Source of the K8s resource file(s)"
         }
       },
       "title": "StandardK8STrigger is the standard Kubernetes resource trigger",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Status": {
+    "io.argoproj.events.v1alpha1.Status": {
       "description": "Status is a common structure which can be used for Status field.",
       "properties": {
         "conditions": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Condition"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.Condition",
+            "type": "object"
           },
           "title": "Conditions are the latest available observations of a resource's current state.\n+optional\n+patchMergeKey=type\n+patchStrategy=merge",
           "type": "array"
@@ -3455,7 +3518,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StatusPolicy": {
+    "io.argoproj.events.v1alpha1.StatusPolicy": {
       "properties": {
         "allow": {
           "items": {
@@ -3468,7 +3531,7 @@
       "title": "StatusPolicy refers to the policy used to check the state of the trigger using response status",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StorageGridEventSource": {
+    "io.argoproj.events.v1alpha1.StorageGridEventSource": {
       "properties": {
         "apiURL": {
           "description": "APIURL is the url of the storagegrid api.",
@@ -3489,7 +3552,7 @@
           "type": "array"
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StorageGridFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.StorageGridFilter",
           "description": "Filter on object key which caused the notification."
         },
         "metadata": {
@@ -3504,7 +3567,7 @@
           "type": "string"
         },
         "tls": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TLSConfig",
           "title": "TLS configuration for the service bus client\n+optional"
         },
         "topicArn": {
@@ -3512,14 +3575,14 @@
           "type": "string"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook holds configuration for a REST endpoint"
         }
       },
       "title": "StorageGridEventSource refers to event-source for StorageGrid related events",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StorageGridFilter": {
+    "io.argoproj.events.v1alpha1.StorageGridFilter": {
       "properties": {
         "prefix": {
           "type": "string"
@@ -3531,7 +3594,7 @@
       "title": "StorageGridFilter represents filters to apply to bucket notifications for specifying constraints on objects\n+k8s:openapi-gen=true",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StripeEventSource": {
+    "io.argoproj.events.v1alpha1.StripeEventSource": {
       "properties": {
         "apiKey": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -3556,14 +3619,14 @@
           "type": "object"
         },
         "webhook": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext",
           "title": "Webhook holds configuration for a REST endpoint"
         }
       },
       "title": "StripeEventSource describes the event source for stripe webhook notifications\nMore info at https://stripe.com/docs/webhooks",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TLSConfig": {
+    "io.argoproj.events.v1alpha1.TLSConfig": {
       "description": "TLSConfig refers to TLS configuration for a client.",
       "properties": {
         "caCertSecret": {
@@ -3589,25 +3652,26 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Template": {
+    "io.argoproj.events.v1alpha1.Template": {
       "properties": {
         "affinity": {
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "title": "If specified, the pod's scheduling constraints\n+optional"
         },
         "container": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Container",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Container",
           "title": "Container is the main container image to run in the sensor pod\n+optional"
         },
         "imagePullSecrets": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
+            "type": "object"
           },
           "title": "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec.\nIf specified, these secrets will be passed to individual puller implementations for them to use. For example,\nin the case of docker, only DockerConfig type secrets are honored.\nMore info: https://kubernetes.io/docs/concepts/containers/images#specifying-imagepullsecrets-on-a-pod\n+optional\n+patchMergeKey=name\n+patchStrategy=merge",
           "type": "array"
         },
         "metadata": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Metadata",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Metadata",
           "title": "Metadata sets the pods's metadata, i.e. annotations and labels"
         },
         "nodeSelector": {
@@ -3635,14 +3699,16 @@
         },
         "tolerations": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration",
+            "type": "object"
           },
           "title": "If specified, the pod's tolerations.\n+optional",
           "type": "array"
         },
         "volumes": {
           "items": {
-            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume",
+            "type": "object"
           },
           "title": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.\n+patchStrategy=merge\n+patchMergeKey=name\n+optional",
           "type": "array"
@@ -3651,7 +3717,7 @@
       "title": "Template holds the information of a deployment template",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TimeFilter": {
+    "io.argoproj.events.v1alpha1.TimeFilter": {
       "description": "TimeFilter describes a window in time.\nIt filters out events that occur outside the time limits.\nIn other words, only events that occur after Start and before Stop\nwill pass this filter.",
       "properties": {
         "start": {
@@ -3669,44 +3735,45 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Trigger": {
+    "io.argoproj.events.v1alpha1.Trigger": {
       "properties": {
         "atLeastOnce": {
           "title": "AtLeastOnce determines the trigger execution semantics.\nDefaults to false. Trigger execution will use at-most-once semantics.\nIf set to true, Trigger execution will switch to at-least-once semantics.\n+kubebuilder:default=false\n+optional",
           "type": "boolean"
         },
         "dlqTrigger": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Trigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Trigger",
           "title": "If the trigger fails, it will retry up to the configured number of\nretries. If the maximum retries are reached and the trigger is set to\nexecute atLeastOnce, the dead letter queue (DLQ) trigger will be invoked if\nspecified.  Invoking the dead letter queue trigger helps prevent data\nloss.\n+optional"
         },
         "parameters": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameter",
+            "type": "object"
           },
           "title": "Parameters is the list of parameters applied to the trigger template definition",
           "type": "array"
         },
         "policy": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerPolicy",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerPolicy",
           "title": "Policy to configure backoff and execution criteria for the trigger\n+optional"
         },
         "rateLimit": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.RateLimit",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.RateLimit",
           "title": "Rate limit, default unit is Second\n+optional"
         },
         "retryStrategy": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Backoff",
           "title": "Retry strategy, defaults to no retry\n+optional"
         },
         "template": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerTemplate",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerTemplate",
           "description": "Template describes the trigger specification."
         }
       },
       "title": "Trigger is an action taken, output produced, an event created, a message sent",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameter": {
+    "io.argoproj.events.v1alpha1.TriggerParameter": {
       "properties": {
         "dest": {
           "description": "Dest is the JSONPath of a resource key.\nA path is a series of keys separated by a dot. The colon character can be escaped with '.'\nThe -1 key can be used to append a value to an existing array.\nSee https://github.com/tidwall/sjson#path-syntax for more information about how this is used.",
@@ -3717,14 +3784,14 @@
           "type": "string"
         },
         "src": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameterSource",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.TriggerParameterSource",
           "title": "Src contains a source reference to the value of the parameter from a dependency"
         }
       },
       "title": "TriggerParameter indicates a passed parameter to a service template",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerParameterSource": {
+    "io.argoproj.events.v1alpha1.TriggerParameterSource": {
       "properties": {
         "contextKey": {
           "description": "ContextKey is the JSONPath of the event's (JSON decoded) context key\nContextKey is a series of keys separated by a dot. A key may contain wildcard characters '*' and '?'.\nTo access an array value use the index as the key. The dot and wildcard characters can be escaped with '\\\\'.\nSee https://github.com/tidwall/gjson#path-syntax for more information on how to use this.",
@@ -3758,37 +3825,37 @@
       "title": "TriggerParameterSource defines the source for a parameter from a event event",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerPolicy": {
+    "io.argoproj.events.v1alpha1.TriggerPolicy": {
       "properties": {
         "k8s": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.K8SResourcePolicy",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.K8SResourcePolicy",
           "title": "K8SResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels"
         },
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StatusPolicy",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.StatusPolicy",
           "title": "Status refers to the policy used to check the state of the trigger using response status"
         }
       },
       "title": "TriggerPolicy dictates the policy for the trigger retries",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.TriggerTemplate": {
+    "io.argoproj.events.v1alpha1.TriggerTemplate": {
       "description": "TriggerTemplate is the template that describes trigger specification.",
       "properties": {
         "argoWorkflow": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ArgoWorkflowTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.ArgoWorkflowTrigger",
           "title": "ArgoWorkflow refers to the trigger that can perform various operations on an Argo io.argoproj.workflow.v1alpha1.\n+optional"
         },
         "awsLambda": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AWSLambdaTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AWSLambdaTrigger",
           "title": "AWSLambda refers to the trigger designed to invoke AWS Lambda function with with on-the-fly constructable payload.\n+optional"
         },
         "azureEventHubs": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureEventHubsTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureEventHubsTrigger",
           "title": "AzureEventHubs refers to the trigger send an event to an Azure Event Hub.\n+optional"
         },
         "azureServiceBus": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.AzureServiceBusTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.AzureServiceBusTrigger",
           "title": "AzureServiceBus refers to the trigger designed to place messages on Azure Service Bus\n+optional"
         },
         "conditions": {
@@ -3797,33 +3864,34 @@
         },
         "conditionsReset": {
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ConditionsResetCriteria"
+            "$ref": "#/definitions/io.argoproj.events.v1alpha1.ConditionsResetCriteria",
+            "type": "object"
           },
           "title": "Criteria to reset the conditons\n+optional",
           "type": "array"
         },
         "custom": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.CustomTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.CustomTrigger",
           "title": "CustomTrigger refers to the trigger designed to connect to a gRPC trigger server and execute a custom trigger.\n+optional"
         },
         "email": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EmailTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EmailTrigger",
           "title": "Email refers to the trigger designed to send an email notification\n+optional"
         },
         "http": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.HTTPTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.HTTPTrigger",
           "title": "HTTP refers to the trigger designed to dispatch a HTTP request with on-the-fly constructable payload.\n+optional"
         },
         "k8s": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.StandardK8STrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.StandardK8STrigger",
           "title": "StandardK8STrigger refers to the trigger designed to create or update a generic Kubernetes resource.\n+optional"
         },
         "kafka": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.KafkaTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.KafkaTrigger",
           "description": "Kafka refers to the trigger designed to place messages on Kafka topic.\n+optional."
         },
         "log": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.LogTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.LogTrigger",
           "title": "Log refers to the trigger designed to invoke log the io.argoproj.workflow.v1alpha1.\n+optional"
         },
         "name": {
@@ -3831,25 +3899,25 @@
           "type": "string"
         },
         "nats": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.NATSTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.NATSTrigger",
           "description": "NATS refers to the trigger designed to place message on NATS subject.\n+optional."
         },
         "openWhisk": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.OpenWhiskTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.OpenWhiskTrigger",
           "title": "OpenWhisk refers to the trigger designed to invoke OpenWhisk action.\n+optional"
         },
         "pulsar": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.PulsarTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.PulsarTrigger",
           "title": "Pulsar refers to the trigger designed to place messages on Pulsar topic.\n+optional"
         },
         "slack": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.SlackTrigger",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.SlackTrigger",
           "title": "Slack refers to the trigger designed to send slack notification message.\n+optional"
         }
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.URLArtifact": {
+    "io.argoproj.events.v1alpha1.URLArtifact": {
       "description": "URLArtifact contains information about an artifact at an HTTP endpoint.",
       "properties": {
         "path": {
@@ -3863,7 +3931,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.ValueFromSource": {
+    "io.argoproj.events.v1alpha1.ValueFromSource": {
       "properties": {
         "configMapKeyRef": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
@@ -3875,7 +3943,7 @@
       "title": "ValueFromSource allows you to reference keys from either a Configmap or Secret",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WatchPathConfig": {
+    "io.argoproj.events.v1alpha1.WatchPathConfig": {
       "properties": {
         "directory": {
           "title": "Directory to watch for events",
@@ -3892,7 +3960,7 @@
       },
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext": {
+    "io.argoproj.events.v1alpha1.WebhookContext": {
       "properties": {
         "authSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
@@ -3937,72 +4005,17 @@
       "title": "WebhookContext holds a general purpose REST API context",
       "type": "object"
     },
-    "github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookEventSource": {
+    "io.argoproj.events.v1alpha1.WebhookEventSource": {
       "properties": {
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSourceFilter",
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.EventSourceFilter",
           "title": "Filter\n+optional"
         },
         "webhookContext": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.WebhookContext"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.WebhookContext"
         }
       },
       "title": "CalendarEventSource describes an HTTP based EventSource",
-      "type": "object"
-    },
-    "google.protobuf.Any": {
-      "properties": {
-        "type_url": {
-          "type": "string"
-        },
-        "value": {
-          "format": "byte",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "grpc.gateway.runtime.Error": {
-      "properties": {
-        "code": {
-          "type": "integer"
-        },
-        "details": {
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          },
-          "type": "array"
-        },
-        "error": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "grpc.gateway.runtime.StreamError": {
-      "properties": {
-        "details": {
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          },
-          "type": "array"
-        },
-        "grpc_code": {
-          "type": "integer"
-        },
-        "http_code": {
-          "type": "integer"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        }
-      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Amount": {
@@ -4673,18 +4686,6 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateUpdateRequest": {
-      "properties": {
-        "name": {
-          "description": "DEPRECATED: This field is ignored.",
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.CollectEventRequest": {
       "properties": {
         "name": {
@@ -4975,16 +4976,13 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.CreateCronWorkflowRequest": {
+    "io.argoproj.workflow.v1alpha1.CreateCronWorkflowBody": {
       "properties": {
         "createOptions": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
         },
         "cronWorkflow": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
-        },
-        "namespace": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -4995,6 +4993,35 @@
         "objectLocking": {
           "description": "ObjectLocking Enable object locking",
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.CreateWorkflowBody": {
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
+        },
+        "instanceID": {
+          "description": "This field is no longer used.",
+          "type": "string"
+        },
+        "serverDryRun": {
+          "type": "boolean"
+        },
+        "workflow": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.CreateWorkflowTemplateBody": {
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
         }
       },
       "type": "object"
@@ -5063,17 +5090,6 @@
         "metadata",
         "items"
       ],
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.CronWorkflowResumeRequest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
@@ -5165,17 +5181,6 @@
         "succeeded": {
           "description": "v3.6 and after: Succeeded counts how many times child workflows succeeded",
           "type": "integer"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -5324,6 +5329,19 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.EventResponse": {
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.EventWatchEvent": {
+      "properties": {
+        "object": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Event",
+          "title": "the event"
+        },
+        "type": {
+          "title": "the type of change",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
@@ -5804,13 +5822,15 @@
       "properties": {
         "columns": {
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Column"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Column",
+            "type": "object"
           },
           "type": "array"
         },
         "links": {
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link",
+            "type": "object"
           },
           "type": "array"
         },
@@ -5943,13 +5963,29 @@
       "x-kubernetes-patch-merge-key": "name",
       "x-kubernetes-patch-strategy": "merge"
     },
-    "io.argoproj.workflow.v1alpha1.LintCronWorkflowRequest": {
+    "io.argoproj.workflow.v1alpha1.LintCronWorkflowBody": {
       "properties": {
         "cronWorkflow": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.LintWorkflowBody": {
+      "properties": {
+        "workflow": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.LintWorkflowTemplateBody": {
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
         },
-        "namespace": {
-          "type": "string"
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
         }
       },
       "type": "object"
@@ -6674,7 +6710,7 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowRequest": {
+    "io.argoproj.workflow.v1alpha1.ResubmitArchivedWorkflowBody": {
       "properties": {
         "memoized": {
           "type": "boolean"
@@ -6690,8 +6726,30 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ResubmitWorkflowBody": {
+      "properties": {
+        "memoized": {
+          "type": "boolean"
         },
-        "uid": {
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ResumeCronWorkflowBody": {
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ResumeWorkflowBody": {
+      "properties": {
+        "nodeFieldSelector": {
           "type": "string"
         }
       },
@@ -6706,7 +6764,7 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.RetryArchivedWorkflowRequest": {
+    "io.argoproj.workflow.v1alpha1.RetryArchivedWorkflowBody": {
       "properties": {
         "name": {
           "type": "string"
@@ -6725,9 +6783,6 @@
         },
         "restartSuccessful": {
           "type": "boolean"
-        },
-        "uid": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -6758,6 +6813,23 @@
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.RetryWorkflowBody": {
+      "properties": {
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "restartSuccessful": {
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -7157,6 +7229,23 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.SetWorkflowBody": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "outputParameters": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.StopStrategy": {
       "description": "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after",
       "properties": {
@@ -7168,6 +7257,17 @@
       "required": [
         "expression"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.StopWorkflowBody": {
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Submit": {
@@ -7254,8 +7354,25 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.SubmitWorkflowBody": {
+      "properties": {
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitOpts"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.SuppliedValueFrom": {
       "description": "SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.SuspendCronWorkflowBody": {
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
@@ -7266,6 +7383,9 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.SuspendWorkflowBody": {
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.SyncDatabaseRef": {
@@ -7571,6 +7691,9 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.TerminateWorkflowBody": {
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.TransformationStep": {
       "properties": {
         "expression": {
@@ -7583,17 +7706,26 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.UpdateCronWorkflowRequest": {
+    "io.argoproj.workflow.v1alpha1.UpdateClusterWorkflowTemplateBody": {
+      "properties": {
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.UpdateCronWorkflowBody": {
       "properties": {
         "cronWorkflow": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
-        },
-        "name": {
-          "description": "DEPRECATED: This field is ignored.",
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.UpdateWorkflowTemplateBody": {
+      "properties": {
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
         }
       },
       "type": "object"
@@ -7895,27 +8027,6 @@
         }
       ]
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest": {
-      "properties": {
-        "createOptions": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
-        },
-        "instanceID": {
-          "description": "This field is no longer used.",
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "serverDryRun": {
-          "type": "boolean"
-        },
-        "workflow": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse": {
       "type": "object"
     },
@@ -8021,17 +8132,6 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowLintRequest": {
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "workflow": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.WorkflowList": {
       "description": "WorkflowList is list of Workflow resources",
       "properties": {
@@ -8078,86 +8178,6 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LabelValueFrom"
           },
           "type": "object"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowResubmitRequest": {
-      "properties": {
-        "memoized": {
-          "type": "boolean"
-        },
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "parameters": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowResumeRequest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "nodeFieldSelector": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowRetryRequest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "nodeFieldSelector": {
-          "type": "string"
-        },
-        "parameters": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "restartSuccessful": {
-          "type": "boolean"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowSetRequest": {
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "nodeFieldSelector": {
-          "type": "string"
-        },
-        "outputParameters": {
-          "type": "string"
-        },
-        "phase": {
-          "type": "string"
         }
       },
       "type": "object"
@@ -8545,51 +8565,6 @@
       },
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowStopRequest": {
-      "properties": {
-        "message": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "nodeFieldSelector": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "resourceKind": {
-          "type": "string"
-        },
-        "resourceName": {
-          "type": "string"
-        },
-        "submitOptions": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitOpts"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowSuspendRequest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplate": {
       "description": "WorkflowTemplate is the definition of a workflow template resource",
       "properties": {
@@ -8623,35 +8598,7 @@
         }
       ]
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest": {
-      "properties": {
-        "createOptions": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateDeleteResponse": {
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTemplateLintRequest": {
-      "properties": {
-        "createOptions": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
-        }
-      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateList": {
@@ -8690,32 +8637,6 @@
         },
         "name": {
           "description": "Name is the resource name of the workflow template.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTemplateUpdateRequest": {
-      "properties": {
-        "name": {
-          "description": "DEPRECATED: This field is ignored.",
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
-        }
-      },
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowTerminateRequest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
           "type": "string"
         }
       },
@@ -12016,16 +11937,13 @@
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
       "type": "string"
     },
-    "sensor.CreateSensorRequest": {
+    "sensor.CreateSensorBody": {
       "properties": {
         "createOptions": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
         },
-        "namespace": {
-          "type": "string"
-        },
         "sensor": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Sensor"
         }
       },
       "type": "object"
@@ -12069,7 +11987,7 @@
     "sensor.SensorWatchEvent": {
       "properties": {
         "object": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Sensor"
         },
         "type": {
           "type": "string"
@@ -12077,21 +11995,15 @@
       },
       "type": "object"
     },
-    "sensor.UpdateSensorRequest": {
+    "sensor.UpdateSensorBody": {
       "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
         "sensor": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.Sensor"
+          "$ref": "#/definitions/io.argoproj.events.v1alpha1.Sensor"
         }
       },
       "type": "object"
     },
-    "sync.CreateSyncLimitRequest": {
+    "sync.CreateSyncLimitBody": {
       "properties": {
         "cmName": {
           "type": "string"
@@ -12101,9 +12013,6 @@
         },
         "limit": {
           "type": "integer"
-        },
-        "namespace": {
-          "type": "string"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"
@@ -12142,19 +12051,13 @@
       },
       "type": "object"
     },
-    "sync.UpdateSyncLimitRequest": {
+    "sync.UpdateSyncLimitBody": {
       "properties": {
         "cmName": {
           "type": "string"
         },
-        "key": {
-          "type": "string"
-        },
         "limit": {
           "type": "integer"
-        },
-        "namespace": {
-          "type": "string"
         },
         "type": {
           "$ref": "#/definitions/sync.SyncConfigType"

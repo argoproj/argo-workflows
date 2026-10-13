@@ -5,6 +5,11 @@
     "description": "Artifact Service API provides GRPC access to artifact operations",
     "version": "version not set"
   },
+  "tags": [
+    {
+      "name": "ArtifactService"
+    }
+  ],
   "consumes": [
     "application/json"
   ],
@@ -25,7 +30,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         },
@@ -57,7 +62,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         },
@@ -89,7 +94,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         },
@@ -121,7 +126,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         },
@@ -153,7 +158,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         },
@@ -185,7 +190,7 @@
                   "$ref": "#/definitions/artifact.OpenStreamResponse"
                 },
                 "error": {
-                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                  "$ref": "#/definitions/google.rpc.Status"
                 }
               },
               "title": "Stream result of artifact.OpenStreamResponse"
@@ -194,7 +199,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         },
@@ -237,13 +242,13 @@
         "optional": {
           "type": "boolean"
         },
-        "sub_path": {
+        "subPath": {
           "type": "string"
         },
-        "recurse_mode": {
+        "recurseMode": {
           "type": "boolean"
         },
-        "from_expression": {
+        "fromExpression": {
           "type": "string"
         },
         "deleted": {
@@ -271,15 +276,6 @@
         }
       }
     },
-    "artifact.GetCapabilitiesResponse": {
-      "type": "object",
-      "properties": {
-        "supports_save_stream": {
-          "type": "boolean",
-          "description": "supports_save_stream indicates whether this plugin implements the streaming\nSaveStream RPC. Callers should check this before invoking SaveStream, since a\nreader already partially consumed cannot be rewound to fall back to Save."
-        }
-      }
-    },
     "artifact.IsDirectoryRequest": {
       "type": "object",
       "properties": {
@@ -291,7 +287,7 @@
     "artifact.IsDirectoryResponse": {
       "type": "object",
       "properties": {
-        "is_directory": {
+        "isDirectory": {
           "type": "boolean"
         },
         "error": {
@@ -324,7 +320,7 @@
     "artifact.LoadArtifactRequest": {
       "type": "object",
       "properties": {
-        "input_artifact": {
+        "inputArtifact": {
           "$ref": "#/definitions/artifact.Artifact"
         },
         "path": {
@@ -358,7 +354,7 @@
           "type": "string",
           "format": "byte"
         },
-        "is_end": {
+        "isEnd": {
           "type": "boolean"
         },
         "error": {
@@ -375,7 +371,7 @@
         "configuration": {
           "type": "string"
         },
-        "connection_timeout_seconds": {
+        "connectionTimeoutSeconds": {
           "type": "integer",
           "format": "int32"
         },
@@ -391,7 +387,7 @@
         "path": {
           "type": "string"
         },
-        "output_artifact": {
+        "outputArtifact": {
           "$ref": "#/definitions/artifact.Artifact"
         }
       }
@@ -410,21 +406,15 @@
     "google.protobuf.Any": {
       "type": "object",
       "properties": {
-        "type_url": {
+        "@type": {
           "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
         }
-      }
+      },
+      "additionalProperties": {}
     },
-    "grpc.gateway.runtime.Error": {
+    "google.rpc.Status": {
       "type": "object",
       "properties": {
-        "error": {
-          "type": "string"
-        },
         "code": {
           "type": "integer",
           "format": "int32"
@@ -435,31 +425,7 @@
         "details": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          }
-        }
-      }
-    },
-    "grpc.gateway.runtime.StreamError": {
-      "type": "object",
-      "properties": {
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
-          "type": "string"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
+            "type": "object",
             "$ref": "#/definitions/google.protobuf.Any"
           }
         }
