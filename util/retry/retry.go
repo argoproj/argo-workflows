@@ -2,6 +2,7 @@ package retry
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -46,15 +47,17 @@ func ExecutorRetry(ctx context.Context) wait.Backoff {
 const DefaultExecutorTaskResultRetryTimeout = 10 * time.Minute
 
 // ExecutorTaskResultRetryTimeout is how long the WorkflowExecutor keeps
-// retrying transient errors when writing its task result. Non-positive
-// values use the default.
+// retrying transient errors when writing its task result. Values that are
+// not positive, or too large for a time.Duration, use the default.
 func ExecutorTaskResultRetryTimeout(ctx context.Context) time.Duration {
+	const maxSeconds = math.MaxInt64 / int64(time.Second)
 	seconds := envutil.LookupEnvIntOr(ctx, "EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS", int(DefaultExecutorTaskResultRetryTimeout/time.Second))
-	if seconds <= 0 {
+	if seconds <= 0 || int64(seconds) > maxSeconds {
 		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 			"EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS": seconds,
+			"max":     maxSeconds,
 			"default": DefaultExecutorTaskResultRetryTimeout,
-		}).Warn(ctx, "EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS must be positive, using the default")
+		}).Warn(ctx, "EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS is out of range (1 to max), using the default")
 		return DefaultExecutorTaskResultRetryTimeout
 	}
 	return time.Duration(seconds) * time.Second

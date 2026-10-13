@@ -27,4 +27,13 @@ func TestExecutorTaskResultRetryTimeout(t *testing.T) {
 		t.Setenv("EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS", "0")
 		assert.Equal(t, 10*time.Minute, ExecutorTaskResultRetryTimeout(ctx))
 	})
+	t.Run("TooLargeUsesDefault", func(t *testing.T) {
+		// 1e10 seconds overflows time.Duration, which tops out near 9.2e9.
+		t.Setenv("EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS", "10000000000")
+		assert.Equal(t, 10*time.Minute, ExecutorTaskResultRetryTimeout(ctx))
+	})
+	t.Run("LargestAllowed", func(t *testing.T) {
+		t.Setenv("EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS", "9223372036")
+		assert.Equal(t, 9223372036*time.Second, ExecutorTaskResultRetryTimeout(ctx))
+	})
 }
