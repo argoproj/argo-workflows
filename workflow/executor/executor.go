@@ -1108,17 +1108,15 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	}
 }
 
-// ReportOutputs writes the captured outputs to the WorkflowTaskResult and,
-// unless another container reports after it, marks outputs reporting
-// complete in the same write.
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact) error {
+// ReportOutputs writes the captured outputs to the WorkflowTaskResult. A
+// final report also marks outputs reporting complete in the same write;
+// the caller passes final=false only when another container reports after
+// this one.
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact, final bool) error {
 	outputs := we.capturedOutputs().DeepCopy()
 	outputs.Artifacts = artifacts
 	result := wfv1.NodeResult{Outputs: outputs}
-	// A resource template that archives its logs also has a wait container,
-	// which reports the logs once this main container exits and marks the
-	// result complete then.
-	if we.Template.Resource != nil && we.Template.SaveLogsAsArtifact() {
+	if !final {
 		return we.reportResult(ctx, result, nil)
 	}
 	return we.reportFinalResult(ctx, result)
