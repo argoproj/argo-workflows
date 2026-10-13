@@ -13,6 +13,9 @@
 # Settings (normally driven by the Makefile / CI, see `make start`):
 #   --auth-mode=<mode>                  argo-server auth mode (hybrid; sso for PROFILE=sso)
 #   --secure=true                       argo-server serves TLS
+#   --base-href=/argo/                  serve the UI under a sub-path: argo-server gets
+#                                       --base-href and the webpack dev server (dev mode)
+#                                       gets ARGO_BASE_HREF, so http://localhost:8080/argo/
 #   --api=false                         don't build or run the argo-server
 #   --initless=true                     deploy the <profile>-initless manifests, enabling the
 #                                       init-less pod layout (requires K8s image volumes —
@@ -32,6 +35,7 @@ config.define_string('mode')
 config.define_string('auth-mode')
 config.define_string('secure')
 config.define_string('api')
+config.define_string('base-href')
 config.define_string('pod-status-capture-finalizer')
 # --debug=controller,server runs the named components under headless Delve. See
 # the "Debugging under Tilt" section of docs/running-locally.md.
@@ -44,6 +48,11 @@ is_ci = mode == 'ci'
 auth_mode = cfg.get('auth-mode', 'hybrid')
 secure = cfg.get('secure', 'false')
 api = cfg.get('api', 'true') != 'false'
+# normalised to a single leading and trailing slash, as the Makefile does and
+# server/static/static.go expects
+base_href = '/' + cfg.get('base-href', '/').strip('/')
+if base_href != '/':
+    base_href += '/'
 finalizer = cfg.get('pod-status-capture-finalizer', 'true')
 # Debugging is a dev-only convenience; force it off under CI so `tilt ci` builds
 # the real production images and never wraps them in dlv. Tilt's string_list
@@ -145,8 +154,8 @@ for o in objs:
         # manifest reshuffle drops them (a silent no-op here would deploy a
         # server with the wrong auth/TLS mode)
         args = container.get('args', [])
-        replaced = {'--auth-mode=': False, '--secure=': False}
-        values = {'--auth-mode=': auth_mode, '--secure=': secure}
+        replaced = {'--auth-mode=': False, '--secure=': False, '--base-href=': False}
+        values = {'--auth-mode=': auth_mode, '--secure=': secure, '--base-href=': base_href}
         for i in range(len(args)):
             for prefix in replaced.keys():
                 if args[i].startswith(prefix):
@@ -299,7 +308,8 @@ if not is_ci and api:
         labels=['ui'])
     local_resource('ui',
         serve_cmd='yarn --cwd ui start',
+        serve_env={'ARGO_BASE_HREF': base_href},
         deps=['ui/src'],
         resource_deps=['ui-deps', 'argo-server'],
-        links=['http://localhost:8080'],
+        links=['http://localhost:8080' + base_href],
         labels=['ui'])
