@@ -95,26 +95,53 @@ func getTaskResult(t *testing.T, clientset *argofake.Clientset) *wfv1.WorkflowTa
 // the placeholder create, then one patch carrying both the outputs and the
 // completed label, and nothing from the deferred FinalizeOutput.
 func TestTaskResultWrites_ContainerPlans(t *testing.T) {
-	for _, initless := range []bool{false, true} {
-		t.Run(map[bool]string{false: "legacy", true: "initless"}[initless], func(t *testing.T) {
+	script := wfv1.Template{Script: &wfv1.ScriptTemplate{}}
+	tests := []struct {
+		name string
+		tmpl wfv1.Template
+		// preMainFailed skips the stages that need main's outputs, but
+		// report-outputs must still run and complete the result.
+		preMainFailed bool
+		wantResult    *string
+		// wantErr is set when a collect stage fails without stopping
+		// report-outputs.
+		wantErr bool
+	}{
+		{name: "Script", tmpl: script, wantResult: new("hello")},
+		{name: "PreMainFailed", tmpl: script, preMainFailed: true},
+		{
+			// Only a resource template leaves completion to a later
+			// report, so archived logs here must not hold the label back.
+			name:    "ArchivedLogs",
+			tmpl:    wfv1.Template{Container: &corev1.Container{}, ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
+			wantErr: true, // no artifact repository, so saving the logs records an error
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
 			rt := &mocks.ContainerRuntimeExecutor{}
 			rt.On("Wait", mock.Anything, []string{"main"}).Return(nil)
-			rt.On("GetOutputStream", mock.Anything, "main", false).Return(io.NopCloser(strings.NewReader("hello")), nil)
+			rt.On("GetOutputStream", mock.Anything, "main", false).Return(io.NopCloser(strings.NewReader("hello")), nil).Maybe()
+			rt.On("GetOutputStream", mock.Anything, "main", true).Return(io.NopCloser(strings.NewReader("log")), nil).Maybe()
 			clientset := argofake.NewClientset()
-			we := newTaskResultTestExecutor(t, wfv1.Template{Script: &wfv1.ScriptTemplate{}}, rt, clientset)
-			we.IncludeScriptOutput = true
-			we.initlessPod = initless
+			we := newTaskResultTestExecutor(t, tt.tmpl, rt, clientset)
+			we.IncludeScriptOutput = tt.tmpl.Script != nil
 
-			require.NoError(t, we.PostMain(ctx, ctx, false))
+			err := we.PostMain(ctx, ctx, tt.preMainFailed)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			writes := taskResultWrites(t, clientset)
 			we.FinalizeOutput(ctx)
 
-			writes := taskResultWrites(t, clientset)
 			assert.Equal(t, []string{"create:false", "patch:true"}, verbs(writes))
+			assert.Len(t, taskResultWrites(t, clientset), len(writes), "FinalizeOutput has nothing left to write")
 			require.NotNil(t, writes[1].outputs, "the completing write carries the outputs")
-			assert.Equal(t, "hello", *writes[1].outputs.Result)
+			assert.Equal(t, tt.wantResult, writes[1].outputs.Result)
 			assert.Equal(t, "true", getTaskResult(t, clientset).Labels[common.LabelKeyReportOutputsCompleted])
-			assert.NoError(t, we.HasError())
 		})
 	}
 }
@@ -241,14 +268,13 @@ func TestTaskResultWrites_Resource(t *testing.T) {
 		rt.On("GetOutputStream", mock.Anything, mock.Anything, true).Return(io.NopCloser(strings.NewReader("log")), nil).Maybe()
 		wait := newTaskResultTestExecutor(t, tmpl, rt, clientset)
 		_ = wait.PostMain(ctx, ctx, false) // no artifact repository, so saving the logs records an error
+		writes := taskResultWrites(t, clientset)
 		wait.FinalizeOutput(ctx)
 
-		writes := taskResultWrites(t, clientset)
-		last := len(writes) - 1
-		assert.Equal(t, "true", writes[last].completed, "the logs report completes the result")
-		for _, w := range writes[:last] {
-			assert.NotEqual(t, "true", w.completed, "only the last write may complete the result")
-		}
+		// wait's placeholder create finds main's result and patches it, then
+		// the logs report patches in the logs and the label together.
+		assert.Equal(t, []string{"create:false", "patch:", "create:false", "patch:", "patch:true"}, verbs(writes))
+		assert.Len(t, taskResultWrites(t, clientset), len(writes), "the logs report completes the result, leaving FinalizeOutput nothing to write")
 		result := getTaskResult(t, clientset)
 		assert.Equal(t, "true", result.Labels[common.LabelKeyReportOutputsCompleted])
 		assert.Equal(t, "dflt", result.Outputs.Parameters[0].Value.String(), "main's parameters survive the logs report")
