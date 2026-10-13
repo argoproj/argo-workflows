@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: message
+  hooks:
+    failure:
+      template: message
+  templates:
+    - name: message
+      script:
+        image: alpine:3.23
+        command: [sh]
+        source: |
+          echo Hi

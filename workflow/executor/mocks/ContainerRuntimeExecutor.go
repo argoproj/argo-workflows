@@ -18,10 +18,19 @@ func NewContainerRuntimeExecutor(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *ContainerRuntimeExecutor {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &ContainerRuntimeExecutor{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -67,7 +76,7 @@ type ContainerRuntimeExecutor_CopyFile_Call struct {
 //   - sourcePath string
 //   - destPath string
 //   - compressionLevel int
-func (_e *ContainerRuntimeExecutor_Expecter) CopyFile(ctx interface{}, containerName interface{}, sourcePath interface{}, destPath interface{}, compressionLevel interface{}) *ContainerRuntimeExecutor_CopyFile_Call {
+func (_e *ContainerRuntimeExecutor_Expecter) CopyFile(ctx any, containerName any, sourcePath any, destPath any, compressionLevel any) *ContainerRuntimeExecutor_CopyFile_Call {
 	return &ContainerRuntimeExecutor_CopyFile_Call{Call: _e.mock.On("CopyFile", ctx, containerName, sourcePath, destPath, compressionLevel)}
 }
 
@@ -148,7 +157,7 @@ type ContainerRuntimeExecutor_GetFileContents_Call struct {
 // GetFileContents is a helper method to define mock.On call
 //   - containerName string
 //   - sourcePath string
-func (_e *ContainerRuntimeExecutor_Expecter) GetFileContents(containerName interface{}, sourcePath interface{}) *ContainerRuntimeExecutor_GetFileContents_Call {
+func (_e *ContainerRuntimeExecutor_Expecter) GetFileContents(containerName any, sourcePath any) *ContainerRuntimeExecutor_GetFileContents_Call {
 	return &ContainerRuntimeExecutor_GetFileContents_Call{Call: _e.mock.On("GetFileContents", containerName, sourcePath)}
 }
 
@@ -217,7 +226,7 @@ type ContainerRuntimeExecutor_GetOutputStream_Call struct {
 //   - ctx context.Context
 //   - containerName string
 //   - combinedOutput bool
-func (_e *ContainerRuntimeExecutor_Expecter) GetOutputStream(ctx interface{}, containerName interface{}, combinedOutput interface{}) *ContainerRuntimeExecutor_GetOutputStream_Call {
+func (_e *ContainerRuntimeExecutor_Expecter) GetOutputStream(ctx any, containerName any, combinedOutput any) *ContainerRuntimeExecutor_GetOutputStream_Call {
 	return &ContainerRuntimeExecutor_GetOutputStream_Call{Call: _e.mock.On("GetOutputStream", ctx, containerName, combinedOutput)}
 }
 
@@ -280,7 +289,7 @@ type ContainerRuntimeExecutor_Kill_Call struct {
 //   - ctx context.Context
 //   - containerNames []string
 //   - terminationGracePeriodDuration time.Duration
-func (_e *ContainerRuntimeExecutor_Expecter) Kill(ctx interface{}, containerNames interface{}, terminationGracePeriodDuration interface{}) *ContainerRuntimeExecutor_Kill_Call {
+func (_e *ContainerRuntimeExecutor_Expecter) Kill(ctx any, containerNames any, terminationGracePeriodDuration any) *ContainerRuntimeExecutor_Kill_Call {
 	return &ContainerRuntimeExecutor_Kill_Call{Call: _e.mock.On("Kill", ctx, containerNames, terminationGracePeriodDuration)}
 }
 
@@ -342,7 +351,7 @@ type ContainerRuntimeExecutor_Wait_Call struct {
 // Wait is a helper method to define mock.On call
 //   - ctx context.Context
 //   - containerNames []string
-func (_e *ContainerRuntimeExecutor_Expecter) Wait(ctx interface{}, containerNames interface{}) *ContainerRuntimeExecutor_Wait_Call {
+func (_e *ContainerRuntimeExecutor_Expecter) Wait(ctx any, containerNames any) *ContainerRuntimeExecutor_Wait_Call {
 	return &ContainerRuntimeExecutor_Wait_Call{Call: _e.mock.On("Wait", ctx, containerNames)}
 }
 

@@ -63,6 +63,15 @@ type dagContext struct {
 	// they should complete with. executeDAG marks them once assessment is done.
 	taskGroupsToComplete map[string]wfv1.NodePhase
 
+	// expandingTaskGroups collects the TaskGroup nodes executeDAGTask expanded
+	// this reconcile. Completing these is the job of executeDAGTask's own
+	// end-of-loop check, which knows the full expanded item list; assessDAGPhase
+	// must not complete them from their created children alone, because an early
+	// return out of the expandedTasks loop (parallelism, a pending exit hook, a
+	// deadline) can leave later items not yet created while every created child
+	// is already fulfilled.
+	expandingTaskGroups map[string]bool
+
 	// used for logging in the dag
 	log logging.Logger
 }
@@ -76,7 +85,7 @@ func (d *dagContext) GetTaskDependencies(ctx context.Context, taskName string) [
 }
 
 func (d *dagContext) GetTaskFinishedAtTime(ctx context.Context, taskName string) time.Time {
-	node := d.getTaskNode(ctx, taskName)
+	node := d.getTaskNode(taskName)
 	if node == nil {
 		return time.Time{}
 	}
@@ -122,15 +131,14 @@ func (d *dagContext) taskNodeName(taskName string) string {
 // taskNodeID formulates the node ID for a dag task
 func (d *dagContext) taskNodeID(taskName string) string {
 	nodeName := d.taskNodeName(taskName)
-	return d.wf.NodeID(nodeName)
+	return d.wf.ResolveNodeID(nodeName)
 }
 
 // getTaskNode returns the node status of a task.
-func (d *dagContext) getTaskNode(ctx context.Context, taskName string) *wfv1.NodeStatus {
+func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	nodeID := d.taskNodeID(taskName)
 	node, err := d.wf.Status.Nodes.Get(nodeID)
 	if err != nil {
-		d.log.WithFields(logging.Fields{"nodeID": nodeID, "taskName": taskName}).Warn(ctx, "was unable to obtain the node")
 		return nil
 	}
 	return node
@@ -182,7 +190,7 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 			// would then hold the DAG Running forever. Complete it from its children
 			// instead of blocking here.
 			groupPhase, ok := completableTaskGroupPhase(node, nodes)
-			if !ok {
+			if !ok || d.expandingTaskGroups[node.Name] {
 				return wfv1.NodeRunning, nil
 			}
 			if d.taskGroupsToComplete == nil {
@@ -309,7 +317,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 	// pre-execute daemoned tasks
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.getTaskNode(ctx, task.Name)
+		taskNode := dagCtx.getTaskNode(task.Name)
 		if err != nil {
 			continue
 		}
@@ -328,7 +336,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		// considered complete; calling runOnExitNode (and therefore executeTemplate) a second
 		// time on the same onExit node would re-run checkParallelism against the count this
 		// very pass just bumped.
-		taskNode := dagCtx.getTaskNode(ctx, taskName)
+		taskNode := dagCtx.getTaskNode(taskName)
 
 		if taskNode != nil {
 			task := dagCtx.GetTask(ctx, taskName)
@@ -382,7 +390,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	// set outputs from tasks in order for DAG templates to support outputs
 	scope := createScope(tmpl)
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.getTaskNode(ctx, task.Name)
+		taskNode := dagCtx.getTaskNode(task.Name)
 		if taskNode == nil {
 			// Can happen when dag.target was specified
 			continue
@@ -444,9 +452,8 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(ctx context.Context
 	// set the outbound nodes from the target tasks
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
-		depNode := dagCtx.getTaskNode(ctx, depName)
+		depNode := dagCtx.getTaskNode(depName)
 		if depNode == nil {
-			woc.log.Info(ctx, depName)
 			continue
 		}
 		outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
@@ -470,7 +477,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	}
 	dagCtx.visited[taskName] = true
 
-	node := dagCtx.getTaskNode(ctx, taskName)
+	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(ctx, taskName)
 	ctx, log := woc.log.WithField("taskName", taskName).InContext(ctx)
 	if node != nil && (node.Fulfilled() || node.Phase == wfv1.NodeRunning) {
@@ -550,6 +557,15 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
 		taskGroupNode = nil
 	}
+	markExpandingTaskGroup := func() {
+		if dagCtx.expandingTaskGroups == nil {
+			dagCtx.expandingTaskGroups = make(map[string]bool)
+		}
+		dagCtx.expandingTaskGroups[nodeName] = true
+	}
+	if taskGroupNode != nil {
+		markExpandingTaskGroup()
+	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
 		if len(taskDependencies) == 0 || taskGroupNode != nil {
@@ -563,7 +579,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		} else {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
-				depNode := dagCtx.getTaskNode(ctx, depName)
+				depNode := dagCtx.getTaskNode(depName)
 				outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
 					outNodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
@@ -637,34 +653,48 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
 			connectDependencies(nodeName)
 		} else if taskGroupNode == nil {
+			// The connect must happen before the initialize: connectDependencies
+			// links the group under its dependencies only while taskGroupNode is
+			// nil, and predicting the slot is safe here because the node is
+			// created in the adjacent statement with nothing able to return in
+			// between.
 			connectDependencies(nodeName)
 			_, taskGroupNode = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true, "")
+			markExpandingTaskGroup()
 		}
 	}
 
 	for _, t := range expandedTasks {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
-		node = dagCtx.getTaskNode(ctx, t.Name)
+		node = dagCtx.getTaskNode(t.Name)
+		nodeIsNew := node == nil
 		if node == nil {
 			woc.log.WithFields(logging.Fields{"nodeName": taskNodeName, "dependencies": taskDependencies}).Info(ctx, "All of node dependencies completed")
-			// Add the child relationship from our dependency's outbound nodes to this node.
-			connectDependencies(taskNodeName)
-
 			// Check the task's when clause to decide if it should execute
 			proceed, whenErr := shouldExecute(t.When)
 			if whenErr != nil {
 				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, whenErr.Error())
+				connectDependencies(taskNodeName)
 				continue
 			}
 			if !proceed {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
 				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
+				connectDependencies(taskNodeName)
 				continue
 			}
 		}
 
 		// Finally execute the template
 		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		// Add the child relationship from our dependency's outbound nodes to
+		// this node, only once its node exists: executeTemplate can defer
+		// creation (parallelism, transient errors), and an edge persisted for
+		// a node that is never created can later be claimed by a colliding
+		// name (#16376).
+		if nodeIsNew && woc.wf.Status.Nodes.Has(dagCtx.taskNodeID(t.Name)) {
+			connectDependencies(taskNodeName)
+		}
 		if err != nil {
 			switch {
 			case errors.Is(err, ErrDeadlineExceeded):
@@ -704,7 +734,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		groupPhase := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
-			node := dagCtx.getTaskNode(ctx, t.Name)
+			node := dagCtx.getTaskNode(t.Name)
 			if node == nil || !node.Fulfilled() {
 				return
 			}
@@ -723,7 +753,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 
 	ancestors := common.GetTaskAncestry(ctx, dagCtx, task.Name)
 	for _, ancestor := range ancestors {
-		ancestorNode := dagCtx.getTaskNode(ctx, ancestor)
+		ancestorNode := dagCtx.getTaskNode(ancestor)
 		if ancestorNode == nil {
 			return nil, argoerrors.InternalErrorf("Ancestor task node %s not found", ancestor)
 		}
@@ -839,7 +869,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
 			woc.requeue()
-			woc.log.WithError(err).Warn(ctx, "was unable to find variable")
+			woc.log.WithError(err).Debug(ctx, "was unable to find variable")
 			return nil, ErrRequeue
 		}
 		return nil, err
@@ -969,7 +999,7 @@ type TaskResults struct {
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
 // completed and execute means that given the results of its dependencies, this node should execute.
 func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) (bool, bool, error) {
-	node := d.getTaskNode(ctx, taskName)
+	node := d.getTaskNode(taskName)
 	if node != nil {
 		return true, true, nil
 	}
@@ -978,7 +1008,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 
 	for _, taskName := range d.GetTaskDependencies(ctx, taskName) {
 		// If the task is still running, we should not proceed.
-		depNode := d.getTaskNode(ctx, taskName)
+		depNode := d.getTaskNode(taskName)
 		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
 			return false, false, nil
 		}
@@ -997,7 +1027,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 			for _, childNodeID := range depNode.Children {
 				childNodePhase, err := d.wf.Status.Nodes.GetPhase(childNodeID)
 				if err != nil {
-					d.log.WithField("nodeID", childNodeID).Warn(ctx, "was unable to obtain node")
+					d.log.WithField("nodeID", childNodeID).Debug(ctx, "was unable to obtain node")
 					allFailed = false // we don't know if all failed
 					continue
 				}

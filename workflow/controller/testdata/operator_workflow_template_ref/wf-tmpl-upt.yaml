@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template
+  namespace: default
+spec:
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
+    - - name: hello2a
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello2a"}]
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello2b"}]
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]

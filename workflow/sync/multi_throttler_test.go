@@ -260,3 +260,30 @@ func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
 	assert.True(throttler.Admit("default/b"))
 	assert.True(throttler.Admit("default/c"))
 }
+
+func TestPriorityQueueTieBreaksOnKey(t *testing.T) {
+	created := time.Now()
+	pq := &priorityQueue{itemByKey: make(map[string]*item)}
+	// Same priority and creation time: only the key can order these.
+	pq.add("ns/wf-c", 0, created)
+	pq.add("ns/wf-a", 0, created)
+	pq.add("ns/wf-b", 0, created)
+	// Removing the front is what reshuffles a heap with no tie-break.
+	pq.add("ns/wf-0", 0, created)
+	pq.remove("ns/wf-0")
+
+	var order []string
+	for pq.Len() > 0 {
+		order = append(order, pq.pop().key)
+	}
+	assert.Equal(t, []string{"ns/wf-a", "ns/wf-b", "ns/wf-c"}, order)
+}
+
+func TestQueueLess(t *testing.T) {
+	earlier := time.Now()
+	later := earlier.Add(time.Second)
+	assert.True(t, queueLess(1, later, "b", 0, earlier, "a"), "higher priority wins over time and key")
+	assert.True(t, queueLess(0, earlier, "b", 0, later, "a"), "earlier creation wins over key")
+	assert.True(t, queueLess(0, earlier, "a", 0, earlier, "b"), "key breaks a full tie")
+	assert.False(t, queueLess(0, earlier, "a", 0, earlier, "a"), "identical entries are not less")
+}

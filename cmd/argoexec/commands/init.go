@@ -41,18 +41,10 @@ func loadArtifacts(ctx context.Context) error {
 	defer errHandler()
 	defer stats.LogStats()
 
-	if err := wfExecutor.Init(); err != nil {
-		wfExecutor.AddError(ctx, err)
-		return err
-	}
-	err := wfExecutor.StageFiles(ctx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-		return err
-	}
-	// Download input artifacts
-	err = wfExecutor.LoadArtifactsWithoutPlugins(ctx)
-	if err != nil {
+	// The legacy init container is the plan's Prepare phase: install the
+	// binary, stage files, download input artifacts. Plugin artifacts are
+	// loaded by their own artifact-plugin-init containers.
+	if err := wfExecutor.Prepare(ctx); err != nil {
 		wfExecutor.AddError(ctx, err)
 		return err
 	}

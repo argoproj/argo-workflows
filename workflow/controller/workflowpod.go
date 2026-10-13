@@ -13,6 +13,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
+	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +26,6 @@ import (
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -240,11 +240,9 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 	// workflow status. Deep-copying it into the snapshot keeps build pure: it
 	// reads scheduling constraints from a frozen value instead of reaching back
 	// into live woc.wf during the build. A nil/unresolvable boundary template is
-	// expected (e.g. top-level nodes) and is surfaced only as a warning.
+	// expected (e.g. top-level nodes).
 	var boundaryTemplate *wfv1.Template
-	if bt, err := woc.GetBoundaryTemplate(ctx, nodeName); err != nil {
-		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't get boundaryTemplate")
-	} else {
+	if bt, err := woc.GetBoundaryTemplate(ctx, nodeName); err == nil {
 		boundaryTemplate = bt.DeepCopy()
 	}
 	// Deep-copy mainCtrs into the snapshot so build owns a frozen value: build
@@ -264,7 +262,7 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 	return &podBuilder{
 		in: podBuilderInputs{
 			nodeName:                  nodeName,
-			nodeID:                    woc.wf.NodeID(nodeName),
+			nodeID:                    woc.wf.ResolveNodeID(nodeName),
 			namespace:                 woc.wf.Namespace,
 			wfName:                    woc.wf.Name,
 			ownerRef:                  *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -348,7 +346,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// pod-spec rebuild) are expensive, so the podExists and shutdown guards run
 	// first — using values cheaply derived from woc — and reconciles of existing
 	// pods (and shutdown-skips) return without constructing the snapshot at all.
-	nodeID := woc.wf.NodeID(nodeName)
+	nodeID := woc.wf.ResolveNodeID(nodeName)
 
 	// (a) podExists pre-check. We must check rather than optimistically creating
 	// and relying on AlreadyExists, because we won't get that error if there are
@@ -648,7 +646,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		{Name: common.EnvVarWorkflowName, Value: pb.in.wfName},
 	}
 
-	carrier := telemetry.Carrier{SetEnvFunc: func(key, value string) {
+	carrier := &envcar.Carrier{SetEnvFunc: func(key, value string) {
 		envVars = append(envVars, apiv1.EnvVar{Name: key, Value: value})
 	}}
 	prop := propagation.TraceContext{}
@@ -1205,7 +1203,6 @@ func (woc *wfOperationCtx) buildPluginSidecars(ctx context.Context, tmpl *wfv1.T
 
 func (woc *wfOperationCtx) getExecutorLogOpts(ctx context.Context) []string {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("loglevel", string(log.Level())).Info(ctx, "getExecutorLogOpts")
 	return []string{"--loglevel", string(log.Level()), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
 }
 
@@ -1228,10 +1225,6 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 					FieldPath:  "metadata.uid",
 				},
 			},
-		},
-		{
-			Name:  common.EnvVarWorkflowName,
-			Value: woc.wf.Name,
 		},
 		{
 			Name:  common.EnvVarWorkflowUID,

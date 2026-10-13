@@ -8,7 +8,7 @@ A standalone bot ([`pr-readiness.yaml`](../workflows/pr-readiness.yaml)) that lo
 |---|---|---|
 | Lint | `Lint` (CI) | `make pre-commit -B` |
 | Codegen | `Codegen` (CI) | `make codegen -B` |
-| UI | `UI` (CI) | `yarn --cwd ui …` |
+| UI | `UI build and unit tests` (CI) | `yarn --cwd ui …` |
 | Build | `Build Binaries (cli/controller)` (CI) | `make cli` / `make controller` |
 | Docs | `docs` (Docs) | `make docs` |
 | PR title | `title-check` (PR Title Check) | conventional commits |
@@ -30,6 +30,7 @@ Tune guidance, add or remove signals in [`checks.config.json`](checks.config.jso
 - When issues are resolved but other covered checks are still running: the comment shows a short "waiting" state.
 - When everything is terminal and green: the comment is edited to a short ✅ all-clear.
 - Skipped: PRs by anyone in [`OWNERS`](../../OWNERS) (owners/approvers/reviewers) and by bots.
+- Skipped: PRs that do not target the default branch (`main`), e.g. backports to `release-*`. A stacked PR counts as targeting `main` when its base branch is the head of another open PR that (transitively) targets `main`.
 
 ## PR description check
 

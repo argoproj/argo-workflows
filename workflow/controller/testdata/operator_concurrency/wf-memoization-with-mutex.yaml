@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: example-steps-simple
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: job-1
+            template: sleep
+            arguments:
+              parameters:
+                - name: sleep_duration
+                  value: 10
+          - name: job-2
+            template: sleep
+            arguments:
+              parameters:
+                - name: sleep_duration
+                  value: 5
+
+    - name: sleep
+      synchronization:
+        mutexes:
+          - name: mutex-example-steps-simple
+      inputs:
+        parameters:
+          - name: sleep_duration
+      script:
+        image: alpine:3.23
+        command: [/bin/sh]
+        source: |
+          echo "Sleeping for {{ inputs.parameters.sleep_duration }}"
+          sleep {{ inputs.parameters.sleep_duration }}
+      memoize:
+        key: "memo-key-1"
+        cache:
+          configMap:
+            name: cache-example-steps-simple

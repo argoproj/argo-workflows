@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"time"
 
@@ -27,10 +28,10 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
-	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/wfcontext"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -112,7 +113,8 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer.Informer().SetTransform(informerutil.StripManagedFields)
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
-		cc.logger.WithFatal().Error(ctx, err.Error())
+		cc.logger.Error(ctx, err.Error())
+		os.Exit(1) //nolint:gocritic // preserves the previous WithFatal behavior, which also skipped defers
 	}
 
 	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
@@ -180,7 +182,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 		logger.WithError(err).Error(ctx, "malformed cron workflow: could not convert from unstructured")
 		return true
 	}
-	ctx = wfctx.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
+	ctx = wfcontext.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
 	cronWorkflowOperationCtx := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
 

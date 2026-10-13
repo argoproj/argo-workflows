@@ -1,0 +1,212 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-template-whalesay-template-1
+  namespace: default
+spec:
+
+  entrypoint: main
+
+  templates:
+  - name: main
+    steps:
+    - - hooks:
+          exit:
+            expression: steps["step-1"].status == "Running"
+            templateRef:
+              name: workflow-template-whalesay-template
+              template: http
+          error:
+            expression: steps["step-1"].status == "Error"
+            template: ""
+            templateRef:
+              name: workflow-template-whalesay-template
+              template: http
+        name: step-1
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: main
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2022-01-28T07:01:04Z"
+  nodes:
+    workflow-template-whalesay-template-1:
+      children:
+      - workflow-template-whalesay-template-1-1761665519
+      displayName: workflow-template-whalesay-template-1
+      finishedAt: "2022-01-28T07:01:04Z"
+      id: workflow-template-whalesay-template-1
+      name: workflow-template-whalesay-template-1
+      outboundNodes:
+      - workflow-template-whalesay-template-1-79192944
+      phase: Running
+      progress: 2/2
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
+      templateName: main
+      templateScope: local/workflow-template-whalesay-template-1
+      type: Steps
+    workflow-template-whalesay-template-1-1236010667:
+      boundaryID: workflow-template-whalesay-template-1-1438125631
+      children:
+      - workflow-template-whalesay-template-1-2715724931
+      displayName: '[0]'
+      finishedAt: "2022-01-28T07:01:00Z"
+      id: workflow-template-whalesay-template-1-1236010667
+      name: workflow-template-whalesay-template-1[0].step-1[0]
+      phase: Running
+      progress: 2/2
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
+      templateScope: namespaced/workflow-template-whalesay-template
+      type: StepGroup
+    workflow-template-whalesay-template-1-1438125631:
+      boundaryID: workflow-template-whalesay-template-1
+      children:
+      - workflow-template-whalesay-template-1-1236010667
+      - workflow-template-whalesay-template-1-986640140
+      - workflow-template-whalesay-template-1-1359034694
+      displayName: step-1
+      finishedAt: "2022-01-28T07:01:04Z"
+      id: workflow-template-whalesay-template-1-1438125631
+      name: workflow-template-whalesay-template-1[0].step-1
+      outboundNodes:
+      - workflow-template-whalesay-template-1-79192944
+      phase: Running
+      progress: 2/2
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
+      templateRef:
+        name: workflow-template-whalesay-template
+        template: main
+      templateScope: local/workflow-template-whalesay-template-1
+      type: Steps
+    workflow-template-whalesay-template-1-1761665519:
+      boundaryID: workflow-template-whalesay-template-1
+      children:
+      - workflow-template-whalesay-template-1-1438125631
+      displayName: '[0]'
+      finishedAt: "2022-01-28T07:01:04Z"
+      id: workflow-template-whalesay-template-1-1761665519
+      name: workflow-template-whalesay-template-1[0]
+      phase: Running
+      progress: 2/2
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
+      templateScope: local/workflow-template-whalesay-template-1
+      type: StepGroup
+    workflow-template-whalesay-template-1-2377035854:
+      boundaryID: workflow-template-whalesay-template-1-1438125631
+      children:
+      - workflow-template-whalesay-template-1-79192944
+      displayName: '[1]'
+      finishedAt: "2022-01-28T07:01:04Z"
+      id: workflow-template-whalesay-template-1-2377035854
+      name: workflow-template-whalesay-template-1[0].step-1[1]
+      phase: Running
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2022-01-28T07:01:00Z"
+      templateScope: namespaced/workflow-template-whalesay-template
+      type: StepGroup
+    workflow-template-whalesay-template-1-2715724931:
+      boundaryID: workflow-template-whalesay-template-1-1438125631
+      children:
+      - workflow-template-whalesay-template-1-3456567280
+      - workflow-template-whalesay-template-1-1403479850
+      - workflow-template-whalesay-template-1-2377035854
+      displayName: step-1
+      finishedAt: "2022-01-28T07:00:58Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: workflow-template-whalesay-template-1-2715724931
+      name: workflow-template-whalesay-template-1[0].step-1[0].step-1
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: workflow-template-whalesay-template-1/workflow-template-whalesay-template-1-2715724931/main.log
+        exitCode: "0"
+      phase: Running
+      progress: 1/1
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2022-01-28T07:00:55Z"
+      templateName: echo
+      templateScope: namespaced/workflow-template-whalesay-template
+      type: Pod
+  phase: Running
+  progress: 2/2
+  resourcesDuration:
+    cpu: 3
+    memory: 0
+  startedAt: "2022-01-28T07:00:55Z"
+  storedTemplates:
+    namespaced/workflow-template-whalesay-template/echo:
+      container:
+        args:
+        - echo "it was heads"
+        command:
+        - sh
+        - -c
+        image: alpine:3.23
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: echo
+      outputs: {}
+    namespaced/workflow-template-whalesay-template/http:
+      http:
+        url: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
+      inputs: {}
+      metadata: {}
+      name: http
+      outputs: {}
+    namespaced/workflow-template-whalesay-template/main:
+      inputs: {}
+      metadata: {}
+      name: main
+      outputs: {}
+      steps:
+      - - arguments: {}
+          hooks:
+            exit:
+              arguments: {}
+              expression: steps["step-1"].status == "Running"
+              template: http
+            error:
+              arguments: {}
+              expression: steps["step-1"].status == "Error"
+              template: http
+          name: step-1
+          template: echo
+      - - arguments: {}
+          hooks:
+            exit:
+              arguments: {}
+              expression: steps.step2.status == "Running"
+              template: http
+            error:
+              arguments: {}
+              expression: steps.step2.status == "Error"
+              template: http
+          name: step2
+          template: echo
+

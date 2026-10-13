@@ -167,7 +167,7 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 		}
 		mainRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 
-		onExitID := wf.NodeID(wf.Name + "." + onExitSuffix)
+		onExitID := wf.ResolveNodeID(wf.Name + "." + onExitSuffix)
 		if onExitRoot, ok := roots[onExitID]; ok {
 			_, _ = fmt.Fprintf(w, "\t\t\t\t\t\n")
 			onExitRoot.renderNodes(w, wf, 0, " ", " ", getArgs)

@@ -1,0 +1,202 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation-one-will-fail-69x7k
+spec:
+
+  entrypoint: parameter-aggregation-one-will-fail
+  templates:
+  -
+    dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: num
+            value: '{{item}}'
+        continueOn:
+          failed: true
+        name: one-will-fail
+        template: one-will-fail
+        withItems:
+        - 1
+        - 2
+      -
+        continueOn:
+          failed: true
+        dependencies:
+        - one-will-fail
+        name: whalesay
+        template: whalesay
+    inputs: {}
+    metadata: {}
+    name: parameter-aggregation-one-will-fail
+    outputs: {}
+  -
+    container:
+      args:
+      - |
+        if [ $(({{inputs.parameters.num}})) == 1 ]; then
+          exit 1;
+        else
+          echo {{inputs.parameters.num}}
+        fi
+      command:
+      - sh
+      - -xc
+      image: alpine:3.23
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: num
+    metadata: {}
+    name: one-will-fail
+    outputs: {}
+  -
+    container:
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  nodes:
+    parameter-aggregation-one-will-fail-69x7k:
+      children:
+      - parameter-aggregation-one-will-fail-69x7k-4292161196
+      displayName: parameter-aggregation-one-will-fail-69x7k
+      id: parameter-aggregation-one-will-fail-69x7k
+      name: parameter-aggregation-one-will-fail-69x7k
+      outboundNodes:
+      - parameter-aggregation-one-will-fail-69x7k-3555414042
+      phase: Running
+      startedAt: "2020-04-20T16:47:22Z"
+      templateName: parameter-aggregation-one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail-69x7k
+      type: DAG
+    parameter-aggregation-one-will-fail-69x7k-1324058456:
+      boundaryID: parameter-aggregation-one-will-fail-69x7k
+      children:
+      - parameter-aggregation-one-will-fail-69x7k-3555414042
+      displayName: one-will-fail(0:1)
+      finishedAt: "2020-04-20T16:47:26Z"
+      id: parameter-aggregation-one-will-fail-69x7k-1324058456
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      message: failed with exit code 1
+      name: parameter-aggregation-one-will-fail-69x7k.one-will-fail(0:1)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail-69x7k/parameter-aggregation-one-will-fail-69x7k-1324058456/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2020-04-20T16:47:22Z"
+      templateName: one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail-69x7k
+      type: Pod
+    parameter-aggregation-one-will-fail-69x7k-3086527730:
+      boundaryID: parameter-aggregation-one-will-fail-69x7k
+      children:
+      - parameter-aggregation-one-will-fail-69x7k-3555414042
+      displayName: one-will-fail(1:2)
+      finishedAt: "2020-04-20T16:47:28Z"
+      id: parameter-aggregation-one-will-fail-69x7k-3086527730
+      inputs:
+        parameters:
+        - name: num
+          value: "2"
+      name: parameter-aggregation-one-will-fail-69x7k.one-will-fail(1:2)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail-69x7k/parameter-aggregation-one-will-fail-69x7k-3086527730/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 4
+        memory: 0
+      startedAt: "2020-04-20T16:47:22Z"
+      templateName: one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail-69x7k
+      type: Pod
+    parameter-aggregation-one-will-fail-69x7k-3555414042:
+      boundaryID: parameter-aggregation-one-will-fail-69x7k
+      displayName: whalesay
+      finishedAt: "2020-04-20T16:47:33Z"
+      id: parameter-aggregation-one-will-fail-69x7k-3555414042
+      name: parameter-aggregation-one-will-fail-69x7k.whalesay
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail-69x7k/parameter-aggregation-one-will-fail-69x7k-3555414042/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2020-04-20T16:47:30Z"
+      templateName: whalesay
+      templateScope: local/parameter-aggregation-one-will-fail-69x7k
+      type: Pod
+    parameter-aggregation-one-will-fail-69x7k-4292161196:
+      boundaryID: parameter-aggregation-one-will-fail-69x7k
+      children:
+      - parameter-aggregation-one-will-fail-69x7k-1324058456
+      - parameter-aggregation-one-will-fail-69x7k-3086527730
+      displayName: one-will-fail
+      finishedAt: "2020-04-20T16:47:29Z"
+      id: parameter-aggregation-one-will-fail-69x7k-4292161196
+      name: parameter-aggregation-one-will-fail-69x7k.one-will-fail
+      phase: Failed
+      startedAt: "2020-04-20T16:47:22Z"
+      templateName: one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail-69x7k
+      type: TaskGroup
+  phase: Running
+  resourcesDuration:
+    cpu: 9
+    memory: 0
+  startedAt: "2020-04-20T16:47:22Z"
