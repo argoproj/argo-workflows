@@ -22,10 +22,15 @@ import (
 )
 
 // This file holds the derivations of a task's pod-level fields, executor
-// containers and deadlines. Each is a function of explicit values (the
-// template, the workflow spec, controller configuration and a clock reading)
-// with no live pod, workflow status or API access, so that anything building a
-// task's execution environment derives it the same way the pod builder does.
+// containers and deadlines. Each is a function of the values passed to it: the
+// template and its boundary template, the workflow spec, controller
+// configuration (including execContainerConfig), the artifact repository, the
+// pod layout, the workflow and execution deadlines, a clock reading, and two
+// values the caller looks up from status or the cluster: the node's StartedAt
+// and Phase (templateTimeoutDeadlines) and the executor token's Secret name
+// (executorTokenVolume). None reads a live pod, the workflow object or the API,
+// so anything building a task's execution environment derives it the same way
+// the pod builder does.
 
 // applyMainContainerDefaults names the template's user containers and merges
 // the controller's main container defaults (Config.MainContainer) under each:
@@ -150,8 +155,10 @@ func templateTimeoutDeadlines(tmpl *wfv1.Template, node *wfv1.NodeStatus, now ti
 
 // applyTemplateDeadline lowers activeDeadlineSeconds to the whole seconds left
 // before templateDeadline (the node's StartedAt plus the template timeout, see
-// templateTimeoutDeadlines) as of now. It fails when one second or less is
-// left. A nil templateDeadline leaves activeDeadlineSeconds unchanged.
+// templateTimeoutDeadlines) as of now. It fails when that is 1 or less, which,
+// as the seconds left are truncated, means under two seconds left. The cut-off
+// is 1 because that is the minimum valid activeDeadlineSeconds (see #12762). A
+// nil templateDeadline leaves activeDeadlineSeconds unchanged.
 func applyTemplateDeadline(nodeName string, activeDeadlineSeconds *int64, templateDeadline *time.Time, now time.Time) (*int64, error) {
 	if templateDeadline == nil || (activeDeadlineSeconds != nil && now.Sub(*templateDeadline).Seconds() >= float64(*activeDeadlineSeconds)) {
 		return activeDeadlineSeconds, nil
@@ -276,10 +283,14 @@ func applyDNSConfig(spec *apiv1.PodSpec, wfSpec *wfv1.WorkflowSpec) {
 	}
 }
 
-// applySchedulingConstraints applies any node selectors or affinity rules,
-// either set in the workflow or the template. boundaryTemplate is the template
-// of the node's boundary (the enclosing steps or DAG), nil when there is none;
-// its settings take precedence over the workflow's.
+// applySchedulingConstraints sets the pod's node selector, affinity,
+// tolerations, scheduler name, priority class, host aliases and security
+// context from the template or the workflow spec, the template taking
+// precedence. For the node selector, affinity and tolerations only,
+// boundaryTemplate (the template of the node's boundary, the enclosing steps or
+// DAG; nil when there is none) comes between them: the template wins over the
+// boundary, and the boundary over the workflow. Host aliases are combined, the
+// workflow's first, rather than replaced.
 func applySchedulingConstraints(spec *apiv1.PodSpec, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, boundaryTemplate *wfv1.Template) {
 	// Set nodeSelector (if specified)
 	switch {
