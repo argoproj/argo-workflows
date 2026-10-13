@@ -46135,6 +46135,15 @@ spec:
               startedAt:
                 format: date-time
                 type: string
+              storedTemplateSpecs:
+                properties:
+                  hydrated:
+                    type: boolean
+                  uid:
+                    type: string
+                  version:
+                    type: string
+                type: object
               storedTemplates:
                 type: object
                 x-kubernetes-map-type: atomic

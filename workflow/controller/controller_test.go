@@ -788,6 +788,24 @@ func TestWorkflowController_archiveWorkflowAux_ReturnsArchiveError(t *testing.T)
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 }
 
+// TestWorkflowController_archiveWorkflowAux_TemplateHydrationErrorRetries pins the error
+// return, so the archive worker requeues and the offloaded rows survive.
+func TestWorkflowController_archiveWorkflowAux_TemplateHydrationErrorRetries(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	wf.UID = "uid-1"
+	ctx := logging.TestContext(t.Context())
+	// No ArchiveWorkflow or DeleteTemplates expectation: either call fails the test.
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	repo := sqldbmocks.NewTemplateRepo(t)
+	hydrateErr := errors.New("Error 1040 (08004): Too many connections")
+	repo.EXPECT().GetTemplates(mock.Anything, "uid-1").Return(nil, hydrateErr).Once()
+	controller := &WorkflowController{hydrator: hydratorfake.Noop, wfArchive: archive, templateRepo: repo}
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+	require.ErrorIs(t, controller.archiveWorkflowAux(ctx, un), hydrateErr)
+}
+
 // pendingArchiveWorkflow returns a completed workflow labelled the way the
 // operator labels one it has queued for archiving, which is what the archive
 // queue's informer filter matches on.

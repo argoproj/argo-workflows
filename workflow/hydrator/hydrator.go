@@ -82,6 +82,8 @@ func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
 			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		})
 		if err != nil {
+			log.WithField("uid", wf.UID).WithField("version", wf.GetOffloadNodeStatusVersion()).
+				WithError(err).Error(ctx, "Failed to hydrate offloaded node status; referenced version not readable")
 			return err
 		}
 		h.HydrateWithNodes(wf, offloadedNodes)
@@ -118,6 +120,12 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 		})
 		if offloadErr != nil {
 			return fmt.Errorf("%sTried to offload but encountered error: %s", errMsg, offloadErr.Error())
+		}
+		// Read-back confirms the version is durably queryable before the workflow references
+		// it; a save that "succeeded" but isn't readable becomes a phantom reference that can
+		// never hydrate, so fail the dehydrate instead of persisting the "Couldn't obtain child" deadlock.
+		if _, readErr := h.offloadNodeStatusRepo.Get(ctx, string(wf.UID), offloadVersion); readErr != nil {
+			return fmt.Errorf("offloaded node status version %s not readable after save: %w", offloadVersion, readErr)
 		}
 		wf.Status.Nodes = nil
 		wf.Status.CompressedNodes = ""

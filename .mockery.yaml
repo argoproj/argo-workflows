@@ -12,6 +12,7 @@ template-data:
 packages:
   github.com/argoproj/argo-workflows/v4/persist/sqldb:
     interfaces:
+      TemplateRepo: {}
       WorkflowArchive: {}
   github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow:
     interfaces:

@@ -1589,6 +1589,16 @@ func (r *ArtifactRepositoryRefStatus) String() string {
 	return fmt.Sprintf("%s/%s", r.Namespace, r.ArtifactRepositoryRef.String())
 }
 
+// TemplateSpecReference references offloaded template specifications stored in database
+type TemplateSpecReference struct {
+	// UID is the workflow UID
+	UID string `json:"uid,omitempty" protobuf:"bytes,1,opt,name=uid"`
+	// Version is a hash of the template specifications
+	Version string `json:"version,omitempty" protobuf:"bytes,2,opt,name=version"`
+	// Hydrated indicates if templates have been loaded from database
+	Hydrated bool `json:"hydrated,omitempty" protobuf:"varint,3,opt,name=hydrated"`
+}
+
 type ArtifactSearchQuery struct {
 	ArtifactGCStrategies map[ArtifactGCStrategy]bool `json:"artifactGCStrategies,omitempty" protobuf:"bytes,1,rep,name=artifactGCStrategies,castkey=ArtifactGCStrategy"`
 	ArtifactName         string                      `json:"artifactName,omitempty" protobuf:"bytes,2,rep,name=artifactName"`
@@ -2253,6 +2263,9 @@ type WorkflowStatus struct {
 
 	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
+
+	// StoredTemplateSpecs references offloaded template specifications stored in database
+	StoredTemplateSpecs *TemplateSpecReference `json:"storedTemplateSpecs,omitempty" protobuf:"bytes,21,opt,name=storedTemplateSpecs"`
 }
 
 // MarkTaskResultIncomplete sets either the task results completion field

@@ -141,6 +141,22 @@ type Config struct {
 	// (template write, script staging, input artifact download, readiness signaling) in
 	// addition to its existing post-main work.
 	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
+
+	// ReadTimeout is the maximum duration for reading the entire request, including the body.
+	// Unset (nil) or 0s means no timeout (Go's [http.Server] default). Recommended: 10m when
+	// large workflow submissions or artifact uploads are expected.
+	ReadTimeout *metav1.Duration `json:"readTimeout,omitempty"`
+
+	// WriteTimeout is the maximum duration before timing out writes of the response.
+	// Unset (nil) or 0s means no timeout (Go's [http.Server] default). Recommended: 10m.
+	// The server's HTTP and gRPC traffic share one listener, so a timeout set here also
+	// bounds long-lived gRPC streams such as WatchWorkflows.
+	WriteTimeout *metav1.Duration `json:"writeTimeout,omitempty"`
+
+	// IdleTimeout is the maximum amount of time to wait for the next request when keep-alives
+	// are enabled. Unset (nil) or 0s means no timeout (Go's [http.Server] default).
+	// Recommended: 15m.
+	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 }
 
 // InitlessPodConfig configures the init-less pod layout.
@@ -251,6 +267,27 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	return c.PodGCDeleteDelayDuration.Duration
 }
 
+func (c Config) GetReadTimeout() time.Duration {
+	if c.ReadTimeout == nil {
+		return 0 // no timeout: Go's http.Server default
+	}
+	return c.ReadTimeout.Duration
+}
+
+func (c Config) GetWriteTimeout() time.Duration {
+	if c.WriteTimeout == nil {
+		return 0 // no timeout: Go's http.Server default
+	}
+	return c.WriteTimeout.Duration
+}
+
+func (c Config) GetIdleTimeout() time.Duration {
+	if c.IdleTimeout == nil {
+		return 0 // no timeout: Go's http.Server default
+	}
+	return c.IdleTimeout.Duration
+}
+
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
 	if slices.Contains(allowedProtocol, inputProtocol) {
 		return nil
@@ -313,6 +350,20 @@ type DBConfig struct {
 
 const defaultDBConnectionTimeout = 5 * time.Second
 
+// defaultOperationTimeout bounds each persistence DB operation when operationTimeoutSeconds is unset.
+const defaultOperationTimeout = 30 * time.Second
+
+// DefaultTemplateOffloadMinSize is the default value for PersistConfig.TemplateOffloadMinSize.
+const DefaultTemplateOffloadMinSize = 256 * 1024
+
+// Defaults for the fallback template-hydration path (used when a workflow carries
+// no StoredTemplateSpecs marker, e.g. after upgrades or crash recovery).
+const (
+	defaultTemplateHydrationFallbackRetries    = 15
+	defaultTemplateHydrationFallbackBackoff    = 500 * time.Millisecond
+	defaultTemplateHydrationFallbackBackoffMax = 120 * time.Second
+)
+
 // ConnectionTimeout returns the database connection-establishment timeout,
 // defaulting to 5s when unset.
 func (c DBConfig) ConnectionTimeout() time.Duration {
@@ -339,6 +390,26 @@ type PersistConfig struct {
 	DBConfig
 	// NodeStatusOffload saves node status only to the persistence DB to avoid the 1MB limit in etcd
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
+	// TemplateOffload saves workflow templates only to the persistence DB to avoid the 1MB limit in etcd
+	TemplateOffload bool `json:"templateOffLoad,omitempty"`
+	// TemplateOffloadMinSize is the minimum serialized size in bytes above which a workflow's
+	// inline templates are offloaded to the persistence database. Defaults to 262144 (256KiB).
+	TemplateOffloadMinSize *int `json:"templateOffloadMinSize,omitempty"`
+	// TemplateHydrationRetries is the maximum number of retries when hydrating templates from database.
+	TemplateHydrationRetries *int `json:"templateHydrationRetries,omitempty"`
+	// TemplateHydrationBackoff is the initial backoff duration for template hydration retries.
+	TemplateHydrationBackoff *metav1.Duration `json:"templateHydrationBackoff,omitempty"`
+	// TemplateHydrationBackoffMax is the maximum backoff duration for template hydration retries.
+	TemplateHydrationBackoffMax *metav1.Duration `json:"templateHydrationBackoffMax,omitempty"`
+	// TemplateHydrationFallbackRetries is the maximum number of retries for fallback template hydration.
+	TemplateHydrationFallbackRetries *int `json:"templateHydrationFallbackRetries,omitempty"`
+	// TemplateHydrationFallbackBackoff is the initial backoff duration for fallback template hydration retries.
+	TemplateHydrationFallbackBackoff *metav1.Duration `json:"templateHydrationFallbackBackoff,omitempty"`
+	// TemplateHydrationFallbackBackoffMax is the maximum backoff duration for fallback template hydration retries.
+	TemplateHydrationFallbackBackoffMax *metav1.Duration `json:"templateHydrationFallbackBackoffMax,omitempty"`
+	// OperationTimeoutSeconds bounds each persistence DB operation (node/template offload) with a
+	// context timeout so a slow or locked database cannot stall workflow reconciliation. Default 30s.
+	OperationTimeoutSeconds *int32 `json:"operationTimeoutSeconds,omitempty"`
 	// Archive completed and Workflows to persistence so you can access them after they're
 	// removed from kubernetes
 	Archive bool `json:"archive,omitempty"`
@@ -364,6 +435,78 @@ func (c PersistConfig) GetClusterName() string {
 		return c.ClusterName
 	}
 	return "default"
+}
+
+// GetTemplateHydrationRetries returns the maximum number of retries for template hydration.
+func (c PersistConfig) GetTemplateHydrationRetries() int {
+	if c.TemplateHydrationRetries != nil {
+		return max(0, *c.TemplateHydrationRetries)
+	}
+	return 10
+}
+
+// GetTemplateHydrationFallbackRetries returns the maximum number of retries for fallback template hydration.
+func (c PersistConfig) GetTemplateHydrationFallbackRetries() int {
+	if c.TemplateHydrationFallbackRetries != nil {
+		return max(0, *c.TemplateHydrationFallbackRetries)
+	}
+	return defaultTemplateHydrationFallbackRetries
+}
+
+// GetTemplateHydrationBackoff returns the initial backoff duration for template hydration retries.
+func (c PersistConfig) GetTemplateHydrationBackoff() time.Duration {
+	if c.TemplateHydrationBackoff != nil {
+		return max(0, c.TemplateHydrationBackoff.Duration)
+	}
+	return 100 * time.Millisecond
+}
+
+// GetTemplateHydrationFallbackBackoff returns the initial backoff duration for fallback template hydration retries.
+func (c PersistConfig) GetTemplateHydrationFallbackBackoff() time.Duration {
+	if c.TemplateHydrationFallbackBackoff != nil {
+		return max(0, c.TemplateHydrationFallbackBackoff.Duration)
+	}
+	return defaultTemplateHydrationFallbackBackoff
+}
+
+// GetTemplateHydrationBackoffMax returns the maximum backoff duration for template hydration retries.
+func (c PersistConfig) GetTemplateHydrationBackoffMax() time.Duration {
+	if c.TemplateHydrationBackoffMax != nil {
+		return max(0, c.TemplateHydrationBackoffMax.Duration)
+	}
+	return 25 * time.Second // approximately 25.6s
+}
+
+// GetTemplateHydrationFallbackBackoffMax returns the maximum backoff duration for fallback template hydration retries.
+func (c PersistConfig) GetTemplateHydrationFallbackBackoffMax() time.Duration {
+	if c.TemplateHydrationFallbackBackoffMax != nil {
+		return max(0, c.TemplateHydrationFallbackBackoffMax.Duration)
+	}
+	return defaultTemplateHydrationFallbackBackoffMax
+}
+
+// GetOperationTimeout returns the per-operation timeout applied to persistence DB operations.
+func (c PersistConfig) GetOperationTimeout() time.Duration {
+	if c.OperationTimeoutSeconds != nil && *c.OperationTimeoutSeconds > 0 {
+		return time.Duration(*c.OperationTimeoutSeconds) * time.Second
+	}
+	return defaultOperationTimeout
+}
+
+// GetTemplateOffloadMinSize returns the minimum serialized template size above which templates are offloaded.
+func (c PersistConfig) GetTemplateOffloadMinSize() int {
+	if c.TemplateOffloadMinSize != nil && *c.TemplateOffloadMinSize > 0 {
+		return *c.TemplateOffloadMinSize
+	}
+	return DefaultTemplateOffloadMinSize
+}
+
+// Validate checks template-offload specific constraints of PersistConfig.
+func (c PersistConfig) Validate() error {
+	if c.TemplateOffload && c.TemplateOffloadMinSize != nil && *c.TemplateOffloadMinSize <= 0 {
+		return fmt.Errorf("templateOffloadMinSize must be greater than 0 when templateOffLoad is enabled")
+	}
+	return nil
 }
 
 // SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)

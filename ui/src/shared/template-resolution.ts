@@ -14,7 +14,9 @@ export function getResolvedTemplates(workflow: models.Workflow, node: models.Nod
         const templRef = resolveTemplateReference(scope.ResourceScope, scope.ResourceName, tmpTemplate, scope.CompatibilityMode);
         let tmpl = null;
         if (templRef.StorageNeeded) {
-            tmpl = workflow.status.storedTemplates[templRef.StoredTemplateName];
+            // storedTemplates may be absent entirely (list view / archive without hydration);
+            // treat it as empty rather than indexing undefined.
+            tmpl = (workflow.status.storedTemplates || {})[templRef.StoredTemplateName];
         } else if (tmpTemplate.template) {
             tmpl = execSpec(workflow).templates.find(item => item.name === tmpTemplate.template);
         }

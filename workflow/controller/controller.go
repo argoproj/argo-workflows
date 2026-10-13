@@ -120,6 +120,7 @@ type WorkflowController struct {
 	restConfig        *rest.Config
 	kubeclientset     kubernetes.Interface
 	rateLimiter       *rate.Limiter
+	templateCache     *templateCache
 	dynamicInterface  dynamic.Interface
 	metadataInterface metadata.Interface
 	wfclientset       wfclientset.Interface
@@ -174,6 +175,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo      sqldb.OffloadNodeStatusRepo
 	hydrator                   hydrator.Interface
 	wfArchive                  sqldb.WorkflowArchive
+	templateRepo               sqldb.TemplateRepo
 	estimatorFactory           estimation.EstimatorFactory
 	syncManager                *sync.Manager
 	metrics                    *metrics.Metrics
@@ -469,6 +471,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	ctx = wfc.tracing.BreakTrace(ctx)
 
 	go wfc.workflowGarbageCollector(ctx)
+	go wfc.templateGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
@@ -891,7 +894,63 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(ctx context.Conte
 			return err
 		}
 	}
+	// Clean up offloaded templates if workflow no longer exists
+	if wf == nil && wfc.templateRepo != nil {
+		if err := wfc.templateRepo.DeleteTemplates(ctx, uid); err != nil {
+			logger.WithError(err).WithField("uid", uid).Error(ctx, "Failed to delete offloaded templates")
+		} else {
+			wfc.templateCache.evict(uid)
+		}
+	}
 	return nil
+}
+
+// templateGarbageCollector periodically cleans up orphaned offloaded template rows,
+// independently of the node-status GC (so it runs even when node-status offload is off).
+func (wfc *WorkflowController) templateGarbageCollector(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+
+	periodicity := env.LookupEnvDurationOr(ctx, "TEMPLATE_GC_PERIOD", 30*time.Minute)
+	logger := logging.RequireLoggerFromContext(ctx)
+	ctx, logger = logger.WithField("component", "template_garbage_collector").InContext(ctx)
+	logger.WithField("periodicity", periodicity).Info(ctx, "Performing periodic template GC")
+	ticker := time.NewTicker(periodicity)
+	for {
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			if wfc.templateRepo == nil || !wfc.templateRepo.IsEnabled() {
+				continue
+			}
+			logger.Info(ctx, "Performing periodic template GC")
+			uids, err := wfc.templateRepo.ListOldOffloads(ctx, periodicity*2)
+			if err != nil {
+				logger.WithField("err", err).Error(ctx, "Failed to list old template offloads")
+				continue
+			}
+			for _, uid := range uids {
+				// Check if the workflow still exists
+				workflows, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.UIDIndex, uid)
+				if err != nil {
+					logger.WithError(err).WithField("uid", uid).Error(ctx, "Failed to lookup workflow by UID")
+					continue
+				}
+				if len(workflows) > 0 {
+					// Workflow still exists, skip cleanup
+					continue
+				}
+				logger.WithField("uid", uid).Info(ctx, "Deleting orphaned offloaded templates")
+				if err := wfc.templateRepo.DeleteTemplates(ctx, uid); err != nil {
+					logger.WithError(err).WithField("uid", uid).Error(ctx, "Failed to delete orphaned offloaded templates")
+				} else {
+					wfc.templateCache.evict(uid)
+				}
+			}
+			logger.Info(ctx, "Template GC finished")
+		}
+	}
 }
 
 func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Context) {
@@ -1319,11 +1378,14 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				DeleteFunc: func(obj any) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
+					key, keyErr := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+
+					un := obj.(*unstructured.Unstructured)
 
 					// Remove finalizers from Pods if they exist before deletion
 					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
+						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, un.GetName()),
 					})
 					if err != nil {
 						logger.WithError(err).Error(ctx, "Failed to list pods")
@@ -1334,8 +1396,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						}
 					}
 
-					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-					if err == nil {
+					// Offloaded rows are intentionally NOT deleted here: this handler cannot
+					// tell a real delete from an informer cache eviction, and deleting on a real
+					// delete races the archive worker, which still needs them to hydrate the
+					// archived record. archiveWorkflowAux deletes them post-archive; periodic GC reclaims the rest.
+
+					if keyErr == nil {
 						wfc.releaseAllWorkflowLocks(ctx, obj)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
@@ -1416,9 +1482,51 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info(ctx, "archiving workflow")
+
+	// Hydrate offloaded templates before archiving so the record is self-contained
+	// (otherwise spec.templates stays nil and templates are unrecoverable once etcd
+	// deletes the workflow and the GC reclaims the rows). Probe by UID whenever
+	// spec.Templates is empty — the marker can be lost to a resourceVersion race.
+	if wfc.templateRepo != nil && wf.Spec.WorkflowTemplateRef == nil && len(wf.Spec.Templates) == 0 {
+		templates, hydrateErr := wfc.templateRepo.GetTemplates(ctx, string(wf.UID))
+		if hydrateErr != nil {
+			// Rows are the only copy: fail so the archive worker retries before any delete.
+			return fmt.Errorf("failed to hydrate templates before archiving: %w", hydrateErr)
+		}
+		if len(templates) > 0 {
+			wf.Spec.Templates = templates
+			// Make the archived record carry a consistent marker too (set even if the
+			// live marker was lost to the race) so archived-server reads don't re-probe.
+			if wf.Status.StoredTemplateSpecs == nil || wf.Status.StoredTemplateSpecs.UID == "" {
+				wf.Status.StoredTemplateSpecs = &wfv1.TemplateSpecReference{
+					UID:      string(wf.UID),
+					Version:  util.ComputeTemplateVersion(templates),
+					Hydrated: true,
+				}
+			}
+			if wf.Status.StoredTemplates == nil {
+				wf.Status.StoredTemplates = make(map[string]wfv1.Template)
+			}
+			for _, tmpl := range templates {
+				wf.Status.StoredTemplates[tmpl.Name] = tmpl
+			}
+		}
+	}
+
 	err = wfc.wfArchive.ArchiveWorkflow(ctx, wf)
 	if err != nil {
 		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+
+	// The archived record now carries the templates (hydrated above). DeleteFunc
+	// cleanup skips Pending-archiving workflows (see the race note in the informer
+	// DeleteFunc), so remove the offloaded rows here once the archive is persisted.
+	if wfc.templateRepo != nil && wfc.templateRepo.IsEnabled() && wf.UID != "" {
+		if delErr := wfc.templateRepo.DeleteTemplates(ctx, string(wf.UID)); delErr != nil {
+			logger.WithError(delErr).WithField("uid", wf.UID).Warn(ctx, "Failed to delete offloaded templates after archiving")
+		} else {
+			logger.WithField("uid", wf.UID).Info(ctx, "Deleted offloaded templates after archiving")
+		}
 	}
 	data, err := json.Marshal(map[string]any{
 		"metadata": metav1.ObjectMeta{

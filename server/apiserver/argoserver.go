@@ -248,9 +248,15 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	instanceIDService := instanceid.NewService(config.InstanceID)
 	offloadRepo := persist.ExplosiveOffloadNodeStatusRepo
 	wfArchive := persist.NullWorkflowArchive
+	var templateRepo persist.TemplateRepo
+	var sessionProxy *sqldb.SessionProxy
 	persistence := config.Persistence
 	if persistence != nil {
-		sessionProxy, sessionErr := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+		if validateErr := persistence.Validate(); validateErr != nil {
+			log.WithFatal().Error(ctx, validateErr.Error())
+		}
+		var sessionErr error
+		sessionProxy, sessionErr = sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
 			KubectlConfig: as.clients.Kubernetes,
 			Namespace:     as.namespace,
 			DBConfig:      persistence.DBConfig,
@@ -266,7 +272,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
+		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName, persistence.GetOperationTimeout())
 		if err != nil {
 			log.WithError(err).Error(ctx, err.Error())
 			os.Exit(1)
@@ -274,6 +280,16 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
 		wfArchive = persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
+		// Always construct the repository: templateOffLoad gates new offloads only. The
+		// server must still hydrate and clean up rows written while it was enabled.
+		templateRepo = persist.NewTemplateRepo(ctx, log, sessionProxy, persistence.GetClusterName(), "argo_offloaded_workflow_templates", persistence.GetOperationTimeout())
+		if persistence.TemplateOffload {
+			log.Info(ctx, "Template offloading is enabled for API server")
+		} else {
+			log.Info(ctx, "Template offloading is disabled for API server, existing offloaded templates will still be hydrated")
+		}
+	} else {
+		log.Debug(ctx, "Persistence not configured, template offloading not available")
 	}
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
@@ -296,7 +312,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
 	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
+	// templateRepo is only non-nil when persistence is configured, so the min size is unused
+	// otherwise; 0 resolves to the default inside ShouldOffloadTemplates.
+	templateOffloadMinSize := 0
+	if persistence != nil {
+		templateOffloadMinSize = persistence.GetTemplateOffloadMinSize()
+	}
+	templateOffload := persistence != nil && persistence.TemplateOffload
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults, templateRepo, templateOffloadMinSize, templateOffload)
 
 	syncServer := serversync.NewSyncServer(ctx, as.clients.Kubernetes, as.namespace, config.Synchronization)
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
@@ -304,7 +327,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		log.Error(ctx, err.Error())
 		os.Exit(1)
 	}
-	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories)
+	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories, templateRepo, templateOffloadMinSize, templateOffload)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -343,6 +366,12 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	muxServer := &http.Server{
 		Handler:   handler,
 		Protocols: protocols,
+		// Read/Write/Idle timeouts are unset by default (Go's http.Server default: no timeout)
+		// and become active only when configured; this listener is shared with gRPC, so
+		// read/write timeouts also bound streaming calls such as WatchWorkflows.
+		ReadTimeout:  config.GetReadTimeout(),
+		WriteTimeout: config.GetWriteTimeout(),
+		IdleTimeout:  config.GetIdleTimeout(),
 	}
 
 	wftmplStore.Run(ctx, as.stopCh)
