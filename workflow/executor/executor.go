@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bufio"
+	"cmp"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -53,6 +54,17 @@ const (
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
+// defaultTaskResultBackoff spaces out task result retries: the delay grows
+// until it reaches Cap and then stays there. Only the retry timeout ends
+// the retries.
+var defaultTaskResultBackoff = wait.Backoff{
+	Duration: time.Second,
+	Factor:   2,
+	Jitter:   0.1,
+	Steps:    math.MaxInt32, // the delay only grows while steps remain
+	Cap:      30 * time.Second,
+}
+
 // Process holds the state shared by every task an argoexec process runs:
 // API clients, the container runtime, tracing and pod-scoped settings. It
 // is built once per process by NewProcess; the per-task state lives in the
@@ -84,6 +96,10 @@ type Process struct {
 	initlessPod                  bool
 	retryBackoff                 wait.Backoff
 	resourceStateCheckInterval   time.Duration
+	// taskResultRetryTimeout and taskResultBackoff govern retryTaskResult;
+	// zero values mean the defaults.
+	taskResultRetryTimeout time.Duration
+	taskResultBackoff      wait.Backoff
 }
 
 // WorkflowExecutor runs one task (one template on one node) within a
@@ -162,6 +178,10 @@ type ProcessConfig struct {
 	// ResourceStateCheckInterval is the poll interval for resource template
 	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
 	ResourceStateCheckInterval time.Duration
+	// TaskResultRetryTimeout bounds how long writes to the task result retry
+	// transient errors (EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS); zero means
+	// retry.DefaultExecutorTaskResultRetryTimeout.
+	TaskResultRetryTimeout time.Duration
 }
 
 // TaskConfig carries the per-task values a WorkflowExecutor is constructed
@@ -259,6 +279,7 @@ func NewProcess(
 		initlessPod:                  cfg.InitlessPod,
 		retryBackoff:                 cfg.RetryBackoff,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
+		taskResultRetryTimeout:       cfg.TaskResultRetryTimeout,
 	}, nil
 }
 
@@ -1039,15 +1060,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	var count uint64
-	err := retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	err := we.retryTaskResult(ctx, func(ctx context.Context) error {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
@@ -1067,15 +1080,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	var count uint64
-	err := retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	err := we.retryTaskResult(ctx, func(ctx context.Context) error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
 			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
@@ -1110,15 +1115,7 @@ func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
 	var count uint64 // used to avoid spamming with these messages
 	logger := logging.RequireLoggerFromContext(ctx)
-	return retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2.0,
-		Jitter:   0.2,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	return we.retryTaskResult(ctx, func(ctx context.Context) error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
 			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
@@ -1128,6 +1125,34 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 		count++
 		return err
 	})
+}
+
+// retryTaskResult calls op until it succeeds or fails with an error that
+// isn't transient. It gives up with the last error once ctx is done or
+// the retry timeout has passed; op's ctx carries that deadline, so an
+// attempt in flight is cut off too.
+func (we *WorkflowExecutor) retryTaskResult(ctx context.Context, op func(ctx context.Context) error) error {
+	ctx, cancel := context.WithTimeout(ctx, cmp.Or(we.taskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout))
+	defer cancel()
+	var lastErr error
+	err := cmp.Or(we.taskResultBackoff, defaultTaskResultBackoff).DelayFunc().Until(ctx, true, true, func(ctx context.Context) (bool, error) {
+		err := op(ctx)
+		switch {
+		case err == nil:
+			return true, nil
+		case ctx.Err() != nil:
+			return false, ctx.Err()
+		case errorsutil.IsTransientErr(ctx, err):
+			lastErr = err
+			return false, nil
+		default:
+			return false, err
+		}
+	})
+	if wait.Interrupted(err) && lastErr != nil {
+		return lastErr
+	}
+	return err
 }
 
 // AddError adds an error to the list of encountered errors during execution

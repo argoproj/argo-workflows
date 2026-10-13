@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // DefaultRetry is a default retry backoff settings when retrying API calls
@@ -38,4 +39,23 @@ func ExecutorRetry(ctx context.Context) wait.Backoff {
 	factor := envutil.LookupEnvFloatOr(ctx, "EXECUTOR_RETRY_BACKOFF_FACTOR", 1.6)
 	jitter := envutil.LookupEnvFloatOr(ctx, "EXECUTOR_RETRY_BACKOFF_JITTER", 0.5)
 	return wait.Backoff{Steps: steps, Duration: duration, Factor: factor, Jitter: jitter}
+}
+
+// DefaultExecutorTaskResultRetryTimeout is the default for
+// ExecutorTaskResultRetryTimeout.
+const DefaultExecutorTaskResultRetryTimeout = 10 * time.Minute
+
+// ExecutorTaskResultRetryTimeout is how long the WorkflowExecutor keeps
+// retrying transient errors when writing its task result. Non-positive
+// values use the default.
+func ExecutorTaskResultRetryTimeout(ctx context.Context) time.Duration {
+	seconds := envutil.LookupEnvIntOr(ctx, "EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS", int(DefaultExecutorTaskResultRetryTimeout/time.Second))
+	if seconds <= 0 {
+		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
+			"EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS": seconds,
+			"default": DefaultExecutorTaskResultRetryTimeout,
+		}).Warn(ctx, "EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS must be positive, using the default")
+		return DefaultExecutorTaskResultRetryTimeout
+	}
+	return time.Duration(seconds) * time.Second
 }
