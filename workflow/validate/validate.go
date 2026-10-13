@@ -523,11 +523,13 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		localParams[varkeys.RetriesLastStatus.Template()] = placeholderGenerator.NextPlaceholder()
 		localParams[varkeys.RetriesLastDuration.Template()] = placeholderGenerator.NextPlaceholder()
 		localParams[varkeys.RetriesLastMessage.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.RetriesExitCodes.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.RetriesLastExitCode.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.RetriesLastStatus.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.RetriesLastDuration.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.RetriesLastMessage.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.RetriesExitCodes.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
