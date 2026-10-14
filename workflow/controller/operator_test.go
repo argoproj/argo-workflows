@@ -14204,13 +14204,13 @@ spec:
 	total := time.Since(start)
 
 	for offset := time.Duration(0); offset < total; offset += total / 2000 {
-		woc := newWorkflowOperationCtx(ctx, woc.wf.DeepCopy(), controller)
-		woc.deadline = time.Now().UTC().Add(offset)
-		woc.operate(ctx)
+		sweepWoc := newWorkflowOperationCtx(ctx, woc.wf.DeepCopy(), controller)
+		sweepWoc.deadline = time.Now().UTC().Add(offset)
+		sweepWoc.operate(ctx)
 		for len(recorder.Events) > 0 {
 			<-recorder.Events
 		}
-		for _, node := range woc.wf.Status.Nodes {
+		for _, node := range sweepWoc.wf.Status.Nodes {
 			assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %s", node.Name)
 		}
 	}
