@@ -955,12 +955,13 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	}
 
 	if templateDeadline != nil {
-		remaining := templateDeadline.Sub(pb.in.now)
-		if pod.Spec.ActiveDeadlineSeconds == nil || remaining.Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds) {
-			newActiveDeadlineSeconds := int64(remaining.Seconds())
-			if newActiveDeadlineSeconds <= 1 {
-				return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
-			}
+		newActiveDeadlineSeconds := int64(templateDeadline.Sub(pb.in.now).Seconds())
+		// Check the timeout first, so a smaller activeDeadlineSeconds can't
+		// keep a pod whose timeout has already run out.
+		if newActiveDeadlineSeconds <= 1 {
+			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+		}
+		if pod.Spec.ActiveDeadlineSeconds == nil || newActiveDeadlineSeconds < *pod.Spec.ActiveDeadlineSeconds {
 			log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
 			pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 		}
