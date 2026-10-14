@@ -1198,3 +1198,73 @@ func TestStepsPendingTimeoutWaitsForSiblings(t *testing.T) {
 		})
 	}
 }
+
+const stepsMissingOutputWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-missing-output
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: produce
+        continueOn:
+          failed: true
+    - - name: consumer
+        template: consume
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{steps.producer.outputs.parameters.out}}"
+      - name: sibling
+        template: run
+    - - name: last
+        template: run
+  - name: produce
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: alpine:3.23
+  - name: consume
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+  - name: run
+    container:
+      image: alpine:3.23
+`
+
+// TestStepsMissingOutputWaitsAlone verifies that a step referring to an
+// output its producer never reported (the producer failed, and continueOn
+// let the template carry on) waits on its own: its siblings in the group
+// start, while the step gets no node and the next group does not start.
+// The step waits until the output is reported, as the whole group did before.
+func TestStepsMissingOutputWaitsAlone(t *testing.T) {
+	ctx, r := r4Start(t, stepsMissingOutputWf)
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{"producer": apiv1.PodFailed})
+	for range 3 {
+		r.r4SetPods(ctx, nil)
+	}
+
+	assert.Equal(t, wfv1.NodeFailed, r.r4Phase("producer"))
+	assert.Equal(t, wfv1.NodeSucceeded, r.r4Phase("[0]"), "continueOn.failed carries the template on")
+	assert.NotEmpty(t, r.r4Phase("sibling"), "the consumer's sibling starts")
+	assert.Empty(t, r.r4Phase("consumer"), "the consumer waits for the output, with no node")
+
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{"sibling": apiv1.PodSucceeded})
+	r.op(ctx)
+	assert.Equal(t, wfv1.NodeSucceeded, r.r4Phase("sibling"))
+	assert.Empty(t, r.r4Phase("consumer"))
+	assert.Equal(t, wfv1.NodeRunning, r.r4Phase("[1]"), "the group waits for the consumer")
+	assert.Empty(t, r.r4Phase("last"), "the next group does not start")
+	assert.Equal(t, wfv1.WorkflowRunning, r.woc.wf.Status.Phase)
+}

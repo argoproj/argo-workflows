@@ -43,6 +43,13 @@ The step's node ends `Error` and the other steps in its group still run; then th
 `continueOn.error` on such a step now lets the template carry on, as it already did for a DAG task.
 Previously a Steps template failed the step group before the steps listed after it started, whatever the step's `continueOn` said.
 
+A step whose arguments refer to an output that its producer has not reported is not one of these errors: it waits for the output.
+For example, a step with an argument `{{steps.producer.outputs.parameters.out}}`, where `producer` failed without reporting `out` and `continueOn.failed` let the template carry on.
+Such a step now waits on its own, with no node: the other steps in its group start, and the next group waits for it.
+Previously no step in its group started.
+As before, if the output is never reported the step waits indefinitely and the workflow stays `Running`.
+This differs from a reference to an output of a skipped or omitted step, which resolves or fails as described in [Outputs of skipped and omitted steps and tasks now resolve](#outputs-of-skipped-and-omitted-steps-and-tasks-now-resolve).
+
 A step that is still `Pending` when its template's `timeout` or `pendingTimeout` passes now also fails only itself, as a DAG task already did.
 The step's node ends `Failed` and its step group waits for the other steps in the group to finish.
 Then the group ends `Failed` with the message `child '<node ID>' failed`, unless the step has `continueOn.failed`, in which case the next group runs.
