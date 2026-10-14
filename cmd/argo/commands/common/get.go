@@ -344,6 +344,14 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 
 			for _, child := range status.Children {
 				nonBoundaryParentChildrenMap[child] = &n
+				// A TaskGroup is not itself a render node: an expanded
+				// step's items print under its StepGroup or Retry parent,
+				// as they did before the TaskGroup existed.
+				if wf.Status.Nodes[child].Type == wfv1.NodeTypeTaskGroup {
+					for _, item := range wf.Status.Nodes[child].Children {
+						nonBoundaryParentChildrenMap[item] = &n
+					}
+				}
 			}
 		}
 	}
