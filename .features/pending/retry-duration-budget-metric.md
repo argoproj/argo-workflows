@@ -11,6 +11,6 @@ The controller now emits a `retry_strategy_terminations_total` counter.
 Each increment is one attempt the controller would have made and did not, because of the duration budget.
 The counter carries only `namespace` and a `reason` of `MaxDurationExceeded` or `BackoffWouldExceedMaxDuration`, so its cardinality does not grow with the number of Workflows, nodes or templates.
 
-The counter does not increment when the retry would have been rejected anyway by `retryPolicy`, `limit` or `expression`.
+The counter doesn't increment when `retryPolicy`, `limit` or `expression` would have stopped the retry anyway.
 
 The retry node's message is unchanged and remains the signal for diagnosing an individual Workflow.

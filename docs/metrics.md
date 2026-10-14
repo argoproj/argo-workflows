@@ -482,8 +482,8 @@ Each increment is a next attempt the controller would have made, stopped because
 - `MaxDurationExceeded`: the `maxDuration` deadline had already passed.
 - `BackoffWouldExceedMaxDuration`: waiting for the next back-off would cross that deadline.
 
-The counter does not increment when the retry would have been rejected anyway by
-`retryPolicy`, `limit` or `expression`.
+The counter doesn't increment when `retryPolicy`, `limit` or `expression`
+would have stopped the retry anyway.
 A termination is therefore attributed to the duration budget rather than to
 whichever check the controller ran first.
 
