@@ -101,7 +101,7 @@ spec:
 ### Pod status capture finalizer
 
 With `ARGO_POD_STATUS_CAPTURE_FINALIZER=true`, a deleted pod that is not `Pending` keeps the finalizer while its workflow runs, until the controller has recorded the pod's result in the workflow.
-If the kubelet finished the pod, the controller keeps it for at most `TASK_RESULT_TIMEOUT_DURATION` after its `deletionTimestamp` or the controller's start, whichever is later.
+If the kubelet finished the pod, the controller keeps it for up to a minute past `TASK_RESULT_TIMEOUT_DURATION`, counted from its `deletionTimestamp` or the controller's start, whichever is later.
 If no kubelet finished the pod, for example because it was force deleted on an unreachable node or Kubernetes marked it `Failed` after its node was lost, the controller keeps it for 2 to 3 minutes after its `deletionTimestamp`.
 A running pod that is deleted and stops in that time is recorded with its exit status, for example exit code 143 after `SIGTERM`, not as `pod deleted`.
 
