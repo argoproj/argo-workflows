@@ -1512,6 +1512,21 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 		downstream = append(downstream, node.Children...)
 	}
 
+	// A preserved hook needs a surviving boundary to attach to. Include its
+	// entire subtree in the plan when that boundary is deleted, so retry also
+	// removes the subtree's pods. This can delete another hook's boundary.
+	for deletedHook := true; deletedHook; {
+		deletedHook = false
+		for hookID, boundaryID := range hookedNodesToReparent {
+			if !toDelete[hookID] && !toDelete[boundaryID] {
+				continue
+			}
+			markSubtree(wf.Status.Nodes, hookID, toDelete)
+			delete(hookedNodesToReparent, hookID)
+			deletedHook = true
+		}
+	}
+
 	return resetPlan{toReset: toReset, toDelete: toDelete, hookedNodesToReparent: hookedNodesToReparent}, nil
 }
 

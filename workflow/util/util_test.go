@@ -1610,6 +1610,64 @@ func TestPlanResetReopensSkippedDependentsAfterNestedGroupRetry(t *testing.T) {
 	require.NoError(t, err, "retry output must not leave preserved hooks orphaned")
 }
 
+func TestPlanResetDeletesHookSubtreeWhenBoundaryIsDeleted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	const (
+		workflowName = "stop-retry"
+		workName     = workflowName + ".work"
+		aName        = workName + ".a"
+		bName        = workName + ".b"
+		afterName    = workflowName + ".after"
+		nextName     = workflowName + ".next"
+		insideName   = nextName + ".inside"
+		hookName     = insideName + ".hooks.exit"
+		hookSkipName = hookName + ".skipped"
+		hookPodName  = hookSkipName + ".pod"
+	)
+	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: workflowName}}
+	rootID, workID := wf.NodeID(workflowName), wf.NodeID(workName)
+	aID, bID := wf.NodeID(aName), wf.NodeID(bName)
+	afterID, nextID := wf.NodeID(afterName), wf.NodeID(nextName)
+	insideID, hookID := wf.NodeID(insideName), wf.NodeID(hookName)
+	hookSkippedID, hookPodID := wf.NodeID(hookSkipName), wf.NodeID(hookPodName)
+	wf.Status = wfv1.WorkflowStatus{
+		Phase: wfv1.WorkflowFailed,
+		Nodes: wfv1.Nodes{
+			rootID:        {ID: rootID, Name: workflowName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, Children: []string{workID}},
+			workID:        {ID: workID, Name: workName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, Children: []string{aID, bID}, OutboundNodes: []string{aID}},
+			aID:           {ID: aID, Name: aName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, Children: []string{afterID}},
+			bID:           {ID: bID, Name: bName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID},
+			afterID:       {ID: afterID, Name: afterName, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID, Children: []string{nextID}},
+			nextID:        {ID: nextID, Name: nextName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, Children: []string{insideID}},
+			insideID:      {ID: insideID, Name: insideName, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeSkipped, BoundaryID: nextID, Children: []string{hookID}},
+			hookID:        {ID: hookID, Name: hookName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: nextID, NodeFlag: &wfv1.NodeFlag{Hooked: true}, Children: []string{hookSkippedID}},
+			hookSkippedID: {ID: hookSkippedID, Name: hookSkipName, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeSkipped, BoundaryID: hookID, Children: []string{hookPodID}},
+			hookPodID:     {ID: hookPodID, Name: hookPodName, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: hookID, TemplateName: "echo"},
+		},
+	}
+
+	plan, err := planReset(ctx, wf, false, "", false)
+	require.NoError(t, err)
+	for _, id := range []string{afterID, nextID, insideID, hookID, hookSkippedID, hookPodID} {
+		assert.True(t, plan.toDelete[id], "node %s belongs to the deleted boundary subtree", id)
+	}
+	assert.NotContains(t, plan.hookedNodesToReparent, hookID, "a hook cannot be reparented to a deleted boundary")
+
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	assert.NotContains(t, retryWf.Status.Nodes, hookID)
+	assert.NotContains(t, retryWf.Status.Nodes, hookSkippedID)
+	assert.NotContains(t, retryWf.Status.Nodes, hookPodID)
+	assert.Contains(t, podsToDelete, GeneratePodName(wf.Name, hookPodName, "echo", hookPodID, GetWorkflowPodNameVersion(wf)))
+	_, err = newWorkflowsDag(retryWf)
+	require.NoError(t, err, "retry must not leave a hook subtree orphaned")
+
+	resubmitWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	_, err = newWorkflowsDag(resubmitWf)
+	require.NoError(t, err, "memoized resubmit must also discard the hook subtree")
+}
+
 func TestApplyResetPlanDoesNotDuplicateHookAlreadyLinkedToBoundary(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	const (

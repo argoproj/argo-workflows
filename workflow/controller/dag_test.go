@@ -1359,6 +1359,8 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	after, err := woc.wf.GetNodeByName(afterName)
 	require.NoError(t, err, "the downstream task should be recreated after its dependency succeeds")
 	assert.Equal(t, wfv1.NodePending, after.Phase)
+	_, err = getPod(ctx, woc, woc.getPodName(after.Name, wfutil.GetTemplateFromNode(*after)))
+	require.NoError(t, err, "retry should create a Pod for the reopened downstream task")
 	_, err = woc.wf.GetNodeByName(after2Name)
 	require.Error(t, err, "the next dependent must wait for after to complete")
 
@@ -1368,6 +1370,8 @@ func TestDAGRetryAfterStopReexecutesOmittedDependent(t *testing.T) {
 	after2, err := woc.wf.GetNodeByName(after2Name)
 	require.NoError(t, err, "downstream omitted descendants should run after the reopened chain succeeds")
 	assert.Equal(t, wfv1.NodePending, after2.Phase)
+	_, err = getPod(ctx, woc, woc.getPodName(after2.Name, wfutil.GetTemplateFromNode(*after2)))
+	require.NoError(t, err, "retry should create a Pod for the reopened descendant")
 
 	makePodsPhase(ctx, woc, v1.PodSucceeded)
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
