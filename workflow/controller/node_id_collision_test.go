@@ -55,63 +55,9 @@ func assertNodeIDInvariant(t *testing.T, wf *wfv1.Workflow) {
 // The workflow from https://github.com/argoproj/argo-workflows/issues/16376:
 // the outer step group custom-job-thbh7[0] and the pod node
 // custom-job-thbh7[0].custom-job[0].custom-job-main hash to the same ID.
-var nodeIDCollisionIssueTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-debug
-  namespace: default
-spec:
-  templates:
-    - name: custom-job
-      inputs:
-        parameters:
-          - name: message
-      steps:
-      - - name: custom-job-main
-          template: custom-job-main
-          arguments:
-            parameters:
-            - name: message
-              value: "{{inputs.parameters.message}}"
-    - name: custom-job-main
-      inputs:
-        parameters:
-        - name: message
-      container:
-        image: argoproj/argosay:v2
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-`
-
-var nodeIDCollisionIssueWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: custom-job-thbh7
-  namespace: default
-spec:
-  arguments:
-    parameters:
-      - name: MESSAGE
-        value: hello
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: custom-job
-        templateRef:
-          name: workflow-template-debug
-          template: custom-job
-        arguments:
-          parameters:
-          - name: message
-            value: "{{workflow.parameters.MESSAGE}}"
-`
-
 func TestNodeIDCollisionIssue16376(t *testing.T) {
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(nodeIDCollisionIssueTemplate)
-	wf := wfv1.MustUnmarshalWorkflow(nodeIDCollisionIssueWorkflow)
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/node_id_collision/issue-16376-workflow-template.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/node_id_collision/issue-16376-workflow.yaml")
 	outerSG := "custom-job-thbh7[0]"
 	leafName := "custom-job-thbh7[0].custom-job[0].custom-job-main"
 	require.Equal(t, wf.NodeID(outerSG), wf.NodeID(leafName), "the names this test relies on must collide")
@@ -157,32 +103,8 @@ func TestNodeIDCollisionIssue16376(t *testing.T) {
 // collide[0].s1161224. FNV-1a has no finalisation step, so their
 // descendants collide too: collide[0].s488469[0] with collide[0].s1161224[0]
 // and so on down. The loser's whole subtree must resolve.
-var nodeIDCollisionSubtreeWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: collide
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: s488469
-        template: inner
-      - name: s1161224
-        template: inner
-  - name: inner
-    steps:
-    - - name: x
-        template: leaf
-  - name: leaf
-    container:
-      image: argoproj/argosay:v2
-`
-
 func TestNodeIDCollisionSubtree(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(nodeIDCollisionSubtreeWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/node_id_collision/sibling-subtree-workflow.yaml")
 	a, b := "collide[0].s488469", "collide[0].s1161224"
 	require.Equal(t, wf.NodeID(a), wf.NodeID(b), "the names this test relies on must collide")
 	require.Equal(t, wf.NodeID(a+"[0].x"), wf.NodeID(b+"[0].x"))
@@ -228,33 +150,8 @@ func TestNodeIDCollisionSubtree(t *testing.T) {
 // the deferred task must not be persisted before its node exists: the
 // colliding sibling would claim the predicted slot on a later reconcile,
 // leaving the DAG boundary holding an edge to a node that is not its child.
-var nodeIDCollisionDeferredDAGWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: collide
-  namespace: default
-spec:
-  entrypoint: main
-  parallelism: 1
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: filler
-        template: leaf
-      - name: t2335786
-        template: leaf
-        depends: filler
-      - name: t3074240
-        template: leaf
-  - name: leaf
-    container:
-      image: argoproj/argosay:v2
-`
-
 func TestNodeIDCollisionDeferredDAGTask(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(nodeIDCollisionDeferredDAGWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/node_id_collision/deferred-dag-task-workflow.yaml")
 	a, b := "collide.t2335786", "collide.t3074240"
 	require.Equal(t, wf.NodeID(a), wf.NodeID(b), "the names this test relies on must collide")
 
