@@ -152,6 +152,11 @@ func GetWfClient(ctx context.Context) workflow.Interface {
 	return ctx.Value(WfKey).(workflow.Interface)
 }
 
+// GetDynamicClient returns the caller-scoped client installed by the gatekeeper.
+func GetDynamicClient(ctx context.Context) dynamic.Interface {
+	return ctx.Value(DynamicKey).(dynamic.Interface)
+}
+
 func GetEventsClient(ctx context.Context) events.Interface {
 	return ctx.Value(EventsKey).(events.Interface)
 }

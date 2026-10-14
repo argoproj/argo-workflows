@@ -1,0 +1,499 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argo-parameterization-lab
+  labels:
+    app.kubernetes.io/part-of: argo-parameterization-experiment
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo
+  namespace: argo-parameterization-lab
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-server
+  namespace: argo-parameterization-lab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-role
+  namespace: argo-parameterization-lab
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - pods/exec
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumeclaims
+  - persistentvolumeclaims/finalizers
+  verbs:
+  - create
+  - update
+  - delete
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  - workflowtasksets
+  - workflowtasksets/status
+  - workflowtasksets/finalizers
+  - workflowartifactgctasks
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+  - create
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtaskresults
+  verbs:
+  - list
+  - watch
+  - deletecollection
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - cronworkflows
+  - cronworkflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - get
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-server-role
+  namespace: argo-parameterization-lab
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  - pods/exec
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - watch
+  - create
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - eventsources
+  - sensors
+  - workflows
+  - workfloweventbindings
+  - workflowtemplates
+  - cronworkflows
+  - cronworkflows/finalizers
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - parameters.workflows.example.io
+  resources:
+  - parametertemplates
+  - parametersets
+  - parameterrevisions
+  - workflowforms
+  - workflowparameterbindings
+  - workflowsubmissions
+  - actiondefinitions
+  - actionresulttemplates
+  - workflowactionbindings
+  - parameterretries
+  - parameternodeinputs
+  verbs:
+  - get
+  - list
+  - create
+  - update
+- apiGroups:
+  - parameters.workflows.example.io
+  resources:
+  - resourceoperations
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-binding
+  namespace: argo-parameterization-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-role
+subjects:
+- kind: ServiceAccount
+  name: argo
+  namespace: argo-parameterization-lab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-server-binding
+  namespace: argo-parameterization-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-server-role
+subjects:
+- kind: ServiceAccount
+  name: argo-server
+  namespace: argo-parameterization-lab
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+  namespace: argo-parameterization-lab
+data:
+  config: "instanceID: parameterization-lab\nworkflowDefaults:\n  spec:\n    serviceAccountName:\
+    \ workflow-executor\nexecutor:\n  image: quay.io/argoproj/argoexec:v4.0.1\n"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-server
+  namespace: argo-parameterization-lab
+spec:
+  ports:
+  - name: web
+    port: 2746
+    targetPort: 2746
+  selector:
+    app: argo-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+      - args:
+        - server
+        - --namespaced
+        - --managed-namespace=argo-parameterization-lab
+        - --auth-mode=server
+        - --auth-mode=client
+        - --secure=false
+        - --instanceid=parameterization-lab
+        env:
+        - name: ARGO_PARAMETERIZATION_ENABLED
+          value: 'true'
+        - name: ARGO_PARAMETERIZATION_SECRET_BACKEND
+          value: kubernetes-encrypted
+        - name: ARGO_PARAMETERIZATION_ALLOW_LOOPBACK_SECRET_INPUT
+          value: 'true'
+        image: argo-parameterization:local-v37-v4.0.1
+        name: argo-server
+        ports:
+        - containerPort: 2746
+          name: web
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 2746
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+        imagePullPolicy: Never
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 2Gi
+        command:
+        - /bin/argo
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: argo-server
+      volumes:
+      - emptyDir: {}
+        name: tmp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    matchLabels:
+      app: workflow-controller
+  template:
+    metadata:
+      labels:
+        app: workflow-controller
+    spec:
+      containers:
+      - args:
+        - --namespaced
+        - --managed-namespace=argo-parameterization-lab
+        - --executor-image=quay.io/argoproj/argoexec:v4.0.1
+        command:
+        - /bin/workflow-controller
+        env:
+        - name: LEADER_ELECTION_IDENTITY
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: argo-parameterization:local-v31-amd64-v4.0.1
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 6060
+          initialDelaySeconds: 90
+          periodSeconds: 60
+          timeoutSeconds: 30
+        name: workflow-controller
+        ports:
+        - containerPort: 9090
+          name: metrics
+        - containerPort: 6060
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+        imagePullPolicy: Never
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '2'
+            memory: 2Gi
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: argo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workflow-executor
+  namespace: argo-parameterization-lab
+---
+# Native v3.7 HTTP agents resolve this service account token Secret by name.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: workflow-executor.service-account-token
+  namespace: argo-parameterization-lab
+  annotations:
+    kubernetes.io/service-account.name: workflow-executor
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: workflow-executor
+  namespace: argo-parameterization-lab
+rules:
+- apiGroups: [argoproj.io]
+  resources: [workflowtasksets]
+  verbs: [get, list, watch]
+- apiGroups: [argoproj.io]
+  resources: [workflowtasksets/status]
+  verbs: [patch]
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtaskresults
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: workflow-executor
+  namespace: argo-parameterization-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workflow-executor
+subjects:
+- kind: ServiceAccount
+  name: workflow-executor
+  namespace: argo-parameterization-lab
+---
+# Optional cluster-scoped template reads are separate from namespace mutation.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-parameterization-template-reader
+rules:
+- apiGroups: [argoproj.io]
+  resources: [clusterworkflowtemplates]
+  # Native template UI uses an informer; preview itself only requires get.
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-parameterization-template-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-parameterization-template-reader
+subjects:
+- kind: ServiceAccount
+  name: argo-server
+  namespace: argo-parameterization-lab

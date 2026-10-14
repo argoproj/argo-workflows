@@ -49,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
 	"github.com/argoproj/argo-workflows/v4/util/resource"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v4/util/runtime"
@@ -497,7 +498,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	if woc.execWf.Spec.HasExitHook() {
 		woc.log.WithField("onExit", woc.execWf.Spec.OnExit).Info(ctx, "Running OnExit handler")
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.Name)
-		onExitNode, _ = woc.execWf.GetNodeByName(onExitNodeName)
+		onExitNode, _ = woc.wf.GetNodeByName(onExitNodeName)
 		if onExitNode != nil || woc.GetShutdownStrategy().ShouldExecute(true) {
 			exitHook := woc.execWf.Spec.GetExitHook(woc.execWf.Spec.Arguments)
 			onExitNode, err = woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, exitHook.Arguments, &executeTemplateOpts{
@@ -586,7 +587,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
-		if woc.controller.syncManager.ReleaseAll(ctx, woc.execWf) {
+		if woc.controller.syncManager.ReleaseAll(ctx, woc.wf) {
 			woc.log.WithFields(logging.Fields{"key": woc.execWf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
 			// The workflow never started: it was still waiting for its
 			// synchronization lock when it was terminated, so it completes as
@@ -780,6 +781,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // in-memory workflow may not match the API object (e.g. connection reset before persist).
 func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
 	woc.reapplyFailed = true
+	woc.requeue()
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
@@ -1696,6 +1698,14 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	}
 
+	if updated.Phase == wfv1.NodeSucceeded && !woc.wf.Status.IsTaskResultIncomplete(old.ID) {
+		if err := parameterization.ValidateActionOutputs(tmpl, updated.Outputs); err != nil {
+			updated.Phase = wfv1.NodeError
+			updated.Message = err.Error()
+			updated.Outputs = nil
+		}
+	}
+
 	// if we are transitioning from Pending to a different state (except Fail or Error), clear out unchanged message
 	if old.Phase == wfv1.NodePending && updated.Phase != wfv1.NodePending && updated.Phase != wfv1.NodeFailed && updated.Phase != wfv1.NodeError && old.Message == updated.Message {
 		updated.Message = ""
@@ -2290,6 +2300,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	if err != nil {
 		errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
 		return errNode, err
+	}
+
+	if inputErr := parameterization.ValidateActionInputs(processedTmpl); inputErr != nil {
+		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, inputErr), inputErr
 	}
 
 	// Update displayName from processedTmpl
@@ -3662,6 +3676,8 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	}
 
 	mainCtr := tmpl.Script.Container.DeepCopy()
+	// A frozen output contract may require result even without a DAG consumer.
+	includeScriptOutput = includeScriptOutput || tmpl.Metadata.Annotations[parameterization.OutputContractAnnotation] != ""
 	if len(tmpl.Script.Source) == 0 {
 		woc.log.Warn(ctx, "'script.source' is empty, suggest change template into 'container'")
 	} else {
@@ -4569,6 +4585,12 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
 		}
+		// Execution-time substitution must not overwrite the persisted inputs.
+		// In particular, a workflow.name or workflow.outputs expression must
+		// remain available when a later reconciliation or retry resolves it.
+		execution := *woc.wf
+		execution.Spec = *woc.wf.Spec.DeepCopy() //nolint:forbidigo // not-woc-misuse: initialize execWf from defaulted spec in the non-reference branch.
+		woc.execWf = &execution
 		woc.volumes = woc.wf.Spec.DeepCopy().Volumes //nolint:forbidigo // not-woc-misuse
 	}
 
