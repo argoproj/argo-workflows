@@ -4566,3 +4566,101 @@ func TestDagOmittedTargetMixedFailures(t *testing.T) {
 		})
 	}
 }
+
+var daemonRetryAfterConsumerDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-retry-after-consumer
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: server
+        template: daemon
+      - name: client
+        template: run
+        depends: server
+  - name: daemon
+    daemon: true
+    retryStrategy:
+      limit: 2
+    container:
+      image: alpine:3.23
+  - name: run
+    container:
+      image: alpine:3.23
+`
+
+var daemonRetryAfterConsumerSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-retry-after-consumer
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: server
+        template: daemon
+    - - name: client
+        template: run
+  - name: daemon
+    daemon: true
+    retryStrategy:
+      limit: 2
+    container:
+      image: alpine:3.23
+  - name: run
+    container:
+      image: alpine:3.23
+`
+
+// TestDaemonRetryAfterConsumer verifies that a daemon with a retryStrategy
+// that dies in the same reconcile that sees its consumer finish is retried:
+// the template starts a new attempt and waits for it to be ready before it
+// ends, although nothing is left to use it.
+func TestDaemonRetryAfterConsumer(t *testing.T) {
+	for _, tc := range []struct {
+		name, manifest, server, client string
+	}{
+		{"DAG", daemonRetryAfterConsumerDAG, "daemon-retry-after-consumer.server", "daemon-retry-after-consumer.client"},
+		{"Steps", daemonRetryAfterConsumerSteps, "daemon-retry-after-consumer[0].server", "daemon-retry-after-consumer[1].client"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(tc.manifest)
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			server0, server1 := tc.server+"(0)", tc.server+"(1)"
+
+			woc := r4Operate(t, ctx, controller, wf)
+			r4SetPodsPhase(t, ctx, woc, v1.PodRunning, r4PodForNode(server0), r4WithReady)
+			woc = r4Operate(t, ctx, controller, woc.wf)
+			r4SetPodsPhase(t, ctx, woc, v1.PodRunning, r4PodForNode(tc.client))
+			woc = r4Operate(t, ctx, controller, woc.wf)
+			require.NotEmpty(t, r4NodePhase(woc, tc.client), "the client starts once the daemon is ready")
+
+			// The client finishes and the daemon dies before the next reconcile.
+			r4SetPodsPhase(t, ctx, woc, v1.PodSucceeded, r4PodForNode(tc.client))
+			r4SetPodsPhase(t, ctx, woc, v1.PodFailed, r4PodForNode(server0), withExitCode(1))
+			for range 3 {
+				woc = r4Operate(t, ctx, controller, woc.wf)
+			}
+			assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, tc.client))
+			assert.NotEmpty(t, r4NodePhase(woc, server1), "the daemon is retried")
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "the template waits for the new attempt")
+
+			r4SetPodsPhase(t, ctx, woc, v1.PodRunning, r4PodForNode(server1), r4WithReady)
+			for range 3 {
+				woc = r4Operate(t, ctx, controller, woc.wf)
+			}
+			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+		})
+	}
+}

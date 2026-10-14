@@ -153,6 +153,11 @@ A daemon task or step without items that dies this way now also runs its exit ho
 The items of an expanded daemon task or step that die this way do not start new hooks.
 Previously a DAG never started these hooks; a Steps template's workflow could end before a hook it had started finished.
 
+A daemon with a `retryStrategy` that dies is still retried while the tasks or steps that use it are running.
+It is now also retried when it dies in the same reconciliation that sees the last of them finish: the template starts a new attempt and waits for it to be ready before it ends, so the workflow runs one more pod and finishes later.
+Previously the template ended at once.
+The template's phase is the same either way, but if the new attempt never becomes ready, for example because its pod cannot be scheduled, the workflow stays `Running` until the attempt's `pendingTimeout` or `timeout`, or the workflow's `activeDeadlineSeconds`, passes.
+
 #### Outputs, metrics and messages
 
 `globalName` outputs are now exported when the node that produces them finishes, so the workflow's global outputs hold the value from the node that finished last.
