@@ -67,9 +67,9 @@ var defaultTaskResultBackoff = wait.Backoff{
 
 // defaultInterimResultRetryTimeout limits the retries of the task result
 // writes before the final ones: InitializeOutput's placeholder and the
-// progress reports. Neither is worth waiting long for: a later write
-// creates the task result anyway, and the progress monitor sends the
-// latest progress again on its next tick. Waiting would hold up the
+// progress reports. Neither waits long: a failed placeholder write errors
+// the step, as it always has, and the progress monitor sends the latest
+// progress again on its next tick. Waiting would hold up the
 // deadline monitor and the resource action, which start after
 // InitializeOutput. 30s is about what every write got before the retry
 // timeout existed, when the backoff gave up on reaching its cap.
