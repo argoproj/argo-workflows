@@ -39,6 +39,13 @@ The workflow-controller (and the parts of the argo-server that share its informe
 This reduces controller memory usage — As a rough guide `managedFields` might be about 20% of the memory usage of objects, and at scale informer objects use most of the controllers memory footprint.
 This is internal to the controller's caches; objects stored in the cluster are unaffected.
 
+### Template caches no longer store the client-side-apply annotation
+
+The workflow-controller now strips the `kubectl.kubernetes.io/last-applied-configuration` annotation from WorkflowTemplates and ClusterWorkflowTemplates before storing them in its informer caches ([#16566](https://github.com/argoproj/argo-workflows/issues/16566)).
+Client-side `kubectl apply` stores a copy of the whole spec there, which on a measured cluster was 3.6 KB of an 8.3 KB WorkflowTemplate.
+Only those two caches are affected, because the controller never writes those objects back whole; the Workflow cache is deliberately left alone.
+This is internal to the controller's caches; objects stored in the cluster are unaffected.
+
 ### `argo archive` commands accept a workflow name as well as a UID
 
 The `argo archive get`, `delete`, `resubmit` and `retry` commands previously took a workflow UID as their argument.

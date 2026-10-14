@@ -17,6 +17,7 @@ If you observe the Controller using its total CPU or memory requests, you should
 
 At scale the Controller's memory usage is dominated by its informer caches, which hold every live Workflow, Pod and related object it watches.
 Since v4.1 the Controller strips `metadata.managedFields` from objects before caching them, which reduces the memory needed per cached object; keep this in mind when comparing heap profiles across versions.
+It also strips the `kubectl.kubernetes.io/last-applied-configuration` annotation from cached WorkflowTemplates and ClusterWorkflowTemplates, which matters most on GitOps-managed installs where client-side `kubectl apply` stores a copy of each spec there.
 
 ### Adding Goroutines to Increase Concurrency
 
