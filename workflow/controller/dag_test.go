@@ -4488,3 +4488,81 @@ func TestDAGTaskGroupSkippedThenDeferredItems(t *testing.T) {
 		}
 	}
 }
+
+var dagOmittedTargetMixedFailures = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-omitted-target-mixed-failures
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      failFast: false
+      tasks:
+      - name: a
+        template: run
+      - name: b
+        template: run
+      - name: c
+        template: run
+        depends: "a.Succeeded && b.Succeeded"
+  - name: run
+    container:
+      image: alpine:3.23
+`
+
+// TestDagOmittedTargetMixedFailures verifies that an omitted target whose
+// branches failed in different ways ends the DAG Error, whichever branch
+// failed which way: Error takes precedence over Failed (see
+// dag.WorsePhase), so the result does not depend on the order in which the
+// branches are visited.
+func TestDagOmittedTargetMixedFailures(t *testing.T) {
+	for _, errored := range []string{"a", "b"} {
+		t.Run(errored+" errored", func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(dagOmittedTargetMixedFailures)
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			erroredNode := woc.wf.Status.Nodes.FindByDisplayName(errored)
+			require.NotNil(t, erroredNode)
+
+			// A pod that fails with its container still waiting makes its
+			// node Error; the other pod fails normally, making its node Failed.
+			withWaitingContainer := func(pod *v1.Pod, woc *wfOperationCtx) {
+				if woc.nodeID(pod) != erroredNode.ID {
+					return
+				}
+				pod.Status.Message = ""
+				pod.Status.ContainerStatuses = []v1.ContainerStatus{{
+					Name:  "main",
+					State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{Reason: "ImagePullBackOff"}},
+				}}
+			}
+			makePodsPhase(ctx, woc, v1.PodFailed, withWaitingContainer)
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+
+			for name, want := range map[string]wfv1.NodePhase{
+				"a": wfv1.NodeFailed,
+				"b": wfv1.NodeFailed,
+				"c": wfv1.NodeOmitted,
+			} {
+				if name == errored {
+					want = wfv1.NodeError
+				}
+				node := woc.wf.Status.Nodes.FindByDisplayName(name)
+				require.NotNil(t, node, name)
+				assert.Equal(t, want, node.Phase, name)
+			}
+			dagNode := woc.wf.Status.Nodes.FindByDisplayName(wf.Name)
+			require.NotNil(t, dagNode)
+			assert.Equal(t, wfv1.NodeError, dagNode.Phase)
+			assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		})
+	}
+}

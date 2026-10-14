@@ -48,6 +48,11 @@ Previously it took the phase of the last failing item, so the result depended on
 This affects everything that reads the task's phase: `depends: "task.Failed"` is false and `task.Errored` is true, `continueOn.failed` no longer covers the task and `continueOn.error` does, and `{{workflow.status}}` in an exit handler can be `Error` where it was `Failed`.
 In a Steps template `continueOn` now applies to the expanded step as a whole, so an expanded step with `continueOn.error` carries on even when one item `Failed` alongside an item that ended `Error`.
 
+A DAG whose target task was omitted because tasks it depends on failed now ends `Error` if any of those tasks ended `Error`, and `Failed` otherwise.
+For example, with a target `c` that `depends: "a.Succeeded && b.Succeeded"`, where `a` ends `Failed` and `b` ends `Error`, the DAG now always ends `Error`.
+Previously it took the phase of whichever failed task the controller reached first, so it could end `Failed` or `Error`.
+This affects everything that reads the DAG's phase: `{{workflow.status}}` in an exit handler, and the `continueOn` and `depends` of a task or step that runs the DAG as its template.
+
 A task that follows a nested DAG or Steps template now sees that template's own phase, not the phases of the nodes inside it.
 If a task inside the nested template failed but `continueOn` let the nested template succeed, an omitted or `when`-skipped task after it no longer fails the outer DAG.
 
