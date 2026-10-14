@@ -9,4 +9,4 @@ This feature adds the `tokenExpirationInMinutes` field to the S3 artifact reposi
 
 Note that AWS STS doesn't issue a token longer than the assumed role's maximum session duration, which defaults to 60 minutes unless increased, so STS rejects anything above that limit.
 
-When used with `roleARN`, the value is limited to 60 minutes if the pod already has a role (for example, IRSA), because assuming a role from another role is role chaining, which AWS caps at one hour regardless of the role's maximum session duration.
+When used with `roleARN`, if the value is above 60 minutes and the pod already has a role (for example, IRSA), STS rejects it, because assuming a role from another role is role chaining, which AWS caps at one hour regardless of the role's maximum session duration.
