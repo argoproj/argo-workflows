@@ -110,7 +110,7 @@ attributes:
     type: bool
   - name: TaskResultMarksCompleted
     displayName: marks_completed
-    description: "True if this write sets the task result's completed label"
+    description: "True if this write marks the task result completed"
     type: bool
   - name: TaskResultName
     displayName: name
