@@ -43,6 +43,12 @@ The step's node ends `Error` and the other steps in its group still run; then th
 `continueOn.error` on such a step now lets the template carry on, as it already did for a DAG task.
 Previously a Steps template failed the step group before the steps listed after it started, whatever the step's `continueOn` said.
 
+A step that is still `Pending` when its template's `timeout` or `pendingTimeout` passes now also fails only itself, as a DAG task already did.
+The step's node ends `Failed` and its step group waits for the other steps in the group to finish.
+Then the group ends `Failed` with the message `child '<node ID>' failed`, unless the step has `continueOn.failed`, in which case the next group runs.
+Previously the step group and the Steps template failed as soon as the timeout passed, with the message `timeout`, whatever the step's `continueOn` said.
+Because the template now waits for the other steps, the workflow's exit handler starts once they have finished rather than as soon as the step timed out.
+
 An expanded task or step whose items include both `Error` and `Failed` items now always ends `Error`.
 Previously it took the phase of the last failing item, so the result depended on the order of the items.
 This affects everything that reads the task's phase: `depends: "task.Failed"` is false and `task.Errored` is true, `continueOn.failed` no longer covers the task and `continueOn.error` does, and `{{workflow.status}}` in an exit handler can be `Error` where it was `Failed`.

@@ -2,6 +2,8 @@ package controller
 
 import (
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1120,4 +1122,79 @@ func TestStepsGroupsChainedNotSiblings(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, slices.Contains(sg1.Children, stepB.ID),
 		"[1] must contain step-b as a child")
+}
+
+const stepsPendingTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-pending-timeout
+  namespace: default
+spec:
+  entrypoint: main
+  onExit: exit
+  templates:
+  - name: main
+    steps:
+    - - name: slow
+        template: run
+      - name: stuck
+        template: pending
+        continueOn:
+          failed: {{continue}}
+    - - name: after
+        template: run
+  - name: run
+    container:
+      image: alpine:3.23
+  - name: pending
+    pendingTimeout: 30s
+    container:
+      image: alpine:3.23
+  - name: exit
+    container:
+      image: alpine:3.23
+`
+
+// TestStepsPendingTimeoutWaitsForSiblings verifies that a step whose
+// pendingTimeout passes fails only itself, as a DAG task does: its step group
+// waits for its running siblings before it ends, the exit handler starts only
+// then, and continueOn.failed on the step lets the next group run.
+func TestStepsPendingTimeoutWaitsForSiblings(t *testing.T) {
+	for _, continueOn := range []bool{false, true} {
+		t.Run("continueOn.failed="+strconv.FormatBool(continueOn), func(t *testing.T) {
+			manifest := strings.Replace(stepsPendingTimeoutWf, "{{continue}}", strconv.FormatBool(continueOn), 1)
+			ctx, r := r4Start(t, manifest)
+			// slow runs; stuck's pod stays Pending past its pendingTimeout.
+			r.r4SetPods(ctx, map[string]apiv1.PodPhase{"stuck": apiv1.PodPending})
+			require.Equal(t, wfv1.NodeRunning, r.r4Phase("slow"))
+			r.r4AgeNode(ctx, "stuck", time.Hour)
+			r.op(ctx)
+
+			stuck := r.woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, stuck)
+			assert.Equal(t, wfv1.NodeFailed, stuck.Phase)
+			assert.Equal(t, wfv1.NodeRunning, r.r4Phase("slow"))
+			assert.Equal(t, wfv1.NodeRunning, r.r4Phase("[0]"), "the group waits for slow")
+			assert.Empty(t, r.r4Phase("steps-pending-timeout.onExit"), "the exit handler waits for the group")
+
+			r.r4SetPods(ctx, map[string]apiv1.PodPhase{"slow": apiv1.PodSucceeded})
+			if continueOn {
+				assert.Equal(t, wfv1.NodeSucceeded, r.r4Phase("[0]"))
+				assert.NotEmpty(t, r.r4Phase("after"), "continueOn.failed lets the next group run")
+				r.drive(ctx, 10, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
+				assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+				return
+			}
+			group := r.woc.wf.Status.Nodes.FindByDisplayName("[0]")
+			require.NotNil(t, group)
+			assert.Equal(t, wfv1.NodeFailed, group.Phase)
+			assert.Equal(t, "child '"+stuck.ID+"' failed", group.Message)
+			assert.Equal(t, wfv1.NodeOmitted, r.r4Phase("after"))
+			assert.NotEmpty(t, r.r4Phase("steps-pending-timeout.onExit"), "the exit handler starts once the group has ended")
+			r.drive(ctx, 10, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
+			assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
+			assert.Equal(t, "child '"+stuck.ID+"' failed", r.woc.wf.Status.Message)
+		})
+	}
 }
