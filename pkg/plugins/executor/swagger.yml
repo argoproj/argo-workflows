@@ -3938,7 +3938,7 @@ definitions:
         properties:
             type:
                 $ref: '#/definitions/RetryNodeAntiAffinityType'
-        title: RetryNodeAntiAffinity prevents running steps on the hosts that previous attempts ran on.
+        title: RetryNodeAntiAffinity avoids running steps on the hosts that previous attempts ran on.
         type: object
     RetryNodeAntiAffinityType:
         description: |-
