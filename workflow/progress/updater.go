@@ -65,6 +65,7 @@ func executable(nodeType wfv1.NodeType) bool {
 func sumProgress(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, visited map[string]bool) wfv1.Progress {
 	logger := logging.RequireLoggerFromContext(ctx)
 	progress := wfv1.ProgressZero
+	missingChildren := 0
 	for _, childNodeID := range node.Children {
 		if visited[childNodeID] {
 			continue
@@ -73,7 +74,10 @@ func sumProgress(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, v
 		// this will tolerate missing child (will be "") and therefore ignored
 		child, err := wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			logger.WithField("childNodeID", childNodeID).Warn(ctx, "Couldn't obtain child, panicking")
+			// Dangling child references are tolerated by design in large DAGs; counting them keeps
+			// the walk quiet instead of logging a line per missing child, which is what wedges the
+			// worker on log I/O.
+			missingChildren++
 			continue
 		}
 		progress = progress.Add(sumProgress(ctx, wf, *child, visited))
@@ -83,6 +87,9 @@ func sumProgress(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, v
 				progress = progress.Add(v)
 			}
 		}
+	}
+	if missingChildren > 0 {
+		logger.WithField("missingChildren", missingChildren).WithField("node", node.Name).Warn(ctx, "sumProgress: child nodes not found, tolerated")
 	}
 	return progress
 }

@@ -450,3 +450,20 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 		assert.False(t, template.IsMissingVariableErr(err))
 	})
 }
+
+// TestSubstituteParamsFastPathKeepsInputContract verifies that the no-template-variables
+// fast path enforces the same input-parameter contract as the slow path: a required
+// parameter with neither value nor valueFrom is rejected, and a valued parameter survives
+// the round-trip.
+func TestSubstituteParamsFastPathKeepsInputContract(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	noVal := wfv1.Template{Inputs: wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "req"}}}}
+	_, err := SubstituteParams(ctx, &noVal, Parameters{}, Parameters{})
+	require.ErrorContains(t, err, "inputs.parameters.req had no value")
+
+	withVal := wfv1.Template{Inputs: wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "req", Value: wfv1.AnyStringPtr("x")}}}}
+	out, err := SubstituteParams(ctx, &withVal, Parameters{}, Parameters{})
+	require.NoError(t, err)
+	assert.Equal(t, "x", out.Inputs.Parameters[0].Value.String())
+}

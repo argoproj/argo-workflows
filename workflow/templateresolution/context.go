@@ -73,44 +73,91 @@ type TemplateContext struct {
 	// workflow is the Workflow where templates will be stored
 	workflow *wfv1.Workflow
 	// log is a logging entry.
-	log logging.Logger
+	log               logging.Logger
+	templateNameCache map[string]*wfv1.Template
+	// templateIndex maps template names to the base workflow's templates, built once so lookups do
+	// not scan the template list.
+	// READ-ONLY: it is shared by reference across child contexts via WithTemplateBase, so mutating
+	// it corrupts the parent context.
+	templateIndex map[string]*wfv1.Template
 }
 
 // NewContext returns new Context.
 func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow, log logging.Logger) *TemplateContext {
-	return &TemplateContext{
-		wftmplGetter:  wftmplGetter,
-		cwftmplGetter: cwftmplGetter,
-		tmplBase:      tmplBase,
-		workflow:      workflow,
-		log:           log,
+	tc := &TemplateContext{
+		wftmplGetter:      wftmplGetter,
+		cwftmplGetter:     cwftmplGetter,
+		tmplBase:          tmplBase,
+		workflow:          workflow,
+		log:               log,
+		templateNameCache: make(map[string]*wfv1.Template),
 	}
+	tc.buildTemplateIndex()
+	return tc
 }
 
 // NewContextFromClientSet returns new Context.
 func NewContextFromClientSet(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow, log logging.Logger) *TemplateContext {
-	return &TemplateContext{
-		wftmplGetter:  WrapWorkflowTemplateInterface(wftmplClientset),
-		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
-		tmplBase:      tmplBase,
-		workflow:      workflow,
-		log:           log,
+	tc := &TemplateContext{
+		wftmplGetter:      WrapWorkflowTemplateInterface(wftmplClientset),
+		cwftmplGetter:     WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
+		tmplBase:          tmplBase,
+		workflow:          workflow,
+		log:               log,
+		templateNameCache: make(map[string]*wfv1.Template),
 	}
+	tc.buildTemplateIndex()
+	return tc
 }
 
 // GetTemplateByName returns a template by name in the context.
 func (tplCtx *TemplateContext) GetTemplateByName(ctx context.Context, name string) (*wfv1.Template, error) {
 	tplCtx.log.WithField("name", name).Debug(ctx, "Getting the template by name")
 
-	tmpl := tplCtx.tmplBase.GetTemplateByName(name)
+	if cached, ok := tplCtx.templateNameCache[name]; ok {
+		return cached.DeepCopy(), nil
+	}
+
+	var tmpl *wfv1.Template
+	if tplCtx.templateIndex != nil {
+		tmpl = tplCtx.templateIndex[name]
+	} else {
+		tmpl = tplCtx.tmplBase.GetTemplateByName(name)
+	}
 	if tmpl == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
 	}
 
-	podMetadata := tplCtx.tmplBase.GetPodMetadata()
-	tplCtx.addPodMetadata(podMetadata, tmpl)
+	cp := tmpl.DeepCopy()
+	tplCtx.addPodMetadata(tplCtx.tmplBase.GetPodMetadata(), cp)
+	tplCtx.templateNameCache[name] = cp
+	return cp.DeepCopy(), nil
+}
 
-	return tmpl.DeepCopy(), nil
+// buildTemplateIndex fills templateIndex from the base holder when it is a *Workflow.
+func (tplCtx *TemplateContext) buildTemplateIndex() {
+	wf, ok := tplCtx.tmplBase.(*wfv1.Workflow)
+	if !ok || wf == nil {
+		return
+	}
+	tplCtx.templateIndex = make(map[string]*wfv1.Template, len(wf.Spec.Templates))
+	for i := range wf.Spec.Templates {
+		tplCtx.templateIndex[wf.Spec.Templates[i].Name] = &wf.Spec.Templates[i]
+	}
+	if wf.Status.StoredWorkflowSpec != nil {
+		for i := range wf.Status.StoredWorkflowSpec.Templates {
+			name := wf.Status.StoredWorkflowSpec.Templates[i].Name
+			if _, exists := tplCtx.templateIndex[name]; !exists {
+				tplCtx.templateIndex[name] = &wf.Status.StoredWorkflowSpec.Templates[i]
+			}
+		}
+	}
+	for k, v := range wf.Status.StoredTemplates {
+		if _, exists := tplCtx.templateIndex[k]; !exists {
+			cp := v
+			tplCtx.templateIndex[k] = &cp
+		}
+	}
 }
 
 func (tplCtx *TemplateContext) GetTemplateGetterFromRef(ctx context.Context, tmplRef *wfv1.TemplateRef) (wfv1.TemplateHolder, error) {
@@ -270,7 +317,24 @@ func (tplCtx *TemplateContext) WithTemplateHolder(ctx context.Context, tmplHolde
 
 // WithTemplateBase creates new context with a wfv1.TemplateHolder.
 func (tplCtx *TemplateContext) WithTemplateBase(tmplBase wfv1.TemplateHolder) *TemplateContext {
-	return NewContext(tplCtx.wftmplGetter, tplCtx.cwftmplGetter, tmplBase, tplCtx.workflow, tplCtx.log)
+	sameBase := tplCtx.tmplBase == tmplBase
+	tc := &TemplateContext{
+		wftmplGetter:      tplCtx.wftmplGetter,
+		cwftmplGetter:     tplCtx.cwftmplGetter,
+		tmplBase:          tmplBase,
+		workflow:          tplCtx.workflow,
+		log:               tplCtx.log,
+		templateNameCache: make(map[string]*wfv1.Template),
+	}
+	if sameBase {
+		// Reuse the parent's index only when the base holder is unchanged: a different holder's
+		// templates are not described by it, and an empty inherited index shadows them.
+		tc.templateIndex = tplCtx.templateIndex
+	}
+	if tc.templateIndex == nil {
+		tc.buildTemplateIndex()
+	}
+	return tc
 }
 
 // WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
