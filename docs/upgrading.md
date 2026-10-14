@@ -175,6 +175,10 @@ The outputs of a DAG template can now refer to `workflow.outputs`, for example `
 Template metrics (`metrics.prometheus`) are now also emitted when a memoized template is served from the cache, with a duration close to zero.
 Previously cache hits emitted no metrics.
 
+The completion metrics of a pod template with a `retryStrategy` can now refer to `{{pod.name}}`: each attempt is counted with its own pod name.
+Previously they were not emitted, and the workflow's `MetricsError` condition said `failed to resolve {{pod.name}}`.
+A realtime metric of such a template still has the pod name of its first attempt.
+
 A failed DAG template's node now has the message `child '<node ID>' failed`, naming its first failed task, as a Steps template's node already did.
 A `retryStrategy.expression` on a DAG template that tests `lastRetry.message` now sees this message.
 

@@ -275,7 +275,7 @@ func TestResourceDurationMetric(t *testing.T) {
       type: Pod
 `
 
-	woc := wfOperationCtx{scope: variables.NewScope()}
+	woc := wfOperationCtx{wf: &wfv1.Workflow{}, scope: variables.NewScope()}
 	var node wfv1.NodeStatus
 	wfv1.MustUnmarshal([]byte(nodeStatus), &node)
 	localScope, _ := woc.prepareMetricScope(&node)

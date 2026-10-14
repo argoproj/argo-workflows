@@ -10,6 +10,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]any, map[string]func() float64) {
@@ -38,6 +39,22 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		realTimeScope[varkeys.MetricDuration.Template()] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
+	}
+
+	// A retried pod template leaves {{pod.name}} to its attempts, so its
+	// metrics resolve it here from the attempt: the node itself, or a Retry
+	// node's latest attempt, read from the status since the caller's copy of
+	// the Retry node can predate the attempt just linked to it.
+	podNode := node
+	if node.Type == wfv1.NodeTypeRetry {
+		if retry, err := woc.wf.Status.Nodes.Get(node.ID); err == nil && len(retry.Children) > 0 {
+			if last, err := woc.wf.Status.Nodes.Get(retry.Children[len(retry.Children)-1]); err == nil {
+				podNode = last
+			}
+		}
+	}
+	if podNode.Type == wfv1.NodeTypePod {
+		localScope[varkeys.PodName.Template()] = woc.getPodName(podNode.Name, wfutil.GetTemplateFromNode(*podNode))
 	}
 
 	if len(node.Children) != 0 {
