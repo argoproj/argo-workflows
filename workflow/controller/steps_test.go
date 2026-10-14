@@ -1268,3 +1268,58 @@ func TestStepsMissingOutputWaitsAlone(t *testing.T) {
 	assert.Empty(t, r.r4Phase("last"), "the next group does not start")
 	assert.Equal(t, wfv1.WorkflowRunning, r.woc.wf.Status.Phase)
 }
+
+const stepsOmittedOutboundWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-omitted-outbound
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: inner
+        template: inner
+        continueOn:
+          failed: true
+      - name: dependant
+        template: run
+        dependencies: [inner]
+  - name: inner
+    steps:
+    - - name: first
+        template: run
+    - - name: second
+        template: run
+  - name: run
+    container:
+      image: alpine:3.23
+`
+
+// TestStepsOmittedOutboundNode verifies that when a Steps template fails in
+// an early group, its outbound node is the omitted step of its last group,
+// which is now recorded, rather than the step that failed: a task that
+// depends on the template hangs off that omitted step, and still runs.
+func TestStepsOmittedOutboundNode(t *testing.T) {
+	ctx, r := r4Start(t, stepsOmittedOutboundWf)
+	r.r4SetPods(ctx, map[string]apiv1.PodPhase{"first": apiv1.PodFailed})
+	r.op(ctx)
+
+	inner := r.woc.wf.Status.Nodes.FindByDisplayName("inner")
+	require.NotNil(t, inner)
+	assert.Equal(t, wfv1.NodeFailed, inner.Phase)
+	second := r.woc.wf.Status.Nodes.FindByDisplayName("second")
+	require.NotNil(t, second)
+	assert.Equal(t, wfv1.NodeOmitted, second.Phase)
+	assert.Equal(t, []string{second.ID}, inner.OutboundNodes, "the outbound node is the omitted step")
+
+	dependant := r.woc.wf.Status.Nodes.FindByDisplayName("dependant")
+	require.NotNil(t, dependant, "continueOn.failed lets the dependant run")
+	assert.Contains(t, second.Children, dependant.ID, "the dependant hangs off the omitted step")
+
+	r.drive(ctx, 10, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
+}

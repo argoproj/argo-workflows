@@ -133,6 +133,9 @@ When an expanded DAG task's `templateRef` refers to other tasks' outputs, its `T
 
 A step group is still created when it starts.
 A group that follows a failed, stopped or timed-out group is now shown, as `Omitted`, together with its omitted steps; previously it did not appear.
+So when a Steps template fails in an earlier group, its outbound nodes (`outboundNodes` on its node) are now the omitted steps of its last group, rather than the steps of the group that failed.
+A task or step that runs after the template, for example because the template's task has `continueOn.failed`, is linked under those omitted steps, and the workflow graph draws it there.
+Tools that read `outboundNodes` should expect them to be `Omitted`.
 After `failFast` stops a template, later groups are not created.
 
 An empty step group (`- []`) that follows a group that did not succeed now ends `Omitted`, so `argo retry` can re-run the failed group.
