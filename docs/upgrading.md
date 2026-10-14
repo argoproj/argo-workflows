@@ -107,6 +107,9 @@ A DAG task's lifecycle hooks now always run before its exit hook, as they alread
 Previously a task that finished in the same reconciliation that started it (for example a memoization cache hit, or a retried task whose attempt had already succeeded) ran its exit hook alongside its lifecycle hooks.
 Its exit hook, and so its dependants, now wait for the lifecycle hooks; the final result is the same.
 
+A step with a `retryStrategy` whose attempt succeeds while one of its lifecycle hooks is still running no longer starts another attempt.
+Previously a Steps template could run the step a second time, starting another pod; a DAG task already ran once.
+
 The controller releases a task's or step's mutex or semaphore lock when the task finishes, in DAG and Steps templates, whether or not it was retried, even while its lifecycle or exit hooks are still running.
 It likewise exports a DAG task's completion metrics and `globalName` outputs as soon as the task itself finishes.
 Previously a DAG task held its lock, and delayed its metrics and `globalName` export, until its lifecycle hooks had finished, so a lifecycle hook that needed the same lock (for example through `templateDefaults.synchronization`) waited for it forever; that no longer happens.
