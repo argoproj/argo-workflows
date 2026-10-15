@@ -279,6 +279,7 @@ nav:
           - service-account-secrets.md
           - synchronization-config.md
           - parallelism.md
+          - template-offloading.md
       - Argo Server:
           - argo-server.md
           - argo-server-auth-mode.md
