@@ -140,6 +140,7 @@ func TestRetryDownloadTransientErrors(t *testing.T) {
 		"read ECONNRESET", "connect ETIMEDOUT", "getaddrinfo EAI_AGAIN", "connect ECONNREFUSED",
 		"ENETUNREACH", "EHOSTUNREACH", "socket hang up", "TLS handshake timeout", "i/o timeout",
 		"connection reset by peer", "Temporary failure in name resolution",
+		`go: github.com/envoyproxy/go-control-plane/envoy@v1.37.0: read "https://proxy.golang.org/github.com/envoyproxy/go-control-plane/envoy/@v/v1.37.0.zip": stream error: stream ID 2607; INTERNAL_ERROR; received from peer`,
 	} {
 		t.Run(message, func(t *testing.T) {
 			h := newDownloadHarness(t)
@@ -162,6 +163,7 @@ func TestRetryDownloadPermanentErrors(t *testing.T) {
 		"unable to verify the first certificate", "Integrity check failed", "checksum mismatch",
 		"error Couldn't find any versions for package", "syntax error", "command not found",
 		"package-502 version 503.0.0 is invalid", "HTTP/1.1 5030", "1502 Bad Gateway", "go: inconsistent vendoring",
+		"INTERNAL_ERROR", "stream error: stream ID 2607; PROTOCOL_ERROR; received from peer",
 	} {
 		t.Run(message, func(t *testing.T) {
 			h := newDownloadHarness(t)
@@ -180,6 +182,7 @@ func TestRetryDownloadMixedErrors(t *testing.T) {
 		`error Error: https://registry.yarnpkg.com/private/-/private-1.0.0.tgz: Request failed "401 Unauthorized"`,
 		"403 Forbidden", "404 Not Found", "501 Not Implemented",
 		"HTTP/2 401", "HTTP/1.1 403", "curl: (22) The requested URL returned error: 404", "npm error code E401",
+		"401 Unauthorized\nstream error: stream ID 2607; INTERNAL_ERROR; received from peer",
 		"unable to verify the first certificate", "Integrity check failed", "checksum mismatch",
 		"error Couldn't find any versions for package", "syntax error", "command not found", "go: inconsistent vendoring",
 	} {
