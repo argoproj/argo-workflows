@@ -15,6 +15,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 )
@@ -128,6 +129,19 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		}
 		if result.Progress.IsValid() {
 			newNode.Progress = result.Progress
+		}
+		// Task results can be replayed after a Pod has been assessed or deleted.
+		// Do not restore outputs already rejected by the frozen action contract.
+		if newNode.Phase.Completed() && !woc.wf.Status.IsTaskResultIncomplete(nodeID) {
+			if tmpl, err := woc.GetNodeTemplate(ctx, newNode); err == nil && tmpl != nil && tmpl.Metadata.Annotations[parameterization.OutputContractAnnotation] != "" {
+				if err := parameterization.ValidateActionOutputs(tmpl, newNode.Outputs); err != nil {
+					newNode.Outputs = nil
+					if newNode.Succeeded() {
+						newNode.Phase = wfv1.NodeError
+						newNode.Message = err.Error()
+					}
+				}
+			}
 		}
 		if !reflect.DeepEqual(old, newNode) {
 			woc.log.

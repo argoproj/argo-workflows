@@ -56,6 +56,7 @@ validation:
   anchors: warn
 exclude_docs: |
   /proposals/
+  !/proposals/parameterization/
   /requirements.txt
   /tested-kubernetes-versions.md
 
@@ -292,6 +293,12 @@ nav:
       - running-locally.md
       - doc-changes.md
       - public-api.md
+      - Experimental parameterization proposal:
+          - Decisions and acceptance: proposals/parameterization/implementation-decisions.md
+          - Local testing: proposals/parameterization/local-testing.md
+          - Local testing (Chinese): proposals/parameterization/local-testing.zh.md
+          - Bound action results: proposals/parameterization/execution-results.md
+          - Result acceptance (Chinese): proposals/parameterization/execution-results.zh.md
       - artifact-plugin.md
       - static-code-analysis.md
       - stress-testing.md
