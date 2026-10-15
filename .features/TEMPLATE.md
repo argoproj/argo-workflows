@@ -10,7 +10,7 @@ Additional details about the feature written in markdown, aimed at users who wan
 * Explain when you would want to use the feature
 * Describe only what this release does, not planned work
 * Show configuration inline in back-ticks, for example `tokenExpirationInMinutes: 120`
-  * The release notes drop blank lines, so code blocks, indented lists and separate paragraphs don't render
+  * The release notes drop blank lines, so indented code blocks, unindented lists and separate paragraphs don't render
 * Use Kubernetes style: active voice, present tense, "you" for the reader
 * One sentence per line of markdown
 -->
