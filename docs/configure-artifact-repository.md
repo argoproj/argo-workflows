@@ -682,7 +682,7 @@ For S3, a `keyPrefix` you set goes in front of this default.
 For Artifactory, the key always starts with the repository URL.
 `{{node.taskName}}` names the attempt: for pod templates it is the pod name, the same value as `{{pod.name}}`, so each attempt gets its own key.
 A key format that uses `{{node.taskName}}` needs a v4.2 or later controller.
-An earlier controller leaves `{{node.taskName}}` unresolved, so every pod in a workflow writes to the same key.
+An earlier controller can't resolve `{{node.taskName}}`, so it doesn't create a pod that stores logs or artifacts under that key format, and the node errors with `failed to resolve {{node.taskName}}`.
 If you might roll the controller back to an earlier version, don't use it in any key format, whether in the `workflow-controller-configmap` or in a namespace's `artifact-repositories` configmap.
 
 ### S3 compatible artifact repository bucket (such as AWS, GCS, MinIO, and Alibaba Cloud OSS)
