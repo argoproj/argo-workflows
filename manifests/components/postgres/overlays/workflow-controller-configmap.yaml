@@ -9,6 +9,7 @@ data:
       maxOpenConns: 0
       connMaxLifetime: 0s
     nodeStatusOffLoad: true
+    templateOffLoad: true
     archive: true
     archiveTTL: 7d
     postgresql:
