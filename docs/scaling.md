@@ -25,7 +25,6 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 - If you have many Workflows and you notice they're not being reconciled fast enough, increase `--workflow-workers`.
 - If you're using `TTLStrategy` in your Workflows and you notice they're not being deleted fast enough, increase `--workflow-ttl-workers`.
 - If you're using `PodGC` in your Workflows and you notice the Pods aren't being deleted fast enough, increase `--pod-cleanup-workers`.
-
 - If you're using a lot of `CronWorkflows` and they don't seem to be firing on time, increase `--cron-workflow-workers`.
 
 ### K8S API Client Side Rate Limiting

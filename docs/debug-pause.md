@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The `debug pause` feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state. Currently this feature is only supported when using the [Emissary Executor](workflow-executors.md#emissary-executor)
+The `debug pause` feature makes it possible to pause individual workflow steps for debugging before, after or both and then release the steps from the paused state.
 
 In order to pause a container env variables are used:
 

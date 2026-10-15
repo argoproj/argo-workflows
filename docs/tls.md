@@ -5,8 +5,6 @@ running [authentication](argo-server.md#auth-mode)):
 
 ## Default configuration
 
-Defaults to [Encrypted](#encrypted) if cert is available
-
 Argo image/deployment defaults to [Encrypted](#encrypted) with a self-signed certificate which expires after 365 days.
 
 ## Plain Text

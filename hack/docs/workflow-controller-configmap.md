@@ -35,8 +35,9 @@ data:
 
 ```
 
-The `config: |` key is optional. However, if the `config: |` key is not used, all nested maps under top level
-keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize.
+The `config: |` key is optional.
+However, if the `config: |` key is not used, all nested maps under top level keys should be strings.
+This makes it easier to generate the map with some configuration management tools like Kustomize.
 
 ```yaml
 # This file describes the config settings available in the workflow controller configmap

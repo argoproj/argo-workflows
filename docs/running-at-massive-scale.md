@@ -4,7 +4,8 @@ Argo Workflows is an incredibly scalable tool for orchestrating workflows. It em
 
 ## Run The Latest Version
 
-Upgrade to the very latest patch. Performance fixes often come in patches.
+Upgrade to the very latest patch.
+Performance fixes often come in patches.
 
 ## Test Your Cluster Before You Install Argo Workflows
 

@@ -39,7 +39,8 @@ Use `retryPolicy` to choose which failure types to retry:
 
 The `retryPolicy` applies even if you also specify an `expression`, but the default policy means the expression makes the decision unless you explicitly specify a policy.
 
-The default `retryPolicy` is `OnFailure`, except when an expression is also supplied, when it is `Always`. This may be easier to understand in this diagram.
+The default `retryPolicy` is `OnFailure`, except when an expression is also supplied, when it is `Always`.
+This may be easier to understand in this diagram.
 
 ```mermaid
 flowchart LR

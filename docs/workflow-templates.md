@@ -2,9 +2,8 @@
 
 ## Introduction
 
-`WorkflowTemplates` are definitions of `Workflows` that live in your cluster. This allows you to create a library of
-frequently-used templates and reuse them either by submitting them directly or by referencing them from
-your `Workflows`.
+`WorkflowTemplates` are definitions of `Workflows` that live in your cluster.
+This allows you to create a library of frequently-used templates and reuse them either by submitting them directly or by referencing them from your `Workflows`.
 
 ### `WorkflowTemplate` vs `template`
 
@@ -50,7 +49,8 @@ and `WorkflowTemplates` on your cluster. To see how, please see [Referencing Oth
 
 ## `WorkflowTemplate` Spec
 
-All the fields in `WorkflowSpec` (except for `priority` that must be configured in a `WorkflowSpec` itself) are supported for `WorkflowTemplates`. You can take any existing `Workflow` you may have and convert it to a `WorkflowTemplate` by substituting `kind: Workflow` to `kind: WorkflowTemplate`.
+All the fields in `WorkflowSpec` (except for `priority` that must be configured in a `WorkflowSpec` itself) are supported for `WorkflowTemplates`.
+You can take any existing `Workflow` you may have and convert it to a `WorkflowTemplate` by substituting `kind: Workflow` to `kind: WorkflowTemplate`.
 
 ### Adding labels/annotations to Workflows with `workflowMetadata`
 
