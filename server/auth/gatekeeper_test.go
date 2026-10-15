@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -291,6 +292,79 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.Equal(t, wfClient, GetWfClient(ctx))
 		assert.Equal(t, kubeClient, GetKubeClient(ctx))
 		assert.NotNil(t, GetClaims(ctx))
+	})
+	t.Run("Authorization failure does not fall back to Header", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
+		headerIf.On("IsRBACEnabled").Return(false)
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything).Return(nil, errors.New("invalid credentials"))
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "Bearer v2:invalid", "x-forwarded-user", "header-user"))
+		_, err = g.Context(ctx)
+		ssoIf.AssertExpectations(t)
+		headerIf.AssertNotCalled(t, "Authorize", mock.Anything)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	})
+
+	t.Run("Authorization with no credentials falls through to Header", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
+		headerIf.On("IsRBACEnabled").Return(false)
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything).Return(nil, authTypes.ErrNoCredentials)
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "Bearer v2:whatever", "x-forwarded-user", "header-user"))
+		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, GetClaims(ctx))
+		assert.Equal(t, "header-user", GetClaims(ctx).Subject)
+		headerIf.AssertCalled(t, "Authorize", mock.Anything)
+	})
+	t.Run("Header takes precedence over cookie", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
+		headerIf.On("IsRBACEnabled").Return(false)
+		ssoIf := &ssomocks.Interface{}
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer v2:invalid"))
+		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, GetClaims(ctx))
+		assert.Equal(t, "header-user", GetClaims(ctx).Subject)
+		ssoIf.AssertNotCalled(t, "Authorize", mock.Anything)
+	})
+	t.Run("Header no credentials falls through to cookie", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(nil, authTypes.ErrNoCredentials)
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "cookie-user"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(false)
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer v2:valid"))
+		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, GetClaims(ctx))
+		assert.Equal(t, "cookie-user", GetClaims(ctx).Subject)
+		ssoIf.AssertExpectations(t)
+	})
+	t.Run("Header failure does not fall back to cookie or Server", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(nil, errors.New("invalid header credentials"))
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "cookie-user"}}, nil)
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer v2:valid"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		ssoIf.AssertNotCalled(t, "Authorize", mock.Anything)
 	})
 	t.Run("SSO+RBAC,precedence=1", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}

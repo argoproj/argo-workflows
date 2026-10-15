@@ -79,6 +79,11 @@ type gatekeeper struct {
 	tokenReviewCache cache.Interface
 }
 
+type authorizationCredential struct {
+	value      string
+	fromCookie bool
+}
+
 // tokenReviewCacheSize bounds the number of distinct client-mode tokens whose successful
 // SelfSubjectReview is remembered.
 const tokenReviewCacheSize = 1000
@@ -169,14 +174,19 @@ func GetClaims(ctx context.Context) *authTypes.Claims {
 	return config
 }
 
-func getAuthHeaders(md metadata.MD) []string {
+func getAuthHeaders(md metadata.MD) []authorizationCredential {
 	// looks for the HTTP header `Authorization: Bearer ...`
 	for _, t := range md.Get(authcookie.AuthorizationMetadataKey) {
-		return []string{t}
+		return []authorizationCredential{
+			{
+				value:      t,
+				fromCookie: false,
+			},
+		}
 	}
 	// check the HTTP cookie
 	// In cases such as wildcard domain cookies, there could be multiple authorization headers
-	var authorizations []string
+	var authorizationCredentials []authorizationCredential
 	for _, t := range md.Get("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
@@ -184,23 +194,26 @@ func getAuthHeaders(md metadata.MD) []string {
 		cookies := request.Cookies()
 		for _, c := range cookies {
 			if c.Name == authcookie.AuthorizationCookieName {
-				authorizations = append(authorizations, c.Value)
+				authorizationCredentials = append(authorizationCredentials, authorizationCredential{value: c.Value, fromCookie: true})
 			}
 		}
 	}
-	return authorizations
+	return authorizationCredentials
 }
 
 func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	//
-	// Authorization Header Authentication
+	// Authorization Header Authentication (excluding cookie-derived credentials)
 	//
-	authorizations := getAuthHeaders(md)
-	if len(authorizations) > 0 {
-		for _, authorization := range authorizations {
-			if s.Modes[SSO] && strings.HasPrefix(authorization, sso.Prefix) {
-				clients, claims, err := s.authenticateSSO(ctx, authorization, req)
+	authorizationCredentials := getAuthHeaders(md)
+	if len(authorizationCredentials) > 0 {
+		for _, authorizationCredential := range authorizationCredentials {
+			if authorizationCredential.fromCookie {
+				continue
+			}
+			if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
+				clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
 				if err == nil {
 					return clients, claims, nil
 				}
@@ -213,9 +226,9 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			}
 
 			if s.Modes[Client] &&
-				(strings.HasPrefix(authorization, "Bearer ") ||
-					strings.HasPrefix(authorization, "Basic ")) {
-				clients, claims, err := s.authenticateClient(ctx, authorization)
+				(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
+					strings.HasPrefix(authorizationCredential.value, "Basic ")) {
+				clients, claims, err := s.authenticateClient(ctx, authorizationCredential.value)
 				if err == nil {
 					return clients, claims, nil
 				}
@@ -228,8 +241,8 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			}
 		}
 
-		// All Authorization headers were empty.
-		// Fall through to the next authentication method.
+		// No Authorization header credential authenticated the request.
+		// Fall through to trusted header authentication.
 	}
 	//
 	// Trusted Header Authentication
@@ -243,6 +256,46 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		if !errors.Is(err, authTypes.ErrNoCredentials) {
 			return nil, nil, err
 		}
+	}
+	//
+	// Cookie-based Authorization Authentication
+	//
+	if len(authorizationCredentials) > 0 {
+		for _, authorizationCredential := range authorizationCredentials {
+			if !authorizationCredential.fromCookie {
+				continue
+			}
+			if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
+				clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
+				if err == nil {
+					return clients, claims, nil
+				}
+
+				if errors.Is(err, authTypes.ErrNoCredentials) {
+					continue
+				}
+
+				return nil, nil, err
+			}
+
+			if s.Modes[Client] &&
+				(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
+					strings.HasPrefix(authorizationCredential.value, "Basic ")) {
+				clients, claims, err := s.authenticateClient(ctx, authorizationCredential.value)
+				if err == nil {
+					return clients, claims, nil
+				}
+
+				if errors.Is(err, authTypes.ErrNoCredentials) {
+					continue
+				}
+
+				return nil, nil, err
+			}
+		}
+
+		// No cookie-derived Authorization credential authenticated the request.
+		// Fall through to server authentication.
 	}
 
 	if s.Modes[Server] {
