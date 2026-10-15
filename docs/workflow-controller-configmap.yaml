@@ -277,8 +277,10 @@ data:
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
     #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
     nodeStatusOffLoad: false
-    # if true spec.templates is offloaded to the db to avoid 1MB limit in etcd
+    # if true spec.templates is offloaded to the persistence database to avoid the 1MB limit in etcd
     templateOffLoad: false
+    # minimum size in bytes above which spec.templates are offloaded (default 262144 = 256KiB)
+    # templateOffloadMinSize: 262144
     # save completed workloads to the workflow archive
     archive: false
     # the number of days to keep archived workflows (the default is forever)
