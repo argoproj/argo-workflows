@@ -3795,8 +3795,15 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
 
-	// wait 4 seconds
-	time.Sleep(4 * time.Second)
+	// Simulate the suspend duration elapsing without waiting on the wall clock.
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	suspendNode := wf.Status.Nodes.FindByDisplayName("approve")
+	require.NotNil(t, suspendNode)
+	suspendNode.StartedAt = metav1.NewTime(suspendNode.StartedAt.Add(-4 * time.Second))
+	wf.Status.Nodes[suspendNode.ID] = *suspendNode
+	wf, err = wfcset.Update(ctx, wf, metav1.UpdateOptions{})
+	require.NoError(t, err)
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
@@ -3942,6 +3949,90 @@ func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
 	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
+}
+
+const suspendWithOutputDefaultTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-with-output-default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: approve
+        template: approve
+    - - name: release
+        template: release
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.approve.outputs.parameters.message}}"
+  - name: approve
+    suspend:
+      duration: "0s"
+    outputs:
+      parameters:
+      - name: message
+        valueFrom:
+          default: default message
+          supplied: {}
+  - name: release
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestSuspendTimeoutWithOutputDefault(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendWithOutputDefaultTemplate)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	approveNode := woc.wf.Status.Nodes.FindByDisplayName("approve")
+	require.NotNil(t, approveNode)
+	require.NotNil(t, approveNode.Outputs)
+	require.Len(t, approveNode.Outputs.Parameters, 1)
+	assert.Equal(t, wfv1.NodeSucceeded, approveNode.Phase)
+	assert.Equal(t, wfv1.AnyStringPtr("default message"), approveNode.Outputs.Parameters[0].Value)
+
+	releaseNode := woc.wf.Status.Nodes.FindByDisplayName("release")
+	require.NotNil(t, releaseNode)
+	require.Len(t, releaseNode.Inputs.Parameters, 1)
+	assert.Equal(t, wfv1.AnyStringPtr("default message"), releaseNode.Inputs.Parameters[0].Value)
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Progress("2/2"), woc.wf.Status.Progress)
+	releaseNode = woc.wf.Status.Nodes.FindByDisplayName("release")
+	require.NotNil(t, releaseNode)
+	assert.Equal(t, wfv1.NodeSucceeded, releaseNode.Phase)
+}
+
+func TestSuspendTimeoutWithoutOutputDefault(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	manifest := strings.Replace(suspendWithOutputDefaultTemplate, "          default: default message\n", "", 1)
+	manifest = strings.Replace(manifest, "name: suspend-with-output-default", "name: suspend-without-output-default", 1)
+	wf := wfv1.MustUnmarshalWorkflow(manifest)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "raw output parameter 'message' has not been set and does not have a default value")
 }
 
 var volumeWithParam = `
