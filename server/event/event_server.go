@@ -26,11 +26,12 @@ type Controller struct {
 	operationQueue chan dispatch.Operation
 	workerCount    int
 	asyncDispatch  bool
+	excludedHeaders map[string]struct{}
 }
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(ctx context.Context, instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int, asyncDispatch bool) *Controller {
+func NewController(ctx context.Context, instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int, asyncDispatch bool, excludedHeaders map[string]struct{}) *Controller {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize, "asyncDispatch": asyncDispatch}).Info(ctx, "Creating event controller")
 
@@ -41,6 +42,7 @@ func NewController(ctx context.Context, instanceIDService instanceid.Service, ev
 		operationQueue: make(chan dispatch.Operation, operationQueueSize),
 		workerCount:    workerCount,
 		asyncDispatch:  asyncDispatch,
+		excludedHeaders: excludedHeaders,
 	}
 }
 
@@ -78,7 +80,7 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), s.excludedHeaders, list.Items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

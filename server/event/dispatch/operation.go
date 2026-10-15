@@ -43,8 +43,8 @@ func (o *Operation) Context() context.Context {
 	return o.ctx
 }
 
-func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eventRecorder record.EventRecorder, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
-	env, err := expressionEnvironment(ctx, namespace, discriminator, payload)
+func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eventRecorder record.EventRecorder, excludedHeaders map[string]struct{}, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
+	env, err := expressionEnvironment(ctx, namespace, discriminator, payload, excludedHeaders)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow template expression environment: %w", err)
 	}
@@ -229,25 +229,31 @@ func (o *Operation) evaluateStringExpression(statement string, errorInfo string)
 	return v, nil
 }
 
-func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]any, error) {
+func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item, excludedHeaders map[string]struct{}) (map[string]any, error) {
 	src := map[string]any{
 		"namespace":     namespace,
 		"discriminator": discriminator,
-		"metadata":      metaData(ctx),
+		"metadata":      metaData(ctx, excludedHeaders),
 		"payload":       payload,
 	}
 	return jsonutil.Jsonify(src)
 }
 
-func metaData(ctx context.Context) map[string]any {
+func metaData(ctx context.Context, excludedHeaders map[string]struct{}) map[string]any {
 	meta := make(map[string]any)
 	md, _ := metadata.FromIncomingContext(ctx)
-	for k, v := range md {
+	for key, values := range md {
 		// only allow headers `X-`  headers, e.g. `X-Github-Action`
 		// otherwise, deny, e.g. deny `authorization` as this would leak security credentials
-		if strings.HasPrefix(k, "x-") {
-			meta[k] = v
-		}
-	}
+        if !strings.HasPrefix(key, "x-") {
+            continue
+        }
+
+        if _, excluded := excludedHeaders[strings.ToLower(key)]; excluded {
+            continue
+        }
+
+        meta[key] = values
+    }
 	return meta
 }

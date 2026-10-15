@@ -110,6 +110,9 @@ type argoServer struct {
 	cache                    *cache.ResourceCache
 	restConfig               *rest.Config
 	maxGRPCMessageSize       int
+	// Headers that must be excluded from WorkflowEventBinding metadata
+	// to prevent exposing trusted authentication credentials and identity claims.
+	excludedHeaders map[string]struct{}
 }
 
 type ArgoServerOpts struct {
@@ -142,19 +145,45 @@ func getResourceCacheNamespace(managedNamespace string) string {
 	return v1.NamespaceAll
 }
 
+// getExcludedHeaders returns the configured trusted authentication headers
+// that must be excluded from WorkflowEventBinding metadata.
+func getExcludedHeaders(c config.HeaderConfig) map[string]struct{} {
+	headers := []string{
+		c.Issuer.Header,
+		c.Subject.Header,
+		c.Email.Header,
+		c.PreferredUsername.Header,
+		c.Groups.ClaimSource.Header,
+	}
+
+	if c.SharedSecret != nil {
+		headers = append(headers, c.SharedSecret.Header)
+	}
+
+	excluded := make(map[string]struct{})
+	for _, h := range headers {
+		if h != "" {
+			excluded[strings.ToLower(h)] = struct{}{}
+		}
+	}
+
+	return excluded
+}
+
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
+	c, err := configController.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	ssoIf := sso.NullSSO
 	headerIf := header.NullHeaderAuth
+	excludedHeaders := getExcludedHeaders(c.Header)
 
 	if opts.AuthModes[auth.Header] {
-		c, err := configController.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
-
 		headerIf, err = header.New(
 			ctx,
 			c.Header,
@@ -170,10 +199,6 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		log.Info(ctx, "Trusted Header authentication disabled")
 	}
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
 		if err = logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
 			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
 		}
@@ -227,6 +252,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		cache:                    resourceCache,
 		restConfig:               opts.RestConfig,
 		maxGRPCMessageSize:       maxGRPCMessageSize,
+		excludedHeaders:          excludedHeaders,
 	}, nil
 }
 
@@ -308,7 +334,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
-	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
+	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch, as.excludedHeaders)
 	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
 
 	syncServer := serversync.NewSyncServer(ctx, as.clients.Kubernetes, as.namespace, config.Synchronization)

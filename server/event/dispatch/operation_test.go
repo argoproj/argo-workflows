@@ -25,17 +25,42 @@ import (
 
 func Test_metaData(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
-		data := metaData(logging.TestContext(t.Context()))
+		data := metaData(logging.TestContext(t.Context()), nil)
 		assert.Empty(t, data)
 	})
+
 	t.Run("Headers", func(t *testing.T) {
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.MD{
 			"x-valid": []string{"true"},
 			"ignored": []string{"false"},
 		})
-		data := metaData(ctx)
+
+		data := metaData(ctx, nil)
+
 		require.Len(t, data, 1)
 		assert.Equal(t, []string{"true"}, data["x-valid"])
+	})
+
+	t.Run("ExcludesConfiguredAuthenticationHeaders", func(t *testing.T) {
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.MD{
+			"x-proxy-auth":      []string{"super-secret"},
+			"x-forwarded-user":  []string{"student@example.com"},
+			"x-forwarded-groups": []string{"admins"},
+			"x-custom-event":    []string{"pull-request"},
+		})
+
+		excludedHeaders := map[string]struct{}{
+			"x-proxy-auth":     {},
+			"x-forwarded-user": {},
+			"x-forwarded-groups": {},
+		}
+
+		data := metaData(ctx, excludedHeaders)
+
+		assert.NotContains(t, data, "x-proxy-auth")
+		assert.NotContains(t, data, "x-forwarded-user")
+		assert.NotContains(t, data, "x-forwarded-groups")
+		assert.Equal(t, []string{"pull-request"}, data["x-custom-event"])
 	})
 }
 
@@ -64,7 +89,7 @@ func TestNewOperation(t *testing.T) {
 	recorder := record.NewFakeRecorder(6)
 
 	// act
-	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), recorder, []wfv1.WorkflowEventBinding{
+	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), recorder, nil, []wfv1.WorkflowEventBinding{
 		// test a malformed binding
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "malformed", Namespace: "my-ns"},
@@ -211,7 +236,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	recorder := record.NewFakeRecorder(10)
 
 	// act
-	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), recorder, []wfv1.WorkflowEventBinding{
+	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), recorder, nil, []wfv1.WorkflowEventBinding{
 		{
 			// No name specified
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-1", Namespace: "my-ns"},
@@ -427,7 +452,7 @@ func TestDispatchWorkflowMetadata(t *testing.T) {
 		client := fake.NewClientset(tmpl)
 		ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, client)
 		ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-		op, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), record.NewFakeRecorder(6),
+		op, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), record.NewFakeRecorder(6), nil,
 			[]wfv1.WorkflowEventBinding{binding}, "my-ns", "", &wfv1.Item{Value: json.RawMessage(`{}`)})
 		require.NoError(t, err)
 		require.NoError(t, op.Dispatch(ctx))
@@ -472,7 +497,7 @@ func TestDispatchWorkflowMetadata(t *testing.T) {
 }
 
 func Test_expressionEnvironment(t *testing.T) {
-	env, err := expressionEnvironment(logging.TestContext(t.Context()), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
+	env, err := expressionEnvironment(logging.TestContext(t.Context()), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "my-ns", env["namespace"])
 	assert.Equal(t, "my-d", env["discriminator"])
