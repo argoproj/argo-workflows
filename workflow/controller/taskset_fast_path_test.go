@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -9,9 +11,13 @@ import (
 	syncpkg "github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	fakekube "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -85,6 +91,74 @@ func TestTaskSetCompletionFastPath(t *testing.T) {
 				assert.Equal(t, "default/workflow", key)
 				queue.Done(key)
 				t.Logf("event-to-queue delay (virtual clock): %s", time.Since(start))
+			})
+		})
+	}
+}
+
+func TestTaskSetCompletionFastPathFromEnv(t *testing.T) {
+	// Keep the real constructor's telemetry initialization local to this test.
+	for _, key := range []string{"OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"} {
+		t.Setenv(key, "")
+	}
+	meterProvider, tracerProvider := otel.GetMeterProvider(), otel.GetTracerProvider()
+	t.Cleanup(func() {
+		otel.SetMeterProvider(meterProvider)
+		otel.SetTracerProvider(tracerProvider)
+	})
+	for _, tt := range []struct {
+		name    string
+		value   string
+		unset   bool
+		enabled bool
+	}{
+		{name: "unset", unset: true},
+		{name: "empty"},
+		{name: "false", value: "false"},
+		{name: "true", value: "true", enabled: true},
+		{name: "uppercase is not opt-in", value: "TRUE"},
+		{name: "numeric is not opt-in", value: "1"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			const key = "ARGO_TASKSET_COMPLETION_FAST_PATH"
+			t.Setenv(key, tt.value)
+			if tt.unset {
+				require.NoError(t, os.Unsetenv(key))
+			}
+			configMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "controller-config", Namespace: "default"},
+				Data:       map[string]string{"config": "metricsConfig:\n  enabled: false\n"},
+			}
+			controller, err := NewWorkflowController(logging.TestContext(t.Context()),
+				&rest.Config{Host: "https://kubernetes.invalid"}, fakekube.NewClientset(configMap), fakewfclientset.NewClientset(),
+				"default", "default", "argoexec:test", "", "text", configMap.Name, false, false)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				controller.wfQueue.ShutDown()
+				controller.wfArchiveQueue.ShutDown()
+				assert.NoError(t, controller.ShutdownTracing(context.Background()))
+				assert.NoError(t, controller.ShutdownMetrics(context.Background()))
+			})
+			assert.Equal(t, tt.enabled, controller.taskSetCompletionFastPath)
+		})
+	}
+}
+
+func TestTaskSetCompletionFastPathInvalidObject(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: time.Second})
+				defer queue.ShutDown()
+				controller := &WorkflowController{wfQueue: queue, taskSetCompletionFastPath: enabled}
+				// No metadata means no valid workflow key. Neither immediate nor
+				// delayed work should be enqueued, even with the fast path enabled.
+				require.NotPanics(t, func() { controller.onWorkflowTaskSetUpdate(fastPathTaskSet(), struct{}{}) })
+				synctest.Wait()
+				require.Zero(t, queue.Len())
+				time.Sleep(time.Second)
+				synctest.Wait()
+				require.Zero(t, queue.Len())
 			})
 		})
 	}
