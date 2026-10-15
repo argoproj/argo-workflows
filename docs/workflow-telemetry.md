@@ -10,6 +10,7 @@ A number of system level metrics
 
 Metrics are defined in-place on the Workflow/Step/Task where they are emitted from.
 Metrics are always processed _after_ the Workflow/Step/Task completes, with the exception of [real-time metrics](#real-time-metrics).
+Template metrics are also emitted when a [memoized](memoization.md) template is served from the cache, with a duration close to zero.
 Custom metrics are defined under a `prometheus` tag in the yaml for legacy reasons.
 They are emitted over all active protocols.
 
@@ -149,6 +150,8 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
 Argo supports a limited number of real-time metrics.
 These metrics are emitted in real-time, beginning when the step execution starts and ending when it completes.
 Real-time metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#real-time-metrics).
+In a real-time metric of a template with a `retryStrategy`, `{{pod.name}}` is the pod name of the first attempt.
+In the completion metrics of the same template, each attempt is counted with its own pod name.
 
 To define a real-time metric simply add `realtime: true` to a gauge metric with a valid real-time variable. For example:
 
