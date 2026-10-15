@@ -26,6 +26,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
+// completionDelayTaskSet builds a taskset fixture with stable node IDs so tests
+// can compare phase transitions for the same workflow across informer updates.
 func completionDelayTaskSet(phases ...wfv1.NodePhase) *wfv1.WorkflowTaskSet {
 	ts := &wfv1.WorkflowTaskSet{
 		ObjectMeta: metav1.ObjectMeta{Name: "workflow", Namespace: "default", ResourceVersion: "1"},
@@ -37,6 +39,8 @@ func completionDelayTaskSet(phases ...wfv1.NodePhase) *wfv1.WorkflowTaskSet {
 	return ts
 }
 
+// TestTaskSetCompletionDelay checks exact queue timing across result transitions,
+// preserving the normal delay unless a newly terminal result has an override.
 func TestTaskSetCompletionDelay(t *testing.T) {
 	for _, delay := range []*time.Duration{nil, new(time.Duration(0)), new(250 * time.Millisecond), new(time.Second), new(20 * time.Second)} {
 		name := "unset"
@@ -109,6 +113,8 @@ func TestTaskSetCompletionDelay(t *testing.T) {
 	}
 }
 
+// TestTaskSetCompletionDelayFromEnv exercises the real constructor's optional
+// duration parsing, invalid-value rejection and independent normal requeue delay.
 func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 	for _, key := range []string{"OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"} {
 		t.Setenv(key, "")
@@ -170,6 +176,8 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 	}
 }
 
+// TestTaskSetCompletionDelayInvalidObject verifies that updates lacking metadata
+// neither panic nor enqueue immediate or delayed work, regardless of the override.
 func TestTaskSetCompletionDelayInvalidObject(t *testing.T) {
 	for i, delay := range []*time.Duration{nil, new(time.Duration(0)), new(time.Second)} {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
@@ -188,6 +196,8 @@ func TestTaskSetCompletionDelayInvalidObject(t *testing.T) {
 	}
 }
 
+// TestTaskSetCompletionDelayCoalesces verifies that completion bursts share one
+// queued workflow key and cannot cause concurrent processing of an in-flight key.
 func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
 	for _, delay := range []time.Duration{0, time.Second} {
 		t.Run(delay.String(), func(t *testing.T) {
@@ -222,6 +232,8 @@ func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
 	}
 }
 
+// TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent confirms that an override
+// is a scheduling delay, not a minimum interval that blocks an earlier enqueue.
 func TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: time.Second})
@@ -238,6 +250,8 @@ func TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent(t *testing.T) {
 	})
 }
 
+// TestTaskSetCompletionDelayPromotesDelayedWorkflow verifies that a zero override
+// enqueues immediately without cancelling an already scheduled delayed wakeup.
 func TestTaskSetCompletionDelayPromotesDelayedWorkflow(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: 10 * time.Second})
@@ -261,6 +275,8 @@ func TestTaskSetCompletionDelayPromotesDelayedWorkflow(t *testing.T) {
 	})
 }
 
+// TestTaskSetCompletionDelayRejectsStaleWorkflow verifies that immediate completion
+// events still pass through stale-version rejection and the normal delayed retry.
 func TestTaskSetCompletionDelayRejectsStaleWorkflow(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: 10 * time.Second})
@@ -292,6 +308,8 @@ func TestTaskSetCompletionDelayRejectsStaleWorkflow(t *testing.T) {
 	})
 }
 
+// TestTaskSetCompletionDelayInformer verifies the actual informer wiring: a
+// terminal status update delivered through the fake API enqueues its workflow.
 func TestTaskSetCompletionDelayInformer(t *testing.T) {
 	ctx := t.Context()
 	initial := completionDelayTaskSet(wfv1.NodeRunning)
