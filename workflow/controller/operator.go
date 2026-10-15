@@ -1553,6 +1553,14 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			updated.Daemoned = nil
 			break
 		}
+		// A pod force-deleted from a lost node can be seen Failed before any kubelet has reported a container
+		// status. Assessing it now would record the "can't find failed message" placeholder, and the retry
+		// policy decides on it once. Wait for the statuses, or for the pod to go away ("pod deleted").
+		if wait := deletedPodStatusWait(pod); wait > 0 {
+			woc.log.WithFields(logging.Fields{"pod": pod.Name, "wait": wait}).Info(ctx, "Pod failed while being deleted and has no container status yet, waiting")
+			woc.requeueAfter(wait)
+			return nil
+		}
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
@@ -1878,6 +1886,21 @@ func getPendingReason(pod *apiv1.Pod) string {
 		}
 	}
 	return ""
+}
+
+// deletedPodStatusTimeout bounds how long a deleted Failed pod is left unassessed while it has no container status.
+// It matches the 2m after which the pod controller releases the status finalizer of a deleting pod, so the pod
+// is normally gone (and its node marked "pod deleted") before it elapses.
+const deletedPodStatusTimeout = 2 * time.Minute
+
+// deletedPodStatusWait returns how long to wait before assessing a Failed pod that is being deleted and has not
+// reported a message or any container status, or 0 if it can be assessed now.
+func deletedPodStatusWait(pod *apiv1.Pod) time.Duration {
+	if pod.DeletionTimestamp == nil || pod.Status.Message != "" ||
+		len(pod.Status.ContainerStatuses) > 0 || len(pod.Status.InitContainerStatuses) > 0 {
+		return 0
+	}
+	return max(time.Until(pod.DeletionTimestamp.Add(deletedPodStatusTimeout)), 0)
 }
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
