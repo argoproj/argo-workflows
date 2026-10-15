@@ -1,7 +1,7 @@
 Description: Allows offloading spec.templates to the db allowing for arbitrarily large workflows
 Authors: [Martin Hnatek](https://github.com/hnatekmar)
 Component: General
-Issues: 7121
+Issues: 17239 7121
 
 Workflows whose inline templates exceed a configurable size threshold have those templates stored in the persistence database, leaving a small stub in the Workflow object.
 
