@@ -21,13 +21,13 @@ import (
 )
 
 // onWorkflowTaskSetUpdate keeps routine updates rate-limited, but optionally
-// wakes the workflow immediately when a task result first becomes terminal.
+// applies a separate scheduling delay when a task result first becomes terminal.
 func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 	key, err := cache.MetaNamespaceKeyFunc(newObj)
 	if err != nil {
 		return
 	}
-	if wfc.taskSetCompletionFastPath {
+	if wfc.taskSetCompletionDelay != nil {
 		previous := old.(*wfv1.WorkflowTaskSet)
 		current := newObj.(*wfv1.WorkflowTaskSet)
 		for id, result := range current.Status.Nodes {
@@ -35,7 +35,7 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 				// The workqueue coalesces pending keys and serializes work per key.
 				// processNextItem still rejects stale workflow versions and falls
 				// back to a rate-limited retry while the workflow informer catches up.
-				wfc.wfQueue.Add(key)
+				wfc.wfQueue.AddAfter(key, *wfc.taskSetCompletionDelay)
 				return
 			}
 		}

@@ -152,8 +152,9 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
-	// taskSetCompletionFastPath bypasses the fixed delay for newly terminal taskset results.
-	taskSetCompletionFastPath bool
+	// taskSetCompletionDelay overrides the delay for newly terminal taskset results.
+	// Nil preserves the normal rate-limited path; zero enqueues immediately.
+	taskSetCompletionDelay *time.Duration
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -213,6 +214,15 @@ const (
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
+	var taskSetCompletionDelay *time.Duration
+	if value, set := os.LookupEnv("ARGO_TASKSET_COMPLETION_REQUEUE_TIME"); set {
+		delay, err := time.ParseDuration(value)
+		if err != nil || delay < 0 {
+			return nil, fmt.Errorf("ARGO_TASKSET_COMPLETION_REQUEUE_TIME must be a non-negative duration (e.g. 0s, 250ms, 1s); got %q", value)
+		}
+		taskSetCompletionDelay = &delay
+	}
+
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -252,7 +262,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
-		taskSetCompletionFastPath:  os.Getenv("ARGO_TASKSET_COMPLETION_FAST_PATH") == "true",
+		taskSetCompletionDelay:     taskSetCompletionDelay,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
