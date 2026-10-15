@@ -1776,6 +1776,8 @@ func TestStepsRetriesVariable(t *testing.T) {
 	assert.ElementsMatch(t, expected, actual)
 }
 
+// TestAssessNodeStatus checks the node phase and message assessNodeStatus derives from a pod, or that it returns nil
+// when the node must not be updated yet.
 func TestAssessNodeStatus(t *testing.T) {
 	const templateName = "whalesay"
 	tests := []struct {

@@ -63,8 +63,9 @@ func lostNodePod(ctx context.Context, t *testing.T) (*WorkflowController, *wfOpe
 	return controller, woc
 }
 
-// A pod force-deleted from a lost node can be observed Failed before the kubelet has reported any container
-// status. The retry policy must be evaluated on the status the kubelet reports, not on that placeholder.
+// TestPodFailedWhileDeletingWithoutContainerStatuses checks that a pod force-deleted from a lost node, observed Failed
+// before the kubelet has reported any container status, has its retry policy evaluated on the status the kubelet
+// reports, not on the "can't find failed message" placeholder.
 func TestPodFailedWhileDeletingWithoutContainerStatuses(t *testing.T) {
 	t.Setenv("TRANSIENT_ERROR_PATTERN", `ContainerStatusUnknown \(exit code 137\)`)
 	ctx := logging.TestContext(t.Context())
@@ -95,7 +96,8 @@ func TestPodFailedWhileDeletingWithoutContainerStatuses(t *testing.T) {
 	assert.Len(t, retryNode.Children, 2, "expected a second attempt, retry node is %s: %s", retryNode.Phase, retryNode.Message)
 }
 
-// When no kubelet reports the pod's statuses, the pod goes away and its node is recorded as "pod deleted".
+// TestPodFailedWhileDeletingWithoutContainerStatusesThenGone checks that when no kubelet reports the pod's statuses,
+// the pod goes away and its node is recorded as "pod deleted", which the retry policy then decides on.
 func TestPodFailedWhileDeletingWithoutContainerStatusesThenGone(t *testing.T) {
 	t.Setenv("TRANSIENT_ERROR_PATTERN", "pod deleted")
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0s")
@@ -123,6 +125,7 @@ func TestPodFailedWhileDeletingWithoutContainerStatusesThenGone(t *testing.T) {
 	assert.Len(t, retryNode.Children, 2, "expected a second attempt, retry node is %s: %s", retryNode.Phase, retryNode.Message)
 }
 
+// updatePod applies mutate to the workflow's only pod and waits for the pod informer to observe the change.
 func updatePod(ctx context.Context, t *testing.T, woc *wfOperationCtx, mutate func(pod *apiv1.Pod)) {
 	t.Helper()
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace)
