@@ -229,6 +229,9 @@ const (
 	LabelValueTypeConfigMapParameter = "Parameter"
 	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.
 	LabelValueTypeConfigMapExecutorPlugin = "ExecutorPlugin"
+	// LabelValueTypeConfigMapWorkflowDefaults is a key for configmaps that contain
+	// namespace-level workflow defaults.
+	LabelValueTypeConfigMapWorkflowDefaults = "WorkflowDefaults"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
