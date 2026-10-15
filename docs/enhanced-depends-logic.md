@@ -51,6 +51,14 @@ If you depend on a task that uses `withItems`, you can use `.AnySucceeded` and `
 depends: "task-1.AnySucceeded || task-2.AllFailed"
 ```
 
+When the items of an expanded task include both `Error` items and `Failed` items, the task ends `Error`.
+So `.Errored` is true for that task, and `.Failed` is false.
+
+The controller evaluates a `depends` expression only when every task that the expression refers to has finished, and the hooks of those tasks have also finished.
+A daemon task that is running counts as finished.
+
+[How DAG and Steps Templates Run](dag-and-steps-execution.md) describes how the phases of tasks combine.
+
 ## Compatibility with `dependencies` and `dag.task.continueOn`
 
 You cannot use both `dependencies` and `depends` in the same task group.

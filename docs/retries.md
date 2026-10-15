@@ -110,7 +110,8 @@ This is an [expr expression](variables.md#expression) with access to the followi
     expression: asInt(lastRetry.duration) < 60 # Retry unless duration >= 1 minute
     ```
 
-- `lastRetry.message`: The message output from the last retry (available from version 3.5)
+- `lastRetry.message`: The message output from the last retry (available from version 3.5).
+  For a failed DAG template, the message is `child '<node ID>' failed`, where the node ID is the ID of the first failed task.
 
     ```yaml
     # Retry if message matches the regular expression
@@ -118,6 +119,10 @@ This is an [expr expression](variables.md#expression) with access to the followi
     ```
 
 If `expression` evaluates to false, the step will not be retried.
+
+If `expression` cannot be evaluated, the step is not retried.
+The retried node ends `Error`, and its message is the error from the expression.
+The last attempt keeps its own phase, for example `Failed`.
 
 The `expression` result will be logical *and* with the `retryPolicy`. Both must be true to retry.
 
