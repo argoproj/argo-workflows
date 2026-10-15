@@ -23,7 +23,7 @@ This document outlines environment variables that can be used to customize behav
 | `ARGO_AGENT_PATCH_RATE`                  | `time.Duration`     | `DEFAULT_REQUEUE_TIME`                                                                      | Rate that the Argo Agent will patch the workflow task-set.                                                                                                                                                                                                               |
 | `ARGO_AGENT_CPU_LIMIT`                   | `resource.Quantity` | `100m`                                                                                      | CPU resource limit for the agent.                                                                                                                                                                                                                                        |
 | `ARGO_AGENT_MEMORY_LIMIT`                | `resource.Quantity` | `256m`                                                                                      | Memory resource limit for the agent.                                                                                                                                                                                                                                     |
-| `ARGO_TASKSET_COMPLETION_REQUEUE_TIME` | `time.Duration` | Unset (normal rate-limited path) | Sets a separate controller scheduling delay for newly terminal [`WorkflowTaskSet`](http-template.md#argo-agent-rbac) results, useful for short HTTP or executor-plugin steps that spend longer waiting for reconciliation than running, for example `250ms` or `1s`; leave unset to preserve normal rate limiting or use `0s` to enqueue immediately once results reach the controller; also lower `ARGO_AGENT_PATCH_RATE` (default: `DEFAULT_REQUEUE_TIME`) to reduce the preceding batching delay, since results can still wait up to that interval with `0s`; empty, negative or malformed values cause the controller to fail to start; other events may enqueue sooner, so this is not a minimum reconciliation interval; shorter delays may increase controller load. |
+| `ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS` | `int` | `DEFAULT_REQUEUE_TIME` | How long the controller waits to reconcile a workflow after an HTTP or plugin node in its [WorkflowTaskSet](http-template.md#argo-agent-rbac) finishes ([details](#argo_taskset_completion_requeue_milliseconds)). |
 | `ARGO_POD_STATUS_CAPTURE_FINALIZER`      | `bool`              | `false`                                                                                     | The finalizer blocks the deletion of pods until the controller captures their status.
 | `BUBBLE_ENTRY_TEMPLATE_ERR`              | `bool`              | `true`                                                                                      | Whether to bubble up template errors to workflow.                                                                                                                                                                                                                        |
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
@@ -98,6 +98,30 @@ spec:
             - name: WORKFLOW_GC_PERIOD
               value: 30s
 ```
+
+### ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS
+
+Use this setting for short HTTP or executor-plugin nodes that spend longer waiting for reconciliation than running.
+It sets a separate controller scheduling delay for newly terminal [WorkflowTaskSet](http-template.md#argo-agent-rbac) results.
+Specify a non-negative integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.
+A value of `0` enqueues the workflow immediately once results reach the controller.
+Leave the setting unset to preserve normal rate limiting, whose delay is `DEFAULT_REQUEUE_TIME`.
+The controller fails to start if the value is empty, negative, not an integer, or too large to represent as an internal duration.
+
+The agent publishes results at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
+Even with a completion delay of `0`, results can wait up to that patch interval before reaching the controller.
+To reduce the preceding batching delay as well, lower `ARGO_AGENT_PATCH_RATE` alongside this setting, for example:
+
+```yaml
+env:
+  - name: ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS
+    value: "250"
+  - name: ARGO_AGENT_PATCH_RATE
+    value: "1s"
+```
+
+This is a scheduling delay, not a minimum interval between reconciliations: other events may enqueue a workflow sooner.
+Shorter delays may increase controller load.
 
 ## Executor
 
