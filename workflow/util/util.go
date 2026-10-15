@@ -1535,7 +1535,12 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 		if node.Type == wfv1.NodeTypeSkipped && (node.Phase == wfv1.NodeOmitted || node.Phase == wfv1.NodeSkipped) {
 			markStaleSkippedSubtree(wf.Status.Nodes, nodeID, toDelete, hookedNodesToReparent)
 		}
-		downstream = append(downstream, node.Children...)
+		if node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeSteps {
+			// A group's children are internal tasks; only its outbound nodes lead downstream.
+			downstream = append(downstream, node.OutboundNodes...)
+		} else {
+			downstream = append(downstream, node.Children...)
+		}
 	}
 
 	// A preserved hook needs a surviving boundary to attach to. Include its

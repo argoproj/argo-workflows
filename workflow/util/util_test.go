@@ -1847,6 +1847,63 @@ func TestPlanResetReopensSkippedDependentsAfterNestedGroupRetry(t *testing.T) {
 	require.NoError(t, err, "retry output must not leave preserved hooks orphaned")
 }
 
+func TestPlanResetPreservesSkippedNodesInsideRetainedNestedGroups(t *testing.T) {
+	for _, groupType := range []wfv1.NodeType{wfv1.NodeTypeDAG, wfv1.NodeTypeSteps} {
+		t.Run(string(groupType), func(t *testing.T) {
+			testPlanResetPreservesSkippedNodesInsideRetainedNestedGroup(t, groupType)
+		})
+	}
+}
+
+func testPlanResetPreservesSkippedNodesInsideRetainedNestedGroup(t *testing.T, groupType wfv1.NodeType) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	// The succeeded nested DAG continues after the failed group, like a task
+	// reached through continueOn. Its false-when task is valid history; only the
+	// omitted task after the nested DAG must be evaluated again.
+	const (
+		workflowName     = "stop-retry"
+		rootID           = workflowName
+		workID           = workflowName + ".work"
+		aID              = workID + ".a"
+		bID              = workID + ".b"
+		continuedID      = workflowName + ".continued"
+		innerSkippedID   = continuedID + ".when-skipped"
+		innerSucceededID = continuedID + ".step"
+		afterID          = workflowName + ".after"
+	)
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: workflowName},
+		Status: wfv1.WorkflowStatus{
+			Phase: wfv1.WorkflowFailed,
+			Nodes: wfv1.Nodes{
+				rootID:           {ID: rootID, Name: workflowName, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, Children: []string{workID}},
+				workID:           {ID: workID, Name: workID, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeFailed, BoundaryID: rootID, Children: []string{aID, bID}, OutboundNodes: []string{aID}},
+				aID:              {ID: aID, Name: aID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: workID, Children: []string{continuedID}},
+				bID:              {ID: bID, Name: bID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, BoundaryID: workID},
+				continuedID:      {ID: continuedID, Name: continuedID, Type: groupType, Phase: wfv1.NodeSucceeded, BoundaryID: rootID, Children: []string{innerSkippedID, innerSucceededID}, OutboundNodes: []string{innerSucceededID}},
+				innerSkippedID:   {ID: innerSkippedID, Name: innerSkippedID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeSkipped, BoundaryID: continuedID},
+				innerSucceededID: {ID: innerSucceededID, Name: innerSucceededID, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: continuedID, Children: []string{afterID}},
+				afterID:          {ID: afterID, Name: afterID, Type: wfv1.NodeTypeSkipped, Phase: wfv1.NodeOmitted, BoundaryID: rootID},
+			},
+		},
+	}
+
+	plan, err := planReset(ctx, wf, false, "", false)
+	require.NoError(t, err)
+	assert.True(t, plan.toDelete[afterID], "dependants beyond the nested DAG must be re-evaluated")
+	assert.False(t, plan.toDelete[innerSkippedID], "a retained nested DAG's internal skipped task must not be deleted")
+	assert.False(t, plan.toDelete[innerSucceededID], "a retained nested DAG's outbound task must remain memoized")
+
+	dst := wf.DeepCopy()
+	applyResetPlan(ctx, wf, dst, plan, nil, nil)
+	assert.Contains(t, dst.Status.Nodes, innerSkippedID)
+	assert.Contains(t, dst.Status.Nodes, innerSucceededID)
+	assert.NotContains(t, dst.Status.Nodes, afterID)
+	_, err = newWorkflowsDag(dst)
+	require.NoError(t, err, "retry output must keep the retained nested DAG intact")
+}
+
 func TestPlanResetDeletesHookSubtreeWhenBoundaryIsDeleted(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	const (
