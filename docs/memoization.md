@@ -42,6 +42,12 @@ spec:
 !!! Note
     In order to use memoization it is necessary to add the verbs `create` and `update` to the `configmaps` resource for the appropriate (cluster) roles. In the case of a cluster install the `argo-cluster-role` cluster role should be updated, whilst for a namespace install the `argo-role` role should be updated.
 
+If the controller cannot save a template's result to the cache, the template's node ends `Error`.
+This applies to every memoized template, including DAG and Steps templates.
+For example, this happens when the cache ConfigMap would be larger than the 1 MiB limit, or when the controller is not allowed to update the ConfigMap.
+
+When the controller serves a memoized template from the cache, it still emits the template's metrics (`metrics.prometheus`), with a duration close to zero.
+
 ## FAQ
 
 1. If you see errors like `error creating cache entry: ConfigMap \"reuse-task\" is invalid: []: Too long: must have at most 1048576 characters`,
