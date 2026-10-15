@@ -152,6 +152,8 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
+	// taskSetCompletionFastPath bypasses the fixed delay for newly terminal taskset results.
+	taskSetCompletionFastPath bool
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -250,6 +252,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
+		taskSetCompletionFastPath:  os.Getenv("ARGO_TASKSET_COMPLETION_FAST_PATH") == "true",
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
@@ -1646,12 +1649,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, newObj any) {
-				key, err := cache.MetaNamespaceKeyFunc(newObj)
-				if err == nil {
-					wfc.wfQueue.AddRateLimited(key)
-				}
-			},
+			UpdateFunc: wfc.onWorkflowTaskSetUpdate,
 		})
 	return informer
 }
