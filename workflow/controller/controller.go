@@ -212,7 +212,10 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
-// NewWorkflowController instantiates a new WorkflowController
+// NewWorkflowController initializes a controller from its clients and startup configuration.
+// ARGO_TASKSET_COMPLETION_REQUEUE_TIME optionally overrides the scheduling delay
+// for newly terminal taskset results; unset preserves normal rate limiting.
+// An empty, negative or malformed override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	var taskSetCompletionDelay *time.Duration
 	if value, set := os.LookupEnv("ARGO_TASKSET_COMPLETION_REQUEUE_TIME"); set {
@@ -1646,6 +1649,8 @@ func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[strin
 	return make(map[string]int64)
 }
 
+// newWorkflowTaskSetInformer watches tasksets in the managed namespace and controller
+// instance, routing updates through the normal or configured completion-delay queue path.
 func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,

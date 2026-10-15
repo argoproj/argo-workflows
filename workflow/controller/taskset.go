@@ -22,6 +22,8 @@ import (
 
 // onWorkflowTaskSetUpdate keeps routine updates rate-limited, but optionally
 // applies a separate scheduling delay when a task result first becomes terminal.
+// Updates without a valid object key are ignored; repeated terminal results
+// retain normal rate limiting rather than triggering the completion delay again.
 func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 	key, err := cache.MetaNamespaceKeyFunc(newObj)
 	if err != nil {
