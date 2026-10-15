@@ -1888,19 +1888,33 @@ func getPendingReason(pod *apiv1.Pod) string {
 	return ""
 }
 
-// deletedPodStatusTimeout bounds how long a deleted Failed pod is left unassessed while it has no container status.
-// It matches the 2m after which the pod controller releases the status finalizer of a deleting pod, so the pod
-// is normally gone (and its node marked "pod deleted") before it elapses.
-const deletedPodStatusTimeout = 2 * time.Minute
+// deletedPodStatusMinTimeout is the minimum delay after which the pod controller releases the status finalizer of a
+// deleting pod.
+const deletedPodStatusMinTimeout = 2 * time.Minute
 
 // deletedPodStatusWait returns how long to wait before assessing a Failed pod that is being deleted and has not
-// reported a message or any container status, or 0 if it can be assessed now.
+// reported a message or any container status, or 0 if it can be assessed now. It waits as long as the pod controller
+// retains the pod: the larger of 2m and the pod's podGC deleteDelayDuration, from the later of its deletion and its
+// last condition transition. The pod is normally gone (and its node marked "pod deleted") before that elapses.
 func deletedPodStatusWait(pod *apiv1.Pod) time.Duration {
 	if pod.DeletionTimestamp == nil || pod.Status.Message != "" ||
 		len(pod.Status.ContainerStatuses) > 0 || len(pod.Status.InitContainerStatuses) > 0 {
 		return 0
 	}
-	return max(time.Until(pod.DeletionTimestamp.Add(deletedPodStatusTimeout)), 0)
+	timeout := deletedPodStatusMinTimeout
+	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
+		_, delay, _ := strings.Cut(val, "/")
+		if d, err := (&wfv1.PodGC{DeleteDelayDuration: delay}).GetDeleteDelayDuration(); err == nil && d > timeout {
+			timeout = d
+		}
+	}
+	since := pod.DeletionTimestamp.Time
+	for _, c := range pod.Status.Conditions {
+		if c.LastTransitionTime.After(since) {
+			since = c.LastTransitionTime.Time
+		}
+	}
+	return max(time.Until(since.Add(timeout)), 0)
 }
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
