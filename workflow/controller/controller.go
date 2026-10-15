@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	gosync "sync"
+	"sync/atomic"
 	"time"
 
 	syncpkg "github.com/argoproj/pkg/sync"
@@ -185,6 +186,9 @@ type WorkflowController struct {
 	artGCTaskInformer          wfextvv1alpha1.WorkflowArtifactGCTaskInformer
 	taskResultInformer         cache.SharedIndexInformer
 
+	// gcController is set once leading, so that configuration reloads reach its retention policy
+	gcController atomic.Pointer[gccontroller.Controller]
+
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
 	progressPatchTickDuration time.Duration
@@ -305,9 +309,8 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 }
 
 // runGCcontroller runs the workflow garbage collector controller
-func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLWorkers int) {
+func (wfc *WorkflowController) runGCcontroller(ctx context.Context, gcCtrl *gccontroller.Controller, workflowTTLWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
-	gcCtrl := gccontroller.NewController(ctx, wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
 	err := gcCtrl.Run(ctx, workflowTTLWorkers)
 	if err != nil {
 		panic(err)
@@ -471,7 +474,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
 
-	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
+	gcCtrl := gccontroller.NewController(ctx, wfc.wfclientset, wfc.wfInformer, wfc.metrics, wfc.Config.RetentionPolicy)
+	wfc.gcController.Store(gcCtrl)
+	// pick up a reload that happened before the store above
+	gcCtrl.UpdateRetentionPolicy(ctx, wfc.Config.RetentionPolicy)
+	go wfc.runGCcontroller(ctx, gcCtrl, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
 
 	go wait.UntilWithContext(ctx, wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod)
