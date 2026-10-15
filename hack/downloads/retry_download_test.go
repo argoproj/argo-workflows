@@ -174,6 +174,28 @@ func TestRetryDownloadPermanentErrors(t *testing.T) {
 	}
 }
 
+// TestRetryDownloadMixedErrors gives permanent errors precedence regardless of log order.
+func TestRetryDownloadMixedErrors(t *testing.T) {
+	for _, message := range []string{
+		`error Error: https://registry.yarnpkg.com/private/-/private-1.0.0.tgz: Request failed "401 Unauthorized"`,
+		"403 Forbidden", "404 Not Found", "501 Not Implemented",
+		"HTTP/2 401", "HTTP/1.1 403", "curl: (22) The requested URL returned error: 404", "npm error code E401",
+		"unable to verify the first certificate", "Integrity check failed", "checksum mismatch",
+		"error Couldn't find any versions for package", "syntax error", "command not found", "go: inconsistent vendoring",
+	} {
+		t.Run(message, func(t *testing.T) {
+			for _, output := range []string{message + "\n502 Bad Gateway", "502 Bad Gateway\n" + message} {
+				h := newDownloadHarness(t)
+				fixture := h.fixture(t, outcome{output, 23}, outcome{"download completed", 0})
+				output, status := h.run(t, "sh", fixture)
+				assert.Equal(t, 23, status, output)
+				assert.Equal(t, 1, h.attempts(t))
+				assert.Empty(t, h.sleeps(t))
+			}
+		})
+	}
+}
+
 // TestRetryDownloadLimit verifies bounded backoff and preservation of
 // the final command status when a download keeps failing.
 func TestRetryDownloadLimit(t *testing.T) {
