@@ -31,7 +31,7 @@ func NewTolerantClusterWorkflowTemplateInformer(dynamicInterface dynamic.Interfa
 		}
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural})
 	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
-	delegate.Informer().SetTransform(informerutil.StripTemplateCacheFields)
+	delegate.Informer().SetTransform(informerutil.StripManagedFields)
 	return &tolerantClusterWorkflowTemplateInformer{delegate: delegate}
 }
 

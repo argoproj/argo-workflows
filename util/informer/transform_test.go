@@ -139,3 +139,28 @@ func TestStripTemplateCacheFields(t *testing.T) {
 	assert.Equal(t, "yes", un.GetAnnotations()["keep-me"])
 	assert.Equal(t, "my-template", un.GetName())
 }
+
+// The shared tolerant-informer constructors use StripManagedFields, and
+// argo-server builds those same informers to serve templates to clients. So
+// this transform must leave the client-side-apply annotation alone: stripping
+// it there would let a get/modify/update round trip drop it from the live
+// object.
+func TestStripManagedFieldsKeepsLastAppliedConfiguration(t *testing.T) {
+	un := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "argoproj.io/v1alpha1",
+		"kind":       "WorkflowTemplate",
+		"metadata": map[string]any{
+			"name":          "my-template",
+			"managedFields": []any{map[string]any{"manager": "kubectl-client-side-apply"}},
+			"annotations": map[string]any{
+				apiv1.LastAppliedConfigAnnotation: `{"spec":{}}`,
+			},
+		},
+	}}
+	out, err := StripManagedFields(un)
+	require.NoError(t, err)
+	assert.Same(t, un, out)
+	assert.Nil(t, un.GetManagedFields(), "managedFields is loss-free to strip")
+	assert.Contains(t, un.GetAnnotations(), apiv1.LastAppliedConfigAnnotation,
+		"the apply annotation must survive: argo-server serves this cache to clients")
+}

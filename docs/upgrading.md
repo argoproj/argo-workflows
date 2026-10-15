@@ -7,6 +7,13 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v4.2
 
+### Template caches no longer store the client-side-apply annotation
+
+The workflow-controller now strips the `kubectl.kubernetes.io/last-applied-configuration` annotation from WorkflowTemplates and ClusterWorkflowTemplates before storing them in its informer caches ([#16566](https://github.com/argoproj/argo-workflows/issues/16566)).
+Client-side `kubectl apply` stores a copy of the whole spec there, which on a measured cluster was 3.6 KB of an 8.3 KB WorkflowTemplate.
+Only the controller's two template caches are affected. argo-server builds the same informers but serves those objects to clients, so its caches keep the annotation, and the Workflow cache is deliberately left alone too.
+This is internal to the controller's caches; objects stored in the cluster are unaffected.
+
 ### ContainerSet siblings are no longer terminated when one container fails
 
 Previously, as soon as any container in a `containerSet` exited with a non-zero exit code, the controller terminated the whole pod, killing any sibling containers that were still running.
@@ -37,13 +44,6 @@ No configuration or secret changes are required.
 
 The workflow-controller (and the parts of the argo-server that share its informers) now strips `metadata.managedFields` from objects before storing them in its informer caches ([#16563](https://github.com/argoproj/argo-workflows/pull/16563)).
 This reduces controller memory usage — As a rough guide `managedFields` might be about 20% of the memory usage of objects, and at scale informer objects use most of the controllers memory footprint.
-This is internal to the controller's caches; objects stored in the cluster are unaffected.
-
-### Template caches no longer store the client-side-apply annotation
-
-The workflow-controller now strips the `kubectl.kubernetes.io/last-applied-configuration` annotation from WorkflowTemplates and ClusterWorkflowTemplates before storing them in its informer caches ([#16566](https://github.com/argoproj/argo-workflows/issues/16566)).
-Client-side `kubectl apply` stores a copy of the whole spec there, which on a measured cluster was 3.6 KB of an 8.3 KB WorkflowTemplate.
-Only those two caches are affected, because the controller never writes those objects back whole; the Workflow cache is deliberately left alone.
 This is internal to the controller's caches; objects stored in the cluster are unaffected.
 
 ### `argo archive` commands accept a workflow name as well as a UID

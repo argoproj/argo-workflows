@@ -29,10 +29,15 @@ func StripManagedFields(i any) (any, error) {
 // built on it) stores a copy of the whole spec there, which on a real cluster
 // measured 3.6 KB of an 8.3 KB WorkflowTemplate.
 //
-// Unlike managedFields this is ordinary object data, so it is only safe on
-// informers whose objects the controller never writes back whole: dropping it
-// from an object that is later sent in a full Update would remove it from the
-// live object and break the next client-side-apply three-way merge.
+// Unlike managedFields this is ordinary object data, so it is only safe on a
+// cache whose objects are never written back whole: dropping it from an object
+// that is later sent in a full Update would remove it from the live object and
+// break the next client-side-apply three-way merge.
+//
+// That makes it controller-only. argo-server builds the same tolerant template
+// informers, and its GetWorkflowTemplate serves the cached object straight to
+// the client, which may send it back to UpdateWorkflowTemplate. So this is set
+// on the controller's informers rather than inside the shared constructor.
 func StripLastAppliedConfiguration(i any) (any, error) {
 	obj, err := meta.Accessor(i)
 	// err != nil: tombstones (DeletedFinalStateUnknown) etc — pass through.
@@ -49,9 +54,10 @@ func StripLastAppliedConfiguration(i any) (any, error) {
 }
 
 // StripTemplateCacheFields strips both managedFields and the client-side-apply
-// annotation. It is for the WorkflowTemplate and ClusterWorkflowTemplate
-// informers, whose objects the controller only ever reads. SetTransform takes a
-// single function, so the two have to be composed rather than chained.
+// annotation. It is for the controller's WorkflowTemplate and
+// ClusterWorkflowTemplate informers, whose objects the controller only ever
+// reads -- not for argo-server's, which serves them to clients. SetTransform
+// takes a single function, so the two have to be composed rather than chained.
 func StripTemplateCacheFields(i any) (any, error) {
 	if _, err := StripManagedFields(i); err != nil {
 		return i, err
