@@ -17,7 +17,7 @@ trap 'exit 143' TERM
 # Match download diagnostics, not arbitrary numbers in package names or versions.
 http_errors='(^|[^0-9])(408 Request Timeout|429 Too Many Requests|500 Internal Server Error|502 Bad Gateway|503 Service Unavailable|504 Gateway Timeout)([^[:alpha:]]|$)'
 http_codes='HTTP(/[0-9.]+)?[[:space:]]+(408|429|500|502|503|504)([[:space:]]|$)|returned error: (408|429|500|502|503|504)([^0-9]|$)|code E(408|429|500|502|503|504)([^0-9]|$)'
-network_errors='ECONNRESET|ETIMEDOUT|EAI_AGAIN|ECONNREFUSED|ENETUNREACH|EHOSTUNREACH|socket hang up|TLS handshake timeout|i/o timeout|connection reset by peer|temporary failure in name resolution'
+network_errors='ECONNRESET|ETIMEDOUT|EAI_AGAIN|ECONNREFUSED|ENETUNREACH|EHOSTUNREACH|socket hang up|TLS handshake timeout|i/o timeout|connection reset by peer|temporary failure in name resolution|stream error: stream ID [0-9]+; INTERNAL_ERROR; received from peer'
 permanent_http_errors='(^|[^0-9])(401 Unauthorized|403 Forbidden|404 Not Found|501 Not Implemented)([^[:alpha:]]|$)'
 permanent_http_codes='HTTP(/[0-9.]+)?[[:space:]]+(401|403|404|501)([[:space:]]|$)|returned error: (401|403|404|501)([^0-9]|$)|code E(401|403|404|501)([^0-9]|$)'
 permanent_errors="unable to verify the first certificate|integrity check failed|checksum mismatch|couldn't find any versions for package|syntax error|command not found|inconsistent vendoring"
