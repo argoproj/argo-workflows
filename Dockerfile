@@ -20,7 +20,8 @@ RUN apk update && apk add --no-cache \
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY hack/retry-download.sh /usr/local/bin/retry-download.sh
+RUN --mount=type=cache,target=/go/pkg/mod sh /usr/local/bin/retry-download.sh go mod download
 
 COPY . .
 
@@ -41,10 +42,11 @@ FROM node:20-alpine AS argo-ui
 RUN apk update && apk add --no-cache git
 
 COPY ui/package.json ui/yarn.lock ui/
+COPY hack/retry-download.sh /usr/local/bin/retry-download.sh
 
 RUN --mount=type=cache,target=/root/.yarn \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
-  yarn --cwd ui install --network-timeout 1000000
+  sh /usr/local/bin/retry-download.sh yarn --cwd ui install --network-timeout 1000000
 
 COPY ui ui
 COPY api api
