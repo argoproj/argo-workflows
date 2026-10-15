@@ -24,8 +24,6 @@ Key:
 
 ## How We Kill Sidecars Using `kubectl exec`
 
-> v3.1 and after
-
 Kubernetes does not provide a way to kill a single container. You can delete a pod, but this kills all containers, and loses all information
 and logs of that pod.
 

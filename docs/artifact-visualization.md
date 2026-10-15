@@ -1,7 +1,5 @@
 # Artifact Visualization
 
-> v3.4 and after
-
 Artifacts can be viewed in the UI.
 
 Use cases:
