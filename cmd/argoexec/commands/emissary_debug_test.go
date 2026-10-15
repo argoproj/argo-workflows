@@ -49,7 +49,7 @@ func TestEmissary_DebugPauseAfter(t *testing.T) {
 			dependencyErr := waitForDependency(ctx, "producer")
 			if scenario == "cancelled" {
 				require.ErrorIs(t, err, context.Canceled)
-				assert.ErrorContains(t, err, "failed waiting for debug-pause-after marker")
+				require.ErrorContains(t, err, "failed waiting for debug-pause-after marker")
 				assert.Equal(t, "64", string(marker))
 				assert.ErrorContains(t, dependencyErr, `dependency "producer" exited with non-zero code: 64`)
 			} else {
