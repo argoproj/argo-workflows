@@ -114,7 +114,7 @@ func TestTaskSetCompletionDelay(t *testing.T) {
 }
 
 // TestTaskSetCompletionDelayFromEnv exercises the real constructor's optional
-// duration parsing, invalid-value rejection and independent normal requeue delay.
+// integer-millisecond parsing, overflow rejection and independent normal requeue delay.
 func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 	for _, key := range []string{"OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"} {
 		t.Setenv(key, "")
@@ -133,20 +133,23 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 		invalid bool
 	}{
 		{name: "unset", unset: true},
-		{name: "zero", value: "0s", delay: new(time.Duration(0))},
-		{name: "bare zero", value: "0", delay: new(time.Duration(0))},
-		{name: "subsecond", value: "250ms", delay: new(250 * time.Millisecond)},
-		{name: "one second", value: "1s", delay: new(time.Second)},
-		{name: "longer than normal", value: "20s", delay: new(20 * time.Second)},
+		{name: "zero", value: "0", delay: new(time.Duration(0))},
+		{name: "one millisecond", value: "1", delay: new(time.Millisecond)},
+		{name: "subsecond", value: "250", delay: new(250 * time.Millisecond)},
+		{name: "one second", value: "1000", delay: new(time.Second)},
+		{name: "longer than normal", value: "20000", delay: new(20 * time.Second)},
+		{name: "maximum", value: "9223372036854", delay: new(9223372036854 * time.Millisecond)},
 		{name: "empty", invalid: true},
-		{name: "negative", value: "-1s", invalid: true},
-		{name: "malformed", value: "not-a-duration", invalid: true},
-		{name: "no unit", value: "1", invalid: true},
+		{name: "negative", value: "-1", invalid: true},
+		{name: "malformed", value: "not-an-integer", invalid: true},
+		{name: "fractional", value: "0.5", invalid: true},
+		{name: "duration suffix", value: "250ms", invalid: true},
 		{name: "boolean", value: "true", invalid: true},
-		{name: "overflow", value: "999999999999999999999h", invalid: true},
+		{name: "duration overflow", value: "9223372036855", invalid: true},
+		{name: "integer overflow", value: "9223372036854775808", invalid: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			const key = "ARGO_TASKSET_COMPLETION_REQUEUE_TIME"
+			const key = "ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS"
 			t.Setenv(key, tt.value)
 			if tt.unset {
 				require.NoError(t, os.Unsetenv(key))
@@ -159,7 +162,7 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 				&rest.Config{Host: "https://kubernetes.invalid"}, fakekube.NewClientset(configMap), fakewfclientset.NewClientset(),
 				"default", "default", "argoexec:test", "", "text", configMap.Name, false, false)
 			if tt.invalid {
-				require.ErrorContains(t, err, key+" must be a non-negative duration")
+				require.ErrorContains(t, err, key+" must be an integer between 0 and")
 				assert.Nil(t, controller)
 				return
 			}

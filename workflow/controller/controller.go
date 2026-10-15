@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -213,16 +214,19 @@ const (
 )
 
 // NewWorkflowController initializes a controller from its clients and startup configuration.
-// ARGO_TASKSET_COMPLETION_REQUEUE_TIME optionally overrides the scheduling delay
-// for newly terminal taskset results; unset preserves normal rate limiting.
-// An empty, negative or malformed override returns an error before initialization.
+// ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS optionally overrides the scheduling
+// delay for newly terminal WorkflowTaskSet results; unset preserves normal rate limiting.
+// An empty, negative, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	var taskSetCompletionDelay *time.Duration
-	if value, set := os.LookupEnv("ARGO_TASKSET_COMPLETION_REQUEUE_TIME"); set {
-		delay, err := time.ParseDuration(value)
-		if err != nil || delay < 0 {
-			return nil, fmt.Errorf("ARGO_TASKSET_COMPLETION_REQUEUE_TIME must be a non-negative duration (e.g. 0s, 250ms, 1s); got %q", value)
+	if value, set := os.LookupEnv("ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS"); set {
+		// Bound milliseconds before conversion to avoid overflowing time.Duration.
+		const maxMilliseconds = math.MaxInt64 / int64(time.Millisecond)
+		milliseconds, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || milliseconds < 0 || milliseconds > maxMilliseconds {
+			return nil, fmt.Errorf("ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS must be an integer between 0 and %d; got %q", maxMilliseconds, value)
 		}
+		delay := time.Duration(milliseconds) * time.Millisecond
 		taskSetCompletionDelay = &delay
 	}
 
