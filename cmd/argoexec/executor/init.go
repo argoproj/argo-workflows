@@ -85,6 +85,7 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 			InitlessPod:                  common.IsInitlessPod(),
 			RetryBackoff:                 retry.ExecutorRetry(ctx),
 			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
+			TaskResultRetryTimeout:       retry.ExecutorTaskResultRetryTimeout(ctx),
 		},
 	)
 	CheckErr(err)
