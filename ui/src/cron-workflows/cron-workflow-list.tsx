@@ -141,9 +141,10 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                 <div className='row argo-table-list__head'>
                                     <div className='columns small-1' />
                                     <div className='columns small-2'>NAME</div>
-                                    <div className='columns small-2'>NAMESPACE</div>
+                                    <div className='columns small-1'>NAMESPACE</div>
                                     <div className='columns small-1'>TimeZone</div>
-                                    <div className='columns small-1'>SCHEDULES</div>
+                                    {/* schedules need the room: a hashed one such as `H(1-20) H/2 * * *` is long */}
+                                    <div className='columns small-2'>SCHEDULES</div>
                                     <div className='columns small-1' />
                                     <div className='columns small-2'>
                                         CREATED{' '}

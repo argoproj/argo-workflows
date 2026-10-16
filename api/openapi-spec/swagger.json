@@ -9454,6 +9454,13 @@
           "description": "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
           "type": "string"
         },
+        "resolvedSchedules": {
+          "description": "ResolvedSchedules maps a schedule of the spec using a `H` (hash) token to what it resolved to. Set by the controller, schedules without a `H` are not listed",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "succeeded": {
           "description": "v3.6 and after: Succeeded counts how many times child workflows succeeded",
           "type": "integer"
