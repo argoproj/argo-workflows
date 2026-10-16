@@ -105,8 +105,8 @@ This opt-in prototype sets the minimum delay before reconciling a workflow after
 Use it for short nodes that spend longer waiting for reconciliation than running.
 Specify a positive integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.
 `DEFAULT_REQUEUE_TIME` caps the completion delay and remains the delay for all other updates, including pod and WorkflowTaskResult completions.
-Leave the setting unset to preserve today's behavior exactly, including normal rate limiting.
-The controller fails to start if the value is empty, zero, negative, not an integer, or too large to represent as an internal duration.
+Leave the setting unset or empty to keep normal rate limiting.
+The controller fails to start if the value is zero, negative, not an integer, or too large to represent as an internal duration.
 
 The agent batches results on its own ticker at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
 Results can wait up to that patch interval before reaching the controller; this setting does not change agent batching.

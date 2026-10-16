@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -215,19 +214,12 @@ const (
 
 // NewWorkflowController initializes a controller from its clients and startup configuration.
 // COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
-// WorkflowTaskSet results; unset preserves normal rate limiting.
-// An empty, non-positive, malformed or overflowing override returns an error before initialization.
+// WorkflowTaskSet results; unset or empty keeps normal rate limiting.
+// A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
-	var taskSetCompletionDelay *time.Duration
-	if value, set := os.LookupEnv("COMPLETED_REQUEUE_TIME_MS"); set {
-		// Bound milliseconds before conversion to avoid overflowing time.Duration.
-		const maxMilliseconds = math.MaxInt64 / int64(time.Millisecond)
-		milliseconds, err := strconv.ParseInt(value, 10, 64)
-		if err != nil || milliseconds <= 0 || milliseconds > maxMilliseconds {
-			return nil, fmt.Errorf("COMPLETED_REQUEUE_TIME_MS must be an integer between 1 and %d; got %q", maxMilliseconds, value)
-		}
-		delay := time.Duration(milliseconds) * time.Millisecond
-		taskSetCompletionDelay = &delay
+	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
+	if err != nil {
+		return nil, err
 	}
 
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
