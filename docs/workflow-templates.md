@@ -361,7 +361,7 @@ spec:
           - '{{inputs.parameters.message}}'
 
 ```
-```
+
 
 ### Real-world examples: Reusing Templates across Workflows
 
