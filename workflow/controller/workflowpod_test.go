@@ -2099,7 +2099,7 @@ func TestArtifactPluginSidecar(t *testing.T) {
 		ctx, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 
-		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg)
+		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg, woc.execContainerConfig(tmpl))
 		require.NoError(t, err)
 
 		// Volumes are normally added in addOutputArtifactsVolumes
@@ -2224,7 +2224,8 @@ func TestArtifactPluginSidecar(t *testing.T) {
 
 		// Skip workflow validation by not calling setExecWorkflow
 		// Test plugin init container creation directly
-		initContainers, err := woc.newInitContainers(ctx, tmpl)
+		pb := woc.newPodBuilder(ctx, "test-workflow", nil, tmpl, &createWorkflowPodOpts{})
+		initContainers, err := pb.newInitContainers(ctx, tmpl, pb.execContainerConfig(""))
 		require.NoError(t, err)
 
 		// Should have standard init container plus 2 plugin init containers
