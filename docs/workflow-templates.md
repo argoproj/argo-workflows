@@ -359,4 +359,41 @@ spec:
         args:
           - echo
           - '{{inputs.parameters.message}}'
-```
+
+### Real-world examples: Reusing Templates across Workflows
+
+In production, you define common tasks once and reuse them to keep workflows DRY.
+
+#### Pattern 1: Reusing via WorkflowTemplate (same namespace)
+
+Best when teams share templates within one namespace.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: reusable-whalesay-template
+  namespace: argo
+spec:
+  templates:
+    - name: whalesay
+    inputs:
+      parameters:
+            - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: use-workflow-template-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: reusable-whalesay-template
+  arguments:
+    parameters:
+        - name: message
+      value: "hello from reusable workflow template"
