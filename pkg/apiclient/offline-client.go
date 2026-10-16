@@ -52,7 +52,8 @@ func newOfflineClient(ctx context.Context, paths []string) (context.Context, Cli
 			for _, pr := range common.ParseObjects(ctx, bytes, false) {
 				obj, err := pr.Object, pr.Err
 				if err != nil {
-					return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
+					// Linting reports parse failures with the original source file.
+					continue
 				}
 
 				if obj == nil {
