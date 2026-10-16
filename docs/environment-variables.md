@@ -27,6 +27,8 @@ This document outlines environment variables that can be used to customize behav
 | `BUBBLE_ENTRY_TEMPLATE_ERR`              | `bool`              | `true`                                                                                      | Whether to bubble up template errors to workflow.                                                                                                                                                                                                                        |
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
 | `CACHE_GC_AFTER_NOT_HIT_DURATION`        | `time.Duration`     | `30s`                                                                                       | When a memoization cache has not been hit after this duration, it will be deleted.                                                                                                                                                                                       |
+| `COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT` | `int` | `20` | Target percentage of one worker's time for each workflow when completion-triggered scheduling is enabled; an integer from 1 to 100 ([details](#completed_requeue_duty_cycle_percent)). |
+| `COMPLETED_REQUEUE_TIME_MS` | `int` | `DEFAULT_REQUEUE_TIME` | Prototype minimum delay in milliseconds before reconciling after a completion, only for HTTP and executor-plugin nodes in a WorkflowTaskSet ([details](#completed_requeue_time_ms)). |
 | `CRON_SYNC_PERIOD`                       | `time.Duration`     | `10s`                                                                                       | How often to sync cron workflows.                                                                                                                                                                                                                                        |
 | `DEFAULT_REQUEUE_TIME`                   | `time.Duration`     | `10s`                                                                                       | The re-queue time for the rate limiter of the workflow queue.                                                                                                                                                                                                            |
 | `DISABLE_MAX_RECURSION`                  | `bool`              | `false`                                                                                     | Set to true to disable the recursion preventer, which will stop a workflow running which has called into a child template 100 times                                                                                                                                      |
@@ -97,6 +99,60 @@ spec:
             - name: WORKFLOW_GC_PERIOD
               value: 30s
 ```
+
+### COMPLETED_REQUEUE_TIME_MS
+
+This opt-in prototype sets the minimum delay before reconciling a workflow after a completion, applying only to HTTP and executor-plugin nodes whose results arrive through a [WorkflowTaskSet](http-template.md#argo-agent-rbac).
+Use it for short nodes that spend longer waiting for reconciliation than running.
+Specify a positive integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.
+`DEFAULT_REQUEUE_TIME` caps the completion delay and remains the delay for all other updates, including pod and WorkflowTaskResult completions.
+Leave the setting unset or empty to keep normal rate limiting.
+The controller fails to start if the value is zero, negative, not an integer, or too large to represent as an internal duration.
+
+The agent batches results on its own ticker at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
+Results can wait up to that patch interval before reaching the controller; this setting does not change agent batching.
+To see much benefit, lower `ARGO_AGENT_PATCH_RATE` alongside this setting, for example:
+
+```yaml
+env:
+  - name: COMPLETED_REQUEUE_TIME_MS
+    value: "250"
+  - name: ARGO_AGENT_PATCH_RATE
+    value: "1s"
+```
+
+This is a completion scheduling delay, not a minimum interval between all reconciliations: other events may enqueue a workflow sooner.
+The [per-workflow duty cycle](#completed_requeue_duty_cycle_percent) increases the delay for workflows with expensive reconciliations.
+Gains may vary under load: if the workflow informer is behind the controller's last write, the controller rejects the reconcile as outdated and waits the full `DEFAULT_REQUEUE_TIME` before retrying.
+
+### COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT
+
+When you enable `COMPLETED_REQUEUE_TIME_MS`, this setting targets the fraction of one worker's time that each workflow spends reconciling.
+Set an integer from `1` to `100`; unset or empty uses `20`, and invalid values fail controller startup.
+At `100`, completion events use the configured floor without an additional duty-cycle gap.
+This setting alone does not enable completion-triggered scheduling.
+The controller collects duty-cycle timing and utilization samples only when `COMPLETED_REQUEUE_TIME_MS` is enabled.
+
+The controller measures each workflow's `operate()` duration, excluding time waiting for its workflow lock.
+It smooths the duration with an exponentially weighted moving average, using 20% of the latest measurement and 80% of the previous average.
+For a duty cycle expressed as a fraction, it computes:
+
+```text
+gap   = smoothedDuration × (1 − dutyCycle) / dutyCycle
+delay = clamp(lastReconcileEnd + gap − now, COMPLETED_REQUEUE_TIME_MS, DEFAULT_REQUEUE_TIME)
+```
+
+For example, a one-second reconciliation at `20` percent needs a four-second gap after it ends.
+If the completion event arrives one second into that gap, the requested delay is three seconds, subject to the floor and ceiling.
+A workflow without a timing measurement uses the floor.
+If the configured floor exceeds `DEFAULT_REQUEUE_TIME`, the ceiling takes precedence.
+The controller tracks timing by workflow UID, clears it on completion or deletion, and sweeps timing records idle for more than 40 minutes at most once per minute during reconciliation or workflow-version bookkeeping.
+
+This is a per-workflow scheduling target, not a strict worker quota or a cluster-wide rate limit.
+An earlier queued event can reconcile sooner, and the ceiling limits how far an expensive workflow can back off.
+The number of workflow workers and the client `--qps` and `--burst` settings still bound overall throughput.
+Use the `workflow_completion_requeue_delay` and `workflow_reconcile_utilization` [metrics](metrics.md#default-controller-metrics) alongside `queue_latency`, `client_rate_limiter_latency` and `resource_rate_limiter_latency` to assess the effect.
+The utilization histogram aggregates per-workflow samples without workflow-name or UID labels.
 
 ## Executor
 
