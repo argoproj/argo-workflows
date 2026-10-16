@@ -8,7 +8,6 @@ metadata:
       The first task "split" produces a number of parts, each in the form of a JSON document, saving it to a bucket.
       Each "map" task then reads those documents, performs a map operation, and writes them out to a new bucket.
       Finally, "reduce" merges all the mapped documents into a final document.
-    workflows.argoproj.io/version: '>= 3.0.0'
 spec:
   entrypoint: main
   arguments:

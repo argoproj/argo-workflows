@@ -1,7 +1,5 @@
 # ContainerSet Template
 
-> v3.1 and after
-
 A ContainerSet template is similar to a normal container template, but it allows you to run multiple containers within a single Pod.
 
 Since multiple containers run within a single Pod, they schedule on the same host.
@@ -122,8 +120,6 @@ In this case, `a` only has small requests, but the ContainerSet uses the total o
 This is a good example of when using a ContainerSet template would not be efficient.
 
 ## Inner `retryStrategy` usage
-
-> v3.3 and after
 
 Set an inner `retryStrategy` to apply to all containers of a container set, including the `duration` between each retry and the total number of `retries`.
 
