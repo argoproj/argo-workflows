@@ -153,8 +153,8 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
-	// taskSetCompletionDelay overrides the delay for newly terminal taskset results.
-	// Nil preserves the normal rate-limited path; zero enqueues immediately.
+	// taskSetCompletionDelay sets a positive minimum delay for taskset completions,
+	// capped at requeueTime. Nil preserves the normal rate-limited path.
 	taskSetCompletionDelay *time.Duration
 
 	// datastructures to support the processing of workflows and workflow pods
@@ -214,17 +214,17 @@ const (
 )
 
 // NewWorkflowController initializes a controller from its clients and startup configuration.
-// ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS optionally overrides the scheduling
-// delay for newly terminal WorkflowTaskSet results; unset preserves normal rate limiting.
-// An empty, negative, malformed or overflowing override returns an error before initialization.
+// COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
+// WorkflowTaskSet results; unset preserves normal rate limiting.
+// An empty, non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	var taskSetCompletionDelay *time.Duration
-	if value, set := os.LookupEnv("ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS"); set {
+	if value, set := os.LookupEnv("COMPLETED_REQUEUE_TIME_MS"); set {
 		// Bound milliseconds before conversion to avoid overflowing time.Duration.
 		const maxMilliseconds = math.MaxInt64 / int64(time.Millisecond)
 		milliseconds, err := strconv.ParseInt(value, 10, 64)
-		if err != nil || milliseconds < 0 || milliseconds > maxMilliseconds {
-			return nil, fmt.Errorf("ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS must be an integer between 0 and %d; got %q", maxMilliseconds, value)
+		if err != nil || milliseconds <= 0 || milliseconds > maxMilliseconds {
+			return nil, fmt.Errorf("COMPLETED_REQUEUE_TIME_MS must be an integer between 1 and %d; got %q", maxMilliseconds, value)
 		}
 		delay := time.Duration(milliseconds) * time.Millisecond
 		taskSetCompletionDelay = &delay

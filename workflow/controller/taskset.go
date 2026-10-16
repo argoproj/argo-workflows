@@ -21,7 +21,8 @@ import (
 )
 
 // onWorkflowTaskSetUpdate keeps routine updates rate-limited, but optionally
-// applies a separate scheduling delay when a task result first becomes terminal.
+// applies a minimum completion delay, capped at the default requeue delay,
+// when a task result first becomes terminal.
 // Updates without a valid object key are ignored; repeated terminal results
 // retain normal rate limiting rather than triggering the completion delay again.
 func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
@@ -37,7 +38,7 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 				// The workqueue coalesces pending keys and serializes work per key.
 				// processNextItem still rejects stale workflow versions and falls
 				// back to a rate-limited retry while the workflow informer catches up.
-				wfc.wfQueue.AddAfter(key, *wfc.taskSetCompletionDelay)
+				wfc.wfQueue.AddAfter(key, min(*wfc.taskSetCompletionDelay, wfc.requeueTime))
 				return
 			}
 		}
