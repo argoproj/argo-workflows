@@ -27,6 +27,9 @@ func lookupCompletionDutyCyclePercent() (int, error) {
 }
 
 func (wfc *WorkflowController) recordWorkflowReconcile(ctx context.Context, wf *wfv1.Workflow, start, end time.Time) {
+	if wfc.taskSetCompletionDelay == nil {
+		return
+	}
 	wfc.lastWrittenVersions.mutex.Lock()
 	defer wfc.lastWrittenVersions.mutex.Unlock()
 	wfc.expireCompletedVersions()
