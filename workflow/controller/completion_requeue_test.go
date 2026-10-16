@@ -50,7 +50,7 @@ func TestCompletionDutyCyclePercent(t *testing.T) {
 			if tt.want == 0 {
 				require.ErrorContains(t, err, key+" must be an integer between 1 and 100")
 				// Startup must reject the setting before touching clients.
-				_, err = NewWorkflowController(t.Context(), nil, nil, nil, "", "", "", "", "", "", false, false)
+				_, err = NewWorkflowController(logging.TestContext(t.Context()), nil, nil, nil, "", "", "", "", "", "", false, false)
 				require.ErrorContains(t, err, key)
 			} else {
 				require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestCompletionDutyCyclePercent(t *testing.T) {
 func TestCompletionRequeueInvalidFloor(t *testing.T) {
 	t.Setenv("COMPLETED_REQUEUE_TIME_MS", "0")
 	t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", "20")
-	controller, err := NewWorkflowController(t.Context(), nil, nil, nil, "", "", "", "", "", "", false, false)
+	controller, err := NewWorkflowController(logging.TestContext(t.Context()), nil, nil, nil, "", "", "", "", "", "", false, false)
 	require.ErrorContains(t, err, "COMPLETED_REQUEUE_TIME_MS")
 	assert.Nil(t, controller)
 }
@@ -142,7 +142,7 @@ func TestWorkflowReconcileTiming(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
 	require.NoError(t, err)
-	controller := &WorkflowController{metrics: m}
+	controller := &WorkflowController{metrics: m, taskSetCompletionDelay: new(time.Millisecond)}
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "uid"}}
 	start := time.Now()
 	controller.recordWorkflowReconcile(ctx, wf, start, start.Add(time.Second))
@@ -165,12 +165,29 @@ func TestWorkflowReconcileTiming(t *testing.T) {
 	assert.Empty(t, controller.reconcileTimings, "completion clears timing immediately")
 }
 
+func TestWorkflowReconcileTimingDisabled(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, m.Shutdown(ctx)) }()
+	controller := &WorkflowController{metrics: m}
+	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "uid"}}
+	start := time.Now()
+	controller.recordWorkflowReconcile(ctx, wf, start, start.Add(time.Second))
+	controller.recordWorkflowReconcile(ctx, wf, start.Add(5*time.Second), start.Add(6*time.Second))
+	assert.Nil(t, controller.reconcileTimings, "disabled fast path must not allocate timing state")
+	assert.True(t, controller.lastWrittenVersions.nextCleanup.IsZero(), "disabled timing must not trigger lifecycle bookkeeping")
+	attrs := attribute.NewSet()
+	_, err = exporter.GetFloat64HistogramData(ctx, telemetry.InstrumentWorkflowReconcileUtilization.Name(), &attrs)
+	require.Error(t, err, "disabled fast path must not emit utilization samples")
+}
+
 func TestWorkflowReconcileTimingCleanup(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		controller := newCompletionDelayController(t, 10*time.Second, new(time.Millisecond))
 		controller.lastWrittenVersions.versions = make(map[types.UID]lastWrittenVersion)
 		wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "uid", ResourceVersion: "1"}}
-		ctx := t.Context()
+		ctx := logging.TestContext(t.Context())
 		record := func() { controller.recordWorkflowReconcile(ctx, wf, time.Now().Add(-time.Second), time.Now()) }
 		record()
 		controller.recordWorkflowWrite(wf)
@@ -192,6 +209,7 @@ func TestWorkflowReconcileTimingCleanup(t *testing.T) {
 }
 
 func TestWorkflowReconcileTimingConcurrent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	controller := newCompletionDelayController(t, 10*time.Second, new(time.Millisecond))
 	controller.lastWrittenVersions.versions = make(map[types.UID]lastWrittenVersion)
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{UID: "uid", ResourceVersion: "1"}}
@@ -200,7 +218,7 @@ func TestWorkflowReconcileTimingConcurrent(t *testing.T) {
 		wg.Go(func() {
 			for range 100 {
 				now := time.Now()
-				controller.recordWorkflowReconcile(t.Context(), wf, now.Add(-time.Millisecond), now)
+				controller.recordWorkflowReconcile(ctx, wf, now.Add(-time.Millisecond), now)
 				controller.completionRequeueDelay(wf.UID, now)
 				controller.recordWorkflowCompleted(wf)
 			}
@@ -225,8 +243,9 @@ func TestTaskSetCompletionDutyCycle(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
+				ctx := logging.TestContext(t.Context())
 				controller := newCompletionDelayController(t, 10*time.Second, tt.floor)
-				m, exporter, err := metrics.CreateDefaultTestMetrics(logging.TestContext(t.Context()))
+				m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
 				require.NoError(t, err)
 				controller.metrics = m
 				controller.reconcileTimings = map[types.UID]workflowReconcileTiming{
@@ -234,9 +253,9 @@ func TestTaskSetCompletionDutyCycle(t *testing.T) {
 				}
 				current := completionDelayTaskSet(tt.phase)
 				current.OwnerReferences = []metav1.OwnerReference{{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowKind, UID: tt.owner}}
-				controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), current)
+				controller.onWorkflowTaskSetUpdate(ctx, completionDelayTaskSet(), current)
 				attrs := attribute.NewSet()
-				data, err := exporter.GetFloat64HistogramData(t.Context(), telemetry.InstrumentWorkflowCompletionRequeueDelay.Name(), &attrs)
+				data, err := exporter.GetFloat64HistogramData(ctx, telemetry.InstrumentWorkflowCompletionRequeueDelay.Name(), &attrs)
 				if tt.floor != nil && tt.phase == wfv1.NodeSucceeded {
 					require.NoError(t, err)
 					assert.Equal(t, uint64(1), data.Count)
@@ -282,7 +301,9 @@ spec:
     - name: main
       suspend: {}
 `)
-		cancel, controller := newController(ctx, wf)
+		cancel, controller := newController(ctx, wf, func(controller *WorkflowController) {
+			controller.taskSetCompletionDelay = new(time.Millisecond)
+		})
 		defer cancel()
 		defer controller.wfArchiveQueue.ShutDown()
 		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {

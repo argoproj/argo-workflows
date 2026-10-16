@@ -538,7 +538,7 @@ Records the duration of a workflow's `operate()` call divided by the elapsed tim
 Values are fractions between 0 and 1, not percentages.
 Time waiting for the workflow lock is excluded from the operation duration but included in the elapsed interval.
 The first reconciliation has no preceding interval and produces no sample.
-Samples are collected even when the completion delay is disabled, so you can compare utilization before and after enabling it.
+Samples are collected only when `COMPLETED_REQUEUE_TIME_MS` is enabled.
 Workflow names and UIDs are not labels: this histogram aggregates per-workflow samples without creating a time series for every workflow.
 
 This metric has no attributes.
