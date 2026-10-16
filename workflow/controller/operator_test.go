@@ -14203,7 +14203,9 @@ spec:
 	newWorkflowOperationCtx(ctx, woc.wf.DeepCopy(), controller).operate(ctx)
 	total := time.Since(start)
 
-	for offset := time.Duration(0); offset < total; offset += total / 2000 {
+	require.Positive(t, total)
+	step := max(total/2000, time.Nanosecond)
+	for offset := time.Duration(0); offset < total; offset += step {
 		sweepWoc := newWorkflowOperationCtx(ctx, woc.wf.DeepCopy(), controller)
 		sweepWoc.deadline = time.Now().UTC().Add(offset)
 		sweepWoc.operate(ctx)
