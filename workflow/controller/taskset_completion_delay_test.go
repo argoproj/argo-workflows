@@ -42,7 +42,7 @@ func completionDelayTaskSet(phases ...wfv1.NodePhase) *wfv1.WorkflowTaskSet {
 // TestTaskSetCompletionDelay checks exact queue timing across result transitions,
 // preserving the normal delay unless a newly terminal result has an override.
 func TestTaskSetCompletionDelay(t *testing.T) {
-	for _, delay := range []*time.Duration{nil, new(time.Duration(0)), new(250 * time.Millisecond), new(time.Second), new(20 * time.Second)} {
+	for _, delay := range []*time.Duration{nil, new(time.Millisecond), new(250 * time.Millisecond), new(time.Second), new(20 * time.Second)} {
 		name := "unset"
 		if delay != nil {
 			name = delay.String()
@@ -73,7 +73,7 @@ func TestTaskSetCompletionDelay(t *testing.T) {
 						const normalDelay = 7 * time.Second
 						queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: normalDelay})
 						defer queue.ShutDown()
-						controller := &WorkflowController{wfQueue: queue, taskSetCompletionDelay: delay}
+						controller := &WorkflowController{wfQueue: queue, requeueTime: normalDelay, taskSetCompletionDelay: delay}
 						before, after := completionDelayTaskSet(tt.before...), completionDelayTaskSet(tt.after...)
 						after.ResourceVersion = "2"
 						// Metadata, spec and output-only changes must not make an already
@@ -87,19 +87,17 @@ func TestTaskSetCompletionDelay(t *testing.T) {
 						}
 						wantDelay := normalDelay
 						if tt.terminal && delay != nil {
-							wantDelay = *delay
+							wantDelay = min(*delay, normalDelay)
 						}
 						start := time.Now()
 						controller.onWorkflowTaskSetUpdate(before, after)
 						synctest.Wait()
-						if wantDelay > 0 {
-							require.Zero(t, queue.Len())
-							time.Sleep(wantDelay - time.Nanosecond)
-							synctest.Wait()
-							require.Zero(t, queue.Len(), "must not enqueue before the requested delay")
-							time.Sleep(time.Nanosecond)
-							synctest.Wait()
-						}
+						require.Zero(t, queue.Len())
+						time.Sleep(wantDelay - time.Nanosecond)
+						synctest.Wait()
+						require.Zero(t, queue.Len(), "must not enqueue before the requested delay")
+						time.Sleep(time.Nanosecond)
+						synctest.Wait()
 						require.Equal(t, 1, queue.Len())
 						key, quit := queue.Get()
 						require.False(t, quit)
@@ -133,7 +131,7 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 		invalid bool
 	}{
 		{name: "unset", unset: true},
-		{name: "zero", value: "0", delay: new(time.Duration(0))},
+		{name: "zero", value: "0", invalid: true},
 		{name: "one millisecond", value: "1", delay: new(time.Millisecond)},
 		{name: "subsecond", value: "250", delay: new(250 * time.Millisecond)},
 		{name: "one second", value: "1000", delay: new(time.Second)},
@@ -149,7 +147,7 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 		{name: "integer overflow", value: "9223372036854775808", invalid: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			const key = "ARGO_TASKSET_COMPLETION_REQUEUE_MILLISECONDS"
+			const key = "COMPLETED_REQUEUE_TIME_MS"
 			t.Setenv(key, tt.value)
 			if tt.unset {
 				require.NoError(t, os.Unsetenv(key))
@@ -162,7 +160,7 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 				&rest.Config{Host: "https://kubernetes.invalid"}, fakekube.NewClientset(configMap), fakewfclientset.NewClientset(),
 				"default", "default", "argoexec:test", "", "text", configMap.Name, false, false)
 			if tt.invalid {
-				require.ErrorContains(t, err, key+" must be an integer between 0 and")
+				require.ErrorContains(t, err, key+" must be an integer between 1 and")
 				assert.Nil(t, controller)
 				return
 			}
@@ -182,7 +180,7 @@ func TestTaskSetCompletionDelayFromEnv(t *testing.T) {
 // TestTaskSetCompletionDelayInvalidObject verifies that updates lacking metadata
 // neither panic nor enqueue immediate or delayed work, regardless of the override.
 func TestTaskSetCompletionDelayInvalidObject(t *testing.T) {
-	for i, delay := range []*time.Duration{nil, new(time.Duration(0)), new(time.Second)} {
+	for i, delay := range []*time.Duration{nil, new(time.Millisecond), new(time.Second)} {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: time.Second})
@@ -202,12 +200,12 @@ func TestTaskSetCompletionDelayInvalidObject(t *testing.T) {
 // TestTaskSetCompletionDelayCoalesces verifies that completion bursts share one
 // queued workflow key and cannot cause concurrent processing of an in-flight key.
 func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
-	for _, delay := range []time.Duration{0, time.Second} {
+	for _, delay := range []time.Duration{time.Millisecond, time.Second} {
 		t.Run(delay.String(), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: time.Hour})
 				defer queue.ShutDown()
-				controller := &WorkflowController{wfQueue: queue, taskSetCompletionDelay: &delay}
+				controller := &WorkflowController{wfQueue: queue, requeueTime: time.Hour, taskSetCompletionDelay: &delay}
 				for range 100 {
 					controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
 				}
@@ -241,44 +239,52 @@ func TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: time.Second})
 		defer queue.ShutDown()
-		controller := &WorkflowController{wfQueue: queue, taskSetCompletionDelay: new(10 * time.Second)}
+		controller := &WorkflowController{wfQueue: queue, requeueTime: time.Second, taskSetCompletionDelay: new(10 * time.Second)}
 		running := completionDelayTaskSet(wfv1.NodeRunning)
 		controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), running)
+		synctest.Wait()
+		time.Sleep(500 * time.Millisecond)
 		controller.onWorkflowTaskSetUpdate(running, completionDelayTaskSet(wfv1.NodeSucceeded))
 		synctest.Wait()
 		require.Zero(t, queue.Len())
-		time.Sleep(time.Second)
+		time.Sleep(500 * time.Millisecond)
 		synctest.Wait()
 		require.Equal(t, 1, queue.Len(), "the completion delay is not a minimum reconciliation interval")
 	})
 }
 
-// TestTaskSetCompletionDelayPromotesDelayedWorkflow verifies that a zero override
-// enqueues immediately without cancelling an already scheduled delayed wakeup.
+// TestTaskSetCompletionDelayPromotesDelayedWorkflow verifies that a positive delay
+// moves an existing delayed entry earlier without leaving a redundant wakeup.
 func TestTaskSetCompletionDelayPromotesDelayedWorkflow(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: 10 * time.Second})
 		defer queue.ShutDown()
-		controller := &WorkflowController{wfQueue: queue, taskSetCompletionDelay: new(time.Duration(0))}
+		controller := &WorkflowController{wfQueue: queue, requeueTime: 10 * time.Second, taskSetCompletionDelay: new(250 * time.Millisecond)}
 		running := completionDelayTaskSet(wfv1.NodeRunning)
 		controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), running)
 		synctest.Wait()
 		require.Zero(t, queue.Len())
 		time.Sleep(time.Second)
 		controller.onWorkflowTaskSetUpdate(running, completionDelayTaskSet(wfv1.NodeSucceeded))
+		synctest.Wait()
+		require.Zero(t, queue.Len())
+		time.Sleep(250*time.Millisecond - time.Nanosecond)
+		synctest.Wait()
+		require.Zero(t, queue.Len(), "completion must wait for the positive delay")
+		time.Sleep(time.Nanosecond)
+		synctest.Wait()
 		require.Equal(t, 1, queue.Len())
 		key, quit := queue.Get()
 		require.False(t, quit)
 		queue.Done(key)
 		require.Zero(t, queue.Len())
-		// Immediate enqueue does not cancel an existing delayed enqueue.
 		time.Sleep(9 * time.Second)
 		synctest.Wait()
-		require.Equal(t, 1, queue.Len())
+		require.Zero(t, queue.Len(), "the original rate-limited deadline must not enqueue again")
 	})
 }
 
-// TestTaskSetCompletionDelayRejectsStaleWorkflow verifies that immediate completion
+// TestTaskSetCompletionDelayRejectsStaleWorkflow verifies that delayed completion
 // events still pass through stale-version rejection and the normal delayed retry.
 func TestTaskSetCompletionDelayRejectsStaleWorkflow(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
@@ -292,13 +298,17 @@ func TestTaskSetCompletionDelayRejectsStaleWorkflow(t *testing.T) {
 		workflow.SetResourceVersion("1")
 		require.NoError(t, informer.GetIndexer().Add(workflow))
 		controller := &WorkflowController{
-			wfQueue: queue, wfInformer: informer, taskSetCompletionDelay: new(time.Duration(0)),
+			wfQueue: queue, wfInformer: informer, requeueTime: 10 * time.Second, taskSetCompletionDelay: new(250 * time.Millisecond),
 			workflowKeyLock: syncpkg.NewKeyLock(),
 			lastWrittenVersions: lastWrittenVersions{versions: map[types.UID]lastWrittenVersion{
 				"workflow-uid": {resourceVersion: "2"},
 			}},
 		}
 		controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
+		synctest.Wait()
+		require.Zero(t, queue.Len())
+		time.Sleep(250 * time.Millisecond)
+		synctest.Wait()
 		require.Equal(t, 1, queue.Len())
 		// No API clients are installed: proceeding past the stale-version guard
 		// would fail rather than silently reconciling the stale workflow.
@@ -319,7 +329,7 @@ func TestTaskSetCompletionDelayInformer(t *testing.T) {
 	client := fakewfclientset.NewClientset(initial)
 	queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: time.Hour})
 	defer queue.ShutDown()
-	controller := &WorkflowController{wfclientset: client, wfQueue: queue, taskSetCompletionDelay: new(time.Duration(0))}
+	controller := &WorkflowController{wfclientset: client, wfQueue: queue, requeueTime: time.Hour, taskSetCompletionDelay: new(time.Millisecond)}
 	informer := controller.newWorkflowTaskSetInformer().Informer()
 	go informer.Run(ctx.Done())
 	require.True(t, cache.WaitForCacheSync(ctx.Done(), informer.HasSynced))
