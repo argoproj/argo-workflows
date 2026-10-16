@@ -13,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
@@ -753,4 +754,77 @@ func TestBuild_OffloadContainerArgs(t *testing.T) {
 	require.True(t, ok, "main container must carry ARGO_CONTAINER_ARGS_FILE pointing at the offloaded file")
 	assert.Equal(t, common.EnvConfigMountPath+"/"+common.EnvVarContainerArgsFile, argsFile)
 	assert.True(t, hasMount(mainCtr, envConfigMountName), "main container must mount the offload ConfigMap")
+}
+
+// templateTimeoutStubDeps is the build-test stub with a node and a fixed
+// template timeout deadline, so build applies the template timeout.
+type templateTimeoutStubDeps struct {
+	*stubPodBuilderDeps
+	templateDeadline *time.Time
+}
+
+func (d *templateTimeoutStubDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) {
+	return &wfv1.NodeStatus{}, nil
+}
+
+func (d *templateTimeoutStubDeps) checkTemplateTimeouts(_ *wfv1.Template, _ *wfv1.NodeStatus, _ time.Time) (deadline, pendingDeadline *time.Time, err error) {
+	return d.templateDeadline, nil, nil
+}
+
+// TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds asserts the
+// template timeout lowers the pod's activeDeadlineSeconds to the time left
+// before the timeout, and never raises an activeDeadlineSeconds that is already
+// smaller, whichever source set it.
+func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
+	now := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	inAMinute := now.Add(time.Minute)
+	inASecond := now.Add(time.Second)
+	passed := now.Add(-10 * time.Second)
+	wfDeadline := now.Add(30 * time.Second)
+	tests := []struct {
+		name             string
+		tmplADS          string
+		workflowDeadline *time.Time
+		podSpecPatch     string
+		templateDeadline *time.Time
+		wantADS          int64
+		wantErr          string
+	}{
+		{name: "no template timeout", tmplADS: "30", wantADS: 30},
+		{name: "template activeDeadlineSeconds smaller than timeout is kept", tmplADS: "30", templateDeadline: &inAMinute, wantADS: 30},
+		{name: "template activeDeadlineSeconds larger than timeout is clamped", tmplADS: "300", templateDeadline: &inAMinute, wantADS: 60},
+		{name: "no activeDeadlineSeconds takes the timeout", templateDeadline: &inAMinute, wantADS: 60},
+		{name: "workflow deadline smaller than timeout is kept", workflowDeadline: &wfDeadline, templateDeadline: &inAMinute, wantADS: 30},
+		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, templateDeadline: &inAMinute, wantADS: 30},
+		{name: "timeout nearly expired", tmplADS: "30", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
+		{name: "timeout nearly expired with a smaller activeDeadlineSeconds", tmplADS: "1", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
+		{name: "timeout passed", tmplADS: "30", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
+		{name: "timeout passed longer ago than activeDeadlineSeconds", tmplADS: "5", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			tmpl := simpleContainerTemplate()
+			if tt.tmplADS != "" {
+				tmpl.ActiveDeadlineSeconds = intstr.ParsePtr(tt.tmplADS)
+			}
+			tmpl.PodSpecPatch = tt.podSpecPatch
+			main := tmpl.Container.DeepCopy()
+
+			deps := &templateTimeoutStubDeps{stubPodBuilderDeps: newStubDeps(), templateDeadline: tt.templateDeadline}
+			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
+			pb.in.now = now
+			pb.in.computedWorkflowDeadline = tt.workflowDeadline
+
+			result, err := pb.build(ctx)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, result)
+			require.NotNil(t, result.Pod.Spec.ActiveDeadlineSeconds)
+			assert.Equal(t, tt.wantADS, *result.Pod.Spec.ActiveDeadlineSeconds)
+		})
+	}
 }
