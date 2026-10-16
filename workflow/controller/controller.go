@@ -239,7 +239,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
-		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
+		eventRecorderManager:       events.NewEventRecorderManagerWithLogger(kubeclientset, logging.RequireLoggerFromContext(ctx)),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		indexWorkflowSemaphoreKeys: os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false",
