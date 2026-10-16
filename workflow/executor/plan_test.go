@@ -166,7 +166,9 @@ func TestPlanFor_ResourceTemplateCollectsLogsOnly(t *testing.T) {
 
 // TestPlansAreWellFormed is the plan validation: every selectable plan has
 // uniquely named, runnable stages, and only Collect stages may depend on
-// main's outputs (the skip flag is meaningless in the other phases).
+// main's outputs (the skip flag is meaningless in the other phases). Each
+// plan also ends with exactly one final report: that report marks the task
+// result complete in the same write, so no stage may write outputs after it.
 func TestPlansAreWellFormed(t *testing.T) {
 	templates := map[string]*wfv1.Template{
 		"container": {Container: &apiv1.Container{}},
@@ -177,6 +179,7 @@ func TestPlansAreWellFormed(t *testing.T) {
 		for _, initless := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/initless=%v", name, initless), func(t *testing.T) {
 				plan := planFor(tmpl, initless, []wfv1.ArtifactPluginName{"s3"})
+				finalReports := 0
 				seen := map[string]bool{}
 				for phase, stages := range map[string][]Stage{"Prepare": plan.Prepare, "Run": plan.Run, "Collect": plan.Collect} {
 					require.NotEmpty(t, stages, "phase %s has no stages", phase)
@@ -188,8 +191,14 @@ func TestPlansAreWellFormed(t *testing.T) {
 						if s.NeedsMainOutputs {
 							assert.Equal(t, "Collect", phase, "stage %s needs main outputs but is in %s", s.Name, phase)
 						}
+						if s.Name == reportOutputs.Name || s.Name == reportLogs.Name {
+							finalReports++
+						}
 					}
 				}
+				assert.Equal(t, 1, finalReports, "plan must have exactly one final report")
+				last := plan.Collect[len(plan.Collect)-1].Name
+				assert.Contains(t, []string{reportOutputs.Name, reportLogs.Name}, last, "the final report must be the last stage")
 			})
 		}
 	}
