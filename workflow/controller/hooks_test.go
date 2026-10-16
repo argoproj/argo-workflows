@@ -12,6 +12,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func TestExecuteWfLifeCycleHook(t *testing.T) {
@@ -306,4 +307,129 @@ func TestExitHookSkippedOutputAbsenceSemantics(t *testing.T) {
 	require.NotNil(t, in2)
 	require.NotNil(t, in2.Value)
 	assert.Equal(t, "hook-fallback", in2.Value.String(), "?? must fire on the absent optional in hook arguments")
+}
+
+// The hook's input comes from a ConfigMap that does not exist: validation has no ConfigMap store
+// and accepts it, so the hook fails only when it fires.
+const runtimeFailingHookTemplate = `
+    - name: handle
+      inputs:
+        parameters:
+          - name: region
+            valueFrom:
+              configMapKeyRef:
+                name: does-not-exist
+                key: region
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.region}}"]
+    - name: fail
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["exit 1"]
+`
+
+func TestLifecycleHookInitErrorIsLinkedToParent(t *testing.T) {
+	tests := []struct {
+		name         string
+		wf           string
+		hookNodeName string
+		parentName   string
+	}{
+		{
+			name: "WorkflowLevel",
+			wf: `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-init-error
+  namespace: argo
+spec:
+  entrypoint: fail
+  hooks:
+    Failed:
+      expression: workflow.status == "Failed"
+      template: handle
+  templates:` + runtimeFailingHookTemplate,
+			hookNodeName: "hook-init-error.hooks.Failed",
+			parentName:   "hook-init-error",
+		},
+		{
+			name: "Step",
+			wf: `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-init-error
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: will-fail
+            template: fail
+            hooks:
+              failure:
+                expression: steps["will-fail"].status == "Failed"
+                template: handle` + runtimeFailingHookTemplate,
+			hookNodeName: "hook-init-error[0].will-fail.hooks.failure",
+			parentName:   "hook-init-error[0].will-fail",
+		},
+		{
+			name: "DAGTask",
+			wf: `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-init-error
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: will-fail
+            template: fail
+            hooks:
+              failure:
+                expression: tasks["will-fail"].status == "Failed"
+                template: handle` + runtimeFailingHookTemplate,
+			hookNodeName: "hook-init-error.will-fail.hooks.failure",
+			parentName:   "hook-init-error.will-fail",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(tt.wf)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			makePodsPhase(ctx, woc, apiv1.PodFailed)
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+
+			hookNode := woc.wf.Status.Nodes.FindByName(tt.hookNodeName)
+			require.NotNil(t, hookNode)
+			assert.Equal(t, wfv1.NodeError, hookNode.Phase)
+			assert.Contains(t, hookNode.Message, "unable to retrieve inputs.parameters.region from ConfigMap")
+			parent := woc.wf.Status.Nodes.FindByName(tt.parentName)
+			require.NotNil(t, parent)
+			assert.Contains(t, parent.Children, hookNode.ID)
+
+			for i := 0; i < 3 && !woc.wf.Status.Phase.Completed(); i++ {
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+			}
+			require.True(t, woc.wf.Status.Phase.Completed(), "phase %s", woc.wf.Status.Phase)
+			_, _, err := wfutil.FormulateRetryWorkflow(ctx, woc.wf, false, "", nil)
+			require.NoError(t, err)
+		})
+	}
 }
