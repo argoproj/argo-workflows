@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"math"
 	"os"
 	"sync"
@@ -12,9 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -52,6 +56,47 @@ func TestCompletionDutyCyclePercent(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, got)
 			}
+		})
+	}
+}
+
+func TestCompletionRequeueInvalidFloor(t *testing.T) {
+	t.Setenv("COMPLETED_REQUEUE_TIME_MS", "0")
+	t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", "20")
+	controller, err := NewWorkflowController(t.Context(), nil, nil, nil, "", "", "", "", "", "", false, false)
+	require.ErrorContains(t, err, "COMPLETED_REQUEUE_TIME_MS")
+	assert.Nil(t, controller)
+}
+
+func TestCompletionRequeueControllerConfiguration(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		floor       string
+		percent     string
+		wantFloor   *time.Duration
+		wantPercent int
+	}{
+		{"defaults", "", "", nil, 20},
+		{"configured", "250", "25", new(250 * time.Millisecond), 25},
+		{"no extra gap", "1", "100", new(time.Millisecond), 100},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("COMPLETED_REQUEUE_TIME_MS", tt.floor)
+			t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", tt.percent)
+			ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+			defer cancel()
+			kube := fake.NewClientset(&apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+				Name: "workflow-controller-configmap", Namespace: "default",
+			}})
+			controller, err := NewWorkflowController(ctx, &rest.Config{Host: "https://localhost"}, kube, fakewfclientset.NewClientset(),
+				"default", "default", "argoexec:test", "", "text", "workflow-controller-configmap", false, false)
+			require.NoError(t, err)
+			defer controller.wfQueue.ShutDown()
+			defer controller.wfArchiveQueue.ShutDown()
+			defer func() { assert.NoError(t, controller.ShutdownMetrics(ctx)) }()
+			defer func() { assert.NoError(t, controller.ShutdownTracing(ctx)) }()
+			assert.Equal(t, tt.wantFloor, controller.taskSetCompletionDelay)
+			assert.Equal(t, tt.wantPercent, controller.completionDutyCyclePercent)
 		})
 	}
 }
