@@ -145,22 +145,7 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 }
 
 func TestResourcesDuration(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     container:
-       image: my-image
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resources-duration.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -179,22 +164,7 @@ spec:
 }
 
 func TestGlobalParamDuration(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     container:
-       image: my-image
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/global-param-duration.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -210,36 +180,8 @@ spec:
 }
 
 func TestEstimatedDuration(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-  labels:
-    workflows.argoproj.io/workflow-template: my-wftmpl
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     container:
-       image: my-image
-`)
-	cancel, controller := newController(logging.TestContext(t.Context()), wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-baseline-wf
-  namespace: my-ns
-status:
-  startedAt: "1970-01-01T00:00:00Z"
-  finishedAt: "1970-01-01T00:01:00Z"
-  nodes:
-    my-baseline-wf:
-      startedAt: "1970-01-01T00:00:00Z"
-      finishedAt: "1970-01-01T00:01:00Z"
-`), wf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/estimated-duration-workflow.yaml")
+	cancel, controller := newController(logging.TestContext(t.Context()), wfv1.MustUnmarshalWorkflow("@testdata/operator/estimated-duration-baseline-workflow.yaml"), wf)
 	defer cancel()
 
 	ctx := logging.TestContext(t.Context())
@@ -257,22 +199,7 @@ status:
 }
 
 func TestDefaultProgress(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     container:
-       image: my-image
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/default-progress.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -294,25 +221,7 @@ spec:
 }
 
 func TestLoggedProgress(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     metadata:
-        annotations:
-          workflows.argoproj.io/progress: 0/100
-     container:
-       image: my-image
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/logged-progress.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -340,45 +249,6 @@ spec:
 	pod = woc.wf.Status.Nodes.FindByDisplayName("pod")
 	assert.Equal(t, wfv1.Progress("100/100"), pod.Progress)
 }
-
-var sidecarWithVol = `
-# Verifies sidecars can reference volumeClaimTemplates
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: sidecar-with-volumes
-spec:
-  entrypoint: sidecar-with-volumes
-  volumeClaimTemplates:
-  - metadata:
-      name: claim-vol
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
-  volumes:
-  - name: existing-vol
-    persistentVolumeClaim:
-      claimName: my-existing-volume
-  templates:
-  - name: sidecar-with-volumes
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        print("hello world")
-    sidecars:
-    - name: sidevol
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt; sleep 9999"]
-      volumeMounts:
-      - name: claim-vol
-        mountPath: /mnt/vol
-      - name: existing-vol
-        mountPath: /mnt/existing-vol
-`
 
 func TestGlobalParams(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
@@ -413,7 +283,7 @@ func TestGlobalParams(t *testing.T) {
 
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(sidecarWithVol)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/sidecar-with-vol.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -1324,137 +1194,11 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
-var backoffMessage = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  creationTimestamp: "2020-05-05T15:18:40Z"
-  generateName: retry-backoff-
-  generation: 21
-  labels:
-    workflows.argoproj.io/completed: "true"
-    workflows.argoproj.io/phase: Failed
-  name: retry-backoff-s69z6
-  namespace: argo
-  resourceVersion: "348670"
-  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/retry-backoff-s69z6
-  uid: 110dbef4-c54b-4963-9739-03e9878810d9
-spec:
-
-  entrypoint: retry-backoff
-  templates:
-  -
-    container:
-      args:
-      - import random; import sys; exit_code = random.choice([1, 1]); sys.exit(exit_code)
-      command:
-      - python
-      - -c
-      image: python:alpine3.23
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: retry-backoff
-    outputs: {}
-    retryStrategy:
-      backoff:
-        duration: "2"
-        factor: 2
-        maxDuration: 1m
-      limit: 10
-status:
-  nodes:
-    retry-backoff-s69z6:
-      children:
-      - retry-backoff-s69z6-1807967148
-      - retry-backoff-s69z6-130058153
-      displayName: retry-backoff-s69z6
-      id: retry-backoff-s69z6
-      name: retry-backoff-s69z6
-      phase: Running
-      startedAt: "2020-05-05T15:18:40Z"
-      templateName: retry-backoff
-      templateScope: local/retry-backoff-s69z6
-      type: Retry
-    retry-backoff-s69z6-130058153:
-      displayName: retry-backoff-s69z6(1)
-      finishedAt: "2020-05-05T15:18:43Z"
-      hostNodeName: minikube
-      id: retry-backoff-s69z6-130058153
-      message: failed with exit code 1
-      name: retry-backoff-s69z6(1)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: retry-backoff-s69z6/retry-backoff-s69z6-130058153/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "1"
-      phase: Failed
-      resourcesDuration:
-        cpu: 1
-        memory: 0
-      startedAt: "2020-05-05T15:18:45Z"
-      templateName: retry-backoff
-      templateScope: local/retry-backoff-s69z6
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-backoff-s69z6-1807967148:
-      displayName: retry-backoff-s69z6(0)
-      finishedAt: "2020-05-05T15:18:43Z"
-      hostNodeName: minikube
-      id: retry-backoff-s69z6-1807967148
-      message: failed with exit code 1
-      name: retry-backoff-s69z6(0)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: retry-backoff-s69z6/retry-backoff-s69z6-1807967148/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "1"
-      phase: Failed
-      resourcesDuration:
-        cpu: 2
-        memory: 0
-      startedAt: "2020-05-05T15:18:40Z"
-      templateName: retry-backoff
-      templateScope: local/retry-backoff-s69z6
-      type: Pod
-      nodeFlag:
-        retried: true
-  phase: Running
-  resourcesDuration:
-    cpu: 5
-    memory: 0
-  startedAt: "2020-05-05T15:18:40Z"
-`
-
 func TestBackoffMessage(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
-	wf := wfv1.MustUnmarshalWorkflow(backoffMessage)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/backoff-message.yaml")
 	assert.NotNil(t, wf)
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -1506,25 +1250,8 @@ func TestBackoffMessage(t *testing.T) {
 	assert.Empty(t, newRetryNode.Message)
 }
 
-var retriesVariableTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    retryStrategy:
-      limit: 10
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay {{retries}}"]
-`
-
 func TestRetriesVariable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(retriesVariableTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retries-variable-template.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -1552,33 +1279,10 @@ func TestRetriesVariable(t *testing.T) {
 	assert.ElementsMatch(t, expected, actual)
 }
 
-var retriesVariableInPodSpecPatchTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    retryStrategy:
-      limit: 10
-    podSpecPatch: |
-      containers:
-        - name: main
-          resources:
-            limits:
-              memory: "{{=(sprig.int(retries) + 1) * 64}}Mi"
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello"]
-`
-
 // TestRetriesVariableInPodSpecPatch makes sure that {{retries}} variable in pod spec patch is correctly
 // updated before each retry
 func TestRetriesVariableInPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(retriesVariableInPodSpecPatchTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retries-variable-in-pod-spec-patch-template.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -1607,35 +1311,8 @@ func TestRetriesVariableInPodSpecPatch(t *testing.T) {
 	assert.ElementsMatch(t, actual, expected)
 }
 
-var retriesVariableWithGlobalVariablesInPodSpecPatchTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: memreqnum
-        value: 100
-  templates:
-  - name: whalesay
-    retryStrategy:
-      limit: 10
-    podSpecPatch: |
-      containers:
-        - name: main
-          resources:
-            limits:
-              memory: "{{= (sprig.int(retries)+1)* sprig.int(workflow.parameters.memreqnum)}}Mi"
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello"]
-`
-
 func TestRetriesVariableWithGlobalVariableInPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(retriesVariableWithGlobalVariablesInPodSpecPatchTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retries-variable-with-global-variables-in-pod-spec-patch-template.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -1664,31 +1341,8 @@ func TestRetriesVariableWithGlobalVariableInPodSpecPatch(t *testing.T) {
 	assert.ElementsMatch(t, actual, expected)
 }
 
-var lastretryVariableInPodSpecPatchTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    retryStrategy:
-      limit: 10
-    podSpecPatch: |
-      containers:
-        - name: main
-          resources:
-            limits:
-              memory: "{{= (sprig.int(lastRetry.exitCode)==1 ? (sprig.int(retries)+1) : 1)* 100}}Mi"
-    container:
-      image: python:alpine3.23
-      command: ["python", -c]
-      args: ["import sys; sys.exit(1)"]
-`
-
 func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(lastretryVariableInPodSpecPatchTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/lastretry-variable-in-pod-spec-patch-template.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -2097,26 +1751,6 @@ func TestAssessNodeStatus(t *testing.T) {
 	}
 }
 
-var daemonContainerSetWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: daemon-container-set
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    daemon: true
-    containerSet:
-      containers:
-      - name: step-1
-        image: alpine
-        command: [sh, -c, sleep 999999]
-      - name: step-2
-        image: alpine
-        command: [sh, -c, sleep 999999]
-`
-
 // TestAssessNodeStatusDaemonContainerSetTeardown verifies that when killDaemonedChildren has
 // stopped a daemon container set pod (marking its node and unfinished container children
 // Succeeded before terminating the pod), the resulting PodFailed event and the containers'
@@ -2125,7 +1759,7 @@ spec:
 // See https://github.com/argoproj/argo-workflows/issues/16397.
 func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(daemonContainerSetWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/daemon-container-set-wf.yaml")
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -2176,63 +1810,6 @@ func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, step2.Phase, "container that failed before the teardown stays Failed")
 }
-
-var daemonContainerSetStepsWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: daemon-cs-steps
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: daemon
-        template: cs
-    - - name: after
-        template: noop
-  - name: cs
-    daemon: true
-    containerSet:
-      containers:
-      - name: step-1
-        image: alpine
-        command: [sh, -c, sleep 999999]
-      - name: step-2
-        image: alpine
-        command: [sh, -c, sleep 999999]
-  - name: noop
-    container:
-      image: alpine
-      command: [sh, -c, "true"]
-`
-
-var daemonScriptStepsWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: daemon-script-steps
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: daemon
-        template: script
-    - - name: after
-        template: noop
-  - name: script
-    daemon: true
-    script:
-      image: alpine
-      command: [sh]
-      source: |
-        sleep 999999
-  - name: noop
-    container:
-      image: alpine
-      command: [sh, -c, "true"]
-`
 
 // injectPlaceholderTaskResult mirrors what the executor writes at pod start: a WorkflowTaskResult
 // labelled report-outputs-completed=false, before any output has been reported. Every pod with an
@@ -2287,13 +1864,13 @@ func TestDaemonTeardownEndToEnd(t *testing.T) {
 	}{{
 		// a container set pod has no container called "main", so getExitCode never matches it
 		name:       "container set",
-		wf:         daemonContainerSetStepsWf,
+		wf:         "@testdata/operator/daemon-container-set-steps-wf.yaml",
 		daemonNode: "daemon-cs-steps[0].daemon",
 		ctrNodes:   []string{"step-1", "step-2"},
 	}, {
 		// a script pod does have a "main" container, so it is the case that can record an exit code
 		name:       "script",
-		wf:         daemonScriptStepsWf,
+		wf:         "@testdata/operator/daemon-script-steps-wf.yaml",
 		daemonNode: "daemon-script-steps[0].daemon",
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2687,48 +2264,13 @@ func TestGetPodDeadline(t *testing.T) {
 	}
 }
 
-var workflowStepRetry = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: step-retry
-spec:
-  entrypoint: step-retry
-  templates:
-  - name: step-retry
-    retryStrategy:
-      limit: 1
-    steps:
-      - - name: whalesay-success
-          arguments:
-            parameters:
-            - name: message
-              value: success
-          template: whalesay
-      - - name: whalesay-failure
-          arguments:
-            parameters:
-            - name: message
-              value: failure
-          template: whalesay
-
-  - name: whalesay
-    inputs:
-      parameters:
-        - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
-`
-
 // TestWorkflowStepRetry verifies that steps retry will restart from the 0th step
 func TestWorkflowStepRetry(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := wfv1.MustUnmarshalWorkflow(workflowStepRetry)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-step-retry.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -2764,41 +2306,10 @@ func TestWorkflowStepRetry(t *testing.T) {
 	assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
 }
 
-var workflowParallelismLimit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: parallelism-limit
-spec:
-  entrypoint: parallelism-limit
-  parallelism: 2
-  templates:
-  - name: parallelism-limit
-    steps:
-    - - name: sleep
-        template: sleep
-        withItems:
-        - this
-        - workflow
-        - should
-        - take
-        - at
-        - least
-        - 60
-        - seconds
-        - to
-        - complete
-
-  - name: sleep
-    container:
-      image: alpine:3.23
-      command: [sh, -c, sleep 10]
-`
-
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowParallelismLimit(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(workflowParallelismLimit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-parallelism-limit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -2881,37 +2392,9 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 	assert.Len(t, pods.Items, 2)
 }
 
-var dagTemplateParallelismLimit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-parallelism-limit
-spec:
-  entrypoint: dag-parallelism-limit
-  templates:
-  - name: dag-parallelism-limit
-    parallelism: 2
-    dag:
-      tasks:
-      - name: a
-        template: sleep
-      - name: b
-        template: sleep
-      - name: c
-        template: sleep
-      - name: d
-        template: sleep
-      - name: e
-        template: sleep
-  - name: sleep
-    container:
-      image: alpine:3.23
-      command: [sh, -c, sleep 10]
-`
-
 // TestDAGTemplateParallelismLimit verifies parallelism at a dag level is honored.
 func TestDAGTemplateParallelismLimit(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagTemplateParallelismLimit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-template-parallelism-limit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -2930,78 +2413,12 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 	assert.Len(t, pods.Items, 2)
 }
 
-var nestedParallelism = `
-# Example with vertical and horizontal scalability
-#
-# Imagine we have 'M' workers which work in parallel,
-# each worker should performs 'N' loops sequentially
-#
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: parallelism-nested-
-spec:
-  arguments:
-    parameters:
-    - name: seq-list
-      value: |
-        ["a","b","c","d"]
-    - name: parallel-list
-      value: |
-        [1,2,3,4]
-
-  entrypoint: parallel-worker
-  templates:
-  - name: parallel-worker
-    inputs:
-      parameters:
-      - name: seq-list
-      - name: parallel-list
-    steps:
-    - - name: parallel-worker
-        template: seq-worker
-        arguments:
-          parameters:
-          - name: seq-list
-            value: "{{inputs.parameters.seq-list}}"
-          - name: parallel-id
-            value: "{{item}}"
-        withParam: "{{inputs.parameters.parallel-list}}"
-
-  - name: seq-worker
-    parallelism: 1
-    inputs:
-      parameters:
-      - name: seq-list
-      - name: parallel-id
-    steps:
-    - - name: seq-step
-        template: one-job
-        arguments:
-          parameters:
-          - name: parallel-id
-            value: "{{inputs.parameters.parallel-id}}"
-          - name: seq-id
-            value: "{{item}}"
-        withParam: "{{inputs.parameters.seq-list}}"
-
-  - name: one-job
-    inputs:
-      parameters:
-      - name: seq-id
-      - name: parallel-id
-    container:
-      image: alpine
-      command: ['/bin/sh', '-c']
-      args: ["echo {{inputs.parameters.parallel-id}} {{inputs.parameters.seq-id}}; sleep 10"]
-`
-
 func TestNestedTemplateParallelismLimit(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := wfv1.MustUnmarshalWorkflow(nestedParallelism)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/nested-parallelism.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -3267,19 +2684,6 @@ func TestStopOnSuspendedWorkflow(t *testing.T) {
 	})
 }
 
-var suspendTemplateWithDeadline = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-template
-spec:
-  entrypoint: suspend
-  activeDeadlineSeconds: 0
-  templates:
-  - name: suspend
-    suspend: {}
-`
-
 func TestSuspendWithDeadline(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -3287,7 +2691,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 
 	// operate the workflow. it should become in a suspended state after
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateWithDeadline)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-template-with-deadline.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3313,30 +2717,12 @@ func TestSuspendWithDeadline(t *testing.T) {
 	assert.True(t, found)
 }
 
-var suspendTemplateInputResolution = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-template
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    inputs:
-        parameters:
-            - name: param1
-              value: "{\"enum\": [\"one\", \"two\", \"three\"]}"
-            - name: param2
-              value: "value2"
-    suspend: {}
-`
-
 func TestSuspendInputsResolution(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendTemplateInputResolution)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-template-input-resolution.yaml")
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
@@ -3356,42 +2742,13 @@ func TestSuspendInputsResolution(t *testing.T) {
 	assert.Equal(t, "value2", node.Inputs.Parameters[1].Value.String())
 }
 
-var sequence = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: sequence
-spec:
-  entrypoint: steps
-  templates:
-  - name: steps
-    steps:
-      - - name: step1
-          template: echo
-          arguments:
-            parameters:
-            - name: msg
-              value: "{{item}}"
-          withSequence:
-            start: "100"
-            end: "101"
-
-  - name: echo
-    inputs:
-      parameters:
-      - name: msg
-    container:
-      image: alpine:3.23
-      command: [echo, "{{inputs.parameters.msg}}"]
-`
-
 func TestSequence(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(sequence)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/sequence.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3414,48 +2771,13 @@ func TestSequence(t *testing.T) {
 	assert.True(t, found101)
 }
 
-var inputParametersAsJSON = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-spec:
-  entrypoint: steps
-  arguments:
-    parameters:
-    - name: parameter1
-      value: value1
-  templates:
-  - name: steps
-    inputs:
-      parameters:
-      - name: parameter1
-      - name: parameter2
-        value: template2
-    steps:
-      - - name: step1
-          template: whalesay
-          arguments:
-            parameters:
-            - name: json
-              value: "Workflow: {{workflow.parameters}}. Template: {{inputs.parameters}}"
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: json
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-`
-
 func TestInputParametersAsJson(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(inputParametersAsJSON)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/input-parameters-as-json.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3473,39 +2795,6 @@ func TestInputParametersAsJson(t *testing.T) {
 	assert.True(t, found)
 }
 
-var expandWithItems = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: expand-with-items
-spec:
-  entrypoint: expand-with-items
-  templates:
-  - name: expand-with-items
-    steps:
-    - - name: whalesay
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item}}"
-        withItems:
-        - string
-        - 0
-        - 0
-        - false
-        - 1.3
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
-`
-
 func TestExpandWithItems(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -3513,7 +2802,7 @@ func TestExpandWithItems(t *testing.T) {
 
 	// Test list expansion
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(expandWithItems)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/expand-with-items.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3533,44 +2822,13 @@ func TestExpandWithItems(t *testing.T) {
 	assert.Len(t, pods.Items, 5)
 }
 
-var expandWithItemsMap = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: expand-with-items
-spec:
-  entrypoint: expand-with-items
-  templates:
-  - name: expand-with-items
-    steps:
-    - - name: whalesay
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item.os}} {{item.version}} JSON({{item}})"
-        withItems:
-        - {os: debian, version: 9.1}
-        - {os: debian, version: 9.1}
-        - {os: ubuntu, version: 16.10}
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay \"{{inputs.parameters.message}}\""]
-`
-
 func TestExpandWithItemsMap(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(expandWithItemsMap)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/expand-with-items-map.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3587,38 +2845,6 @@ func TestExpandWithItemsMap(t *testing.T) {
 	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", expandedTasks[0].Arguments.Parameters[0].Value.String())
 }
 
-var suspendTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-template
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: approve
-        template: approve
-        arguments:
-          parameters:
-          - name: param1
-            value: value1
-    - - name: release
-        template: whalesay
-
-  - name: approve
-    inputs:
-      parameters:
-      - name: param1
-    suspend: {}
-
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-`
-
 func TestSuspendTemplate(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -3626,7 +2852,7 @@ func TestSuspendTemplate(t *testing.T) {
 
 	// operate the workflow. it should become in a suspended state after
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-template.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3664,7 +2890,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 
 	// operate the workflow. it should become in a suspended state after
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-template.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3703,7 +2929,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 
 	// operate the workflow. it should become in a suspended state after
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-template.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3746,32 +2972,6 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 }
 
-var suspendResumeAfterTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-template
-spec:
-  entrypoint: suspend
-  templates:
-  - name: suspend
-    steps:
-    - - name: approve
-        template: approve
-    - - name: release
-        template: whalesay
-
-  - name: approve
-    suspend:
-      duration: 3
-
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-`
-
 func TestSuspendResumeAfterTemplate(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
@@ -3779,7 +2979,7 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 
 	// operate the workflow. it should become in a suspended state after
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendResumeAfterTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-resume-after-template.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3813,7 +3013,7 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 
 	// operate the workflow. it should become in a suspended state after
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendResumeAfterTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-resume-after-template.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -3839,58 +3039,6 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	assert.Empty(t, pods.Items)
 }
 
-var suspendWithInputDefaultsTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: suspend-with-input-defaults
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: wait
-        template: wait
-    - - name: print
-        template: print
-        arguments:
-          parameters:
-          - name: input
-            value: "{{steps.wait.outputs.parameters.input}}"
-          - name: select
-            value: "{{steps.wait.outputs.parameters.select}}"
-  - name: wait
-    suspend:
-      duration: "0s"
-    inputs:
-      parameters:
-        - name: input
-          default: "Hello World"
-        - name: select
-          default: "default"
-          enum:
-            - default
-            - option1
-            - option2
-    outputs:
-      parameters:
-        - name: input
-          valueFrom:
-            supplied: {}
-        - name: select
-          valueFrom:
-            supplied: {}
-  - name: print
-    inputs:
-      parameters:
-        - name: input
-        - name: select
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.input}} - {{inputs.parameters.select}}"]
-`
-
 // TestSuspendTimeoutWithInputDefaults tests that when a suspend node times out,
 // output parameters get their default values from matching input parameters
 func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
@@ -3899,7 +3047,7 @@ func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(suspendWithInputDefaultsTemplate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/suspend-with-input-defaults-template.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
