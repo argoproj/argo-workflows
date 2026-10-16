@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 )
 
 // newCompletionDelayController keeps the controller and queue requeue delays in
@@ -26,7 +27,9 @@ func newCompletionDelayController(t *testing.T, requeueTime time.Duration, delay
 	t.Helper()
 	queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: requeueTime})
 	t.Cleanup(queue.ShutDown)
-	return &WorkflowController{wfQueue: queue, requeueTime: requeueTime, taskSetCompletionDelay: delay}
+	m, _, err := metrics.CreateDefaultTestMetrics(logging.TestContext(t.Context()))
+	require.NoError(t, err)
+	return &WorkflowController{wfQueue: queue, requeueTime: requeueTime, taskSetCompletionDelay: delay, completionDutyCyclePercent: 20, metrics: m}
 }
 
 // completionDelayTaskSet builds a taskset fixture with stable node IDs so tests
@@ -92,7 +95,7 @@ func TestTaskSetCompletionDelay(t *testing.T) {
 							wantDelay = min(*delay, normalDelay)
 						}
 						start := time.Now()
-						controller.onWorkflowTaskSetUpdate(before, after)
+						controller.onWorkflowTaskSetUpdate(t.Context(), before, after)
 						synctest.Wait()
 						require.Zero(t, queue.Len())
 						time.Sleep(wantDelay - time.Nanosecond)
@@ -121,7 +124,7 @@ func TestTaskSetCompletionDelayInvalidObject(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				controller := newCompletionDelayController(t, time.Second, delay)
 				queue := controller.wfQueue
-				require.NotPanics(t, func() { controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), struct{}{}) })
+				require.NotPanics(t, func() { controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), struct{}{}) })
 				synctest.Wait()
 				require.Zero(t, queue.Len())
 				time.Sleep(time.Second)
@@ -141,7 +144,7 @@ func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
 				controller := newCompletionDelayController(t, time.Hour, &delay)
 				queue := controller.wfQueue
 				for range 100 {
-					controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
+					controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
 				}
 				synctest.Wait()
 				time.Sleep(delay)
@@ -150,7 +153,7 @@ func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
 				key, quit := queue.Get()
 				require.False(t, quit)
 				for range 100 {
-					controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeFailed))
+					controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeFailed))
 				}
 				synctest.Wait()
 				time.Sleep(delay)
@@ -174,10 +177,10 @@ func TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent(t *testing.T) {
 		controller := newCompletionDelayController(t, time.Second, new(10*time.Second))
 		queue := controller.wfQueue
 		running := completionDelayTaskSet(wfv1.NodeRunning)
-		controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), running)
+		controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), running)
 		synctest.Wait()
 		time.Sleep(500 * time.Millisecond)
-		controller.onWorkflowTaskSetUpdate(running, completionDelayTaskSet(wfv1.NodeSucceeded))
+		controller.onWorkflowTaskSetUpdate(t.Context(), running, completionDelayTaskSet(wfv1.NodeSucceeded))
 		synctest.Wait()
 		require.Zero(t, queue.Len())
 		time.Sleep(500 * time.Millisecond)
@@ -193,11 +196,11 @@ func TestTaskSetCompletionDelayPromotesDelayedWorkflow(t *testing.T) {
 		controller := newCompletionDelayController(t, 10*time.Second, new(250*time.Millisecond))
 		queue := controller.wfQueue
 		running := completionDelayTaskSet(wfv1.NodeRunning)
-		controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), running)
+		controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), running)
 		synctest.Wait()
 		require.Zero(t, queue.Len())
 		time.Sleep(time.Second)
-		controller.onWorkflowTaskSetUpdate(running, completionDelayTaskSet(wfv1.NodeSucceeded))
+		controller.onWorkflowTaskSetUpdate(t.Context(), running, completionDelayTaskSet(wfv1.NodeSucceeded))
 		synctest.Wait()
 		require.Zero(t, queue.Len())
 		time.Sleep(250*time.Millisecond - time.Nanosecond)
@@ -234,7 +237,7 @@ func TestTaskSetCompletionDelayRejectsStaleWorkflow(t *testing.T) {
 		controller.lastWrittenVersions = lastWrittenVersions{versions: map[types.UID]lastWrittenVersion{
 			"workflow-uid": {resourceVersion: "2"},
 		}}
-		controller.onWorkflowTaskSetUpdate(completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
+		controller.onWorkflowTaskSetUpdate(t.Context(), completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
 		synctest.Wait()
 		require.Zero(t, queue.Len())
 		time.Sleep(250 * time.Millisecond)
@@ -260,7 +263,7 @@ func TestTaskSetCompletionDelayInformer(t *testing.T) {
 	controller := newCompletionDelayController(t, time.Hour, new(time.Millisecond))
 	controller.wfclientset = client
 	queue := controller.wfQueue
-	informer := controller.newWorkflowTaskSetInformer().Informer()
+	informer := controller.newWorkflowTaskSetInformer(ctx).Informer()
 	go informer.Run(ctx.Done())
 	require.True(t, cache.WaitForCacheSync(ctx.Done(), informer.HasSynced))
 	completed := initial.DeepCopy()
