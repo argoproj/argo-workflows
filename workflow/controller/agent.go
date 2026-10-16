@@ -232,6 +232,14 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	tmpl := &wfv1.Template{}
 	// Agent pods have no boundary node, so there is no boundary template to apply.
+	// Workflow-level templateDefaults still do: an empty template is
+	// TemplateTypeUnknown, so mergedTemplateDefaultsInto keeps only the fields
+	// that are not tied to a template type (scheduling, metadata) and drops the
+	// container, script, http and plugin defaults, which have no meaning for an
+	// agent pod shared by every http and plugin node in the workflow.
+	if err = woc.mergedTemplateDefaultsInto(tmpl); err != nil {
+		return nil, fmt.Errorf("failed to apply templateDefaults to the agent pod: %w", err)
+	}
 	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, nil)
 	woc.addMetadata(pod, tmpl)
 	woc.addDNSConfig(pod)
