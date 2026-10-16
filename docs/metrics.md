@@ -509,6 +509,18 @@ Worker Types:
 
 This and associated metrics are all directly sourced from the [client-go workqueue metrics](https://godocs.io/k8s.io/client-go/util/workqueue)
 
+#### `workflow_completion_requeue_delay`
+
+A histogram of computed completion-triggered workflow requeue delays.
+Records the delay requested for each completion-triggered enqueue, in seconds, when `COMPLETED_REQUEUE_TIME_MS` is enabled.
+The delay includes the per-workflow duty-cycle gap and is bounded by the completion floor and `DEFAULT_REQUEUE_TIME`.
+This is not the actual queue wait: an earlier event can advance reconciliation, and busy workers can delay it.
+Compare with `queue_latency`, `client_rate_limiter_latency` and `resource_rate_limiter_latency` to identify queueing and API throttling.
+
+This metric has no attributes.
+
+Default bucket sizes: 0.001, 0.01, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30
+
 #### `workflow_condition`
 
 A gauge of the number of workflows with different conditions.
@@ -518,6 +530,20 @@ This will tell you the number of workflows with running pods.
 |-----------|----------------------------------------------------|
 | `type`    | The type of condition, currently only `PodRunning` |
 | `status`  | Boolean: `true` or `false`                         |
+
+#### `workflow_reconcile_utilization`
+
+A histogram of per-workflow worker utilization between reconciliations.
+Records the duration of a workflow's `operate()` call divided by the elapsed time since its preceding reconciliation ended.
+Values are fractions between 0 and 1, not percentages.
+Time waiting for the workflow lock is excluded from the operation duration but included in the elapsed interval.
+The first reconciliation has no preceding interval and produces no sample.
+Samples are collected even when the completion delay is disabled, so you can compare utilization before and after enabling it.
+Workflow names and UIDs are not labels: this histogram aggregates per-workflow samples without creating a time series for every workflow.
+
+This metric has no attributes.
+
+Default bucket sizes: 0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 0.9, 1
 
 #### `workflowtemplate_runtime`
 

@@ -154,7 +154,8 @@ type WorkflowController struct {
 	requeueTime time.Duration
 	// taskSetCompletionDelay sets a positive minimum delay for taskset completions,
 	// capped at requeueTime. Nil preserves the normal rate-limited path.
-	taskSetCompletionDelay *time.Duration
+	taskSetCompletionDelay     *time.Duration
+	completionDutyCyclePercent int
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -201,6 +202,9 @@ type WorkflowController struct {
 	lastUnreconciledWorkflows map[string]*wfv1.Workflow
 
 	lastWrittenVersions lastWrittenVersions
+	// Protected by lastWrittenVersions.mutex so completion/deletion cannot race
+	// with a finishing operation and resurrect its timing record.
+	reconcileTimings map[types.UID]workflowReconcileTiming
 }
 
 const (
@@ -218,6 +222,11 @@ const (
 // A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
+	if err != nil {
+		return nil, err
+	}
+
+	completionDutyCyclePercent, err := lookupCompletionDutyCyclePercent()
 	if err != nil {
 		return nil, err
 	}
@@ -262,6 +271,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
 		taskSetCompletionDelay:     taskSetCompletionDelay,
+		completionDutyCyclePercent: completionDutyCyclePercent,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
@@ -420,7 +430,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
-	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
+	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer(ctx)
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
@@ -1055,7 +1065,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	ctx = wfcontext.InjectObjectMeta(ctx, &woc.wf.ObjectMeta)
 	startTime := time.Now()
 	woc.operate(ctx)
-	wfc.metrics.OperationCompleted(ctx, time.Since(startTime).Seconds())
+	endTime := time.Now()
+	wfc.metrics.OperationCompleted(ctx, endTime.Sub(startTime).Seconds())
+	wfc.recordWorkflowReconcile(ctx, woc.wf, startTime, endTime)
 
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
@@ -1234,15 +1246,22 @@ const completedVersionRetention = maxQueueBackoff + 5*time.Minute
 const versionCleanupPeriod = time.Minute
 
 // expireCompletedVersions removes records of workflows that completed or were
-// deleted more than completedVersionRetention ago. Scans are throttled to at
-// most one per versionCleanupPeriod. The caller must hold the
-// lastWrittenVersions write lock.
+// deleted more than completedVersionRetention ago, and idle reconcile timings.
+// Scans are throttled to at most one per versionCleanupPeriod. The caller must
+// hold the lastWrittenVersions write lock.
 func (wfc *WorkflowController) expireCompletedVersions() {
 	now := time.Now()
 	if now.Before(wfc.lastWrittenVersions.nextCleanup) {
 		return
 	}
 	wfc.lastWrittenVersions.nextCleanup = now.Add(versionCleanupPeriod)
+	// Active workflows resync every 20 minutes; discard idle stragglers without
+	// removing the resource-version guard that is still needed for correctness.
+	for uid, timing := range wfc.reconcileTimings {
+		if now.Sub(timing.lastEnd) > 2*workflowResyncPeriod {
+			delete(wfc.reconcileTimings, uid)
+		}
+	}
 	for uid, last := range wfc.lastWrittenVersions.versions {
 		if !last.completedAt.IsZero() && now.Sub(last.completedAt) > completedVersionRetention {
 			delete(wfc.lastWrittenVersions.versions, uid)
@@ -1266,6 +1285,7 @@ func (wfc *WorkflowController) recordWorkflowCompleted(wf metav1.Object) {
 	wfc.lastWrittenVersions.mutex.Lock()
 	defer wfc.lastWrittenVersions.mutex.Unlock()
 	wfc.expireCompletedVersions()
+	delete(wfc.reconcileTimings, wf.GetUID())
 	rv := wf.GetResourceVersion()
 	if last, ok := wfc.lastWrittenVersions.versions[wf.GetUID()]; ok {
 		// never regress the recorded version: this event may itself be stale
@@ -1647,7 +1667,7 @@ func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[strin
 
 // newWorkflowTaskSetInformer watches tasksets in the managed namespace and controller
 // instance, routing updates through the normal or configured completion-delay queue path.
-func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
+func (wfc *WorkflowController) newWorkflowTaskSetInformer(ctx context.Context) wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
 		workflowTaskSetResyncPeriod,
@@ -1660,7 +1680,9 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: wfc.onWorkflowTaskSetUpdate,
+			UpdateFunc: func(old, newObj any) {
+				wfc.onWorkflowTaskSetUpdate(ctx, old, newObj)
+			},
 		})
 	return informer
 }
