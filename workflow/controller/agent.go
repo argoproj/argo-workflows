@@ -153,7 +153,11 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
+	useProjectedToken := slices.ContainsFunc(woc.execWf.Spec.ExecutorPlugins, func(plugin wfv1.ExecutorPlugin) bool {
+		return plugin.Spec.Sidecar.AutomountWorkflowServiceAccountToken
+	})
+	// The agent also needs a projected token to run without a workflow token Secret.
+	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName, useProjectedToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
@@ -244,6 +248,17 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		pod.Spec = *patchedPodSpec
 	}
 
+	if useProjectedToken {
+		// Projected tokens use the pod's service account after applying PodSpecPatch.
+		serviceAccountName := pod.Spec.ServiceAccountName
+		if serviceAccountName == "" {
+			serviceAccountName = "default"
+		}
+		if _, getErr := woc.controller.kubeclientset.CoreV1().ServiceAccounts(pod.Namespace).Get(ctx, serviceAccountName, metav1.GetOptions{}); getErr != nil {
+			return nil, fmt.Errorf("failed to get agent service account: %w", getErr)
+		}
+	}
+
 	if woc.controller.Config.InstanceID != "" {
 		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
@@ -299,18 +314,18 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
-	wFPlugins, err := woc.execWf.Spec.AsExecutorPluginSpec()
+	workflowPlugins, err := woc.execWf.Spec.AsExecutorPluginSpec()
 	if err != nil {
 		return nil, nil, err
 	}
-	isGetPluginsFromWorkflow := len(wFPlugins) > 0
-	if isGetPluginsFromWorkflow && !woc.controller.enableWorkflowLevelExecutorPlugins {
+	hasWorkflowPlugins := len(workflowPlugins) > 0
+	if hasWorkflowPlugins && !woc.controller.enableWorkflowLevelExecutorPlugins {
 		return nil, nil, fmt.Errorf(
 			"workflow-level executor plugins are disabled in the controller. To enable them, set the environment variable ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true",
 		)
 	}
-	if isGetPluginsFromWorkflow {
-		for _, plugin := range wFPlugins {
+	if hasWorkflowPlugins {
+		for _, plugin := range workflowPlugins {
 			sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, plugin)
 			if err != nil {
 				return nil, nil, err
@@ -347,10 +362,14 @@ func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug
 		// only mount the token for this plugin, not others
 		SubPath: c.Name,
 	})
-	if !s.AutomountServiceAccountToken {
+	if !s.AutomountServiceAccountToken && !s.AutomountWorkflowServiceAccountToken {
 		return c, nil, nil
 	}
-	volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	serviceAccountName := plug.Name + "-executor-plugin"
+	if s.AutomountWorkflowServiceAccountToken {
+		serviceAccountName = woc.execWf.Spec.ServiceAccountName
+	}
+	volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName, s.AutomountWorkflowServiceAccountToken)
 	if err != nil {
 		return nil, nil, err
 	}
