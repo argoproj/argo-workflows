@@ -26,7 +26,7 @@ func (n *explosiveOffloadNodeStatusRepo) Get(context.Context, string, string) (w
 	return nil, ErrOffloadNotSupported
 }
 
-func (n *explosiveOffloadNodeStatusRepo) List(context.Context, string) (map[UUIDVersion]wfv1.Nodes, error) {
+func (n *explosiveOffloadNodeStatusRepo) List(context.Context, string, []UUIDVersion) (map[UUIDVersion]wfv1.Nodes, error) {
 	return nil, ErrOffloadNotSupported
 }
 
