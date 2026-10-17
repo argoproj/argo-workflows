@@ -497,6 +497,9 @@ data:
   # authenticates users and removes or overwrites client-supplied
   # identity headers before forwarding requests to Argo Server.
   header: |
+    # Issuer claim, either supplied by an HTTP header or configured as a static value.
+    iss:
+      value: https://auth.example.com
     # HTTP header containing the user's subject.
     sub:
       header: X-Forwarded-User
@@ -509,6 +512,15 @@ data:
     # HTTP header containing the user's groups.
     groups:
       header: X-Forwarded-Groups
+    # HTTP header containing the shared secret used to authenticate the trusted proxy.
+    sharedSecret:
+      header: X-Proxy-Auth
+      requiredValue:
+        name: argo-server-header-auth
+        key: proxy-auth
+    # Whether role-based access control is enabled for trusted header authentication.
+    rbac:
+      enabled: true
 
   # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:
