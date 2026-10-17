@@ -32,8 +32,8 @@ func Test_estimator(t *testing.T) {
 				StartedAt:  a,
 				FinishedAt: b,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-baseline":             {StartedAt: a, FinishedAt: b},
-					"my-baseline-873244444":   {StartedAt: a, FinishedAt: b},
+					"my-baseline":             {Name: "my-baseline", StartedAt: a, FinishedAt: b},
+					"my-baseline-873244444":   {Name: "1", StartedAt: a, FinishedAt: b},
 					"my-baseline-873244444.x": {StartedAt: a, FinishedAt: b},
 				},
 			},

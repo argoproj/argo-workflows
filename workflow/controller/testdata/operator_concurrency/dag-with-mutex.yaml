@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: dag-mutex
+ namespace: default
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: mutex
+     - name: B
+       depends: A
+       template: mutex
+
+ - name: mutex
+   synchronization:
+     mutexes:
+       - name: welcome
+   container:
+     image: alpine:3.23
+     command: [sh, -c, "exit 0"]

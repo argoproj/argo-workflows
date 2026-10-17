@@ -71,8 +71,15 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 			Nodes: map[string]wfv1.NodeStatus{},
 		},
 	}
+	wf.Status.Nodes.Set(ctx, wfName, wfv1.NodeStatus{
+		ID:    wfName,
+		Name:  wfName,
+		Type:  wfv1.NodeTypeSteps,
+		Phase: wfv1.NodeFailed,
+	})
 	onExitID := wf.NodeID(onExitName)
 	onExitNode := wfv1.NodeStatus{
+		ID:    onExitID,
 		Name:  onExitName,
 		Phase: wfv1.NodeSucceeded,
 	}
@@ -83,6 +90,728 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
+}
+
+// memoizedResubmitFixture is a failed DAG fan-out: gen succeeded, fan(0:a) and fan(2:c) succeeded,
+// fan(1:b) is a retry node that exhausted two attempts, and the dependant "after" was omitted.
+// The nested "inner" DAG under fan(0:a) has its leaf pod pointing at "after", the shape that used
+// to leave a memoized resubmit Running forever.
+const memoizedResubmitFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: items
+      value: "[a, b, c]"
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+      - name: fan
+        template: inner
+        dependencies: [gen]
+        withParam: "{{workflow.parameters.items}}"
+      - name: after
+        template: run
+        dependencies: [fan]
+  - name: inner
+    dag:
+      tasks:
+      - name: step
+        template: run
+  - name: run
+    retryStrategy: {limit: 1}
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      outputs:
+        result: "[1]"
+      children: [wf-fan]
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: TaskGroup
+      boundaryID: wf
+      phase: Failed
+      children: [wf-fan-a, wf-fan-b, wf-fan-c]
+    wf-fan-a:
+      id: wf-fan-a
+      name: wf.fan(0:a)
+      type: DAG
+      boundaryID: wf
+      phase: Succeeded
+      children: [wf-fan-a-step]
+      outboundNodes: [wf-fan-a-step]
+    wf-fan-a-step:
+      id: wf-fan-a-step
+      name: wf.fan(0:a).step
+      type: Pod
+      boundaryID: wf-fan-a
+      phase: Succeeded
+      children: [wf-after]
+    wf-fan-b:
+      id: wf-fan-b
+      name: wf.fan(1:b)
+      type: Retry
+      boundaryID: wf
+      phase: Failed
+      message: No more retries left
+      children: [wf-fan-b-0, wf-fan-b-1]
+    wf-fan-b-0:
+      id: wf-fan-b-0
+      name: wf.fan(1:b)(0)
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      nodeFlag: {retried: true}
+    wf-fan-b-1:
+      id: wf-fan-b-1
+      name: wf.fan(1:b)(1)
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      nodeFlag: {retried: true}
+      children: [wf-after]
+    wf-fan-c:
+      id: wf-fan-c
+      name: wf.fan(2:c)
+      type: DAG
+      boundaryID: wf
+      phase: Succeeded
+      children: [wf-fan-c-step]
+      outboundNodes: [wf-fan-c-step]
+    wf-fan-c-step:
+      id: wf-fan-c-step
+      name: wf.fan(2:c).step
+      type: Pod
+      boundaryID: wf-fan-c
+      phase: Succeeded
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Skipped
+      boundaryID: wf
+      phase: Omitted
+      message: "omitted: depends condition not met"
+`
+
+func TestFormulateResubmitWorkflowMemoized(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+
+	get := func(suffix string) *wfv1.NodeStatus {
+		node, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + suffix))
+		require.NoError(t, err, "expected node %s%s to exist", newWf.Name, suffix)
+		return node
+	}
+	has := func(suffix string) bool {
+		return newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name + suffix))
+	}
+
+	t.Run("succeeded pods are memoized placeholders that keep their outputs", func(t *testing.T) {
+		gen := get(".gen")
+		assert.Equal(t, wfv1.NodeTypeSkipped, gen.Type)
+		assert.Equal(t, wfv1.NodeSkipped, gen.Phase)
+		assert.Equal(t, "original pod: wf-gen", gen.Message)
+		assert.Equal(t, "[1]", *gen.Outputs.Result)
+		assert.Equal(t, wfv1.NodeTypeSkipped, get(".fan(0:a).step").Type)
+		assert.Equal(t, wfv1.NodeTypeSkipped, get(".fan(2:c).step").Type)
+	})
+
+	t.Run("succeeded templates are kept as succeeded so they are not re-run", func(t *testing.T) {
+		assert.Equal(t, wfv1.NodeSucceeded, get(".fan(0:a)").Phase)
+		assert.Equal(t, wfv1.NodeSucceeded, get(".fan(2:c)").Phase)
+	})
+
+	t.Run("the failed path is reset the way a retry resets it", func(t *testing.T) {
+		assert.Equal(t, wfv1.NodeRunning, get("").Phase)
+		assert.Equal(t, wfv1.NodeRunning, get(".fan").Phase)
+		retry := get(".fan(1:b)")
+		assert.Equal(t, wfv1.NodeRunning, retry.Phase)
+		assert.Empty(t, retry.Message)
+		assert.Empty(t, retry.Children, "old attempts must go so the retry budget starts afresh")
+		assert.False(t, has(".fan(1:b)(0)"))
+		assert.False(t, has(".fan(1:b)(1)"))
+	})
+
+	t.Run("omitted dependants are deleted so they are re-evaluated", func(t *testing.T) {
+		assert.False(t, has(".after"))
+	})
+
+	t.Run("nothing references a deleted node", func(t *testing.T) {
+		for _, node := range newWf.Status.Nodes {
+			for _, child := range node.Children {
+				assert.True(t, newWf.Status.Nodes.Has(child), "node %s still references deleted child %s", node.Name, child)
+			}
+			for _, outbound := range node.OutboundNodes {
+				assert.True(t, newWf.Status.Nodes.Has(outbound), "node %s still references deleted outbound node %s", node.Name, outbound)
+			}
+		}
+		assert.Empty(t, get(".fan(0:a).step").Children)
+		assert.Equal(t, []string{get(".fan(0:a).step").ID}, get(".fan(0:a)").OutboundNodes, "references to kept nodes are preserved")
+	})
+
+	t.Run("everything is renamed under the new workflow", func(t *testing.T) {
+		for id, node := range newWf.Status.Nodes {
+			assert.True(t, strings.HasPrefix(node.Name, newWf.Name), "node %s not renamed", node.Name)
+			assert.Equal(t, newWf.NodeID(node.Name), id)
+			assert.Equal(t, id, node.ID)
+			if node.BoundaryID != "" {
+				assert.True(t, newWf.Status.Nodes.Has(node.BoundaryID), "node %s has unknown boundary %s", node.Name, node.BoundaryID)
+			}
+		}
+	})
+}
+
+func TestFormulateResubmitWorkflowMemoizedParameterOverride(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, []string{"items=[x]"})
+	require.NoError(t, err)
+
+	// Overriding parameters can change the fan-out, so a reset TaskGroup loses its expanded
+	// children for the controller to re-expand them, as retry does.
+	fan, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".fan"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, fan.Phase)
+	assert.Empty(t, fan.Children)
+	for _, suffix := range []string{".fan(0:a)", ".fan(0:a).step", ".fan(1:b)", ".fan(2:c)", ".fan(2:c).step"} {
+		assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+suffix)), "%s should have been deleted", suffix)
+	}
+	assert.Equal(t, "[x]", newWf.Spec.Arguments.Parameters[0].Value.String())
+}
+
+func TestFormulateResubmitWorkflowMemoizedUnfinishedPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: set
+      - name: b
+        template: run
+  - name: set
+    containerSet:
+      containers:
+      - name: one
+        image: busybox
+      - name: two
+        image: busybox
+        dependencies: [one]
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: Steps
+      phase: Failed
+      children: [wf-sg]
+    wf-sg:
+      id: wf-sg
+      name: wf[0]
+      type: StepGroup
+      boundaryID: wf
+      phase: Failed
+      children: [wf-a, wf-b]
+    wf-a:
+      id: wf-a
+      name: wf[0].a
+      type: Pod
+      boundaryID: wf
+      phase: Running
+      children: [wf-a-one]
+    wf-a-one:
+      id: wf-a-one
+      name: wf[0].a.one
+      type: Container
+      boundaryID: wf-a
+      phase: Succeeded
+      children: [wf-a-two]
+    wf-a-two:
+      id: wf-a-two
+      name: wf[0].a.two
+      type: Container
+      boundaryID: wf-a
+      phase: Running
+    wf-b:
+      id: wf-b
+      name: wf[0].b
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	// A pod that never finished cannot be memoized, its pod belongs to the old workflow, and
+	// neither can anything under it, even a container that had already succeeded.
+	for _, suffix := range []string{"[0].a", "[0].a.one", "[0].a.two", "[0].b"} {
+		assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+suffix)), "%s should have been dropped", suffix)
+	}
+	sg, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + "[0]"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, sg.Phase)
+	assert.Empty(t, sg.Children)
+}
+
+// A failure that no execution node owns: the fan-out's withParam could not be expanded, which the
+// controller records as a Skipped node in Error. Memoized resubmit must still reset the path to it.
+const nonPodFailureFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+      - name: fan
+        template: run
+        dependencies: [gen]
+        withParam: "{{tasks.gen.outputs.result}}"
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      outputs:
+        result: not json
+      children: [wf-fan]
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: Skipped
+      boundaryID: wf
+      phase: Error
+      message: "withParam value could not be parsed as a JSON list"
+`
+
+func TestFormulateResubmitWorkflowMemoizedNonPodFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(nonPodFailureFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get(newWf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the root must be revisited, not carried over as Error")
+	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".fan")), "the failed node must be re-created")
+	gen, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".gen"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeSkipped, gen.Type, "the succeeded pod is still memoized")
+}
+
+func TestFormulateRetryWorkflowNonPodFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(nonPodFailureFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase)
+	assert.False(t, newWf.Status.Nodes.Has("wf-fan"))
+	assert.True(t, newWf.Status.Nodes.Has("wf-gen"))
+}
+
+// A bug present before the DAG/Steps engine refactor too: a
+// DAG task that could not be set up (here, a `when` that cannot be
+// evaluated) is recorded as a Skipped Error leaf, and its dependant, never
+// dispatched, hangs underneath it as Omitted. planReset's old leaf rule
+// ("execution node, or no children at all") missed it: the node has a
+// child, so it was never treated as the node that actually failed, and
+// `argo retry` reset nothing.
+const dagLeafWithOmittedChildFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+        when: "{{workflow.parameters.x}} == ok"
+      - name: after
+        template: run
+        dependencies: [gen]
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Skipped
+      boundaryID: wf
+      phase: Error
+      message: "when expression could not be evaluated"
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Skipped
+      boundaryID: wf
+      phase: Omitted
+      message: "omitted: depends condition not met"
+`
+
+func TestFormulateRetryWorkflowDAGLeafWithOmittedChild(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagLeafWithOmittedChildFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the failed node's only child is Omitted (it never ran), so it must be reset")
+	assert.False(t, newWf.Status.Nodes.Has("wf-gen"), "the failed node must be re-created")
+	assert.False(t, newWf.Status.Nodes.Has("wf-after"), "the omitted dependant must be re-created")
+}
+
+// A's exit hook errored while fan ran, so fan created no more items and
+// completed from the one that ran, with the message that says so; pre had
+// completed. Retry must reset fan, keeping its item, so the retried DAG
+// creates its remaining items, and must leave pre alone. The message alone
+// decides it, not the times: fan's finishedAt (from the controller's clock)
+// is earlier than the hook's (from the kubelet's), and pre's later.
+const hookErrorStoppedFanOutFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: pre, template: run, withItems: ["0"]}
+      - {name: A, template: run, hooks: {exit: {template: run}}}
+      - {name: fan, template: run, withItems: ["0", "1"]}
+  - name: run
+    container: {image: alpine, command: [echo]}
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-pre, wf-A, wf-fan]
+    wf-pre:
+      id: wf-pre
+      name: wf.pre
+      type: TaskGroup
+      boundaryID: wf
+      phase: Succeeded
+      finishedAt: "2026-01-01T10:02:00Z"
+      children: [wf-pre0]
+    wf-pre0:
+      id: wf-pre0
+      name: wf.pre(0:0)
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+    wf-A:
+      id: wf-A
+      name: wf.A
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      children: [wf-A-exit]
+    wf-A-exit:
+      id: wf-A-exit
+      name: wf.A.onExit
+      type: Pod
+      boundaryID: wf
+      phase: Error
+      nodeFlag: {hooked: true}
+      finishedAt: "2026-01-01T10:01:00Z"
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: TaskGroup
+      boundaryID: wf
+      phase: Succeeded
+      message: "items not started because a hook errored: 1"
+      finishedAt: "2026-01-01T10:00:00Z"
+      children: [wf-fan0]
+    wf-fan0:
+      id: wf-fan0
+      name: wf.fan(0:0)
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+`
+
+func TestFormulateRetryWorkflowHookErrorStoppedFanOut(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(hookErrorStoppedFanOutFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	phase := func(id string) wfv1.NodePhase {
+		if n, err := newWf.Status.Nodes.Get(id); err == nil {
+			return n.Phase
+		}
+		return ""
+	}
+	assert.Equal(t, wfv1.NodeRunning, phase("wf"))
+	assert.Equal(t, wfv1.NodeRunning, phase("wf-fan"), "the TaskGroup the hook error stopped")
+	assert.Empty(t, newWf.Status.Nodes["wf-fan"].Message, "the reset TaskGroup")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-fan0"), "the item that ran")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-pre"), "the TaskGroup that completed")
+	assert.Equal(t, wfv1.NodeSucceeded, phase("wf-A"))
+	assert.Equal(t, wfv1.NodePhase(""), phase("wf-A-exit"), "the errored hook is re-created")
+}
+
+// A ContainerSet pod whose containers all finished successfully is
+// deleted before its wait container reports (e.g. the pod is evicted). The
+// node-phase state machine refuses Succeeded->Error, so the pod node itself
+// goes Error "pod deleted" while its Container children keep their true
+// Succeeded phase. isDescendantNodeSucceeded must not count a Container
+// child's own Succeeded phase as a succeeded descendant (it is a sibling
+// execution inside the same pod, not a downstream node), or planReset never
+// resets the pod and `argo retry` silently does nothing.
+const podErrorWithSucceededContainersFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: run
+  - name: run
+    containerSet:
+      containers:
+      - name: first
+        image: alpine
+        command: [echo]
+      - name: main
+        image: alpine
+        command: [echo]
+        dependencies: [first]
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-A]
+    wf-A:
+      id: wf-A
+      name: wf.A
+      type: Pod
+      boundaryID: wf
+      phase: Error
+      message: "pod deleted"
+      children: [wf-A-first, wf-A-main]
+    wf-A-first:
+      id: wf-A-first
+      name: wf.A.first
+      displayName: first
+      type: Container
+      boundaryID: wf
+      phase: Succeeded
+    wf-A-main:
+      id: wf-A-main
+      name: wf.A.main
+      displayName: main
+      type: Container
+      boundaryID: wf
+      phase: Succeeded
+`
+
+func TestFormulateRetryWorkflowPodErrorWithSucceededContainers(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(podErrorWithSucceededContainersFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the pod's own Container children succeeding must not stop it being reset")
+	assert.False(t, newWf.Status.Nodes.Has("wf-A"), "the errored pod must be re-created")
+}
+
+// A pod that failed but was carried past with continueOn is memoized as a failed placeholder; it
+// must not be re-run, and it must not claim a pod under the new workflow.
+func TestFormulateResubmitWorkflowMemoizedContinueOn(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: flaky
+        template: run
+        continueOn: {failed: true}
+      - name: after
+        template: run
+        dependencies: [flaky]
+      - name: broken
+        template: run
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-flaky, wf-broken]
+    wf-flaky:
+      id: wf-flaky
+      name: wf.flaky
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      message: "exit code 1"
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+    wf-broken:
+      id: wf-broken
+      name: wf.broken
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      message: "exit code 2"
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	flaky, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".flaky"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, flaky.Phase)
+	assert.Equal(t, wfv1.NodeTypeSkipped, flaky.Type, "no pod exists for it under the new workflow")
+	assert.Equal(t, "original pod: wf-flaky: exit code 1", flaky.Message)
+	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".broken")), "the real failure is re-run")
+}
+
+// A workflow left behind by the memoized resubmit of an older version can reference nodes that no
+// longer exist. It must still be resubmittable.
+func TestFormulateResubmitWorkflowMemoizedDanglingInput(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	gen := wf.Status.Nodes["wf-gen"]
+	gen.Children = append(gen.Children, "wf-gone")
+	wf.Status.Nodes.Set(ctx, "wf-gen", gen)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	for _, node := range newWf.Status.Nodes {
+		for _, child := range node.Children {
+			assert.True(t, newWf.Status.Nodes.Has(child), "node %s still references %s", node.Name, child)
+		}
+	}
+}
+
+func TestFormulateResubmitWorkflowMemoizedNoRootNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	wf.Status.Nodes.Delete(ctx, "wf")
+	_, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.ErrorContains(t, err, "no root node")
+}
+
+func TestFormulateResubmitWorkflowMemoizedNoNodes(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  message: invalid spec
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	assert.Empty(t, newWf.Status.Nodes)
+	assert.Equal(t, wfv1.WorkflowUnknown, newWf.Status.Phase)
 }
 
 // TestReadFromSingleorMultiplePath ensures we can read the content of a single file or multiple files correctly using the ReadFromFilePathsOrUrls function
@@ -1048,7 +1777,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		assert.Len(t, wf.Status.Nodes, 1)
+		// The root failed on its own, with nothing beneath it to blame, so it is
+		// the failure and is re-created rather than carried over as Failed.
+		assert.Empty(t, wf.Status.Nodes)
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
 		wf := &wfv1.Workflow{

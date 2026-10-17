@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: lifecycle-hook-tmpl-level-
+  labels:
+    test: test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: main
+            template: echo
+            hooks:
+              exit:
+                template: hook
+                arguments:
+                  parameters:
+                    - name: status
+                      value: "{{steps.main.status}}"
+    - name: echo
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo hi"]
+    - name: hook
+      inputs:
+        parameters:
+          - name: status
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.status}}"]

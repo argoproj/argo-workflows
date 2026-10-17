@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-template-scope-2
+  namespace: default
+spec:
+  templates:
+  - name: steps
+    steps:
+    - - name: hello
+        template: hello
+  - name: hello
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        print("hello world")

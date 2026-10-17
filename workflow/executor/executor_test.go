@@ -81,12 +81,14 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 			tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 			require.NoError(t, err)
 			we := WorkflowExecutor{
+				Process: &Process{
+					Tracing: tracing,
+				},
 				Template: wfv1.Template{
 					Inputs: wfv1.Inputs{
 						Artifacts: []wfv1.Artifact{test.artifact},
 					},
 				},
-				Tracing: tracing,
 			}
 			err = we.loadArtifacts(ctx, "")
 			require.EqualError(t, err, test.error)
@@ -110,18 +112,22 @@ func TestSaveParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        templateWithOutParam,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+		Process: &Process{
+			PodName:         fakePodName,
+			ClientSet:       fakeClientset,
+			Namespace:       fakeNamespace,
+			RuntimeExecutor: &mockRuntimeExecutor,
+		},
+		Template: templateWithOutParam,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("has a newline\n", nil)
 
 	ctx := logging.TestContext(t.Context())
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
+	assert.Equal(t, "has a newline", we.capturedOutputs().Parameters[0].Value.String())
+	// Capture writes to the task's outputs copy, never to the template.
+	assert.Nil(t, we.Template.Outputs.Parameters[0].Value)
 }
 
 // TestIsBaseImagePath tests logic of isBaseImagePath which determines if a path is coming from a
@@ -148,6 +154,7 @@ func TestIsBaseImagePath(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
+		Process:  &Process{},
 		Template: templateWithSameDir,
 	}
 	// 1. unrelated dir/file should be captured from base image layer
@@ -189,6 +196,7 @@ func TestIsBaseImagePath(t *testing.T) {
 func TestIsBaseImagePathInitless(t *testing.T) {
 	newWe := func() *WorkflowExecutor {
 		return &WorkflowExecutor{
+			Process: &Process{},
 			Template: wfv1.Template{
 				Container: &corev1.Container{},
 				Inputs: wfv1.Inputs{
@@ -242,12 +250,14 @@ func TestStageArchiveFileInitlessOverlap(t *testing.T) {
 
 	newWe := func(rt *mocks.ContainerRuntimeExecutor) *WorkflowExecutor {
 		return &WorkflowExecutor{
+			Process: &Process{
+				RuntimeExecutor: rt,
+				Tracing:         tr,
+			},
 			Template: wfv1.Template{
 				Inputs:  wfv1.Inputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
 				Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
 			},
-			RuntimeExecutor: rt,
-			Tracing:         tr,
 		}
 	}
 
@@ -296,18 +306,20 @@ func TestDefaultParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        templateWithOutParam,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+		Process: &Process{
+			PodName:         fakePodName,
+			ClientSet:       fakeClientset,
+			Namespace:       fakeNamespace,
+			RuntimeExecutor: &mockRuntimeExecutor,
+		},
+		Template: templateWithOutParam,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
 	ctx := logging.TestContext(t.Context())
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "Default Value", we.Template.Outputs.Parameters[0].Value.String())
+	assert.Equal(t, "Default Value", we.capturedOutputs().Parameters[0].Value.String())
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
@@ -327,18 +339,20 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        templateWithOutParam,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+		Process: &Process{
+			PodName:         fakePodName,
+			ClientSet:       fakeClientset,
+			Namespace:       fakeNamespace,
+			RuntimeExecutor: &mockRuntimeExecutor,
+		},
+		Template: templateWithOutParam,
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerName, "/path").Return("", fmt.Errorf("file not found"))
 
 	ctx := logging.TestContext(t.Context())
 	err := we.SaveParameters(ctx)
 	require.NoError(t, err)
-	assert.Empty(t, we.Template.Outputs.Parameters[0].Value.String())
+	assert.Empty(t, we.capturedOutputs().Parameters[0].Value.String())
 }
 
 func TestIsTarball(t *testing.T) {
@@ -556,37 +570,43 @@ func TestSaveArtifacts(t *testing.T) {
 	}{
 		{
 			workflowExecutor: &WorkflowExecutor{
-				PodName:          fakePodName,
-				Template:         templateWithOutParam,
-				ClientSet:        fakeClientset,
-				Namespace:        fakeNamespace,
-				RuntimeExecutor:  &mockRuntimeExecutor,
-				taskResultClient: mockTaskResultClient,
-				Tracing:          tracing,
+				Process: &Process{
+					PodName:          fakePodName,
+					ClientSet:        fakeClientset,
+					Namespace:        fakeNamespace,
+					RuntimeExecutor:  &mockRuntimeExecutor,
+					taskResultClient: mockTaskResultClient,
+					Tracing:          tracing,
+				},
+				Template: templateWithOutParam,
 			},
 			expectError: false,
 		},
 		{
 			workflowExecutor: &WorkflowExecutor{
-				PodName:          fakePodName,
-				Template:         templateOptionFalse,
-				ClientSet:        fakeClientset,
-				Namespace:        fakeNamespace,
-				RuntimeExecutor:  &mockRuntimeExecutor,
-				taskResultClient: mockTaskResultClient,
-				Tracing:          tracing,
+				Process: &Process{
+					PodName:          fakePodName,
+					ClientSet:        fakeClientset,
+					Namespace:        fakeNamespace,
+					RuntimeExecutor:  &mockRuntimeExecutor,
+					taskResultClient: mockTaskResultClient,
+					Tracing:          tracing,
+				},
+				Template: templateOptionFalse,
 			},
 			expectError: true,
 		},
 		{
 			workflowExecutor: &WorkflowExecutor{
-				PodName:          fakePodName,
-				Template:         templateZipArchive,
-				ClientSet:        fakeClientset,
-				Namespace:        fakeNamespace,
-				RuntimeExecutor:  &mockRuntimeExecutor,
-				taskResultClient: mockTaskResultClient,
-				Tracing:          tracing,
+				Process: &Process{
+					PodName:          fakePodName,
+					ClientSet:        fakeClientset,
+					Namespace:        fakeNamespace,
+					RuntimeExecutor:  &mockRuntimeExecutor,
+					taskResultClient: mockTaskResultClient,
+					Tracing:          tracing,
+				},
+				Template: templateZipArchive,
 			},
 			expectError: false,
 		},
@@ -617,27 +637,29 @@ func TestMonitorProgress(t *testing.T) {
 		},
 	})
 	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
-	we, err := NewExecutor(
+	process, err := NewProcess(
 		ctx,
 		nil,
 		taskResults,
 		nil,
 		&mocks.ContainerRuntimeExecutor{},
-		Config{
+		ProcessConfig{
 			PodName:                      fakePodName,
 			PodUID:                       fakePodUID,
-			WorkflowName:                 fakeWorkflow,
-			WorkflowUID:                  fakeWorkflowUID,
-			NodeID:                       fakeNodeID,
 			Namespace:                    fakeNamespace,
-			Template:                     wfv1.Template{},
-			IncludeScriptOutput:          false,
-			Deadline:                     time.Now(),
 			AnnotationPatchTickDuration:  annotationPackTickDuration,
 			ReadProgressFileTickDuration: readProgressFileTickDuration,
 		},
 	)
 	require.NoError(t, err)
+	we := process.NewExecutor(TaskConfig{
+		WorkflowName:        fakeWorkflow,
+		WorkflowUID:         fakeWorkflowUID,
+		NodeID:              fakeNodeID,
+		Template:            wfv1.Template{},
+		IncludeScriptOutput: false,
+		Deadline:            time.Now(),
+	})
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -667,9 +689,11 @@ func TestSaveLogs(t *testing.T) {
 			},
 		}
 		we := WorkflowExecutor{
-			Template:        templateWithArchiveLogs,
-			RuntimeExecutor: &mockRuntimeExecutor,
-			Tracing:         tracing,
+			Process: &Process{
+				RuntimeExecutor: &mockRuntimeExecutor,
+				Tracing:         tracing,
+			},
+			Template: templateWithArchiveLogs,
 		}
 
 		logArtifacts := we.SaveLogs(ctx)
@@ -690,9 +714,11 @@ func TestSaveLogs(t *testing.T) {
 		rt.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).
 			Return((io.ReadCloser)(nil), os.ErrNotExist)
 		we := WorkflowExecutor{
-			Template:        wfv1.Template{ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
-			RuntimeExecutor: rt,
-			Tracing:         tr,
+			Process: &Process{
+				RuntimeExecutor: rt,
+				Tracing:         tr,
+			},
+			Template: wfv1.Template{ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
 		}
 
 		logArtifacts := we.SaveLogs(ctx)
@@ -721,10 +747,12 @@ func TestReportOutputs(t *testing.T) {
 		tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 		require.NoError(t, err)
 		we := WorkflowExecutor{
-			Template:         templateWithArtifacts,
-			RuntimeExecutor:  &mockRuntimeExecutor,
-			taskResultClient: mockTaskResultClient,
-			Tracing:          tracing,
+			Process: &Process{
+				RuntimeExecutor:  &mockRuntimeExecutor,
+				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
+			},
+			Template: templateWithArtifacts,
 		}
 
 		err = we.ReportOutputs(ctx, artifacts)
@@ -876,9 +904,11 @@ func TestWaitMainContainers(t *testing.T) {
 		rt := &mocks.ContainerRuntimeExecutor{}
 		rt.On("Wait", mock.Anything, mock.Anything).Return(nil)
 		we := &WorkflowExecutor{
-			PodName:         fakePodName,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: rt,
+			Process: &Process{
+				PodName:         fakePodName,
+				Namespace:       fakeNamespace,
+				RuntimeExecutor: rt,
+			},
 		}
 		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}))
 		rt.AssertExpectations(t)

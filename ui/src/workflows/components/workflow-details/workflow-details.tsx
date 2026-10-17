@@ -19,7 +19,7 @@ import {archivalStatus, ArtifactRepository, execSpec, isArchivedWorkflow, isWork
 import {getPodName} from '../../../shared/pod-name';
 import {RetryWatch} from '../../../shared/retry-watch';
 import {services} from '../../../shared/services';
-import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {getMainContainerNames, getResolvedTemplates} from '../../../shared/template-resolution';
 import {useCollectEvent} from '../../../shared/use-collect-event';
 import {useQueryParams} from '../../../shared/use-query-params';
 import {useResizableWidth} from '../../../shared/use-resizable-width';
@@ -47,7 +47,7 @@ import './workflow-details.scss';
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
-    return {type, nodeId, container: container || 'main'};
+    return {type, nodeId, container};
 }
 
 const LEFT_NAV_WIDTH = 60;
@@ -587,7 +587,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                             workflow={workflow}
                             initialPodName={podName}
                             initialNodeId={parsedSidePanel.nodeId}
-                            container={parsedSidePanel.container}
+                            container={parsedSidePanel.container || getMainContainerNames(workflow, workflow.status.nodes[parsedSidePanel.nodeId])[0]}
                             archived={isArchivedWorkflow(workflow)}
                         />
                     )}

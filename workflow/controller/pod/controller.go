@@ -91,7 +91,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 					return
 				}
 				if !significantPodChange(oldPod, newPod) {
-					log.WithField("key", key).Info(ctx, "insignificant pod change")
+					log.WithField("key", key).Debug(ctx, "insignificant pod change")
 					diff.LogChanges(ctx, oldPod, newPod)
 					return
 				}
@@ -238,7 +238,6 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 }
 
 func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
-	c.log.WithField("pod", pod.Name).Info(ctx, "add pod event")
 	err := c.callBack(pod)
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod add failed")
@@ -247,9 +246,8 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, newPod *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, _ *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
-	c.log.WithField("pod", old.Name).Info(ctx, "update pod event")
 	err := c.callBack(newPod)
 	if err != nil {
 		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
@@ -272,7 +270,6 @@ func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 			return
 		}
 	}
-	c.log.WithField("pod", pod.Name).Info(ctx, "delete pod event")
 	// enqueue the workflow for the deleted pod
 	err = c.callBack(pod)
 	if err != nil {

@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template-1
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      http:
+       url: "http://localhost"
+      memoize:
+        key: cache-demo-1
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: cache-demo-1
+status:
+  nodes:
+    http-template-fqgsf-2338098285:
+      boundaryID: http-template-fqgsf
+      displayName: main
+      id: http-template-fqgsf-2338098285
+      name: http-template-fqgsf[0].main
+      memoizationStatus:
+        hit: false
+        key: cache-demo-1
+        cacheName: cache-demo-1
+      outputs:
+        parameters:
+        - name: result
+          value: |
+            { demo }
+      phase: Succeeded
+      templateName: http
+      type: HTTP
+  phase: Running

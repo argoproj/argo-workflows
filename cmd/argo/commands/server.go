@@ -225,7 +225,7 @@ See %s`, help.ArgoServer()),
 		cmdutil.FatalBootstrap(logFormat, err, "Failed to create server logger")
 	}
 	if err := viper.BindPFlags(command.Flags()); err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to bind flags to env vars")
+		logger.WithError(err).Error(ctx, "Failed to bind flags to env vars")
 		os.Exit(1)
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
@@ -233,7 +233,7 @@ See %s`, help.ArgoServer()),
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				logger.WithError(err).WithFatal().Error(ctx, "Failed to set flag")
+				logger.WithError(err).Error(ctx, "Failed to set flag")
 				os.Exit(1)
 			}
 		}

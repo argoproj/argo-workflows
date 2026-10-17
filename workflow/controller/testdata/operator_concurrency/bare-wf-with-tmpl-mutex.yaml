@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: tmpl-mutex-bare
+  namespace: default
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      synchronization:
+        mutexes:
+          - name: tmpl-shutdown-test
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 99999"]

@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-onexit-shutdown
+spec:
+  entrypoint: main-dag
+  onExit: exit-dag
+  shutdown: Stop
+  templates:
+  - name: main-dag
+    dag:
+      tasks:
+      - name: main-task
+        template: echo
+  - name: exit-dag
+    dag:
+      tasks:
+      - name: on-exit-handler
+        template: echo
+  - name: echo
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+status:
+  phase: Running
+  startedAt: "2020-05-29T18:11:55Z"
+  nodes:
+    dag-onexit-shutdown:
+      id: dag-onexit-shutdown
+      name: dag-onexit-shutdown
+      displayName: dag-onexit-shutdown
+      type: DAG
+      templateName: main-dag
+      templateScope: local/dag-onexit-shutdown
+      phase: Running
+      startedAt: "2020-05-29T18:11:55Z"
+      children:
+      - dag-onexit-shutdown-1234567890
+      outboundNodes:
+      - dag-onexit-shutdown-1234567890
+    dag-onexit-shutdown-1234567890:
+      id: dag-onexit-shutdown-1234567890
+      name: dag-onexit-shutdown.main-task
+      displayName: main-task
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-onexit-shutdown
+      phase: Succeeded
+      boundaryID: dag-onexit-shutdown
+      startedAt: "2020-05-29T18:11:55Z"
+      finishedAt: "2020-05-29T18:11:58Z"
+      outputs:
+        exitCode: "0"

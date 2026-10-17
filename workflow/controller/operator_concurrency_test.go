@@ -22,117 +22,15 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 )
 
-const configMap = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-config
-data:
-  workflow: "2"
-  template: "1"
-  step: "1"
-`
+const configMap = "@testdata/operator_concurrency/semaphore-configmap.yaml"
 
-const wfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-  namespace: default
-spec:
-  entrypoint: whalesay
-  templates:
-    -
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      name: whalesay
-`
+const wfWithSemaphore = "@testdata/operator_concurrency/wf-with-semaphore.yaml"
 
-const ScriptWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: scriptTmpl
-  templates:
-  - name: scriptTmpl
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-    script:
-      image: python:alpine3.23
-      command: ["python"]
-      # fail with a 66% probability
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([0, 1, 1]);
-        sys.exit(exit_code)
-`
+const ScriptWfWithSemaphore = "@testdata/operator_concurrency/script-wf-with-semaphore.yaml"
 
-const ScriptWfWithSemaphoreDifferentNamespace = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: scriptTmpl
-  templates:
-  - name: scriptTmpl
-    synchronization:
-      semaphores:
-        - namespace: other
-          configMapKeyRef:
-            key: template
-            name: my-config
-    script:
-      image: python:alpine3.23
-      command: ["python"]
-      # fail with a 66% probability
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([0, 1, 1]);
-        sys.exit(exit_code)
-`
+const ScriptWfWithSemaphoreDifferentNamespace = "@testdata/operator_concurrency/script-wf-with-semaphore-different-namespace.yaml"
 
-const ResourceWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: resource-wf
-  namespace: default
-spec:
-  entrypoint: resourceTmpl
-  templates:
-  - name: resourceTmpl
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-    resource:
-      action: create
-      manifest: |
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: workflow-controller-configmap1
-`
+const ResourceWfWithSemaphore = "@testdata/operator_concurrency/resource-wf-with-semaphore.yaml"
 
 var workflowExistenceFunc = func(key string) bool {
 	return true
@@ -167,7 +65,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -228,7 +126,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -288,7 +186,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("other").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -350,7 +248,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -432,32 +330,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	})
 }
 
-var DAGWithMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: dag-mutex
- namespace: default
-spec:
- entrypoint: diamond
- templates:
- - name: diamond
-   dag:
-     tasks:
-     - name: A
-       template: mutex
-     - name: B
-       depends: A
-       template: mutex
-
- - name: mutex
-   synchronization:
-     mutexes:
-       - name: welcome
-   container:
-     image: alpine:3.23
-     command: [sh, -c, "exit 0"]
-`
+const DAGWithMutex = "@testdata/operator_concurrency/dag-with-mutex.yaml"
 
 func TestMutexInDAG(t *testing.T) {
 	assert := assert.New(t)
@@ -492,44 +365,7 @@ func TestMutexInDAG(t *testing.T) {
 	})
 }
 
-var DAGWithInterpolatedMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: dag-mutex
- namespace: default
-spec:
- entrypoint: diamond
- templates:
- - name: diamond
-   dag:
-     tasks:
-     - name: A
-       template: mutex
-       arguments:
-         parameters:
-         - name: message
-           value: foo/bar
-
-     - name: B
-       depends: A
-       template: mutex
-       arguments:
-         parameters:
-         - name: message
-           value: foo/bar
-
- - name: mutex
-   synchronization:
-     mutexes:
-       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
-   inputs:
-     parameters:
-     - name: message
-   container:
-     image: alpine:3.23
-     command: [sh, -c, "echo {{inputs.parameters.message}}"]
-`
+const DAGWithInterpolatedMutex = "@testdata/operator_concurrency/dag-with-interpolated-mutex.yaml"
 
 func TestMutexInDAGWithInterpolation(t *testing.T) {
 	assert := assert.New(t)
@@ -565,36 +401,7 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	})
 }
 
-const RetryWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: step1
-  retryStrategy:
-    limit: 10
-  templates:
-    - name: step1
-      steps:
-        - - name: hello1
-            template: whalesay
-        - - name: hello2
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-`
+const RetryWfWithSemaphore = "@testdata/operator_concurrency/retry-wf-with-semaphore.yaml"
 
 func TestSynchronizationWithRetry(t *testing.T) {
 	assert := assert.New(t)
@@ -604,7 +411,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
@@ -644,165 +451,9 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	})
 }
 
-const StepWithSync = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-jklcl
-  namespace: default
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  -
-    name: hello-hello-hello
-    steps:
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello1
-        name: hello1
-        template: whalesay
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
-  -
-    container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay
-    inputs:
-      parameters:
-      - name: message
-    name: whalesay
-`
+const StepWithSync = "@testdata/operator_concurrency/step-with-sync.yaml"
 
-const StepWithSyncStatus = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-jklcl
-  namespace: default
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  - inputs: {}
-    name: hello-hello-hello
-    steps:
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello1
-        name: hello1
-        template: whalesay
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
-  - container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay
-      resources: {}
-    inputs:
-      parameters:
-      - name: message
-    name: whalesay
-status:
-  artifactRepositoryRef:
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  - status: "True"
-    type: Completed
-  finishedAt: "2021-02-11T19:46:55Z"
-  nodes:
-    steps-jklcl:
-      children:
-      - steps-jklcl-3895081407
-      displayName: steps-jklcl
-      finishedAt: "2021-02-11T19:46:55Z"
-      id: steps-jklcl
-      name: steps-jklcl
-      outboundNodes:
-      - steps-jklcl-969694128
-      phase: Running
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateName: hello-hello-hello
-      templateScope: local/steps-jklcl
-      type: Steps
-    steps-jklcl-969694128:
-      boundaryID: steps-jklcl
-      displayName: hello1
-      finishedAt: "2021-02-11T19:46:44Z"
-      id: steps-jklcl-969694128
-      inputs:
-        parameters:
-        - name: message
-          value: hello1
-      name: steps-jklcl[0].hello1
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: steps-jklcl/steps-jklcl-969694128/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateName: whalesay
-      templateScope: local/steps-jklcl
-      type: Pod
-    steps-jklcl-3895081407:
-      boundaryID: steps-jklcl
-      children:
-      - steps-jklcl-969694128
-      displayName: '[0]'
-      finishedAt: "2021-02-11T19:46:55Z"
-      id: steps-jklcl-3895081407
-      name: steps-jklcl[0]
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateScope: local/steps-jklcl
-      type: StepGroup
-  phase: Succeeded
-  progress: 1/1
-  resourcesDuration:
-    cpu: 7
-    memory: 4
-  startedAt: "2021-02-11T19:46:33Z"
-
-`
+const StepWithSyncStatus = "@testdata/operator_concurrency/step-with-sync-status.yaml"
 
 func TestSynchronizationWithStep(t *testing.T) {
 	assert := assert.New(t)
@@ -812,7 +463,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -855,31 +506,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	})
 }
 
-const wfWithStepRetry = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: my-workflow-
-spec:
-  entrypoint: step-entry
-  templates:
-    - name: step-entry
-      steps:
-      - - name: step1
-          template: sleep
-
-    - name: sleep
-      retryStrategy:
-        limit: 5
-        retryPolicy: Always
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              name: my-config
-              key: template
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["sleep 300"]`
+const wfWithStepRetry = "@testdata/operator_concurrency/wf-with-step-retry.yaml"
 
 func TestSynchronizationWithStepRetry(t *testing.T) {
 	assert := assert.New(t)
@@ -889,7 +516,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -927,23 +554,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	})
 }
 
-const pendingWfWithShutdownStrategy = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: synchronization-wf-level
-  namespace: default
-spec:
-  entrypoint: whalesay
-  onExit: whalesay
-  synchronization:
-    mutexes:
-      - name:  test
-  templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const pendingWfWithShutdownStrategy = "@testdata/operator_concurrency/pending-wf-with-shutdown-strategy.yaml"
 
 func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
@@ -1070,48 +681,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 }
 
 func TestWorkflowMemoizationWithMutex(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: example-steps-simple
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: job-1
-            template: sleep
-            arguments:
-              parameters:
-                - name: sleep_duration
-                  value: 10
-          - name: job-2
-            template: sleep
-            arguments:
-              parameters:
-                - name: sleep_duration
-                  value: 5
-
-    - name: sleep
-      synchronization:
-        mutexes:
-          - name: mutex-example-steps-simple
-      inputs:
-        parameters:
-          - name: sleep_duration
-      script:
-        image: alpine:3.23
-        command: [/bin/sh]
-        source: |
-          echo "Sleeping for {{ inputs.parameters.sleep_duration }}"
-          sleep {{ inputs.parameters.sleep_duration }}
-      memoize:
-        key: "memo-key-1"
-        cache:
-          configMap:
-            name: cache-example-steps-simple
-    `)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_concurrency/wf-memoization-with-mutex.yaml")
 	wf.Name = "example-steps-simple-gas12"
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
@@ -1158,65 +728,11 @@ spec:
 	}
 }
 
-const bareWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: tmpl-mutex-bare
-  namespace: default
-spec:
-  entrypoint: whalesay
-  templates:
-    - name: whalesay
-      synchronization:
-        mutexes:
-          - name: tmpl-shutdown-test
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const bareWfWithTmplMutex = "@testdata/operator_concurrency/bare-wf-with-tmpl-mutex.yaml"
 
-const stepsWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: tmpl-mutex-steps
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: locked
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        mutexes:
-          - name: tmpl-shutdown-test
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const stepsWfWithTmplMutex = "@testdata/operator_concurrency/steps-wf-with-tmpl-mutex.yaml"
 
-const dagWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: tmpl-mutex-dag
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: locked
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        mutexes:
-          - name: tmpl-shutdown-test
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const dagWfWithTmplMutex = "@testdata/operator_concurrency/dag-wf-with-tmpl-mutex.yaml"
 
 // TestShutdownWaitingForTmplLevelLock ensures that shutting down a workflow
 // whose node is still waiting to acquire a template-level synchronization lock
@@ -1317,4 +833,481 @@ func findWaitingSyncNodeByID(wf *wfv1.Workflow, id string) *wfv1.NodeStatus {
 		}
 	}
 	return nil
+}
+
+const dagWithSequenceMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-seq-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: client
+        template: client
+        withSequence:
+          count: "3"
+  - name: client
+    synchronization:
+      mutexes:
+        - name: dag-seq-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`
+
+// TestSynchronizationWithDAGWithSequence verifies that when a DAG task uses
+// withSequence and each child holds the same mutex, the lock held by a completed
+// child is released so the next child can acquire it.
+func TestSynchronizationWithDAGWithSequence(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithSequenceMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// First child should be Pending (acquired the mutex). The other two should be
+	// either created and Pending (waiting for the lock) or not yet expanded.
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1, "exactly one child should be holding the mutex initially")
+
+	// Complete client(0:0)'s pod.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// Re-operate. The lock held by client(0:0) must be released so client(1:0) can
+	// acquire it. The bug we're fixing: the engine never releases sync locks for
+	// fulfilled children of a withSequence task, so the mutex stays held forever.
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// client(0:0) should be Succeeded, and the workflow status must no longer list
+	// it as holding the mutex.
+	displayToID := make(map[string]string)
+	for _, node := range woc.wf.Status.Nodes {
+		displayToID[node.DisplayName] = node.ID
+	}
+	firstID, ok := displayToID["client(0:0)"]
+	require.True(t, ok, "client(0:0) node must exist")
+	firstChild, err := woc.wf.Status.Nodes.Get(firstID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, firstChild.Phase)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	holdingIDs := make(map[string]bool)
+	for _, holding := range woc.wf.Status.Synchronization.Mutex.Holding {
+		holdingIDs[strings.TrimPrefix(holding.Holder, wfPrefix)] = true
+	}
+	assert.False(t, holdingIDs[firstID],
+		"completed client(0:0) must not still be recorded as holding the mutex")
+
+	// And one of the waiting siblings must have acquired the freed lock.
+	// converge iterates `results` (a map), so dispatch order between siblings is
+	// non-deterministic — either client(1:1) or client(2:2) may grab the lock
+	// first. Asserting one specific sibling is racy; assert that *some* waiter took it.
+	nextHolderFound := false
+	for _, name := range []string{"client(1:1)", "client(2:2)"} {
+		id, ok := displayToID[name]
+		if ok && holdingIDs[id] {
+			nextHolderFound = true
+			break
+		}
+	}
+	assert.True(t, nextHolderFound,
+		"a waiting sibling must hold the mutex after client(0:0) completes")
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"exactly one sibling holds the mutex; the other still waits")
+}
+
+const dagWithItemsMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-items-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: client
+        template: client
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: ["a", "b", "c"]
+  - name: client
+    inputs:
+      parameters:
+      - name: msg
+    synchronization:
+      mutexes:
+        - name: dag-items-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestSynchronizationWithDAGWithItems mirrors TestSynchronizationWithDAGWithSequence
+// but uses withItems instead. Same per-item reconciliation path; different expansion source.
+func TestSynchronizationWithDAGWithItems(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithItemsMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"exactly one withItems child should hold the mutex initially")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	displayToID := make(map[string]string)
+	for _, node := range woc.wf.Status.Nodes {
+		displayToID[node.DisplayName] = node.ID
+	}
+	firstID, ok := displayToID["client(0:a)"]
+	require.True(t, ok, "client(0:a) node must exist")
+
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	holdingIDs := make(map[string]bool)
+	for _, holding := range woc.wf.Status.Synchronization.Mutex.Holding {
+		holdingIDs[strings.TrimPrefix(holding.Holder, wfPrefix)] = true
+	}
+	assert.False(t, holdingIDs[firstID], "completed first child must not still be holding the mutex")
+
+	// One of the waiting siblings must hold the freed lock. Dispatch order
+	// between siblings is non-deterministic (converge iterates a map), so we
+	// can't assume a specific child takes the lock — only that one of them does.
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+	nextHolderFound := false
+	for _, name := range []string{"client(1:b)", "client(2:c)"} {
+		if id, ok := displayToID[name]; ok && holdingIDs[id] {
+			nextHolderFound = true
+			break
+		}
+	}
+	assert.True(t, nextHolderFound, "a waiting withItems sibling must hold the freed mutex")
+}
+
+// TestSynchronizationWithDAGWithSequenceCompletesAll drives a withSequence to
+// completion across multiple operate cycles, verifying that the lock is
+// transferred from one child to the next on every release and that the
+// workflow ultimately reaches Succeeded with no holders left.
+func TestSynchronizationWithDAGWithSequenceCompletesAll(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithSequenceMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	allChildren := map[string]bool{"client(0:0)": true, "client(1:1)": true, "client(2:2)": true}
+
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	idToDisplay := func() map[string]string {
+		m := make(map[string]string, len(woc.wf.Status.Nodes))
+		for _, n := range woc.wf.Status.Nodes {
+			m[n.ID] = n.DisplayName
+		}
+		return m
+	}
+	currentHolder := func(t *testing.T) (displayName string) {
+		t.Helper()
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+			"exactly one child holds the mutex at a time")
+		raw := strings.TrimPrefix(woc.wf.Status.Synchronization.Mutex.Holding[0].Holder, wfPrefix)
+		return idToDisplay()[raw]
+	}
+
+	// Drive each child to completion in whatever order the engine picks them.
+	// After each cycle, the previous holder must be Succeeded and a different
+	// not-yet-completed sibling must hold the lock — until the last one.
+	completed := map[string]bool{}
+	for cycle := range 3 {
+		holderName := currentHolder(t)
+		assert.True(t, allChildren[holderName],
+			"holder must be one of the expanded children, got %q", holderName)
+		assert.False(t, completed[holderName],
+			"holder %q has already completed in a previous cycle", holderName)
+
+		// Complete the current holder's pod.
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		// The just-completed holder must be Succeeded.
+		for _, n := range woc.wf.Status.Nodes {
+			if n.DisplayName == holderName {
+				assert.Equal(t, wfv1.NodeSucceeded, n.Phase, "%q must be Succeeded", holderName)
+				break
+			}
+		}
+		completed[holderName] = true
+
+		if cycle == 2 {
+			// Last child done — no holders left.
+			if woc.wf.Status.Synchronization != nil && woc.wf.Status.Synchronization.Mutex != nil {
+				assert.Empty(t, woc.wf.Status.Synchronization.Mutex.Holding,
+					"after the last child completes, no one should hold the mutex")
+			}
+			continue
+		}
+		// Otherwise a sibling that hasn't completed yet must now hold the lock.
+		nextName := currentHolder(t)
+		assert.True(t, allChildren[nextName] && !completed[nextName],
+			"new holder must be an uncompleted sibling, got %q", nextName)
+	}
+	assert.Len(t, completed, 3, "every child should have held and released the mutex exactly once")
+}
+
+const dagWithParamMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-param-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: source
+        template: produce-list
+      - name: client
+        depends: source
+        template: client
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withParam: "{{tasks.source.outputs.result}}"
+  - name: produce-list
+    script:
+      image: alpine:3.23
+      command: [sh, -c]
+      source: |
+        echo '["a","b","c"]'
+  - name: client
+    inputs:
+      parameters:
+      - name: msg
+    synchronization:
+      mutexes:
+        - name: dag-param-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestSynchronizationWithDAGWithParam covers the third expansion mechanism
+// (withParam, where the item set comes from an upstream task's output rather
+// than a literal list or count). The per-item path must work the same way.
+func TestSynchronizationWithDAGWithParam(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithParamMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Drive the source task to Succeeded with a JSON-array output so that
+	// withParam can resolve. The output comes back via the task-result path,
+	// so we mark both pod phase and the task result manually.
+	resultStr := `["a","b","c"]`
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Result: &resultStr}))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// At this point the children should be expanded and one of them holding the mutex.
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"a single withParam child should hold the mutex; siblings wait")
+
+	// Complete the lock-holding pod and reoperate. The lock must transfer.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"after the first child finishes, the next withParam child must take the lock")
+}
+
+const stepsWithSequenceMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-seq-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: client
+        template: client
+        withSequence:
+          count: "3"
+  - name: client
+    synchronization:
+      mutexes:
+        - name: steps-seq-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`
+
+// TestSynchronizationWithStepsWithSequence verifies the per-item path also
+// works under a Steps template (different boundary naming: "[0].client" vs
+// the DAG "client").
+func TestSynchronizationWithStepsWithSequence(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithSequenceMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"one Steps withSequence child should hold the mutex initially")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"the freed Steps mutex must be picked up by the next sibling")
+}
+
+const dagSequenceMutexFailFirstChild = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-seq-fail-first
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: client
+        template: client
+        withSequence:
+          count: "3"
+  - name: client
+    synchronization:
+      mutexes:
+        - name: dag-seq-fail-first-shared
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`
+
+// TestSynchronizationFailedFirstChildReleasesLock guards against a regression
+// where a Failed child wouldn't release the mutex (the lock is released in
+// assessNodeStatus regardless of phase, but the TaskGroup dispatch must not
+// re-run the failed item while still letting its siblings progress).
+func TestSynchronizationFailedFirstChildReleasesLock(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSequenceMutexFailFirstChild)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// First child holds the lock.
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+
+	// Mark the holder's pod as Failed. assessNodeStatus must release the lock.
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// Find the failed child and confirm it's terminal AND not still a holder.
+	var firstID string
+	for _, n := range woc.wf.Status.Nodes {
+		if n.DisplayName == "client(0:0)" {
+			firstID = n.ID
+			assert.True(t, n.Phase.FailedOrError(), "client(0:0) must be terminal Failed/Error")
+			break
+		}
+	}
+	require.NotEmpty(t, firstID)
+
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	holdingIDs := make(map[string]bool)
+	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Synchronization.Mutex != nil {
+		for _, h := range woc.wf.Status.Synchronization.Mutex.Holding {
+			holdingIDs[strings.TrimPrefix(h.Holder, wfPrefix)] = true
+		}
+	}
+	assert.False(t, holdingIDs[firstID], "failed child must not still be holding the mutex")
+
+	// One of the next children must have acquired the freed lock.
+	nextHolderFound := false
+	for _, n := range woc.wf.Status.Nodes {
+		if (n.DisplayName == "client(1:1)" || n.DisplayName == "client(2:2)") && holdingIDs[n.ID] {
+			nextHolderFound = true
+			break
+		}
+	}
+	assert.True(t, nextHolderFound,
+		"a sibling must have picked up the lock after the holder failed")
 }

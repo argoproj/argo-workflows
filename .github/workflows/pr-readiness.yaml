@@ -26,6 +26,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
   # Dry-run: set to "true" to render to the job summary instead of
   # commenting/labelling.
   DRY_RUN: "false"
@@ -40,6 +42,12 @@ jobs:
       contents: read # checkout of the default branch (scripts, OWNERS, template)
       actions: read # job/step conclusions for the feature check
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
       # Default branch only — never the PR head.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

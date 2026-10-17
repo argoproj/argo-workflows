@@ -157,7 +157,7 @@ For example, to allow the user to execute `/bin/kubectl`, we set `mode: 0755`.
 
 ## Artifact Garbage Collection
 
-As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](../configure-artifact-repository.md) for the current supported store engine).
+You can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](../configure-artifact-repository.md) for the current supported store engine).
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`.
 You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
@@ -368,6 +368,10 @@ If you don't use your own `ServiceAccount` and are just using `default` ServiceA
 If deletion of the artifact fails for some reason (other than the Artifact already having been deleted which is not considered a failure), the Workflow's Status will be marked with a new Condition to indicate "Artifact GC Failure", a Kubernetes Event will be issued, and the Argo Server UI will also indicate the failure.
 For additional debugging, the user should find 1 or more Pods named `<wfName>-artgc-*` and can view the logs.
 
+If the controller cannot start Artifact GC at all, for example because the GC Pod is rejected by an admission webhook or the Kubernetes API is unavailable, it records the same Condition and Event and retries on later reconciliations.
+It keeps retrying until the Workflow has been complete (or, for `OnWorkflowDeletion`, deleted) for longer than `ARGO_ARTIFACT_GC_RETRY_WINDOW` (default 60 minutes, see [environment variables](../environment-variables.md)), after which the strategy is abandoned and the Condition says so.
+The Workflow always gets at least one attempt, however old it is when the controller reaches it.
+
 If the user needs to delete the Workflow and its child CRD objects, they will need to patch the Workflow to remove the finalizer preventing the deletion:
 
 ```yaml
@@ -388,9 +392,10 @@ kubectl patch workflow my-wf \
 
 Or for simplicity use the Argo CLI `argo delete` command with flag `--force`, which under the hood removes the finalizer before performing the deletion.
 
-### Release Versions >= 3.5
+### Forcing Finalizer Removal
 
-A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails:
+The Workflow Spec has a flag called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails.
+This covers both a GC Pod that ran and failed and a strategy that was abandoned because the controller could not start it:
 
 ```yaml
 spec:

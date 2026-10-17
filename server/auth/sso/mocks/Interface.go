@@ -17,10 +17,19 @@ func NewInterface(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *Interface {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &Interface{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -73,7 +82,7 @@ type Interface_Authorize_Call struct {
 
 // Authorize is a helper method to define mock.On call
 //   - authorization string
-func (_e *Interface_Expecter) Authorize(authorization interface{}) *Interface_Authorize_Call {
+func (_e *Interface_Expecter) Authorize(authorization any) *Interface_Authorize_Call {
 	return &Interface_Authorize_Call{Call: _e.mock.On("Authorize", authorization)}
 }
 
@@ -158,7 +167,7 @@ type Interface_HandleCallback_Call struct {
 // HandleCallback is a helper method to define mock.On call
 //   - writer http.ResponseWriter
 //   - request *http.Request
-func (_e *Interface_Expecter) HandleCallback(writer interface{}, request interface{}) *Interface_HandleCallback_Call {
+func (_e *Interface_Expecter) HandleCallback(writer any, request any) *Interface_HandleCallback_Call {
 	return &Interface_HandleCallback_Call{Call: _e.mock.On("HandleCallback", writer, request)}
 }
 
@@ -204,7 +213,7 @@ type Interface_HandleRedirect_Call struct {
 // HandleRedirect is a helper method to define mock.On call
 //   - writer http.ResponseWriter
 //   - request *http.Request
-func (_e *Interface_Expecter) HandleRedirect(writer interface{}, request interface{}) *Interface_HandleRedirect_Call {
+func (_e *Interface_Expecter) HandleRedirect(writer any, request any) *Interface_HandleRedirect_Call {
 	return &Interface_HandleRedirect_Call{Call: _e.mock.On("HandleRedirect", writer, request)}
 }
 
