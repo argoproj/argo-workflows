@@ -2098,7 +2098,7 @@ func TestAssessNodeStatus(t *testing.T) {
 		node:    &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
 		wantNil: true,
 	}, {
-		name: "pod failed while being deleted, no container status, condition changed after the deletion",
+		name: "pod failed while being deleted, no container status, condition changed after the deletion does not extend the wait",
 		pod: &apiv1.Pod{
 			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now().Add(-deletedPodStatusMinTimeout)}},
 			Status: apiv1.PodStatus{
@@ -2106,8 +2106,9 @@ func TestAssessNodeStatus(t *testing.T) {
 				Conditions: []apiv1.PodCondition{{Type: apiv1.DisruptionTarget, LastTransitionTime: metav1.Now()}},
 			},
 		},
-		node:    &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
-		wantNil: true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "can't find failed message for pod  namespace ",
 	}, {
 		name: "pod failed while being deleted, no container status but a message",
 		pod: &apiv1.Pod{

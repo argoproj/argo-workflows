@@ -1893,9 +1893,10 @@ func getPendingReason(pod *apiv1.Pod) string {
 const deletedPodStatusMinTimeout = 2 * time.Minute
 
 // deletedPodStatusWait returns how long to wait before assessing a Failed pod that is being deleted and has not
-// reported a message or any container status, or 0 if it can be assessed now. It waits as long as the pod controller
-// retains the pod: the larger of 2m and the pod's podGC deleteDelayDuration, from the later of its deletion and its
-// last condition transition. The pod is normally gone (and its node marked "pod deleted") before that elapses.
+// reported a message or any container status, or 0 if it can be assessed now. It waits at least as long as the pod
+// controller normally retains the pod: the larger of 2m and the pod's podGC deleteDelayDuration, from its deletion
+// timestamp. Later status changes cannot extend the wait. The pod is normally gone (and its node marked
+// "pod deleted") before that elapses.
 func deletedPodStatusWait(pod *apiv1.Pod) time.Duration {
 	if pod.DeletionTimestamp == nil || pod.Status.Message != "" ||
 		len(pod.Status.ContainerStatuses) > 0 || len(pod.Status.InitContainerStatuses) > 0 {
@@ -1908,13 +1909,7 @@ func deletedPodStatusWait(pod *apiv1.Pod) time.Duration {
 			timeout = d
 		}
 	}
-	since := pod.DeletionTimestamp.Time
-	for _, c := range pod.Status.Conditions {
-		if c.LastTransitionTime.After(since) {
-			since = c.LastTransitionTime.Time
-		}
-	}
-	return max(time.Until(since.Add(timeout)), 0)
+	return max(time.Until(pod.DeletionTimestamp.Add(timeout)), 0)
 }
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
