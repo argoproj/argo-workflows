@@ -156,26 +156,14 @@ spec:
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	var wfTmpl v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
+	wfTmpl.Labels = map[string]string{LabelKeyControllerInstanceID: "my-instance"}
 	t.Run("ConvertWorkflowFromWFT", func(t *testing.T) {
-		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
+		wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
 		assert.NotNil(t, wf)
 		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
-		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
-		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
-	})
-	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadata", func(t *testing.T) {
-		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
-		assert.NotNil(t, wf)
-		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
-		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
-		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
-	})
-	t.Run("ConvertWorkflowFromWFTWithNilWorkflowMetadataLabels", func(t *testing.T) {
-		wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
-		assert.NotNil(t, wf)
-		assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+		assert.Equal(t, "my-instance", wf.Labels[LabelKeyControllerInstanceID])
+		assert.Equal(t, "value1", wf.Labels["label1"])
+		assert.Equal(t, "value1", wf.Annotations["annotation1"])
 		assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
 		assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
 		assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
@@ -183,12 +171,16 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 }
 
 func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
-	var wfTmpl v1alpha1.WorkflowTemplate
-	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &wfTmpl)
-	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, true)
+	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
+	v1alpha1.MustUnmarshal([]byte(workflowTmpl), &cwfTmpl)
+	cwfTmpl.Labels = map[string]string{LabelKeyControllerInstanceID: "my-instance"}
+	wf := ConvertClusterWorkflowTemplateToWorkflow(&cwfTmpl)
 	assert.NotNil(t, wf)
 	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])
+	assert.Equal(t, "my-instance", wf.Labels[LabelKeyControllerInstanceID])
+	assert.Equal(t, "value1", wf.Labels["label1"])
+	assert.Equal(t, "value1", wf.Annotations["annotation1"])
 	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
-	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+	assert.Equal(t, cwfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
 	assert.True(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 }
