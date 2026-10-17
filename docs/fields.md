@@ -4492,7 +4492,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken enables mounting the service account token. The service account must be named <plugin-name>-executor-plugin.|
+|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken enables mounting the service account token. The service account must be named <plugin-name>-executor-plugin. Mutually exclusive with automountWorkflowServiceAccountToken.|
+|`automountWorkflowServiceAccountToken`|`boolean`|AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account. Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.|
 |`container`|[`Container`](#container)|Container defines the Kubernetes container specification for the sidecar.|
 
 ## Counter
