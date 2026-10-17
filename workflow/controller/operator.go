@@ -1905,6 +1905,8 @@ func deletedPodStatusWait(pod *apiv1.Pod) time.Duration {
 	timeout := deletedPodStatusMinTimeout
 	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
 		_, delay, _ := strings.Cut(val, "/")
+		// The controller writes this annotation from an already parsed duration (getPodGCDelay logs a parse error), so
+		// an error here means a hand-edited annotation; keep the minimum, as the pod controller does.
 		if d, err := (&wfv1.PodGC{DeleteDelayDuration: delay}).GetDeleteDelayDuration(); err == nil && d > timeout {
 			timeout = d
 		}
