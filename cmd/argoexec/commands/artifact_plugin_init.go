@@ -26,6 +26,15 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 			containerName := os.Getenv(common.EnvVarContainerName)
 			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 
+			// The plugin server binds its socket inside this directory, so it has to exist
+			// before the server starts. If the server wins that race, bind() fails with
+			// ENOENT, the server exits, and the load below waits out its full 120s timeout
+			// for a socket that can never appear.
+			pluginName := wfv1.ArtifactPluginName(artifactPlugin)
+			if err := os.MkdirAll(pluginName.SocketDir(), 0o755); err != nil {
+				return fmt.Errorf("failed to create artifact plugin socket directory: %w", err)
+			}
+
 			name, args := args[0], args[1:]
 			logger.WithFields(logging.Fields{"name": name, "args": args}).Debug(ctx, "starting command")
 
@@ -44,7 +53,7 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 
 				forwardSignals(ctx, signals, command.Process.Pid, false)
 			}()
-			err := loadArtifactPlugin(ctx, wfv1.ArtifactPluginName(artifactPlugin))
+			err := loadArtifactPlugin(ctx, pluginName)
 			if err != nil {
 				return fmt.Errorf("%w", err)
 			}
@@ -56,9 +65,6 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 }
 
 func loadArtifactPlugin(ctx context.Context, pluginName wfv1.ArtifactPluginName) error {
-	if err := os.MkdirAll(pluginName.SocketDir(), 0755); err != nil {
-		return err
-	}
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 	errHandler := wfExecutor.HandleError(ctx)
 	defer errHandler()
