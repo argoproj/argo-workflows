@@ -9650,7 +9650,11 @@
       ],
       "properties": {
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken enables mounting the service account token. The service account must be named \u003cplugin-name\u003e-executor-plugin.",
+          "description": "AutomountServiceAccountToken enables mounting the service account token. The service account must be named \u003cplugin-name\u003e-executor-plugin. Mutually exclusive with automountWorkflowServiceAccountToken.",
+          "type": "boolean"
+        },
+        "automountWorkflowServiceAccountToken": {
+          "description": "AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account. Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.",
           "type": "boolean"
         },
         "container": {
