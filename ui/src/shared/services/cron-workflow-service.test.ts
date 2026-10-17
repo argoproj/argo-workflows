@@ -75,6 +75,24 @@ describe('cron workflow service', () => {
         });
     });
 
+    describe('delete', () => {
+        test('deletes created Workflows by default', async () => {
+            jest.spyOn(requests, 'delete').mockResolvedValue({} as any);
+
+            await CronWorkflowService.delete('cron-workflow', 'ns');
+
+            expect(requests.delete).toHaveBeenCalledWith('api/v1/cron-workflows/ns/cron-workflow');
+        });
+
+        test('keeps created Workflows when requested', async () => {
+            jest.spyOn(requests, 'delete').mockResolvedValue({} as any);
+
+            await CronWorkflowService.delete('cron-workflow', 'ns', true);
+
+            expect(requests.delete).toHaveBeenCalledWith('api/v1/cron-workflows/ns/cron-workflow?deleteOptions.propagationPolicy=Orphan');
+        });
+    });
+
     describe('suspend', () => {
         test('with valid CronWorkflow', async () => {
             const cronWf = exampleCronWorkflow('ns');
