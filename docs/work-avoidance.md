@@ -1,10 +1,10 @@
 # Work Avoidance
 
-> v2.9 and after
-
 You can make workflows faster and more robust by employing **work avoidance**. A workflow that utilizes this is simply a workflow containing steps that do not run if the work has already been done.
 
-This is a technique is similar to [memoization](memoization.md). Work avoidance is totally in your control and you make the decisions as to have to skip the work. [Memoization](memoization.md) is a feature of Argo Workflows to automatically skip steps which generate outputs. Prior to version 3.5 this required `outputs` to be specified, but you can use memoization for all steps and tasks in version 3.5 or later.
+This technique is similar to [memoization](memoization.md).
+Work avoidance is totally in your control, and you decide how to skip the work.
+[Memoization](memoization.md) is a feature of Argo Workflows that automatically skips steps and tasks whose results are already cached.
 
 This simplest way to do this is to use **marker files**.
 

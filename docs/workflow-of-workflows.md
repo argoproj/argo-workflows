@@ -1,7 +1,5 @@
 # Workflow of Workflows
 
-> v2.9 and after
-
 ## Introduction
 
 The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting on their results.
