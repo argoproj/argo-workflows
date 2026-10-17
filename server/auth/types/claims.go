@@ -86,7 +86,7 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func (c *Claims) GetUserInfoGroups(ctx context.Context, httpClient HTTPClient, accessToken, issuer, userInfoPath string) ([]string, error) {
+func (c *Claims) GetUserInfoGroups(ctx context.Context, httpClient HTTPClient, accessToken, issuer, userInfoPath string, customKeyName string) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 
@@ -103,9 +103,21 @@ func (c *Claims) GetUserInfoGroups(ctx context.Context, httpClient HTTPClient, a
 		return nil, err
 	}
 
+	defer response.Body.Close()
+
+	if customKeyName != "" {
+		var rawResponse map[string]any
+		err = json.NewDecoder(response.Body).Decode(&rawResponse)
+		if err != nil {
+			return nil, err
+		}
+
+		tempClaims := &Claims{RawClaim: rawResponse}
+		return tempClaims.GetCustomGroup(customKeyName)
+	}
+
 	userInfo := UserInfo{}
 
-	defer response.Body.Close()
 	err = json.NewDecoder(response.Body).Decode(&userInfo)
 
 	if err != nil {
