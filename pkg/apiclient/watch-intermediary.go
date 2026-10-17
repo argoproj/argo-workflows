@@ -68,3 +68,31 @@ func (w *eventWatchIntermediary) SendHeader(metadata.MD) error {
 func newEventWatchIntermediary(ctx context.Context) *eventWatchIntermediary {
 	return &eventWatchIntermediary{newAbstractIntermediary(ctx), make(chan *v1.Event)}
 }
+
+type workflowPodWatchIntermediary struct {
+	abstractIntermediary
+	events chan *workflowpkg.WorkflowPodWatchEvent
+}
+
+func (w workflowPodWatchIntermediary) Send(e *workflowpkg.WorkflowPodWatchEvent) error {
+	w.events <- e
+	return nil
+}
+
+func (w workflowPodWatchIntermediary) Recv() (*workflowpkg.WorkflowPodWatchEvent, error) {
+	select {
+	case e := <-w.error:
+		return nil, e
+	case event := <-w.events:
+		return event, nil
+	}
+}
+
+func (w *workflowPodWatchIntermediary) SendHeader(metadata.MD) error {
+	// No-op: the server calls SendHeader to flush SSE headers early; there is nothing to flush in-process.
+	return nil
+}
+
+func newWorkflowPodWatchIntermediary(ctx context.Context) *workflowPodWatchIntermediary {
+	return &workflowPodWatchIntermediary{newAbstractIntermediary(ctx), make(chan *workflowpkg.WorkflowPodWatchEvent)}
+}

@@ -38,6 +38,10 @@ func (o OfflineWorkflowServiceClient) WatchEvents(context.Context, *workflowpkg.
 	return nil, ErrOffline
 }
 
+func (o OfflineWorkflowServiceClient) WatchWorkflowPod(context.Context, *workflowpkg.WatchWorkflowPodRequest, ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowPodClient, error) {
+	return nil, ErrOffline
+}
+
 func (o OfflineWorkflowServiceClient) DeleteWorkflow(context.Context, *workflowpkg.WorkflowDeleteRequest, ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
 	return nil, ErrOffline
 }
