@@ -3,6 +3,7 @@ package sqldb
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,4 +42,21 @@ func Test_archivedWorkflowMetadata_argumentsUnmarshal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_sortListedWorkflows(t *testing.T) {
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	wfs := []archivedWorkflowMetadata{
+		{UID: "b", StartedAt: base},
+		{UID: "d", StartedAt: base.Add(time.Minute)},
+		{UID: "c", StartedAt: base},
+		{UID: "a", StartedAt: base},
+	}
+	sortListedWorkflows(wfs)
+	uids := make([]string, len(wfs))
+	for i, wf := range wfs {
+		uids[i] = wf.UID
+	}
+	// Newest first, then uid ascending, as BuildArchivedWorkflowSelector orders them.
+	assert.Equal(t, []string{"d", "a", "b", "c"}, uids)
 }

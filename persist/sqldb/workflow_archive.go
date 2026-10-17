@@ -2,10 +2,12 @@ package sqldb
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,6 +35,9 @@ const (
 	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS environment variable
 	defaultEstimationDBQueryTimeoutSeconds = 5
 )
+
+// archivedWorkflowListColumns are the plain columns ListWorkflows reads into archivedWorkflowMetadata.
+var archivedWorkflowListColumns = []any{"name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp"}
 
 type archivedWorkflowMetadata struct {
 	ClusterName       string             `db:"clustername"`
@@ -175,14 +180,36 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 	}, nil)
 }
 
+// pageSelector selects the primary keys of the archived workflows matching options, sorted and
+// limited to the requested page, for Postgres. Filtering, sorting and paging on these narrow rows, then joining
+// back for the wide columns, keeps the workflow JSON out of the sort: otherwise every matching
+// row's extracted JSON is sorted, which spills to disk once it outgrows the sort memory.
+func (r *workflowArchive) pageSelector(s db.Session, options sutils.ListOptions) (db.Selector, error) {
+	selector := s.SQL().
+		Select("clustername", "uid").
+		From(archiveTableName).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+	return BuildArchivedWorkflowSelector(selector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
+}
+
+// sortListedWorkflows puts a page of listed workflows in the order BuildArchivedWorkflowSelector's
+// ORDER BY chose them. On Postgres the join back for the wide columns doesn't keep that order, and
+// ordering the page here rather than in the query keeps the extracted JSON out of a database sort.
+// Callers fetch one row past the page and drop it, so the order must match exactly.
+func sortListedWorkflows(wfs []archivedWorkflowMetadata) {
+	slices.SortFunc(wfs, func(a, b archivedWorkflowMetadata) int {
+		return cmp.Or(b.StartedAt.Compare(a.StartedAt), strings.Compare(a.UID, b.UID))
+	})
+}
+
 func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 
 	switch r.dbType {
 	case sqldb.MySQL:
 		if err := r.sessionProxy.With(ctx, func(s db.Session) error {
-			baseSelector := s.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp")
-			selectQuery := baseSelector.
+			selectQuery := s.SQL().
+				Select(archivedWorkflowListColumns...).
 				Columns(
 					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.metadata.labels'), '{}') as labels"),
 					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.metadata.annotations'), '{}') as annotations"),
@@ -208,10 +235,16 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 		}
 	case sqldb.Postgres:
 		if err := r.sessionProxy.With(ctx, func(s db.Session) error {
-			baseSelector := s.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp")
-			// Use a common table expression to reduce detoast overhead for the "workflow" column:
+			page, err := r.pageSelector(s, options)
+			if err != nil {
+				return err
+			}
+
+			// Extract metadata and status once per row in an inner query, then pick fields out of
+			// them, to reduce detoast overhead for the "workflow" column:
 			// https://github.com/argoproj/argo-workflows/issues/13601#issuecomment-2420499551
-			cteSelector := baseSelector.
+			workflows := s.SQL().
+				Select(archivedWorkflowListColumns...).
 				Columns(
 					db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
 					db.Raw("coalesce(workflow->'status', '{}') as status"),
@@ -219,27 +252,25 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 					db.Raw("coalesce(workflow->'spec'->'arguments', '{}') as arguments"),
 				).
 				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID())
+				Join(db.Raw("? AS page", page)).
+				Using("clustername", "uid")
 
-			var err error
-			cteSelector, err = BuildArchivedWorkflowSelector(cteSelector, archiveTableName, archiveLabelsTableName, r.dbType, options, false)
-			if err != nil {
-				return err
-			}
-
-			selectQuery := baseSelector.Columns(
-				db.Raw("coalesce(metadata->>'labels', '{}') as labels"),
-				db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
-				db.Raw("coalesce(status->>'progress', '') as progress"),
-				"suspend",
-				db.Raw("coalesce(arguments::text, '{}') as arguments"),
-				db.Raw("coalesce(status->>'message', '') as message"),
-				db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
-				db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
-			)
-
+			// OFFSET 0 stops the planner flattening the inner query into this one, which would
+			// repeat workflow->'metadata' and workflow->'status' (and their detoasting) in every
+			// field below.
 			return s.SQL().
-				Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows")).
+				Select(archivedWorkflowListColumns...).
+				Columns(
+					db.Raw("coalesce(metadata->>'labels', '{}') as labels"),
+					db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
+					db.Raw("coalesce(status->>'progress', '') as progress"),
+					"suspend",
+					db.Raw("coalesce(arguments::text, '{}') as arguments"),
+					db.Raw("coalesce(status->>'message', '') as message"),
+					db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
+					db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
+				).
+				From(db.Raw("(? OFFSET 0) AS workflows", workflows)).
 				All(&archivedWfs)
 		}); err != nil {
 			return nil, err
@@ -247,6 +278,8 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 	default:
 		return nil, fmt.Errorf("unsupported db type %s", r.dbType)
 	}
+
+	sortListedWorkflows(archivedWfs)
 
 	wfs := make(wfv1.Workflows, len(archivedWfs))
 	for i, md := range archivedWfs {
