@@ -1,7 +1,5 @@
 # Workflow Progress
 
-> v2.12 and after
-
 When you run a workflow, the controller will report on its progress.
 
 We define progress as two numbers, `N/M` such that `0 <= N <= M and 0 <= M`.
@@ -24,8 +22,6 @@ For a whole workflow's, progress is the sum of all its leaf nodes.
     `M` will increase during workflow run each time a node is added to the graph.
 
 ## Self reporting progress
-
-> v3.3 and after
 
 Pods in a workflow can report their own progress during their runtime. This self reported progress overrides the
 auto-generated progress.

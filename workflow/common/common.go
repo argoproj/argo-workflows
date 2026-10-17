@@ -294,6 +294,12 @@ const (
 	// none. It is an internal controller contract: user-supplied values are never expected to
 	// collide with it, and a collision merely makes the argument behave as if it were omitted.
 	AbsentOptionalArgumentValue = "__argo-internal.absent-optional-output__"
+
+	// TaskGroupHookStoppedMessage starts the message of a TaskGroup that a
+	// hook error in its template completed before every item had started,
+	// followed by the number of items not started. `argo retry` resets a
+	// TaskGroup with this message so that its remaining items are created.
+	TaskGroupHookStoppedMessage = "items not started because a hook errored: "
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
