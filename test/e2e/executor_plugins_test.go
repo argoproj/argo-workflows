@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,6 +129,42 @@ func (s *ExecutorPluginsSuite) TestWorkflowLevelTemplateExecutor() {
 			assert.Empty(t, wfts.Status.Nodes)
 			assert.Empty(t, wfts.Spec.Tasks)
 			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
+func (s *ExecutorPluginsSuite) TestWorkflowLevelTemplateExecutorServiceAccount() {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/plugins/executor/workflow-level-projected-service-account-workflow.yaml")
+	s.Given().
+		WorkflowWorkflow(wf).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "Authenticated as system:serviceaccount:"+fixtures.Namespace+":"+wf.Spec.ServiceAccountName, status.Nodes[md.Name].Message)
+		}).
+		ExpectPods(func(t *testing.T, pods []apiv1.Pod) {
+			require.Len(t, pods, 1)
+			pod := pods[0]
+			assert.Equal(t, wf.Spec.ServiceAccountName, pod.Spec.ServiceAccountName)
+			plugin := requireFindContainerByName(t, pod.Spec.Containers, "use-projected-sa")
+			mountIndex := slices.IndexFunc(plugin.VolumeMounts, func(m apiv1.VolumeMount) bool {
+				return m.MountPath == common.ServiceAccountTokenMountPath
+			})
+			require.NotEqual(t, -1, mountIndex, "workflow service account token must be mounted in the plugin")
+			mount := plugin.VolumeMounts[mountIndex]
+			assert.True(t, mount.ReadOnly)
+			assert.Empty(t, mount.SubPath)
+			volumeIndex := slices.IndexFunc(pod.Spec.Volumes, func(v apiv1.Volume) bool {
+				return v.Name == mount.Name
+			})
+			require.NotEqual(t, -1, volumeIndex)
+			volume := pod.Spec.Volumes[volumeIndex]
+			assert.Nil(t, volume.Secret)
+			require.NotNil(t, volume.Projected)
+			assert.True(t, slices.ContainsFunc(volume.Projected.Sources, func(source apiv1.VolumeProjection) bool {
+				return source.ServiceAccountToken != nil && source.ServiceAccountToken.Path == "token"
+			}))
 		})
 }
 

@@ -36,6 +36,49 @@ func TestWorkflows(t *testing.T) {
 	})
 }
 
+func TestAsExecutorPluginSpec(t *testing.T) {
+	wfSpec := WorkflowSpec{ExecutorPlugins: []ExecutorPlugin{{
+		ObjectMeta: metav1.ObjectMeta{Name: "hello"},
+		Spec: ExecutorPluginSpec{Sidecar: ExecutorPluginSidecar{
+			Container: corev1.Container{
+				Ports: []corev1.ContainerPort{{ContainerPort: 4355}},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{},
+					Limits:   corev1.ResourceList{},
+				},
+				SecurityContext: &corev1.SecurityContext{},
+			},
+		}},
+	}}}
+	for _, tt := range []struct {
+		name          string
+		pluginToken   bool
+		workflowToken bool
+	}{
+		{name: "no token"},
+		{name: "plugin account", pluginToken: true},
+		{name: "workflow account", workflowToken: true},
+		{name: "conflicting accounts", pluginToken: true, workflowToken: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			sidecar := &wfSpec.ExecutorPlugins[0].Spec.Sidecar
+			sidecar.AutomountServiceAccountToken = tt.pluginToken
+			sidecar.AutomountWorkflowServiceAccountToken = tt.workflowToken
+			plugins, err := wfSpec.AsExecutorPluginSpec()
+			if tt.pluginToken && tt.workflowToken {
+				require.EqualError(t, err, `executor plugin "hello": automountServiceAccountToken and automountWorkflowServiceAccountToken cannot both be true`)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, plugins, 1)
+			assert.Equal(t, wfSpec.ExecutorPlugins[0].ObjectMeta, plugins[0].ObjectMeta)
+			assert.Equal(t, tt.pluginToken, plugins[0].Spec.Sidecar.AutomountServiceAccountToken)
+			assert.Equal(t, tt.workflowToken, plugins[0].Spec.Sidecar.AutomountWorkflowServiceAccountToken)
+			assert.Equal(t, sidecar.Container, plugins[0].Spec.Sidecar.Container)
+		})
+	}
+}
+
 func TestGetTemplateByName(t *testing.T) {
 	t.Run("Spec", func(t *testing.T) {
 		wf := &Workflow{

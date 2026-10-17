@@ -3057,6 +3057,14 @@ func (m *ExecutorPluginSidecar) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.AutomountWorkflowServiceAccountToken {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x18
 	{
 		size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -10742,6 +10750,7 @@ func (m *ExecutorPluginSidecar) Size() (n int) {
 	n += 2
 	l = m.Container.Size()
 	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
 	return n
 }
 
@@ -13859,6 +13868,7 @@ func (this *ExecutorPluginSidecar) String() string {
 	s := strings.Join([]string{`&ExecutorPluginSidecar{`,
 		`AutomountServiceAccountToken:` + fmt.Sprintf("%v", this.AutomountServiceAccountToken) + `,`,
 		`Container:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Container), "Container", "v1.Container", 1), `&`, ``, 1) + `,`,
+		`AutomountWorkflowServiceAccountToken:` + fmt.Sprintf("%v", this.AutomountWorkflowServiceAccountToken) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -24013,6 +24023,26 @@ func (m *ExecutorPluginSidecar) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AutomountWorkflowServiceAccountToken", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AutomountWorkflowServiceAccountToken = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

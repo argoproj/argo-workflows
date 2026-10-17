@@ -43,6 +43,22 @@ controller:
       value: "true"
 ```
 
+### Service Account Tokens
+
+Set `spec.executorPlugins[].spec.sidecar.automountWorkflowServiceAccountToken: true` to mount a Kubernetes service account token for `spec.serviceAccountName` from the workflow.
+If the workflow does not specify `serviceAccountName`, the plugin uses the `default` service account.
+The plugin and agent use projected tokens that the kubelet requests and rotates, so neither needs a token Secret.
+The plugin must reload the token file when it changes; Go clients using `client-go` with `InClusterConfig()` support this automatically.
+The service account needs [agent permissions](http-template.md#argo-agent-rbac) and any permissions required by the plugin.
+The plugin receives all permissions granted to this service account.
+Projected tokens use the agent Pod's service account: overriding `serviceAccountName` through `podSpecPatch` also changes the token's identity.
+
+This option defaults to `false` and applies only to workflow-level plugins; plugins loaded from ConfigMaps ignore it.
+Without this opt-in, the agent continues to use a token Secret for the workflow's service account.
+To use the plugin's own service account, set `automountServiceAccountToken: true` instead.
+This mode uses `<plugin-name>-executor-plugin` in the workflow's namespace, requires a [token Secret](service-account-secrets.md), and also works with ConfigMap plugins.
+Setting both options to `true` fails workflow validation.
+
 ### Example: A Simple Python Plugin
 
 Let's make a Python Executor Plugin that prints "hello" each time the Workflow is operated on.

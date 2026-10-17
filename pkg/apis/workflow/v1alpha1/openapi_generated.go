@@ -2768,7 +2768,14 @@ func schema_pkg_apis_workflow_v1alpha1_ExecutorPluginSidecar(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken enables mounting the service account token. The service account must be named <plugin-name>-executor-plugin.",
+							Description: "AutomountServiceAccountToken enables mounting the service account token. The service account must be named <plugin-name>-executor-plugin. Mutually exclusive with automountWorkflowServiceAccountToken.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"automountWorkflowServiceAccountToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account. Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
