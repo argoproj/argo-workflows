@@ -5,6 +5,7 @@ package informer
 import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/tools/cache"
 )
 
 // StripManagedFields is a cache.TransformFunc that removes
@@ -59,8 +60,20 @@ func StripLastAppliedConfiguration(i any) (any, error) {
 // reads -- not for argo-server's, which serves them to clients. SetTransform
 // takes a single function, so the two have to be composed rather than chained.
 func StripTemplateCacheFields(i any) (any, error) {
-	if _, err := StripManagedFields(i); err != nil {
-		return i, err
+	return chain(StripManagedFields, StripLastAppliedConfiguration)(i)
+}
+
+// chain runs transforms in order, passing each one's result to the next and
+// stopping at the first error. SetTransform takes a single function, so
+// composing is the only way to apply more than one to an informer.
+func chain(fns ...cache.TransformFunc) cache.TransformFunc {
+	return func(i any) (any, error) {
+		var err error
+		for _, fn := range fns {
+			if i, err = fn(i); err != nil {
+				return i, err
+			}
+		}
+		return i, nil
 	}
-	return StripLastAppliedConfiguration(i)
 }

@@ -1,6 +1,7 @@
 package informer
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,4 +164,27 @@ func TestStripManagedFieldsKeepsLastAppliedConfiguration(t *testing.T) {
 	assert.Nil(t, un.GetManagedFields(), "managedFields is loss-free to strip")
 	assert.Contains(t, un.GetAnnotations(), apiv1.LastAppliedConfigAnnotation,
 		"the apply annotation must survive: argo-server serves this cache to clients")
+}
+
+// chain must stop at the first error and hand back what that transform
+// returned, rather than running the rest over a half-transformed object.
+func TestChainStopsAtFirstError(t *testing.T) {
+	boom := errors.New("boom")
+	var ranAfter bool
+	failing := func(i any) (any, error) { return "halfway", boom }
+	after := func(i any) (any, error) { ranAfter = true; return i, nil }
+
+	got, err := chain(StripManagedFields, failing, after)("start")
+	require.ErrorIs(t, err, boom)
+	assert.Equal(t, "halfway", got, "the failing transform's value is returned, not the input")
+	assert.False(t, ranAfter, "transforms after a failure must not run")
+}
+
+// chain threads each transform's output into the next.
+func TestChainThreadsOutput(t *testing.T) {
+	appendA := func(i any) (any, error) { return i.(string) + "a", nil }
+	appendB := func(i any) (any, error) { return i.(string) + "b", nil }
+	got, err := chain(appendA, appendB)("x")
+	require.NoError(t, err)
+	assert.Equal(t, "xab", got)
 }
