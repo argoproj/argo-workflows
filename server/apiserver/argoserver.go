@@ -170,6 +170,14 @@ func getExcludedHeaders(c config.HeaderConfig) map[string]struct{} {
 	return excluded
 }
 
+func headersToMetadata(headers http.Header) metadata.MD {
+	md := metadata.MD{}
+	for key, values := range headers {
+		md[strings.ToLower(key)] = values
+	}
+	return md
+}
+
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
@@ -531,15 +539,16 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle(logout.LogoutEndpoint, logoutHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
+			md := headersToMetadata(r.Header)
 			for _, c := range r.Cookies() {
 				if c.Name == authcookie.AuthorizationCookieName {
 					md.Append("cookie", c.Value)
 				}
 			}
-			ctx = metadata.NewIncomingContext(ctx, md)
-			if _, err := as.gatekeeper.Context(ctx); err != nil {
-				log.WithError(err).Error(ctx, "failed to authenticate /metrics endpoint")
+
+			requestCtx := metadata.NewIncomingContext(r.Context(), md)
+			if _, err := as.gatekeeper.Context(requestCtx); err != nil {
+				log.WithError(err).Error(requestCtx, "failed to authenticate /metrics endpoint")
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}

@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"net/http"
 )
 
 func TestNewArgoServerIgnoresLogoutRedirectOutsideSSO(t *testing.T) {
@@ -279,65 +280,79 @@ func TestValidateArtifactDriverImages(t *testing.T) {
 }
 
 func TestGetExcludedHeaders(t *testing.T) {
-    t.Run("IncludesConfiguredHeadersAndNormalizesCase", func(t *testing.T) {
-        c := config.HeaderConfig{
-            Issuer: config.ClaimSource{
-                Header: "X-Forwarded-Issuer",
-            },
-            Subject: config.ClaimSource{
-                Header: "X-Forwarded-User",
-            },
-            Email: config.ClaimSource{
-                Header: "X-Forwarded-Email",
-            },
-            PreferredUsername: config.ClaimSource{
-                Header: "X-Forwarded-Preferred-Username",
-            },
-            Groups: config.GroupClaimSource{
-                ClaimSource: config.ClaimSource{
-                    Header: "X-Forwarded-Groups",
-                },
-            },
-            SharedSecret: &config.SharedSecretHeader{
-                Header: "X-Proxy-Auth",
-            },
-        }
+	t.Run("IncludesConfiguredHeadersAndNormalizesCase", func(t *testing.T) {
+		c := config.HeaderConfig{
+			Issuer: config.ClaimSource{
+				Header: "X-Forwarded-Issuer",
+			},
+			Subject: config.ClaimSource{
+				Header: "X-Forwarded-User",
+			},
+			Email: config.ClaimSource{
+				Header: "X-Forwarded-Email",
+			},
+			PreferredUsername: config.ClaimSource{
+				Header: "X-Forwarded-Preferred-Username",
+			},
+			Groups: config.GroupClaimSource{
+				ClaimSource: config.ClaimSource{
+					Header: "X-Forwarded-Groups",
+				},
+			},
+			SharedSecret: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+			},
+		}
 
-        got := getExcludedHeaders(c)
+		got := getExcludedHeaders(c)
 
-        expected := map[string]struct{}{
-            "x-forwarded-issuer":            {},
-            "x-forwarded-user":              {},
-            "x-forwarded-email":             {},
-            "x-forwarded-preferred-username": {},
-            "x-forwarded-groups":            {},
-            "x-proxy-auth":                  {},
-        }
+		expected := map[string]struct{}{
+			"x-forwarded-issuer":             {},
+			"x-forwarded-user":               {},
+			"x-forwarded-email":              {},
+			"x-forwarded-preferred-username": {},
+			"x-forwarded-groups":             {},
+			"x-proxy-auth":                   {},
+		}
 
-        assert.Equal(t, expected, got)
-    })
+		assert.Equal(t, expected, got)
+	})
 
-    t.Run("IgnoresEmptyHeadersAndNilSharedSecret", func(t *testing.T) {
-        c := config.HeaderConfig{
-            Issuer: config.ClaimSource{
-                Header: "X-Forwarded-Issuer",
-            },
-            // Other claim headers are empty.
-            SharedSecret: nil,
-        }
+	t.Run("IgnoresEmptyHeadersAndNilSharedSecret", func(t *testing.T) {
+		c := config.HeaderConfig{
+			Issuer: config.ClaimSource{
+				Header: "X-Forwarded-Issuer",
+			},
+			// Other claim headers are empty.
+			SharedSecret: nil,
+		}
 
-        got := getExcludedHeaders(c)
+		got := getExcludedHeaders(c)
 
-        expected := map[string]struct{}{
-            "x-forwarded-issuer": {},
-        }
+		expected := map[string]struct{}{
+			"x-forwarded-issuer": {},
+		}
 
-        assert.Equal(t, expected, got)
-    })
+		assert.Equal(t, expected, got)
+	})
 
-    t.Run("EmptyConfigReturnsEmptyMap", func(t *testing.T) {
-        got := getExcludedHeaders(config.HeaderConfig{})
+	t.Run("EmptyConfigReturnsEmptyMap", func(t *testing.T) {
+		got := getExcludedHeaders(config.HeaderConfig{})
 
-        assert.Empty(t, got)
-    })
+		assert.Empty(t, got)
+	})
+}
+
+func TestHeadersToMetadata(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("X-Forwarded-User", "pradeep")
+	headers.Set("X-Forwarded-Groups", "admin")
+	headers.Add("X-Proxy-Auth", "secret-one")
+	headers.Add("X-Proxy-Auth", "secret-two")
+
+	md := headersToMetadata(headers)
+
+	assert.Equal(t, []string{"pradeep"}, md.Get("x-forwarded-user"))
+	assert.Equal(t, []string{"admin"}, md.Get("x-forwarded-groups"))
+	assert.Equal(t, []string{"secret-one", "secret-two"}, md.Get("x-proxy-auth"))
 }
