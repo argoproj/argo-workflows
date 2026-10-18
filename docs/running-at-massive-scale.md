@@ -4,8 +4,8 @@ Argo Workflows is an incredibly scalable tool for orchestrating workflows. It em
 
 ## Run The Latest Version
 
-You must be running at least v3.1 for several recommendations to work. Upgrade to the very latest patch. Performance
-fixes often come in patches.
+Upgrade to the very latest patch.
+Performance fixes often come in patches.
 
 ## Test Your Cluster Before You Install Argo Workflows
 
@@ -23,9 +23,8 @@ pod GC and workflow GC to achieve this.
 
 Where Argo has a lot of work to do, the Kubernetes API can be overwhelmed. There are several strategies to reduce this:
 
-* Use the Emissary executor (>= v3.1). This does not make any Kubernetes API requests (except for resources template).
 * Limit the number of concurrent workflows using parallelism.
-* Rate-limit pod creation [configuration](workflow-controller-configmap.yaml) (>= v3.1).
+* Rate-limit pod creation [configuration](workflow-controller-configmap.yaml).
 * Set [`DEFAULT_REQUEUE_TIME=1m`](environment-variables.md)
 
 ## Overwhelmed Database

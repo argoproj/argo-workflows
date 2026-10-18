@@ -4299,3 +4299,29 @@ func TestLastRetryExitCodesResolvesInValidation(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), lastRetryExitCodesInExpression)
 	require.NoError(t, err)
 }
+
+// Expression keywords are not task names: validation rejects them as undefined
+// dependencies, so the DAG evaluator never has to special-case them.
+func TestDAGDependsKeywordIsNotATask(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-depends-keyword-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        template: echo
+        depends: "A.Succeeded || false"
+  - name: echo
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "invalid dependency false")
+}

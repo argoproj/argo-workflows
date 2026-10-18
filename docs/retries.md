@@ -35,11 +35,12 @@ Use `retryPolicy` to choose which failure types to retry:
 - `Always`: Retry all failed steps
 - `OnFailure`: Retry steps whose main container is marked as failed in Kubernetes
 - `OnError`: Retry steps that encounter Argo controller errors, or whose init or wait containers fail
-- `OnTransientError`: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/main/util/errors/errors.go), or errors matching the `TRANSIENT_ERROR_PATTERN` [environment variable](environment-variables.md). Available in version 3.0 and later.
+- `OnTransientError`: Retry steps that encounter errors [defined as transient](https://github.com/argoproj/argo-workflows/blob/main/util/errors/errors.go), or errors matching the `TRANSIENT_ERROR_PATTERN` [environment variable](environment-variables.md).
 
-The `retryPolicy` applies even if you also specify an `expression`, but in version 3.5 or later the default policy means the expression makes the decision unless you explicitly specify a policy.
+The `retryPolicy` applies even if you also specify an `expression`, but the default policy means the expression makes the decision unless you explicitly specify a policy.
 
-The default `retryPolicy` is `OnFailure`, except in version 3.5 or later when an expression is also supplied, when it is `Always`. This may be easier to understand in this diagram.
+The default `retryPolicy` is `OnFailure`, except when an expression is also supplied, when it is `Always`.
+This may be easier to understand in this diagram.
 
 ```mermaid
 flowchart LR
@@ -55,13 +56,9 @@ flowchart LR
   policyAndExpression(Supplied Policy AND Expression)
   expressionNoPolicy(Expression specified?)
   expressionNoPolicy-->|No|onfailureNoExpr
-  expressionNoPolicy-->|Yes|version
+  expressionNoPolicy-->|Yes|always
   onfailureNoExpr[OnFailure]
-  onfailure[OnFailure AND Expression]
-  version(Workflows version)
-  version-->|3.4 or earlier|onfailure
   always[Only Expression matters]
-  version-->|3.5 or later|always
 ```
 
 An example retry strategy:
@@ -87,8 +84,6 @@ spec:
 
 ## Conditional retries
 
-> v3.2 and after
-
 You can also use `expression` to control retries.
 This is an [expr expression](variables.md#expression) with access to the following variables:
 
@@ -110,7 +105,7 @@ This is an [expr expression](variables.md#expression) with access to the followi
     expression: asInt(lastRetry.duration) < 60 # Retry unless duration >= 1 minute
     ```
 
-- `lastRetry.message`: The message output from the last retry (available from version 3.5)
+- `lastRetry.message`: The message output from the last retry
 
     ```yaml
     # Retry if message matches the regular expression

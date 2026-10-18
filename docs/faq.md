@@ -11,7 +11,7 @@ If you're using `--auth-mode=client`, make sure you have `Bearer` in front of th
 
 ## Argo Server return EOF error
 
-Since v3.0 the Argo Server listens for HTTPS requests, rather than HTTP. Try changing your URL to HTTPS, or start Argo Server using `--secure=false`.
+The Argo Server listens for HTTPS requests, rather than HTTP. Try changing your URL to HTTPS, or start Argo Server using `--secure=false`.
 
 ## My workflow hangs
 
