@@ -312,19 +312,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	localParams[varkeys.RetriesLastDuration.Template()] = duration
 	localParams[varkeys.RetriesLastMessage.Template()] = message
 
-	// Inject the exit codes of ALL previous attempts (oldest first, comma-separated) so an
-	// expression can escalate resources cumulatively per failure type — e.g. grow memory once
-	// per prior OOM and hold it across non-OOM retries — which lastRetry.exitCode (the last
-	// attempt alone) cannot express. Empty on the first attempt.
-	lastRetryExitCodes := make([]string, 0, len(childNodeIDs))
-	for _, childID := range childNodeIDs {
-		if childNode, getErr := woc.wf.Status.Nodes.Get(childID); getErr == nil {
-			if childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
-				lastRetryExitCodes = append(lastRetryExitCodes, *childNode.Outputs.ExitCode)
-			}
-		}
-	}
-	localParams[varkeys.RetriesExitCodes.Template()] = strings.Join(lastRetryExitCodes, ",")
+	localParams[varkeys.RetriesExitCodes.Template()] = retryExitCodes(childNodeIDs, woc.wf.Status.Nodes)
 
 	// Save the unsubstituted template for potential recursive retry calls.
 	// SubstituteParams replaces {{retries}} etc. in-place, so the recursive call

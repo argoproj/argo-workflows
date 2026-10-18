@@ -112,7 +112,8 @@ This is an [expr expression](variables.md#expression) with access to the followi
     expression: lastRetry.message matches 'imminent node shutdown|pod deleted'
     ```
 
-- `lastRetry.exitCodes`: The exit codes of all previous attempts as a comma-separated string, oldest first, or empty on the first attempt. Attempts without an exit code are skipped.
+- `lastRetry.exitCodes`: The exit codes of all previous attempts as a comma-separated string, oldest first, or empty on the first attempt.
+  Attempts without an exit code are skipped.
 
     ```yaml
     # Retry unless the step has already run out of memory (exit 137) three times

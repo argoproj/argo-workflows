@@ -2240,10 +2240,18 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
-// buildRetryStrategyLocalScope returns the lastRetry.* variables for a retry node — the retries index,
-// the last retried child's exit code, status, duration, and message, and the exit-code history of all
-// previous attempts — for use in retryStrategy.expression. It returns an empty scope when the node has
-// no retried children yet.
+// retryExitCodes joins the exit codes of the given retry children, oldest first, skipping children without one.
+func retryExitCodes(childNodeIDs []string, nodes wfv1.Nodes) string {
+	exitCodes := make([]string, 0, len(childNodeIDs))
+	for _, childID := range childNodeIDs {
+		if childNode, err := nodes.Get(childID); err == nil && childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
+			exitCodes = append(exitCodes, *childNode.Outputs.ExitCode)
+		}
+	}
+	return strings.Join(exitCodes, ",")
+}
+
+// buildRetryStrategyLocalScope returns the lastRetry.* variables for retryStrategy.expression.
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]any {
 	localScope := make(map[string]any)
 
@@ -2264,19 +2272,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[varkeys.RetriesLastDuration.Template()] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[varkeys.RetriesLastMessage.Template()] = lastChildNode.Message
 
-	// Mirror the template-substitution scope: expose the exit codes of ALL previous
-	// attempts (oldest first, comma-separated) so retryStrategy.expression can reference
-	// lastRetry.exitCodes as well. Validation allows it in both scopes, so without this
-	// an expression using it passes validation but resolves to nothing at runtime.
-	lastRetryExitCodes := make([]string, 0, len(childNodeIds))
-	for _, childID := range childNodeIds {
-		if childNode, err := nodes.Get(childID); err == nil {
-			if childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
-				lastRetryExitCodes = append(lastRetryExitCodes, *childNode.Outputs.ExitCode)
-			}
-		}
-	}
-	localScope[varkeys.RetriesExitCodes.Template()] = strings.Join(lastRetryExitCodes, ",")
+	localScope[varkeys.RetriesExitCodes.Template()] = retryExitCodes(childNodeIds, nodes)
 
 	return localScope
 }
