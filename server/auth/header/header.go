@@ -145,7 +145,7 @@ func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
 	}
 
 	if claims.Subject == "" {
-		return nil, fmt.Errorf("subject claim is empty")
+		return nil, types.ErrNoCredentials
 	}
 
 	claims.Email, err = resolveClaim(h.config.Email, md)

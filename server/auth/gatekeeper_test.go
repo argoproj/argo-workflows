@@ -21,7 +21,9 @@ import (
 	"k8s.io/client-go/rest"
 	k8stesting "k8s.io/client-go/testing"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	headerauth "github.com/argoproj/argo-workflows/v4/server/auth/header"
 	headermocks "github.com/argoproj/argo-workflows/v4/server/auth/header/mocks"
 	ssomocks "github.com/argoproj/argo-workflows/v4/server/auth/sso/mocks"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
@@ -288,6 +290,26 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("x-forwarded-user", ""))
 		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, wfClient, GetWfClient(ctx))
+		assert.Equal(t, kubeClient, GetKubeClient(ctx))
+		assert.NotNil(t, GetClaims(ctx))
+	})
+
+	t.Run("Header+Server, missing identity header falls through to Server", func(t *testing.T) {
+		headerIf, err := headerauth.New(t.Context(), config.HeaderConfig{
+			Subject: config.ClaimSource{
+				Header: "X-Forwarded-User",
+			},
+		}, kubefake.NewClientset().CoreV1().Secrets("my-ns"), true)
+		require.NoError(t, err)
+
+		g, err := NewGatekeeper(Modes{Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.MD{})
+		ctx, err = g.Context(ctx)
+
 		require.NoError(t, err)
 		assert.Equal(t, wfClient, GetWfClient(ctx))
 		assert.Equal(t, kubeClient, GetKubeClient(ctx))

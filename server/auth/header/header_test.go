@@ -340,7 +340,7 @@ func TestAuthorizeMissingSubject(t *testing.T) {
 	claims, err := h.Authorize(metadata.MD{})
 
 	assert.Nil(t, claims)
-	assert.EqualError(t, err, "subject claim is empty")
+	require.ErrorIs(t, err, types.ErrNoCredentials)
 }
 
 func TestAuthenticateProxy(t *testing.T) {
