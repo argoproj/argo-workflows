@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-parameter-overwrite-
+  namespace: default
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  workflowTemplateRef:
+    name: wf-template-echo

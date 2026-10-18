@@ -5966,8 +5966,7 @@ spec:
                   for this Workflow
                 properties:
                   mutexes:
-                    description: 'v3.6 and after: Mutexes holds the list of Mutex
-                      lock details'
+                    description: Mutexes holds the list of Mutex lock details
                     items:
                       description: Mutex holds Mutex configuration
                       properties:
@@ -5985,8 +5984,7 @@ spec:
                       type: object
                     type: array
                   semaphores:
-                    description: 'v3.6 and after: Semaphores holds the list of Semaphores
-                      configuration'
+                    description: Semaphores holds the list of Semaphores configuration
                     items:
                       description: SemaphoreRef is a reference of Semaphore
                       properties:
@@ -38350,8 +38348,7 @@ spec:
                         for this template
                       properties:
                         mutexes:
-                          description: 'v3.6 and after: Mutexes holds the list of
-                            Mutex lock details'
+                          description: Mutexes holds the list of Mutex lock details
                           items:
                             description: Mutex holds Mutex configuration
                             properties:
@@ -38369,8 +38366,7 @@ spec:
                             type: object
                           type: array
                         semaphores:
-                          description: 'v3.6 and after: Semaphores holds the list
-                            of Semaphores configuration'
+                          description: Semaphores holds the list of Semaphores configuration
                           items:
                             description: SemaphoreRef is a reference of Semaphore
                             properties:
@@ -42928,8 +42924,8 @@ spec:
                 format: int32
                 type: integer
               schedules:
-                description: 'v3.6 and after: Schedules is a list of schedules to
-                  run the Workflow in Cron format'
+                description: Schedules is a list of schedules to run the Workflow
+                  in Cron format
                 items:
                   pattern: ^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?()-]+\s+){4}[A-Za-z0-9*,/?()-]+)$
                   type: string
@@ -42943,12 +42939,12 @@ spec:
                 minimum: 0
                 type: integer
               stopStrategy:
-                description: 'v3.6 and after: StopStrategy defines if the CronWorkflow
-                  should stop scheduling based on a condition'
+                description: StopStrategy defines if the CronWorkflow should stop
+                  scheduling based on a condition
                 properties:
                   expression:
                     description: |-
-                      v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables
+                      Expression is an expression that stops scheduling workflows when true. Use the variables
                       `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
                     type: string
                 required:
@@ -42969,8 +42965,8 @@ spec:
                   time.
                 type: string
               when:
-                description: 'v3.6 and after: When is an expression that determines
-                  if a run should be scheduled.'
+                description: When is an expression that determines if a run should
+                  be scheduled.
                 type: string
               workflowMetadata:
                 description: WorkflowMetadata contains some metadata of the workflow
@@ -49014,8 +49010,7 @@ spec:
                       for this Workflow
                     properties:
                       mutexes:
-                        description: 'v3.6 and after: Mutexes holds the list of Mutex
-                          lock details'
+                        description: Mutexes holds the list of Mutex lock details
                         items:
                           description: Mutex holds Mutex configuration
                           properties:
@@ -49033,8 +49028,7 @@ spec:
                           type: object
                         type: array
                       semaphores:
-                        description: 'v3.6 and after: Semaphores holds the list of
-                          Semaphores configuration'
+                        description: Semaphores holds the list of Semaphores configuration
                         items:
                           description: SemaphoreRef is a reference of Semaphore
                           properties:
@@ -81858,8 +81852,7 @@ spec:
                             configuration for this template
                           properties:
                             mutexes:
-                              description: 'v3.6 and after: Mutexes holds the list
-                                of Mutex lock details'
+                              description: Mutexes holds the list of Mutex lock details
                               items:
                                 description: Mutex holds Mutex configuration
                                 properties:
@@ -81877,8 +81870,8 @@ spec:
                                 type: object
                               type: array
                             semaphores:
-                              description: 'v3.6 and after: Semaphores holds the list
-                                of Semaphores configuration'
+                              description: Semaphores holds the list of Semaphores
+                                configuration
                               items:
                                 description: SemaphoreRef is a reference of Semaphore
                                 properties:
@@ -94989,8 +94982,7 @@ spec:
                   for this Workflow
                 properties:
                   mutexes:
-                    description: 'v3.6 and after: Mutexes holds the list of Mutex
-                      lock details'
+                    description: Mutexes holds the list of Mutex lock details
                     items:
                       description: Mutex holds Mutex configuration
                       properties:
@@ -95008,8 +95000,7 @@ spec:
                       type: object
                     type: array
                   semaphores:
-                    description: 'v3.6 and after: Semaphores holds the list of Semaphores
-                      configuration'
+                    description: Semaphores holds the list of Semaphores configuration
                     items:
                       description: SemaphoreRef is a reference of Semaphore
                       properties:
@@ -127373,8 +127364,7 @@ spec:
                         for this template
                       properties:
                         mutexes:
-                          description: 'v3.6 and after: Mutexes holds the list of
-                            Mutex lock details'
+                          description: Mutexes holds the list of Mutex lock details
                           items:
                             description: Mutex holds Mutex configuration
                             properties:
@@ -127392,8 +127382,7 @@ spec:
                             type: object
                           type: array
                         semaphores:
-                          description: 'v3.6 and after: Semaphores holds the list
-                            of Semaphores configuration'
+                          description: Semaphores holds the list of Semaphores configuration
                           items:
                             description: SemaphoreRef is a reference of Semaphore
                             properties:
@@ -154964,8 +154953,7 @@ spec:
                   for this Workflow
                 properties:
                   mutexes:
-                    description: 'v3.6 and after: Mutexes holds the list of Mutex
-                      lock details'
+                    description: Mutexes holds the list of Mutex lock details
                     items:
                       description: Mutex holds Mutex configuration
                       properties:
@@ -154983,8 +154971,7 @@ spec:
                       type: object
                     type: array
                   semaphores:
-                    description: 'v3.6 and after: Semaphores holds the list of Semaphores
-                      configuration'
+                    description: Semaphores holds the list of Semaphores configuration
                     items:
                       description: SemaphoreRef is a reference of Semaphore
                       properties:
@@ -187348,8 +187335,7 @@ spec:
                         for this template
                       properties:
                         mutexes:
-                          description: 'v3.6 and after: Mutexes holds the list of
-                            Mutex lock details'
+                          description: Mutexes holds the list of Mutex lock details
                           items:
                             description: Mutex holds Mutex configuration
                             properties:
@@ -187367,8 +187353,7 @@ spec:
                             type: object
                           type: array
                         semaphores:
-                          description: 'v3.6 and after: Semaphores holds the list
-                            of Semaphores configuration'
+                          description: Semaphores holds the list of Semaphores configuration
                           items:
                             description: SemaphoreRef is a reference of Semaphore
                             properties:
@@ -193124,17 +193109,17 @@ spec:
       automountServiceAccountToken: false
       containers:
       - command:
-        - minio
+        - silo
         - server
         - --console-address
         - :9001
         - /data
         env:
-        - name: MINIO_ACCESS_KEY
+        - name: MINIO_ROOT_USER
           value: admin
-        - name: MINIO_SECRET_KEY
+        - name: MINIO_ROOT_PASSWORD
           value: password
-        image: quay.io/minio/minio:RELEASE.2022-11-17T23-20-09Z@sha256:b2a98df34c3e8d605a5e96f0bc1657dd440a5bd53d95465a7b342e736da9c6cf
+        image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z@sha256:635197cb9f36d01bee221d34d1c7d7960f6a95c48b0b6c01d99cd13bdae51a46
         lifecycle:
           postStart:
             exec:

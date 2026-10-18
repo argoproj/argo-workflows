@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-template-scope
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+      - - name: step
+          templateRef:
+            name: test-template-scope-1
+            template: steps
+            clusterScope: true

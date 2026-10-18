@@ -1,5 +1,115 @@
 # Changelog
 
+## v4.1.5 (2026-10-09)
+
+Full Changelog: [v4.1.4...v4.1.5](https://github.com/argoproj/argo-workflows/compare/v4.1.4...v4.1.5)
+
+### Selected Changes
+
+* [aa30942bd](https://github.com/argoproj/argo-workflows/commit/aa30942bdb308d2538bdcf9c65fce7f8b31161f5) fix(build): drop deprecated http2.Transport (cherry-pick #17182 for 4.1) (#17185)
+* [9f0d0e163](https://github.com/argoproj/argo-workflows/commit/9f0d0e1637a0a2913d6802fb59e8695c2fd06787) chore(deps): update module golang.org/x/net to v0.60.0 [security] (release-4.1) (#17179)
+* [0bdaeeeb9](https://github.com/argoproj/argo-workflows/commit/0bdaeeeb92cb3722b9ad8ffe82ec22107101e66c) fix: postrgesql use sslmode when configured (cherry-pick #17113 for 4.1) (#17143)
+* [e7fb498e1](https://github.com/argoproj/argo-workflows/commit/e7fb498e1551da6ab6b4fc183aa0d2030c0c0623) chore(deps): update dependency moment to v2.31.0 [security] (release-4.1) (#17121)
+* [d264a204e](https://github.com/argoproj/argo-workflows/commit/d264a204ebfd42c33cb5a5d9b82844ba714df279) fix: tie database queries to the caller's context (cherry-pick #17076 for 4.1) (#17102)
+* [4748d152e](https://github.com/argoproj/argo-workflows/commit/4748d152e5eba916b0f6f6e0aec2f1dce4e21a6a) fix: termination of suspended workflow (cherry-pick #17052 for 4.1) (#17100)
+* [7af1e72d6](https://github.com/argoproj/argo-workflows/commit/7af1e72d6be393ec98a156c353ce3523c12623f7) fix(controller): scope sync queue GC deletes to the owning controller. Fixes #16737 (cherry-pick #16768 for 4.1) (#17079)
+* [02bd780f7](https://github.com/argoproj/argo-workflows/commit/02bd780f7dfe7b8c4db7df703ad1d0b28d7f441d) fix: resolve node ID collisions made by a memoized resubmit (cherry-pick #17028 for 4.1) (#17072)
+* [08877fa03](https://github.com/argoproj/argo-workflows/commit/08877fa03da844924bc89ad5e8a9e0a23f871dca) fix: run the quick-start artifact repository on pgsty/silo. Fixes #17030 (cherry-pick #17073 for 4.1) (#17075)
+* [bf69815ba](https://github.com/argoproj/argo-workflows/commit/bf69815ba0e62adc453218e8ad9be5b239137fb4) fix: correctly parse custom headers containing colon (cherry-pick #17054 for 4.1) (#17055)
+* [a42c94938](https://github.com/argoproj/argo-workflows/commit/a42c9493850847accc6f3b462619876bddec5d19) fix(controller): remove and downgrade noisy log lines (cherry-pick #16955 for 4.1) (#17048)
+* [d17b13004](https://github.com/argoproj/argo-workflows/commit/d17b13004a2194841d98478d772c06fc3bb47ddc) fix(controller): retry failed artifact GC attempts. Fixes #16894 (cherry-pick #16897 for 4.1) (#17035)
+* [d7e6d61d2](https://github.com/argoproj/argo-workflows/commit/d7e6d61d261fe5c8324abe8dae0b12b820ea68e1) fix: deterministic span and trace ids (cherry-pick #15584 for 4.1) (#17037)
+* [ad183514a](https://github.com/argoproj/argo-workflows/commit/ad183514a159bf8a1314fce01f710b70e58de7e9) fix: make memoized resubmit reuse the retry reset logic (cherry-pick #16938 for 4.1) (#17033)
+* [40e2bb1f0](https://github.com/argoproj/argo-workflows/commit/40e2bb1f037891d4bc6c0aab03513b74d478dbd5) fix(controller): set ARGO_WORKFLOW_NAME once per container (cherry-pick #16946 for 4.1) (#17023)
+* [b5949dc23](https://github.com/argoproj/argo-workflows/commit/b5949dc23292d03694840c6ea9cec5014425ea51) fix(controller): don't end the node tracing span twice (cherry-pick #16945 for 4.1) (#17022)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Aleksa Majkić
+* Aswin Kumar
+* Claude Fable 5.1
+* Claude Opus 5
+* Claude Opus 5.5
+* Claude Opus 5.5 (1M context)
+* Claude Sonnet 5
+* gaurang_mishra
+* Gaurang Mishra
+* Martijn Remmen
+* Zain Qureshi
+
+</details>
+
+## v4.1.4 (2026-09-18)
+
+Full Changelog: [v4.1.3...v4.1.4](https://github.com/argoproj/argo-workflows/compare/v4.1.3...v4.1.4)
+
+### Selected Changes
+
+* [b5b4d665e](https://github.com/argoproj/argo-workflows/commit/b5b4d665e9be9b87c115f943584c3e0ae96fe073) Merge commit from fork
+* [17bd099b5](https://github.com/argoproj/argo-workflows/commit/17bd099b5ac4e63df8142f74aea6049842cbd81e) Merge commit from fork
+* [a40972386](https://github.com/argoproj/argo-workflows/commit/a40972386c097ddf816d2e60e13f058bedca53d9) Merge commit from fork
+* [3f2825c1b](https://github.com/argoproj/argo-workflows/commit/3f2825c1b9bc250a9c60d73973832b4865c4fdeb) Merge commit from fork
+* [a9740dd9e](https://github.com/argoproj/argo-workflows/commit/a9740dd9e8e1302f0f217b959df84d99fecd9a7d) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc to v1.45.0 [security] (release-4.1) (#16996)
+* [aae1375c0](https://github.com/argoproj/argo-workflows/commit/aae1375c0ccce5fe9a550b8507df0b5d10da0f20) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlptrace to v1.45.0 [security] (release-4.1) (#17002)
+* [9db4dfb53](https://github.com/argoproj/argo-workflows/commit/9db4dfb53070ba3bd8e001d45b6cbf25cf0b4d91) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp to v1.45.0 [security] (release-4.1) (#16997)
+* [83bc3de75](https://github.com/argoproj/argo-workflows/commit/83bc3de75d8aa8db7127185d00f4397b0c8c9f21) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.45.0 [security] (release-4.1) (#16998)
+* [49e529123](https://github.com/argoproj/argo-workflows/commit/49e529123bca4bc6b424ac8ea4673492fd96b148) fix(controller): resolve node ID hash collisions instead of corrupting the graph (cherry-pick #16883 for 4.1) (#16986)
+* [f0342ba21](https://github.com/argoproj/argo-workflows/commit/f0342ba215ba60230baee7358c8c00f053fe3de9) fix(sync): break lock queue ties identically in memory and in the database (cherry-pick #16880 for 4.1) (#16951)
+* [6f62eaf01](https://github.com/argoproj/argo-workflows/commit/6f62eaf01005936b851b3ed0028ccf11a9bf229f) fix(controller): skip empty optional step artifacts (cherry-pick #16839 for 4.1) (#16944)
+* [e69872804](https://github.com/argoproj/argo-workflows/commit/e6987280415d9eeaa45b6aed85320e3e77d1f037) fix: guard nil pointer deref in FormulateRetryWorkflow when retry parent node is missing (cherry-pick #16926 for 4.1) (#16947)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Claude Fable 5.1
+* Claude Opus 5 (1M context)
+* Nepoxx
+* Raymond Wong
+
+</details>
+
+## v4.1.3 (2026-09-11)
+
+Full Changelog: [v4.1.2...v4.1.3](https://github.com/argoproj/argo-workflows/compare/v4.1.2...v4.1.3)
+
+### Selected Changes
+
+* [5fdad0fe6](https://github.com/argoproj/argo-workflows/commit/5fdad0fe6f6d740c55d8289f26c912ab711ca407) fix(telemetry): disable OTLP exporters for empty endpoints (cherry-pick #16898 for 4.1) (#16930)
+* [d2cbf6b1e](https://github.com/argoproj/argo-workflows/commit/d2cbf6b1e2ddf79b4deef74070888d5d5418708f) fix: Respect OTEL_SERVICE_NAME if set (cherry-pick #16928 for 4.1) (#16933)
+* [06fa4f20b](https://github.com/argoproj/argo-workflows/commit/06fa4f20b7f35a4a93dbbbb096b3bafc4cebc118) chore(deps): update module golang.org/x/crypto to v0.56.0 [security] (release-4.1) (#16917)
+* [f414b4cbb](https://github.com/argoproj/argo-workflows/commit/f414b4cbb667496158703fefcbb2ed144625da02) fix(sync): report available slots in the database lock waiting message (cherry-pick #16881 for 4.1) (#16910)
+* [e463f4baa](https://github.com/argoproj/argo-workflows/commit/e463f4baa9a4f0af2134ea7e9e6a520a31f48909) fix(controller): preserve NodeSucceeded on daemon pod PodFailed/PodSucceeded events after teardown. Fixes #16397 (cherry-pick #16396 for 4.1) (#16908)
+* [0f7953870](https://github.com/argoproj/argo-workflows/commit/0f795387032e5b361f6816ae5bf7ca3600d0768b) chore(deps): update module google.golang.org/grpc to v1.83.2 [security] (release-4.1) (#16877)
+* [31fddce46](https://github.com/argoproj/argo-workflows/commit/31fddce463507070b912c26874556dc321bd9303) fix: don't fail nodes on artifact plugin sidecar exit codes (cherry-pick #16807 for 4.1) (#16870)
+* [3305f7420](https://github.com/argoproj/argo-workflows/commit/3305f742087dde4ee06be11584a222a818c0cc2e) chore(deps): update module google.golang.org/grpc to v1.83.1 [security] (release-4.1) (#16854)
+* [7a443d43e](https://github.com/argoproj/argo-workflows/commit/7a443d43ea50fced5b4a53ce5d66846c6d315016) chore(deps): update dependency qs to v6.16.0 [security] (release-4.1) (#16861)
+* [9e977c545](https://github.com/argoproj/argo-workflows/commit/9e977c545a65a45e42ef6b323e01d3073f318195) chore(deps): update module golang.org/x/crypto to v0.55.0 [security] (release-4.1) (#16838)
+* [e4cae671d](https://github.com/argoproj/argo-workflows/commit/e4cae671de1c95ea95e0e8f91e9441dc4bdbf4ae) fix: build the PostgreSQL token-auth DSN for lib/pq (cherry-pick #16829 for 4.1) (#16835)
+* [2224112be](https://github.com/argoproj/argo-workflows/commit/2224112bed9dbb4d71ef79b777f9803899d002f4) fix(sync): return a nil interface from SynchronizationStatus.GetStatus for unset locks (cherry-pick #16831 for 4.1) (#16833)
+* [e05961840](https://github.com/argoproj/argo-workflows/commit/e059618402a341ce02871b68b936d62b58bd70b7) fix: prevent panic in ParseProgress on input without a slash (cherry-pick #16537 for 4.1) (#16814)
+* [40a32a3a5](https://github.com/argoproj/argo-workflows/commit/40a32a3a59548e9bcbfc7acd99643b1e2cec36e2) fix: GetNodeTemplate checks storedTemplates before live CWT informer (cherry-pick #15659 for 4.1) (#16812)
+* [75726d0f2](https://github.com/argoproj/argo-workflows/commit/75726d0f274030ba9a582e17a6c44cffbde0f70c) fix: allow semaphore initialization with a resolved limit of 0 (cherry-pick #16805 for 4.1) (#16809)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Chikara Takahashi
+* Claude Fable 5
+* Claude Fable 5.1
+* Claude Opus 5 (1M context)
+* Claude Sonnet 4.6
+* Eric Wyles
+* Mike Bryant
+* Ryan Currah
+* semx
+* Sergey Sannikov
+* Sooraj KS
+* Tianchu Zhao
+
+</details>
+
 ## v4.1.2 (2026-08-21)
 
 Full Changelog: [v4.1.1...v4.1.2](https://github.com/argoproj/argo-workflows/compare/v4.1.1...v4.1.2)
@@ -107,7 +217,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.10...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.10...v4.1.0-rc1)
+Full Changelog: [v4.0.13...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.13...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -727,6 +837,98 @@ Full Changelog: [v4.0.10...v4.1.0-rc1](https://github.com/argoproj/argo-workflow
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.13 (2026-10-09)
+
+Full Changelog: [v4.0.12...v4.0.13](https://github.com/argoproj/argo-workflows/compare/v4.0.12...v4.0.13)
+
+### Selected Changes
+
+* [c6f31c89b](https://github.com/argoproj/argo-workflows/commit/c6f31c89be880a1d7426d9235e686b9541fa833c) chore(deps): update gcr.io/distroless/static-debian13:latest docker digest to 5813399 (release-4.0) (#17168)
+* [5d3923b3e](https://github.com/argoproj/argo-workflows/commit/5d3923b3e085763579caa92ad0cf739d45895947) chore(deps): update dependency moment to v2.31.0 [security] (release-4.0) (#17120)
+* [7f47b61bf](https://github.com/argoproj/argo-workflows/commit/7f47b61bf45e8fe5752e5f898cc58ab729255aa3) fix: termination of suspended workflow (cherry-pick #17052 for 4.0) (#17099)
+* [0b465e709](https://github.com/argoproj/argo-workflows/commit/0b465e7094c840c4a5fa345c3b8f4a6072a0a68b) fix(controller): scope sync queue GC deletes to the owning controller. Fixes #16737 (cherry-pick #16768 for 4.0) (#17080)
+* [423b9e37b](https://github.com/argoproj/argo-workflows/commit/423b9e37bcad08c356f3ab407b2bfb1c12636331) fix: resolve node ID collisions made by a memoized resubmit (cherry-pick #17028 for 4.0) (#17071)
+* [0274611ea](https://github.com/argoproj/argo-workflows/commit/0274611ead099811bab15031ae290453bd5c24e1) fix: run the quick-start artifact repository on pgsty/silo. Fixes #17030 (cherry-pick #17073 for 4.0) (#17078)
+* [05ca13e3b](https://github.com/argoproj/argo-workflows/commit/05ca13e3bad578d61e8354db1e6f0011585f2bc5) fix: correctly parse custom headers containing colon (cherry-pick #17054 for 4.0) (#17056)
+* [2ba05a1e5](https://github.com/argoproj/argo-workflows/commit/2ba05a1e5572455c17f530e4808f371589b9a4a6) fix: make memoized resubmit reuse the retry reset logic (cherry-pick #16938 for 4.0) (#17050)
+* [5a3c6e645](https://github.com/argoproj/argo-workflows/commit/5a3c6e64519a63d94fd9006ec12d664d5c335b1e) fix(controller): retry failed artifact GC attempts. Fixes #16894 (cherry-pick #16897 for 4.0) (#17036)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Aleksa Majkić
+* Aswin Kumar
+* Claude Fable 5.1
+* Claude Opus 5
+* Claude Opus 5.5
+* Claude Sonnet 5
+* gaurang_mishra
+* Gaurang Mishra
+* Zain Qureshi
+
+</details>
+
+## v4.0.12 (2026-09-18)
+
+Full Changelog: [v4.0.11...v4.0.12](https://github.com/argoproj/argo-workflows/compare/v4.0.11...v4.0.12)
+
+### Selected Changes
+
+* [d087979df](https://github.com/argoproj/argo-workflows/commit/d087979dfac1f6b1f8a57b44c2ccd6bd55f1d696) Merge commit from fork
+* [510a9f8e4](https://github.com/argoproj/argo-workflows/commit/510a9f8e44bad39128e308d6fb2f3ac74c9940d1) Merge commit from fork
+* [aa939696a](https://github.com/argoproj/argo-workflows/commit/aa939696a966457d53483ac6be93c51e5ad8daa8) Merge commit from fork
+* [4a0d30a2e](https://github.com/argoproj/argo-workflows/commit/4a0d30a2e68fe974c10b16c83f1957e43eb49ee5) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.45.0 [security] (release-4.0) (#17001)
+* [86ef3c9a2](https://github.com/argoproj/argo-workflows/commit/86ef3c9a2e4dad9effd404668f37935bfcd175c5) fix(controller): resolve node ID hash collisions instead of corrupting the graph (cherry-pick #16883 for 4.0) (#16988)
+* [423e591b5](https://github.com/argoproj/argo-workflows/commit/423e591b50e3421c1b382cb86b1b11b3f818b528) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.45.0 [security] (release-4.0) (#16995)
+* [56f5427fb](https://github.com/argoproj/argo-workflows/commit/56f5427fbe8f5983f111806248efbdf175d5b20f) fix(sync): break lock queue ties identically in memory and in the database (cherry-pick #16880 for 4.0) (#16954)
+* [4f1cfae03](https://github.com/argoproj/argo-workflows/commit/4f1cfae03002e2e22d0be8c80fa4e1499c021fa9) fix(controller): skip empty optional step artifacts (cherry-pick #16839 for 4.0) (#16950)
+* [157bf0e48](https://github.com/argoproj/argo-workflows/commit/157bf0e482df9d860ccb03dc32592619e855d533) fix: guard nil pointer deref in FormulateRetryWorkflow when retry parent node is missing (cherry-pick #16926 for 4.0) (#16948)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5.1
+* Nepoxx
+* Raymond Wong
+
+</details>
+
+## v4.0.11 (2026-09-11)
+
+Full Changelog: [v4.0.10...v4.0.11](https://github.com/argoproj/argo-workflows/compare/v4.0.10...v4.0.11)
+
+### Selected Changes
+
+* [dc33efd84](https://github.com/argoproj/argo-workflows/commit/dc33efd84469d9cb5511e83152ef23f33fa4e9f3) fix(telemetry): disable OTLP exporters for empty endpoints (cherry-pick #16898 for 4.0) (#16937)
+* [e943741ab](https://github.com/argoproj/argo-workflows/commit/e943741ab5241ace263cb3a71a80abaa8e68a237) fix: Respect OTEL_SERVICE_NAME if set (cherry-pick #16928 for 4.0) (#16934)
+* [ba4ab7ede](https://github.com/argoproj/argo-workflows/commit/ba4ab7edefbb375358ab2f93cd662b570bb73e76) fix(controller): preserve NodeSucceeded on daemon pod PodFailed/PodSucceeded events after teardown. Fixes #16397 (cherry-pick #16396 for 4.0) (#16913)
+* [44233ee5e](https://github.com/argoproj/argo-workflows/commit/44233ee5e772d02477c0e07ceab78f9497fda74b) fix(sync): report available slots in the database lock waiting message (cherry-pick #16881 for 4.0) (#16911)
+* [6926264ad](https://github.com/argoproj/argo-workflows/commit/6926264ad27d809901c225506710b5205acc9e65) fix: don't fail nodes on artifact plugin sidecar exit codes (cherry-pick #16807 for 4.0) (#16873)
+* [6b6b15fe9](https://github.com/argoproj/argo-workflows/commit/6b6b15fe950855bc8b91489285fec7fe6fbc216d) chore(deps): update module google.golang.org/grpc to v1.83.2 [security] (release-4.0) (#16906)
+* [44a6e82c4](https://github.com/argoproj/argo-workflows/commit/44a6e82c4969fe5750e91ec5844cfd8251b539c2) chore(deps): update module google.golang.org/grpc to v1.83.2 [security] (release-4.0) (#16904)
+* [80ff82791](https://github.com/argoproj/argo-workflows/commit/80ff8279143de3b5cfeb514e3bc32118a9a15966) chore(deps): update module google.golang.org/grpc to v1.83.1 [security] (release-4.0) (#16853)
+* [cd8225fe9](https://github.com/argoproj/argo-workflows/commit/cd8225fe95fdabf05f0643d59a46d66d21e19bd9) chore(deps): update dependency qs to v6.16.0 [security] (release-4.0) (#16860)
+* [68314fd95](https://github.com/argoproj/argo-workflows/commit/68314fd954a4cee386d04cd2c7c67eab28aa5d6b) fix(sync): return a nil interface from SynchronizationStatus.GetStatus for unset locks (cherry-pick #16831 for 4.0) (#16834)
+* [edc89f0ea](https://github.com/argoproj/argo-workflows/commit/edc89f0ead59d599cfd92ab46c103eed784999b3) fix: prevent panic in ParseProgress on input without a slash (cherry-pick #16537 for 4.0) (#16813)
+* [cb5cb0efe](https://github.com/argoproj/argo-workflows/commit/cb5cb0efe92d923f86474735f2cbbbdf389d1f14) fix: GetNodeTemplate checks storedTemplates before live CWT informer (cherry-pick #15659 for 4.0) (#16811)
+* [d5ddca7a5](https://github.com/argoproj/argo-workflows/commit/d5ddca7a5d1c45135f1d8e10bc10486b92ca6734) fix: allow semaphore initialization with a resolved limit of 0 (cherry-pick #16805 for 4.0) (#16808)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Claude Fable 5.1
+* Claude Opus 5 (1M context)
+* Claude Sonnet 4.6
+* Eric Wyles
+* Ryan Currah
+* semx
+* Sergey Sannikov
+* Sooraj Macbook
+* Tianchu Zhao
 
 </details>
 

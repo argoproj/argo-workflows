@@ -17,10 +17,19 @@ func NewInterface(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *Interface {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &Interface{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -74,7 +83,7 @@ type Interface_Get_Call struct {
 // Get is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ref *v1alpha1.ArtifactRepositoryRefStatus
-func (_e *Interface_Expecter) Get(ctx interface{}, ref interface{}) *Interface_Get_Call {
+func (_e *Interface_Expecter) Get(ctx any, ref any) *Interface_Get_Call {
 	return &Interface_Get_Call{Call: _e.mock.On("Get", ctx, ref)}
 }
 
@@ -143,7 +152,7 @@ type Interface_Resolve_Call struct {
 //   - ctx context.Context
 //   - ref *v1alpha1.ArtifactRepositoryRef
 //   - workflowNamespace string
-func (_e *Interface_Expecter) Resolve(ctx interface{}, ref interface{}, workflowNamespace interface{}) *Interface_Resolve_Call {
+func (_e *Interface_Expecter) Resolve(ctx any, ref any, workflowNamespace any) *Interface_Resolve_Call {
 	return &Interface_Resolve_Call{Call: _e.mock.On("Resolve", ctx, ref, workflowNamespace)}
 }
 

@@ -119,10 +119,12 @@ func NewTracing(ctx context.Context, serviceName string, extraOpts ...tracesdk.T
 			}
 			options = append(options, tracesdk.WithBatcher(httpExporter))
 		default:
-			logger.WithFatal().WithField("protocol", otlpProtocol).Error(ctx, "OTEL tracing protocol invalid")
+			logger.WithField("protocol", otlpProtocol).Error(ctx, "OTEL tracing protocol invalid")
+			os.Exit(1)
 		}
 	}
 
+	options = append(options, tracesdk.WithIDGenerator(&DeterministicIDGenerator{}))
 	provider := tracesdk.NewTracerProvider(options...)
 	otel.SetTracerProvider(provider)
 

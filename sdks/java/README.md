@@ -36,5 +36,4 @@ The very latest version:
 * [Sensor service](client/docs/SensorServiceApi.md)
 * [Event source service](client/docs/EventSourceServiceApi.md)
 * [Info service](client/docs/InfoServiceApi.md )
-* [Pipeline service](client/docs/PipelineServiceApi.md)
 * [Workflow service](client/docs/WorkflowServiceApi.md)

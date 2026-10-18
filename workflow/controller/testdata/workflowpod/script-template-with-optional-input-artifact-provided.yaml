@@ -1,0 +1,13 @@
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: manifest
+    path: /manifest
+    optional: true
+    http:
+        url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
+script:
+  image: alpine:3.23
+  command: [sh]
+  source: |
+    ls -al

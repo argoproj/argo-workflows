@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
 jobs:
   find-labels:
     name: Find Cherry Pick Labels
@@ -21,6 +25,12 @@ jobs:
     outputs:
       labels: ${{ steps.extract-labels.outputs.labels }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
       - name: Extract cherry-pick labels
         id: extract-labels
         # Event data is passed through env rather than interpolated into the

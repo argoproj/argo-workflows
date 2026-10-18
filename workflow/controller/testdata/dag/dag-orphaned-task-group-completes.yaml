@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-orphaned-taskgroup
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fanout
+        template: echo
+        withItems: [a, b]
+      - name: leaf
+        template: echo
+        depends: fanout
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "exit 0"]

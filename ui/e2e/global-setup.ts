@@ -14,7 +14,7 @@ async function serverVersion(): Promise<string> {
     let lastErr: unknown;
     for (let attempt = 0; attempt < 5; attempt++) {
         try {
-            const res = await fetch(`${BASE_URL}/api/v1/version`, {headers: {Authorization: bearer()}});
+            const res = await fetch(new URL('api/v1/version', BASE_URL), {headers: {Authorization: bearer()}});
             if (res.ok) {
                 const version = (await res.json()).version;
                 if (version) {
@@ -29,7 +29,7 @@ async function serverVersion(): Promise<string> {
         }
         await new Promise(resolve => setTimeout(resolve, 2_000));
     }
-    throw new Error(`could not fetch ${BASE_URL}/api/v1/version to seed modal suppression (is the stack up?): ${lastErr}`);
+    throw new Error(`could not fetch ${new URL('api/v1/version', BASE_URL)} to seed modal suppression (is the stack up?): ${lastErr}`);
 }
 
 // Runs once before the suite. Rather than driving the login page for every test,
@@ -49,7 +49,9 @@ export default async function globalSetup(): Promise<void> {
                 name: 'authorization',
                 value: bearer(),
                 domain: url.hostname,
-                path: '/',
+                // Login scopes the cookie to the base href (shared/cookie.ts), and
+                // logout only clears that path; match it so both agree.
+                path: url.pathname,
                 expires: -1, // session cookie
                 httpOnly: false,
                 secure: false,

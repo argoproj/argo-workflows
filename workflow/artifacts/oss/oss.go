@@ -553,11 +553,10 @@ func GetOssDirectory(ctx context.Context, bucket *oss.Bucket, objectName, path s
 		return err
 	}
 	for _, f := range files {
-		innerName, err := filepath.Rel(objectName, f)
+		fpath, err := common.LocalPathForObject(path, objectName, f)
 		if err != nil {
-			return fmt.Errorf("get Rel path from %s to %s error: %w", f, objectName, err)
+			return err
 		}
-		fpath := filepath.Join(path, innerName)
 		if strings.HasSuffix(f, "/") {
 			err = os.MkdirAll(fpath, 0o700)
 			if err != nil {
