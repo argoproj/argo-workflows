@@ -24,10 +24,11 @@ func TestAuthorize(t *testing.T) {
 
 		trustUnauthenticated bool
 
-		issuer  string
-		subject string
-		email   string
-		groups  []string
+		issuer        string
+		subject       string
+		email         string
+		groups        []string
+		expectedError string
 	}{
 		{
 			name: "static values",
@@ -141,8 +142,7 @@ func TestAuthorize(t *testing.T) {
 
 			trustUnauthenticated: true,
 
-			subject: "pradeep,admin",
-			groups:  []string{},
+			expectedError: `multiple values for claim header "X-Forwarded-User"`,
 		},
 
 		{
@@ -202,6 +202,31 @@ func TestAuthorize(t *testing.T) {
 			subject: "pradeep",
 			groups:  []string{},
 		},
+		{
+			name: "multiple group header values",
+
+			cfg: config.HeaderConfig{
+				Subject: config.ClaimSource{
+					Header: "X-Forwarded-User",
+				},
+				Groups: config.GroupClaimSource{
+					ClaimSource: config.ClaimSource{
+						Header: "X-Forwarded-Groups",
+					},
+				},
+			},
+
+			md: metadata.Pairs(
+				"x-forwarded-user", "pradeep",
+				"x-forwarded-groups", "admin",
+				"x-forwarded-groups", "developer,argo",
+			),
+
+			trustUnauthenticated: true,
+
+			subject: "pradeep",
+			groups:  []string{"admin", "developer", "argo"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -235,6 +260,12 @@ func TestAuthorize(t *testing.T) {
 			require.NoError(t, err)
 
 			claims, err := h.Authorize(tt.md)
+
+			if tt.expectedError != "" {
+				require.EqualError(t, err, tt.expectedError)
+				assert.Nil(t, claims)
+				return
+			}
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.issuer, claims.Issuer)
@@ -388,7 +419,7 @@ func TestAuthenticateProxy(t *testing.T) {
 				"x-proxy-auth", "wrong-secret",
 				"x-proxy-auth", "secret",
 			),
-			expectedError: "trusted proxy authentication failed",
+			expectedError: `multiple values for shared secret header "X-Proxy-Auth"`,
 		},
 	}
 

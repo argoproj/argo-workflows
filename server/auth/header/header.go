@@ -88,24 +88,37 @@ func New(ctx context.Context, cfg config.HeaderConfig, secretsIf corev1.SecretIn
 	}, nil
 }
 
-func resolveClaim(source config.ClaimSource, md metadata.MD) string {
+func resolveClaim(source config.ClaimSource, md metadata.MD) (string, error) {
 	if source.Value != "" {
-		return source.Value
+		return source.Value, nil
 	}
 
 	if source.Header != "" {
 		values := md.Get(strings.ToLower(source.Header))
-		if len(values) > 0 {
-			return strings.Join(values, ",")
+
+		switch len(values) {
+		case 0:
+			return "", nil
+		case 1:
+			return values[0], nil
+		default:
+			return "", fmt.Errorf("multiple values for claim header %q", source.Header)
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
 func resolveGroups(source config.GroupClaimSource, md metadata.MD) []string {
-	value := resolveClaim(source.ClaimSource, md)
+	if source.Value != "" {
+		return strings.Split(source.Value, ",")
+	}
 
+	if source.Header == "" {
+		return []string{}
+	}
+
+	value := strings.Join(md.Get(strings.ToLower(source.Header)), ",")
 	if value == "" {
 		return []string{}
 	}
@@ -119,15 +132,32 @@ func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
 	}
 	claims := &types.Claims{}
 
-	claims.Issuer = resolveClaim(h.config.Issuer, md)
-	claims.Subject = resolveClaim(h.config.Subject, md)
+	var err error
+
+	claims.Issuer, err = resolveClaim(h.config.Issuer, md)
+	if err != nil {
+		return nil, err
+	}
+
+	claims.Subject, err = resolveClaim(h.config.Subject, md)
+	if err != nil {
+		return nil, err
+	}
 
 	if claims.Subject == "" {
 		return nil, fmt.Errorf("subject claim is empty")
 	}
 
-	claims.Email = resolveClaim(h.config.Email, md)
-	claims.PreferredUsername = resolveClaim(h.config.PreferredUsername, md)
+	claims.Email, err = resolveClaim(h.config.Email, md)
+	if err != nil {
+		return nil, err
+	}
+
+	claims.PreferredUsername, err = resolveClaim(h.config.PreferredUsername, md)
+	if err != nil {
+		return nil, err
+	}
+
 	claims.Groups = resolveGroups(h.config.Groups, md)
 
 	return claims, nil
@@ -147,7 +177,11 @@ func (h *header) authenticateProxy(md metadata.MD) error {
 		return types.ErrNoCredentials
 	}
 
-	providedSecret := strings.Join(values, ",")
+	if len(values) != 1 {
+		return fmt.Errorf("multiple values for shared secret header %q", h.config.SharedSecret.Header)
+	}
+
+	providedSecret := values[0]
 
 	if subtle.ConstantTimeCompare(
 		[]byte(providedSecret),
