@@ -388,12 +388,16 @@ func TestServer_GetWFClient(t *testing.T) {
 		headerIf.AssertNotCalled(t, "Authorize", mock.Anything)
 	})
 
-	t.Run("Unrecognised Authorization with Server enabled is rejected, not server SA", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true, Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, &headermocks.Interface{}, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+	t.Run("Unrecognised Authorization with Header+Server runs as server, not header identity", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		g, err := NewGatekeeper(Modes{Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
-		_, err = g.Context(x(logging.TestContext(t.Context()), "garbage"))
-		require.Error(t, err)
-		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "garbage", "x-forwarded-user", "header-user"))
+		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, wfClient, GetWfClient(ctx))
+		assert.Equal(t, kubeClient, GetKubeClient(ctx))
+		headerIf.AssertNotCalled(t, "Authorize", mock.Anything)
 	})
 
 	for _, empty := range []string{"", "   "} {
@@ -447,13 +451,58 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	})
 
-	t.Run("Unrecognised cookie credential is rejected", func(t *testing.T) {
-		// Encodes the current decision: the cookie loop rejects values no
-		// enabled mode handles. If you change it to `continue`, this should
-		// instead expect success via Server.
+	t.Run("Unrecognised cookie credential runs as server", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer k8s-token"))
+		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, wfClient, GetWfClient(ctx))
+		assert.Equal(t, kubeClient, GetKubeClient(ctx))
+	})
+	t.Run("Server only, Bearer token runs as server", func(t *testing.T) {
+		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer x"))
+		require.NoError(t, err)
+		assert.Equal(t, wfClient, GetWfClient(ctx))
+		assert.Equal(t, kubeClient, GetKubeClient(ctx))
+	})
+
+	t.Run("Client+SSO+Server, Bearer v2: goes to SSO not client", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "sso-user"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(false)
+		clientCalled := false
+		spying := func(string, *rest.Config) (*rest.Config, *servertypes.Clients, error) {
+			clientCalled = true
+			return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
+		}
+		g, err := NewGatekeeper(Modes{Client: true, SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, spying, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
+		require.NoError(t, err)
+		require.NotNil(t, GetClaims(ctx))
+		assert.Equal(t, "sso-user", GetClaims(ctx).Subject)
+		assert.False(t, clientCalled, "a v2: token must go to SSO, not client auth")
+	})
+
+	t.Run("Client+SSO+Server, plain Bearer goes to client not SSO", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		g, err := NewGatekeeper(Modes{Client: true, SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer k8s-token"))
+		require.NoError(t, err)
+		assert.NotEqual(t, wfClient, GetWfClient(ctx))
+		ssoIf.AssertNotCalled(t, "Authorize", mock.Anything, mock.Anything)
+	})
+
+	t.Run("Header+Server, header error does not fall back to Server", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(nil, errors.New("invalid header credentials"))
+		g, err := NewGatekeeper(Modes{Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("x-forwarded-user", "someone"))
 		_, err = g.Context(ctx)
 		require.Error(t, err)
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))

@@ -223,9 +223,11 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			return s.authenticateClient(ctx, authorizationCredential.value)
 		}
 
-		// Non-empty value that no enabled mode recognises (e.g. a k8s Bearer
-		// token with --auth-mode=sso,header). Reject instead of silently
-		// falling back to another identity.
+		// No enabled mode claimed this credential. Server auth, if enabled,
+		// is the catch-all; otherwise reject.
+		if s.Modes[Server] {
+			return s.authenticateServer()
+		}
 		return nil, nil, status.Error(
 			codes.Unauthenticated,
 			"authorization credential does not match any enabled authentication mode",
@@ -263,6 +265,10 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			return s.authenticateClient(ctx, authorizationCredential.value)
 		}
 
+		// No enabled mode claimed this cookie credential. Same rule as above.
+		if s.Modes[Server] {
+			return s.authenticateServer()
+		}
 		return nil, nil, status.Error(
 			codes.Unauthenticated,
 			"cookie credential does not match any enabled authentication mode",
