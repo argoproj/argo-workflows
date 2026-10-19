@@ -153,7 +153,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
-	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
+	tokenVolume, tokenVolumeMount, err := woc.getAgentTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}

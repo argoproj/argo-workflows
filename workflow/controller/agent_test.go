@@ -297,4 +297,30 @@ func TestWorkflowDefinedExecutorPluginsUsage(t *testing.T) {
 		require.ErrorContains(t, err, "serviceaccounts \"test-sidecar-executor-plugin\" not found")
 		require.Nil(t, pod)
 	})
+
+	t.Run("AgentPodProjectedToken", func(t *testing.T) {
+		// A ServiceAccount without token secrets (Kubernetes >= 1.24) gets a projected token volume,
+		// while automountServiceAccountToken stays false.
+		sa := defaultServiceAccount.DeepCopy()
+		sa.Secrets = nil
+
+		wfCopy := wf.DeepCopy()
+		var ts wfv1.WorkflowTaskSet
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wfCopy, ts, sa)
+		defer cancel()
+
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		pod, err := woc.createAgentPod(ctx)
+		require.NoError(t, err)
+		assert.False(t, *pod.Spec.AutomountServiceAccountToken)
+		var projected int
+		for _, v := range pod.Spec.Volumes {
+			if v.Projected != nil && strings.HasPrefix(v.Name, "kube-api-access-") {
+				projected++
+				assert.Len(t, v.Projected.Sources, 3)
+			}
+		}
+		assert.Equal(t, 1, projected)
+	})
 }
