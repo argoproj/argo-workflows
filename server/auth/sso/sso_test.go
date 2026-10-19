@@ -160,15 +160,6 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestAuthorizeNoCredentials(t *testing.T) {
-	ssoObject := newTestSso(t)
-
-	claims, err := ssoObject.Authorize("")
-
-	assert.Nil(t, claims)
-	require.ErrorIs(t, err, types.ErrNoCredentials)
-}
-
 func TestAuthorizeEncryptedToken(t *testing.T) {
 	ssoObject := newTestSso(t)
 	raw, err := jwt.Encrypted(ssoObject.encrypter).Claims(newTestClaims()).Serialize()

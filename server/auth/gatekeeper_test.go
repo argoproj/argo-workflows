@@ -330,22 +330,6 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	})
-
-	t.Run("Authorization with no credentials falls through to Header", func(t *testing.T) {
-		headerIf := &headermocks.Interface{}
-		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
-		headerIf.On("IsRBACEnabled").Return(false)
-		ssoIf := &ssomocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything).Return(nil, authTypes.ErrNoCredentials)
-		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
-		require.NoError(t, err)
-		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "Bearer v2:whatever", "x-forwarded-user", "header-user"))
-		ctx, err = g.Context(ctx)
-		require.NoError(t, err)
-		require.NotNil(t, GetClaims(ctx))
-		assert.Equal(t, "header-user", GetClaims(ctx).Subject)
-		headerIf.AssertCalled(t, "Authorize", mock.Anything)
-	})
 	t.Run("Header takes precedence over cookie", func(t *testing.T) {
 		headerIf := &headermocks.Interface{}
 		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
@@ -461,17 +445,6 @@ func TestServer_GetWFClient(t *testing.T) {
 		_, err = g.Context(ctx)
 		require.Error(t, err)
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))
-	})
-
-	t.Run("Cookie with no credentials falls through to Server", func(t *testing.T) {
-		ssoIf := &ssomocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil, authTypes.ErrNoCredentials)
-		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
-		require.NoError(t, err)
-		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer v2:whatever"))
-		ctx, err = g.Context(ctx)
-		require.NoError(t, err)
-		assert.Equal(t, wfClient, GetWfClient(ctx))
 	})
 
 	t.Run("Unrecognised cookie credential is rejected", func(t *testing.T) {

@@ -214,20 +214,12 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		}
 
 		if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
-			clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
-			if err == nil {
-				return clients, claims, nil
-			}
-			if errors.Is(err, authTypes.ErrNoCredentials) {
-				continue // SSO had nothing to authenticate with
-			}
-			return nil, nil, err // invalid credentials: fail
+			return s.authenticateSSO(ctx, authorizationCredential.value, req)
 		}
 
 		if s.Modes[Client] &&
 			(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
 				strings.HasPrefix(authorizationCredential.value, "Basic ")) {
-			// A presented client credential decides the outcome; it never falls through.
 			return s.authenticateClient(ctx, authorizationCredential.value)
 		}
 
@@ -262,14 +254,7 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		}
 
 		if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
-			clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
-			if err == nil {
-				return clients, claims, nil
-			}
-			if errors.Is(err, authTypes.ErrNoCredentials) {
-				continue
-			}
-			return nil, nil, err
+			return s.authenticateSSO(ctx, authorizationCredential.value, req)
 		}
 
 		if s.Modes[Client] &&
@@ -319,9 +304,6 @@ func (s *gatekeeper) authenticateSSO(
 	claims, err := s.ssoIf.Authorize(authorization)
 
 	if err != nil {
-		if errors.Is(err, authTypes.ErrNoCredentials) {
-			return nil, nil, err
-		}
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
