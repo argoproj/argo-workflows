@@ -145,6 +145,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer "))
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "argo-workflows.readthedocs.io/en/latest/faq")
 	})
 	t.Run("Client", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, nil, clientForAuthorization, "", "", true, resourceCache, time.Minute)

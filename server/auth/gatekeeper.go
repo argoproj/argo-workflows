@@ -88,6 +88,9 @@ type authorizationCredential struct {
 // SelfSubjectReview is remembered.
 const tokenReviewCacheSize = 1000
 
+// errTokenNotValid is the Unauthenticated message that links users to the FAQ.
+const errTokenNotValid = "token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/"
+
 func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, headerIf header.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, resourceCache *cache.ResourceCache, tokenReviewCacheTTL time.Duration) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
@@ -228,10 +231,8 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		if s.Modes[Server] {
 			return s.authenticateServer()
 		}
-		return nil, nil, status.Error(
-			codes.Unauthenticated,
-			"authorization credential does not match any enabled authentication mode",
-		)
+
+		return nil, nil, status.Error(codes.Unauthenticated, errTokenNotValid)
 	}
 
 	//
@@ -269,20 +270,15 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		if s.Modes[Server] {
 			return s.authenticateServer()
 		}
-		return nil, nil, status.Error(
-			codes.Unauthenticated,
-			"cookie credential does not match any enabled authentication mode",
-		)
+
+		return nil, nil, status.Error(codes.Unauthenticated, errTokenNotValid)
 	}
 
 	if s.Modes[Server] {
 		return s.authenticateServer()
 	}
 
-	return nil, nil, status.Error(
-		codes.Unauthenticated,
-		"no active authentication mode matched the request",
-	)
+	return nil, nil, status.Error(codes.Unauthenticated, errTokenNotValid)
 }
 
 func (s *gatekeeper) authenticateClient(ctx context.Context, authorization string) (*servertypes.Clients, *authTypes.Claims, error) {
