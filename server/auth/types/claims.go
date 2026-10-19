@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/go-jose/go-jose/v4/jwt"
+
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 )
 
 type Claims struct {
@@ -59,6 +61,23 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 
 	*c = Claims(localClaim)
 	return nil
+}
+
+// ExprEnv returns the environment that SSO RBAC rules are evaluated against.
+// `groups` is always set, to an empty list for a user without groups, so a rule
+// such as `'admin' in groups` is false for them instead of failing to compile.
+func (c *Claims) ExprEnv() (map[string]any, error) {
+	env, err := jsonutil.Jsonify(c)
+	if err != nil {
+		return nil, err
+	}
+	if env == nil {
+		env = map[string]any{}
+	}
+	if env["groups"] == nil {
+		env["groups"] = []any{}
+	}
+	return env, nil
 }
 
 // GetCustomGroup is responsible for extracting groups based on the
