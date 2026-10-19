@@ -202,6 +202,13 @@ After `argo retry`, a succeeded task's or step's exit hook that has its own `ret
 Previously it ran a new attempt.
 A hook without a `retryStrategy` was not re-run at either version.
 
+### A template `timeout` no longer raises a pod's `activeDeadlineSeconds`
+
+A template's `timeout` now only lowers a pod's `activeDeadlineSeconds` and never raises it ([#17218](https://github.com/argoproj/argo-workflows/pull/17218)).
+Previously, a `timeout` longer than the template's `activeDeadlineSeconds`, the remaining workflow deadline, or an `activeDeadlineSeconds` set by `podSpecPatch` replaced that smaller deadline.
+Pods that relied on this now stop at the smaller deadline and fail with `DeadlineExceeded`.
+If you need the longer deadline, raise or remove the smaller `activeDeadlineSeconds`.
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade
