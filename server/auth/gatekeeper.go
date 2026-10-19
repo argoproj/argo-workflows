@@ -203,47 +203,43 @@ func getAuthHeaders(md metadata.MD) []authorizationCredential {
 
 func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
+	authorizationCredentials := getAuthHeaders(md)
+
 	//
 	// Authorization Header Authentication (excluding cookie-derived credentials)
 	//
-	authorizationCredentials := getAuthHeaders(md)
-	if len(authorizationCredentials) > 0 {
-		for _, authorizationCredential := range authorizationCredentials {
-			if authorizationCredential.fromCookie {
-				continue
-			}
-			if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
-				clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
-				if err == nil {
-					return clients, claims, nil
-				}
-
-				if errors.Is(err, authTypes.ErrNoCredentials) {
-					continue
-				}
-
-				return nil, nil, err
-			}
-
-			if s.Modes[Client] &&
-				(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
-					strings.HasPrefix(authorizationCredential.value, "Basic ")) {
-				clients, claims, err := s.authenticateClient(ctx, authorizationCredential.value)
-				if err == nil {
-					return clients, claims, nil
-				}
-
-				if errors.Is(err, authTypes.ErrNoCredentials) {
-					continue
-				}
-
-				return nil, nil, err
-			}
+	for _, authorizationCredential := range authorizationCredentials {
+		if authorizationCredential.fromCookie || strings.TrimSpace(authorizationCredential.value) == "" {
+			continue
 		}
 
-		// No Authorization header credential authenticated the request.
-		// Fall through to trusted header authentication.
+		if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
+			clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
+			if err == nil {
+				return clients, claims, nil
+			}
+			if errors.Is(err, authTypes.ErrNoCredentials) {
+				continue // SSO had nothing to authenticate with
+			}
+			return nil, nil, err // invalid credentials: fail
+		}
+
+		if s.Modes[Client] &&
+			(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
+				strings.HasPrefix(authorizationCredential.value, "Basic ")) {
+			// A presented client credential decides the outcome; it never falls through.
+			return s.authenticateClient(ctx, authorizationCredential.value)
+		}
+
+		// Non-empty value that no enabled mode recognises (e.g. a k8s Bearer
+		// token with --auth-mode=sso,header). Reject instead of silently
+		// falling back to another identity.
+		return nil, nil, status.Error(
+			codes.Unauthenticated,
+			"authorization credential does not match any enabled authentication mode",
+		)
 	}
+
 	//
 	// Trusted Header Authentication
 	//
@@ -252,50 +248,40 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		if err == nil {
 			return clients, claims, nil
 		}
-
 		if !errors.Is(err, authTypes.ErrNoCredentials) {
 			return nil, nil, err
 		}
 	}
+
 	//
 	// Cookie-based Authorization Authentication
 	//
-	if len(authorizationCredentials) > 0 {
-		for _, authorizationCredential := range authorizationCredentials {
-			if !authorizationCredential.fromCookie {
-				continue
-			}
-			if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
-				clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
-				if err == nil {
-					return clients, claims, nil
-				}
-
-				if errors.Is(err, authTypes.ErrNoCredentials) {
-					continue
-				}
-
-				return nil, nil, err
-			}
-
-			if s.Modes[Client] &&
-				(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
-					strings.HasPrefix(authorizationCredential.value, "Basic ")) {
-				clients, claims, err := s.authenticateClient(ctx, authorizationCredential.value)
-				if err == nil {
-					return clients, claims, nil
-				}
-
-				if errors.Is(err, authTypes.ErrNoCredentials) {
-					continue
-				}
-
-				return nil, nil, err
-			}
+	for _, authorizationCredential := range authorizationCredentials {
+		if !authorizationCredential.fromCookie || strings.TrimSpace(authorizationCredential.value) == "" {
+			continue
 		}
 
-		// No cookie-derived Authorization credential authenticated the request.
-		// Fall through to server authentication.
+		if s.Modes[SSO] && strings.HasPrefix(authorizationCredential.value, sso.Prefix) {
+			clients, claims, err := s.authenticateSSO(ctx, authorizationCredential.value, req)
+			if err == nil {
+				return clients, claims, nil
+			}
+			if errors.Is(err, authTypes.ErrNoCredentials) {
+				continue
+			}
+			return nil, nil, err
+		}
+
+		if s.Modes[Client] &&
+			(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
+				strings.HasPrefix(authorizationCredential.value, "Basic ")) {
+			return s.authenticateClient(ctx, authorizationCredential.value)
+		}
+
+		return nil, nil, status.Error(
+			codes.Unauthenticated,
+			"cookie credential does not match any enabled authentication mode",
+		)
 	}
 
 	if s.Modes[Server] {

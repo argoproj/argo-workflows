@@ -388,6 +388,103 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))
 		ssoIf.AssertNotCalled(t, "Authorize", mock.Anything)
 	})
+
+	t.Run("Unrecognised Authorization with SSO+Header is rejected, not header identity", func(t *testing.T) {
+		// A k8s bearer token (no sso prefix) when client mode is off.
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
+		ssoIf := &ssomocks.Interface{}
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "Bearer k8s-token", "x-forwarded-user", "header-user"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		ssoIf.AssertNotCalled(t, "Authorize", mock.Anything, mock.Anything)
+		headerIf.AssertNotCalled(t, "Authorize", mock.Anything)
+	})
+
+	t.Run("Unrecognised Authorization with Server enabled is rejected, not server SA", func(t *testing.T) {
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, &headermocks.Interface{}, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		_, err = g.Context(x(logging.TestContext(t.Context()), "garbage"))
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	})
+
+	for _, empty := range []string{"", "   "} {
+		t.Run("Empty Authorization "+`"`+empty+`"`+" falls through to Header", func(t *testing.T) {
+			headerIf := &headermocks.Interface{}
+			headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
+			headerIf.On("IsRBACEnabled").Return(false)
+			g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+			require.NoError(t, err)
+			ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", empty, "x-forwarded-user", "header-user"))
+			ctx, err = g.Context(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, GetClaims(ctx))
+			assert.Equal(t, "header-user", GetClaims(ctx).Subject)
+		})
+	}
+
+	t.Run("SSO failure does not fall back to Server", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil, errors.New("invalid credentials"))
+		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer v2:invalid"))
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	})
+
+	t.Run("Client token rejected does not fall back to Header", func(t *testing.T) {
+		rejecting, _ := reviewingClientForAuthorization(apierrors.NewUnauthorized("Unauthorized"))
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
+		g, err := NewGatekeeper(Modes{Client: true, Header: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, rejecting, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "Bearer fake", "x-forwarded-user", "header-user"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		headerIf.AssertNotCalled(t, "Authorize", mock.Anything)
+	})
+
+	t.Run("Cookie SSO failure does not fall back to Server", func(t *testing.T) {
+		headerIf := &headermocks.Interface{}
+		headerIf.On("Authorize", mock.Anything).Return(nil, authTypes.ErrNoCredentials)
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil, errors.New("invalid credentials"))
+		g, err := NewGatekeeper(Modes{SSO: true, Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer v2:invalid"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	})
+
+	t.Run("Cookie with no credentials falls through to Server", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil, authTypes.ErrNoCredentials)
+		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer v2:whatever"))
+		ctx, err = g.Context(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, wfClient, GetWfClient(ctx))
+	})
+
+	t.Run("Unrecognised cookie credential is rejected", func(t *testing.T) {
+		// Encodes the current decision: the cookie loop rejects values no
+		// enabled mode handles. If you change it to `continue`, this should
+		// instead expect success via Server.
+		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, nil, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer k8s-token"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	})
 	t.Run("SSO+RBAC,precedence=1", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
