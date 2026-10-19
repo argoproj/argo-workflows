@@ -703,50 +703,35 @@ func TestBuild_OffloadContainerArgs(t *testing.T) {
 	assert.True(t, hasMount(mainCtr, envConfigMountName), "main container must mount the offload ConfigMap")
 }
 
-// templateTimeoutStubDeps is the build-test stub with a node and a fixed
-// template timeout deadline, so build applies the template timeout.
-type templateTimeoutStubDeps struct {
-	*stubPodBuilderDeps
-	templateDeadline *time.Time
-}
-
-func (d *templateTimeoutStubDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) {
-	return &wfv1.NodeStatus{}, nil
-}
-
-func (d *templateTimeoutStubDeps) checkTemplateTimeouts(_ *wfv1.Template, _ *wfv1.NodeStatus, _ time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	return d.templateDeadline, nil, nil
-}
-
 // TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds asserts the
 // template timeout lowers the pod's activeDeadlineSeconds to the time left
 // before the timeout, and never raises an activeDeadlineSeconds that is already
-// smaller, whichever source set it.
+// smaller, whichever source set it. The node is pending and started startedAgo,
+// so its template times out timeout after that.
 func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 	now := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
-	inAMinute := now.Add(time.Minute)
-	inASecond := now.Add(time.Second)
-	passed := now.Add(-10 * time.Second)
 	wfDeadline := now.Add(30 * time.Second)
 	tests := []struct {
 		name             string
 		tmplADS          string
 		workflowDeadline *time.Time
 		podSpecPatch     string
-		templateDeadline *time.Time
+		timeout          string
+		startedAgo       time.Duration
 		wantADS          int64
 		wantErr          string
 	}{
 		{name: "no template timeout", tmplADS: "30", wantADS: 30},
-		{name: "template activeDeadlineSeconds smaller than timeout is kept", tmplADS: "30", templateDeadline: &inAMinute, wantADS: 30},
-		{name: "template activeDeadlineSeconds larger than timeout is clamped", tmplADS: "300", templateDeadline: &inAMinute, wantADS: 60},
-		{name: "no activeDeadlineSeconds takes the timeout", templateDeadline: &inAMinute, wantADS: 60},
-		{name: "workflow deadline smaller than timeout is kept", workflowDeadline: &wfDeadline, templateDeadline: &inAMinute, wantADS: 30},
-		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, templateDeadline: &inAMinute, wantADS: 30},
-		{name: "timeout nearly expired", tmplADS: "30", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
-		{name: "timeout nearly expired with a smaller activeDeadlineSeconds", tmplADS: "1", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
-		{name: "timeout passed", tmplADS: "30", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
-		{name: "timeout passed longer ago than activeDeadlineSeconds", tmplADS: "5", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
+		{name: "template activeDeadlineSeconds smaller than timeout is kept", tmplADS: "30", timeout: "1m", wantADS: 30},
+		{name: "template activeDeadlineSeconds larger than timeout is clamped", tmplADS: "300", timeout: "1m", wantADS: 60},
+		{name: "time already spent counts against the timeout", tmplADS: "300", timeout: "1m", startedAgo: 20 * time.Second, wantADS: 40},
+		{name: "no activeDeadlineSeconds takes the timeout", timeout: "1m", wantADS: 60},
+		{name: "workflow deadline smaller than timeout is kept", workflowDeadline: &wfDeadline, timeout: "1m", wantADS: 30},
+		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, timeout: "1m", wantADS: 30},
+		{name: "timeout nearly expired", tmplADS: "30", timeout: "1s", wantErr: "node exceeded its deadline"},
+		{name: "timeout nearly expired with a smaller activeDeadlineSeconds", tmplADS: "1", timeout: "1s", wantErr: "node exceeded its deadline"},
+		{name: "timeout passed", tmplADS: "30", timeout: "1m", startedAgo: 70 * time.Second, wantErr: ErrTimeout.Error()},
+		{name: "timeout passed longer ago than activeDeadlineSeconds", tmplADS: "5", timeout: "1m", startedAgo: 70 * time.Second, wantErr: ErrTimeout.Error()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -756,9 +741,11 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 				tmpl.ActiveDeadlineSeconds = intstr.ParsePtr(tt.tmplADS)
 			}
 			tmpl.PodSpecPatch = tt.podSpecPatch
+			tmpl.Timeout = tt.timeout
 			main := tmpl.Container.DeepCopy()
 
-			deps := &templateTimeoutStubDeps{stubPodBuilderDeps: newStubDeps(), templateDeadline: tt.templateDeadline}
+			deps := newStubDeps()
+			deps.node = &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: metav1.NewTime(now.Add(-tt.startedAgo))}
 			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
 			pb.in.now = now
 			pb.in.computedWorkflowDeadline = tt.workflowDeadline

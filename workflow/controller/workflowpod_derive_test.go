@@ -197,6 +197,7 @@ func TestBuild_Deadlines(t *testing.T) {
 		{name: "exit handler", tmplADS: "30", workflowDeadline: &passed, computedWorkflowDeadline: &passed, onExit: true, wantADS: new(int64(30))},
 		{name: "execution deadline", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, executionDeadline: executionDeadline, wantADS: new(int64(600)), wantDeadline: executionDeadline},
 		{name: "template timeout", tmplADS: "300", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, templateDeadline: &templateDeadline, wantADS: new(int64(120)), wantDeadline: wfDeadline},
+		{name: "template timeout longer than activeDeadlineSeconds", tmplADS: "30", templateDeadline: &templateDeadline, wantADS: new(int64(30))},
 		{name: "debug pause before clears activeDeadlineSeconds", tmplADS: "30", debugPauseEnv: "ARGO_DEBUG_PAUSE_BEFORE"},
 		{name: "debug pause after clears activeDeadlineSeconds", tmplADS: "30", debugPauseEnv: "ARGO_DEBUG_PAUSE_AFTER"},
 	}
