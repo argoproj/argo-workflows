@@ -23,6 +23,7 @@ This document outlines environment variables that can be used to customize behav
 | `ARGO_AGENT_PATCH_RATE`                  | `time.Duration`     | `DEFAULT_REQUEUE_TIME`                                                                      | Rate that the Argo Agent will patch the workflow task-set.                                                                                                                                                                                                               |
 | `ARGO_AGENT_CPU_LIMIT`                   | `resource.Quantity` | `100m`                                                                                      | CPU resource limit for the agent.                                                                                                                                                                                                                                        |
 | `ARGO_AGENT_MEMORY_LIMIT`                | `resource.Quantity` | `256m`                                                                                      | Memory resource limit for the agent.                                                                                                                                                                                                                                     |
+| `COMPLETED_REQUEUE_TIME_MS` | `int` | `DEFAULT_REQUEUE_TIME` | Prototype minimum delay in milliseconds before reconciling after a completion, currently only for HTTP and executor-plugin nodes in a WorkflowTaskSet ([details](#completed_requeue_time_ms)). |
 | `ARGO_POD_STATUS_CAPTURE_FINALIZER`      | `bool`              | `false`                                                                                     | The finalizer blocks the deletion of pods until the controller captures their status.
 | `BUBBLE_ENTRY_TEMPLATE_ERR`              | `bool`              | `true`                                                                                      | Whether to bubble up template errors to workflow.                                                                                                                                                                                                                        |
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
@@ -97,6 +98,31 @@ spec:
             - name: WORKFLOW_GC_PERIOD
               value: 30s
 ```
+
+### COMPLETED_REQUEUE_TIME_MS
+
+This opt-in prototype sets the minimum delay before reconciling a workflow after a completion, currently applying only to HTTP and executor-plugin nodes whose results arrive through a [WorkflowTaskSet](http-template.md#argo-agent-rbac).
+Use it for short nodes that spend longer waiting for reconciliation than running.
+Specify a positive integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.
+`DEFAULT_REQUEUE_TIME` caps the completion delay and remains the delay for all other updates, including pod and WorkflowTaskResult completions.
+Leave the setting unset or empty to keep normal rate limiting.
+The controller fails to start if the value is zero, negative, not an integer, or too large to represent as an internal duration.
+
+The agent batches results on its own ticker at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
+Results can wait up to that patch interval before reaching the controller; this setting does not change agent batching.
+To see much benefit, lower `ARGO_AGENT_PATCH_RATE` alongside this setting, for example:
+
+```yaml
+env:
+  - name: COMPLETED_REQUEUE_TIME_MS
+    value: "250"
+  - name: ARGO_AGENT_PATCH_RATE
+    value: "1s"
+```
+
+This is a completion scheduling delay, not a minimum interval between all reconciliations: other events may enqueue a workflow sooner.
+The prototype has no per-workflow throttling, so a large executor-plugin fan-out can reconcile at roughly the configured rate, increasing load on the controller, API server and etcd.
+Gains may vary under load: if the workflow informer is behind the controller's last write, the controller rejects the reconcile as outdated and waits the full `DEFAULT_REQUEUE_TIME` before retrying.
 
 ## Executor
 
