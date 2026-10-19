@@ -1,9 +1,8 @@
 codecov:
   notify:
     # both unit-test jobs run under the same condition, so coverage always
-    # arrives as two uploads; do not evaluate statuses until both are in,
-    # or a report codecov received but failed to process leaves the project
-    # status comparing the Windows flag alone against base (~-10%)
+    # arrives as two uploads; do not evaluate statuses until both are in, or
+    # the project status compares the Windows flag alone against base
     after_n_builds: 2
 comment:
   after_n_builds: 2
