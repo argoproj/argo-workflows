@@ -77,6 +77,7 @@ func newPodLayout(initless bool) podLayout {
 // outputs.
 type legacyLayout struct{}
 
+// auxContainer is the `wait` container.
 func (legacyLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
 	return pb.newWaitContainer(ctx, tmpl, execCfg)
 }
@@ -92,6 +93,8 @@ func (legacyLayout) mainNeedsTemplateEnv(hasAuxCtr bool) bool {
 	return false
 }
 
+// initContainers are the standard init container and one per input artifact
+// plugin.
 func (legacyLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error) {
 	return pb.newInitContainers(ctx, tmpl, execCfg)
 }
@@ -104,6 +107,8 @@ func (legacyLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
 	return nil
 }
 
+// wireArtifactPlugins adds the plugin init containers and the sidecars `wait`
+// drives.
 func (legacyLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error {
 	return pb.deps.addArtifactPluginsLegacy(ctx, pod, tmpl, config, execCfg)
 }
@@ -116,6 +121,7 @@ func (legacyLayout) decorateUserContainer(c *apiv1.Container, hasAuxCtr bool) {}
 // argoexec binary reaches user containers through an image volume.
 type initlessLayout struct{}
 
+// auxContainer is the `supervisor` container.
 func (initlessLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
 	return pb.newSupervisorContainer(ctx, tmpl, execCfg)
 }
@@ -136,9 +142,10 @@ func (initlessLayout) mainNeedsTemplateEnv(hasAuxCtr bool) bool {
 	return !hasAuxCtr
 }
 
+// initContainers is always empty: init-less pods schedule with zero init
+// containers, and the supervisor performs the pre-main responsibilities as a
+// regular container.
 func (initlessLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error) {
-	// Init-less pods schedule with zero init containers; the supervisor performs
-	// the pre-main responsibilities as a regular container.
 	return nil, nil
 }
 
@@ -150,6 +157,7 @@ func (initlessLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
 	return []apiv1.Volume{argoBinVolume(pb.in.executorImage, pb.in.executorImagePullPolicy)}
 }
 
+// wireArtifactPlugins adds the supervisor-driven plugin sidecars.
 func (initlessLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error {
 	return pb.deps.addArtifactPluginsInitless(ctx, pod, tmpl, execCfg)
 }

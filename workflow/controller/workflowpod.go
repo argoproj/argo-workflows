@@ -1012,6 +1012,9 @@ func (woc *wfOperationCtx) artifactSidecarContainer(ctx context.Context, tmpl *w
 	return ctr, nil
 }
 
+// artifactInitContainer builds the legacy layout's init container that runs
+// driver's artifact plugin to stage input artifacts, using the argoexec binary
+// the standard init container copied to /var/run/argo.
 func (woc *wfOperationCtx) artifactInitContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig, driver config.ArtifactDriver) (*apiv1.Container, error) {
 	execCmd := []string{"artifact-plugin-init", "--plugin-name", string(driver.Name)}
 	return woc.artifactContainer(ctx, tmpl, execCfg, driver, common.ArtifactPluginInitPrefix, legacyArgoexecBinaryPath, execCmd)
@@ -1053,6 +1056,8 @@ func (woc *wfOperationCtx) newArtifactPluginInitContainers(ctx context.Context, 
 	return initContainers, nil
 }
 
+// newWaitContainer builds the legacy layout's `wait` container, which
+// observes main and collects its outputs, logs and artifacts.
 func (pb *podBuilder) newWaitContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
 	ctr := buildExecContainer(common.WaitContainerName, tmpl, execCfg)
 	ctr.Command = append([]string{"argoexec", "wait"}, pb.deps.getExecutorLogOpts(ctx)...)
