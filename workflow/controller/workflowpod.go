@@ -954,13 +954,17 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		return nil, scheduleErr
 	}
 
-	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || pb.in.now.Sub(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+	if templateDeadline != nil {
 		newActiveDeadlineSeconds := int64(templateDeadline.Sub(pb.in.now).Seconds())
+		// Check the timeout first, so a smaller activeDeadlineSeconds can't
+		// keep a pod whose timeout has already run out.
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
-		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+		if pod.Spec.ActiveDeadlineSeconds == nil || newActiveDeadlineSeconds < *pod.Spec.ActiveDeadlineSeconds {
+			log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
+			pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+		}
 	}
 
 	// build is pure: the pod is fully constructed but not yet created. submitPod
