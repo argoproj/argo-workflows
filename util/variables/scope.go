@@ -39,6 +39,13 @@ func (s *Scope) AsStringMap() map[string]string {
 	return out
 }
 
+// Merge copies every entry of other, with its skipped mark, into s, as
+// setting each of them on s in turn would.
+func (s *Scope) Merge(other *Scope) {
+	maps.Copy(s.data, other.data)
+	maps.Copy(s.skipped, other.skipped)
+}
+
 func (s *Scope) IsSkipped(key string) bool {
 	return s.skipped[key]
 }

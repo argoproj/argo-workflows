@@ -5964,8 +5964,7 @@ spec:
                   for this Workflow
                 properties:
                   mutexes:
-                    description: 'v3.6 and after: Mutexes holds the list of Mutex
-                      lock details'
+                    description: Mutexes holds the list of Mutex lock details
                     items:
                       description: Mutex holds Mutex configuration
                       properties:
@@ -5983,8 +5982,7 @@ spec:
                       type: object
                     type: array
                   semaphores:
-                    description: 'v3.6 and after: Semaphores holds the list of Semaphores
-                      configuration'
+                    description: Semaphores holds the list of Semaphores configuration
                     items:
                       description: SemaphoreRef is a reference of Semaphore
                       properties:
@@ -38348,8 +38346,7 @@ spec:
                         for this template
                       properties:
                         mutexes:
-                          description: 'v3.6 and after: Mutexes holds the list of
-                            Mutex lock details'
+                          description: Mutexes holds the list of Mutex lock details
                           items:
                             description: Mutex holds Mutex configuration
                             properties:
@@ -38367,8 +38364,7 @@ spec:
                             type: object
                           type: array
                         semaphores:
-                          description: 'v3.6 and after: Semaphores holds the list
-                            of Semaphores configuration'
+                          description: Semaphores holds the list of Semaphores configuration
                           items:
                             description: SemaphoreRef is a reference of Semaphore
                             properties:

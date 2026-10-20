@@ -1,7 +1,5 @@
 # Default Workflow Spec
 
-> v2.7 and after
-
 ## Introduction
 
 Default Workflow spec values can be set on [the controller config map](./workflow-controller-configmap.md) that will apply to all Workflows executed from said controller.

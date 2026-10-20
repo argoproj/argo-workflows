@@ -1,7 +1,5 @@
 # Node Field Selectors
 
-> v2.8 and after
-
 ## Introduction
 
 The resume, stop and retry Argo CLI and API commands support a `--node-field-selector` parameter to allow the user to select a subset of nodes for the command to apply to.
