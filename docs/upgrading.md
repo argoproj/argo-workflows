@@ -202,6 +202,18 @@ After `argo retry`, a succeeded task's or step's exit hook that has its own `ret
 Previously it ran a new attempt.
 A hook without a `retryStrategy` was not re-run at either version.
 
+### Workflow-level `templateDefaults` now apply to the agent pod
+
+The agent pod, which runs a workflow's `http` and `plugin` nodes, ignored `spec.templateDefaults` entirely ([#15869](https://github.com/argoproj/argo-workflows/issues/15869)).
+Scheduling and metadata defaults that every other pod in the workflow received were not applied to it.
+
+Workflow-level `templateDefaults` are now merged into the agent pod.
+Only the fields that are not tied to a template type take effect: scheduling constraints such as `nodeSelector`, `tolerations` and `affinity`, together with `metadata` and the other type-agnostic fields.
+The `container`, `script`, `http`, `plugin` and `resource` defaults are dropped, because one agent pod is shared by every `http` and `plugin` node in the workflow.
+
+If your `templateDefaults` carries scheduling constraints that only your step pods can satisfy, the agent pod is now subject to them too and may stay `Pending`.
+Move those constraints onto the templates that need them, or widen them so the agent pod can also be scheduled.
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade
