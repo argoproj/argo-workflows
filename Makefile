@@ -704,9 +704,12 @@ else
 	# packages' test binaries, so the directory holds counts for them too).
 	go tool covdata textfmt -i=$(COVERAGE_DIR) -o $(COVERAGE_PROFILE) \
 		-pkg=$$(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... | paste -sd, -)
-	go test -covermode=atomic -coverprofile=$(COVERAGE_DIR)/untested.out \
-		$$(go list -f '{{if not (or .TestGoFiles .XTestGoFiles)}}{{.ImportPath}}{{end}}' ./...) > /dev/null
-	tail -n +2 $(COVERAGE_DIR)/untested.out >> $(COVERAGE_PROFILE)
+	# With no packages, go test would test the current directory, so skip it.
+	pkgs=$$(go list -f '{{if not (or .TestGoFiles .XTestGoFiles)}}{{.ImportPath}}{{end}}' ./...); \
+	if [ -n "$$pkgs" ]; then \
+		go test -covermode=atomic -coverprofile=$(COVERAGE_DIR)/untested.out $$pkgs > /dev/null && \
+		tail -n +2 $(COVERAGE_DIR)/untested.out >> $(COVERAGE_PROFILE); \
+	fi
 endif
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
