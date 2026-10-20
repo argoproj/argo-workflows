@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -177,20 +178,6 @@ func TestUnmarshalJSON(t *testing.T) {
 	}
 }
 
-func TestClaimsJSON(t *testing.T) {
-	claims := &Claims{
-		Groups: []string{},
-	}
-
-	data, err := json.Marshal(claims)
-	require.NoError(t, err)
-
-	var result map[string]any
-	require.NoError(t, json.Unmarshal(data, &result))
-
-	assert.Equal(t, []any{}, result["groups"])
-}
-
 func TestGetCustomGroup(t *testing.T) {
 	t.Run("NoCustomGroupSet", func(t *testing.T) {
 		claims := &Claims{}
@@ -257,5 +244,18 @@ func TestGetUserInfoGroups(t *testing.T) {
 		groups, err := claims.GetUserInfoGroups(ctx, httpClient, "Bearer fake", "https://fake.okta.com", "/user-info")
 		assert.Equal(t, []string{"Everyone"}, groups)
 		require.NoError(t, err)
+	})
+}
+
+func TestClaims_GroupsSerialization(t *testing.T) {
+	t.Run("empty non-nil groups are kept", func(t *testing.T) {
+		v, err := jsonutil.Jsonify(&Claims{Groups: []string{}})
+		require.NoError(t, err)
+		assert.Contains(t, v, "groups")
+	})
+	t.Run("nil groups are omitted", func(t *testing.T) {
+		v, err := jsonutil.Jsonify(&Claims{})
+		require.NoError(t, err)
+		assert.NotContains(t, v, "groups")
 	})
 }

@@ -11,7 +11,7 @@ import (
 
 type Claims struct {
 	jwt.Claims
-	Groups                  []string       `json:"groups"`
+	Groups                  []string       `json:"groups,omitzero"`
 	Email                   string         `json:"email,omitempty"`
 	EmailVerified           bool           `json:"-"`
 	Name                    string         `json:"name,omitempty"`
