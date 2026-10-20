@@ -81,6 +81,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 			tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 			require.NoError(t, err)
 			we := WorkflowExecutor{
+				paths: PodPaths(),
 				Process: &Process{
 					Tracing: tracing,
 				},
@@ -112,11 +113,12 @@ func TestSaveParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: &mockRuntimeExecutor,
 		Process: &Process{
-			PodName:         fakePodName,
-			ClientSet:       fakeClientset,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: &mockRuntimeExecutor,
+			PodName:   fakePodName,
+			ClientSet: fakeClientset,
+			Namespace: fakeNamespace,
 		},
 		Template: templateWithOutParam,
 	}
@@ -154,6 +156,7 @@ func TestIsBaseImagePath(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
+		paths:    PodPaths(),
 		Process:  &Process{},
 		Template: templateWithSameDir,
 	}
@@ -196,6 +199,7 @@ func TestIsBaseImagePath(t *testing.T) {
 func TestIsBaseImagePathInitless(t *testing.T) {
 	newWe := func() *WorkflowExecutor {
 		return &WorkflowExecutor{
+			paths:   PodPaths(),
 			Process: &Process{},
 			Template: wfv1.Template{
 				Container: &corev1.Container{},
@@ -250,9 +254,10 @@ func TestStageArchiveFileInitlessOverlap(t *testing.T) {
 
 	newWe := func(rt *mocks.ContainerRuntimeExecutor) *WorkflowExecutor {
 		return &WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: rt,
 			Process: &Process{
-				RuntimeExecutor: rt,
-				Tracing:         tr,
+				Tracing: tr,
 			},
 			Template: wfv1.Template{
 				Inputs:  wfv1.Inputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
@@ -306,11 +311,12 @@ func TestDefaultParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: &mockRuntimeExecutor,
 		Process: &Process{
-			PodName:         fakePodName,
-			ClientSet:       fakeClientset,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: &mockRuntimeExecutor,
+			PodName:   fakePodName,
+			ClientSet: fakeClientset,
+			Namespace: fakeNamespace,
 		},
 		Template: templateWithOutParam,
 	}
@@ -339,11 +345,12 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: &mockRuntimeExecutor,
 		Process: &Process{
-			PodName:         fakePodName,
-			ClientSet:       fakeClientset,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: &mockRuntimeExecutor,
+			PodName:   fakePodName,
+			ClientSet: fakeClientset,
+			Namespace: fakeNamespace,
 		},
 		Template: templateWithOutParam,
 	}
@@ -570,11 +577,12 @@ func TestSaveArtifacts(t *testing.T) {
 	}{
 		{
 			workflowExecutor: &WorkflowExecutor{
+				paths:           PodPaths(),
+				RuntimeExecutor: &mockRuntimeExecutor,
 				Process: &Process{
 					PodName:          fakePodName,
 					ClientSet:        fakeClientset,
 					Namespace:        fakeNamespace,
-					RuntimeExecutor:  &mockRuntimeExecutor,
 					taskResultClient: mockTaskResultClient,
 					Tracing:          tracing,
 				},
@@ -584,11 +592,12 @@ func TestSaveArtifacts(t *testing.T) {
 		},
 		{
 			workflowExecutor: &WorkflowExecutor{
+				paths:           PodPaths(),
+				RuntimeExecutor: &mockRuntimeExecutor,
 				Process: &Process{
 					PodName:          fakePodName,
 					ClientSet:        fakeClientset,
 					Namespace:        fakeNamespace,
-					RuntimeExecutor:  &mockRuntimeExecutor,
 					taskResultClient: mockTaskResultClient,
 					Tracing:          tracing,
 				},
@@ -598,11 +607,12 @@ func TestSaveArtifacts(t *testing.T) {
 		},
 		{
 			workflowExecutor: &WorkflowExecutor{
+				paths:           PodPaths(),
+				RuntimeExecutor: &mockRuntimeExecutor,
 				Process: &Process{
 					PodName:          fakePodName,
 					ClientSet:        fakeClientset,
 					Namespace:        fakeNamespace,
-					RuntimeExecutor:  &mockRuntimeExecutor,
 					taskResultClient: mockTaskResultClient,
 					Tracing:          tracing,
 				},
@@ -642,7 +652,7 @@ func TestMonitorProgress(t *testing.T) {
 		nil,
 		taskResults,
 		nil,
-		&mocks.ContainerRuntimeExecutor{},
+		func(TaskPaths) ContainerRuntimeExecutor { return &mocks.ContainerRuntimeExecutor{} },
 		ProcessConfig{
 			PodName:                      fakePodName,
 			PodUID:                       fakePodUID,
@@ -652,14 +662,14 @@ func TestMonitorProgress(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	we := process.NewExecutor(TaskConfig{
+	we := process.NewExecutor(Task{Config: TaskConfig{
 		WorkflowName:        fakeWorkflow,
 		WorkflowUID:         fakeWorkflowUID,
 		NodeID:              fakeNodeID,
 		Template:            wfv1.Template{},
 		IncludeScriptOutput: false,
 		Deadline:            time.Now(),
-	})
+	}, Paths: PodPaths()})
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -689,9 +699,10 @@ func TestSaveLogs(t *testing.T) {
 			},
 		}
 		we := WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: &mockRuntimeExecutor,
 			Process: &Process{
-				RuntimeExecutor: &mockRuntimeExecutor,
-				Tracing:         tracing,
+				Tracing: tracing,
 			},
 			Template: templateWithArchiveLogs,
 		}
@@ -714,9 +725,10 @@ func TestSaveLogs(t *testing.T) {
 		rt.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).
 			Return((io.ReadCloser)(nil), os.ErrNotExist)
 		we := WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: rt,
 			Process: &Process{
-				RuntimeExecutor: rt,
-				Tracing:         tr,
+				Tracing: tr,
 			},
 			Template: wfv1.Template{ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
 		}
@@ -747,8 +759,9 @@ func TestReportOutputs(t *testing.T) {
 		tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 		require.NoError(t, err)
 		we := WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: &mockRuntimeExecutor,
 			Process: &Process{
-				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
 				Tracing:          tracing,
 			},
@@ -904,13 +917,28 @@ func TestWaitMainContainers(t *testing.T) {
 		rt := &mocks.ContainerRuntimeExecutor{}
 		rt.On("Wait", mock.Anything, mock.Anything).Return(nil)
 		we := &WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: rt,
 			Process: &Process{
-				PodName:         fakePodName,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: rt,
+				PodName:   fakePodName,
+				Namespace: fakeNamespace,
 			},
 		}
 		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}))
 		rt.AssertExpectations(t)
 	})
+}
+
+// A worker's tasks each need their own runtime; one built from anything but
+// the task's paths would read every task's outputs from the same place.
+func TestNewExecutor_BuildsRuntimeFromTaskPaths(t *testing.T) {
+	var got TaskPaths
+	p := &Process{newRuntime: func(paths TaskPaths) ContainerRuntimeExecutor {
+		got = paths
+		return &mocks.ContainerRuntimeExecutor{}
+	}}
+	want, err := WorkerPaths("/w", "node-1")
+	require.NoError(t, err)
+	p.NewExecutor(Task{Paths: want})
+	assert.Equal(t, want, got)
 }
