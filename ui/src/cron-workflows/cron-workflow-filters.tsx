@@ -68,8 +68,8 @@ export function CronWorkflowFilters({cronWorkflows, namespace, labels, states, o
                             onChange(namespace, labels, selected);
                         }}
                         items={[
-                            {name: 'Running', count: 0},
-                            {name: 'Suspended', count: 1}
+                            {name: 'Running', count: 0, icon: 'fa-clock'},
+                            {name: 'Suspended', count: 1, icon: 'fa-pause'}
                         ]}
                         type='state'
                     />
