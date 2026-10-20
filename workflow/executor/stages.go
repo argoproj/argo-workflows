@@ -18,6 +18,17 @@ import (
 
 // Prepare-phase stages.
 var (
+	// checkWorker fails a worker task the worker cannot run, before any
+	// work is done.
+	checkWorker = Stage{Name: "check-worker", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.checkWorker()
+	}}
+	// createTaskDirs gives a worker's task an empty tree under its root. A
+	// retried node reuses its node ID, so anything left from the last
+	// attempt is removed first.
+	createTaskDirs = Stage{Name: "create-task-dirs", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.createTaskDirs()
+	}}
 	// installArgoexec copies the argoexec binary into the shared volume and
 	// writes the template: the legacy init container's job. The init-less
 	// layout delivers the binary via an image volume and needs only
@@ -51,6 +62,11 @@ var (
 	initializeOutput = Stage{Name: "initialize-output", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		we.InitializeOutput(context.WithoutCancel(ctx))
 		return nil
+	}}
+	// runMain runs main in this process (worker layout), where waitMain
+	// waits for main's container (pod layouts).
+	runMain = Stage{Name: "run-main", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.runMain(ctx)
 	}}
 	waitMain = Stage{Name: "wait", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.Wait(ctx)
@@ -95,6 +111,10 @@ var (
 	finalizeOutput = Stage{Name: "finalize-output", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		we.FinalizeOutput(ctx)
 		return nil
+	}}
+	// removeTaskRoot removes a worker task's own files once it is done.
+	removeTaskRoot = Stage{Name: "remove-task-root", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.removeTaskRoot()
 	}}
 )
 

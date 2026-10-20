@@ -543,10 +543,10 @@ spans:
     parents: [SaveArtifact]
   - name: CaptureScriptResult
     description: Capturing script output as a result
-    parents: [RunWaitContainer, RunSupervisorContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer, RunWorkerTask]
   - name: CreateTaskResult
     description: Creating the WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
+    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer, RunWorkerTask]
   - name: CreateWorkflowPod
     description: Creating a workflow pod for a node
     parents: [Node]
@@ -559,7 +559,7 @@ spans:
       - name: ArtifactPath
   - name: LoadArtifacts
     description: Load the artifacts
-    parents: [RunInitContainer, RunSupervisorContainer]
+    parents: [RunInitContainer, RunSupervisorContainer, RunWorkerTask]
   - name: Node
     description: One node in the DAG of a workflow
     attributes:
@@ -581,10 +581,10 @@ spans:
     deterministic: true
   - name: PatchTaskResult
     description: Patching the WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
+    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer, RunWorkerTask]
   - name: PatchTaskResultLabels
     description: Patching the labels of WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
+    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer, RunWorkerTask]
   - name: PersistUpdates
     description: Persisting workflow status updates to Kubernetes
     parents: [Workflow]
@@ -630,6 +630,12 @@ spans:
     attributes:
       - name: WorkflowName
       - name: WorkflowNamespace
+  - name: RunWorkerTask
+    description: Run one task's whole flow in a worker process (no command runs a worker yet)
+    root: true
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
   - name: RunWorkload
     description: This is where your workload will appear if it emits traces
     parents: [RunMainContainer]
@@ -641,7 +647,7 @@ spans:
     parents: [SaveArtifacts]
   - name: SaveArtifacts
     description: Save all the artifacts
-    parents: [RunWaitContainer, RunSupervisorContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer, RunWorkerTask]
   - name: SaveContainerLogs
     description: Saving logs for a specific container
     parents: [SaveLogs]
@@ -649,10 +655,10 @@ spans:
       - name: ContainerName
   - name: SaveLogs
     description: Saving container logs as artifacts
-    parents: [RunWaitContainer, RunSupervisorContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer, RunWorkerTask]
   - name: StageFiles
     description: Staging script or manifest files for execution
-    parents: [RunInitContainer, RunSupervisorContainer]
+    parents: [RunInitContainer, RunSupervisorContainer, RunWorkerTask]
   - name: StartupCacheSync
     description: Controllers informer caches have been synchronized
     parents: [StartupController]
