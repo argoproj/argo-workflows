@@ -46,8 +46,10 @@ func loadArtifactsFromPlugin(name wfv1.ArtifactPluginName) Stage {
 
 // Run-phase stages.
 var (
+	// initializeOutput writes the placeholder result even after SIGTERM, so
+	// the controller knows outputs are on their way.
 	initializeOutput = Stage{Name: "initialize-output", Run: func(ctx context.Context, we *WorkflowExecutor) error {
-		we.InitializeOutput(ctx)
+		we.InitializeOutput(context.WithoutCancel(ctx))
 		return nil
 	}}
 	waitMain = Stage{Name: "wait", Run: func(ctx context.Context, we *WorkflowExecutor) error {
@@ -81,6 +83,18 @@ var (
 	// report-outputs would overwrite them with the template's empty values.
 	reportLogs = Stage{Name: "report-logs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.ReportOutputsLogs(ctx)
+	}}
+)
+
+// Stages a role runs once its part of the flow is over, even after a
+// panic.
+var (
+	killArtifactSidecars = Stage{Name: "kill-artifact-sidecars", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.KillArtifactSidecars(ctx)
+	}}
+	finalizeOutput = Stage{Name: "finalize-output", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		we.FinalizeOutput(ctx)
+		return nil
 	}}
 )
 

@@ -662,14 +662,15 @@ func TestMonitorProgress(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	we := process.NewExecutor(Task{Config: TaskConfig{
+	cfg := TaskConfig{
 		WorkflowName:        fakeWorkflow,
 		WorkflowUID:         fakeWorkflowUID,
 		NodeID:              fakeNodeID,
 		Template:            wfv1.Template{},
 		IncludeScriptOutput: false,
 		Deadline:            time.Now(),
-	}, Paths: PodPaths()})
+	}
+	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, process.NewTaskResultSink(cfg, false))
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -767,6 +768,7 @@ func TestReportOutputs(t *testing.T) {
 			},
 			Template: templateWithArtifacts,
 		}
+		we.sink = we.NewTaskResultSink(TaskConfig{}, false)
 
 		err = we.ReportOutputs(ctx, artifacts)
 
@@ -939,6 +941,6 @@ func TestNewExecutor_BuildsRuntimeFromTaskPaths(t *testing.T) {
 	}}
 	want, err := WorkerPaths("/w", "node-1")
 	require.NoError(t, err)
-	p.NewExecutor(Task{Paths: want})
+	p.NewExecutor(Task{Paths: want}, nil)
 	assert.Equal(t, want, got)
 }
