@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -248,10 +249,22 @@ func TestZipPreservesModeAndModTime(t *testing.T) {
 		return dir, script
 	}
 
-	assertEntry := func(t *testing.T, entry *zip.File) {
+	assertEntry := func(t *testing.T, entry *zip.File, source string) {
 		t.Helper()
 		require.NotNil(t, entry)
-		require.Equal(t, os.FileMode(0o755), entry.Mode().Perm(), "the executable bit must survive the archive")
+
+		// Compare against the mode the file actually has rather than the 0755
+		// it was written with. Windows has no executable bit — os.Chmod there
+		// only toggles the read-only attribute — so the source is 0666 and this
+		// compares 0666 to 0666, while the modification time below still has
+		// teeth on every platform.
+		info, err := os.Stat(source)
+		require.NoError(t, err)
+		if runtime.GOOS != "windows" {
+			require.Equal(t, os.FileMode(0o755), info.Mode().Perm(), "fixture is not executable, so the assertion below would prove nothing")
+		}
+		require.Equal(t, info.Mode().Perm(), entry.Mode().Perm(), "the archive must carry the file's mode")
+
 		require.True(t, entry.Modified.Equal(modTime), "modification time = %v, want %v", entry.Modified, modTime)
 		// zip.FileInfoHeader leaves Method at Store; losing compression while
 		// fixing the mode would be a silent regression.
@@ -260,12 +273,12 @@ func TestZipPreservesModeAndModTime(t *testing.T) {
 
 	t.Run("single file", func(t *testing.T) {
 		_, script := newSource(t)
-		assertEntry(t, zipEntries(t, script)["run.sh"])
+		assertEntry(t, zipEntries(t, script)["run.sh"], script)
 	})
 
 	t.Run("directory", func(t *testing.T) {
-		dir, _ := newSource(t)
-		assertEntry(t, zipEntries(t, dir)["run.sh"])
+		dir, script := newSource(t)
+		assertEntry(t, zipEntries(t, dir)["run.sh"], script)
 	})
 }
 
@@ -276,6 +289,9 @@ func TestZipPreservesModeAndModTime(t *testing.T) {
 // is a separate decision from carrying file modes — see TestUnzipMaliciousSymlink
 // in workflow/executor for how argo's own extractor treats them today.
 func TestZipLeavesSymlinksAsEmptyEntriesToday(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink on Windows needs a privilege the runner does not have")
+	}
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "target.txt"), []byte("payload"), 0o644))
 	require.NoError(t, os.Symlink("target.txt", filepath.Join(dir, "link.txt")))
