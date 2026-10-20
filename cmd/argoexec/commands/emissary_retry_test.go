@@ -23,9 +23,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 )
 
-type mainDriverFunc func(context.Context, maindriver.Task, maindriver.ResultSink) (int, error)
+type mainDriverFunc func(context.Context, maindriver.Task, maindriver.OutputStager) (int, error)
 
-func (f mainDriverFunc) Run(ctx context.Context, task maindriver.Task, sink maindriver.ResultSink) (int, error) {
+func (f mainDriverFunc) Run(ctx context.Context, task maindriver.Task, sink maindriver.OutputStager) (int, error) {
 	return f(ctx, task, sink)
 }
 
@@ -56,7 +56,7 @@ func TestEmissary_OutputsSurviveRetryStartupFailure(t *testing.T) {
 			ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 			defer cancel()
 			attempts := 0
-			driver := mainDriverFunc(func(ctx context.Context, task maindriver.Task, sink maindriver.ResultSink) (int, error) {
+			driver := mainDriverFunc(func(ctx context.Context, task maindriver.Task, sink maindriver.OutputStager) (int, error) {
 				attempts++
 				code, runErr := (maindriver.Container{}).Run(ctx, task, sink)
 				if attempts == 1 {
@@ -73,7 +73,7 @@ func TestEmissary_OutputsSurviveRetryStartupFailure(t *testing.T) {
 				return code, runErr
 			})
 
-			err = runEmissary(ctx, "main", newPodSource("main", true, command), driver)
+			err = runEmissary(ctx, "main", newPodTask("main", true, command), driver)
 			require.Error(t, err)
 			if scenario == "cancelled" {
 				require.ErrorIs(t, err, context.Canceled)

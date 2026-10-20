@@ -59,14 +59,15 @@ func NewEmissaryCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			containerName := os.Getenv(common.EnvVarContainerName)
 			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
-			return runEmissary(cmd.Context(), containerName, newPodSource(containerName, includeScriptOutput, args), maindriver.Container{})
+			return runEmissary(cmd.Context(), containerName, newPodTask(containerName, includeScriptOutput, args), maindriver.Container{})
 		},
 	}
 }
 
-// newPodSource builds the one task a pod spec delivers, from env and argv.
-func newPodSource(containerName string, includeScriptOutput bool, args []string) maindriver.TaskSource {
-	return &maindriver.PodSource{
+// newPodTask returns a loader for the one task a pod spec delivers, from env
+// and argv. runEmissary calls it once the supervisor (if any) is ready.
+func newPodTask(containerName string, includeScriptOutput bool, args []string) func(context.Context) (maindriver.Task, error) {
+	cfg := maindriver.PodTaskConfig{
 		VarRunArgo:          varRunArgo,
 		TemplateEnv:         os.Getenv(common.EnvVarTemplate),
 		OffloadDir:          common.EnvConfigMountPath,
@@ -77,13 +78,16 @@ func newPodSource(containerName string, includeScriptOutput bool, args []string)
 		Env:                 os.Environ(),
 		IncludeScriptOutput: includeScriptOutput,
 	}
+	return func(ctx context.Context) (maindriver.Task, error) {
+		return maindriver.PodTask(ctx, cfg)
+	}
 }
 
 // runEmissary is the emissary body, with everything the command parses from
 // the environment passed in as parameters so it is testable without env or
 // package-level state.
-func runEmissary(ctx context.Context, containerName string, source maindriver.TaskSource, driver maindriver.MainDriver) error {
-	exitCode := 64 // The exitcode file gets the exit code of the last task.
+func runEmissary(ctx context.Context, containerName string, loadTask func(context.Context) (maindriver.Task, error), driver maindriver.MainDriver) error {
+	exitCode := 64 // The exitcode file gets the exit code of the task.
 	logger := logging.RequireLoggerFromContext(ctx)
 	// Registered before the exit code defer so that it runs after it: releasing
 	// the liveness lock is what tells a dependent the exit code is readable, so
@@ -265,10 +269,10 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 			}
 		}
 
-		// The sink stages outputs only for the main container.
-		var sink maindriver.ResultSink = maindriver.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
+		// The stager stages outputs only for the main container.
+		var stager maindriver.OutputStager = maindriver.PodStager{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
 		for _, out := range outputs {
-			if err := sink.Put(ctx, task.NodeID, out); err != nil {
+			if err := stager.Stage(ctx, task.NodeID, out); err != nil {
 				return code, err
 			}
 		}
@@ -276,32 +280,19 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		return code, cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 	}
 
-	ran := false
-	for {
-		task, ok, err := source.Next(ctx)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			break
-		}
-		ran = true
-		var taskErr error
-		exitCode, taskErr = runTask(ctx, task)
-		if taskErr != nil {
-			return taskErr
-		}
+	task, loadErr := loadTask(ctx)
+	if loadErr != nil {
+		return loadErr
 	}
-	if !ran {
-		return errors.New("no task to run")
-	}
-	return nil
+	var runErr error
+	exitCode, runErr = runTask(ctx, task)
+	return runErr
 }
 
 // outputCollector records an attempt's outputs for staging after retries.
 type outputCollector []maindriver.Output
 
-func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output) error {
+func (c *outputCollector) Stage(_ context.Context, _ string, out maindriver.Output) error {
 	*c = append(*c, out)
 	return nil
 }
@@ -333,7 +324,7 @@ func terminateWhenMainExits(ctx context.Context, logger logging.Logger, template
 // already created /var/run/argo/ctr/<name> earlier in main, which MkdirAll'd
 // the full parent chain.
 func waitForSupervisorReady(ctx context.Context) error {
-	return waitForSupervisorReadyAt(ctx, common.StatusMarkerPath, supervisorHeartbeatTimeout, supervisorStatusPollInterval)
+	return waitForSupervisorReadyAt(ctx, wfexecutor.StatusMarkerPath(argoexecexecutor.PodPaths(varRunArgo)), supervisorHeartbeatTimeout, supervisorStatusPollInterval)
 }
 
 // waitForSupervisorReadyAt is the parameterized form used by tests; production
@@ -418,11 +409,11 @@ func evaluateSupervisorStatus(statusPath string, timeout time.Duration, start ti
 		//nolint:nilerr // deliberate: swallow the transient read error and retry
 		return false, nil
 	}
-	token, message := parseSupervisorStatus(body)
+	token, message := wfexecutor.ParseStatusMarker(body)
 	switch token {
-	case statusReady:
+	case wfexecutor.StatusReady:
 		return true, nil
-	case statusFailed:
+	case wfexecutor.StatusFailed:
 		return true, fmt.Errorf("supervisor reported pre-main failure: %s", message)
 	default:
 		// RUNNING, or a transient/partial read: the supervisor is alive only if
@@ -432,13 +423,6 @@ func evaluateSupervisorStatus(statusPath string, timeout time.Duration, start ti
 		}
 		return false, nil
 	}
-}
-
-// parseSupervisorStatus splits the marker into its first-line token and the
-// remaining message (used by the FAILED token to carry the cause).
-func parseSupervisorStatus(body []byte) (token, message string) {
-	first, rest, _ := strings.Cut(string(body), "\n")
-	return strings.TrimSpace(first), strings.TrimSpace(rest)
 }
 
 // exitCodeFromErr maps the result of waiting on a sub-process to a numeric exit

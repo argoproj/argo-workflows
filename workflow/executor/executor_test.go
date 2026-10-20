@@ -671,14 +671,15 @@ func TestMonitorProgress(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 90*time.Second, process.taskResultRetryTimeout)
 	assert.Equal(t, defaultTaskResultBackoff, process.taskResultBackoff)
-	we := process.NewExecutor(Task{Config: TaskConfig{
+	cfg := TaskConfig{
 		WorkflowName:        fakeWorkflow,
 		WorkflowUID:         fakeWorkflowUID,
 		NodeID:              fakeNodeID,
 		Template:            wfv1.Template{},
 		IncludeScriptOutput: false,
 		Deadline:            time.Now(),
-	}, Paths: PodPaths()})
+	}
+	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, process.NewTaskResultSink(cfg, false))
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -778,6 +779,7 @@ func TestReportOutputs(t *testing.T) {
 			},
 			Template: templateWithArtifacts,
 		}
+		we.sink = we.NewTaskResultSink(TaskConfig{}, false)
 
 		err = we.ReportOutputs(ctx, artifacts)
 
@@ -803,7 +805,7 @@ func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration
 		}
 		return false, nil, nil
 	})
-	return &WorkflowExecutor{
+	we := &WorkflowExecutor{
 		Process: &Process{
 			taskResultClient:          clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
 			Tracing:                   tr,
@@ -813,7 +815,9 @@ func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration
 		},
 		workflow: fakeWorkflow,
 		nodeID:   fakeNodeID,
-	}, clientset
+	}
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: fakeWorkflow, NodeID: fakeNodeID}, false)
+	return we, clientset
 }
 
 func TestDefaultTaskResultBackoff(t *testing.T) {
@@ -847,13 +851,18 @@ func TestTaskResultRetries(t *testing.T) {
 	t.Run("InterimWritesUseTheirOwnLimit", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		we, _ := newFlakyTaskResultExecutor(t, -1, time.Minute)
-		we.interimResultRetryTimeout = 50 * time.Millisecond
+		we.sink.(*taskResultSink).interimRetryTimeout = 50 * time.Millisecond
 
 		start := time.Now()
 		we.InitializeOutput(ctx)
 		assert.Less(t, time.Since(start), 10*time.Second)
 		require.Len(t, we.errors, 1)
 		assert.True(t, apierr.IsServiceUnavailable(we.errors[0]), "got %v", we.errors[0])
+
+		start = time.Now()
+		err := we.sink.Progress(ctx, "1/2")
+		assert.Less(t, time.Since(start), 10*time.Second)
+		require.ErrorContains(t, err, "gave up writing task result after 50ms: ")
 	})
 	t.Run("OutagePastBackoffCapButShorterThanTimeoutSucceeds", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -880,7 +889,7 @@ func TestTaskResultRetries(t *testing.T) {
 		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
 
 		start := time.Now()
-		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, 50*time.Millisecond, func(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 			case <-time.After(10 * time.Second):
@@ -898,7 +907,7 @@ func TestTaskResultRetries(t *testing.T) {
 		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
 
 		attempts := 0
-		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, 50*time.Millisecond, func(ctx context.Context) error {
 			attempts++
 			if attempts == 1 {
 				return apierr.NewServiceUnavailable("API server unavailable")
@@ -921,7 +930,7 @@ func TestTaskResultRetries(t *testing.T) {
 		// still live, so this isn't giving up: the error comes back as is.
 		failure := fmt.Errorf("reading response: %w", context.Canceled)
 		attempts := 0
-		err := we.retryTaskResult(ctx, time.Minute, func(context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, time.Minute, func(context.Context) error {
 			attempts++
 			if attempts == 1 {
 				return apierr.NewServiceUnavailable("API server unavailable")
@@ -1110,6 +1119,6 @@ func TestNewExecutor_BuildsRuntimeFromTaskPaths(t *testing.T) {
 	}}
 	want, err := WorkerPaths("/w", "node-1")
 	require.NoError(t, err)
-	p.NewExecutor(Task{Paths: want})
+	p.NewExecutor(Task{Paths: want}, nil)
 	assert.Equal(t, want, got)
 }
