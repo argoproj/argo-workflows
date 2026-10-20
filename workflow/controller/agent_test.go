@@ -218,6 +218,55 @@ func Test_createAgentPod_alreadyExists(t *testing.T) {
 	assert.Equal(t, podName, pod.Name)
 }
 
+// templateDefaults applies to the agent pod too. Fixes #15869: createAgentPod
+// passed a bare wfv1.Template{} to addSchedulingConstraints and addMetadata, so
+// nothing a user set in templateDefaults ever reached the agent pod that runs
+// their http and plugin nodes.
+func Test_createAgentPod_templateDefaults(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		NodeSelector:      map[string]string{"workload": "agent"},
+		SchedulerName:     "custom-scheduler",
+		PriorityClassName: "high-priority",
+		Tolerations: []apiv1.Toleration{{
+			Key:      "dedicated",
+			Operator: apiv1.TolerationOpEqual,
+			Value:    "argo",
+			Effect:   apiv1.TaintEffectNoSchedule,
+		}},
+		Metadata: wfv1.Metadata{
+			Labels:      map[string]string{"team": "platform"},
+			Annotations: map[string]string{"owner": "platform"},
+		},
+		// A container default must NOT leak in: the agent runs the controller's
+		// executor image, and one agent pod is shared by every http and plugin
+		// node in the workflow, so a per-template container default is meaningless here.
+		Container: &apiv1.Container{Image: "should-not-be-used"},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	assert.Equal(t, map[string]string{"workload": "agent"}, pod.Spec.NodeSelector)
+	assert.Equal(t, "custom-scheduler", pod.Spec.SchedulerName)
+	assert.Equal(t, "high-priority", pod.Spec.PriorityClassName)
+	require.Len(t, pod.Spec.Tolerations, 1)
+	assert.Equal(t, "dedicated", pod.Spec.Tolerations[0].Key)
+	assert.Equal(t, "platform", pod.Labels["team"])
+	assert.Equal(t, "platform", pod.Annotations["owner"])
+
+	for _, c := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
+		assert.NotEqual(t, "should-not-be-used", c.Image,
+			"container templateDefaults must not reach the agent pod (container %q)", c.Name)
+	}
+}
+
 func TestDisableAgentPodCreation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/disable-agent-pod-creation.yaml")
