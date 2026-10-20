@@ -100,12 +100,8 @@ aliyun oss lifecycle --method put oss://my-artifact-bucket lifecycle.json
 
 ## Configuring MinIO
 
-MinIO no longer publishes community container images.
-The MinIO Helm chart at `https://charts.min.io/` is archived, and its default images (`quay.io/minio/minio` and `quay.io/minio/mc`) can no longer be pulled without credentials.
-With its default values the chart also creates a distributed StatefulSet with 16 replicas, each requesting 16Gi of memory.
-
 For a test setup, you can install the S3 compatible server that the [quick start](quick-start.md) uses.
-It runs `docker.io/pgsty/silo`, a maintained fork of the MinIO server that keeps the S3 API and the `MINIO_*` settings:
+It runs `docker.io/pgsty/silo`, a fork of the MinIO server that keeps the S3 API and the `MINIO_*` settings:
 
 ```bash
 kubectl apply -n argo -k "https://github.com/argoproj/argo-workflows//manifests/quick-start/base/minio?ref=v4.1.5"
