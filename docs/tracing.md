@@ -22,6 +22,58 @@ See [Telemetry Configuration](telemetry-configuration.md#tracing) for setup deta
 
 <!-- Generated documentation BEGIN -->
 
+### Trace: `RunWorkerTask`
+
+```mermaid
+flowchart TD
+    RunWorkerTask[<a href='#run_worker_task'>run_worker_task</a>]
+    CaptureScriptResult[<a href='#capture_script_result'>capture_script_result</a>]
+    CreateTaskResult[<a href='#create_task_result'>create_task_result</a>]
+    LoadArtifacts[<a href='#load_artifacts'>load_artifacts</a>]
+    PatchTaskResult[<a href='#patch_task_result'>patch_task_result</a>]
+    PatchTaskResultLabels[<a href='#patch_task_result_labels'>patch_task_result_labels</a>]
+    SaveArtifacts[<a href='#save_artifacts'>save_artifacts</a>]
+    SaveLogs[<a href='#save_logs'>save_logs</a>]
+    StageFiles[<a href='#stage_files'>stage_files</a>]
+    LoadArtifact[<a href='#load_artifact'>load_artifact</a>]
+    SaveArtifact[<a href='#save_artifact'>save_artifact</a>]
+    SaveContainerLogs[<a href='#save_container_logs'>save_container_logs</a>]
+    UnarchiveArtifact[<a href='#unarchive_artifact'>unarchive_artifact</a>]
+    ArchiveArtifact[<a href='#archive_artifact'>archive_artifact</a>]
+    RunWaitContainer --> CaptureScriptResult
+    RunSupervisorContainer --> CaptureScriptResult
+    RunWorkerTask --> CaptureScriptResult
+    RunWaitContainer --> CreateTaskResult
+    RunMainContainer --> CreateTaskResult
+    RunSupervisorContainer --> CreateTaskResult
+    RunWorkerTask --> CreateTaskResult
+    RunInitContainer --> LoadArtifacts
+    RunSupervisorContainer --> LoadArtifacts
+    RunWorkerTask --> LoadArtifacts
+    RunWaitContainer --> PatchTaskResult
+    RunMainContainer --> PatchTaskResult
+    RunSupervisorContainer --> PatchTaskResult
+    RunWorkerTask --> PatchTaskResult
+    RunWaitContainer --> PatchTaskResultLabels
+    RunMainContainer --> PatchTaskResultLabels
+    RunSupervisorContainer --> PatchTaskResultLabels
+    RunWorkerTask --> PatchTaskResultLabels
+    RunWaitContainer --> SaveArtifacts
+    RunSupervisorContainer --> SaveArtifacts
+    RunWorkerTask --> SaveArtifacts
+    RunWaitContainer --> SaveLogs
+    RunSupervisorContainer --> SaveLogs
+    RunWorkerTask --> SaveLogs
+    RunInitContainer --> StageFiles
+    RunSupervisorContainer --> StageFiles
+    RunWorkerTask --> StageFiles
+    LoadArtifacts --> LoadArtifact
+    SaveArtifacts --> SaveArtifact
+    SaveLogs --> SaveContainerLogs
+    LoadArtifact --> UnarchiveArtifact
+    SaveArtifact --> ArchiveArtifact
+```
+
 ### Trace: `StartupController`
 
 ```mermaid
@@ -82,25 +134,33 @@ flowchart TD
     RunMainContainer --> RunWorkload
     RunWaitContainer --> SaveArtifacts
     RunSupervisorContainer --> SaveArtifacts
+    RunWorkerTask --> SaveArtifacts
     RunWaitContainer --> SaveLogs
     RunSupervisorContainer --> SaveLogs
+    RunWorkerTask --> SaveLogs
     RunInitContainer --> StageFiles
     RunSupervisorContainer --> StageFiles
+    RunWorkerTask --> StageFiles
     RunWaitContainer --> WaitWorkload
     RunSupervisorContainer --> WaitWorkload
     RunWaitContainer --> CaptureScriptResult
     RunSupervisorContainer --> CaptureScriptResult
+    RunWorkerTask --> CaptureScriptResult
     RunWaitContainer --> CreateTaskResult
     RunMainContainer --> CreateTaskResult
     RunSupervisorContainer --> CreateTaskResult
+    RunWorkerTask --> CreateTaskResult
     RunInitContainer --> LoadArtifacts
     RunSupervisorContainer --> LoadArtifacts
+    RunWorkerTask --> LoadArtifacts
     RunWaitContainer --> PatchTaskResult
     RunMainContainer --> PatchTaskResult
     RunSupervisorContainer --> PatchTaskResult
+    RunWorkerTask --> PatchTaskResult
     RunWaitContainer --> PatchTaskResultLabels
     RunMainContainer --> PatchTaskResultLabels
     RunSupervisorContainer --> PatchTaskResultLabels
+    RunWorkerTask --> PatchTaskResultLabels
     RunMainContainer --> ProcessDataTemplate
     ReconcileTaskResults --> ReconcileTaskResult
     SaveArtifacts --> SaveArtifact
@@ -254,6 +314,15 @@ Run the supervisor container of a workload (init-less mode).
 #### `run_wait_container`
 
 Run the wait container of a workload.
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
+
+#### `run_worker_task`
+
+Run one task's whole flow in a worker process (no command runs a worker yet).
 
 |  attribute  |              explanation              |
 |-------------|---------------------------------------|

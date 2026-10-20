@@ -16,7 +16,8 @@ import (
 var (
 	// InitRole is the legacy init container: the plan's Prepare phase.
 	InitRole = Role{
-		Name: "init",
+		Name:   "init",
+		Layout: LayoutLegacy,
 		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
 			return we.Tracing.StartRunInitContainer(ctx, we.WorkflowName(), we.Namespace)
 		},
@@ -33,7 +34,8 @@ var (
 	// Pre-main ran in the init container; had it failed, the pod would
 	// never have got here.
 	WaitRole = Role{
-		Name: "wait",
+		Name:   "wait",
+		Layout: LayoutLegacy,
 		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
 			return we.Tracing.StartRunWaitContainer(ctx, we.WorkflowName(), we.Namespace)
 		},
@@ -46,7 +48,8 @@ var (
 	// SupervisorRole is the init-less auxiliary container: it prepares
 	// main, signals main through the status marker, then collects outputs.
 	SupervisorRole = Role{
-		Name: "supervisor",
+		Name:   "supervisor",
+		Layout: LayoutInitless,
 		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
 			return we.Tracing.StartRunSupervisorContainer(ctx, we.WorkflowName(), we.Namespace)
 		},
@@ -106,5 +109,27 @@ var (
 			return we.PostMain(ctx, bgCtx, preMainFailed)
 		},
 		Finally: []Stage{killArtifactSidecars, finalizeOutput},
+	}
+
+	// WorkerRole runs a task's whole flow in this process: check the
+	// template, prepare the task's own tree, run main through the process's
+	// MainDriver, collect, then remove the task's files. Exercised only by
+	// tests until a worker command exists.
+	WorkerRole = Role{
+		Name:   "worker",
+		Layout: LayoutWorker,
+		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+			return we.Tracing.StartRunWorkerTask(ctx, we.WorkflowName(), we.Namespace)
+		},
+		Run: func(ctx, bgCtx context.Context, we *WorkflowExecutor) error {
+			// Main runs in the Run phase, so if Prepare failed nothing ran
+			// and there is nothing to collect.
+			if err := we.Prepare(ctx); err != nil {
+				we.AddError(ctx, err)
+				return err
+			}
+			return we.PostMain(ctx, bgCtx, false)
+		},
+		Finally: []Stage{finalizeOutput, removeTaskRoot},
 	}
 )
