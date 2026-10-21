@@ -62,8 +62,8 @@ func TestEmissary_OutputsSurviveRetryStartupFailure(t *testing.T) {
 				if attempts == 1 {
 					require.Equal(t, 7, code)
 					require.NoFileExists(t, varRunArgo+"/outputs/parameters/"+param, "stage only after retries")
-					// Make the next attempt fail before it starts, after the
-					// first command has finished producing its outputs.
+					// The first command wrote its outputs. Make the next attempt
+					// fail before it starts.
 					if scenario == "cancelled" {
 						cancel()
 					} else {

@@ -14,15 +14,16 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
-// forwardSignals starts a goroutine that forwards OS signals received on the
-// given channel to the process with the given pid, until the channel is closed
-// or the returned stop function is called. Parent cancellation must not stop
-// forwarding: signal.NotifyContext can cancel ctx before signal.Notify delivers
-// the same SIGTERM to signals. Stop waits for the goroutine to exit and must be
-// called before starting another attempt. Signals that can be ignored are
-// dropped. When ignoreTerm is true, SIGTERM is also dropped: artifact sidecars
-// stay alive to assist the aux container and are terminated via file signals.
-// The caller owns the channel's lifecycle (signal.Notify / signal.Reset / close).
+// forwardSignals starts a goroutine that forwards OS signals from the given
+// channel to the process with the given pid. Forwarding stops when the channel
+// closes or when the caller calls the returned stop function. Cancellation of
+// the parent ctx must not stop forwarding, because signal.NotifyContext can
+// cancel ctx before signal.Notify sends the same SIGTERM to signals. Stop waits
+// for the goroutine to exit. Call stop before the next attempt starts. The
+// goroutine drops signals that can be ignored. When ignoreTerm is true, it also
+// drops SIGTERM: artifact sidecars stay alive to help the aux container, and
+// file signals stop them. The caller owns the lifecycle of the channel
+// (signal.Notify / signal.Reset / close).
 func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) func() {
 	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	done := make(chan struct{})

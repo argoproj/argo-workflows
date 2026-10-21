@@ -31,8 +31,8 @@ func TestEmissary_DebugPauseAfter(t *testing.T) {
 				code, err := (maindriver.Container{}).Run(ctx, task, sink)
 				require.NoError(t, err)
 				require.Zero(t, code)
-				// Interrupt only after the real command has succeeded, so the
-				// error comes from the debug pause rather than command startup.
+				// Interrupt only after the real command succeeds. Then the error
+				// comes from the debug pause, not from command startup.
 				if scenario == "cancelled" {
 					cancel()
 				} else {
@@ -44,8 +44,8 @@ func TestEmissary_DebugPauseAfter(t *testing.T) {
 			err := runEmissary(runCtx, "producer", newPodSource("producer", false, command), driver)
 			marker, readErr := os.ReadFile(filepath.Join(varRunArgo, "ctr", "producer", "exitcode"))
 			require.NoError(t, readErr)
-			// A sibling's context remains active when only the producer is
-			// interrupted. Check the actual dependency gate with that context.
+			// When only the producer gets an interrupt, the context of a sibling
+			// stays active. Use that context to check the real dependency gate.
 			dependencyErr := waitForDependency(ctx, "producer")
 			if scenario == "cancelled" {
 				require.ErrorIs(t, err, context.Canceled)

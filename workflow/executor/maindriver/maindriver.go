@@ -8,17 +8,19 @@ import (
 
 // Task is one execution of a template's main command.
 type Task struct {
-	// NodeID identifies the task; results are keyed by it.
+	// NodeID identifies the task. The sink uses it as the key for results.
 	NodeID string
 	// Template is the task's template. Required.
 	Template *wfv1.Template
 	// Command is the executable followed by its arguments.
 	Command []string
-	// Env is the command's environment; nil inherits the process's (os/exec).
+	// Env is the environment of the command. If Env is nil, the command
+	// inherits the environment of the process (os/exec).
 	Env []string
 	// IncludeScriptOutput captures stdout so it can become the script result.
 	IncludeScriptOutput bool
-	// WorkDir holds captured stdout/combined logs; required when capturing.
+	// WorkDir holds the captured stdout and combined logs. Run requires it
+	// when it captures logs.
 	WorkDir string
 	// OnStart, if set, receives the command's pid once started.
 	OnStart func(pid int)
@@ -49,7 +51,8 @@ type ResultSink interface {
 
 // TaskSource yields the tasks a worker runs, one at a time.
 type TaskSource interface {
-	// Next returns the next task; check err first, ok=false means exhausted.
+	// Next returns the next task. Check err first. ok=false means that the
+	// source has no more tasks.
 	Next(ctx context.Context) (task Task, ok bool, err error)
 }
 
@@ -57,8 +60,8 @@ type TaskSource interface {
 // signal delivery and every other concern of the pod layout belong to the
 // caller.
 type MainDriver interface {
-	// Run blocks until the command exits and its outputs are handed to sink.
-	// exitCode is the command's regardless of err; a handover error replaces
-	// the exit error and stops further handover.
+	// Run blocks until the command exits and the sink receives its outputs.
+	// exitCode is the exit code of the command, whatever err is. A handover
+	// error replaces the exit error and stops further handover.
 	Run(ctx context.Context, task Task, sink ResultSink) (exitCode int, err error)
 }

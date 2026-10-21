@@ -82,7 +82,7 @@ func newPodSource(containerName string, includeScriptOutput bool, args []string)
 // the environment passed in as parameters so it is testable without env or
 // package-level state.
 func runEmissary(ctx context.Context, containerName string, source maindriver.TaskSource, driver maindriver.MainDriver) error {
-	exitCode := 64 // written to the exitcode file: the last task's
+	exitCode := 64 // The exitcode file gets the exit code of the last task.
 	logger := logging.RequireLoggerFromContext(ctx)
 	// Registered before the exit code defer so that it runs after it: releasing
 	// the liveness lock is what tells a dependent the exit code is readable, so
@@ -176,7 +176,7 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		}
 		template := task.Template
 
-		// Appended: os/exec keeps the last duplicate.
+		// os/exec uses the last value of a duplicate key.
 		task.Env = injectTraceParent(ctx, slices.Clone(task.Env))
 
 		// In init-less pod mode, main can't use the legacy per-artifact
@@ -206,7 +206,7 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 			return code, waitErr
 		}
 
-		// Resolved before the retry loop so a missing binary is not retried.
+		// Resolve the path before the retry loop, so that a missing binary does not cause a retry.
 		name, err := exec.LookPath(task.Command[0])
 		if err != nil {
 			return code, fmt.Errorf("failed to find name in PATH: %w", err)
@@ -230,7 +230,7 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		// Stage outputs once after retries, not per attempt.
 		var outputs outputCollector
 		cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-			// Scoped to the attempt so a retry never signals an old pid.
+			// Each attempt has its own scope, so that a retry never signals the pid of an old attempt.
 			innerCtx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			var stopForwarding func()
@@ -264,7 +264,7 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 			}
 		}
 
-		// The sink decides which containers' outputs are staged (main only).
+		// The sink stages outputs only for the main container.
 		var sink maindriver.ResultSink = maindriver.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
 		for _, out := range outputs {
 			if err := sink.Put(ctx, task.NodeID, out); err != nil {
@@ -305,8 +305,8 @@ func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output
 	return nil
 }
 
-// terminateWhenMainExits stops this sidecar once the template's main
-// containers have exited.
+// terminateWhenMainExits stops this sidecar when the main containers of the
+// template exit.
 func terminateWhenMainExits(ctx context.Context, logger logging.Logger, template *wfv1.Template, containerName string) {
 	em, err := emissary.New()
 	if err != nil {

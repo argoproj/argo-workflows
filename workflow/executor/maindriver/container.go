@@ -14,13 +14,14 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
-// exitCodeUnknown is reported when the command never produced an exit code,
-// matching the emissary's default.
+// exitCodeUnknown is the exit code when the command produced no exit code.
+// The emissary uses the same default.
 const exitCodeUnknown = 64
 
-// Container runs a task's main command as a child process. Not safe for
-// concurrent Run calls in one process (osspecific.Wait reaps any child), and
-// ctx cancellation does not stop the command (released before wait).
+// Container runs the main command of a task as a child process. Do not make
+// concurrent Run calls in one process, because osspecific.Wait reaps any child.
+// Cancellation of ctx does not stop the command, because Run releases the
+// command before it waits.
 type Container struct{}
 
 var _ MainDriver = Container{}
@@ -37,9 +38,9 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode 
 		return exitCodeUnknown, errors.New("task has no workdir to capture logs in")
 	}
 	var logs []Output
-	// A failed startup can leave outputs from an earlier retry in place. Hand
-	// over their paths even when this attempt cannot start; the sink decides
-	// whether each file exists and needs staging.
+	// A failed startup can leave outputs of an earlier retry in place. Give
+	// their paths to the sink even when this attempt cannot start. The sink
+	// decides if each file exists and needs staging.
 	defer func() {
 		if outputErr := putOutputs(ctx, task, sink, logs); outputErr != nil {
 			err = outputErr
@@ -58,7 +59,7 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode 
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "capturing logs")
 		stdoutPath := filepath.Join(task.WorkDir, "stdout")
 		combinedPath := filepath.Join(task.WorkDir, "combined")
-		// O_APPEND: a caller that retries keeps every attempt's logs.
+		// O_APPEND keeps the logs of every attempt when the caller retries.
 		var stdoutf, combinedf *os.File
 		stdoutf, err = os.OpenFile(stdoutPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
@@ -87,7 +88,7 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode 
 	}
 	waitErr := osspecific.Wait(cmd.Process)
 	closer()
-	// Unwrapped: main() reads the exit code with a type assertion.
+	// Do not wrap the error: main() reads the exit code with a type assertion.
 	return exitCodeFromErr(waitErr), waitErr
 }
 
@@ -111,8 +112,8 @@ func putOutputs(ctx context.Context, task Task, sink ResultSink, logs []Output) 
 	return nil
 }
 
-// exitCodeFromErr mirrors the emissary's mapping: 0 on success, the process's
-// own code when it exited, 137 when it was signalled.
+// exitCodeFromErr uses the mapping of the emissary. It returns 0 on success,
+// the exit code of the process when it exited, and 137 when a signal stopped it.
 func exitCodeFromErr(err error) int {
 	if err == nil {
 		return 0

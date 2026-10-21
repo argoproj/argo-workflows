@@ -13,15 +13,15 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// PodSource yields the one task a pod spec delivers, then is exhausted. In
-// the init-less layout, call Next only after the supervisor is READY.
+// PodSource yields the one task that a pod spec delivers, and then no more
+// tasks. In the init-less layout, call Next only after the supervisor is READY.
 type PodSource struct {
 	// VarRunArgo is the shared argoexec directory, normally /var/run/argo.
 	VarRunArgo string
 	// TemplateEnv is the value of ARGO_TEMPLATE, used when the template file
 	// is absent.
 	TemplateEnv string
-	// OffloadDir is where an offloaded ARGO_TEMPLATE is resolved from.
+	// OffloadDir is the directory that Next reads an offloaded ARGO_TEMPLATE from.
 	OffloadDir string
 	// ArgsFile is the value of ARGO_CONTAINER_ARGS_FILE: a JSON list of
 	// extra args appended to Command.
