@@ -193,7 +193,6 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 
 		// Per-task span, parented from the task's TRACEPARENT; its id reaches
 		// the child via task.Env (appended: os/exec keeps the last duplicate).
-		// theory-debt: parent context read from task.Env, not a Task field.
 		ctx, span := tracer.StartRunMainContainer(traceContextFromEnv(ctx, task.Env), workflowName, string(namespace))
 		defer span.End()
 		task.Env = injectTraceParent(ctx, slices.Clone(task.Env))

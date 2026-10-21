@@ -122,7 +122,6 @@ func (s *PodSource) readTemplate() ([]byte, error) {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
-	// theory-debt: empty ARGO_TEMPLATE treated as unset (emissary did not).
 	if s.TemplateEnv == "" {
 		return nil, fmt.Errorf("neither %s nor %s is available", filePath, common.EnvVarTemplate)
 	}

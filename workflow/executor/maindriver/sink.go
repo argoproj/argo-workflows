@@ -17,7 +17,6 @@ import (
 
 // PodSink stages main's outputs under VarRunArgo/outputs for the wait or
 // supervisor container. Logs stay in WorkDir.
-// theory-debt: built per task with its template, not keyed by nodeID.
 type PodSink struct {
 	VarRunArgo    string
 	ContainerName string

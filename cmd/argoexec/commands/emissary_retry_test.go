@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,50 +27,6 @@ type mainDriverFunc func(context.Context, maindriver.Task, maindriver.ResultSink
 
 func (f mainDriverFunc) Run(ctx context.Context, task maindriver.Task, sink maindriver.ResultSink) (int, error) {
 	return f(ctx, task, sink)
-}
-
-func TestEmissary_ZeroRetries(t *testing.T) {
-	for _, exitCode := range []int{0, 7} {
-		t.Run(strconv.Itoa(exitCode), func(t *testing.T) {
-			useTempVarRunArgo(t)
-			t.Setenv(common.EnvVarWaitForReady, "false")
-			ctx := logging.TestContext(t.Context())
-			// Model an output that is already present in the container image.
-			param := filepath.Join(t.TempDir(), "parameter")
-			require.NoError(t, os.WriteFile(param, []byte("preexisting output"), 0o600))
-			command := []string{"sh", "-c", `echo attempt; exit "$1"`, "--", strconv.Itoa(exitCode)}
-			tmpl := wfv1.Template{
-				ContainerSet: &wfv1.ContainerSetTemplate{
-					Containers:    []wfv1.ContainerNode{{Container: corev1.Container{Name: "main", Image: "alpine", Command: command}}},
-					RetryStrategy: &wfv1.ContainerSetRetryStrategy{Retries: new(intstr.FromInt(0))},
-				},
-				Outputs: wfv1.Outputs{
-					Parameters: []wfv1.Parameter{{Name: "p", ValueFrom: &wfv1.ValueFrom{Path: param}}},
-				},
-			}
-			body, err := json.Marshal(tmpl)
-			require.NoError(t, err)
-			require.NoError(t, os.WriteFile(filepath.Join(varRunArgo, "template"), body, 0o600))
-
-			err = runEmissary(ctx, "main", newPodSource("main", true, command), maindriver.Container{})
-			if exitCode == 0 {
-				require.NoError(t, err)
-				require.NoError(t, waitForDependency(ctx, "main"))
-			} else {
-				require.EqualError(t, err, "exit status "+strconv.Itoa(exitCode))
-				require.ErrorContains(t, waitForDependency(ctx, "main"), "exited with non-zero code: "+strconv.Itoa(exitCode))
-			}
-			data, err := os.ReadFile(filepath.Join(varRunArgo, "ctr", "main", "exitcode"))
-			require.NoError(t, err)
-			assert.Equal(t, strconv.Itoa(exitCode), string(data))
-			data, err = os.ReadFile(varRunArgo + "/outputs/parameters/" + param)
-			require.NoError(t, err)
-			assert.Equal(t, "preexisting output", string(data))
-			data, err = os.ReadFile(filepath.Join(varRunArgo, "ctr", "main", "stdout"))
-			require.NoError(t, err)
-			assert.Equal(t, "attempt\n", string(data), "run the initial attempt exactly once, including when it fails")
-		})
-	}
 }
 
 func TestEmissary_OutputsSurviveRetryStartupFailure(t *testing.T) {

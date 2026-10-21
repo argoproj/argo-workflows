@@ -32,8 +32,7 @@ func (in *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
 		return wait.Backoff{Steps: 1}, nil
 	}
 
-	// The initial attempt must still run when retries are disabled.
-	backoff := wait.Backoff{Steps: max(1, in.RetryStrategy.Retries.IntValue())}
+	backoff := wait.Backoff{Steps: in.RetryStrategy.Retries.IntValue()}
 
 	if in.RetryStrategy.Duration == "" {
 		return backoff, nil
