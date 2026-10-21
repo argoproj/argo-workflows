@@ -505,6 +505,16 @@ metrics:
       - name: WorkerType
     unit: "{worker}"
     type: Int64UpDownCounter
+  - name: WorkflowCompletionRequeueDelay
+    description: A histogram of computed completion-triggered workflow requeue delays
+    extendedDescription: |
+      Records the delay requested for each completion-triggered enqueue, in seconds, when `COMPLETED_REQUEUE_TIME_MS` is enabled.
+      The delay includes the per-workflow duty-cycle gap and is bounded by the completion floor and `DEFAULT_REQUEUE_TIME`.
+      This is not the actual queue wait: an earlier event can advance reconciliation, and busy workers can delay it.
+      Compare with `queue_latency`, `client_rate_limiter_latency` and `resource_rate_limiter_latency` to identify queueing and API throttling.
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [0.001, 0.01, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0]
   - name: WorkflowCondition
     description: A gauge of the number of workflows with different conditions
     extendedDescription: This will tell you the number of workflows with running pods.
@@ -513,6 +523,18 @@ metrics:
       - name: WorkflowStatus
     unit: "{workflow}"
     type: Int64ObservableGauge
+  - name: WorkflowReconcileUtilization
+    description: A histogram of per-workflow worker utilization between reconciliations
+    extendedDescription: |
+      Records the duration of a workflow's `operate()` call divided by the elapsed time since its preceding reconciliation ended.
+      Values are fractions between 0 and 1, not percentages.
+      Time waiting for the workflow lock is excluded from the operation duration but included in the elapsed interval.
+      The first reconciliation has no preceding interval and produces no sample.
+      Samples are collected only when `COMPLETED_REQUEUE_TIME_MS` is enabled.
+      Workflow names and UIDs are not labels: this histogram aggregates per-workflow samples without creating a time series for every workflow.
+    unit: "1"
+    type: Float64Histogram
+    defaultBuckets: [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 0.9, 1.0]
   - name: WorkflowtemplateRuntime
     description: A histogram of the runtime of workflows using `workflowTemplateRef` only
     extendedDescription: |

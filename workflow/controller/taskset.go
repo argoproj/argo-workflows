@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +26,7 @@ import (
 // when a task result first becomes terminal.
 // Updates without a valid object key are ignored; repeated terminal results
 // retain normal rate limiting rather than triggering the completion delay again.
-func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
+func (wfc *WorkflowController) onWorkflowTaskSetUpdate(ctx context.Context, old, newObj any) {
 	key, err := cache.MetaNamespaceKeyFunc(newObj)
 	if err != nil {
 		return
@@ -38,7 +39,16 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 				// The workqueue coalesces pending keys and serializes work per key.
 				// processNextItem still rejects stale workflow versions and falls
 				// back to a rate-limited retry while the workflow informer catches up.
-				wfc.wfQueue.AddAfter(key, min(*wfc.taskSetCompletionDelay, wfc.requeueTime))
+				var uid types.UID
+				for _, owner := range current.OwnerReferences {
+					if owner.Kind == workflow.WorkflowKind && owner.APIVersion == workflow.APIVersion {
+						uid = owner.UID
+						break
+					}
+				}
+				delay := wfc.completionRequeueDelay(uid, time.Now())
+				wfc.metrics.RecordWorkflowCompletionRequeueDelay(ctx, delay.Seconds())
+				wfc.wfQueue.AddAfter(key, delay)
 				return
 			}
 		}

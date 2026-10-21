@@ -151,6 +151,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		healthzAge:                 5 * time.Minute,
 		maxOperationTime:           30 * time.Second,
 		requeueTime:                10 * time.Second,
+		completionDutyCyclePercent: 20,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},
