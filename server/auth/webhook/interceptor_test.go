@@ -90,7 +90,7 @@ func TestInterceptorOversizedBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	// Create a body that exceeds 2MB
 	body := bytes.NewReader(make([]byte, 2*1024*1024+1))
-	r := httptest.NewRequest(http.MethodPost, "/api/v1/events/my-ns/my-d", body)
+	r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/events/my-ns/my-d", body)
 	h := &testHTTPHandler{}
 	i(w, r, h)
 	assert.Equal(t, 403, w.Code)
@@ -150,7 +150,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 	w := httptest.NewRecorder()
 	b := &bytes.Buffer{}
 	b.WriteString("{}")
-	r := httptest.NewRequest(method, target, b)
+	r := httptest.NewRequestWithContext(ctx, method, target, b)
 	for k, v := range headers {
 		r.Header.Set(k, v)
 	}
