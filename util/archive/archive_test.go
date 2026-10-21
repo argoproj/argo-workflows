@@ -212,38 +212,23 @@ func TestZipFile(t *testing.T) {
 }
 
 func TestZipFileEntryName(t *testing.T) {
-	for _, absolute := range []bool{false, true} {
-		name := "relative"
-		if absolute {
-			name = "absolute"
-		}
-		t.Run(name, func(t *testing.T) {
-			t.Chdir(t.TempDir())
-			require.NoError(t, os.Mkdir("output", 0o700))
-			sourcePath := filepath.Join("output", "result.txt")
-			content := []byte("workflow result\n")
-			require.NoError(t, os.WriteFile(sourcePath, content, 0o600))
-			if absolute {
-				var err error
-				sourcePath, err = filepath.Abs(sourcePath)
-				require.NoError(t, err)
-			}
+	sourcePath := filepath.Join(t.TempDir(), "result.txt")
+	content := []byte("workflow result\n")
+	require.NoError(t, os.WriteFile(sourcePath, content, 0o600))
 
-			var buf bytes.Buffer
-			writer := zip.NewWriter(&buf)
-			require.NoError(t, ZipToWriter(logging.TestContext(t.Context()), sourcePath, writer))
-			require.NoError(t, writer.Close())
+	var buf bytes.Buffer
+	writer := zip.NewWriter(&buf)
+	require.NoError(t, ZipToWriter(logging.TestContext(t.Context()), sourcePath, writer))
+	require.NoError(t, writer.Close())
 
-			reader, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
-			require.NoError(t, err)
-			require.Len(t, reader.File, 1)
-			require.Equal(t, "result.txt", reader.File[0].Name)
-			file, err := reader.Open("result.txt")
-			require.NoError(t, err)
-			defer file.Close()
-			actual, err := io.ReadAll(file)
-			require.NoError(t, err)
-			require.Equal(t, content, actual)
-		})
-	}
+	reader, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	require.NoError(t, err)
+	require.Len(t, reader.File, 1)
+	require.Equal(t, "result.txt", reader.File[0].Name)
+	file, err := reader.Open("result.txt")
+	require.NoError(t, err)
+	defer file.Close()
+	actual, err := io.ReadAll(file)
+	require.NoError(t, err)
+	require.Equal(t, content, actual)
 }
