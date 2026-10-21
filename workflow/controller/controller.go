@@ -1154,6 +1154,20 @@ func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string)
 	return obj, true
 }
 
+// workflowFromInformerObj returns the workflow an informer event carries. A
+// delete delivered after a watch gap arrives as a cache.DeletedFinalStateUnknown
+// holding the last known state, so unwrap that rather than asserting the type.
+func workflowFromInformerObj(obj any) (*unstructured.Unstructured, bool) {
+	switch x := obj.(type) {
+	case *unstructured.Unstructured:
+		return x, true
+	case cache.DeletedFinalStateUnknown:
+		un, ok := x.Obj.(*unstructured.Unstructured)
+		return un, ok
+	}
+	return nil, false
+}
+
 func reconciliationNeeded(wf metav1.Object) bool {
 	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
 }
@@ -1288,10 +1302,21 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			// the cache. When they are rejected (this returns false)
 			// they will be deleted.
 			FilterFunc: func(obj any) bool {
-				un, ok := obj.(*unstructured.Unstructured)
+				un, ok := workflowFromInformerObj(obj)
 				if !ok {
 					logger.WithField("obj", obj).Warn(ctx, "Workflow FilterFunc: is not an unstructured")
 					return false
+				}
+				// A delete delivered after a watch gap arrives as a
+				// cache.DeletedFinalStateUnknown tombstone. Rejecting it here
+				// would drop the event entirely, because client-go's
+				// FilteringResourceEventHandler.OnDelete returns early when the
+				// filter says no, so DeleteFunc would never release the
+				// throttler slot and the workflow would count against total
+				// parallelism forever (#14750). The object is gone either way,
+				// so let the delete through.
+				if _, tombstone := obj.(cache.DeletedFinalStateUnknown); tombstone {
+					return true
 				}
 				needed := reconciliationNeeded(un)
 				if !needed {
@@ -1332,10 +1357,18 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 
+					// obj may be a cache.DeletedFinalStateUnknown tombstone, so
+					// unwrap it rather than asserting the type (#14750).
+					un, ok := workflowFromInformerObj(obj)
+					if !ok {
+						logger.WithField("obj", obj).Warn(ctx, "Workflow DeleteFunc: is not an unstructured")
+						return
+					}
+
 					// Remove finalizers from Pods if they exist before deletion
 					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
+						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, un.GetName()),
 					})
 					if err != nil {
 						logger.WithError(err).Error(ctx, "Failed to list pods")
@@ -1352,7 +1385,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
-					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
+					wfc.recordWorkflowCompleted(un)
 				},
 			},
 		},

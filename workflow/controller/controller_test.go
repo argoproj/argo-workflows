@@ -1794,3 +1794,53 @@ func TestExpireCompletedVersions(t *testing.T) {
 	outdated, _ = controller.isOutdated(ctx, &metav1.ObjectMeta{UID: inFlight.UID, ResourceVersion: "99"})
 	assert.True(t, outdated, "in-flight records must not expire")
 }
+
+// A delete delivered after a watch gap arrives as a cache.DeletedFinalStateUnknown
+// holding the last known object. Before #14750 the workflow informer's FilterFunc
+// asserted *unstructured.Unstructured directly and returned false for a tombstone,
+// which made client-go's FilteringResourceEventHandler.OnDelete return early, so
+// DeleteFunc never ran and throttler.Remove was never called. The workflow then
+// counted against total parallelism for as long as the controller lived.
+func TestWorkflowFromInformerObj(t *testing.T) {
+	wf := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "argoproj.io/v1alpha1",
+		"kind":       "Workflow",
+		"metadata":   map[string]any{"name": "my-wf", "namespace": "argo"},
+	}}
+
+	t.Run("unstructured", func(t *testing.T) {
+		got, ok := workflowFromInformerObj(wf)
+		require.True(t, ok)
+		assert.Same(t, wf, got)
+	})
+	t.Run("tombstone carrying the last known workflow", func(t *testing.T) {
+		got, ok := workflowFromInformerObj(cache.DeletedFinalStateUnknown{Key: "argo/my-wf", Obj: wf})
+		require.True(t, ok, "a tombstone delete must not be dropped, or the throttler slot leaks")
+		assert.Same(t, wf, got)
+		assert.Equal(t, "my-wf", got.GetName(), "DeleteFunc needs the name to clear pod finalizers")
+	})
+	t.Run("tombstone carrying something else", func(t *testing.T) {
+		_, ok := workflowFromInformerObj(cache.DeletedFinalStateUnknown{Key: "argo/my-wf", Obj: "not a workflow"})
+		assert.False(t, ok)
+	})
+	t.Run("neither", func(t *testing.T) {
+		_, ok := workflowFromInformerObj("not a workflow")
+		assert.False(t, ok)
+	})
+}
+
+// cache.DeletionHandlingMetaNamespaceKeyFunc already understands tombstones, so the
+// key DeleteFunc passes to throttler.Remove matches the one AddFunc used. Pinning it
+// because the fix depends on the two agreeing.
+func TestDeletionHandlingKeyMatchesForTombstone(t *testing.T) {
+	wf := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "argoproj.io/v1alpha1",
+		"kind":       "Workflow",
+		"metadata":   map[string]any{"name": "my-wf", "namespace": "argo"},
+	}}
+	live, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	tomb, err := cache.DeletionHandlingMetaNamespaceKeyFunc(cache.DeletedFinalStateUnknown{Key: live, Obj: wf})
+	require.NoError(t, err)
+	assert.Equal(t, live, tomb)
+}
