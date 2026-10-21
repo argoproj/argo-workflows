@@ -137,6 +137,9 @@ To remove the finalizer by hand, losing any result that is not recorded yet:
 kubectl patch pod <pod> --type json -p '[{"op":"test","path":"/metadata/uid","value":"<pod uid>"},{"op":"test","path":"/metadata/finalizers/0","value":"workflows.argoproj.io/status"},{"op":"remove","path":"/metadata/finalizers/0"}]'
 ```
 
+The patch expects the status finalizer to be the first one.
+If `kubectl get pod <pod> -o jsonpath='{.metadata.finalizers}'` lists another finalizer before it, use its index instead of `0` in both places.
+
 ## Executor
 
 | Name                                   | Type            | Default | Description                                                                                            |
