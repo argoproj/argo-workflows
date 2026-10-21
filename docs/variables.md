@@ -49,8 +49,6 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 ### Expression
 
-> v3.1 and after
-
 The tag is substituted with the result of evaluating the tag as an expression.
 
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
@@ -148,7 +146,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
-| `steps.<STEPNAME>.hostNodeName` | Host node where step ran (available from version 3.5) |
+| `steps.<STEPNAME>.hostNodeName` | Host node where step ran |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container, script, or HTTP step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -167,7 +165,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
-| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
+| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container, script, or HTTP task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -177,7 +175,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 
 ### Outputs of Skipped and Omitted Nodes
 
-> v3.7.16, v4.0.7, and after
+> v4.0.7 and after
 
 A step or task that was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied) never ran, so it produced no outputs.
 References to its declared output parameters and `outputs.result` resolve as follows:
@@ -200,8 +198,6 @@ See the [skipped output defaults examples](https://github.com/argoproj/argo-work
 
 ### HTTP Templates
 
-> v3.3 and after
-
 Only available for `successCondition`
 
 | Variable | Description|
@@ -215,8 +211,6 @@ Only available for `successCondition`
 | `response.headers` | Response headers (`map[string][]string`) |
 
 ### CronWorkflows
-
-> v3.6 and after
 
 | Variable | Description|
 |----------|------------|
@@ -239,7 +233,7 @@ When using the `expression` field within `retryStrategy`, special variables are 
 | `lastRetry.exitCode` | Exit code of the last retry |
 | `lastRetry.status` | Status of the last retry |
 | `lastRetry.duration` | Duration in seconds of the last retry |
-| `lastRetry.message` | Message output from the last retry (available from version 3.5) |
+| `lastRetry.message` | Message output from the last retry |
 
 Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
 

@@ -1575,7 +1575,7 @@ type ArtifactRepositoryRefStatus struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 	// If this ref represents the default artifact repository, rather than a config map.
 	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
-	// The repository the workflow will use. This maybe empty before v3.1.
+	// The repository the workflow will use.
 	ArtifactRepository *ArtifactRepository `json:"artifactRepository,omitempty" protobuf:"bytes,4,opt,name=artifactRepository"`
 }
 
@@ -1925,9 +1925,9 @@ type TemplateRef struct {
 
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// v3.6 and after: Semaphores holds the list of Semaphores configuration
+	// Semaphores holds the list of Semaphores configuration
 	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
-	// v3.6 and after: Mutexes holds the list of Mutex lock details
+	// Mutexes holds the list of Mutex lock details
 	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 

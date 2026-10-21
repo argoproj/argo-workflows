@@ -8,7 +8,10 @@ import {execFileSync} from 'child_process';
 // running against a cluster you cannot `kubectl get secret` on.
 
 export const NAMESPACE = process.env.ARGO_NAMESPACE || 'argo';
-export const BASE_URL = process.env.ARGO_UI_BASE_URL || 'http://localhost:8080';
+// May carry a base href (http://localhost:8080/argo/). Every page and API path
+// in the suite is relative, so a trailing slash is what makes them resolve
+// under the base rather than replace its last segment.
+export const BASE_URL = (process.env.ARGO_UI_BASE_URL || 'http://localhost:8080').replace(/\/*$/, '/');
 export const ENV_FACTOR = Number(process.env.E2E_ENV_FACTOR || '1');
 
 const SECRET_NAME = 'argo-server.service-account-token';
