@@ -78,24 +78,6 @@ func newPodSource(containerName string, includeScriptOutput bool, args []string)
 	}
 }
 
-// traceContextFromEnv extracts TRACEPARENT/TRACESTATE from env into ctx.
-func traceContextFromEnv(ctx context.Context, env []string) context.Context {
-	carrier := propagation.MapCarrier{}
-	for _, kv := range env {
-		k, v, ok := strings.Cut(kv, "=")
-		if !ok {
-			continue
-		}
-		switch strings.ToUpper(k) {
-		case "TRACEPARENT":
-			carrier["traceparent"] = v
-		case "TRACESTATE":
-			carrier["tracestate"] = v
-		}
-	}
-	return propagation.TraceContext{}.Extract(ctx, carrier)
-}
-
 // runEmissary is the emissary body, with everything the command parses from
 // the environment passed in as parameters so it is testable without env or
 // package-level state.
@@ -130,8 +112,11 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		}
 	}()
 
+	ctx = tracing.InjectTraceContext(ctx)
 	workflowName := os.Getenv(common.EnvVarWorkflowName)
 	namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
+	defer span.End()
 
 	osspecific.AllowGrantingAccessToEveryone()
 
@@ -191,10 +176,7 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		}
 		template := task.Template
 
-		// Per-task span, parented from the task's TRACEPARENT; its id reaches
-		// the child via task.Env (appended: os/exec keeps the last duplicate).
-		ctx, span := tracer.StartRunMainContainer(traceContextFromEnv(ctx, task.Env), workflowName, string(namespace))
-		defer span.End()
+		// Appended: os/exec keeps the last duplicate.
 		task.Env = injectTraceParent(ctx, slices.Clone(task.Env))
 
 		// In init-less pod mode, main can't use the legacy per-artifact

@@ -259,17 +259,16 @@ func (l *taskList) Next(context.Context) (maindriver.Task, bool, error) {
 	return task, true, nil
 }
 
-// Each task is its own runMainContainer span: two tasks in one process see
-// the pod's trace id with two different span ids.
-func TestEmissary_SpanPerTask(t *testing.T) {
+func TestEmissary_TasksShareRootSpan(t *testing.T) {
 	varRunArgo = t.TempDir()
 	ctx, err := testContext()
 	require.NoError(t, err)
 	const podTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	t.Setenv("TRACEPARENT", podTraceParent)
 	task := maindriver.Task{
 		Template:            &wfv1.Template{},
 		Command:             []string{"sh", "-c", `echo "$TRACEPARENT"`},
-		Env:                 append(os.Environ(), "TRACEPARENT="+podTraceParent),
+		Env:                 os.Environ(),
 		IncludeScriptOutput: true,
 		WorkDir:             varRunArgo + "/ctr/main",
 	}
@@ -289,7 +288,7 @@ func TestEmissary_SpanPerTask(t *testing.T) {
 		assert.NotEqual(t, "b7ad6b7169203331", parts[2], "span id must not be the pod's")
 		spanIDs = append(spanIDs, parts[2])
 	}
-	assert.NotEqual(t, spanIDs[0], spanIDs[1], "each task gets its own span")
+	assert.Equal(t, spanIDs[0], spanIDs[1], "tasks run in the root span")
 }
 
 // A source with no task must fail the emissary rather than run an empty
