@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  hooks:
+    foo:
+      template: c
+      expression: workflow.status == "Pending"
+    bar:
+      template: b
+      expression: workflow.status == "Pending"
