@@ -3,26 +3,33 @@
 .wf-filters-container {
     overflow: visible;
     position: relative;
-    border-radius: 5px;
-    box-shadow: 1px 1px 3px #8fa4b1;
-    padding: 0 1em 0.75em 1em;
+    border-radius: 8px;
+    border: 1px solid $argo-color-gray-3;
+    box-shadow: 0 1px 2px rgba($argo-color-gray-9, 0.04), 0 2px 8px rgba($argo-color-gray-9, 0.04);
+    padding: 0.25rem 1rem 1rem;
     margin: 12px 0;
-    background-color: white;
+    background-color: $white-color;
 }
 
 .wf-filters-container p {
     margin: 0;
     margin-top: 1em;
-    color: #6d7f8b;
+    color: $argo-color-gray-6;
     text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }
 
 .wf-filters-container__title {
     position: relative;
     width: 100%;
     max-width: 100%;
-    padding: 8px 0;
-    font-size: 15px;
+    padding: 8px 0 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: $argo-color-gray-6;
     background-color: transparent;
     border: 0;
 }
@@ -32,6 +39,25 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
+
+    a {
+        flex-shrink: 0;
+        color: $argo-color-gray-5;
+        text-decoration: none;
+
+        &:hover {
+            color: $argo-color-teal-6;
+        }
+    }
+}
+
+.wf-filters-container .input-filter {
+    gap: 0.35rem;
+
+    a {
+        color: $argo-color-teal-6;
+    }
 }
 
 #top-bar__filter-list {

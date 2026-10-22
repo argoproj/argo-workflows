@@ -18,17 +18,20 @@
         line-height: 3em;
         &--action {
             cursor: pointer;
-            color: white;
-            border-radius: 3px;
+            color: $white-color !important;
+            border-radius: 6px;
             padding: 0.5em 10px;
             margin-right: 10px;
             background-color: $argo-color-gray-6;
+            border: none;
+            font-weight: 600;
+            letter-spacing: 0.02em;
         }
 
         button:disabled {
-            background-color: $argo-color-gray-4;
+            background-color: $argo-color-gray-4 !important;
             cursor: not-allowed;
-            color: $argo-color-gray-6;
+            color: $argo-color-gray-6 !important;
         }
 
         &--suspend {
