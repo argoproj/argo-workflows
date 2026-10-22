@@ -60,7 +60,7 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 
 // setupMultipleLockManagersWithExistence is setupMultipleLockManagers with control over what each
 // controller's informer reports, which garbage collection depends on.
-func setupMultipleLockManagersWithExistence(t *testing.T, dbType sqldb.DBType, semaphoreSize int, workflowExists1, workflowExists2 WorkflowExists) (context.Context, func(), *Manager, *Manager) {
+func setupMultipleLockManagersWithExistence(t *testing.T, dbType sqldb.DBType, semaphoreSize int, workflowActive1, workflowActive2 WorkflowActive) (context.Context, func(), *Manager, *Manager) {
 	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	// Create a database session for the semaphore
 	info, deferfn, cfg, err := createTestDBSession(ctx, t, dbType)
@@ -76,12 +76,12 @@ func setupMultipleLockManagersWithExistence(t *testing.T, dbType sqldb.DBType, s
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowExists1)
+	syncMgr1 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowActive1)
 	require.NotNil(t, syncMgr1)
 	require.NotNil(t, syncMgr1.dbInfo.SessionProxy.Session(ctx))
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowExists2)
+	syncMgr2 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowActive2)
 	require.NotNil(t, syncMgr2)
 	require.NotNil(t, syncMgr2.dbInfo.SessionProxy.Session(ctx))
 	return ctx, deferfn2, syncMgr1, syncMgr2
@@ -262,7 +262,7 @@ func hasKeyFor(keys []string, wfName string) bool {
 // stop the GC collecting the stale rows it exists to collect, so both directions are asserted.
 func testGCKeepsOtherControllersPendingRowsForDB(t *testing.T, dbType sqldb.DBType) {
 	// Each controller's informer only knows about its own workflow.
-	onlyKnows := func(name string) WorkflowExists {
+	onlyKnows := func(name string) WorkflowActive {
 		return func(key string) bool { return strings.Contains(key, name) }
 	}
 	ctx, deferfn, syncMgr1, syncMgr2 := setupMultipleLockManagersWithExistence(t, dbType, 1, onlyKnows("wf-01"), onlyKnows("wf-02"))
