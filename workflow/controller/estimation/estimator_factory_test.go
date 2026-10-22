@@ -1,15 +1,12 @@
 package estimation
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
@@ -21,24 +18,13 @@ import (
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 )
 
-// mustUnmarshalUnstructuredFile loads an unstructured object from a file
-// relative to the package directory, mirroring the "@testdata" convention
-// supported by wfv1.MustUnmarshalWorkflow for workflow-typed fixtures.
-func mustUnmarshalUnstructuredFile(path string) *unstructured.Unstructured {
-	content, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		panic(err)
-	}
-	return testutil.MustUnmarshalUnstructured(string(content))
-}
-
 func Test_estimatorFactory(t *testing.T) {
 	informer := testutil.NewSharedIndexInformer()
 	ctx := logging.TestContext(t.Context())
-	wfFailed := mustUnmarshalUnstructuredFile("testdata/estimator_factory/failed-baseline.yaml")
-	informer.Indexer.SetByIndex(indexes.ClusterWorkflowTemplateIndex, "my-ns/my-cwft", mustUnmarshalUnstructuredFile("testdata/estimator_factory/cwft-baseline.yaml"), wfFailed)
-	informer.Indexer.SetByIndex(indexes.CronWorkflowIndex, "my-ns/my-cwf", mustUnmarshalUnstructuredFile("testdata/estimator_factory/cwf-baseline.yaml"), wfFailed)
-	informer.Indexer.SetByIndex(indexes.WorkflowTemplateIndex, "my-ns/my-wftmpl", mustUnmarshalUnstructuredFile("testdata/estimator_factory/wftmpl-baseline.yaml"), wfFailed)
+	wfFailed := testutil.MustUnmarshalUnstructured("@testdata/estimator_factory/failed-baseline.yaml")
+	informer.Indexer.SetByIndex(indexes.ClusterWorkflowTemplateIndex, "my-ns/my-cwft", testutil.MustUnmarshalUnstructured("@testdata/estimator_factory/cwft-baseline.yaml"), wfFailed)
+	informer.Indexer.SetByIndex(indexes.CronWorkflowIndex, "my-ns/my-cwf", testutil.MustUnmarshalUnstructured("@testdata/estimator_factory/cwf-baseline.yaml"), wfFailed)
+	informer.Indexer.SetByIndex(indexes.WorkflowTemplateIndex, "my-ns/my-wftmpl", testutil.MustUnmarshalUnstructured("@testdata/estimator_factory/wftmpl-baseline.yaml"), wfFailed)
 	wfArchive := &sqldbmocks.WorkflowArchive{}
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/workflow-template=my-archived-wftmpl")
 	require.NoError(t, err)
