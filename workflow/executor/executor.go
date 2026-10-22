@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,7 +23,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -128,8 +126,8 @@ type WorkflowExecutor struct {
 	// current progress which is synced every `annotationPatchTickDuration` to the pods annotations.
 	progress wfv1.Progress
 
-	// flag to indicate if the task result was created
-	taskResultCreated bool
+	// sink is where the task's result goes.
+	sink ResultSink
 }
 
 // ProcessConfig carries the process-wide values a Process is constructed
@@ -273,11 +271,12 @@ func NewProcess(
 // NewExecutor derives the executor for one task from the process-wide
 // state. It has no process-level side effects, so a Process may call it
 // once per task.
-func (p *Process) NewExecutor(task Task) *WorkflowExecutor {
+func (p *Process) NewExecutor(task Task, sink ResultSink) *WorkflowExecutor {
 	cfg := task.Config
 	return &WorkflowExecutor{
 		Process:                  p,
 		paths:                    task.Paths,
+		sink:                     sink,
 		RuntimeExecutor:          p.newRuntime(task.Paths),
 		workflow:                 cfg.WorkflowName,
 		workflowUID:              cfg.WorkflowUID,
@@ -1051,57 +1050,16 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
+// FinalizeOutput marks the task's outputs as completely reported.
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	var count uint64
-	err := retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
-		err := we.patchTaskResultLabels(ctx, map[string]string{
-			common.LabelKeyReportOutputsCompleted: "true",
-		})
-		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		} else if err != nil && count%20 == 0 {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
-		}
-		count++
-		return err
-	})
-	if err != nil {
+	if err := we.sink.Finalize(ctx); err != nil {
 		we.AddError(ctx, err)
 	}
 }
 
+// InitializeOutput records the task's placeholder result.
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	var count uint64
-	err := retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
-		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
-		if apierr.IsForbidden(err) {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		} else if err != nil && count%20 == 0 {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
-		}
-		count++
-		return err
-	})
-	if err != nil {
+	if err := we.sink.Start(ctx); err != nil {
 		we.AddError(ctx, err)
 	}
 }
@@ -1124,26 +1082,7 @@ func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
-	var count uint64 // used to avoid spamming with these messages
-	logger := logging.RequireLoggerFromContext(ctx)
-	return retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2.0,
-		Jitter:   0.2,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
-		err := we.upsertTaskResult(ctx, result)
-		if apierr.IsForbidden(err) {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		} else if err != nil && count%20 == 0 {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
-		}
-		count++
-		return err
-	})
+	return we.sink.Report(ctx, result)
 }
 
 // AddError adds an error to the list of encountered errors during execution
@@ -1575,7 +1514,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		message = "Step exceeded its deadline"
 	}
 	logger.Info(ctx, message)
-	util.WriteTerminateMessage(message)
+	we.sink.Fail(ctx, errors.New(message)) //nolint:staticcheck // the message is shown to users as is
 
 	containerNames = slices.DeleteFunc(containerNames, common.IsArtifactPluginSidecar)
 	we.killContainers(ctx, containerNames)

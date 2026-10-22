@@ -1,16 +1,19 @@
 package executor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	utilretry "github.com/argoproj/argo-workflows/v4/util/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
@@ -22,7 +25,7 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 	ctx := logging.TestContext(t.Context())
 	tracingObj, err := tracing.New(ctx, `argoexec`)
 	require.NoError(t, err)
-	return &WorkflowExecutor{
+	we := &WorkflowExecutor{
 		paths:           PodPaths(),
 		RuntimeExecutor: mockRuntime,
 		Process: &Process{
@@ -40,6 +43,8 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 		nodeID:      fakeNodeID,
 		Template:    tmpl,
 	}
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+	return we
 }
 
 // TestPostMain_ResourceShortCircuit verifies that Resource templates take the
@@ -135,4 +140,37 @@ func TestPostMain_WaitErrorIsAggregated(t *testing.T) {
 
 	err := we.PostMain(ctx, ctx, false)
 	require.Error(t, err, "Wait error must surface via HasError")
+}
+
+// ctxCheckingTaskResults fails calls made on a cancelled context, as a real
+// API client does.
+type ctxCheckingTaskResults struct {
+	argoprojv1.WorkflowTaskResultInterface
+}
+
+func (c ctxCheckingTaskResults) Create(ctx context.Context, r *wfv1.WorkflowTaskResult, opts metav1.CreateOptions) (*wfv1.WorkflowTaskResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return c.WorkflowTaskResultInterface.Create(ctx, r, opts)
+}
+
+// SIGTERM can cancel ctx before the wait/supervisor container gets this far;
+// the Run phase must still write the placeholder result, as it did before
+// the plan existed (InitializeOutput on the background context).
+func TestPostMain_PlaceholderResultSurvivesCancellation(t *testing.T) {
+	bgCtx := logging.TestContext(t.Context())
+	ctx, cancel := context.WithCancel(bgCtx)
+	cancel()
+	mockRuntime := &mocks.ContainerRuntimeExecutor{}
+	mockRuntime.On("Wait", mock.Anything, []string{"main"}).Return(context.Canceled)
+	we := newTestPostMainExecutor(t, wfv1.Template{Name: "container-tmpl"}, mockRuntime)
+	client := ctxCheckingTaskResults{we.taskResultClient}
+	we.taskResultClient = client
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+
+	we.runRecording(ctx, we.selectedPlan().Run, true)
+
+	_, err := client.Get(bgCtx, fakeNodeID, metav1.GetOptions{})
+	require.NoError(t, err)
 }
