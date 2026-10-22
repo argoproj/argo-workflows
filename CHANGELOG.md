@@ -240,7 +240,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.14...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.14...v4.1.0-rc1)
+Full Changelog: [v4.0.15...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.15...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -860,6 +860,21 @@ Full Changelog: [v4.0.14...v4.1.0-rc1](https://github.com/argoproj/argo-workflow
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.15 (2026-10-22)
+
+Full Changelog: [v4.0.14...v4.0.15](https://github.com/argoproj/argo-workflows/compare/v4.0.14...v4.0.15)
+
+### Selected Changes
+
+* [ed8eaf403](https://github.com/argoproj/argo-workflows/commit/ed8eaf4033e81773165e37a68a076c1fc203c102) fix(build): install Go 1.26 in the Windows builder, not an exact patch (release-4.0) (#17271)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 5.5 (1M context)
 
 </details>
 
