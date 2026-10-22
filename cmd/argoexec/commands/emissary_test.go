@@ -14,6 +14,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
@@ -209,35 +211,42 @@ func TestEmissary(t *testing.T) {
 }
 
 func run(script string) error {
-	ctx, err := testContext()
+	cmd := NewEmissaryCommand()
+	ctx, _, err := cmdutil.ContextWithLogger(cmd, string(logging.Info), string(logging.Text))
 	if err != nil {
 		return err
 	}
 	return runEmissary(ctx, "main", newPodSource("main", true, append([]string{"sh", "-c"}, script)), maindriver.Container{})
 }
 
-func testContext() (context.Context, error) {
-	ctx, _, err := cmdutil.ContextWithLogger(NewEmissaryCommand(), string(logging.Info), string(logging.Text))
-	return ctx, err
+const (
+	podTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	podTraceID     = "0af7651916cd43dd8448eb211c80319c"
+	podSpanID      = "b7ad6b7169203331"
+)
+
+func parseTraceParent(t *testing.T, traceParent string) trace.SpanContext {
+	t.Helper()
+	ctx := propagation.TraceContext{}.Extract(t.Context(), propagation.MapCarrier{"traceparent": traceParent})
+	spanContext := trace.SpanContextFromContext(ctx)
+	require.True(t, spanContext.IsValid(), "not a W3C traceparent: %q", traceParent)
+	return spanContext
 }
 
 // The user's process must see the emissary's runMainContainer span, a child
 // of the span the pod spec carries: same trace id, different span id.
 func TestEmissary_ChildGetsRunMainContainerTraceParent(t *testing.T) {
-	varRunArgo = t.TempDir()
+	useTempVarRunArgo(t)
 	require.NoError(t, os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600))
-	const podTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
 	t.Setenv("TRACEPARENT", podTraceParent)
 
 	require.NoError(t, run("echo -n \"$TRACEPARENT\""))
 
 	data, err := os.ReadFile(varRunArgo + "/ctr/main/stdout")
 	require.NoError(t, err)
-	got := strings.Split(string(data), "-")
-	require.Len(t, got, 4, "not a W3C traceparent: %q", data)
-	assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", got[1], "trace id must be the pod's")
-	assert.NotEqual(t, "b7ad6b7169203331", got[2], "span id must be runMainContainer's, not the pod's")
-	assert.Len(t, got[2], 16)
+	got := parseTraceParent(t, string(data))
+	assert.Equal(t, podTraceID, got.TraceID().String(), "trace id must be the pod's")
+	assert.NotEqual(t, podSpanID, got.SpanID().String(), "span id must be runMainContainer's, not the pod's")
 }
 
 // neverRunDriver fails the test if the harness reaches the driver.
@@ -260,10 +269,8 @@ func (l *taskList) Next(context.Context) (maindriver.Task, bool, error) {
 }
 
 func TestEmissary_TasksShareRootSpan(t *testing.T) {
-	varRunArgo = t.TempDir()
-	ctx, err := testContext()
-	require.NoError(t, err)
-	const podTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	useTempVarRunArgo(t)
+	ctx := logging.TestContext(t.Context())
 	t.Setenv("TRACEPARENT", podTraceParent)
 	task := maindriver.Task{
 		Template:            &wfv1.Template{},
@@ -280,13 +287,12 @@ func TestEmissary_TasksShareRootSpan(t *testing.T) {
 	require.NoError(t, err)
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
 	require.Len(t, lines, 2)
-	var spanIDs []string
+	var spanIDs []trace.SpanID
 	for _, line := range lines {
-		parts := strings.Split(line, "-")
-		require.Len(t, parts, 4, "not a W3C traceparent: %q", line)
-		assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", parts[1], "trace id must be the pod's")
-		assert.NotEqual(t, "b7ad6b7169203331", parts[2], "span id must not be the pod's")
-		spanIDs = append(spanIDs, parts[2])
+		got := parseTraceParent(t, line)
+		assert.Equal(t, podTraceID, got.TraceID().String(), "trace id must be the pod's")
+		assert.NotEqual(t, podSpanID, got.SpanID().String(), "span id must not be the pod's")
+		spanIDs = append(spanIDs, got.SpanID())
 	}
 	assert.Equal(t, spanIDs[0], spanIDs[1], "tasks run in the root span")
 }
@@ -294,10 +300,9 @@ func TestEmissary_TasksShareRootSpan(t *testing.T) {
 // A source with no task must fail the emissary rather than run an empty
 // command.
 func TestEmissary_ExhaustedSource(t *testing.T) {
-	varRunArgo = t.TempDir()
+	useTempVarRunArgo(t)
 	require.NoError(t, os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600))
-	ctx, err := testContext()
-	require.NoError(t, err)
+	ctx := logging.TestContext(t.Context())
 	source := newPodSource("main", false, []string{"true"})
 	_, ok, err := source.Next(ctx)
 	require.NoError(t, err)
