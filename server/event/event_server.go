@@ -23,9 +23,9 @@ type Controller struct {
 	instanceIDService    instanceid.Service
 	eventRecorderManager events.EventRecorderManager
 	// a channel for operations to be executed async on
-	operationQueue chan dispatch.Operation
-	workerCount    int
-	asyncDispatch  bool
+	operationQueue  chan dispatch.Operation
+	workerCount     int
+	asyncDispatch   bool
 	excludedHeaders map[string]struct{}
 }
 
@@ -39,9 +39,9 @@ func NewController(ctx context.Context, instanceIDService instanceid.Service, ev
 		instanceIDService:    instanceIDService,
 		eventRecorderManager: eventRecorderManager,
 		//  so we can have `operationQueueSize` operations outstanding before we start putting back pressure on the senders
-		operationQueue: make(chan dispatch.Operation, operationQueueSize),
-		workerCount:    workerCount,
-		asyncDispatch:  asyncDispatch,
+		operationQueue:  make(chan dispatch.Operation, operationQueueSize),
+		workerCount:     workerCount,
+		asyncDispatch:   asyncDispatch,
 		excludedHeaders: excludedHeaders,
 	}
 }

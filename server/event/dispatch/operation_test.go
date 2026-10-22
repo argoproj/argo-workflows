@@ -43,15 +43,15 @@ func Test_metaData(t *testing.T) {
 
 	t.Run("ExcludesConfiguredAuthenticationHeaders", func(t *testing.T) {
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.MD{
-			"x-proxy-auth":      []string{"super-secret"},
-			"x-forwarded-user":  []string{"student@example.com"},
+			"x-proxy-auth":       []string{"super-secret"},
+			"x-forwarded-user":   []string{"student@example.com"},
 			"x-forwarded-groups": []string{"admins"},
-			"x-custom-event":    []string{"pull-request"},
+			"x-custom-event":     []string{"pull-request"},
 		})
 
 		excludedHeaders := map[string]struct{}{
-			"x-proxy-auth":     {},
-			"x-forwarded-user": {},
+			"x-proxy-auth":       {},
+			"x-forwarded-user":   {},
 			"x-forwarded-groups": {},
 		}
 

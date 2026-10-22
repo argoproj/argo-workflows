@@ -245,15 +245,15 @@ func metaData(ctx context.Context, excludedHeaders map[string]struct{}) map[stri
 	for key, values := range md {
 		// only allow headers `X-`  headers, e.g. `X-Github-Action`
 		// otherwise, deny, e.g. deny `authorization` as this would leak security credentials
-        if !strings.HasPrefix(key, "x-") {
-            continue
-        }
+		if !strings.HasPrefix(key, "x-") {
+			continue
+		}
 
-        if _, excluded := excludedHeaders[strings.ToLower(key)]; excluded {
-            continue
-        }
+		if _, excluded := excludedHeaders[strings.ToLower(key)]; excluded {
+			continue
+		}
 
-        meta[key] = values
-    }
+		meta[key] = values
+	}
 	return meta
 }
