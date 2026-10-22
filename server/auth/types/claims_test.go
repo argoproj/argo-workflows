@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -215,6 +216,49 @@ func TestGetCustomGroup(t *testing.T) {
 		}}
 		_, err := claims.GetCustomGroup(("ad_groups"))
 		require.Error(t, err)
+	})
+}
+
+func TestExprEnv(t *testing.T) {
+	tests := []struct {
+		name     string
+		claims   *Claims
+		expected map[string]any
+	}{
+		{
+			name:     "NilGroups",
+			claims:   &Claims{Claims: jwt.Claims{Subject: "my-sub"}},
+			expected: map[string]any{"sub": "my-sub", "groups": []any{}},
+		},
+		{
+			name:     "EmptyGroups",
+			claims:   &Claims{Claims: jwt.Claims{Subject: "my-sub"}, Groups: []string{}},
+			expected: map[string]any{"sub": "my-sub", "groups": []any{}},
+		},
+		{
+			name:     "Groups",
+			claims:   &Claims{Claims: jwt.Claims{Subject: "my-sub"}, Groups: []string{"a", "b"}, Email: "my@example.com"},
+			expected: map[string]any{"sub": "my-sub", "groups": []any{"a", "b"}, "email": "my@example.com"},
+		},
+		{
+			name:     "NilClaims",
+			claims:   nil,
+			expected: map[string]any{"groups": []any{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env, err := tt.claims.ExprEnv()
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, env)
+		})
+	}
+	t.Run("GroupsRuleEvaluatesWithoutGroups", func(t *testing.T) {
+		env, err := (&Claims{}).ExprEnv()
+		require.NoError(t, err)
+		allow, err := argoexpr.EvalBool("'admin' in groups", env)
+		require.NoError(t, err)
+		assert.False(t, allow)
 	})
 }
 

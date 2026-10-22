@@ -94,6 +94,58 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
 		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sso-admin-sa", Namespace: "sso-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'admin' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "1",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "sso-secret"}},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sso-read-only-sa", Namespace: "sso-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "true",
+					common.AnnotationKeyRBACRulePrecedence: "0",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "sso-secret"}},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sso-typo-sa", Namespace: "sso-typo-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'admin' in grups",
+					common.AnnotationKeyRBACRulePrecedence: "1",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "sso-secret"}},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sso-typo-read-only-sa", Namespace: "sso-typo-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "true",
+					common.AnnotationKeyRBACRulePrecedence: "0",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "sso-secret"}},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sso-secret", Namespace: "sso-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "sso-secret", Namespace: "sso-typo-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "my-ns"},
 			Data: map[string][]byte{
@@ -335,6 +387,46 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
+		require.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
+	})
+	for _, tc := range []struct {
+		name   string
+		groups []string
+	}{
+		{name: "nil", groups: nil},
+		{name: "empty", groups: []string{}},
+	} {
+		t.Run("SSO+RBAC, no groups ("+tc.name+"), falls back to precedence=0", func(t *testing.T) {
+			ssoIf := &ssomocks.Interface{}
+			ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "no-groups"}, Groups: tc.groups}, nil)
+			ssoIf.On("IsRBACEnabled").Return(true)
+			g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "sso-ns", "sso-ns", true, resourceCache, time.Minute)
+			require.NoError(t, err)
+			ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
+			require.NoError(t, err)
+			claims := GetClaims(ctx)
+			require.NotNil(t, claims)
+			assert.Equal(t, "sso-read-only-sa", claims.ServiceAccountName)
+			assert.Equal(t, tc.groups, claims.Groups)
+		})
+	}
+	t.Run("SSO+RBAC, admin group matches precedence=1", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"admin"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "sso-ns", "sso-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
+		require.NoError(t, err)
+		assert.Equal(t, "sso-admin-sa", GetClaims(ctx).ServiceAccountName)
+	})
+	t.Run("SSO+RBAC, rule that fails to evaluate denies", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"admin"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "sso-typo-ns", "sso-typo-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
