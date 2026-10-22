@@ -9,12 +9,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"net/http"
+
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"net/http"
 )
 
 func TestNewArgoServerIgnoresLogoutRedirectOutsideSSO(t *testing.T) {

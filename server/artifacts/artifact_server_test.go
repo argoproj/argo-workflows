@@ -32,8 +32,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
 	ktesting "k8s.io/client-go/testing"
+
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"

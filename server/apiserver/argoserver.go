@@ -125,9 +125,12 @@ type ArgoServerOpts struct {
 	AuthModes                           auth.Modes
 	InsecureTrustUnauthenticatedHeaders bool
 	// config map name
-	ConfigName               string
-	ManagedNamespace         string
-	SSONamespace             string
+	ConfigName       string
+	ManagedNamespace string
+	SSONamespace     string
+	// HeaderNamespace is where login-level RBAC rules are looked up for
+	// trusted-header users. Currently the same value as SSONamespace.
+	HeaderNamespace          string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
@@ -153,7 +156,7 @@ func getExcludedHeaders(c config.HeaderConfig) map[string]struct{} {
 		c.Subject.Header,
 		c.Email.Header,
 		c.PreferredUsername.Header,
-		c.Groups.ClaimSource.Header,
+		c.Groups.Header,
 	}
 
 	if c.SharedSecret != nil {
@@ -222,7 +225,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
 		resourceCache.Run(ctx.Done())
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, headerIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache, envutil.LookupEnvDurationOr(ctx, "ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL", time.Minute))
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, headerIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.HeaderNamespace, opts.Namespaced, resourceCache, envutil.LookupEnvDurationOr(ctx, "ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL", time.Minute))
 	if err != nil {
 		return nil, err
 	}

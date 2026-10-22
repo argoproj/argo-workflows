@@ -73,10 +73,45 @@ type gatekeeper struct {
 	// The namespace the server is installed in.
 	namespace    string
 	ssoNamespace string
-	namespaced   bool
-	cache        *cache.ResourceCache
+	// HeaderNamespace is where login-level RBAC rules are looked up for
+	// trusted-header users. Currently the same value as SSONamespace.
+	headerNamespace string
+	namespaced      bool
+	cache           *cache.ResourceCache
 	// successful client-mode token reviews, keyed by a digest of the authorization header
 	tokenReviewCache cache.Interface
+}
+
+type rbacSourceKind int
+
+const (
+	rbacSourceSSO rbacSourceKind = iota
+	rbacSourceHeader
+)
+
+const (
+	ssoDelegateRBACEnvVar    = "SSO_DELEGATE_RBAC_TO_NAMESPACE"
+	headerDelegateRBACEnvVar = "HEADER_DELEGATE_RBAC_TO_NAMESPACE"
+)
+
+// rbacSource describes where RBAC rules for a credential source are looked up
+// and which env var enables namespace delegation for it.
+type rbacSource struct {
+	name           string // used in log messages
+	namespace      string // login-level rule namespace
+	delegateEnvVar string // env var enabling namespace delegation
+}
+
+// rbacSourceFor returns the RBAC settings for the given credential source.
+// SSO and header users share the same service accounts and rules, but have
+// separate login namespaces and delegation switches.
+func (s *gatekeeper) rbacSourceFor(kind rbacSourceKind) rbacSource {
+	switch kind {
+	case rbacSourceHeader:
+		return rbacSource{name: "header", namespace: s.headerNamespace, delegateEnvVar: headerDelegateRBACEnvVar}
+	default:
+		return rbacSource{name: "SSO", namespace: s.ssoNamespace, delegateEnvVar: ssoDelegateRBACEnvVar}
+	}
 }
 
 type authorizationCredential struct {
@@ -91,7 +126,7 @@ const tokenReviewCacheSize = 1000
 // errTokenNotValid is the Unauthenticated message that links users to the FAQ.
 const errTokenNotValid = "token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/"
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, headerIf header.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, resourceCache *cache.ResourceCache, tokenReviewCacheTTL time.Duration) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, headerIf header.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, headerNamespace string, namespaced bool, resourceCache *cache.ResourceCache, tokenReviewCacheTTL time.Duration) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -104,6 +139,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		clientForAuthorization,
 		namespace,
 		ssoNamespace,
+		headerNamespace,
 		namespaced,
 		resourceCache,
 		cache.NewLRUTtlCache(tokenReviewCacheTTL, tokenReviewCacheSize),
@@ -309,7 +345,7 @@ func (s *gatekeeper) authenticateSSO(
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	return s.authenticateClaims(ctx, claims, req, s.ssoIf.IsRBACEnabled())
+	return s.authenticateClaims(ctx, s.rbacSourceFor(rbacSourceSSO), claims, req, s.ssoIf.IsRBACEnabled())
 }
 
 func (s *gatekeeper) authenticateHeader(
@@ -325,11 +361,12 @@ func (s *gatekeeper) authenticateHeader(
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	return s.authenticateClaims(ctx, claims, req, s.headerIf.IsRBACEnabled())
+	return s.authenticateClaims(ctx, s.rbacSourceFor(rbacSourceHeader), claims, req, s.headerIf.IsRBACEnabled())
 }
 
 func (s *gatekeeper) authenticateClaims(
 	ctx context.Context,
+	src rbacSource,
 	claims *authTypes.Claims,
 	req any,
 	rbacEnabled bool,
@@ -337,7 +374,7 @@ func (s *gatekeeper) authenticateClaims(
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if rbacEnabled {
-		clients, err := s.rbacAuthorization(ctx, claims, req)
+		clients, err := s.rbacAuthorization(ctx, src, claims, req)
 		if err != nil {
 			logger.WithError(err).Error(ctx, "failed to perform RBAC authorization")
 			return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -369,7 +406,7 @@ func precedence(serviceAccount *corev1.ServiceAccount) int {
 func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace string) (*corev1.ServiceAccount, error) {
 	list, err := s.cache.ServiceAccountLister.ServiceAccounts(namespace).List(labels.Everything())
 	if err != nil {
-		return nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
+		return nil, fmt.Errorf("failed to list RBAC service accounts: %w", err)
 	}
 	var serviceAccounts []*corev1.ServiceAccount
 	for _, serviceAccount := range list {
@@ -398,12 +435,12 @@ func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace strin
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) canDelegateRBACToRequestNamespace(req any) bool {
-	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(src rbacSource, req any) bool {
+	if s.namespaced || os.Getenv(src.delegateEnvVar) != "true" {
 		return false
 	}
 	namespace := getNamespace(req)
-	return len(namespace) != 0 && s.ssoNamespace != namespace
+	return len(namespace) != 0 && src.namespace != namespace
 }
 
 func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *authTypes.Claims, serviceAccount *corev1.ServiceAccount) (*servertypes.Clients, error) {
@@ -420,22 +457,22 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *au
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Claims, req any) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, src rbacSource, claims *authTypes.Claims, req any) (*servertypes.Clients, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	ssoDelegationAllowed, ssoDelegated := false, false
-	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
+	delegationAllowed, delegated := false, false
+	loginAccount, err := s.getServiceAccount(claims, src.namespace)
 	if err != nil && !strings.Contains(err.Error(), "no service account rule matches") {
 		return nil, err
 	}
 	delegatedAccount := loginAccount
-	if s.canDelegateRBACToRequestNamespace(req) {
-		ssoDelegationAllowed = true
+	if s.canDelegateRBACToRequestNamespace(src, req) {
+		delegationAllowed = true
 		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err != nil {
-			logger.WithError(err).Info(ctx, "Error while SSO Delegation")
+			logger.WithError(err).Info(ctx, fmt.Sprintf("Error while %s delegation", src.name))
 		} else if loginAccount == nil || precedence(namespaceAccount) > precedence(loginAccount) {
 			delegatedAccount = namespaceAccount
-			ssoDelegated = true
+			delegated = true
 		}
 	}
 	if delegatedAccount == nil {
@@ -443,16 +480,17 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Cl
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 	fields := logging.Fields{
-		"serviceAccount":       delegatedAccount.Name,
-		"subject":              claims.Subject,
-		"email":                claims.Email,
-		"ssoDelegationAllowed": ssoDelegationAllowed,
-		"ssoDelegated":         ssoDelegated,
+		"serviceAccount":    delegatedAccount.Name,
+		"subject":           claims.Subject,
+		"email":             claims.Email,
+		"rbacSource":        src.name,
+		"delegationAllowed": delegationAllowed,
+		"delegated":         delegated,
 	}
 	if loginAccount != nil {
 		fields["loginServiceAccount"] = loginAccount.Name
 	}
-	logger.WithFields(fields).Info(ctx, "selected SSO RBAC service account for user")
+	logger.WithFields(fields).Info(ctx, fmt.Sprintf("selected %s RBAC service account for user", src.name))
 	return s.getClientsForServiceAccount(ctx, claims, delegatedAccount)
 }
 
