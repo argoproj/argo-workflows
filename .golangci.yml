@@ -127,6 +127,11 @@ linters:
     staticcheck:
       checks:
         - all
+    modernize:
+      disable:
+        # Promoted fields in composite literals need Go 1.27; code rewritten this way
+        # will not compile on release branches still on Go 1.26, breaking cherry-picks.
+        - embedlit
     govet:
       enable:
         # Check for missing values after append.
