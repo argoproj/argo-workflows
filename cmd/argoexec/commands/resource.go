@@ -46,7 +46,11 @@ func execResource(ctx context.Context, action string) error {
 	wfExecutor.InitializeOutput(bgCtx)
 	errHandler := wfExecutor.HandleError(bgCtx)
 	defer errHandler()
-	if !wfExecutor.Template.SaveLogsAsArtifact() {
+	// A resource template that archives its logs also runs a wait container,
+	// which reports the logs after this container exits and completes the
+	// task result then. Otherwise this container's report is the last.
+	finalReport := !wfExecutor.Template.SaveLogsAsArtifact()
+	if finalReport {
 		defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	}
 	err := wfExecutor.StageFiles(ctx)
@@ -84,7 +88,7 @@ func execResource(ctx context.Context, action string) error {
 			wfExecutor.AddError(ctx, err)
 			return err
 		}
-		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceName)
+		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceName, finalReport)
 		if err != nil {
 			wfExecutor.AddError(ctx, err)
 			return err

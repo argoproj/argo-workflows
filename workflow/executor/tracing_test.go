@@ -6,11 +6,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	corev1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 	exectracing "github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
@@ -145,25 +149,25 @@ func TestTracingArtifactSaveSpans(t *testing.T) {
 }
 
 // TestTracingWaitContainerChildSpans verifies all spans that are direct children of runWaitContainer:
-// createTaskResult, patchTaskResult, patchTaskResultLabels, waitWorkload
+// createTaskResult, patchTaskResult, waitWorkload. The task result spans
+// come from the executor's own writes, so their marks_completed attribute
+// is the one each write computed.
 func TestTracingWaitContainerChildSpans(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
 	tr, exporter, err := exectracing.CreateDefaultTestTracing(ctx)
 	require.NoError(t, err)
+	we := newTaskResultTestExecutor(t, wfv1.Template{Container: &corev1.Container{}}, &mocks.ContainerRuntimeExecutor{}, argofake.NewClientset())
+	we.Tracing = tr
 
 	// Create parent span
 	ctx, waitSpan := tr.StartRunWaitContainer(ctx, fakeWorkflow, fakeNamespace)
 
-	// Create all child spans
-	_, createSpan := tr.StartCreateTaskResult(ctx)
-	createSpan.End()
-
-	_, patchSpan := tr.StartPatchTaskResult(ctx)
-	patchSpan.End()
-
-	_, patchLabelsSpan := tr.StartPatchTaskResultLabels(ctx)
-	patchLabelsSpan.End()
+	// Create all child spans: the placeholder, a progress report and the
+	// final report.
+	we.InitializeOutput(ctx)
+	require.NoError(t, we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}, nil))
+	require.NoError(t, we.ReportOutputs(ctx, nil, true))
 
 	_, workloadSpan := tr.StartWaitWorkload(ctx)
 	workloadSpan.End()
@@ -176,26 +180,31 @@ func TestTracingWaitContainerChildSpans(t *testing.T) {
 	parentSpanID := waitCollected.SpanContext().SpanID()
 	traceID := waitCollected.SpanContext().TraceID()
 
+	marksCompleted := func(span sdktrace.ReadOnlySpan) bool {
+		attribs := attribute.NewSet(span.Attributes()...)
+		val, ok := attribs.Value(attribute.Key(telemetry.AttribTaskResultMarksCompleted))
+		require.True(t, ok)
+		return val.AsBool()
+	}
+
 	// Verify createTaskResult
 	createCollected, err := exporter.GetSpanByName("createTaskResult")
 	require.NoError(t, err)
 	assert.Equal(t, trace.SpanKindInternal, createCollected.SpanKind())
 	assert.Equal(t, parentSpanID, createCollected.Parent().SpanID(), "createTaskResult parent should be runWaitContainer")
 	assert.Equal(t, traceID, createCollected.SpanContext().TraceID())
+	assert.False(t, marksCompleted(createCollected), "the placeholder doesn't complete the result")
 
 	// Verify patchTaskResult
-	patchCollected, err := exporter.GetSpanByName("patchTaskResult")
-	require.NoError(t, err)
-	assert.Equal(t, trace.SpanKindInternal, patchCollected.SpanKind())
-	assert.Equal(t, parentSpanID, patchCollected.Parent().SpanID(), "patchTaskResult parent should be runWaitContainer")
-	assert.Equal(t, traceID, patchCollected.SpanContext().TraceID())
-
-	// Verify patchTaskResultLabels
-	patchLabelsCollected, err := exporter.GetSpanByName("patchTaskResultLabels")
-	require.NoError(t, err)
-	assert.Equal(t, trace.SpanKindInternal, patchLabelsCollected.SpanKind())
-	assert.Equal(t, parentSpanID, patchLabelsCollected.Parent().SpanID(), "patchTaskResultLabels parent should be runWaitContainer")
-	assert.Equal(t, traceID, patchLabelsCollected.SpanContext().TraceID())
+	patchesCollected := exporter.GetSpansByName("patchTaskResult")
+	require.Len(t, patchesCollected, 2)
+	for _, patchCollected := range patchesCollected {
+		assert.Equal(t, trace.SpanKindInternal, patchCollected.SpanKind())
+		assert.Equal(t, parentSpanID, patchCollected.Parent().SpanID(), "patchTaskResult parent should be runWaitContainer")
+		assert.Equal(t, traceID, patchCollected.SpanContext().TraceID())
+	}
+	assert.False(t, marksCompleted(patchesCollected[0]), "a progress report doesn't complete the result")
+	assert.True(t, marksCompleted(patchesCollected[1]), "the final report completes the result")
 
 	// Verify waitWorkload
 	workloadCollected, err := exporter.GetSpanByName("waitWorkload")
