@@ -2,11 +2,13 @@ package http
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -260,5 +262,77 @@ func TestSaveInvalidArtifactLocation(t *testing.T) {
 		err := driver.Save(ctx, tempFile, art)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Either Artifactory or HTTP artifact needs to be configured")
+	})
+}
+
+func TestSaveRetry(t *testing.T) {
+	t.Setenv("EXECUTOR_RETRY_BACKOFF_DURATION", "1ms")
+	t.Setenv("EXECUTOR_RETRY_BACKOFF_STEPS", "3")
+	content := "main container log"
+	tempFile := filepath.Join(t.TempDir(), "main.log")
+	require.NoError(t, os.WriteFile(tempFile, []byte(content), 0o600))
+
+	save := func(t *testing.T, url string) error {
+		t.Helper()
+		driver := &ArtifactDriver{Client: &http.Client{}}
+		art := &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{Artifactory: &wfv1.ArtifactoryArtifact{URL: url}},
+		}
+		return driver.Save(logging.TestContext(t.Context()), tempFile, art)
+	}
+
+	tests := []struct {
+		name             string
+		statuses         []int // response status per attempt, the last one repeats
+		transientPattern string
+		wantAttempts     int32
+		wantErr          string
+	}{
+		{name: "succeeds after 5xx responses", statuses: []int{http.StatusServiceUnavailable, http.StatusBadGateway, http.StatusCreated}, wantAttempts: 3},
+		{name: "retries 408 and 429", statuses: []int{http.StatusRequestTimeout, http.StatusTooManyRequests, http.StatusCreated}, wantAttempts: 3},
+		{name: "gives up after EXECUTOR_RETRY_BACKOFF_STEPS attempts", statuses: []int{http.StatusInternalServerError}, wantAttempts: 3, wantErr: "500 Internal Server Error"},
+		{name: "does not retry a 4xx", statuses: []int{http.StatusForbidden}, wantAttempts: 1, wantErr: "403 Forbidden"},
+		{name: "retries a 4xx matching TRANSIENT_ERROR_PATTERN", statuses: []int{http.StatusUnauthorized, http.StatusCreated}, transientPattern: "401 Unauthorized", wantAttempts: 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("TRANSIENT_ERROR_PATTERN", tt.transientPattern)
+			var attempts atomic.Int32
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// every attempt must re-send the whole file
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, content, string(body))
+				n := int(attempts.Add(1))
+				w.WriteHeader(tt.statuses[min(n, len(tt.statuses))-1])
+			}))
+			defer svr.Close()
+
+			err := save(t, svr.URL)
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tt.wantErr)
+			}
+			assert.Equal(t, tt.wantAttempts, attempts.Load())
+		})
+	}
+
+	t.Run("retries a dropped connection", func(t *testing.T) {
+		var attempts atomic.Int32
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if attempts.Add(1) == 1 {
+				conn, _, err := http.NewResponseController(w).Hijack()
+				if assert.NoError(t, err) {
+					_ = conn.Close()
+				}
+				return
+			}
+			w.WriteHeader(http.StatusCreated)
+		}))
+		defer svr.Close()
+
+		require.NoError(t, save(t, svr.URL))
+		assert.Equal(t, int32(2), attempts.Load())
 	})
 }
