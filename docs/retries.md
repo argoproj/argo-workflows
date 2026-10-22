@@ -112,6 +112,14 @@ This is an [expr expression](variables.md#expression) with access to the followi
     expression: lastRetry.message matches 'imminent node shutdown|pod deleted'
     ```
 
+- `lastRetry.exitCodes`: The exit codes of all previous attempts as a comma-separated string, oldest first, or empty on the first attempt.
+  Attempts without an exit code are skipped.
+
+    ```yaml
+    # Retry unless the step has already run out of memory (exit 137) three times
+    expression: len(filter(split(lastRetry.exitCodes, ','), {# == '137'})) < 3
+    ```
+
 If `expression` evaluates to false, the step will not be retried.
 
 The `expression` result will be logical *and* with the `retryPolicy`. Both must be true to retry.

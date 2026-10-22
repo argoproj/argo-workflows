@@ -2240,6 +2240,18 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	return &lastChildNode
 }
 
+// retryExitCodes joins the exit codes of the given retry children, oldest first, skipping children without one.
+func retryExitCodes(childNodeIDs []string, nodes wfv1.Nodes) string {
+	exitCodes := make([]string, 0, len(childNodeIDs))
+	for _, childID := range childNodeIDs {
+		if childNode, err := nodes.Get(childID); err == nil && childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
+			exitCodes = append(exitCodes, *childNode.Outputs.ExitCode)
+		}
+	}
+	return strings.Join(exitCodes, ",")
+}
+
+// buildRetryStrategyLocalScope returns the lastRetry.* variables for retryStrategy.expression.
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]any {
 	localScope := make(map[string]any)
 
@@ -2259,6 +2271,8 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[varkeys.RetriesLastStatus.Template()] = string(lastChildNode.Phase)
 	localScope[varkeys.RetriesLastDuration.Template()] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[varkeys.RetriesLastMessage.Template()] = lastChildNode.Message
+
+	localScope[varkeys.RetriesExitCodes.Template()] = retryExitCodes(childNodeIds, nodes)
 
 	return localScope
 }

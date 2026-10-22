@@ -234,8 +234,21 @@ When using the `expression` field within `retryStrategy`, special variables are 
 | `lastRetry.status` | Status of the last retry |
 | `lastRetry.duration` | Duration in seconds of the last retry |
 | `lastRetry.message` | Message output from the last retry |
+| `lastRetry.exitCodes` | Comma-separated exit codes of the previous attempts, oldest first (empty on the first attempt). Attempts without an exit code are left out, where `lastRetry.exitCode` reports them as `-1` |
 
 Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
+
+`lastRetry.exitCodes` carries the full history so an expression can escalate a resource cumulatively per failure type, for example to grow memory once per prior OOM and hold it across non-OOM (eviction) retries, which `lastRetry.exitCode` (the last attempt alone) cannot express:
+
+```yaml
+podSpecPatch: |
+  containers:
+    - name: main
+      resources:
+        limits:
+          # 2Gi base + 1Gi per previous OOM (exit 137); held across non-OOM retries
+          memory: "{{=2 + (len(filter(split(lastRetry.exitCodes, ','), {# == '137'})))}}Gi"
+```
 
 ### Container/Script Templates
 
@@ -243,7 +256,7 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
-| `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry |
+| `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry, plus `exitCodes`, the comma-separated exit codes of all previous attempts |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
