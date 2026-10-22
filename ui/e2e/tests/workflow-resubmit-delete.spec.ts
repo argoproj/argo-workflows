@@ -1,3 +1,4 @@
+import {NAMESPACE} from '../fixtures/auth';
 import {expect, test} from '../fixtures/test';
 import {echoWorkflow} from '../fixtures/workflows';
 
@@ -32,4 +33,22 @@ test('deletes a workflow from the list', async ({api, confirmDialog, workflowLis
     await confirmDialog.ok.click();
 
     await expect(workflowListPage.row(name)).toBeHidden();
+});
+
+test('stays on the details page and shows the error when a delete is denied', async ({api, confirmDialog, page, workflowDetailsPage}) => {
+    const name = await api.submitWorkflow(echoWorkflow());
+    await api.waitForPhase(name, 'Succeeded');
+
+    // Stand in for an API server that rejects the delete, as it does when RBAC does not allow it.
+    const message = 'Permission denied, you do not have access to delete workflows';
+    await page.route(new RegExp(`/api/v1/workflows/${NAMESPACE}/${name}$`), route =>
+        route.request().method() === 'DELETE' ? route.fulfill({status: 403, json: {code: 7, message}}) : route.fallback()
+    );
+
+    await workflowDetailsPage.goto(name);
+    await workflowDetailsPage.operation('Delete').click();
+    await confirmDialog.ok.click();
+
+    await expect(page.getByText(message)).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/workflows/${NAMESPACE}/${name}`));
 });
