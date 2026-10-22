@@ -10,6 +10,10 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
@@ -126,38 +130,54 @@ func (h *ArtifactDriver) buildPutRequest(ctx context.Context, body io.Reader, ou
 
 // doPutRequest sends req and fails on a non-2xx response. what describes the
 // operation in error messages, e.g. "saving file /tmp/x" or "saving stream".
-func (h *ArtifactDriver) doPutRequest(req *http.Request, url, what string) error {
+// The returned status code is 0 if no response was received.
+func (h *ArtifactDriver) doPutRequest(req *http.Request, url, what string) (int, error) {
 	res, err := h.Client.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer func() {
 		_ = res.Body.Close()
 	}()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("%s to %s failed with reason: %s", what, url, res.Status)
+		return res.StatusCode, errors.InternalErrorf("%s to %s failed with reason: %s", what, url, res.Status)
 	}
-	return nil
+	return res.StatusCode, nil
 }
 
-// Save writes the artifact to the URL
+// isTransientSaveErr reports whether a failed upload is worth retrying: a 408,
+// 429 or 5xx response, or an error util/errors classifies as transient (network
+// errors and TRANSIENT_ERROR_PATTERN matches).
+func isTransientSaveErr(ctx context.Context, statusCode int, err error) bool {
+	if statusCode == http.StatusRequestTimeout || statusCode == http.StatusTooManyRequests || (statusCode >= 500 && statusCode < 600) {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Info(ctx, "Transient error")
+		return true
+	}
+	return errutil.IsTransientErr(ctx, err)
+}
+
+// Save writes the artifact to the URL, retrying transient failures with the
+// EXECUTOR_RETRY_BACKOFF_* backoff.
 func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	cleanPath := filepath.Clean(path)
-	f, err := os.Open(cleanPath)
-	if err != nil {
-		return err
-	}
-	req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
-	if err != nil {
-		// The request never gets sent, so nothing else will close f.
-		_ = f.Close()
-		return err
-	}
-	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
-	req.GetBody = func() (io.ReadCloser, error) {
-		return os.Open(cleanPath)
-	}
-	return h.doPutRequest(req, url, fmt.Sprintf("saving file %s", path))
+	return waitutil.Backoff(retry.ExecutorRetry(ctx), func() (bool, error) {
+		f, err := os.Open(cleanPath)
+		if err != nil {
+			return true, err
+		}
+		req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
+		if err != nil {
+			// The request never gets sent, so nothing else will close f.
+			_ = f.Close()
+			return true, err
+		}
+		// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
+		req.GetBody = func() (io.ReadCloser, error) {
+			return os.Open(cleanPath)
+		}
+		statusCode, err := h.doPutRequest(req, url, fmt.Sprintf("saving file %s", path))
+		return err == nil || !isTransientSaveErr(ctx, statusCode, err), err
+	})
 }
 
 // SaveStream saves an artifact from an io.Reader to HTTP URL
@@ -177,7 +197,8 @@ func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outpu
 	if err != nil {
 		return err
 	}
-	return h.doPutRequest(req, url, "saving stream")
+	_, err = h.doPutRequest(req, url, "saving stream")
+	return err
 }
 
 // Delete is unsupported for the http artifacts
