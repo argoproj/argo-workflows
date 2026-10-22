@@ -25,7 +25,7 @@ func NewDataCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func execData(ctx context.Context) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 

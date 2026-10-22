@@ -28,7 +28,7 @@ func NewResourceCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func execResource(ctx context.Context, action string) error {
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 
