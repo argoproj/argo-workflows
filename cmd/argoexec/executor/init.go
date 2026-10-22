@@ -63,15 +63,14 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
 	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
 
-	cre, err := emissary.New()
-	CheckErr(err)
-
 	process, err := executor.NewProcess(
 		ctx,
 		clientset,
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
-		cre,
+		func(paths executor.TaskPaths) executor.ContainerRuntimeExecutor {
+			return emissary.New(paths.VarRunArgo)
+		},
 		executor.ProcessConfig{
 			PodName:                      podName,
 			PodUID:                       types.UID(os.Getenv(common.EnvVarPodUID)),
@@ -138,7 +137,7 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 // environment.
 func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
 	process := InitProcess(ctx, clientConfig)
-	wfExecutor := process.NewExecutor(TaskConfigFromEnv(varRunArgo))
+	wfExecutor := process.NewExecutor(executor.Task{Config: TaskConfigFromEnv(varRunArgo), Paths: PodPaths(varRunArgo)})
 
 	logging.RequireLoggerFromContext(ctx).
 		WithFields(argo.GetVersion().Fields()).
