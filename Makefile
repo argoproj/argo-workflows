@@ -324,7 +324,7 @@ cli: dist/argo ## Build the CLI
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
-	JOBS=max yarn --cwd ui install
+	JOBS=max sh hack/retry-download.sh yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 else
@@ -852,7 +852,7 @@ test-%-sdk:
 # Explicit target so it is not captured by the `test-%` Go e2e pattern rule above.
 .PHONY: test-ui-e2e
 test-ui-e2e:
-	yarn --cwd ui install
+	sh hack/retry-download.sh yarn --cwd ui install
 	yarn --cwd ui e2e
 
 Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
