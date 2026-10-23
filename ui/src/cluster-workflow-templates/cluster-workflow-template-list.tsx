@@ -94,7 +94,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                                     <i className='fa fa-clone' />
                                 </div>
                                 <Link to={{pathname: uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}} className='columns small-5'>
-                                    <ClusterWorkflowTemplateMarkdown workflow={t} key={`{t.metadata.namespace}/${t.metadata.name}`} />
+                                    <ClusterWorkflowTemplateMarkdown workflow={t} key={`${t.metadata.namespace}/${t.metadata.name}`} />
                                 </Link>
                                 <div className='columns small-3'>
                                     <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
