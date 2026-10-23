@@ -130,6 +130,8 @@ Gains may vary under load: if the workflow informer is behind the controller's l
 |----------------------------------------|-----------------|---------|--------------------------------------------------------------------------------------------------------|
 | `ARGO_DEBUG_PAUSE_AFTER`               | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) after step execution
 | `ARGO_DEBUG_PAUSE_BEFORE`              | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) before step execution
+| `ARGO_PPROF`                           | `bool`          | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints on the executor, bound to loopback inside the pod. See [Profiling the executor](#profiling-the-executor).
+| `ARGO_PPROF_PORT`                      | `string`        | `6060`  | Port for the executor's `pprof` endpoints. Change it if your own container already uses the default.
 | `ARTIFACT_S3_UPLOAD_THREADS`           | `int`               | `4`                                                                                         | Number of threads for artifact upload through S3. Default: 4.                                                                                                                                                                                                            |
 | `ARTIFACT_S3_UPLOAD_PART_SIZE_MIB`     | `int`               | ``                                                                                          | Size in MiB of the part of a Multipart upload. Default: let MinIO calculate automatically (16 MiB for file <= 156 GiB).                                                                                                                                                     |
 | `EXECUTOR_RETRY_BACKOFF_DURATION`      | `time.Duration` | `1s`    | The retry back-off duration when the workflow executor performs retries.                               |
@@ -153,6 +155,31 @@ data:
       - name: RESOURCE_STATE_CHECK_INTERVAL
         value: 3s
 ```
+
+### Profiling the executor
+
+The `wait` and `supervisor` containers expose the Go profiling endpoints when you set `ARGO_PPROF` to `true`.
+Use this when an executor container grows in memory or CPU over the life of a step, which you cannot see from outside the process.
+
+Set the variable on the executor in your `workflow-controller-configmap`:
+
+```yaml
+executor:
+  env:
+    - name: ARGO_PPROF
+      value: "true"
+```
+
+Then forward the port from a pod that is still running and collect a profile:
+
+```bash
+kubectl port-forward POD 6060:6060
+go tool pprof http://127.0.0.1:6060/debug/pprof/heap
+```
+
+The endpoints listen on loopback inside the pod, so they are not reachable from the rest of the cluster, and `kubectl port-forward` still reaches them.
+They are unauthenticated and anyone who can exec into the pod can read them, so turn them on only while you are investigating.
+The executor shares a network namespace with your own containers; if one of them already listens on `6060`, set `ARGO_PPROF_PORT` to a free port.
 
 ## Argo Server
 
