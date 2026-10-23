@@ -12,7 +12,6 @@ spec:
             - server
             - --secure=false
             - --auth-mode=hybrid
-            - --auth-mode=header
           readinessProbe:
             httpGet:
               scheme: HTTP
