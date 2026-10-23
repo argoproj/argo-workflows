@@ -1,0 +1,92 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-step-dvbnn
+spec:
+
+  entrypoint: daemon-example
+  templates:
+  -
+    inputs: {}
+    metadata: {}
+    name: daemon-example
+    outputs: {}
+    steps:
+    - -
+        name: influx
+        template: influxdb
+  -
+    container:
+      image: influxdb:1.2
+      name: ""
+      readinessProbe:
+        httpGet:
+          path: /ping
+          port: 8086
+      resources: {}
+    daemon: true
+    inputs: {}
+    metadata: {}
+    name: influxdb
+    outputs: {}
+    retryStrategy:
+      limit: 10
+status:
+  finishedAt: null
+  nodes:
+    daemon-step-dvbnn:
+      children:
+      - daemon-step-dvbnn-1159996203
+      displayName: daemon-step-dvbnn
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn
+      name: daemon-step-dvbnn
+      outboundNodes:
+      - daemon-step-dvbnn-2254877734
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: daemon-example
+      type: Steps
+    daemon-step-dvbnn-1159996203:
+      boundaryID: daemon-step-dvbnn
+      children:
+      - daemon-step-dvbnn-3639466923
+      displayName: '[0]'
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-1159996203
+      name: daemon-step-dvbnn[0]
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: daemon-example
+      type: StepGroup
+    daemon-step-dvbnn-2254877734:
+      boundaryID: daemon-step-dvbnn
+      daemoned: true
+      displayName: influx(0)
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-2254877734
+      name: daemon-step-dvbnn[0].influx(0)
+      phase: Running
+      podIP: 172.17.0.8
+      resourcesDuration:
+        cpu: 10
+        memory: 0
+      startedAt: "2020-04-02T16:29:18Z"
+      hostNodeName: ip-127-0-1-1
+      templateName: influxdb
+      type: Pod
+    daemon-step-dvbnn-3639466923:
+      boundaryID: daemon-step-dvbnn
+      children:
+      - daemon-step-dvbnn-2254877734
+      displayName: influx
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-3639466923
+      name: daemon-step-dvbnn[0].influx
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: influxdb
+      type: Retry
+  phase: Succeeded
+  startedAt: "2020-04-02T16:29:18Z"
+
