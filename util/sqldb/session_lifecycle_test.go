@@ -5,12 +5,17 @@ import (
 	"database/sql"
 	"errors"
 	"io"
+	"net"
+	"strconv"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upper/db/v4"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -47,31 +52,85 @@ func TestSessionProxyCloseRejectsAutomaticReconnect(t *testing.T) {
 		t.Error("operation ran after explicit Close")
 		return nil
 	})
-	require.ErrorContains(t, err, "session proxy is closed")
+	require.ErrorIs(t, err, errSessionProxyClosed)
 
 	// An operation that failed before Close must not reopen the proxy later.
 	err = proxy.reconnectIfStale(ctx, sess)
-	require.ErrorContains(t, err, "session proxy is closed")
+	require.ErrorIs(t, err, errSessionProxyClosed)
 	assert.Equal(t, 1, sess.closeCalls)
 }
 
-func TestSessionProxyFailedReconnectAllowsLaterAttempt(t *testing.T) {
+func TestSessionProxyFailedReconnectKeepsProxyOpen(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sess := &lifecycleSessionStub{}
 	// Missing credentials fail immediately, without a database or retry delays.
 	proxy := &SessionProxy{sess: sess}
 
 	require.ErrorContains(t, proxy.Reconnect(ctx), "insufficient authentication information")
-	assert.Equal(t, 1, sess.closeCalls)
 
-	err := proxy.With(ctx, func(db.Session) error {
-		t.Error("operation ran without a successful reconnection")
+	// The proxy stays open with the old session, whose pool redials by itself.
+	calls := 0
+	require.NoError(t, proxy.With(ctx, func(current db.Session) error {
+		calls++
+		assert.Same(t, sess, current)
 		return nil
-	})
-	// A new operation must attempt to connect, rather than permanently rejecting
-	// the proxy as closed or reusing the session discarded by the first attempt.
+	}))
+	assert.Equal(t, 1, calls)
+
+	// A later operation that fails with a network error tries to reconnect again.
+	err := proxy.With(ctx, func(db.Session) error { return io.ErrUnexpectedEOF })
 	require.ErrorContains(t, err, "insufficient authentication information")
-	assert.Equal(t, 1, sess.closeCalls)
+	assert.Zero(t, sess.closeCalls, "a failed reconnect must not close the old session")
+}
+
+// While the database is down, callers that fail on the same session must share
+// one reconnect instead of each running a full retry budget under the lock.
+func TestSessionProxyFailedReconnectIsShared(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// A "database" that accepts and drops every connection, so each dial is
+	// counted and fails with a network error.
+	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { ln.Close() })
+	var dials atomic.Int32
+	go func() {
+		for {
+			conn, acceptErr := ln.Accept()
+			if acceptErr != nil {
+				return
+			}
+			dials.Add(1)
+			conn.Close()
+		}
+	}()
+	host, portStr, err := net.SplitHostPort(ln.Addr().String())
+	require.NoError(t, err)
+	port, err := strconv.Atoi(portStr)
+	require.NoError(t, err)
+	cfg := config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{
+		DatabaseConfig: config.DatabaseConfig{Database: "argo", Host: host, Port: port},
+	}}
+	proxy := &SessionProxy{
+		sess:     &lifecycleSessionStub{},
+		dbConfig: &cfg, username: "argo", password: "argo",
+		maxRetries: 2, baseDelay: 50 * time.Millisecond, maxDelay: 50 * time.Millisecond, retryMultiple: 1,
+	}
+
+	start := time.Now()
+	require.Error(t, proxy.Reconnect(ctx))
+	budgetDials, budgetTime := dials.Swap(0), time.Since(start)
+
+	const callers = 5
+	errs := make(chan error, callers)
+	start = time.Now()
+	for range callers {
+		go func() { errs <- proxy.With(ctx, func(db.Session) error { return io.ErrUnexpectedEOF }) }()
+	}
+	for range callers {
+		require.ErrorContains(t, <-errs, "reconnection failed")
+	}
+	assert.Equal(t, budgetDials, dials.Load(), "queued callers should share one reconnect")
+	assert.Less(t, time.Since(start), 2*budgetTime+100*time.Millisecond)
 }
 
 func TestSessionProxyFailedExplicitReconnectPreservesClose(t *testing.T) {
@@ -86,22 +145,8 @@ func TestSessionProxyFailedExplicitReconnectPreservesClose(t *testing.T) {
 		t.Error("operation ran after a failed explicit reopen")
 		return nil
 	})
-	require.ErrorContains(t, err, "session proxy is closed")
+	require.ErrorIs(t, err, errSessionProxyClosed)
 	assert.Equal(t, 1, sess.closeCalls)
-}
-
-func TestSessionProxyDisconnectedStaleReconnectDoesNotSkip(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	stale := &lifecycleSessionStub{}
-	// Another caller replaced the stale session but its later reconnect failed.
-	// The different session pointer must not be mistaken for a working session.
-	disconnected := &lifecycleSessionStub{}
-	proxy := &SessionProxy{sess: disconnected, disconnected: true}
-
-	err := proxy.reconnectIfStale(ctx, stale)
-	require.ErrorContains(t, err, "insufficient authentication information")
-	assert.Zero(t, stale.closeCalls, "the discarded session must not be closed again")
-	assert.Zero(t, disconnected.closeCalls, "the failed reconnect already closed this session")
 }
 
 func TestSessionProxyStaleReconnectPreservesReplacement(t *testing.T) {
@@ -149,7 +194,7 @@ func TestSessionProxyWithDoesNotReplayNonRetryableOperation(t *testing.T) {
 	}
 }
 
-func TestSessionProxyDisconnectedTransactionDoesNotReconnect(t *testing.T) {
+func TestSessionProxyTransactionWithoutSessionDoesNotReconnect(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	proxy := &SessionProxy{insideTransaction: true}
 

@@ -324,11 +324,11 @@ func (c DBConfig) ConnectionTimeout() time.Duration {
 
 // DBReconnectConfig contains database reconnect settings
 type DBReconnectConfig struct {
-	// MaxRetries defines how many connection attempts should be made before we give up. Default: 5
+	// MaxRetries defines how many times a database operation retries connecting after a network error before it fails. A later operation tries to reconnect again. Default: 5
 	MaxRetries int `json:"maxRetries"`
 	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
 	BaseDelaySeconds int `json:"baseDelaySeconds"`
-	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. After a reconnect has failed, operations that hit a network error return that failure without reconnecting for this long. Default: 30
 	MaxDelaySeconds int `json:"maxDelaySeconds"`
 	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
 	RetryMultiple float64 `json:"retryMultiple"`
