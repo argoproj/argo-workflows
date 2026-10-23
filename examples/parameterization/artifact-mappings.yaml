@@ -1,0 +1,214 @@
+# Synthetic local HTTP artifact store; native executor handles file upload/download.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artifact-demo-store
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    matchLabels:
+      app: artifact-demo-store
+  template:
+    metadata:
+      labels:
+        app: artifact-demo-store
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: store
+        image: python:3.12-alpine
+        command:
+        - python
+        - -u
+        - -c
+        - "from http.server import BaseHTTPRequestHandler,HTTPServer\nfiles={}\nclass\
+          \ Handler(BaseHTTPRequestHandler):\n def do_PUT(self):\n  if self.headers.get('Transfer-Encoding')=='chunked':\n\
+          \   chunks=[]\n   while True:\n    size=int(self.rfile.readline().strip().split(b';')[0],16)\n\
+          \    if size==0:\n     self.rfile.readline();break\n    chunks.append(self.rfile.read(size));self.rfile.read(2)\n\
+          \   data=b''.join(chunks)\n  else:data=self.rfile.read(int(self.headers['Content-Length']))\n\
+          \  files[self.path]=data;self.send_response(201);self.end_headers()\n def\
+          \ do_GET(self):\n  value=files.get(self.path);self.send_response(200 if\
+          \ value is not None else 404);self.end_headers();self.wfile.write(value\
+          \ or b'')\n def log_message(self,*args):pass\nHTTPServer(('0.0.0.0',8080),Handler).serve_forever()\n"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: artifact-demo-store
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    app: artifact-demo-store
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: artifact-mapping-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    properties:
+      message:
+        type: string
+    required:
+    - message
+    additionalProperties: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artifact-mapping-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: message
+  templates:
+  - name: main
+    metadata:
+      annotations:
+        parameters.workflows.example.io/bindable-calls: '["transform"]'
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: transform
+        dependencies:
+        - approve
+        template: base
+        arguments:
+          artifacts:
+          - name: source
+            raw:
+              data: '{{workflow.parameters.message}}'
+      - name: gate
+        dependencies:
+        - transform
+        template: gate
+      - name: consume
+        dependencies:
+        - gate
+        template: consume
+        arguments:
+          artifacts:
+          - name: data
+            from: '{{tasks.transform.outputs.artifacts.report}}'
+  - name: approve
+    suspend: {}
+  - name: gate
+    resource:
+      action: get
+      manifest: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: {{workflow.name}}-ready\n"
+  - name: base
+    inputs:
+      artifacts:
+      - name: source
+        path: /tmp/input
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - cat /tmp/input >/tmp/output; printf ":mapped" >>/tmp/output
+    outputs:
+      artifacts:
+      - name: report
+        path: /tmp/output
+        archive:
+          none: {}
+        http:
+          url: http://artifact-demo-store:8080/{{workflow.name}}/{{pod.name}}
+  - name: consume
+    inputs:
+      artifacts:
+      - name: data
+        path: /tmp/input
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$(cat /tmp/input)" = "artifact-content:mapped"; sha256sum /tmp/input
+        | cut -d" " -f1 >/tmp/hash
+    outputs:
+      parameters:
+      - name: hash
+        valueFrom:
+          path: /tmp/hash
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ActionDefinition
+metadata:
+  name: artifact-mapping-demo
+  namespace: argo-parameterization-lab
+spec:
+  inputSchema: &id001
+    type: object
+    properties: {}
+    additionalProperties: false
+  outputSchema: *id001
+  template:
+    name: implementation
+    inputs:
+      artifacts:
+      - name: data
+        path: /tmp/input
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - cat /tmp/input >/tmp/output; printf ":mapped" >>/tmp/output
+    outputs:
+      artifacts:
+      - name: result
+        path: /tmp/output
+        archive:
+          none: {}
+        http:
+          url: http://artifact-demo-store:8080/{{workflow.name}}/{{pod.name}}
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowActionBinding
+metadata:
+  name: artifact-mapping-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: artifact-mapping-demo
+  calls:
+  - callPath:
+    - main
+    - transform
+    actionDefinition: artifact-mapping-demo
+    inputArtifactMappings:
+    - from: source
+      to: data
+    outputArtifactMappings:
+    - from: result
+      to: report
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: artifact-mapping-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: artifact-mapping-demo
+  parameterTemplate: artifact-mapping-demo
+  actionBinding: artifact-mapping-demo
+  mappings:
+  - path: /message
+    parameter: message
+    encoding: string

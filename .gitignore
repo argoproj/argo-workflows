@@ -54,3 +54,7 @@ node_modules
 result
 .devenv
 .devenv.flake.nix
+
+# Python test caches
+__pycache__/
+*.pyc

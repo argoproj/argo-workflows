@@ -616,6 +616,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	ctx = logging.WithLogger(ctx, log)
 	log.Debug(ctx, "Creating Pod")
 
+	if err := woc.validateParameterPodSecrets(ctx, pod); err != nil {
+		return nil, err
+	}
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

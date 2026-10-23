@@ -13,35 +13,35 @@ type FakeArgoprojV1alpha1 struct {
 }
 
 func (c *FakeArgoprojV1alpha1) ClusterWorkflowTemplates() v1alpha1.ClusterWorkflowTemplateInterface {
-	return &FakeClusterWorkflowTemplates{c}
+	return newFakeClusterWorkflowTemplates(c)
 }
 
 func (c *FakeArgoprojV1alpha1) CronWorkflows(namespace string) v1alpha1.CronWorkflowInterface {
-	return &FakeCronWorkflows{c, namespace}
+	return newFakeCronWorkflows(c, namespace)
 }
 
 func (c *FakeArgoprojV1alpha1) Workflows(namespace string) v1alpha1.WorkflowInterface {
-	return &FakeWorkflows{c, namespace}
+	return newFakeWorkflows(c, namespace)
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowArtifactGCTasks(namespace string) v1alpha1.WorkflowArtifactGCTaskInterface {
-	return &FakeWorkflowArtifactGCTasks{c, namespace}
+	return newFakeWorkflowArtifactGCTasks(c, namespace)
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowEventBindings(namespace string) v1alpha1.WorkflowEventBindingInterface {
-	return &FakeWorkflowEventBindings{c, namespace}
+	return newFakeWorkflowEventBindings(c, namespace)
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowTaskResults(namespace string) v1alpha1.WorkflowTaskResultInterface {
-	return &FakeWorkflowTaskResults{c, namespace}
+	return newFakeWorkflowTaskResults(c, namespace)
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowTaskSets(namespace string) v1alpha1.WorkflowTaskSetInterface {
-	return &FakeWorkflowTaskSets{c, namespace}
+	return newFakeWorkflowTaskSets(c, namespace)
 }
 
 func (c *FakeArgoprojV1alpha1) WorkflowTemplates(namespace string) v1alpha1.WorkflowTemplateInterface {
-	return &FakeWorkflowTemplates{c, namespace}
+	return newFakeWorkflowTemplates(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate
