@@ -20,6 +20,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
+// errSessionProxyClosed is returned once Close has been called.
+var errSessionProxyClosed = errors.New("session proxy is closed")
+
 // SessionProxy is a wrapper for upperdb sessions that provides automatic reconnection
 // on network failures through a With() method pattern.
 type SessionProxy struct {
@@ -35,6 +38,11 @@ type SessionProxy struct {
 	sess   db.Session
 	mu     sync.RWMutex
 	closed bool
+
+	// The last failed automatic reconnect, handed back to callers for maxDelay
+	// so that they do not queue up behind each other while the database is down.
+	lastReconnectErr error
+	lastReconnectAt  time.Time
 
 	// Retry configuration
 	maxRetries    int
@@ -156,7 +164,6 @@ func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error
 				password:          sp.password,
 				dbType:            sp.dbType,
 				sess:              sess,
-				closed:            sp.closed,
 				maxRetries:        sp.maxRetries,
 				baseDelay:         sp.baseDelay,
 				maxDelay:          sp.maxDelay,
@@ -190,6 +197,7 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 
 	err = sess.Ping()
 	if err != nil {
+		sess.Close()
 		return err
 	}
 	sp.closed = false
@@ -273,8 +281,8 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 	sp.mu.RLock()
 	if sp.closed {
 		sp.mu.RUnlock()
-		logger.Warn(ctx, "session proxy is closed")
-		return fmt.Errorf("session proxy is closed")
+		logger.Warn(ctx, errSessionProxyClosed.Error())
+		return errSessionProxyClosed
 	}
 
 	sess := sp.sess
@@ -319,10 +327,22 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 func (sp *SessionProxy) reconnectIfStale(ctx context.Context, staleSess db.Session) error {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
+	if sp.closed {
+		return errSessionProxyClosed
+	}
 	if sp.sess != staleSess {
 		return nil
 	}
-	return sp.reconnectLocked(ctx)
+	// The old session's pool keeps redialling by itself, so failing fast here
+	// does not delay recovery once the database is back.
+	if sp.lastReconnectErr != nil && time.Since(sp.lastReconnectAt) < sp.maxDelay {
+		return sp.lastReconnectErr
+	}
+	err := sp.reconnectLocked(ctx)
+	if err != nil && ctx.Err() == nil {
+		sp.lastReconnectErr, sp.lastReconnectAt = err, time.Now()
+	}
+	return err
 }
 
 // Reconnect performs reconnection with retry logic and linear backoff
@@ -334,19 +354,19 @@ func (sp *SessionProxy) Reconnect(ctx context.Context) error {
 
 func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
+	// Keep the old session until a replacement is up: its pool redials by itself,
+	// and closing it first would leave callers without a session if every attempt fails.
+	old := sp.sess
 
 	var err error
 
 	for attempt := 0; attempt <= sp.maxRetries; attempt++ {
-		// Perform the reconnection attempt
-		// Close the bad connection if it exists
-		if sp.sess != nil {
-			sp.sess.Close()
-			sp.closed = true
-		}
-
-		err = sp.connect(ctx)
+		err = sp.connect(ctx) // only replaces sp.sess on success
 		if err == nil {
+			if old != nil && old != sp.sess {
+				old.Close()
+			}
+			sp.lastReconnectErr = nil
 			logger.WithField("attempt_number", attempt).Info(ctx, "connected to database")
 			return nil
 		}
