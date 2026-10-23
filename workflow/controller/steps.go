@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -199,6 +200,15 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+	}
+
+	// A checked parameter retry can reopen this boundary while retaining its
+	// completed children. Record the current arguments without rewriting the
+	// input evidence of any completed invocation.
+	if !node.Fulfilled() && !reflect.DeepEqual(node.Inputs, &tmpl.Inputs) {
+		node.Inputs = tmpl.Inputs.DeepCopy()
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
 	}
 
 	defer func() {

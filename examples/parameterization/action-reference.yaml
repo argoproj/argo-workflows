@@ -1,0 +1,132 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: action-reference-demo-library
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  podMetadata:
+    labels:
+      example-action-library: shared
+  templates:
+  - name: emit
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "%s" "$MESSAGE" > /tmp/message
+      env:
+      - name: MESSAGE
+        value: '{{inputs.parameters.message}}'
+    outputs:
+      parameters:
+      - name: message
+        valueFrom:
+          path: /tmp/message
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: action-reference-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: message
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: emit
+        dependencies:
+        - approve
+        template: call
+        arguments:
+          parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+  - name: approve
+    suspend: {}
+  - name: call
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.22
+      command:
+      - echo
+      - '{{inputs.parameters.message}}'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: action-reference-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    properties:
+      message:
+        type: string
+        minLength: 1
+    required:
+    - message
+    additionalProperties: false
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ActionDefinition
+metadata:
+  name: action-reference-demo
+  namespace: argo-parameterization-lab
+spec:
+  inputSchema: &id001
+    type: object
+    properties:
+      message:
+        type: string
+        minLength: 1
+    required:
+    - message
+    additionalProperties: false
+  outputSchema: *id001
+  implementationRef:
+    name: action-reference-demo-library
+    template: emit
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowActionBinding
+metadata:
+  name: action-reference-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: action-reference-demo
+  calls:
+  - template: call
+    actionDefinition: action-reference-demo
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: action-reference-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: action-reference-demo
+  parameterTemplate: action-reference-demo
+  actionBinding: action-reference-demo
+  mappings:
+  - path: /message
+    parameter: message
+    encoding: string
