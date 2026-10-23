@@ -152,9 +152,9 @@ spec:
 		// Retry when err.
 		ExpectContainerLogs("c3", func(t *testing.T, logs string) {
 			count := strings.Count(logs, "capturing logs")
-			assert.Equal(t, 2, count)
+			assert.Equal(t, 3, count)
 			countFailureInfo := strings.Count(logs, "intentional failure")
-			assert.Equal(t, 2, countFailureInfo)
+			assert.Equal(t, 3, countFailureInfo)
 		})
 }
 
