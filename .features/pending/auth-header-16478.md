@@ -3,6 +3,6 @@ Authors: [Pradeep Sagitra](https://github.com/PradeepSD476)
 Component: General
 Issues: 16478
 
-Trusted header authentication allows Argo Workflows to authenticate users through HTTP headers provided by a trusted authentication proxy.
-User identity, email, username, and group claims can be resolved from configured headers.
+Trusted header authentication lets you authenticate users through HTTP headers provided by a trusted authentication proxy.
+You can configure headers to set the user's identity, email, username, and groups.
 The resulting claims can be used with the existing RBAC authorization flow.
