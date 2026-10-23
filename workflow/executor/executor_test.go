@@ -223,7 +223,7 @@ func TestIsBaseImagePathInitless(t *testing.T) {
 
 	t.Run("init-less mode reads the live emissary-staged output", func(t *testing.T) {
 		we := newWe()
-		we.initlessPod = true
+		we.layout = LayoutInitless
 		assert.True(t, we.isBaseImagePath("/samedir"))
 		we.Template.Outputs.Artifacts[0].Path = "/samedir/inner"
 		assert.True(t, we.isBaseImagePath("/samedir/inner"))
@@ -231,7 +231,7 @@ func TestIsBaseImagePathInitless(t *testing.T) {
 
 	t.Run("init-less mode still reads user volumes from the mirror", func(t *testing.T) {
 		we := newWe()
-		we.initlessPod = true
+		we.layout = LayoutInitless
 		// A user-declared volume overlap is delivered into the real (shared) volume
 		// and the emissary intentionally skips staging it, so it must keep reading
 		// the mirror even in init-less mode.
@@ -273,7 +273,7 @@ func TestStageArchiveFileInitlessOverlap(t *testing.T) {
 		// emptyDir instead would skip CopyFile and upload the stale input.
 		rt.On("CopyFile", mock.Anything, common.MainContainerName, "/samedir", mock.Anything, mock.Anything).Return(nil)
 		we := newWe(rt)
-		we.initlessPod = true
+		we.layout = LayoutInitless
 		art := we.Template.Outputs.Artifacts[0]
 		fileName, localArtPath, err := we.stageArchiveFile(ctx, common.MainContainerName, &art)
 		require.NoError(t, err)
@@ -670,7 +670,7 @@ func TestMonitorProgress(t *testing.T) {
 		IncludeScriptOutput: false,
 		Deadline:            time.Now(),
 	}
-	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, process.NewTaskResultSink(cfg, false))
+	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, LayoutLegacy, process.NewTaskResultSink(cfg, false))
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -941,6 +941,25 @@ func TestNewExecutor_BuildsRuntimeFromTaskPaths(t *testing.T) {
 	}}
 	want, err := WorkerPaths("/w", "node-1")
 	require.NoError(t, err)
-	p.NewExecutor(Task{Paths: want}, nil)
+	p.NewExecutor(Task{Paths: want}, LayoutLegacy, nil)
 	assert.Equal(t, want, got)
+}
+
+// A worker links input artifacts like an init-less pod, so an output at an
+// input's path is read from what main left there (staged by runMain), not
+// from the input it was given.
+func TestIsBaseImagePathWorker(t *testing.T) {
+	we := &WorkflowExecutor{
+		layout:  LayoutWorker,
+		Process: &Process{},
+		Template: wfv1.Template{
+			Container: &corev1.Container{},
+			Inputs:    wfv1.Inputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
+		},
+	}
+	assert.True(t, we.isBaseImagePath("/samedir"))
+	assert.True(t, we.isBaseImagePath("/samedir/nested"))
+	assert.True(t, LayoutWorker.linksInputArtifacts())
+	assert.True(t, LayoutInitless.linksInputArtifacts())
+	assert.False(t, LayoutLegacy.linksInputArtifacts())
 }

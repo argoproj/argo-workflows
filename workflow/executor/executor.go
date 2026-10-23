@@ -43,8 +43,13 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
+
+// deadlineExceededMessage is a task's failure when it runs past its
+// deadline.
+const deadlineExceededMessage = "Step exceeded its deadline"
 
 // Process holds the state shared by every task an argoexec process runs:
 // API clients, tracing and pod-scoped settings. It is built once per
@@ -77,8 +82,9 @@ type Process struct {
 	terminationGracePeriod       time.Duration
 	artifactPluginNames          string
 	removeLocalArtPath           bool
-	initlessPod                  bool
 	retryBackoff                 wait.Backoff
+	environ                      []string
+	mainDriver                   maindriver.MainDriver
 	resourceStateCheckInterval   time.Duration
 }
 
@@ -95,6 +101,7 @@ type WorkflowExecutor struct {
 	workflowUID types.UID
 	nodeID      string
 	paths       TaskPaths
+	layout      Layout
 	// RuntimeExecutor reads and signals this task's containers.
 	RuntimeExecutor     ContainerRuntimeExecutor
 	Template            wfv1.Template
@@ -153,14 +160,19 @@ type ProcessConfig struct {
 	// RemoveLocalArtPath deletes local artifacts after upload to reduce peak
 	// disk usage (REMOVE_LOCAL_ART_PATH).
 	RemoveLocalArtPath bool
-	// InitlessPod reports whether the pod runs the init-less layout (ARGO_INITLESS_POD).
-	InitlessPod bool
 	// RetryBackoff is the backoff used when retrying transient failures
 	// (EXECUTOR_RETRY_BACKOFF_*, see util/retry.ExecutorRetry).
 	RetryBackoff wait.Backoff
 	// ResourceStateCheckInterval is the poll interval for resource template
 	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
 	ResourceStateCheckInterval time.Duration
+	// Environ is the environment a worker gives the commands it runs
+	// in-process, before the template's own env. Unused in a pod, where
+	// main is its own container.
+	Environ []string
+	// MainDriver runs main in-process for the worker layout. Nil in a pod,
+	// where main runs in its own container.
+	MainDriver maindriver.MainDriver
 }
 
 // TaskConfig carries the per-task values a WorkflowExecutor is constructed
@@ -262,8 +274,9 @@ func NewProcess(
 		terminationGracePeriod:       cfg.TerminationGracePeriod,
 		artifactPluginNames:          cfg.ArtifactPluginNames,
 		removeLocalArtPath:           cfg.RemoveLocalArtPath,
-		initlessPod:                  cfg.InitlessPod,
 		retryBackoff:                 cfg.RetryBackoff,
+		environ:                      cfg.Environ,
+		mainDriver:                   cfg.MainDriver,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
 	}, nil
 }
@@ -271,11 +284,12 @@ func NewProcess(
 // NewExecutor derives the executor for one task from the process-wide
 // state. It has no process-level side effects, so a Process may call it
 // once per task.
-func (p *Process) NewExecutor(task Task, sink ResultSink) *WorkflowExecutor {
+func (p *Process) NewExecutor(task Task, layout Layout, sink ResultSink) *WorkflowExecutor {
 	cfg := task.Config
 	return &WorkflowExecutor{
 		Process:                  p,
 		paths:                    task.Paths,
+		layout:                   layout,
 		sink:                     sink,
 		RuntimeExecutor:          p.newRuntime(task.Paths),
 		workflow:                 cfg.WorkflowName,
@@ -793,24 +807,25 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 			if inArt.Optional && !inArt.HasLocationOrKey() {
 				return true
 			}
-			// In init-less mode the input artifact is delivered as a symlink into
-			// the shared emptyDir rather than a per-artifact SubPath bind mount, and
-			// there is no /mainctrfs mirror for this path. A user that replaces the
-			// file — rm + recreate, or the idiomatic write-temp-then-rename — leaves
-			// a regular file in main's own filesystem while the emptyDir still holds
-			// the original input. Reading the emptyDir would silently upload the
-			// stale input as the output. The emissary, running inside main, has
-			// already tarred the live file to /var/run/argo/outputs/artifacts and
-			// the runtime executor reads it from there, so treat this as a base
-			// image path. (Legacy mode keeps reading the shared mount: there the
+			// When input artifacts are linked (an init-less pod, or a worker) the
+			// input is a symlink into the input-artifacts directory rather than a
+			// per-artifact SubPath bind mount, and there is no /mainctrfs mirror
+			// for this path. A user that replaces the file — rm + recreate, or the
+			// idiomatic write-temp-then-rename — leaves a regular file in main's
+			// own filesystem while the input-artifacts directory still holds the
+			// original input. Reading that would silently upload the stale input as
+			// the output. Main's output stager (the emissary inside main in a pod,
+			// runMain in a worker) has already tarred the live file under
+			// outputs/artifacts and the runtime executor reads it from there, so
+			// treat this as a base image path. (Legacy mode keeps reading the shared mount: there the
 			// SubPath bind mount makes main's writes land in the emptyDir, and rm
 			// fails with EBUSY, so the mount is always current.)
-			return we.initlessPod
+			return we.layout.linksInputArtifacts()
 		}
 		if strings.HasPrefix(path, inArt.Path+"/") {
-			// Output nested under an input artifact directory: the same init-less
-			// reasoning as the exact-match case above applies.
-			return we.initlessPod
+			// Output nested under an input artifact directory: the same reasoning
+			// as the exact-match case above applies.
+			return we.layout.linksInputArtifacts()
 		}
 	}
 	return true
@@ -1511,7 +1526,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		logger.Info(ctx, "Deadline monitor stopped")
 		return
 	case <-deadlineExceeded:
-		message = "Step exceeded its deadline"
+		message = deadlineExceededMessage
 	}
 	logger.Info(ctx, message)
 	we.sink.Fail(ctx, errors.New(message)) //nolint:staticcheck // the message is shown to users as is
