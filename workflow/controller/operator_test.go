@@ -2503,7 +2503,7 @@ func TestSuspendResume(t *testing.T) {
 }
 
 func suspendedShutdownWorkflow() *wfv1.Workflow {
-	wf := wfv1.MustUnmarshalWorkflow(noPodsWhenShutdown)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/no-pods-when-shutdown.yaml")
 	wf.Spec.Shutdown = ""
 	wf.Spec.OnExit = "exit-handler"
 	wf.Spec.Templates = append(wf.Spec.Templates, wfv1.Template{
@@ -5995,83 +5995,6 @@ func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
 	}
 }
 
-var workflowWithMemoizedInSteps = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: memoized-bug-
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: hello-steps
-        template: memoized
-    - - name: whatever
-        template: hello
-
-  - name: memoized
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          parameter: "{{steps.hello-step.outputs.result}}"
-    steps:
-    - - name: hello-step
-        template: hello
-    memoize:
-      key: "memoized-bug-steps-0"
-      cache:
-        configMap:
-          name: my-config
-
-  - name: hello
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo Hello"]
-`
-
-var workflowWithMemoizedInDAG = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: memoized-bug-
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: hello-dag
-        template: memoized
-    - - name: whatever
-        template: hello
-
-  - name: memoized
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          parameter: "{{dag.hello-dag.outputs.result}}"
-    dag:
-      tasks:
-      - name: hello-dag
-        template: hello
-    memoize:
-      key: "memoized-bug-dag-0"
-      cache:
-        configMap:
-          name: my-config
-
-  - name: hello
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo Hello"]
-`
-
 func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 	myConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
@@ -6090,7 +6013,7 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 		},
 	}
 
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInSteps)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-memoized-in-steps.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -6137,7 +6060,7 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 		},
 	}
 
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInDAG)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-memoized-in-dag.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -6166,39 +6089,6 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 	assert.Equal(t, 1, hitCache)
 }
 
-var workflowCachedMaxAge = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: memoized-workflow-test
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: message
-      value: hi-there-world
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    memoize:
-      key: "{{inputs.parameters.message}}"
-      maxAge: '10s'
-      cache:
-        configMap:
-          name: whalesay-cache
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: hello
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
 func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	getEntryCreatedAtTime := func(time time.Time) apiv1.ConfigMap {
 		jsonTime, _ := time.UTC().MarshalJSON()
@@ -6219,7 +6109,7 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 			},
 		}
 	}
-	wf := wfv1.MustUnmarshalWorkflow(workflowCachedMaxAge)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-cached-max-age.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 
 	ctx := logging.TestContext(t.Context())
@@ -6259,177 +6149,8 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
-var workflowStepCachedWithRetryStrategy = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: memoized-workflow-test
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: message
-      value: hi-there-world
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    retryStrategy:
-      limit: "10"
-    memoize:
-      key: "{{inputs.parameters.message}}"
-      cache:
-        configMap:
-          name: whalesay-cache
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: hello
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
-var workflowDagCachedWithRetryStrategy = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: memoized-workflow-test
-spec:
-  entrypoint: main
-#  podGC:
-#    strategy: OnPodCompletion
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: regular-1
-        template: run
-        arguments:
-          parameters:
-          - name: id
-            value: 1
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: regular-2
-        template: run
-        depends: regular-1.Succeeded
-        arguments:
-          parameters:
-          - name: id
-            value: 2
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-retries-1
-        template: run-with-retries
-        arguments:
-          parameters:
-          - name: id
-            value: 3
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-retries-2
-        template: run-with-retries
-        depends: with-retries-1.Succeeded
-        arguments:
-          parameters:
-          - name: id
-            value: 4
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-dag-1
-        template: run-with-dag
-        arguments:
-          parameters:
-          - name: id
-            value: 5
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-dag-2
-        template: run-with-dag
-        depends: with-dag-1.Succeeded
-        arguments:
-          parameters:
-          - name: id
-            value: 6
-          - name: cache-key
-            value: '{{workflow.name}}'
-
-  - name: run
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    script:
-      image: ubuntu:22.04
-      command: [bash]
-      source: |
-        sleep 30
-        echo result: {{inputs.parameters.id}}
-    memoize:
-      key: "regular-{{inputs.parameters.cache-key}}"
-      cache:
-        configMap:
-          name: memoization-test-cache
-
-  - name: run-with-retries
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    script:
-      image: ubuntu:22.04
-      command: [bash]
-      source: |
-        sleep 30
-        echo result: {{inputs.parameters.id}}
-    memoize:
-      key: "retry-{{inputs.parameters.cache-key}}"
-      cache:
-        configMap:
-          name: memoization-test-cache
-    retryStrategy:
-      limit: '1'
-      retryPolicy: Always
-
-  - name: run-raw
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    script:
-      image: ubuntu:22.04
-      command: [bash]
-      source: |
-        sleep 30
-        echo result: {{inputs.parameters.id}}
-
-  - name: run-with-dag
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    dag:
-      tasks:
-      - name: run-raw-step
-        template: run-raw
-        arguments:
-          parameters:
-          - name: id
-            value: '{{inputs.parameters.id}}'
-          - name: cache-key
-            value: '{{inputs.parameters.cache-key}}'
-    memoize:
-      key: "dag-{{inputs.parameters.cache-key}}"
-      cache:
-        configMap:
-          name: memoization-test-cache`
-
 func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowStepCachedWithRetryStrategy)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-step-cached-with-retry-strategy.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -6449,7 +6170,7 @@ func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
 }
 
 func TestDAGConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowDagCachedWithRetryStrategy)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-dag-cached-with-retry-strategy.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -6579,32 +6300,11 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	assert.Equal(t, sampleOutputs, *entry.Outputs)
 }
 
-var propagate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-backoff
-spec:
-  entrypoint: retry-backoff
-  templates:
-  - name: retry-backoff
-    retryStrategy:
-      limit: 10
-      backoff:
-        duration: "1"
-        factor: 1
-        maxDuration: "20"
-    container:
-      image: alpine
-      command: [sh, -c]
-      args: ["sleep $(( {{retries}} * 100 )); exit 1"]
-`
-
 func TestPropagateMaxDurationProcess(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
-	wf := wfv1.MustUnmarshalWorkflow(propagate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/propagate.yaml")
 	assert.NotNil(t, wf)
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -6638,53 +6338,10 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
 }
 
-var resubmitPendingWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: resubmit-pending-wf
-  namespace: argo
-spec:
-
-  entrypoint: resubmit-pending
-  templates:
-  -
-    inputs: {}
-    metadata: {}
-    name: resubmit-pending
-    outputs: {}
-    script:
-      command:
-      - bash
-      image: busybox
-      name: ""
-      resources:
-        limits:
-          cpu: "10"
-      source: |
-        sleep 5
-status:
-  finishedAt: null
-  nodes:
-    resubmit-pending-wf:
-      displayName: resubmit-pending-wf
-      finishedAt: null
-      id: resubmit-pending-wf
-      message: Pending 156.62ms
-      name: resubmit-pending-wf
-      phase: Pending
-      startedAt: "2020-07-07T19:54:18Z"
-      templateName: resubmit-pending
-      templateScope: local/resubmit-pending-wf
-      type: Pod
-  phase: Running
-  startedAt: "2020-07-07T19:54:18Z"
-`
-
 func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	wf := wfv1.MustUnmarshalWorkflow(resubmitPendingWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-pending-wf.yaml")
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
@@ -6704,25 +6361,7 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 }
 
 func TestResubmitMemoization(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: busybox
-status:
-  phase: Failed
-  nodes:
-    my-wf:
-      id: my-wf
-      name: my-wf
-      type: Pod
-      phase: Failed
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-memoization.yaml")
 	ctx := logging.TestContext(t.Context())
 	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, nil)
 	require.NoError(t, err)
@@ -6749,29 +6388,7 @@ status:
 }
 
 func TestResubmitParamsOverride(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: default
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: busybox
-status:
-  phase: Failed
-  nodes:
-    my-wf:
-      id: my-wf
-      name: my-wf
-      type: Pod
-      phase: Failed
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-params-override.yaml")
 	ctx := logging.TestContext(t.Context())
 	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, []string{"message=modified"})
 	require.NoError(t, err)
@@ -6785,30 +6402,7 @@ status:
 }
 
 func TestRetryParamsOverride(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-  labels:
-    workflows.argoproj.io/completed: true
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: default
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: busybox
-status:
-  phase: Failed
-  nodes:
-    my-wf:
-      id: my-wf
-      name: my-wf
-      phase: Failed
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retry-params-override.yaml")
 
 	ctx := logging.TestContext(t.Context())
 	wf, _, err := util.FormulateRetryWorkflow(ctx, wf, false, "", []string{"message=modified"})
@@ -6822,27 +6416,7 @@ status:
 }
 
 func TestWorkflowOutputs(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: step-1
-        template: child
-  - name: child
-    container:
-      image: my-image
-    outputs:
-      parameters:
-      - name: my-param
-        valueFrom:
-          path: /my-path
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-outputs.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -6860,147 +6434,9 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var globalVarsOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-6gphm-8n22g
-  namespace: default
-spec:
-  arguments:
-    parameters:
-      -
-        name: message
-        value: nononono
-  workflowTemplateRef:
-    name: hello-world-6gphm
-status:
-  nodes:
-    hello-world-6gphm-8n22g:
-      displayName: hello-world-6gphm-8n22g
-      finishedAt: "2020-07-14T20:45:28Z"
-      hostNodeName: minikube
-      id: hello-world-6gphm-8n22g
-      inputs:
-        parameters:
-          -
-            name: message
-            value: nononono
-      name: hello-world-6gphm-8n22g
-      outputs:
-        artifacts:
-          -
-            archiveLogs: true
-            name: main-logs
-            s3:
-              accessKeySecret:
-                key: accesskey
-                name: my-minio-cred
-              bucket: my-bucket
-              endpoint: "minio:9000"
-              insecure: true
-              key: hello-world-6gphm-8n22g/hello-world-6gphm-8n22g/main.log
-              secretKeySecret:
-                key: secretkey
-                name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-07-14T20:45:25Z"
-      templateRef:
-        name: hello-world-6gphm
-        template: whalesay
-      templateScope: local/hello-world-6gphm-8n22g
-      type: Pod
-  phase: Running
-  resourcesDuration:
-    cpu: 5
-    memory: 2
-  startedAt: "2020-07-14T20:45:25Z"
-  storedTemplates:
-    namespaced/hello-world-6gphm/whalesay:
-
-      container:
-        args:
-          - "hello {{inputs.parameters.message}}"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      inputs:
-        parameters:
-          -
-            name: message
-      metadata: {}
-      name: whalesay
-      outputs: {}
-  storedWorkflowTemplateSpec:
-    arguments:
-      parameters:
-        -
-          name: message
-          value: nononono
-    entrypoint: whalesay
-    onExit: exitContainer
-    templates:
-      - name: whalesay
-        container:
-          image: "docker/whalesay:latest"
-          args:
-            - "hello {{inputs.parameters.message}}"
-          command:
-            - cowsay
-        inputs:
-          parameters:
-            - name: message
-      - name: exitContainer
-        container:
-          image: docker/whalesay
-          args:
-            - "goodbye {{inputs.parameters.message}}"
-          command:
-            - cowsay
-        inputs:
-          parameters:
-            - name: message
-`
-
-var wftmplGlobalVarsOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: hello-world-6gphm
-  namespace: default
-spec:
-  entrypoint: whalesay
-  onExit: exitContainer
-  arguments:
-    parameters:
-    - name: message
-      value: "default"
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello {{inputs.parameters.message}}"]
-  - name: exitContainer
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye {{inputs.parameters.message}}"]
-`
-
 func TestGlobalVarsOnExit(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(globalVarsOnExit)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftmplGlobalVarsOnExit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/global-vars-on-exit.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator/wftmpl-global-vars-on-exit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -7015,79 +6451,8 @@ func TestGlobalVarsOnExit(t *testing.T) {
 	assert.Equal(t, "nononono", node.Inputs.Parameters[0].Value.String())
 }
 
-var deadlineWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-9fvnv
-  namespace: argo
-spec:
-  activeDeadlineSeconds: 3
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: approve
-        template: approve
-  - name: approve
-    suspend: {}
-  - container:
-      args:
-      - sleep 50
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      resources:
-        requests:
-          memory: 1Gi
-    name: whalesay
-status:
-  finishedAt: null
-  nodes:
-    steps-9fvnv:
-      children:
-      - steps-9fvnv-3514116232
-      displayName: steps-9fvnv
-      finishedAt: null
-      id: steps-9fvnv
-      name: steps-9fvnv
-      phase: Running
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: main
-      templateScope: local/steps-9fvnv
-      type: Steps
-
-    steps-9fvnv-3514116232:
-      boundaryID: steps-9fvnv
-      children:
-      - steps-9fvnv-3700512507
-      displayName: '[0]'
-      finishedAt: null
-      id: steps-9fvnv-3514116232
-      name: steps-9fvnv[0]
-      phase: Running
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: main
-      templateScope: local/steps-9fvnv
-      type: StepGroup
-    steps-9fvnv-3700512507:
-      boundaryID: steps-9fvnv
-      displayName: approve
-      finishedAt: null
-      id: steps-9fvnv-3700512507
-      name: steps-9fvnv[0].approve
-      phase: Running
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: approve
-      templateScope: local/steps-9fvnv
-      type: Suspend
-  phase: Running
-  startedAt: "2020-07-24T16:39:25Z"
-`
-
 func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(deadlineWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/deadline-wf.yaml")
 	wf.Status.StartedAt = metav1.Now()
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -7110,7 +6475,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 }
 
 func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(deadlineWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/deadline-wf.yaml")
 	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -7126,60 +6491,6 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 	})
 }
 
-var stepTimeoutWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-step
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: step1
-        template: whalesay
-
-  - name: whalesay
-    timeout: 5s
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var dagTimeoutWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-dag
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: dag1
-        template: whalesay
-        arguments:
-          parameters:
-          - name: deadline
-            value: 3s
-      - name: dag2
-        template: whalesay
-        arguments:
-          parameters:
-          - name: deadline
-            value: 3s
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: deadline
-    timeout: "{{inputs.parameters.deadline}}"
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
 var pendingTimeoutWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -7210,7 +6521,7 @@ spec:
 
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -7225,7 +6536,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(dagTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-timeout-wf.yaml")
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -7242,7 +6553,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		tmpl := wf.Spec.Templates[1]
 		tmpl.Timeout = "23"
 		wf.Spec.Templates[1] = tmpl
@@ -7259,7 +6570,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 	})
 
 	t.Run("Invalid timeout in step", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		tmpl := wf.Spec.Templates[0]
 		tmpl.Timeout = "23"
 		wf.Spec.Templates[0] = tmpl
@@ -7275,7 +6586,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
 	})
 	t.Run("PendingTimeout in step", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		tmpl := wf.Spec.Templates[0]
 		tmpl.PendingTimeout = "23s"
 		wf.Spec.Templates[0] = tmpl
@@ -7315,30 +6626,8 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 	})
 }
 
-var wfWithPVC = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: storage-quota-limit
-spec:
-  entrypoint: wait
-  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
-    - metadata:
-        name: workdir1                     # name of volume claim
-      spec:
-        accessModes: [ "ReadWriteMany" ]
-        resources:
-          requests:
-            storage: 10Gi
-  templates:
-  - name: wait
-    script:
-      image: argoproj/argosay:v2
-      args: [echo, ":) Hello Argo!"]
-`
-
 func TestStorageQuota(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithPVC)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-with-pvc.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -7362,52 +6651,9 @@ func TestStorageQuota(t *testing.T) {
 	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
 }
 
-var podWithFailed = `
-apiVersion: v1
-kind: Pod
-status:
-  conditions:
-  - lastProbeTime:
-    lastTransitionTime: '2020-08-27T18:14:19Z'
-    status: 'True'
-    type: PodScheduled
-  containerStatuses:
-  - containerID: docker://502dda61a8f05e08d10cffc972d2fb9226e82af7daaacff98e84727bb96f11e6
-    image: python:alpine3.23
-    imageID: docker-pullable://python@sha256:766a961bf699491995cc29e20958ef11fd63741ff41dcc70ec34355b39d52971
-    lastState:
-      waiting: {}
-    name: main
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      waiting:
-        reason: ContainerCreating
-        message: 'Container is creating'
-  - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
-    image: argoproj/argoexec:v2.9.5
-    imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
-    lastState:
-      waiting: {}
-    name: wait
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      waiting: {}
-  hostIP: 192.168.65.3
-  phase: Failed
-  podIP: 10.1.28.244
-  podIPs:
-  - ip: 10.1.28.244
-  qosClass: BestEffort
-  startTime: '2020-08-27T18:14:19Z'
-`
-
 func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podWithFailed, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-with-failed.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
@@ -7418,39 +6664,9 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 // Test that when containers are in Running state (not Terminated) on a Failed pod,
 // we correctly return Failed instead of incorrectly returning Succeeded.
 // This can happen during node eviction or other pod-level failures.
-var podFailedWithRunningContainers = `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  phase: Failed
-  reason: Evicted
-  message: "The node was low on resource: memory."
-  containerStatuses:
-  - name: main
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-  - name: wait
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-`
-
 func TestPodFailureWithRunningContainers(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podFailedWithRunningContainers, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-failed-with-running-containers.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	// Pod has a message, so it should return that
@@ -7461,37 +6677,9 @@ func TestPodFailureWithRunningContainers(t *testing.T) {
 
 // Test that when containers don't have terminated state and there's no pod message,
 // we correctly return Failed with information about which containers couldn't be confirmed.
-var podFailedWithRunningContainersNoMessage = `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-  - name: wait
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-`
-
 func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podFailedWithRunningContainersNoMessage, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-failed-with-running-containers-no-message.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
@@ -7500,43 +6688,9 @@ func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
 }
 
 // Test that sidecar SIGKILL still results in success when main and wait succeeded
-var podFailedWithSidecarSigkill = `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    state:
-      terminated:
-        exitCode: 0
-        reason: Completed
-  - name: wait
-    ready: false
-    state:
-      terminated:
-        exitCode: 0
-        reason: Completed
-  - name: sidecar
-    ready: false
-    state:
-      terminated:
-        exitCode: 137
-        reason: Error
-`
-
 func TestPodFailureWithSidecarSigkill(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podFailedWithSidecarSigkill, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-failed-with-sidecar-sigkill.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
@@ -7545,109 +6699,15 @@ func TestPodFailureWithSidecarSigkill(t *testing.T) {
 	assert.Empty(t, msg)
 }
 
-var podWithWaitContainerOOM = `
-apiVersion: v1
-kind: Pod
-status:
-  containerStatuses:
-  - containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
-    image: docker.io/argoproj/argosay:v2
-    imageID: docker.io/argoproj/argosay@sha256:3d2d553a462cfe3288833a010c1d91454bd05a0e02937f2f82050d68ca57a580
-    lastState: {}
-    name: main
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
-        exitCode: 0
-        finishedAt: "2021-01-22T09:50:17Z"
-        reason: Completed
-        startedAt: "2021-01-22T09:50:16Z"
-  - containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
-    image: docker.io/argoproj/argoexec:latest
-    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
-    lastState: {}
-    name: wait
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
-        exitCode: 137
-        finishedAt: "2021-01-22T09:50:17Z"
-        reason: OOMKilled
-        startedAt: "2021-01-22T09:50:16Z"
-  hostIP: 172.19.0.2
-  phase: Failed
-  podIP: 10.42.0.74
-  podIPs:
-  - ip: 10.42.0.74
-  qosClass: Burstable
-  startTime: "2021-01-22T09:50:15Z"
-`
-
-var podWithMainContainerOOM = `
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  containerStatuses:
-  - containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
-    image: docker.io/monitoringartist/docker-killer:latest
-    imageID: docker.io/monitoringartist/docker-killer@sha256:85ba7f17a5ef691eb4a3dff7fdab406369085c6ee6e74dc4527db9fe9e448fa1
-    lastState: {}
-    name: main
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
-        exitCode: 137
-        finishedAt: "2021-01-22T10:28:13Z"
-        reason: OOMKilled
-        startedAt: "2021-01-22T10:28:13Z"
-  - containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
-    image: docker.io/argoproj/argoexec:latest
-    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
-    lastState: {}
-    name: wait
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
-        exitCode: 0
-        finishedAt: "2021-01-22T10:28:14Z"
-        reason: Completed
-        startedAt: "2021-01-22T10:28:12Z"
-  hostIP: 172.19.0.2
-  phase: Failed
-  podIP: 10.42.0.87
-  podIPs:
-  - ip: 10.42.0.87
-  qosClass: Burstable
-  startTime: "2021-01-22T10:28:12Z"
-`
-
 func TestPodFailureWithContainerOOM(t *testing.T) {
 	tests := []struct {
 		podDetail string
 		phase     wfv1.NodePhase
 	}{{
-		podDetail: podWithWaitContainerOOM,
+		podDetail: "@testdata/operator/pod-with-wait-container-oom.yaml",
 		phase:     wfv1.NodeError,
 	}, {
-		podDetail: podWithMainContainerOOM,
+		podDetail: "@testdata/operator/pod-with-main-container-oom.yaml",
 		phase:     wfv1.NodeFailed,
 	}}
 	var pod apiv1.Pod
@@ -7661,44 +6721,15 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	}
 }
 
-// podWithSupervisorPreMainFailure exercises the init-less mode failure path
+// TestInferFailedReason_SupervisorPreMainFailure exercises the init-less mode failure path
 // where supervisor pre-main fails: supervisor writes the failed marker and
 // exits non-zero, emissary in main observes the marker and exits with 65
 // (sysexits.h EX_DATAERR). inferFailedReason must surface the supervisor's
 // real message rather than main's placeholder exit-65; this is why
 // SupervisorContainerName sorts ahead of main in the order() helper.
-var podWithSupervisorPreMainFailure = `
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-  - name: supervisor
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    state:
-      terminated:
-        exitCode: 65
-        reason: Error
-        message: ""
-  - name: supervisor
-    ready: false
-    state:
-      terminated:
-        exitCode: 1
-        reason: Error
-        message: "failed to load input artifacts from plugin \"s3-driver\": connection refused"
-`
-
 func TestInferFailedReason_SupervisorPreMainFailure(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podWithSupervisorPreMainFailure, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-with-supervisor-pre-main-failure.yaml", &pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	// Supervisor's NodeError must win over main's exit-65 NodeFailed; the
@@ -7713,37 +6744,9 @@ func TestInferFailedReason_SupervisorPreMainFailure(t *testing.T) {
 // When the supervisor exits cleanly (post-main success) but main fails with
 // a real user error, main's failure must still surface — supervisor's order=0
 // ranking only kicks in when supervisor itself failed.
-var podWithSupervisorOKAndMainFail = `
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-  - name: supervisor
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    state:
-      terminated:
-        exitCode: 1
-        reason: Error
-        message: "user command failed"
-  - name: supervisor
-    ready: false
-    state:
-      terminated:
-        exitCode: 0
-        reason: Completed
-`
-
 func TestInferFailedReason_SupervisorSuccessMainFailure(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podWithSupervisorOKAndMainFail, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-with-supervisor-ok-and-main-fail.yaml", &pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
@@ -7754,20 +6757,8 @@ func TestInferFailedReason_SupervisorSuccessMainFailure(t *testing.T) {
 }
 
 func TestResubmitPendingPods(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: my-image
-`)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftmplGlobalVarsOnExit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-pending-pods.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator/wftmpl-global-vars-on-exit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 
@@ -7800,67 +6791,9 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var wfRetryWithParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: parameter-aggregation
-spec:
-  entrypoint: parameter-aggregation
-  templates:
-  - name: parameter-aggregation
-    steps:
-    - - name: divide-by-2
-        template: divide-by-2
-        arguments:
-          parameters:
-          - name: num
-            value: "{{item}}"
-        withItems: [1,2,3]
-    # Finally, print all numbers processed in the previous step
-    - - name: print
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item}}"
-        withParam: "{{steps.divide-by-2.outputs.result}}"
-
-  # divide-by-2 divides a number in half
-  - name: divide-by-2
-    retryStrategy:
-        limit: 2
-        backoff:
-            duration: "1"
-            factor: 2
-    inputs:
-      parameters:
-      - name: num
-    script:
-      image: alpine:3.23
-      command: [sh, -x]
-      source: |
-        #!/bin/sh
-        echo $(({{inputs.parameters.num}}/2))
-  # whalesay prints a number using whalesay
-  - name: whalesay
-    retryStrategy:
-        limit: 2
-        backoff:
-            duration: "1"
-            factor: 2
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
-
 func TestWFWithRetryAndWithParam(t *testing.T) {
 	t.Run("IncludeScriptOutputInRetryAndWithParam", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(wfRetryWithParam)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-retry-with-param.yaml")
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -7879,189 +6812,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 	})
 }
 
-var paramAggregation = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: parameter-aggregation-dag-h8b82
-spec:
-
-  entrypoint: parameter-aggregation
-  templates:
-  -
-    dag:
-      tasks:
-      - arguments:
-          parameters:
-          - name: num
-            value: '{{item}}'
-        name: odd-or-even
-        template: odd-or-even
-        withItems:
-        - 1
-        - 2
-      - arguments:
-          parameters:
-          - name: message
-            value: '{{tasks.odd-or-even.outputs.parameters.num}}'
-        dependencies:
-        - odd-or-even
-        name: print-nums
-        template: whalesay
-      - arguments:
-          parameters:
-          - name: message
-            value: '{{tasks.odd-or-even.outputs.parameters.evenness}}'
-        dependencies:
-        - odd-or-even
-        name: print-evenness
-        template: whalesay
-    inputs: {}
-    metadata: {}
-    name: parameter-aggregation
-    outputs: {}
-  -
-    container:
-      args:
-      - |
-        sleep 1 &&
-        echo {{inputs.parameters.num}} > /tmp/num &&
-        if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
-          echo "even" > /tmp/even;
-        else
-          echo "odd" > /tmp/even;
-        fi
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources: {}
-    inputs:
-      parameters:
-      - name: num
-    metadata: {}
-    name: odd-or-even
-    outputs:
-      parameters:
-      - name: num
-        valueFrom:
-          path: /tmp/num
-      - name: evenness
-        valueFrom:
-          path: /tmp/even
-  -
-    container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs:
-      parameters:
-      - name: message
-    metadata: {}
-    name: whalesay
-    outputs: {}
-status:
-  nodes:
-    parameter-aggregation-dag-h8b82:
-      children:
-      - parameter-aggregation-dag-h8b82-3379492521
-      displayName: parameter-aggregation-dag-h8b82
-      finishedAt: "2020-12-09T15:37:07Z"
-      id: parameter-aggregation-dag-h8b82
-      name: parameter-aggregation-dag-h8b82
-      outboundNodes:
-      - parameter-aggregation-dag-h8b82-3175470584
-      - parameter-aggregation-dag-h8b82-2243926302
-      phase: Running
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: parameter-aggregation
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: DAG
-    parameter-aggregation-dag-h8b82-1440345089:
-      boundaryID: parameter-aggregation-dag-h8b82
-      children:
-      - parameter-aggregation-dag-h8b82-2243926302
-      - parameter-aggregation-dag-h8b82-3175470584
-      displayName: odd-or-even(1:2)
-      finishedAt: "2020-12-09T15:36:54Z"
-      hostNodeName: minikube
-      id: parameter-aggregation-dag-h8b82-1440345089
-      inputs:
-        parameters:
-        - name: num
-          value: "2"
-      name: parameter-aggregation-dag-h8b82.odd-or-even(1:2)
-      outputs:
-        exitCode: "0"
-        parameters:
-        - name: num
-          value: "2"
-          valueFrom:
-            path: /tmp/num
-        - name: evenness
-          value: even
-          valueFrom:
-            path: /tmp/even
-      phase: Succeeded
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: odd-or-even
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: Pod
-    parameter-aggregation-dag-h8b82-3379492521:
-      boundaryID: parameter-aggregation-dag-h8b82
-      children:
-      - parameter-aggregation-dag-h8b82-3572919299
-      - parameter-aggregation-dag-h8b82-1440345089
-      displayName: odd-or-even
-      finishedAt: "2020-12-09T15:36:55Z"
-      id: parameter-aggregation-dag-h8b82-3379492521
-      name: parameter-aggregation-dag-h8b82.odd-or-even
-      phase: Succeeded
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: odd-or-even
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: TaskGroup
-    parameter-aggregation-dag-h8b82-3572919299:
-      boundaryID: parameter-aggregation-dag-h8b82
-      children:
-      - parameter-aggregation-dag-h8b82-2243926302
-      - parameter-aggregation-dag-h8b82-3175470584
-      displayName: odd-or-even(0:1)
-      finishedAt: "2020-12-09T15:36:53Z"
-      hostNodeName: minikube
-      id: parameter-aggregation-dag-h8b82-3572919299
-      inputs:
-        parameters:
-        - name: num
-          value: "1"
-      name: parameter-aggregation-dag-h8b82.odd-or-even(0:1)
-      outputs:
-        exitCode: "0"
-        parameters:
-        - name: num
-          value: "1"
-          valueFrom:
-            path: /tmp/num
-        - name: evenness
-          value: odd
-          valueFrom:
-            path: /tmp/even
-      phase: Succeeded
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: odd-or-even
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: Pod
-  phase: Succeeded
-  startedAt: "2020-12-09T15:36:46Z"
-`
-
 func TestParamAggregation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(paramAggregation)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/param-aggregation.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8309,29 +7061,8 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
-var nodeAntiAffinityWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-fail
-spec:
-  entrypoint: retry-fail
-  templates:
-  - name: retry-fail
-    retryStrategy:
-      limit: 2
-      retryPolicy: "Always"
-      affinity:
-        nodeAntiAffinity: {}
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        exit(1)
-`
-
 func TestRetryOnNodeAntiAffinity(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/node-anti-affinity-workflow.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8408,31 +7139,8 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
-var nodeAntiAffinityStepsWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-fail
-spec:
-  entrypoint: retry-fail
-  templates:
-    - name: retry-fail
-      steps:
-      - - name: fail
-          template: fail
-    - name: fail
-      retryStrategy:
-        limit: "1"
-        affinity:
-          nodeAntiAffinity: {}
-      container:
-        image: alpine:latest
-        command: [ sh, -c ]
-        args: [ "exit 1" ]
-`
-
 func TestRetryOnNodeAntiAffinitySteps(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityStepsWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/node-anti-affinity-steps-workflow.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8477,24 +7185,8 @@ func TestRetryOnNodeAntiAffinitySteps(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
-var noPodsWhenShutdown = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  shutdown: "Stop"
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
 func TestNoPodsWhenShutdown(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(noPodsWhenShutdown)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/no-pods-when-shutdown.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8508,26 +7200,8 @@ func TestNoPodsWhenShutdown(t *testing.T) {
 	assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
 }
 
-var wfscheVariable = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-  annotations:
-    workflows.argoproj.io/scheduled-time: 2006-01-02T15:04:05-07:00
-spec:
-  entrypoint: whalesay
-  shutdown: "Stop"
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{workflow.scheduledTime}}"]
-`
-
 func TestWorkflowScheduledTimeVariable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfscheVariable)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wfsche-variable.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8537,24 +7211,8 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams()[varkeys.WorkflowScheduledTime.Template()])
 }
 
-var wfMainEntrypointVariable = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  shutdown: "Stop"
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{workflow.mainEntrypoint}}"]
-`
-
 func TestWorkflowMainEntrypointVariable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfMainEntrypointVariable)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-main-entrypoint-variable.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 

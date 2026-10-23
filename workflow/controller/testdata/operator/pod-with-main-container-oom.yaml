@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  containerStatuses:
+  - containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
+    image: docker.io/monitoringartist/docker-killer:latest
+    imageID: docker.io/monitoringartist/docker-killer@sha256:85ba7f17a5ef691eb4a3dff7fdab406369085c6ee6e74dc4527db9fe9e448fa1
+    lastState: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
+        exitCode: 137
+        finishedAt: "2021-01-22T10:28:13Z"
+        reason: OOMKilled
+        startedAt: "2021-01-22T10:28:13Z"
+  - containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
+    image: docker.io/argoproj/argoexec:latest
+    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
+    lastState: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
+        exitCode: 0
+        finishedAt: "2021-01-22T10:28:14Z"
+        reason: Completed
+        startedAt: "2021-01-22T10:28:12Z"
+  hostIP: 172.19.0.2
+  phase: Failed
+  podIP: 10.42.0.87
+  podIPs:
+  - ip: 10.42.0.87
+  qosClass: Burstable
+  startTime: "2021-01-22T10:28:12Z"

@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-6gphm
+  namespace: default
+spec:
+  entrypoint: whalesay
+  onExit: exitContainer
+  arguments:
+    parameters:
+    - name: message
+      value: "default"
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello {{inputs.parameters.message}}"]
+  - name: exitContainer
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye {{inputs.parameters.message}}"]
