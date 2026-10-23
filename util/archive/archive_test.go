@@ -245,6 +245,11 @@ func TestZipPreservesModeAndModTime(t *testing.T) {
 		dir = t.TempDir()
 		script = filepath.Join(dir, "run.sh")
 		require.NoError(t, os.WriteFile(script, []byte("#!/bin/sh\necho hi\n"), 0o755))
+		// os.WriteFile applies the process umask, so the perm argument above is
+		// a ceiling, not the mode: under umask 077 the fixture lands at 0700
+		// and the executable bit this test is about is never set. Chmod ignores
+		// the umask, so the fixture is the same whoever runs it.
+		require.NoError(t, os.Chmod(script, 0o755))
 		require.NoError(t, os.Chtimes(script, modTime, modTime))
 		return dir, script
 	}
