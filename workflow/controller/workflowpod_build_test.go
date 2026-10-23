@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -93,29 +95,6 @@ func (s *stubPodBuilderDeps) getPodGCDelay(_ context.Context, _ *wfv1.PodGC) tim
 }
 func (s *stubPodBuilderDeps) persistentVolumeClaims() []apiv1.Volume { return nil }
 
-// TestBuild_ThreadsSnapshotNowIntoTimeout asserts build() drives the template
-// timeout determination off the captured snapshot time (pb.in.now) rather than
-// the live wall-clock, which would break determinism for a given snapshot.
-func TestBuild_ThreadsSnapshotNowIntoTimeout(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	tmpl := simpleContainerTemplate()
-	tmpl.Timeout = "60s"
-	main := tmpl.Container.DeepCopy()
-
-	// Pin the snapshot clock to a fixed instant well away from real time.Now():
-	// against the live clock the node would be long past its timeout.
-	snapshotNow := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
-	deps := newStubDeps()
-	deps.node = &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: metav1.NewTime(snapshotNow.Add(-10 * time.Second))}
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
-	pb.in.now = snapshotNow
-
-	result, err := pb.build(ctx)
-	require.NoError(t, err, "build must use the captured snapshot time for the template timeout, not the live wall-clock")
-	require.NotNil(t, result)
-	assert.Equal(t, new(int64(50)), result.Pod.Spec.ActiveDeadlineSeconds)
-}
-
 // newTestPodBuilder constructs a podBuilder entirely from literals — no woc, no
 // controller, no clientset. initless selects the layout, exactly as
 // newPodBuilder does in production.
@@ -193,6 +172,52 @@ func simpleContainerTemplate() *wfv1.Template {
 			Image:   "my-image",
 			Command: []string{"echo", "hi"},
 		},
+	}
+}
+
+// TestBuild_ExecContainerConfig checks every argoexec container of a built pod,
+// and the pod-level values shared with them, come from the snapshot's execCfg,
+// with the executor service account build resolves from the template.
+func TestBuild_ExecContainerConfig(t *testing.T) {
+	for _, initless := range []bool{false, true} {
+		t.Run(fmt.Sprintf("initless=%v", initless), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			tmpl := simpleContainerTemplate()
+			tmpl.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "exec-sa"}
+			main := tmpl.Container.DeepCopy()
+			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, initless, newStubDeps())
+			pb.in.execCfg.imagePullPolicy = apiv1.PullAlways
+			pb.in.execCfg.instanceID = "instance"
+
+			result, err := pb.build(ctx)
+			require.NoError(t, err)
+			pod := result.Pod
+
+			assert.Equal(t, "instance", pod.Labels[common.LabelKeyControllerInstanceID])
+			assert.True(t, hasVolume(pod.Spec.Volumes, common.ServiceAccountTokenVolumeName))
+			execCtrNames := []string{common.InitContainerName, common.WaitContainerName}
+			if initless {
+				execCtrNames = []string{common.SupervisorContainerName}
+				require.True(t, hasVolume(pod.Spec.Volumes, argoBinVolumeName))
+				for _, v := range pod.Spec.Volumes {
+					if v.Name == argoBinVolumeName {
+						assert.Equal(t, testStubExecutorImage, v.Image.Reference)
+						assert.Equal(t, apiv1.PullAlways, v.Image.PullPolicy)
+					}
+				}
+			}
+			for _, name := range execCtrNames {
+				ctr := containerByName(slices.Concat(pod.Spec.InitContainers, pod.Spec.Containers), name)
+				require.NotNil(t, ctr, name)
+				assert.Equal(t, testStubExecutorImage, ctr.Image, name)
+				assert.Equal(t, apiv1.PullAlways, ctr.ImagePullPolicy, name)
+				uid, _ := envValue(ctr, common.EnvVarWorkflowUID)
+				assert.Equal(t, "wf-uid", uid, name)
+				instance, _ := envValue(ctr, common.EnvVarInstanceID)
+				assert.Equal(t, "instance", instance, name)
+				assert.True(t, hasMount(ctr, common.ServiceAccountTokenVolumeName), name)
+			}
+		})
 	}
 }
 
@@ -709,8 +734,10 @@ func TestBuild_OffloadContainerArgs(t *testing.T) {
 // TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds asserts the
 // template timeout lowers the pod's activeDeadlineSeconds to the time left
 // before the timeout, and never raises an activeDeadlineSeconds that is already
-// smaller, whichever source set it. The node is pending and started startedAgo,
-// so its template times out timeout after that.
+// smaller, whichever source set it. The node is pending (unless running is set)
+// and started startedAgo, so its template times out timeout after that. The
+// snapshot clock is pinned far from the wall clock, so build using the live
+// clock instead of pb.in.now fails every case with a timeout.
 func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 	now := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 	wfDeadline := now.Add(30 * time.Second)
@@ -721,6 +748,7 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 		podSpecPatch     string
 		timeout          string
 		startedAgo       time.Duration
+		running          bool
 		wantADS          int64
 		wantErr          string
 	}{
@@ -731,10 +759,12 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 		{name: "no activeDeadlineSeconds takes the timeout", timeout: "1m", wantADS: 60},
 		{name: "workflow deadline smaller than timeout is kept", workflowDeadline: &wfDeadline, timeout: "1m", wantADS: 30},
 		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, timeout: "1m", wantADS: 30},
+		{name: "podSpecPatch activeDeadlineSeconds larger than timeout is clamped", podSpecPatch: `{"activeDeadlineSeconds": 300}`, timeout: "1m", wantADS: 60},
 		{name: "timeout nearly expired", tmplADS: "30", timeout: "1s", wantErr: "node exceeded its deadline"},
 		{name: "timeout nearly expired with a smaller activeDeadlineSeconds", tmplADS: "1", timeout: "1s", wantErr: "node exceeded its deadline"},
-		{name: "timeout passed", tmplADS: "30", timeout: "1m", startedAgo: 70 * time.Second, wantErr: ErrTimeout.Error()},
-		{name: "timeout passed longer ago than activeDeadlineSeconds", tmplADS: "5", timeout: "1m", startedAgo: 70 * time.Second, wantErr: ErrTimeout.Error()},
+		{name: "pending node past its timeout times out", tmplADS: "30", timeout: "1m", startedAgo: 70 * time.Second, wantErr: ErrTimeout.Error()},
+		{name: "running node past its timeout fails", tmplADS: "30", timeout: "1m", startedAgo: 70 * time.Second, running: true, wantErr: "node exceeded its deadline"},
+		{name: "running node past its timeout fails even with a smaller activeDeadlineSeconds", tmplADS: "5", timeout: "1m", startedAgo: 70 * time.Second, running: true, wantErr: "node exceeded its deadline"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -749,6 +779,9 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 
 			deps := newStubDeps()
 			deps.node = &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: metav1.NewTime(now.Add(-tt.startedAgo))}
+			if tt.running {
+				deps.node.Phase = wfv1.NodeRunning
+			}
 			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
 			pb.in.now = now
 			pb.in.computedWorkflowDeadline = tt.workflowDeadline

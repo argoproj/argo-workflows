@@ -13984,22 +13984,25 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 	})
 }
 
-// TestExecuteTemplatePendingTimeout checks that executeTemplate fails a node pending
-// past its pendingTimeout but not yet past its timeout. The deadline branches
-// themselves are covered by TestTemplateTimeoutDeadlines.
-func TestExecuteTemplatePendingTimeout(t *testing.T) {
+// TestPendingTimeoutFailsNode checks that an operation fails a node pending past
+// its pendingTimeout but not yet past its timeout (executeProcessedTemplate's
+// checkConstraints). The deadline branches themselves are covered by
+// TestTemplateTimeoutDeadlines.
+func TestPendingTimeoutFailsNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
 	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+	// a timeout far beyond the pendingTimeout, so only the pendingTimeout can fail the node
+	wf.Spec.Templates[1].Timeout = "1h"
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	makePodsPhase(ctx, woc, apiv1.PodPending)
 
-	// pendingTimeout is 2s and timeout 4s: start the node 3s ago rather than sleeping
+	// pendingTimeout is 2s: start the node 3s ago rather than sleeping
 	node, err := woc.wf.GetNodeByName("hello-world-dag.dag1")
 	require.NoError(t, err)
 	node.StartedAt = metav1.NewTime(time.Now().Add(-3 * time.Second))

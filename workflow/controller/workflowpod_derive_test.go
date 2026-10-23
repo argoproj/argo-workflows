@@ -131,7 +131,10 @@ func TestTemplateTimeoutDeadlines(t *testing.T) {
 
 func TestApplyTemplateDeadline(t *testing.T) {
 	inAMinute := deriveTestNow.Add(time.Minute)
+	inTwoSeconds := deriveTestNow.Add(2 * time.Second)
+	inUnderTwoSeconds := deriveTestNow.Add(1900 * time.Millisecond)
 	inASecond := deriveTestNow.Add(time.Second)
+	aSecondAgo := deriveTestNow.Add(-time.Second)
 
 	tests := []struct {
 		name             string
@@ -146,8 +149,12 @@ func TestApplyTemplateDeadline(t *testing.T) {
 		{name: "larger activeDeadlineSeconds is lowered", ads: new(int64(300)), templateDeadline: &inAMinute, want: new(int64(60))},
 		{name: "smaller activeDeadlineSeconds is kept", ads: new(int64(30)), templateDeadline: &inAMinute, want: new(int64(30))},
 		{name: "equal activeDeadlineSeconds is kept", ads: new(int64(60)), templateDeadline: &inAMinute, want: new(int64(60))},
-		{name: "expired template deadline fails", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
-		{name: "expired template deadline fails even with a smaller activeDeadlineSeconds", ads: new(int64(1)), templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
+		{name: "two seconds left is the smallest kept", templateDeadline: &inTwoSeconds, want: new(int64(2))},
+		{name: "under two seconds left fails, as the seconds are truncated", templateDeadline: &inUnderTwoSeconds, wantErr: "node exceeded its deadline"},
+		{name: "one second left fails", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
+		{name: "one second left fails even with a smaller activeDeadlineSeconds", ads: new(int64(1)), templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
+		{name: "passed template deadline fails", templateDeadline: &aSecondAgo, wantErr: "node exceeded its deadline"},
+		{name: "passed template deadline fails even with a smaller activeDeadlineSeconds", ads: new(int64(1)), templateDeadline: &aSecondAgo, wantErr: "node exceeded its deadline"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -197,7 +204,6 @@ func TestBuild_Deadlines(t *testing.T) {
 		{name: "exit handler", tmplADS: "30", workflowDeadline: &passed, computedWorkflowDeadline: &passed, onExit: true, wantADS: new(int64(30))},
 		{name: "execution deadline", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, executionDeadline: executionDeadline, wantADS: new(int64(600)), wantDeadline: executionDeadline},
 		{name: "template timeout", tmplADS: "300", workflowDeadline: &wfDeadline, computedWorkflowDeadline: &wfDeadline, templateDeadline: &templateDeadline, wantADS: new(int64(120)), wantDeadline: wfDeadline},
-		{name: "template timeout longer than activeDeadlineSeconds", tmplADS: "30", templateDeadline: &templateDeadline, wantADS: new(int64(30))},
 		{name: "debug pause before clears activeDeadlineSeconds", tmplADS: "30", debugPauseEnv: "ARGO_DEBUG_PAUSE_BEFORE"},
 		{name: "debug pause after clears activeDeadlineSeconds", tmplADS: "30", debugPauseEnv: "ARGO_DEBUG_PAUSE_AFTER"},
 	}
@@ -352,14 +358,18 @@ func TestBuildExecContainer(t *testing.T) {
 	assert.Equal(t, "instance", instance)
 	extra, _ := envValue(ctr, "EXTRA")
 	assert.Equal(t, "x", extra)
-	assert.True(t, hasMount(ctr, common.KubeConfigDefaultVolumeName))
+	assert.Contains(t, ctr.Env, apiv1.EnvVar{Name: common.EnvVarPodUID, ValueFrom: &apiv1.EnvVarSource{FieldRef: &apiv1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.uid"}}})
+	assert.Contains(t, ctr.VolumeMounts, apiv1.VolumeMount{Name: common.KubeConfigDefaultVolumeName, MountPath: common.KubeConfigDefaultMountPath, ReadOnly: true, SubPath: "kubeconfig"})
 	assert.True(t, hasMount(ctr, common.ServiceAccountTokenVolumeName))
+	assert.Nil(t, ctr.SecurityContext, "only resource templates are locked down")
 
 	resourceTmpl := &wfv1.Template{Resource: &wfv1.ResourceTemplate{}}
 	resourceCtr := buildExecContainer(common.MainContainerName, resourceTmpl, execContainerConfig{executor: &apiv1.Container{}})
 	require.NotNil(t, resourceCtr.SecurityContext)
 	assert.Equal(t, new(true), resourceCtr.SecurityContext.ReadOnlyRootFilesystem)
 	assert.False(t, hasMount(resourceCtr, common.ServiceAccountTokenVolumeName))
+	_, hasInstanceID := envValue(resourceCtr, common.EnvVarInstanceID)
+	assert.False(t, hasInstanceID, "no instance ID env without an instance ID")
 	for _, name := range []string{common.InitContainerName, common.WaitContainerName, common.SupervisorContainerName} {
 		ctr := buildExecContainer(name, resourceTmpl, execContainerConfig{executor: &apiv1.Container{}})
 		require.NotNil(t, ctr.SecurityContext, name)
