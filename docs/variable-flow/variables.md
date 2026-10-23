@@ -1,6 +1,6 @@
 # Workflow variables catalog
 
-Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables registered.
+Auto-generated from `util/variables` via `GenerateMarkdown()`. 84 variables registered.
 
 **Skipped and omitted nodes:** when a step or task is skipped (its `when` evaluates false) or omitted (its dependencies never ran), it produces no real outputs. Its `outputs.parameters.<name>`, `outputs.result` and `outputs.artifacts.<name>` variables are still populated with empty placeholder values, so downstream references resolve to empty rather than leaving the workflow stuck on an unresolvable variable.
 
@@ -32,6 +32,7 @@ A runnable [variables-showcase.yaml](https://raw.githubusercontent.com/argoproj/
 | `lastRetry.message`                       | retry         | string         | inside-retry                                               | Message of the previous attempt                                                                                                                                                                                                                                                                                                                                   |
 | `lastRetry.status`                        | retry         | string         | inside-retry                                               | Phase of the previous attempt (or empty on first)                                                                                                                                                                                                                                                                                                                 |
 | `node.name`                               | node-ctx      | string         | pre-dispatch, during-execute                               | Full node name                                                                                                                                                                                                                                                                                                                                                    |
+| `node.taskName`                           | node-ctx      | string         | pre-dispatch, during-execute                               | Name of this attempt of the node, the same as pod.name for pod-producing templates                                                                                                                                                                                                                                                                                |
 | `outputs.artifacts.<name>.path`           | output        | string         | during-execute                                             | Declared output artifact path for the current template (pod side)                                                                                                                                                                                                                                                                                                 |
 | `outputs.parameters.<name>`               | metric        | string         | metric-emission                                            | Current node's named output parameter value (metric scope only)                                                                                                                                                                                                                                                                                                   |
 | `outputs.parameters.<name>.path`          | output        | string         | during-execute                                             | Declared output parameter path for the current template (pod side)                                                                                                                                                                                                                                                                                                |
@@ -197,12 +198,13 @@ A runnable [variables-showcase.yaml](https://raw.githubusercontent.com/argoproj/
 
 ### Node-ctx
 
-|     Key      |  Type  |         Availability         |                       Description                       |
-|--------------|--------|------------------------------|---------------------------------------------------------|
-| `node.name`  | string | pre-dispatch, during-execute | Full node name                                          |
-| `pod.name`   | string | pre-dispatch, during-execute | Computed pod name for pod-producing templates           |
-| `steps.name` | string | pre-dispatch, during-execute | Name of the current step (inside a Steps template body) |
-| `tasks.name` | string | pre-dispatch, during-execute | Name of the current task (inside a DAG template body)   |
+|       Key       |  Type  |         Availability         |                                    Description                                     |
+|-----------------|--------|------------------------------|------------------------------------------------------------------------------------|
+| `node.name`     | string | pre-dispatch, during-execute | Full node name                                                                     |
+| `node.taskName` | string | pre-dispatch, during-execute | Name of this attempt of the node, the same as pod.name for pod-producing templates |
+| `pod.name`      | string | pre-dispatch, during-execute | Computed pod name for pod-producing templates                                      |
+| `steps.name`    | string | pre-dispatch, during-execute | Name of the current step (inside a Steps template body)                            |
+| `tasks.name`    | string | pre-dispatch, during-execute | Name of the current task (inside a DAG template body)                              |
 
 ### Metric
 
@@ -257,6 +259,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `lastRetry.message`                       |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
 | `lastRetry.status`                        |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
 | `node.name`                               | •   | •         | •             | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `node.taskName`                           |     | •         | •             | •      | •        |       |     | •    |         |      |        | •            |               |
 | `outputs.artifacts.<name>.path`           |     | •         | •             | •      | •        |       |     | •    |         |      |        | •            |               |
 | `outputs.parameters.<name>`               | •   | •         | •             | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `outputs.parameters.<name>.path`          |     | •         | •             | •      | •        |       |     | •    |         |      |        | •            |               |
@@ -324,7 +327,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 |        Phase         |                                                                                                                        Meaning                                                                                                                        |
 |----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | workflow-start       | Globals populated once, up front, before any template runs.                                                                                                                                                                                           |
-| pre-dispatch         | Immediately before a template's pod is created; pod.name / node.name / steps.name / tasks.name are set.                                                                                                                                               |
+| pre-dispatch         | Immediately before a template's pod is created; pod.name / node.taskName / node.name / steps.name / tasks.name are set.                                                                                                                               |
 | during-execute       | Inside a template body; inputs.* are bound.                                                                                                                                                                                                           |
 | inside-loop          | Inside a withItems/withParam expansion; `item`, `item.<key>` are bound.                                                                                                                                                                               |
 | inside-retry         | Inside a retryStrategy template; retries.* are bound.                                                                                                                                                                                                 |
@@ -362,11 +365,12 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `workflow.serviceAccountName`        | global | string |
 | `workflow.uid`                       | global | string |
 
-### pre-dispatch (26 variables)
+### pre-dispatch (27 variables)
 
 |                 Key                  |   Kind   |  Type  |
 |--------------------------------------|----------|--------|
 | `node.name`                          | node-ctx | string |
+| `node.taskName`                      | node-ctx | string |
 | `pod.name`                           | node-ctx | string |
 | `steps.name`                         | node-ctx | string |
 | `tasks.name`                         | node-ctx | string |
@@ -393,7 +397,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `workflow.status`                    | runtime  | string |
 | `workflow.uid`                       | global   | string |
 
-### during-execute (34 variables)
+### during-execute (35 variables)
 
 |                 Key                  |   Kind   |     Type      |
 |--------------------------------------|----------|---------------|
@@ -402,6 +406,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `inputs.parameters`                  | input    | json          |
 | `inputs.parameters.<name>`           | input    | string        |
 | `node.name`                          | node-ctx | string        |
+| `node.taskName`                      | node-ctx | string        |
 | `outputs.artifacts.<name>.path`      | output   | string        |
 | `outputs.parameters.<name>.path`     | output   | string        |
 | `pod.name`                           | node-ctx | string        |
@@ -500,11 +505,12 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `tasks.<loopName>.outputs.parameters.<p>` | node-ref | json |
 | `tasks.<loopName>.outputs.result`         | node-ref | json |
 
-### exit-handler (55 variables)
+### exit-handler (56 variables)
 
 |                    Key                    |   Kind   |     Type      |
 |-------------------------------------------|----------|---------------|
 | `inputs.artifacts.<name>.path`            | input    | string        |
+| `node.taskName`                           | node-ctx | string        |
 | `outputs.artifacts.<name>.path`           | output   | string        |
 | `outputs.parameters.<name>.path`          | output   | string        |
 | `pod.name`                                | node-ctx | string        |

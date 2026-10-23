@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
-	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
+	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository.
+	// For a pod, node.taskName is its pod name, so this is the same key as workflow.name/pod.name.
+	DefaultArchivePattern = "{{workflow.name}}/{{node.taskName}}"
 )
 
 // ArtifactRepository represents an artifact repository in which a controller will store its artifacts
@@ -63,7 +64,7 @@ func (a *ArtifactRepository) Get() ArtifactRepositoryType {
 }
 
 // ToArtifactLocation returns the artifact location set with default template key:
-// key = `{{workflow.name}}/{{pod.name}}`
+// key = `{{workflow.name}}/{{node.taskName}}`
 func (a *ArtifactRepository) ToArtifactLocation() *ArtifactLocation {
 	if a == nil {
 		return nil
