@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
@@ -9,6 +10,7 @@ import (
 
 	argoexecexecutor "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
 	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
@@ -62,5 +64,21 @@ func runAuxiliaryContainer(
 
 	stats.StartStatsTicker(5 * time.Minute)
 
+	// Off unless ARGO_PPROF is set. The aux container outlives the main one,
+	// so a leak here shows up as the container being OOMKilled after the step
+	// has already succeeded, with no in-process evidence of what grew.
+	pprofutil.Init(ctx)
+	pprofutil.ListenLoopback(ctx, pprofPort())
+
 	return body(ctx, bgCtx, wfExecutor)
+}
+
+// pprofPort is the port ListenLoopback binds when ARGO_PPROF is set. It is
+// configurable because this process shares a network namespace with the user's
+// own containers, so the default may already be taken.
+func pprofPort() string {
+	if port := os.Getenv("ARGO_PPROF_PORT"); port != "" {
+		return port
+	}
+	return "6060"
 }
