@@ -75,6 +75,6 @@ describe('CronWorkflowList', () => {
             await waitFor(() => expect(rows(container)).toEqual(expected(namespace)));
         }
 
-        expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('Encountered two children with the same key'), expect.anything(), expect.anything());
+        expect(consoleError.mock.calls.map(([msg]) => String(msg)).filter(m => m.includes('Encountered two children with the same key'))).toEqual([]);
     });
 });
