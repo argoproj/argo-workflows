@@ -36,7 +36,8 @@ func Init(ctx context.Context) {
 // ListenLoopback serves the endpoints registered by Init on the loopback
 // interface, and does nothing when they are disabled. It returns once the
 // listener is up, leaving the server running in the background until ctx is
-// done.
+// done. It reports the address it bound, or "" when the endpoints are off or
+// the port could not be taken.
 //
 // Loopback rather than all interfaces, because unlike the controller and the
 // server, this runs inside a user's workflow pod: anything bound to the pod IP
@@ -46,10 +47,10 @@ func Init(ctx context.Context) {
 //
 // The port is configurable because this process shares a network namespace
 // with the user's own containers, which may already be using the default.
-func ListenLoopback(ctx context.Context, port string) {
+func ListenLoopback(ctx context.Context, port string) string {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if !Enabled() {
-		return
+		return ""
 	}
 	addr := net.JoinHostPort("127.0.0.1", port)
 	var lc net.ListenConfig
@@ -58,7 +59,7 @@ func ListenLoopback(ctx context.Context, port string) {
 		// Profiling is a debugging aid: losing the port must never take the
 		// process down with it.
 		logger.WithError(err).WithField("addr", addr).Warn(ctx, "could not start pprof listener")
-		return
+		return ""
 	}
 	srv := &http.Server{Handler: http.DefaultServeMux, ReadHeaderTimeout: 10 * time.Second}
 	go func() {
@@ -72,5 +73,7 @@ func ListenLoopback(ctx context.Context, port string) {
 			logger.WithError(err).Warn(ctx, "pprof listener stopped")
 		}
 	}()
-	logger.WithField("addr", addr).Info(ctx, "pprof debug endpoints listening")
+	bound := ln.Addr().String()
+	logger.WithField("addr", bound).Info(ctx, "pprof debug endpoints listening")
+	return bound
 }

@@ -68,7 +68,7 @@ func runAuxiliaryContainer(
 	// so a leak here shows up as the container being OOMKilled after the step
 	// has already succeeded, with no in-process evidence of what grew.
 	pprofutil.Init(ctx)
-	pprofutil.ListenLoopback(ctx, pprofPort())
+	_ = pprofutil.ListenLoopback(ctx, pprofPort())
 
 	return body(ctx, bgCtx, wfExecutor)
 }

@@ -69,8 +69,9 @@ func TestListenLoopbackIsSilentWhenDisabled(t *testing.T) {
 	port := freePort(t)
 
 	Init(ctx)
-	ListenLoopback(ctx, port)
+	addr := ListenLoopback(ctx, port)
 
+	require.Empty(t, addr, "nothing should be bound with ARGO_PPROF unset")
 	require.Error(t, dial(ctx, net.JoinHostPort("127.0.0.1", port)),
 		"nothing should be listening with ARGO_PPROF unset")
 }
@@ -97,22 +98,27 @@ func TestListenLoopbackServesProfilesWhenEnabled(t *testing.T) {
 
 // Binding the pod IP would publish an unauthenticated memory dump to the whole
 // cluster network, so the listener must be loopback-only.
+//
+// This asserts on the address the listener actually bound rather than trying
+// to bind 0.0.0.0 on the same port and expecting that to succeed: whether a
+// wildcard bind conflicts with an existing loopback bind is platform-specific,
+// and that version of the test passed on macOS and failed on Linux with
+// "address already in use" while the code under test was correct.
 func TestListenLoopbackDoesNotBindOutsideLoopback(t *testing.T) {
 	t.Setenv("ARGO_PPROF", "true")
 	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	defer cancel()
-	port := freePort(t)
 
 	Init(ctx)
-	ListenLoopback(ctx, port)
+	addr := ListenLoopback(ctx, freePort(t))
+	require.NotEmpty(t, addr, "the listener should have started")
 
-	// Listening again on the same port on every interface must succeed: if the
-	// pprof server had bound 0.0.0.0, this would fail with "address already in
-	// use".
-	var lc net.ListenConfig
-	ln, err := lc.Listen(ctx, "tcp", net.JoinHostPort("0.0.0.0", port))
-	require.NoError(t, err, "pprof must not be bound on a non-loopback address")
-	require.NoError(t, ln.Close())
+	host, _, err := net.SplitHostPort(addr)
+	require.NoError(t, err)
+	ip := net.ParseIP(host)
+	require.NotNil(t, ip, "bound host %q is not an IP", host)
+	require.True(t, ip.IsLoopback(), "pprof bound %s, which is not a loopback address", addr)
+	require.False(t, ip.IsUnspecified(), "pprof bound the wildcard address %s", addr)
 }
 
 func TestListenLoopbackStopsWithTheContext(t *testing.T) {
@@ -144,5 +150,7 @@ func TestListenLoopbackSurvivesABusyPort(t *testing.T) {
 	require.NoError(t, err)
 
 	Init(ctx)
-	require.NotPanics(t, func() { ListenLoopback(ctx, port) })
+	var addr string
+	require.NotPanics(t, func() { addr = ListenLoopback(ctx, port) })
+	require.Empty(t, addr, "a port that cannot be bound reports no address")
 }
