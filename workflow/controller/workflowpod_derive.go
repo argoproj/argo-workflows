@@ -24,13 +24,21 @@ import (
 // This file holds the derivations of a task's pod-level fields, executor
 // containers and deadlines. Each is a function of the values passed to it: the
 // template and its boundary template, the workflow spec, controller
-// configuration (including execContainerConfig), the artifact repository, the
-// pod layout, the workflow and execution deadlines, a clock reading, and two
-// values the caller looks up from status or the cluster: the node's StartedAt
-// and Phase (templateTimeoutDeadlines) and the executor token's Secret name
-// (executorTokenVolume). None reads a live pod, the workflow object or the API,
-// so anything building a task's execution environment derives it the same way
-// the pod builder does.
+// configuration (including execContainerConfig and the executor log flags),
+// the artifact repository, the pod layout, the workflow and execution
+// deadlines, a clock reading, and values the caller looks up from status or the
+// cluster: the node's status (templateTimeoutDeadlines reads its StartedAt and
+// Phase) and the executor token's Secret name (executorTokenVolume). None reads
+// a live pod, the workflow object or the API, so anything building a task's
+// execution environment derives it the same way the pod builder does. The
+// apply* and add* functions update the value they are given in place.
+//
+// podBuilder.build combines the deadlines in this order: taskActiveDeadlineSeconds
+// (no pod when start is false), then dropping that for a debug pause
+// (debugPauseRequested), then the template's podSpecPatch, then
+// templateTimeoutDeadlines and applyTemplateDeadline, so the template timeout
+// also lowers an activeDeadlineSeconds the patch set. taskDeadline is the
+// ARGO_DEADLINE alongside it.
 
 // applyMainContainerDefaults names the template's user containers and merges
 // the controller's main container defaults (Config.MainContainer) under each:
@@ -69,9 +77,9 @@ func applyMainContainerDefaults(ctrs []apiv1.Container, tmpl *wfv1.Template, def
 
 // taskDeadline is the absolute deadline a task's executor enforces on itself
 // (ARGO_DEADLINE): the earlier of the workflow deadline and the execution
-// deadline (from retryStrategy.expression's maxDuration). Exit handlers ignore
-// the workflow deadline so they still run after it has passed. The zero time
-// means no deadline.
+// deadline (retryStrategy.backoff.maxDuration after the first attempt started).
+// Exit handlers ignore the workflow deadline so they still run after it has
+// passed. The zero time means no deadline.
 func taskDeadline(workflowDeadline *time.Time, executionDeadline time.Time, onExit bool) time.Time {
 	deadline := time.Time{}
 	if workflowDeadline != nil && !onExit {
@@ -87,8 +95,8 @@ func taskDeadline(workflowDeadline *time.Time, executionDeadline time.Time, onEx
 // template timeout is applied (see applyTemplateDeadline): the template's
 // activeDeadlineSeconds, lowered to the whole seconds left before the workflow
 // deadline as of now. Exit handlers ignore the workflow deadline. start is
-// false when the workflow deadline has already passed, in which case the task
-// must not be started.
+// false when less than a whole second is left before the workflow deadline, in
+// which case the task must not be started.
 func taskActiveDeadlineSeconds(tmpl *wfv1.Template, workflowDeadline *time.Time, onExit bool, now time.Time) (activeDeadlineSeconds *int64, start bool, err error) {
 	tmplActiveDeadlineSeconds, err := intstr.Int64(tmpl.ActiveDeadlineSeconds)
 	if err != nil {
@@ -109,7 +117,9 @@ func taskActiveDeadlineSeconds(tmpl *wfv1.Template, workflowDeadline *time.Time,
 }
 
 // debugPauseRequested reports whether any of the containers asks the executor
-// to pause for debugging, in which case the task gets no activeDeadlineSeconds.
+// to pause for debugging, in which case the task's activeDeadlineSeconds from
+// the template and the workflow deadline is dropped. A template timeout still
+// applies (see applyTemplateDeadline).
 func debugPauseRequested(ctrs []apiv1.Container) bool {
 	for _, c := range ctrs {
 		for _, env := range c.Env {
@@ -159,9 +169,8 @@ func templateTimeoutDeadlines(tmpl *wfv1.Template, node *wfv1.NodeStatus, now ti
 // activeDeadlineSeconds is kept. It fails when the seconds left are 1 or less,
 // which, as they are truncated, means under two seconds left, even when
 // activeDeadlineSeconds is smaller, so a pod whose timeout has already run out
-// is never created. The cut-off is 1 because that is the minimum valid
-// activeDeadlineSeconds (see #12762). A nil templateDeadline leaves
-// activeDeadlineSeconds unchanged.
+// is never created. The cut-off has been 1 since template timeouts were added
+// (#3686). A nil templateDeadline leaves activeDeadlineSeconds unchanged.
 func applyTemplateDeadline(nodeName string, activeDeadlineSeconds *int64, templateDeadline *time.Time, now time.Time) (*int64, error) {
 	if templateDeadline == nil {
 		return activeDeadlineSeconds, nil

@@ -419,7 +419,8 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		return nil, nil
 	}
 
-	// If the template is marked for debugging no deadline will be set
+	// A task paused for debugging gets no activeDeadlineSeconds from the template
+	// or the workflow deadline. The template timeout is still applied below.
 	if debugPauseRequested(mainCtrs) {
 		activeDeadlineSeconds = nil
 	}

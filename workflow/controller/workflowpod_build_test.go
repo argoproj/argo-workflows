@@ -603,11 +603,10 @@ const envConfigMountName = "argo-env-config"
 
 // oversizedTemplate returns a container template whose JSON marshalling exceeds
 // common.MaxEnvVarLen, forcing build()'s ARGO_TEMPLATE offload branch. The bulk
-// lives in tmpl.Metadata.Annotations, which build()'s simplifiedTmpl step
-// preserves (only Inputs.Parameters are stripped), so the marshalled
-// ARGO_TEMPLATE value is guaranteed to be oversized. The stub addMetadata is a
-// no-op, so this does NOT inflate the pod object itself — only the template env
-// value, isolating the offloadEnvVarTemplate path.
+// lives in tmpl.Metadata.Annotations, which executorTemplate preserves (only
+// Inputs.Parameters are stripped), so the marshalled ARGO_TEMPLATE value is
+// guaranteed to be oversized. applyPodMetadata also copies the annotation onto
+// the pod; the tests only assert on the ARGO_TEMPLATE env and its ConfigMap.
 func oversizedTemplate() *wfv1.Template {
 	tmpl := simpleContainerTemplate()
 	tmpl.Metadata = wfv1.Metadata{
