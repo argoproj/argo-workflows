@@ -509,7 +509,7 @@ data:
     # HTTP header containing the user's preferred username.
     preferred_username:
       header: X-Forwarded-User
-    # HTTP header containing the user's groups.
+    # HTTP header containing the user's groups, as a comma-separated list.
     groups:
       header: X-Forwarded-Groups
     # HTTP header containing the shared secret used to authenticate the trusted proxy.
