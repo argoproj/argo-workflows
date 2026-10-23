@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-parameter-overwrite-
+  namespace: argo
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        value: "configmap argument overwrite with argument"
+  workflowTemplateRef:
+    name: wf-template-echo

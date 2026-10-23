@@ -360,6 +360,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return existing, nil
 	}
 
+	// Re-root under the node span: on a re-entry (informer-lag re-creation, or a
+	// later reconcile) the node already exists, so the leaf executor skipped
+	// the initializeExecutableNode call that would have carried the node span in
+	// ctx, leaving the workflow span active. Without this the pod span (started
+	// below) parents under the workflow span instead of the node.
+	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, nodeID)
+
 	// (b) shutdown-strategy guard. Do not create pods if we are shutting down.
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		woc.markNodeFailedOnShutdown(ctx, nodeName, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
@@ -697,7 +704,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
-	// in executeTemplate.
+	// in prepareTemplate.
 	pod, err = substitutePodParams(ctx, pod, pb.in.globalParams, tmpl)
 	if err != nil {
 		return nil, err
@@ -705,7 +712,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 
 	// One final check to verify all variables are resolvable for select fields. We are choosing
 	// only to check ArchiveLocation for now, since everything else should have been substituted
-	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
+	// earlier (i.e. in prepareTemplate). But archive location is unique in that the variables
 	// are formulated from the configmap. We can expand this to other fields as necessary.
 	// Legacy mode carries ARGO_TEMPLATE on the init container; init-less mode carries it on
 	// supervisor (and on main for templates without a supervisor) instead, so we scan both
@@ -947,13 +954,17 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		return nil, scheduleErr
 	}
 
-	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || pb.in.now.Sub(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+	if templateDeadline != nil {
 		newActiveDeadlineSeconds := int64(templateDeadline.Sub(pb.in.now).Seconds())
+		// Check the timeout first, so a smaller activeDeadlineSeconds can't
+		// keep a pod whose timeout has already run out.
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
-		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+		if pod.Spec.ActiveDeadlineSeconds == nil || newActiveDeadlineSeconds < *pod.Spec.ActiveDeadlineSeconds {
+			log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
+			pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+		}
 	}
 
 	// build is pure: the pod is fully constructed but not yet created. submitPod

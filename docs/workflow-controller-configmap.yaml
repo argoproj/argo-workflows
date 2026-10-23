@@ -37,14 +37,12 @@ data:
   # k8s (typically etcd) resulting in errors when trying to create new events:
   # "Unable to create audit event: etcdserver: mvcc: database space exceeded"
   # This config item allows you to disable this.
-  # (since v2.9)
   nodeEvents: |
     enabled: true
 
   # Whether or not to emit events on workflow status changes. These can take a up a lot of space in
   # k8s (typically etcd), see nodeEvents above.
   # This config item allows you to disable this.
-  # (since v3.6)
   workflowEvents: |
     enabled: true
 
@@ -89,7 +87,6 @@ data:
       url: http://workflows?label=workflows.argoproj.io/completed=true
 
   # Columns are custom columns that will be exposed in the Workflow List View.
-  # (available since Argo v3.5)
   columns: |
     # Adds a column to the Workflow List View
     - # The name of this column, e.g., "Workflow Completed".
@@ -183,8 +180,7 @@ data:
       cmd: [/bin/bash]
 
   # Defaults for main containers. These can be overridden by the template.
-  # <= v3.3 only `resources` are supported.
-  # >= v3.4 all fields are supported, including security context.
+  # All fields are supported, including security context.
   mainContainer: |
     imagePullPolicy: IfNotPresent
     resources:
@@ -204,7 +200,6 @@ data:
       runAsUser: 1000
 
   # executor controls how the init and wait container should be customized
-  # (available since Argo v2.3)
   executor: |
     imagePullPolicy: IfNotPresent
     resources:
@@ -251,7 +246,7 @@ data:
           - name
       k8s_request_duration:
         histogramBuckets: [ 1.0, 2.0, 10.0 ]
-    # >= 3.6. Which temporality to use for OpenTelemetry. Default is "Cumulative"
+    # Which temporality to use for OpenTelemetry. Default is "Cumulative"
     temporality: Delta
 
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
@@ -477,15 +472,15 @@ data:
     # must be registered with the provider as a post-logout redirect URI. The server
     # fails to start in SSO mode if it is not an absolute HTTP(S) URL. (optional) >= v4.2.
     logoutRedirectUrl: https://argo-server/logged-out
-    # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
+    # Additional scopes to request. Typically needed for SSO RBAC.
     scopes:
      - groups
      - email
      - profile
-    # RBAC Config. >= v2.12
+    # RBAC Config.
     rbac:
       enabled: false
-    # Skip TLS verify, not recommended in production environments. Useful for testing purposes. >= v3.2.4
+    # Skip TLS verify, not recommended in production environments. Useful for testing purposes.
     insecureSkipVerify: false
     # Custom PEM encoded CA certificate file contents. >= v4.0
     # Note: If CA certificates are mounted to the system certificate directory (/etc/ssl/certs on Linux), this config is not needed.

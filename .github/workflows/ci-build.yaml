@@ -35,7 +35,7 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -148,19 +148,19 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
-      - run: make test STATIC_FILES=false GOTEST_FLAGS='-covermode=atomic -coverprofile=coverage.out'
+      - run: make test STATIC_FILES=false COVERAGE_PROFILE=coverage.out
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-unit
           path: test/reports/json/unit.json
@@ -188,7 +188,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
       - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
@@ -218,14 +218,14 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
       - name: Build k3d and Tilt once
         # The whole e2e matrix shares these binaries via the artifact below, so
@@ -237,7 +237,7 @@ jobs:
           mkdir -p tools-bin
           cp "$(go env GOPATH)/bin/k3d" "$(go env GOPATH)/bin/tilt" tools-bin/
       - name: Upload tools
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-tools
           path: tools-bin
@@ -363,14 +363,14 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -420,7 +420,7 @@ jobs:
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false INITLESS=${{ matrix.initless || 'false' }} TEST_RETRIES="${MATRIX_RETRIES:-2}"
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}${{ matrix.initless && '-initless' || '' }}
           path: test/reports/json/${{matrix.test}}.json
@@ -464,7 +464,7 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -494,14 +494,14 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
       - name: Install protoc
         run: |
@@ -537,14 +537,14 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
@@ -552,10 +552,12 @@ jobs:
         run: git diff --exit-code
       # lint GH Actions
       - name: Ensure GH Actions are pinned to SHAs
-        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@62574f011e0d1967d555a862bd28a7abba8684fe # v5.0.9
+        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@c4e71056006d29f90204b2d063be337109507d62 # v5.0.10
 
   ui:
-    name: UI
+    # the e2e-ui job covers the UI's behaviour; this only checks it builds and
+    # its unit tests and lint pass
+    name: UI build and unit tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
     runs-on: ubuntu-24.04
@@ -565,12 +567,12 @@ jobs:
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24" # change in all GH Workflows
           cache: yarn
@@ -583,38 +585,45 @@ jobs:
       # if lint or deduplicate make changes that are not in the PR, fail the build
       - name: Check if lint & deduplicate made changes not present in the PR
         run: git diff --exit-code
-      # check to see if it'll start (but not if it'll render)
-      - run: yarn --cwd ui start &
-      - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
-        timeout-minutes: 1
 
   e2e-ui:
-    name: E2E UI
+    name: E2E UI (${{ matrix.name }})
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.ui == 'true' || needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each entry runs the Playwright suite against the webpack dev server
+        # (what `make start` gives every contributor), and the root entry also
+        # against the production bundle argo-server embeds. The sub-path entry
+        # can only go through the dev server: argo-server serves its API at
+        # /api/ whatever its --base-href, so a sub-path deployment needs a
+        # prefix-stripping proxy in front, which is what the dev server's
+        # pathRewrite is.
+        include:
+          - name: root
+            base-href: /
+          - name: base-href
+            base-href: /argo/
     env:
       KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
       NODE_OPTIONS: --max-old-space-size=4096
-      # In CI, Tilt (--mode=ci) runs no webpack dev server; the in-cluster
-      # argo-server serves the production UI bundle at :2746. Point Playwright
-      # there — this also gives production-bundle coverage.
-      ARGO_UI_BASE_URL: http://localhost:2746
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24" # change in all GH Workflows
           cache: yarn
@@ -632,6 +641,7 @@ jobs:
           tilt up --stream -- --mode=ci --profile=minimal \
             --api=true \
             --auth-mode=client \
+            --base-href=${{ matrix.base-href }} \
             --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
           # resources only register once the Tiltfile finishes evaluating; wait
           # for one we know is always defined before trusting `--all`
@@ -645,16 +655,39 @@ jobs:
             sleep 5
           done
         timeout-minutes: 15
-      - name: Wait for UI server
+      - name: Wait for argo-server
+        # Tilt (--mode=ci) keeps its argo-server port-forward on :2746 serving
+        # through the test steps below.
         run: until curl -fs http://localhost:2746 > /dev/null ; do sleep 5s ; done
         timeout-minutes: 3
-      - name: Run UI E2E tests
+      - name: Run UI E2E tests (production bundle)
+        # The bundle argo-server embeds, served by argo-server itself.
+        if: ${{ matrix.base-href == '/' }}
+        env:
+          E2E_RUN: production
+          ARGO_UI_BASE_URL: http://localhost:2746/
+        run: make test-ui-e2e
+      - name: Start the webpack dev server
+        # `yarn start` on :8080, proxying API, artifact and auth routes to
+        # argo-server on :2746 (the devServer block in ui/webpack.config.js).
+        # The dev server answers the first request only once the bundle has
+        # compiled, so this wait also covers the compile.
+        env:
+          ARGO_BASE_HREF: ${{ matrix.base-href }}
+        run: |
+          yarn --cwd ui start > /tmp/webpack-dev-server.log 2>&1 &
+          until curl -fs http://localhost:8080${{ matrix.base-href }} > /dev/null ; do sleep 5s ; done
+        timeout-minutes: 5
+      - name: Run UI E2E tests (dev server)
+        env:
+          E2E_RUN: dev-server
+          ARGO_UI_BASE_URL: http://localhost:8080${{ matrix.base-href }}
         run: make test-ui-e2e
       - name: Upload Playwright report
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.name }}
           path: |
             ui/playwright-report/
             ui/test-results/
@@ -662,6 +695,9 @@ jobs:
           retention-days: 10
 
       # failure debugging below
+      - name: Failure debug - webpack dev server log
+        if: ${{ failure() }}
+        run: tail -n 200 /tmp/webpack-dev-server.log || true
       - name: Failure debug - logs
         if: ${{ failure() }}
         uses: ./.github/actions/e2e-failure-debug
