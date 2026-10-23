@@ -118,10 +118,6 @@ func TestBuildPluginSidecarsEmpty(t *testing.T) {
 
 // TestNewSupervisorContainer verifies shape of the supervisor container.
 func TestNewSupervisorContainer(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx)
-	defer cancel()
-
 	tmpl := &wfv1.Template{
 		Name: "t",
 		Container: &apiv1.Container{
@@ -129,19 +125,12 @@ func TestNewSupervisorContainer(t *testing.T) {
 			Command: []string{"echo", "hi"},
 		},
 	}
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "wf", UID: "u"},
-		Spec:       wfv1.WorkflowSpec{Entrypoint: "t", Templates: []wfv1.Template{*tmpl}},
-	}
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	pb := woc.newPodBuilder(ctx, "wf", nil, tmpl, &createWorkflowPodOpts{})
-	ctr := pb.newSupervisorContainer(ctx, tmpl, pb.execContainerConfig(""))
+	ctr := newSupervisorContainer(tmpl, execContainerConfig{executor: &apiv1.Container{}}, []string{"--loglevel", "info"})
 
 	assert.Equal(t, common.SupervisorContainerName, ctr.Name)
-	require.NotEmpty(t, ctr.Command)
-	assert.Equal(t, "argoexec", ctr.Command[0])
-	assert.Equal(t, "supervisor", ctr.Command[1])
+	assert.Equal(t, []string{"argoexec", "supervisor", "--loglevel", "info"}, ctr.Command)
+	assert.Contains(t, ctr.Env, apiv1.EnvVar{Name: common.EnvVarInitlessPod, Value: "true"})
 }
 
 // TestBuildArgoBinVolume verifies the image volume source uses the executor

@@ -143,17 +143,12 @@ type podBuilderInputs struct {
 
 	// controller-derived configuration (immutable for the duration of build)
 	config                *config.Config
-	instanceID            string
 	mainContainerDefaults *apiv1.Container
-	// kubeConfig is the single source of the kubeconfig for both the pod's
-	// kubeconfig volume and every argoexec container's mount of it.
-	kubeConfig *config.KubeConfig
-	// executorImage and executorImagePullPolicy are the effective executor image
-	// settings (command-line flags first, then Config.Executor), shared by the
-	// argoexec containers and the init-less argoexec image volume.
-	executorImage             string
-	executorImagePullPolicy   apiv1.PullPolicy
-	workflowUID               types.UID
+	// execCfg is the executor configuration, with no executor service account
+	// set (see podBuilder.execContainerConfig). Its kubeconfig, executor image
+	// and instance ID are also the pod's: the kubeconfig volume, the init-less
+	// argoexec image volume and the instance ID label are built from it.
+	execCfg                   execContainerConfig
 	progressPatchTickDuration time.Duration
 	progressFileTickDuration  time.Duration
 
@@ -271,12 +266,8 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 			artifactRepository:        woc.artifactRepository.DeepCopy(),
 			configMapIndexer:          wfc.typedConfigMapInformer.GetIndexer(),
 			config:                    &wfc.Config,
-			instanceID:                wfc.Config.InstanceID,
 			mainContainerDefaults:     wfc.Config.MainContainer,
-			kubeConfig:                wfc.Config.KubeConfig,
-			executorImage:             wfc.executorImage(),
-			executorImagePullPolicy:   wfc.executorImagePullPolicy(),
-			workflowUID:               woc.wf.UID,
+			execCfg:                   wfc.execContainerConfig(woc.wf.UID),
 			progressPatchTickDuration: wfc.progressPatchTickDuration,
 			progressFileTickDuration:  wfc.progressFileTickDuration,
 			workflowDeadline:          woc.workflowDeadline,
@@ -450,7 +441,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
-			Volumes:               podVolumes(pb.in.kubeConfig, tmpl),
+			Volumes:               podVolumes(pb.in.execCfg.kubeConfig, tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      pb.in.execWfSpec.ImagePullSecrets,
 		},
@@ -473,8 +464,8 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 
 	applyDNSConfig(&pod.Spec, wfSpec)
 
-	if pb.in.instanceID != "" {
-		pod.Labels[common.LabelKeyControllerInstanceID] = pb.in.instanceID
+	if pb.in.execCfg.instanceID != "" {
+		pod.Labels[common.LabelKeyControllerInstanceID] = pb.in.execCfg.instanceID
 	}
 
 	addArchiveLocation(ctx, tmpl, pb.in.artifactRepository, isArchiveLogs(pb.in.artifactRepository, wfSpec, tmpl))
@@ -708,7 +699,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 			// member, so this stays inside the per-container loop.
 			pb.layout.decorateUserContainer(&c, hasAuxCtr)
 		}
-		if c.Image == pb.in.executorImage {
+		if c.Image == pb.in.execCfg.image {
 			// mount tmp dir to the executor container (wait, or supervisor in init-less mode)
 			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
 				Name:      volumeTmpDir.Name,
@@ -948,14 +939,6 @@ func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams commo
 	return &newSpec, nil
 }
 
-// standardInitContainer builds the legacy `init` container, which stages the
-// template, script and input artifacts before main starts.
-func standardInitContainer(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) *apiv1.Container {
-	ctr := buildExecContainer(common.InitContainerName, tmpl, execCfg)
-	ctr.Command = append([]string{"argoexec", "init"}, logOpts...)
-	return ctr
-}
-
 // artifactContainer builds an argoexec-based artifact container. binaryPath is
 // where argoexec is found inside the container: legacy containers reach it at
 // /var/run/argo/argoexec (copied there by the init container), while init-less
@@ -1056,29 +1039,6 @@ func (woc *wfOperationCtx) newArtifactPluginInitContainers(ctx context.Context, 
 	return initContainers, nil
 }
 
-// newWaitContainer builds the legacy layout's `wait` container, which
-// observes main and collects its outputs, logs and artifacts.
-func (pb *podBuilder) newWaitContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
-	ctr := buildExecContainer(common.WaitContainerName, tmpl, execCfg)
-	ctr.Command = append([]string{"argoexec", "wait"}, pb.deps.getExecutorLogOpts(ctx)...)
-	return ctr
-}
-
-// newSupervisorContainer builds the init-less auxiliary container that
-// replaces `wait` when initlessPod is enabled. It takes on both the pre-main
-// responsibilities of the legacy init container (template write, script
-// staging, input artifact download, readiness signaling) and the post-main
-// responsibilities of `wait` (observe main, collect outputs/logs/artifacts).
-func (pb *podBuilder) newSupervisorContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
-	ctr := buildExecContainer(common.SupervisorContainerName, tmpl, execCfg)
-	ctr.Command = append([]string{"argoexec", "supervisor"}, pb.deps.getExecutorLogOpts(ctx)...)
-	// Tell the executor it's running in init-less mode so init-less-only
-	// code paths (e.g. the input-artifacts overlap fallback in stageArchiveFile)
-	// activate. Without this, those paths would not run.
-	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarInitlessPod, Value: "true"})
-	return ctr
-}
-
 // argoBinVolumeMount is the read-only mount of the argoexec-bin image volume so
 // a container running a non-argoexec image can exec argoexec from argoBinMountPath.
 // Used by main-level containers and by plugin sidecars; both must agree on the
@@ -1136,38 +1096,39 @@ func (woc *wfOperationCtx) getExecutorLogOpts(ctx context.Context) []string {
 	return []string{"--loglevel", string(log.Level()), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
 }
 
+// execContainerConfig is the controller configuration the argoexec containers
+// of a workflow's pods are built from, with no executor service account set.
+func (wfc *WorkflowController) execContainerConfig(workflowUID types.UID) execContainerConfig {
+	return execContainerConfig{
+		image:           wfc.executorImage(),
+		imagePullPolicy: wfc.executorImagePullPolicy(),
+		executor:        wfc.Config.GetExecutor(),
+		kubeConfig:      wfc.Config.KubeConfig,
+		instanceID:      wfc.Config.InstanceID,
+		workflowUID:     workflowUID,
+	}
+}
+
 // execContainerConfig gathers the configuration the argoexec containers of a
 // pod running tmpl are built from, read from the live controller and workflow.
 // It is for argoexec containers built outside podBuilder.build (the resource
 // and data templates' main containers, artifact GC pods); build uses
 // podBuilder.execContainerConfig.
 func (woc *wfOperationCtx) execContainerConfig(tmpl *wfv1.Template) execContainerConfig {
-	return execContainerConfig{
-		image:                      woc.controller.executorImage(),
-		imagePullPolicy:            woc.controller.executorImagePullPolicy(),
-		executor:                   woc.controller.Config.GetExecutor(),
-		kubeConfig:                 woc.controller.Config.KubeConfig,
-		instanceID:                 woc.controller.Config.InstanceID,
-		workflowUID:                woc.wf.UID,
-		executorServiceAccountName: executorServiceAccountName(tmpl, &woc.execWf.Spec),
-	}
+	cfg := woc.controller.execContainerConfig(woc.wf.UID)
+	cfg.executorServiceAccountName = executorServiceAccountName(tmpl, &woc.execWf.Spec)
+	return cfg
 }
 
 // execContainerConfig is the configuration every argoexec container of the pod
-// is built from, taken once per build from the snapshot so the containers share
-// the pod volumes' kubeconfig and the argoexec image volume's image.
-// executorServiceAccountName must be the account the pod's token volume was
-// added for (see setupServiceAccount).
+// is built from: the snapshot's, so the containers share the pod volumes'
+// kubeconfig and the argoexec image volume's image, with the executor service
+// account set. executorServiceAccountName must be the account the pod's token
+// volume was added for (see setupServiceAccount).
 func (pb *podBuilder) execContainerConfig(executorServiceAccountName string) execContainerConfig {
-	return execContainerConfig{
-		image:                      pb.in.executorImage,
-		imagePullPolicy:            pb.in.executorImagePullPolicy,
-		executor:                   pb.in.config.GetExecutor(),
-		kubeConfig:                 pb.in.kubeConfig,
-		instanceID:                 pb.in.instanceID,
-		workflowUID:                pb.in.workflowUID,
-		executorServiceAccountName: executorServiceAccountName,
-	}
+	cfg := pb.in.execCfg
+	cfg.executorServiceAccountName = executorServiceAccountName
+	return cfg
 }
 
 // kubeConfigVolumeName returns the configured kubeconfig volume name, or the

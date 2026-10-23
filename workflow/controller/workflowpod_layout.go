@@ -79,7 +79,7 @@ type legacyLayout struct{}
 
 // auxContainer is the `wait` container.
 func (legacyLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
-	return pb.newWaitContainer(ctx, tmpl, execCfg)
+	return newWaitContainer(tmpl, execCfg, pb.deps.getExecutorLogOpts(ctx))
 }
 
 func (legacyLayout) templateRequiresAuxContainer(tmpl *wfv1.Template) bool {
@@ -123,7 +123,7 @@ type initlessLayout struct{}
 
 // auxContainer is the `supervisor` container.
 func (initlessLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
-	return pb.newSupervisorContainer(ctx, tmpl, execCfg)
+	return newSupervisorContainer(tmpl, execCfg, pb.deps.getExecutorLogOpts(ctx))
 }
 
 func (initlessLayout) templateRequiresAuxContainer(tmpl *wfv1.Template) bool {
@@ -154,7 +154,7 @@ func (initlessLayout) argoexecBinaryPath() string {
 }
 
 func (initlessLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
-	return []apiv1.Volume{argoBinVolume(pb.in.executorImage, pb.in.executorImagePullPolicy)}
+	return []apiv1.Volume{argoBinVolume(pb.in.execCfg.image, pb.in.execCfg.imagePullPolicy)}
 }
 
 // wireArtifactPlugins adds the supervisor-driven plugin sidecars.

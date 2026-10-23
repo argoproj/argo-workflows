@@ -580,6 +580,40 @@ func buildExecContainer(name string, tmpl *wfv1.Template, cfg execContainerConfi
 	return &exec
 }
 
+// standardInitContainer builds the legacy `init` container, which stages the
+// template, script and input artifacts before main starts. logOpts are the
+// executor's log flags.
+func standardInitContainer(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) *apiv1.Container {
+	ctr := buildExecContainer(common.InitContainerName, tmpl, execCfg)
+	ctr.Command = append([]string{"argoexec", "init"}, logOpts...)
+	return ctr
+}
+
+// newWaitContainer builds the legacy layout's `wait` container, which
+// observes main and collects its outputs, logs and artifacts. logOpts are the
+// executor's log flags.
+func newWaitContainer(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) *apiv1.Container {
+	ctr := buildExecContainer(common.WaitContainerName, tmpl, execCfg)
+	ctr.Command = append([]string{"argoexec", "wait"}, logOpts...)
+	return ctr
+}
+
+// newSupervisorContainer builds the init-less auxiliary container that
+// replaces `wait` when initlessPod is enabled. It takes on both the pre-main
+// responsibilities of the legacy init container (template write, script
+// staging, input artifact download, readiness signaling) and the post-main
+// responsibilities of `wait` (observe main, collect outputs/logs/artifacts).
+// logOpts are the executor's log flags.
+func newSupervisorContainer(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) *apiv1.Container {
+	ctr := buildExecContainer(common.SupervisorContainerName, tmpl, execCfg)
+	ctr.Command = append([]string{"argoexec", "supervisor"}, logOpts...)
+	// Tell the executor it's running in init-less mode so init-less-only
+	// code paths (e.g. the input-artifacts overlap fallback in stageArchiveFile)
+	// activate. Without this, those paths would not run.
+	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarInitlessPod, Value: "true"})
+	return ctr
+}
+
 // argoBinVolume builds the ImageVolume that mounts the argoexec binary into
 // `main` for init-less pods. It takes the executor image and pull policy so the
 // mounted binary matches the running supervisor.
