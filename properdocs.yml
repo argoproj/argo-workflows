@@ -285,6 +285,7 @@ nav:
           - tls.md
           - argo-server-sso.md
           - argo-server-sso-argocd.md
+          - argo-server-header-auth.md
       - Best Practices:
           - high-availability.md
           - disaster-recovery.md

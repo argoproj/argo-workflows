@@ -27,10 +27,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+
 	ktesting "k8s.io/client-go/testing"
+
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -1233,4 +1237,39 @@ func (r *failOnReadReader) Read(_ []byte) (int, error) {
 	r.t.Helper()
 	r.t.Fatal("request body must not be read before authorization checks pass")
 	return 0, io.EOF
+}
+
+func TestArtifactServer_GateKeepingForwardsHeaders(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	ctx := logging.TestContext(t.Context())
+
+	var gatekeeperCtx context.Context
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		gatekeeperCtx = args.Get(0).(context.Context)
+	}).Return(ctx, nil)
+
+	s := &ArtifactServer{
+		gatekeeper: gatekeeper,
+	}
+
+	r := httptest.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		"/artifacts/my-ns/my-wf/my-node/my-artifact",
+		nil,
+	)
+	r.Header.Set("X-Forwarded-User", "pradeep")
+	r.Header.Set("X-Proxy-Auth", "secret")
+	r.Header.Set("X-Forwarded-Groups", "admin")
+
+	_, err := s.gateKeeping(r, servertypes.NamespaceHolder("my-ns"))
+
+	require.NoError(t, err)
+	gatekeeper.AssertExpectations(t)
+
+	md, ok := metadata.FromIncomingContext(gatekeeperCtx)
+	require.True(t, ok)
+	assert.Equal(t, []string{"pradeep"}, md.Get("x-forwarded-user"))
+	assert.Equal(t, []string{"secret"}, md.Get("x-proxy-auth"))
+	assert.Equal(t, []string{"admin"}, md.Get("x-forwarded-groups"))
 }
