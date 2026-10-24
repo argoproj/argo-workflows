@@ -28,7 +28,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
       --event-worker-count int                   how many event workers to run (default 4)
   -h, --help                                     help for server
       --hsts                                     Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled. (default true)
-      --insecure-trust-unauthenticated-headers   Trust unauthenticated headers without authenticating the reverse proxy.
+      --insecure-trust-unauthenticated-headers   Trust identity headers without authenticating the reverse proxy. Anyone who can reach the server can impersonate any user. Only use this when nothing except the proxy can reach the server's port, for example a proxy sidecar combined with a NetworkPolicy. Requires --auth-mode=header.
       --kube-api-burst int                       Burst to use while talking with kube-apiserver. (default 30)
       --kube-api-qps float32                     QPS to use while talking with kube-apiserver. (default 20)
       --log-format string                        The formatter to use for logs. One of: text|json (default "text")
