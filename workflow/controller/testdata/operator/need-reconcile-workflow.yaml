@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-need-reconcile
+spec:
+  entrypoint: hello-hello-hello
+  arguments:
+    parameters:
+    - name: message1
+      value: hello world
+    - name: message2
+      value: foobar
+  # This spec contains two templates: hello-hello-hello and whalesay
+  templates:
+  - name: hello-hello-hello
+    # Instead of just running a container
+    # This template has a sequence of steps
+    steps:
+    - - name: hello1            # hello1 is run before the following steps
+        continueOn: {}
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+          - name: workflow_artifact_key
+            value: "{{ workflow.parameters.message2}}"
+    - - name: hello2a           # double dash => run after previous step
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{=steps['hello1'].outputs.parameters['workflow_artifact_key']}}"
+
+  # This is the same template as from the previous example
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    outputs:
+      parameters:
+      - name: workflow_artifact_key
+        value: '{{workflow.name}}'
+    script:
+      image: python:alpine3.23
+      command: [python]
+      env:
+      - name: message
+        value: "{{inputs.parameters.message}}"
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)

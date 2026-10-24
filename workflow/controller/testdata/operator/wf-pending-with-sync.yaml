@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-mpdht
+  namespace: argo
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: derived-mutex-name
+      value: welcome
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+    synchronization:
+      mutexes:
+        - name: "{{ workflow.parameters.derived-mutex-name }}"
+  ttlStrategy:
+    secondsAfterCompletion: 600
+status:
+  nodes:
+    hello-world-mpdht:
+      displayName: hello-world-mpdht
+      finishedAt: null
+      id: hello-world-mpdht
+      name: hello-world-mpdht
+      phase: Pending
+      progress: 0/1
+      startedAt: "2021-04-05T22:11:21Z"
+      synchronizationStatus:
+        waiting: argo/Mutex/welcome
+      templateName: whalesay
+      templateScope: local/hello-world-mpdht
+      type: Pod
+  phase: Running
+  progress: 0/1
+  startedAt: "2021-04-05T22:11:21Z"
+  synchronization:
+    mutex:
+      waiting:
+      - holder: argo/hello-world-tmph8/hello-world-tmph8
+        mutex: argo/Mutex/welcome
