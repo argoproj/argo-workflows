@@ -550,6 +550,13 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 				if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
 					return false, err
 				}
+				// The node is fulfilled here, outside the controller, so its
+				// globalName outputs are exported here, as `argo node set` does.
+				if node.Outputs != nil {
+					for _, param := range node.Outputs.Parameters {
+						AddParamToGlobalScope(ctx, wf, param)
+					}
+				}
 				node.Phase = wfv1.NodeSucceeded
 				if node.Message != "" {
 					uiMsg = node.Message + "; " + uiMsg
@@ -859,8 +866,15 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	// reference has to be rewritten.
 	replaceRegexp := regexp.MustCompile("^" + regexp.QuoteMeta(wf.Name))
 	now := metav1.Time{Time: time.Now().UTC()}
+	rename := func(name string) string {
+		return replaceRegexp.ReplaceAllString(name, newWF.Name)
+	}
+	newIDs, err := newNodeIDs(wf, &newWF, rename)
+	if err != nil {
+		return nil, err
+	}
 	memoize := func(node wfv1.NodeStatus) wfv1.NodeStatus {
-		node.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
+		node.Name = rename(node.Name)
 		node.StartedAt = now
 		node.FinishedAt = now
 		if node.Type == wfv1.NodeTypePod {
@@ -880,8 +894,10 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		}
 		return node
 	}
+	// A reference to a node that is not in the status at all maps to no ID,
+	// and applyResetPlan drops it.
 	mapID := func(id string) string {
-		return convertNodeID(&newWF, replaceRegexp, id, wf.Status.Nodes)
+		return newIDs[id]
 	}
 	applyResetPlan(ctx, wf, &newWF, plan, memoize, mapID)
 
@@ -919,11 +935,42 @@ func keepExistingNodeIDs(nodes wfv1.Nodes, ids []string) []string {
 	return kept
 }
 
-// convertNodeID converts an old nodeID to a new nodeID
-func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
-	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.Name)
-	return newWf.NodeID(newNodeName)
+// newNodeIDs works out the ID each node of wf takes under the name of newWf.
+// A node ID is a hash of the node name, which starts with the workflow name,
+// so renaming the workflow rehashes the whole graph: names that collided
+// before may not any more, and names that did not may now. Nodes are assigned
+// in name order, so the result does not depend on map iteration order, and a
+// name that finds its 32-bit slot taken gets the widened one instead, which is
+// where Workflow.ResolveNode looks for it.
+//
+// Nodes the reset plan deletes are given an ID too, so that a reference to one
+// cannot land on the ID of a node that is kept and so survive the pruning
+// applyResetPlan does.
+func newNodeIDs(wf, newWf *wfv1.Workflow, rename func(name string) string) (map[string]string, error) {
+	oldIDs := make([]string, 0, len(wf.Status.Nodes))
+	for id := range wf.Status.Nodes {
+		oldIDs = append(oldIDs, id)
+	}
+	slices.SortFunc(oldIDs, func(a, b string) int {
+		return strings.Compare(wf.Status.Nodes[a].Name, wf.Status.Nodes[b].Name)
+	})
+	newIDs := make(map[string]string, len(oldIDs))
+	taken := make(map[string]bool, len(oldIDs))
+	for _, oldID := range oldIDs {
+		name := rename(wf.Status.Nodes[oldID].Name)
+		newID := newWf.NodeID(name)
+		if taken[newID] {
+			// the 32-bit slot has gone to another name: widen, as the
+			// controller does when it creates a node
+			newID = newWf.NodeID64(name)
+			if taken[newID] {
+				return nil, errors.Errorf(errors.CodeBadRequest, "cannot resubmit %s as %s: node %s collides with another node at both ID widths", wf.Name, newWf.Name, name)
+			}
+		}
+		taken[newID] = true
+		newIDs[oldID] = newID
+	}
+	return newIDs, nil
 }
 
 func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {
@@ -933,7 +980,11 @@ func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1
 			logging.RequireLoggerFromContext(ctx).WithField("child", child).WithError(err).Error(ctx, "Coudn't obtain child, panicking")
 		}
 		_, present := nodeIDsToReset[child]
-		if (!present && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(ctx, wf, *childStatus, nodeIDsToReset) {
+		// A Container child's own Succeeded phase doesn't count: it is a
+		// sibling execution inside the same pod, not a downstream node whose
+		// success would make its ContainerSet pod node safe to leave alone.
+		// Its own children, if any, still count.
+		if (!present && childStatus.Type != wfv1.NodeTypeContainer && childStatus.Phase == wfv1.NodeSucceeded) || isDescendantNodeSucceeded(ctx, wf, *childStatus, nodeIDsToReset) {
 			return true
 		}
 	}
@@ -1145,11 +1196,12 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 			resetFunc(curr.parent.n.ID)
 			curr = curr.parent
 		}
-		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
-			resetFunc(curr.parent.n.ID)
-		}
-		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeTaskGroup {
-			resetFunc(curr.parent.n.ID)
+		// Reset every enclosing group node between here and the boundary. A
+		// group keeps a terminal phase of its own, so leaving one out would
+		// strand it (e.g. a Failed StepGroup above a re-run TaskGroup child of
+		// an expanded step): the re-run succeeds but the group stays Failed.
+		for p := curr.parent; p != nil && (p.n.Type == wfv1.NodeTypeStepGroup || p.n.Type == wfv1.NodeTypeTaskGroup); p = p.parent {
+			resetFunc(p.n.ID)
 		}
 		seekingBoundaryID := curr.n.BoundaryID
 		if seekingBoundaryID == "" {
@@ -1346,10 +1398,12 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 	for nodeID, node := range wf.Status.Nodes {
 		// A failure belongs to the node that actually failed, not to the group
 		// nodes above it, which only fail because a descendant did. That is an
-		// execution node, or a leaf of any other type: a template that could
-		// not be resolved or expanded is recorded as a Skipped node in Error,
-		// and a suspend node that outlived its deadline as Failed.
-		if node.FailedOrError() && (isExecutionNodeType(node.Type) || len(node.Children) == 0) {
+		// execution node, or a node with no child that ran: a template that
+		// could not be resolved or expanded is recorded as a Skipped node in
+		// Error, and a suspend node that outlived its deadline as Failed; a
+		// later group hung underneath either one, or a StepGroup/TaskGroup
+		// created on demand after such a failure, exists only as Omitted.
+		if node.FailedOrError() && (isExecutionNodeType(node.Type) || !slices.ContainsFunc(node.Children, func(id string) bool { return wf.Status.Nodes[id].Phase != wfv1.NodeOmitted })) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
 				if parentNode := wf.Status.Nodes.FindRetryNodeByChild(nodeID); parentNode != nil {
@@ -1408,6 +1462,18 @@ func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, n
 		}
 		toReset = setUnion(toReset, pathToReset)
 		toDelete = setUnion(toDelete, pathToDelete)
+	}
+
+	// A TaskGroup that a hook error completed before every item had started
+	// is reset, with its enclosing groups, so the retried template creates
+	// the rest.
+	for _, n := range nodes {
+		if n.n.Type == wfv1.NodeTypeTaskGroup && n.n.Fulfilled() && strings.HasPrefix(n.n.Message, common.TaskGroupHookStoppedMessage) {
+			toReset[n.n.ID] = true
+			if _, err := resetBoundaries(n, func(id string) { toReset[id] = true }); err != nil {
+				return resetPlan{}, err
+			}
+		}
 	}
 
 	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,

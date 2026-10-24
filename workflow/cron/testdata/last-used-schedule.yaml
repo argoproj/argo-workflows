@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  schedules:
+    - 41 12 * * *
+  successfulJobsHistoryLimit: 1
+  timezone: America/New_York
+  workflowSpec:
+    arguments: {}
+    entrypoint: job
+    templates:
+    - container:
+        args:
+        - /bin/echo "hello argo"
+        command:
+        - /bin/sh
+        - -c
+        image: alpine
+        imagePullPolicy: Always
+      name: job

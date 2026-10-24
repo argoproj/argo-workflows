@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: wf-template-echo
+  namespace: default
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        value: "message from workflow template"
+  templates:
+    - name: echo
+      container:
+        image: busybox
+        command: [echo]
+        args: ["{{workflow.parameters.message}}"]

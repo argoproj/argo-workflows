@@ -12,7 +12,7 @@ You can configure how the Argo Server authenticates to Kubernetes:
     You must deploy Argo Server behind a trusted reverse proxy that authenticates the user.
     The proxy must remove or overwrite any client-supplied identity headers before forwarding requests.
 
-For v3.0 and after, the default is `client`. Prior to v3.0, it was `server`.
+The default is `client`.
 
 To configure the Server's auth modes, use one or multiple `--auth-mode` flags. For example:
 

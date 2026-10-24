@@ -11,71 +11,10 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-var testTemplateScopeWorkflowYaml = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-scope
-  namespace: default
-spec:
-  entrypoint: entry
-  templates:
-  - name: entry
-    steps:
-      - - name: step
-          templateRef:
-            name: test-template-scope-1
-            template: steps
-`
-
-var testTemplateScopeWorkflowTemplateYaml1 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-1
-  namespace: default
-spec:
-  templates:
-  - name: steps
-    steps:
-    - - name: hello
-        template: hello
-      - name: other-wftmpl
-        templateRef:
-          name: test-template-scope-2
-          template: steps
-  - name: hello
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        print("hello world")
-`
-
-var testTemplateScopeWorkflowTemplateYaml2 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-2
-  namespace: default
-spec:
-  templates:
-  - name: steps
-    steps:
-    - - name: hello
-        template: hello
-  - name: hello
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        print("hello world")
-`
-
 func TestTemplateScope(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeWorkflowYaml)
-	wftmpl1 := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml1)
-	wftmpl2 := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml2)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_template_scope/workflow.yaml")
+	wftmpl1 := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_template_scope/workflow-template-1.yaml")
+	wftmpl2 := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_template_scope/workflow-template-2.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl1, wftmpl2)
 	defer cancel()
@@ -117,53 +56,9 @@ func TestTemplateScope(t *testing.T) {
 	assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
 }
 
-var testTemplateScopeWithParamWorkflowYaml = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-scope-with-param
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: step
-            templateRef:
-              name: test-template-scope-with-param-1
-              template: main
-`
-
-var testTemplateScopeWithParamWorkflowTemplateYaml1 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-with-param-1
-  namespace: default
-spec:
-  templates:
-    - name: main
-      steps:
-        - - name: print-string
-            template: print-string
-            arguments:
-              parameters:
-               - name: letter
-                 value: '{{item}}'
-            withParam: '["x", "y", "z"]'
-    - name: print-string
-      inputs:
-        parameters:
-         - name: letter
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["echo {{inputs.parameters.letter}}"]
-`
-
 func TestTemplateScopeWithParam(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeWithParamWorkflowYaml)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWithParamWorkflowTemplateYaml1)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_template_scope/with-param-workflow.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_template_scope/with-param-workflow-template-1.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
@@ -202,57 +97,9 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 }
 
-var testTemplateScopeNestedStepsWithParamsWorkflowYaml = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-scope-nested-steps-with-params
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: step
-            templateRef:
-              name: test-template-scope-nested-steps-with-params-1
-              template: main
-`
-
-var testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-nested-steps-with-params-1
-  namespace: default
-spec:
-  templates:
-    - name: main
-      steps:
-        - - name: main
-            template: sub
-    - name: sub
-      steps:
-        - - name: print-string
-            template: print-string
-            arguments:
-              parameters:
-               - name: letter
-                 value: '{{item}}'
-            withParam: '["x", "y", "z"]'
-    - name: print-string
-      inputs:
-        parameters:
-         - name: letter
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["echo {{inputs.parameters.letter}}"]
-`
-
 func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_template_scope/nested-steps-with-params-workflow.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_template_scope/nested-steps-with-params-workflow-template-1.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
@@ -301,60 +148,9 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 }
 
-var testTemplateScopeDAGWorkflowYaml = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-scope-dag
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: step
-            templateRef:
-              name: test-template-scope-dag-1
-              template: main
-`
-
-var testTemplateScopeDAGWorkflowTemplateYaml1 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-dag-1
-  namespace: default
-spec:
-  templates:
-    - name: main
-      dag:
-        tasks:
-        - name: A
-          template: print-string
-          arguments:
-            parameters:
-            - name: letter
-              value: 'A'
-        - name: B
-          template: print-string
-          arguments:
-            parameters:
-            - name: letter
-              value: '{{item}}'
-          withParam: '["x", "y", "z"]'
-    - name: print-string
-      inputs:
-        parameters:
-         - name: letter
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["echo {{inputs.parameters.letter}}"]
-`
-
 func TestTemplateScopeDAG(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testTemplateScopeDAGWorkflowYaml)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeDAGWorkflowTemplateYaml1)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_template_scope/dag-workflow.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_template_scope/dag-workflow-template-1.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
@@ -407,51 +203,10 @@ func findNodeByName(nodes map[string]wfv1.NodeStatus, name string) *wfv1.NodeSta
 	return nil
 }
 
-var testTemplateClusterScopeWorkflowYaml = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-scope
-  namespace: default
-spec:
-  entrypoint: entry
-  templates:
-  - name: entry
-    steps:
-      - - name: step
-          templateRef:
-            name: test-template-scope-1
-            template: steps
-            clusterScope: true
-`
-
-var testTemplateClusterScopeWorkflowTemplateYaml1 = `
-apiVersion: argoproj.io/v1alpha1
-kind: ClusterWorkflowTemplate
-metadata:
-  name: test-template-scope-1
-spec:
-  templates:
-  - name: steps
-    steps:
-    - - name: hello
-        template: hello
-      - name: other-wftmpl
-        templateRef:
-          name: test-template-scope-2
-          template: steps
-  - name: hello
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        print("hello world")
-`
-
 func TestTemplateClusterScope(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testTemplateClusterScopeWorkflowYaml)
-	cwftmpl := wfv1.MustUnmarshalClusterWorkflowTemplate(testTemplateClusterScopeWorkflowTemplateYaml1)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(testTemplateScopeWorkflowTemplateYaml2)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_template_scope/cluster-scope-workflow.yaml")
+	cwftmpl := wfv1.MustUnmarshalClusterWorkflowTemplate("@testdata/operator_template_scope/cluster-scope-workflow-template-1.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_template_scope/workflow-template-2.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, cwftmpl, wftmpl)
 	defer cancel()

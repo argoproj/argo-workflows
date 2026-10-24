@@ -213,11 +213,11 @@ func errFromResponse(r *http.Response) error {
 func parseHeaders(headerStrings []string) (http.Header, error) {
 	headers := http.Header{}
 	for _, kv := range headerStrings {
-		items := strings.Split(kv, ":")
-		if len(items)%2 == 1 {
+		key, value, found := strings.Cut(kv, ":")
+		if !found || key == "" {
 			return nil, fmt.Errorf("additional headers must be colon(:)-separated: %s", kv)
 		}
-		headers.Add(items[0], items[1])
+		headers.Add(key, value)
 	}
 	return headers, nil
 }

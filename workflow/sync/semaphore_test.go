@@ -34,7 +34,7 @@ func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namesp
 	require.NoError(t, err)
 
 	dbKey := fmt.Sprintf("%s/%s", namespace, name)
-	_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
+	_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, limit)
 	require.NoError(t, err)
 
 	s, err := newDatabaseSemaphore(ctx, name, dbKey, nextWorkflow, info, cacheTTL)

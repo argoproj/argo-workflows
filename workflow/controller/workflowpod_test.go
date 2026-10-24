@@ -50,86 +50,14 @@ func newWoc(ctx context.Context, wfs ...wfv1.Workflow) *wfOperationCtx {
 	return woc
 }
 
-var scriptWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: script-with-input-artifact
-    inputs:
-      artifacts:
-      - name: kubectl
-        path: /bin/kubectl
-        http:
-          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
-    script:
-      image: alpine:3.23
-      command: [sh]
-      source: |
-        ls /bin/kubectl
-`
-
-var scriptTemplateWithInputArtifact = `
-name: script-with-input-artifact
-inputs:
-  artifacts:
-  - name: kubectl
-    path: /bin/kubectl
-    http:
-      url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
-script:
-  image: alpine:3.23
-  command: [sh]
-  source: |
-    ls /bin/kubectl
-`
-
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithVolume(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
+	tmpl := unmarshalTemplate("@testdata/workflowpod/script-template-with-input-artifact.yaml")
 	woc := newWoc(ctx)
 	_, err := woc.executeScript(ctx, tmpl.Name, "", tmpl, &wfv1.WorkflowStep{}, &executeTemplateOpts{})
 	require.NoError(t, err)
 }
-
-var scriptTemplateWithOptionalInputArtifactProvided = `
-name: script-with-input-artifact
-inputs:
-  artifacts:
-  - name: manifest
-    path: /manifest
-    optional: true
-    http:
-        url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
-script:
-  image: alpine:3.23
-  command: [sh]
-  source: |
-    ls -al
-`
-
-var scriptTemplateWithOptionalInputArtifactProvidedAndOverlappedPath = `
-name: script-with-input-artifact
-inputs:
-  artifacts:
-  - name: manifest
-    path: /manifest
-    optional: true
-    http:
-        url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
-script:
-  volumeMounts:
-  - mountPath: /manifest
-    name: my-mount
-  image: alpine:3.23
-  command: [sh]
-  source: |
-    ls -al
-`
 
 // TestScriptTemplateWithoutVolumeOptionalArtifact ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
@@ -161,7 +89,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	}
 
 	// Ensure that volume mount is added when artifact is provided
-	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvided)
+	tmpl := unmarshalTemplate("@testdata/workflowpod/script-template-with-optional-input-artifact-provided.yaml")
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
 	mainCtr := tmpl.Script.Container
@@ -175,7 +103,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 
 	// Ensure that volume mount is added to initContainer when artifact is provided
 	// and the volume is mounted manually in the template
-	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvidedAndOverlappedPath)
+	tmpl = unmarshalTemplate("@testdata/workflowpod/script-template-with-optional-input-artifact-provided-and-overlapped-path.yaml")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	wf.Spec.Volumes = append(wf.Spec.Volumes, apiv1.Volume{Name: "my-mount"})
 	woc = newWoc(ctx, *wf)
@@ -1533,126 +1461,28 @@ func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
 	}
 }
 
-var helloWorldWfWithPatch = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      parameters:
-      - name: pod-name
-        value: "{{pod.name}}"
-`
-
-var helloWorldWfWithWFPatch = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var helloWorldWfWithWFYAMLPatch = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  podSpecPatch: |
-    containers:
-      - name: main
-        resources:
-          limits:
-            cpu: "800m"
-  templates:
-  - name: whalesay
-    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"memory": "100Mi"}}}]}'
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var helloWorldWfWithTmplAndWFPatch = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  podSpecPatch: |
-    containers:
-      - name: main
-        securityContext:
-          runAsNonRoot: true
-          capabilities:
-            drop:
-              - ALL
-  templates:
-  - name: whalesay
-    podSpecPatch: '{"containers":[{"name":"main", "securityContext":{"capabilities":{"add":["ALL"],"drop":null}}}]}'
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var helloWorldWfWithInvalidPatchFormat = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    podSpecPatch: '{"containers"}' # not a valid JSON here
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
 func TestPodSpecPatch(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-patch.yaml")
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-wf-patch.yaml")
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithWFYAMLPatch)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-wf-yaml-patch.yaml")
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithTmplAndWFPatch)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-tmpl-and-wf-patch.yaml")
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1660,7 +1490,7 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, apiv1.Capability("ALL"), pod.Spec.Containers[1].SecurityContext.Capabilities.Add[0])
 	assert.Equal(t, []apiv1.Capability(nil), pod.Spec.Containers[1].SecurityContext.Capabilities.Drop)
 
-	wf = wfv1.MustUnmarshalWorkflow(helloWorldWfWithInvalidPatchFormat)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-invalid-patch-format.yaml")
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	_, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1668,40 +1498,16 @@ func TestPodSpecPatch(t *testing.T) {
 	require.EqualError(t, errors.Cause(err), "invalid character '}' after object key")
 }
 
-var helloWorldStepWfWithPatch = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: hello
-  templates:
-  - name: hello
-    steps:
-    - - name: hello
-        template: whalesay
-  - name: whalesay
-    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-    outputs:
-      parameters:
-      - name: pod-name
-        value: "{{pod.name}}"
-`
-
 func TestPodSpecPatchPodName(t *testing.T) {
 	tests := []struct {
 		podNameVersion string
 		wantPodName    string
 		workflowYaml   string
 	}{
-		{"v1", "hello-world", helloWorldWfWithPatch},
-		{"v2", "hello-world", helloWorldWfWithPatch},
-		{"v1", "hello-world-3731220306", helloWorldStepWfWithPatch},
-		{"v2", "hello-world-whalesay-3731220306", helloWorldStepWfWithPatch},
+		{"v1", "hello-world", "@testdata/workflowpod/hello-world-wf-with-patch.yaml"},
+		{"v2", "hello-world", "@testdata/workflowpod/hello-world-wf-with-patch.yaml"},
+		{"v1", "hello-world-3731220306", "@testdata/workflowpod/hello-world-step-wf-with-patch.yaml"},
+		{"v2", "hello-world-whalesay-3731220306", "@testdata/workflowpod/hello-world-step-wf-with-patch.yaml"},
 	}
 	for _, tt := range tests {
 		t.Setenv("POD_NAMES", tt.podNameVersion)
@@ -1736,7 +1542,7 @@ func TestMainContainerCustomization(t *testing.T) {
 	// podSpecPatch in workflow spec takes precedence over the main container's
 	// configuration in controller so here we respect what's specified in podSpecPatch.
 	t.Run("PodSpecPatchPrecedence", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithPatch)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-patch.yaml")
 		woc := newWoc(ctx, *wf)
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := woc.execWf.Spec.Templates[0].Container
@@ -1778,7 +1584,7 @@ func TestMainContainerCustomization(t *testing.T) {
 	})
 	// If script template has limits then they take precedence over config in controller
 	t.Run("ScriptPrecedence", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(scriptWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/script-wf.yaml")
 		woc := newWoc(ctx, *wf)
 		woc.controller.Config.MainContainer = mainCtrSpec
 		mainCtr := &woc.execWf.Spec.Templates[0].Script.Container
@@ -1815,25 +1621,8 @@ func TestExecutorContainerCustomization(t *testing.T) {
 	assert.Equal(t, "536870912", waitCtr.Resources.Limits.Memory().AsDec().String())
 }
 
-var helloWindowsWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-hybrid-win
-spec:
-  entrypoint: hello-win
-  templates:
-    - name: hello-win
-      nodeSelector:
-        kubernetes.io/os: windows
-      container:
-        image: mcr.microsoft.com/windows/nanoserver:1809
-        command: ["cmd", "/c"]
-        args: ["echo", "Hello from Windows Container!"]
-`
-
 func TestWindowsUNCPathsAreRemoved(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(helloWindowsWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-windows-wf.yaml")
 	ctx := logging.TestContext(t.Context())
 	uncVolume := apiv1.Volume{
 		Name: "unc",
@@ -1880,25 +1669,10 @@ func TestWindowsUNCPathsAreRemoved(t *testing.T) {
 	}
 }
 
-var propagateMaxDuration = `
-name: retry-backoff
-retryStrategy:
-  limit: 10
-  backoff:
-    duration: "1"
-    factor: 1
-    maxDuration: "20"
-container:
-  image: alpine
-  command: [sh, -c]
-  args: ["sleep $(( {{retries}} * 100 )); exit 1"]
-
-`
-
 func TestPropagateMaxDuration(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	// Ensure that volume mount is added when artifact is provided
-	tmpl := unmarshalTemplate(propagateMaxDuration)
+	tmpl := unmarshalTemplate("@testdata/workflowpod/propagate-max-duration.yaml")
 	woc := newWoc(ctx)
 	deadline := time.Time{}.Add(time.Second)
 	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{*tmpl.Container}, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
@@ -1908,55 +1682,8 @@ func TestPropagateMaxDuration(t *testing.T) {
 	assert.Equal(t, v, deadline)
 }
 
-var wfWithPodMetadata = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  podMetadata:
-    annotations:
-      workflow-level-pod-annotation: foo
-    labels:
-      workflow-level-pod-label: bar
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var wfWithPodMetadataAndTemplateMetadata = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  podMetadata:
-    annotations:
-      workflow-level-pod-annotation: foo
-    labels:
-      workflow-level-pod-label: bar
-  templates:
-  - name: whalesay
-    metadata:
-      annotations:
-        workflow-level-pod-annotation: fizz
-        template-level-pod-annotation: hello
-      labels:
-        workflow-level-pod-label: buzz
-        template-level-pod-label: world
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
 func TestPodMetadata(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/wf-with-pod-metadata.yaml")
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
@@ -1964,7 +1691,7 @@ func TestPodMetadata(t *testing.T) {
 	assert.Equal(t, "foo", pod.Annotations["workflow-level-pod-annotation"])
 	assert.Equal(t, "bar", pod.Labels["workflow-level-pod-label"])
 
-	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadataAndTemplateMetadata)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/wf-with-pod-metadata-and-template-metadata.yaml")
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1974,30 +1701,9 @@ func TestPodMetadata(t *testing.T) {
 	assert.Equal(t, "world", pod.Labels["template-level-pod-label"])
 }
 
-var wfWithContainerSet = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-with-container-set
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    containerSet:
-      containers:
-        - name: a
-          image: docker/whalesay:latest
-          command: [cowsay]
-          args: ["hello world"]
-        - name: b
-          image: docker/whalesay:latest
-          command: [cowsay]
-          args: ["hello world"]
-`
-
 func TestPodDefaultContainer(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/wf-with-container-set.yaml")
 	// change first container name to main
 	wf.Spec.Templates[0].ContainerSet.Containers[0].Name = common.MainContainerName
 	woc := newWoc(ctx, *wf)
@@ -2005,7 +1711,7 @@ func TestPodDefaultContainer(t *testing.T) {
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 	assert.Equal(t, common.MainContainerName, pod.Annotations[common.AnnotationKeyDefaultContainer])
 
-	wf = wfv1.MustUnmarshalWorkflow(wfWithContainerSet)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/wf-with-container-set.yaml")
 	woc = newWoc(ctx, *wf)
 	template = woc.execWf.Spec.Templates[0]
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, template.ContainerSet.GetContainers(), &template, &createWorkflowPodOpts{})
@@ -2072,7 +1778,7 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 			},
 		},
 	}
-	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
+	wf = wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/wf-with-pod-metadata.yaml")
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	ctx, err = woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
@@ -2249,40 +1955,12 @@ func TestProgressEnvVars(t *testing.T) {
 	})
 }
 
-var helloWorldWfWithEnvReferSecret = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    metadata:
-      annotations:
-        annotationKey1: "annotationValue1"
-        annotationKey2: "annotationValue2"
-      labels:
-        labelKey1: "labelValue1"
-        labelKey2: "labelValue2"
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-      env:
-      - name: ENV3
-        valueFrom:
-          secretKeyRef:
-            name: mysecret
-            key: sec
-`
-
 func TestMergeEnvVars(t *testing.T) {
 	setup := func(t *testing.T, options ...any) (context.CancelFunc, *apiv1.Pod) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, options...)
 
-		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithEnvReferSecret)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/hello-world-wf-with-env-refer-secret.yaml")
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
@@ -2651,20 +2329,7 @@ func TestContainerArgsOffloading(t *testing.T) {
 	args := []string{"--flag", largeArg, "--other"}
 
 	// Create a workflow with a container that has large args
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-large-args
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: alpine:latest
-      command: ["/bin/sh"]
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflowpod/container-args-offloading.yaml")
 
 	// Set large args on the template
 	wf.Spec.Templates[0].Container.Args = args

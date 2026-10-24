@@ -281,8 +281,6 @@ artifacts:
 
 #### AWS S3 with IAM Assume Role
 
-> v3.6 and after
-
 You can use an [IAM role](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) for temporary access.
 
 With the bucket and policy described above, create an IAM role and add the policy:
@@ -327,8 +325,6 @@ artifacts:
     IAM role credentials are temporary, so you must refresh them periodically via an external mechanism.
 
 ### AWS S3 with S3 Access Grants
-
-> v3.6 and after
 
 You can use [S3 Access Grants](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants.html) for temporary, reduced scope access.
 Follow the [AWS guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-get-started.html) to set this up in your AWS account and retrieve access grant credentials.
@@ -485,7 +481,7 @@ metadata:
   # different config map in `artifactRepositoryRef.configMap`.
   name: artifact-repositories
   annotations:
-    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    # If you want to use a specific key, put that key into this annotation.
     workflows.argoproj.io/default-artifact-repository: default-oss-artifact-repository
 data:
   default-oss-artifact-repository: |
@@ -545,7 +541,7 @@ metadata:
   # different config map in `artifactRepositoryRef.configMap`.
   name: artifact-repositories
   annotations:
-    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    # If you want to use a specific key, put that key into this annotation.
     workflows.argoproj.io/default-artifact-repository: default-oss-artifact-repository
 data:
   default-oss-artifact-repository: |
@@ -631,8 +627,6 @@ You can also use an [Access Key](https://learn.microsoft.com/en-us/azure/storage
     ```
 
 ### Using Azure Shared Access Signatures (SAS)
-
-> v3.6 and after
 
 You can also use a [Shared Access Signature (SAS)](https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview?toc=%2Fazure%2Fstorage%2Fblobs%2Ftoc.json&bc=%2Fazure%2Fstorage%2Fblobs%2Fbreadcrumb%2Ftoc.json).
 
@@ -1010,7 +1004,7 @@ For developers wanting to create their own artifact plugins, see the [Artifact P
 ## Artifact Streaming
 
 With artifact streaming, artifacts don't need to be saved to disk first. Artifact streaming is only supported in the following
-artifact drivers: S3 (v3.4+), Azure Blob (v3.4+), HTTP (v3.5+), Artifactory (v3.5+), OSS (v3.6+), and Plugin (v4.0+).
+artifact drivers: S3, Azure Blob, HTTP, Artifactory, OSS, and Plugin (v4.0+).
 
 Without artifact streaming, when a user would click the button to download an artifact in the UI, the artifact would need to be written to the Argo Server's disk first before downloading.
 If many users tried to download simultaneously, they would take up disk space and fail the download.

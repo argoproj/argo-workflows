@@ -13,6 +13,9 @@
 # Settings (normally driven by the Makefile / CI, see `make start`):
 #   --auth-mode=<mode>                  argo-server auth mode (hybrid; sso for PROFILE=sso)
 #   --secure=true                       argo-server serves TLS
+#   --base-href=/argo/                  serve the UI under a sub-path: argo-server gets
+#                                       --base-href and the webpack dev server (dev mode)
+#                                       gets ARGO_BASE_HREF, so http://localhost:8080/argo/
 #   --api=false                         don't build or run the argo-server
 #   --initless=true                     deploy the <profile>-initless manifests, enabling the
 #                                       init-less pod layout (requires K8s image volumes —
@@ -32,6 +35,7 @@ config.define_string('mode')
 config.define_string('auth-mode')
 config.define_string('secure')
 config.define_string('api')
+config.define_string('base-href')
 config.define_string('pod-status-capture-finalizer')
 # --debug=controller,server runs the named components under headless Delve. See
 # the "Debugging under Tilt" section of docs/running-locally.md.
@@ -44,6 +48,11 @@ is_ci = mode == 'ci'
 auth_mode = cfg.get('auth-mode', 'hybrid')
 secure = cfg.get('secure', 'false')
 api = cfg.get('api', 'true') != 'false'
+# normalised to a single leading and trailing slash, as the Makefile does and
+# server/static/static.go expects
+base_href = '/' + cfg.get('base-href', '/').strip('/')
+if base_href != '/':
+    base_href += '/'
 finalizer = cfg.get('pod-status-capture-finalizer', 'true')
 # Debugging is a dev-only convenience; force it off under CI so `tilt ci` builds
 # the real production images and never wraps them in dlv. Tilt's string_list
@@ -148,28 +157,35 @@ for o in objs:
         auth_modes = auth_mode.split(',')
         new_args = []
         auth_mode_written = False
-        secure_replaced = False
+        replaced = {'--secure=': False, '--base-href=': False}
+        values = {'--secure=': secure, '--base-href=': base_href}
         for arg in args:
             if arg.startswith('--auth-mode='):
+                # Write all requested modes once, at the position of the first --auth-mode=.
                 if not auth_mode_written:
                     for mode in auth_modes:
                         new_args.append('--auth-mode=' + mode)
                     auth_mode_written = True
                 continue
 
-            if arg.startswith('--secure='):
-                new_args.append('--secure=' + secure)
-                secure_replaced = True
-                continue
-
-            new_args.append(arg)
+            matched = False
+            for prefix in values:
+                if arg.startswith(prefix):
+                    new_args.append(prefix + values[prefix])
+                    replaced[prefix] = True
+                    matched = True
+                    break
+            if not matched:
+                new_args.append(arg)
 
         if not auth_mode_written:
             for mode in auth_modes:
                 new_args.append('--auth-mode=' + mode)
 
-        if not secure_replaced:
-            new_args.append('--secure=' + secure)
+        for prefix, done in replaced.items():
+            if not done:
+                new_args.append(prefix + values[prefix])
+
         container['args'] = new_args
         if secure == 'true':
             # the e2e base probes over HTTP; a TLS server needs an HTTPS probe
@@ -314,7 +330,8 @@ if not is_ci and api:
         labels=['ui'])
     local_resource('ui',
         serve_cmd='yarn --cwd ui start',
+        serve_env={'ARGO_BASE_HREF': base_href},
         deps=['ui/src'],
         resource_deps=['ui-deps', 'argo-server'],
-        links=['http://localhost:8080'],
+        links=['http://localhost:8080' + base_href],
         labels=['ui'])

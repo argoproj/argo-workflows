@@ -125,7 +125,7 @@ type WorkflowController struct {
 	wfclientset       wfclientset.Interface
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
-	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
+	// woc.executeProcessedTemplate and decreased when such calls return. This is used to prevent infinite recursion
 	maxStackDepth int
 
 	// indexWorkflowSemaphoreKeys enables the bySemaphoreConfigMap informer index (INDEX_WORKFLOW_SEMAPHORE_KEYS)
@@ -152,6 +152,9 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
+	// taskSetCompletionDelay sets a positive minimum delay for taskset completions,
+	// capped at requeueTime. Nil preserves the normal rate-limited path.
+	taskSetCompletionDelay *time.Duration
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -209,8 +212,16 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
-// NewWorkflowController instantiates a new WorkflowController
+// NewWorkflowController initializes a controller from its clients and startup configuration.
+// COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
+// WorkflowTaskSet results; unset or empty keeps normal rate limiting.
+// A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
+	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
+	if err != nil {
+		return nil, err
+	}
+
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -250,6 +261,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
+		taskSetCompletionDelay:     taskSetCompletionDelay,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
@@ -370,14 +382,16 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		if wfc.controllerConfigMapInformer != nil {
 			go wfc.controllerConfigMapInformer.Run(ctx.Done())
 			if !cache.WaitForCacheSync(ctx.Done(), handlerSynced) {
-				logger.WithFatal().Error(ctx, "Timed out waiting for controller config map to sync")
+				logger.Error(ctx, "Timed out waiting for controller config map to sync")
+				os.Exit(1) //nolint:gocritic // preserves the previous WithFatal behavior, which also skipped defers
 			}
 		}
 	}
 
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to init db")
+		logger.WithError(err).Error(ctx, "Failed to init db")
+		os.Exit(1)
 	}
 
 	defer wfc.wfQueue.ShutDown()
@@ -400,7 +414,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, newIndexers(wfc.indexWorkflowSemaphoreKeys))
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to create namespace informer")
+		logger.WithError(err).Error(ctx, "Failed to create namespace informer")
+		os.Exit(1)
 	}
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -410,7 +425,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to add workflow informer handlers")
+		logger.WithError(err).Error(ctx, "Failed to add workflow informer handlers")
+		os.Exit(1)
 	}
 	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
@@ -422,7 +438,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.createSynchronizationManager(ctx)
 	// init managers: throttler and SynchronizationManager
 	if err := wfc.initManagers(ctx); err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to init managers")
+		logger.WithError(err).Error(ctx, "Failed to init managers")
+		os.Exit(1)
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
@@ -456,7 +473,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
 	) {
-		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
+		logger.Error(ctx, "Timed out waiting for caches to sync")
+		os.Exit(1)
 	}
 	syncSpan.End()
 	span.End()
@@ -760,7 +778,8 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 			ctx.Done(),
 			wfc.cwftmplInformer.Informer().HasSynced,
 		) {
-			logger.WithFatal().Error(ctx, "Timed out waiting for ClusterWorkflowTemplate cache to sync")
+			logger.Error(ctx, "Timed out waiting for ClusterWorkflowTemplate cache to sync")
+			os.Exit(1)
 		}
 	} else {
 		logger.Warn(ctx, "Controller doesn't have RBAC access for ClusterWorkflowTemplates")
@@ -771,7 +790,8 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	c, err := wfc.configController.Get(ctx)
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to register watch for controller config map")
+		logger.WithError(err).Error(ctx, "Failed to register watch for controller config map")
+		os.Exit(1)
 	}
 	wfc.applyConfig(ctx, c)
 }
@@ -784,7 +804,8 @@ func (wfc *WorkflowController) updateConfigFromConfigMap(ctx context.Context, cm
 	logger := logging.RequireLoggerFromContext(ctx)
 	c, err := wfc.configController.Parse(cm)
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to parse controller config map")
+		logger.WithError(err).Error(ctx, "Failed to parse controller config map")
+		os.Exit(1)
 	}
 	wfc.applyConfig(ctx, c)
 }
@@ -792,7 +813,8 @@ func (wfc *WorkflowController) updateConfigFromConfigMap(ctx context.Context, cm
 func (wfc *WorkflowController) applyConfig(ctx context.Context, c *config.Config) {
 	wfc.Config = *c
 	if err := wfc.updateConfig(ctx); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to update config")
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to update config")
+		os.Exit(1)
 	}
 }
 
@@ -1623,6 +1645,8 @@ func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[strin
 	return make(map[string]int64)
 }
 
+// newWorkflowTaskSetInformer watches tasksets in the managed namespace and controller
+// instance, routing updates through the normal or configured completion-delay queue path.
 func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
@@ -1636,12 +1660,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, newObj any) {
-				key, err := cache.MetaNamespaceKeyFunc(newObj)
-				if err == nil {
-					wfc.wfQueue.AddRateLimited(key)
-				}
-			},
+			UpdateFunc: wfc.onWorkflowTaskSetUpdate,
 		})
 	return informer
 }
