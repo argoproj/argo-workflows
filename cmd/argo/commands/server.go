@@ -160,7 +160,7 @@ See %s`, help.ArgoServer()),
 					logger.Warn(ctx, "--insecure-trust-unauthenticated-headers has no effect because the header auth mode is not enabled")
 				}
 			}
-			
+
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                            baseHRef,
 				TLSConfig:                           tlsConfig,

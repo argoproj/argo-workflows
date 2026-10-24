@@ -4,9 +4,9 @@ package e2e
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"encoding/json"
 	"os"
 	"strings"
 	"testing"

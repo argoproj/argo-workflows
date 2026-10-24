@@ -125,7 +125,9 @@ Header users match the same service accounts and `workflows.argoproj.io/rbac-rul
 If you enable both `sso` and `header`, a rule applies to users from either source.
 To limit a rule to one source, match on the issuer:
 
-    iss == "https://idp.example.com" && "admins" in groups
+```
+iss == "https://idp.example.com" && "admins" in groups
+```
 
 Set a distinct issuer for header users so that you can match on it.
 Groups come from the proxy, so they are only as trustworthy as the proxy.
