@@ -24,6 +24,10 @@ type mockClient struct {
 	files map[string][]string
 	// mockedErrs is a map where key is the function name and value is the mocked error of that function
 	mockedErrs map[string]error
+	// deleteFn allows tests to customize delete behavior per key
+	deleteFn func(bucket, key string) error
+	// deletedKeys records successful delete calls
+	deletedKeys []string
 }
 
 func newMockClient(files map[string][]string, mockedErrs map[string]error) Client {
@@ -245,7 +249,122 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 
 // Delete deletes an S3 artifact by artifact key
 func (s *mockClient) Delete(bucket, key string) error {
-	return s.getMockedErr("Delete")
+	if s.deleteFn != nil {
+		err := s.deleteFn(bucket, key)
+		if err == nil {
+			s.deletedKeys = append(s.deletedKeys, key)
+		}
+		return err
+	}
+	err := s.getMockedErr("Delete")
+	if err == nil {
+		s.deletedKeys = append(s.deletedKeys, key)
+	}
+	return err
+}
+
+func TestDeleteS3Artifact(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("DeleteObjectSuccess", func(t *testing.T) {
+		s3client := &mockClient{
+			files:      map[string][]string{"my-bucket": {"/folder/file.txt"}},
+			mockedErrs: map[string]error{},
+		}
+
+		err := deleteS3Artifact(ctx, s3client, &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{Bucket: "my-bucket"},
+					Key:      "/folder/file.txt",
+				},
+			},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"/folder/file.txt"}, s3client.deletedKeys)
+	})
+
+	t.Run("FallbackToDirectoryDeleteWithoutTrailingSlash", func(t *testing.T) {
+		s3client := &mockClient{
+			files: map[string][]string{
+				"my-bucket": {
+					"/folder/a.txt",
+					"/folder/sub/b.txt",
+				},
+			},
+			mockedErrs: map[string]error{},
+			deleteFn: func(_ string, key string) error {
+				if key == "/folder" {
+					return minio.ErrorResponse{Code: "InternalError"}
+				}
+				return nil
+			},
+		}
+
+		err := deleteS3Artifact(ctx, s3client, &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{Bucket: "my-bucket"},
+					Key:      "/folder",
+				},
+			},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"/folder/a.txt", "/folder/sub/b.txt"}, s3client.deletedKeys)
+	})
+
+	t.Run("DeleteErrorWhenNotDirectory", func(t *testing.T) {
+		s3client := &mockClient{
+			files: map[string][]string{
+				"my-bucket": {
+					"/other/a.txt",
+				},
+			},
+			mockedErrs: map[string]error{},
+			deleteFn: func(_ string, key string) error {
+				if key == "/folder" {
+					return minio.ErrorResponse{Code: "InternalError"}
+				}
+				return nil
+			},
+		}
+
+		err := deleteS3Artifact(ctx, s3client, &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{Bucket: "my-bucket"},
+					Key:      "/folder",
+				},
+			},
+		})
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "internal error")
+		assert.Empty(t, s3client.deletedKeys)
+	})
+
+	t.Run("DeleteDirectoryWithTrailingSlash", func(t *testing.T) {
+		s3client := &mockClient{
+			files: map[string][]string{
+				"my-bucket": {
+					"/folder/a.txt",
+					"/folder/sub/b.txt",
+				},
+			},
+			mockedErrs: map[string]error{},
+		}
+
+		err := deleteS3Artifact(ctx, s3client, &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{Bucket: "my-bucket"},
+					Key:      "/folder/",
+				},
+			},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"/folder/a.txt", "/folder/sub/b.txt"}, s3client.deletedKeys)
+	})
+
 }
 
 func TestLoadS3Artifact(t *testing.T) {
