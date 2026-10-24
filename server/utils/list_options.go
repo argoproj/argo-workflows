@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,6 +24,11 @@ type ListOptions struct {
 	Limit, Offset                int
 	ShowRemainingItemCount       bool
 	StartedAtAscending           bool
+	// CursorStartedAt and CursorUID enable keyset pagination for archived
+	// workflows. When set, the query uses WHERE (startedat, uid) < (cursor)
+	// instead of OFFSET, providing constant-time pagination.
+	CursorStartedAt time.Time
+	CursorUID       string
 }
 
 func (l ListOptions) WithLimit(limit int) ListOptions {
@@ -54,6 +61,40 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
+// archivedWorkflowCursor represents a keyset pagination cursor for archived
+// workflows. It encodes the position using startedat and uid for deterministic
+// ordering.
+type archivedWorkflowCursor struct {
+	StartedAt time.Time `json:"startedat"`
+	UID       string    `json:"uid"`
+}
+
+// EncodeArchivedWorkflowCursor creates a base64-encoded cursor token from a
+// startedat timestamp and uid.
+func EncodeArchivedWorkflowCursor(startedAt time.Time, uid string) string {
+	cursor := archivedWorkflowCursor{StartedAt: startedAt, UID: uid}
+	data, _ := json.Marshal(cursor)
+	return "c:" + base64.StdEncoding.EncodeToString(data)
+}
+
+// DecodeArchivedWorkflowCursor attempts to decode a continue token as an
+// archived workflow cursor. Returns the cursor and true if successful, or
+// zero values and false if the token is not a cursor.
+func DecodeArchivedWorkflowCursor(continueToken string) (archivedWorkflowCursor, bool) {
+	if !strings.HasPrefix(continueToken, "c:") {
+		return archivedWorkflowCursor{}, false
+	}
+	data, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(continueToken, "c:"))
+	if err != nil {
+		return archivedWorkflowCursor{}, false
+	}
+	var cursor archivedWorkflowCursor
+	if err := json.Unmarshal(data, &cursor); err != nil {
+		return archivedWorkflowCursor{}, false
+	}
+	return cursor, true
+}
+
 func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, createdAfter, finishedBefore string) (ListOptions, error) {
 	if options.Continue == "" {
 		options.Continue = "0"
@@ -61,14 +102,27 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 
 	limit := int(options.Limit)
 
-	offset, err := strconv.Atoi(options.Continue)
-	if err != nil {
-		// no need to use sutils here
-		return ListOptions{}, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
-	}
-	if offset < 0 {
-		// no need to use sutils here
-		return ListOptions{}, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
+	// Try to decode as an archived workflow cursor first (keyset pagination).
+	// Fall back to offset-based parsing for backward compatibility.
+	var offset int
+	var cursorStartedAt time.Time
+	var cursorUID string
+
+	if cursor, ok := DecodeArchivedWorkflowCursor(options.Continue); ok {
+		cursorStartedAt = cursor.StartedAt
+		cursorUID = cursor.UID
+		offset = 0 // offset is not used with keyset pagination
+	} else {
+		var err error
+		offset, err = strconv.Atoi(options.Continue)
+		if err != nil {
+			// no need to use sutils here
+			return ListOptions{}, status.Error(codes.InvalidArgument, "listOptions.continue must be int or cursor")
+		}
+		if offset < 0 {
+			// no need to use sutils here
+			return ListOptions{}, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
+		}
 	}
 
 	// namespace is now specified as its own query parameter
@@ -80,6 +134,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 	maxStartedAt := time.Time{}
 	createdAfterTime := time.Time{}
 	finishedBeforeTime := time.Time{}
+	var err error
 
 	if createdAfter != "" {
 		createdAfterTime, err = time.Parse(time.RFC3339, createdAfter)
@@ -172,5 +227,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 		Limit:                  limit,
 		Offset:                 offset,
 		ShowRemainingItemCount: showRemainingItemCount,
+		CursorStartedAt:        cursorStartedAt,
+		CursorUID:              cursorUID,
 	}, nil
 }
