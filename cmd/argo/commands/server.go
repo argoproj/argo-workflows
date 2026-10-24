@@ -153,6 +153,14 @@ See %s`, help.ArgoServer()),
 				logger.Warn(ctx, "You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
 			}
 
+			if insecureTrustUnauthenticatedHeaders {
+				if modes[auth.Header] {
+					logger.Warn(ctx, "You are running with --insecure-trust-unauthenticated-headers. Anyone who can reach Argo Server can impersonate any user by sending identity headers. Make sure only your authenticating proxy can reach the server's port. Learn how to secure the proxy connection: https://argo-workflows.readthedocs.io/en/latest/argo-server-header-auth/")
+				} else {
+					logger.Warn(ctx, "--insecure-trust-unauthenticated-headers has no effect because the header auth mode is not enabled")
+				}
+			}
+			
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                            baseHRef,
 				TLSConfig:                           tlsConfig,
@@ -202,7 +210,7 @@ See %s`, help.ArgoServer()),
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
 	command.Flags().BoolVar(&hsts, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso,header")
-	command.Flags().BoolVar(&insecureTrustUnauthenticatedHeaders, "insecure-trust-unauthenticated-headers", false, "Trust unauthenticated headers without authenticating the reverse proxy.")
+	command.Flags().BoolVar(&insecureTrustUnauthenticatedHeaders, "insecure-trust-unauthenticated-headers", false, "Trust identity headers without authenticating the reverse proxy. Anyone who can reach the server can impersonate any user. Only use this when nothing except the proxy can reach the server's port, for example a proxy sidecar combined with a NetworkPolicy. Requires --auth-mode=header.")
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
