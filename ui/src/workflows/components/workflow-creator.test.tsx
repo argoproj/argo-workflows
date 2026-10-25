@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {createMemoryHistory} from 'history';
 import * as React from 'react';
 
@@ -121,17 +121,71 @@ describe('WorkflowCreator manifest editing', () => {
         expect(services.workflows.create).toHaveBeenCalledWith(restoredWorkflow, 'restored-namespace');
     });
 
-    test.each(['', '{}', 'spec: {}\n', 'metadata: {}\n'])('allows switching editor tabs with an incomplete manifest: %p', async manifest => {
-        const {editor} = await openFullEditor();
-        fireEvent.change(editor, {target: {value: manifest}});
+    test.each([false, true])('submits a workflow template reference without an explicit entrypoint (clusterScope: %p)', async clusterScope => {
+        const workflow: Workflow = {
+            metadata: {generateName: 'from-template-', namespace: 'argo'},
+            spec: {workflowTemplateRef: {name: 'example-template', clusterScope}}
+        };
+        (services.workflows.create as jest.Mock).mockResolvedValue(workflow);
+        const {editor, onCreate} = await openFullEditor();
+        fireEvent.change(editor, {target: {value: ''}});
+        fireEvent.change(editor, {target: {value: JSON.stringify(workflow)}});
 
-        fireEvent.click(screen.getByText('Parameters', {selector: 'a'}));
-        expect(screen.getByRole('heading', {name: 'Parameters'})).toBeInTheDocument();
-        fireEvent.click(screen.getByText('MetaData', {selector: 'a'}));
-        expect(screen.getByText('Generate Name')).toBeInTheDocument();
-        fireEvent.click(screen.getByText('Graph', {selector: 'a'}));
-        fireEvent.click(screen.getByText('Manifest', {selector: 'a'}));
+        expect(screen.getByRole('button', {name: 'Create'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Create'}));
 
-        expect(screen.getByRole('textbox', {name: 'Workflow manifest'})).toHaveValue(manifest);
+        await waitFor(() => expect(onCreate).toHaveBeenCalledWith(workflow));
+        expect(services.workflows.create).toHaveBeenCalledTimes(1);
+        expect(services.workflows.create).toHaveBeenCalledWith(workflow, 'argo');
     });
+
+    test('keeps Create disabled after adding parameters to a cleared manifest', async () => {
+        const {editor, onCreate} = await openFullEditor();
+        fireEvent.change(editor, {target: {value: ''}});
+        fireEvent.click(screen.getByText('Parameters', {selector: 'a'}));
+        fireEvent.change(screen.getByPlaceholderText('Name...'), {target: {value: 'message'}});
+        fireEvent.change(screen.getByPlaceholderText('Value...'), {target: {value: 'hello'}});
+        fireEvent.keyPress(screen.getByPlaceholderText('Value...'), {key: 'Enter', charCode: 13});
+
+        expect(screen.getByText('message')).toBeInTheDocument();
+        expect(screen.getByText('hello')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Create'})).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Create'}));
+        expect(services.workflows.create).not.toHaveBeenCalled();
+        expect(onCreate).not.toHaveBeenCalled();
+    });
+
+    test('keeps Create disabled after editing metadata in a cleared manifest', async () => {
+        const {editor, onCreate} = await openFullEditor();
+        fireEvent.change(editor, {target: {value: ''}});
+        fireEvent.click(screen.getByText('MetaData', {selector: 'a'}));
+        const nameInput = within(screen.getByText('Name', {exact: true}).closest('.row') as HTMLElement).getByRole('textbox');
+        fireEvent.change(nameInput, {target: {value: 'draft-workflow'}});
+
+        expect(nameInput).toHaveValue('draft-workflow');
+        expect(screen.getByRole('button', {name: 'Create'})).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Create'}));
+        expect(services.workflows.create).not.toHaveBeenCalled();
+        expect(onCreate).not.toHaveBeenCalled();
+    });
+
+    test.each(['', '{}', 'spec: {}\n', 'metadata: {}\n', 'spec:\n  workflowTemplateRef: {}\n', 'spec:\n  workflowTemplateRef:\n    name: ""\n'])(
+        'keeps an incomplete manifest editable without allowing submission: %p',
+        async manifest => {
+            const {editor} = await openFullEditor();
+            fireEvent.change(editor, {target: {value: manifest}});
+
+            fireEvent.click(screen.getByText('Parameters', {selector: 'a'}));
+            expect(screen.getByRole('heading', {name: 'Parameters'})).toBeInTheDocument();
+            fireEvent.click(screen.getByText('MetaData', {selector: 'a'}));
+            expect(screen.getByText('Generate Name')).toBeInTheDocument();
+            fireEvent.click(screen.getByText('Graph', {selector: 'a'}));
+            fireEvent.click(screen.getByText('Manifest', {selector: 'a'}));
+
+            expect(screen.getByRole('textbox', {name: 'Workflow manifest'})).toHaveValue(manifest);
+            expect(screen.getByRole('button', {name: 'Create'})).toBeDisabled();
+            fireEvent.click(screen.getByRole('button', {name: 'Create'}));
+            expect(services.workflows.create).not.toHaveBeenCalled();
+        }
+    );
 });

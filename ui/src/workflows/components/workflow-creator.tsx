@@ -114,7 +114,7 @@ export function WorkflowCreator({namespace, onCreate, history}: {namespace: stri
                         <UploadButton onUpload={setWorkflow} onError={setError} />
                         <Button
                             icon='plus'
-                            disabled={!workflow}
+                            disabled={!workflow?.spec?.entrypoint && !workflow?.spec?.workflowTemplateRef?.name}
                             onClick={async () => {
                                 try {
                                     const newWorkflow = await services.workflows.create(workflow, nsUtils.getNamespaceWithDefault(workflow.metadata?.namespace));
