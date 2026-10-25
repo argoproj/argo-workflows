@@ -335,4 +335,13 @@ func TestSaveRetry(t *testing.T) {
 		require.NoError(t, save(t, svr.URL))
 		assert.Equal(t, int32(2), attempts.Load())
 	})
+
+	t.Run("does not retry when the file cannot be opened", func(t *testing.T) {
+		driver := &ArtifactDriver{Client: &http.Client{}}
+		art := &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{Artifactory: &wfv1.ArtifactoryArtifact{URL: "http://127.0.0.1:1/missing.log"}},
+		}
+		err := driver.Save(logging.TestContext(t.Context()), filepath.Join(t.TempDir(), "missing.log"), art)
+		require.ErrorIs(t, err, os.ErrNotExist)
+	})
 }
