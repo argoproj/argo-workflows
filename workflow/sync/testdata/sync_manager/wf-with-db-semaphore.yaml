@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world-db-sem
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   semaphores:
+     - database:
+         key: my-database-sem
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]

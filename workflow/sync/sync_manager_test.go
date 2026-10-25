@@ -25,307 +25,6 @@ import (
 	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
-const configMap = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
- name: my-config
-data:
- workflow: "1"
- template: "1"
-`
-
-const wfWithStatus = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  creationTimestamp: "2020-06-19T17:37:05Z"
-  generateName: hello-world-
-  generation: 4
-  labels:
-    workflows.argoproj.io/phase: Running
-  name: hello-world-prtl9
-  namespace: default
-  resourceVersion: "844854"
-  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-prtl9
-  uid: 790f5c47-211f-4a3b-8949-514ae916633b
-spec:
-  entrypoint: whalesay
-  synchronization:
-    semaphores:
-      - configMapKeyRef:
-          key: workflow
-          name: my-config
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: whalesay
-    outputs: {}
-status:
-  finishedAt: null
-  nodes:
-    hello-world-prtl9:
-      displayName: hello-world-prtl9
-      finishedAt: null
-      hostNodeName: docker-desktop
-      id: hello-world-prtl9
-      message: ContainerCreating
-      name: hello-world-prtl9
-      phase: Pending
-      startedAt: "2020-06-19T17:37:05Z"
-      templateName: whalesay
-      templateScope: local/hello-world-prtl9
-      type: Pod
-  phase: Running
-  startedAt: "2020-06-19T17:37:05Z"
-  synchronization:
-    semaphore:
-      holding:
-      - holders:
-        - hello-world-prtl9
-        semaphore: default/ConfigMap/my-config/workflow
-`
-
-const wfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: hello-world
- namespace: default
-spec:
- entrypoint: whalesay
- synchronization:
-   semaphores:
-     - configMapKeyRef:
-         name: my-config
-         key: workflow
- templates:
- - name: whalesay
-   container:
-     image: docker/whalesay:latest
-     command: [cowsay]
-     args: ["hello world"]
-`
-
-const wfWithTmplSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: semaphore-tmpl-level-xjvln
-  namespace: default
-spec:
-  entrypoint: semaphore-tmpl-level-example
-  templates:
-  - inputs: {}
-    metadata: {}
-    name: semaphore-tmpl-level-example
-    outputs: {}
-    steps:
-    - - name: generate
-        template: gen-number-list
-    - - arguments:
-          parameters:
-          - name: seconds
-            value: '{{item}}'
-        name: sleep
-        template: sleep-n-sec
-        withParam: '{{steps.generate.outputs.result}}'
-  - inputs: {}
-    metadata: {}
-    name: gen-number-list
-    outputs: {}
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      name: ""
-      resources: {}
-      source: |
-        import json
-        import sys
-        json.dump([i for i in range(1, 3)], sys.stdout)
-  - container:
-      args:
-      - echo sleeping for {{inputs.parameters.seconds}} seconds; sleep 10; echo done
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources: {}
-    inputs:
-      parameters:
-      - name: seconds
-    metadata: {}
-    name: sleep-n-sec
-    outputs: {}
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-status:
-  finishedAt: null
-  nodes:
-    semaphore-tmpl-level-xjvln:
-      children:
-      - semaphore-tmpl-level-xjvln-2790796867
-      displayName: semaphore-tmpl-level-xjvln
-      finishedAt: null
-      id: semaphore-tmpl-level-xjvln
-      name: semaphore-tmpl-level-xjvln
-      phase: Running
-      startedAt: "2020-06-04T19:55:11Z"
-      templateName: semaphore-tmpl-level-example
-      templateScope: local/semaphore-tmpl-level-xjvln
-      type: Steps
-    semaphore-tmpl-level-xjvln-5807216:
-      boundaryID: semaphore-tmpl-level-xjvln
-      children:
-      - semaphore-tmpl-level-xjvln-2858054438
-      displayName: generate
-      finishedAt: "2020-06-04T19:55:25Z"
-      hostNodeName: k3d-k3s-default-server
-      id: semaphore-tmpl-level-xjvln-5807216
-      name: semaphore-tmpl-level-xjvln[0].generate
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: semaphore-tmpl-level-xjvln/semaphore-tmpl-level-xjvln-5807216/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-        result: '[1, 2]'
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 9
-        memory: 9
-      startedAt: "2020-06-04T19:55:11Z"
-      templateName: gen-number-list
-      templateScope: local/semaphore-tmpl-level-xjvln
-      type: Pod
-    semaphore-tmpl-level-xjvln-1607747183:
-      boundaryID: semaphore-tmpl-level-xjvln
-      displayName: sleep(1:2)
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server
-      id: semaphore-tmpl-level-xjvln-1607747183
-      inputs:
-        parameters:
-        - name: seconds
-          value: "2"
-      message: ContainerCreating
-      name: semaphore-tmpl-level-xjvln[1].sleep(1:2)
-      phase: Pending
-      startedAt: "2020-06-04T19:55:56Z"
-      templateName: sleep-n-sec
-      templateScope: local/semaphore-tmpl-level-xjvln
-      type: Pod
-    semaphore-tmpl-level-xjvln-2790796867:
-      boundaryID: semaphore-tmpl-level-xjvln
-      children:
-      - semaphore-tmpl-level-xjvln-5807216
-      displayName: '[0]'
-      finishedAt: "2020-06-04T19:55:56Z"
-      id: semaphore-tmpl-level-xjvln-2790796867
-      name: semaphore-tmpl-level-xjvln[0]
-      phase: Succeeded
-      startedAt: "2020-06-04T19:55:11Z"
-      templateName: semaphore-tmpl-level-example
-      templateScope: local/semaphore-tmpl-level-xjvln
-      type: StepGroup
-    semaphore-tmpl-level-xjvln-2858054438:
-      boundaryID: semaphore-tmpl-level-xjvln
-      children:
-      - semaphore-tmpl-level-xjvln-3448864205
-      - semaphore-tmpl-level-xjvln-1607747183
-      displayName: '[1]'
-      finishedAt: null
-      id: semaphore-tmpl-level-xjvln-2858054438
-      name: semaphore-tmpl-level-xjvln[1]
-      phase: Running
-      startedAt: "2020-06-04T19:55:56Z"
-      templateName: semaphore-tmpl-level-example
-      templateScope: local/semaphore-tmpl-level-xjvln
-      type: StepGroup
-    semaphore-tmpl-level-xjvln-3448864205:
-      boundaryID: semaphore-tmpl-level-xjvln
-      displayName: sleep(0:1)
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server
-      id: semaphore-tmpl-level-xjvln-3448864205
-      inputs:
-        parameters:
-        - name: seconds
-          value: "1"
-      message: ContainerCreating
-      name: semaphore-tmpl-level-xjvln[1].sleep(0:1)
-      phase: Pending
-      startedAt: "2020-06-04T19:55:56Z"
-      templateName: sleep-n-sec
-      templateScope: local/semaphore-tmpl-level-xjvln
-      type: Pod
-  phase: Running
-  startedAt: "2020-06-04T19:55:11Z"
-`
-
-const wfWithMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: hello-world
- namespace: default
-spec:
- entrypoint: whalesay
- synchronization:
-   mutexes:
-     - name: my-mutex
- templates:
- - name: whalesay
-   container:
-     image: docker/whalesay:latest
-     command: [cowsay]
-     args: ["hello world"]
-`
-
-// Workflow with database semaphore
-const wfWithDBSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: hello-world-db-sem
- namespace: default
-spec:
- entrypoint: whalesay
- synchronization:
-   semaphores:
-     - database:
-         key: my-database-sem
- templates:
- - name: whalesay
-   container:
-     image: docker/whalesay:latest
-     command: [cowsay]
-     args: ["hello world"]
-`
-
 var WorkflowExistenceFunc = func(s string) bool {
 	return false
 }
@@ -354,7 +53,7 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(context.Context, string) (int, 
 func TestSemaphoreWfLevel(t *testing.T) {
 	kube := fake.NewClientset()
 	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
 
 	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
@@ -366,7 +65,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		wfclientset := fakewfclientset.NewClientset(wf)
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
@@ -381,7 +80,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
 		wf.Status.Synchronization.Semaphore.Holding = invalidSync
 		wfclientset := fakewfclientset.NewClientset(wf)
@@ -413,12 +112,12 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create first workflow claiming to hold the semaphore
-		wf1 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf1 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		wf1.Name = "hello-world-one"
 		wf1.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-one"}
 
 		// Create second workflow also claiming to hold the same semaphore
-		wf2 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf2 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		wf2.Name = "hello-world-two"
 		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-two"}
 
@@ -452,7 +151,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		wf.Name = "cm-holder"
 		wf.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/cm-holder"}
 
@@ -484,10 +183,10 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf1 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf1 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		wf1.Name = "holder-one"
 		wf1.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/holder-one"}
-		wf2 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf2 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		wf2.Name = "holder-two"
 		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/holder-two"}
 
@@ -507,7 +206,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		// A new contender must NOT be able to acquire: the count (2) is over the
 		// limit (1), so the lock is correctly unavailable until holders drain.
-		racer := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		racer := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-status.yaml")
 		racer.Name = "racer"
 		acquired, _, _, _, err := syncManager.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
 		require.NoError(t, err)
@@ -596,7 +295,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, poisoned, "unresolvable holder must poison the lock")
 
 		// A racing workflow must not be able to acquire the poisoned mutex.
-		racer := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		racer := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 		racer.Name = "racer"
 		acquired, _, msg, _, err := syncManager.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
 		require.NoError(t, err)
@@ -669,7 +368,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
@@ -778,7 +477,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create two workflows that both need all semaphores
-		wf1 := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf1 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 		wf1.Name = "wf1"
 		wf1.Spec.Synchronization.Semaphores = []*wfv1.SemaphoreRef{
 			{
@@ -839,7 +538,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 func TestResizeSemaphoreSize(t *testing.T) {
 	kube := fake.NewClientset()
 	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
 
 	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
@@ -851,7 +550,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -920,7 +619,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 func TestSemaphoreTmplLevel(t *testing.T) {
 	kube := fake.NewClientset()
 	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
 
 	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
@@ -934,7 +633,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-tmpl-semaphore.yaml")
 		tmpl := wf.Spec.Templates[2]
 
 		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -1015,7 +714,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 
 		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -1104,7 +803,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-tmpl-semaphore.yaml")
 		tmpl := wf.Spec.Templates[2]
 
 		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -1186,7 +885,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	assert := assert.New(t)
 	kube := fake.NewClientset()
 	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
 	cm.Data["workflow"] = "3"
 
 	ctx := logging.TestContext(t.Context())
@@ -1203,7 +902,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 
 		var wfs []wfv1.Workflow
 		for i := range 3 {
-			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+			wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 			wf.Name = fmt.Sprintf("%s-%d", "acquired", i)
 			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 			require.NoError(t, err)
@@ -1214,7 +913,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 			wfs = append(wfs, *wf)
 		}
 		for i := range 3 {
-			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+			wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 			wf.Name = fmt.Sprintf("%s-%d", "wait", i)
 			status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 			require.NoError(t, err)
@@ -1241,7 +940,7 @@ func TestMutexWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 
@@ -1286,7 +985,7 @@ func TestMutexWfLevel(t *testing.T) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
-		wf := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 		mutexes := make([]*wfv1.Mutex, 0, 10)
 		for i := range 10 {
 			mutexes = append(mutexes, &wfv1.Mutex{Name: fmt.Sprintf("mutex%d", i)})
@@ -1323,7 +1022,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	kube := fake.NewClientset()
 	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
 	cm.Data["workflow"] = "1"
 
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
@@ -1338,10 +1037,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		}, false)
 		require.NoError(t, err)
 
-		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		wfMutex := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 		wfMutex1 := wfMutex.DeepCopy()
 		wfMutex1.Name = "test1"
-		wfSema := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wfSema := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 		wfSema1 := wfSema.DeepCopy()
 		wfSema1.Name = "test2"
 		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfMutex, "", wfMutex.Spec.Synchronization)
@@ -1391,149 +1090,13 @@ func TestTriggerWFWithSemaphoreAndMutex(t *testing.T) {
 	assert := assert.New(t)
 	kube := fake.NewClientset()
 	var cm v1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
 	cm.Data["test-sem"] = "1"
 
 	ctx := logging.TestContext(t.Context())
 	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: synchronization-tmpl-level-sgg6t
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: dag-1-task-1
-        template: django-command
-      - name: dag-1-task-2
-        template: load-command
-  - container:
-      args:
-      - S=$(shuf -i 2-2 -n 1); echo begin to sleep $S; sleep $S; echo acquired lock
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources:
-        requests:
-          cpu: 100m
-          memory: 100Mi
-    name: load-command
-    synchronization:
-      mutexes:
-        - name: dag-2-task-1
-  - container:
-      args:
-      - echo 'django command!'
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources:
-        requests:
-          cpu: 100m
-          memory: 100Mi
-    name: django-command
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: test-sem
-            name: my-config
-  ttlStrategy:
-    secondsAfterCompletion: 600
-status:
-  conditions:
-  - status: "True"
-    type: PodRunning
-  finishedAt: null
-  nodes:
-    synchronization-tmpl-level-sgg6t:
-      children:
-      - synchronization-tmpl-level-sgg6t-1530845388
-      displayName: synchronization-tmpl-level-sgg6t
-      finishedAt: null
-      id: synchronization-tmpl-level-sgg6t
-      name: synchronization-tmpl-level-sgg6t
-      phase: Running
-      progress: 1/2
-      startedAt: "2022-02-28T18:13:00Z"
-      templateName: main
-      templateScope: local/synchronization-tmpl-level-sgg6t
-      type: Steps
-    synchronization-tmpl-level-sgg6t-1530845388:
-      boundaryID: synchronization-tmpl-level-sgg6t
-      children:
-      - synchronization-tmpl-level-sgg6t-1899337224
-      - synchronization-tmpl-level-sgg6t-1949670081
-      displayName: '[0]'
-      finishedAt: null
-      id: synchronization-tmpl-level-sgg6t-1530845388
-      name: synchronization-tmpl-level-sgg6t[0]
-      phase: Running
-      progress: 1/2
-      startedAt: "2022-02-28T18:13:00Z"
-      templateScope: local/synchronization-tmpl-level-sgg6t
-      type: StepGroup
-    synchronization-tmpl-level-sgg6t-1899337224:
-      boundaryID: synchronization-tmpl-level-sgg6t
-      displayName: dag-1-task-1
-      finishedAt: "2022-02-28T18:13:04Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: synchronization-tmpl-level-sgg6t-1899337224
-      name: synchronization-tmpl-level-sgg6t[0].dag-1-task-1
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: synchronization-tmpl-level-sgg6t/synchronization-tmpl-level-sgg6t-1899337224/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2022-02-28T18:13:00Z"
-      templateName: django-command
-      templateScope: local/synchronization-tmpl-level-sgg6t
-      type: Pod
-    synchronization-tmpl-level-sgg6t-1949670081:
-      boundaryID: synchronization-tmpl-level-sgg6t
-      displayName: dag-1-task-2
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server-0
-      id: synchronization-tmpl-level-sgg6t-1949670081
-      name: synchronization-tmpl-level-sgg6t[0].dag-1-task-2
-      outputs:
-        exitCode: "0"
-      phase: Running
-      progress: 0/1
-      startedAt: "2022-02-28T18:13:00Z"
-      templateName: load-command
-      templateScope: local/synchronization-tmpl-level-sgg6t
-      type: Pod
-  phase: Running
-  progress: 1/2
-  resourcesDuration:
-    cpu: 2
-    memory: 1
-  startedAt: "2022-02-28T18:13:00Z"
-  synchronization:
-    mutex:
-      holding:
-      - holder: synchronization-tmpl-level-sgg6t-928517240
-        mutex: argo/Mutex/workflow
-      waiting:
-      - holder: argo/synchronization-tmpl-level-sgg6t/synchronization-tmpl-level-sgg6t-928517240
-        mutex: argo/Mutex/workflow
-  taskResultsCompletionStatus:
-    synchronization-tmpl-level-sgg6t-928517240: false
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/trigger-wf-with-semaphore-and-mutex.yaml")
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
 	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
@@ -1565,235 +1128,6 @@ status:
 	})
 }
 
-const wfV2MutexMigrationWorkflowLevel = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  creationTimestamp: null
-  name: test1
-  namespace: default
-spec:
-  arguments: {}
-  entrypoint: whalesay
-  synchronization:
-    mutexes:
-      - name: my-mutex
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: whalesay
-    outputs: {}
-status:
-  finishedAt: null
-  startedAt: null
-  synchronization:
-    mutex:
-      holding:
-      - holder: test1
-        mutex: default/Mutex/my-mutex
-
-`
-
-const wfV2MutexMigrationTemplateLevel = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v2
-  creationTimestamp: "2024-09-17T00:11:53Z"
-  generateName: synchronization-tmpl-level-
-  generation: 5
-  labels:
-    workflows.argoproj.io/completed: "false"
-    workflows.argoproj.io/phase: Running
-  name: synchronization-tmpl-level-xvzpt
-  namespace: argo
-  resourceVersion: "10182"
-  uid: f2d4ac34-1495-48ba-8aab-25239880fef3
-spec:
-  activeDeadlineSeconds: 300
-  arguments: {}
-  entrypoint: synchronization-tmpl-level-example
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
-  templates:
-  - inputs: {}
-    metadata: {}
-    name: synchronization-tmpl-level-example
-    outputs: {}
-    steps:
-    - - arguments:
-          parameters:
-          - name: seconds
-            value: '{{item}}'
-        name: synchronization-acquire-lock
-        template: acquire-lock
-        withParam: '["1","2","3","4","5"]'
-  - container:
-      args:
-      - sleep 60; echo acquired lock
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: acquire-lock
-    outputs: {}
-    synchronization:
-      mutexes:
-        - name: workflow
-status:
-  artifactGCStatus:
-    notSpecified: true
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "True"
-    type: PodRunning
-  finishedAt: null
-  nodes:
-    synchronization-tmpl-level-xvzpt:
-      children:
-      - synchronization-tmpl-level-xvzpt-2018718843
-      displayName: synchronization-tmpl-level-xvzpt
-      finishedAt: null
-      id: synchronization-tmpl-level-xvzpt
-      name: synchronization-tmpl-level-xvzpt
-      phase: Running
-      progress: 0/5
-      startedAt: "2024-09-17T00:11:53Z"
-      templateName: synchronization-tmpl-level-example
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: Steps
-    synchronization-tmpl-level-xvzpt-755731602:
-      boundaryID: synchronization-tmpl-level-xvzpt
-      displayName: synchronization-acquire-lock(1:2)
-      finishedAt: null
-      id: synchronization-tmpl-level-xvzpt-755731602
-      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
-      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(1:2)
-      phase: Pending
-      progress: 0/1
-      startedAt: "2024-09-17T00:11:53Z"
-      synchronizationStatus:
-        waiting: argo/Mutex/workflow
-      templateName: acquire-lock
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: Pod
-    synchronization-tmpl-level-xvzpt-928517240:
-      boundaryID: synchronization-tmpl-level-xvzpt
-      displayName: synchronization-acquire-lock(0:1)
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server-0
-      id: synchronization-tmpl-level-xvzpt-928517240
-      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(0:1)
-      phase: Running
-      progress: 0/1
-      startedAt: "2024-09-17T00:11:53Z"
-      templateName: acquire-lock
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: Pod
-    synchronization-tmpl-level-xvzpt-1018728496:
-      boundaryID: synchronization-tmpl-level-xvzpt
-      displayName: synchronization-acquire-lock(4:5)
-      finishedAt: null
-      id: synchronization-tmpl-level-xvzpt-1018728496
-      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
-      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(4:5)
-      phase: Pending
-      progress: 0/1
-      startedAt: "2024-09-17T00:11:53Z"
-      synchronizationStatus:
-        waiting: argo/Mutex/workflow
-      templateName: acquire-lock
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: Pod
-    synchronization-tmpl-level-xvzpt-2018718843:
-      boundaryID: synchronization-tmpl-level-xvzpt
-      children:
-      - synchronization-tmpl-level-xvzpt-928517240
-      - synchronization-tmpl-level-xvzpt-755731602
-      - synchronization-tmpl-level-xvzpt-4037094368
-      - synchronization-tmpl-level-xvzpt-3632956078
-      - synchronization-tmpl-level-xvzpt-1018728496
-      displayName: '[0]'
-      finishedAt: null
-      id: synchronization-tmpl-level-xvzpt-2018718843
-      name: synchronization-tmpl-level-xvzpt[0]
-      nodeFlag: {}
-      phase: Running
-      progress: 0/5
-      startedAt: "2024-09-17T00:11:53Z"
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: StepGroup
-    synchronization-tmpl-level-xvzpt-3632956078:
-      boundaryID: synchronization-tmpl-level-xvzpt
-      displayName: synchronization-acquire-lock(3:4)
-      finishedAt: null
-      id: synchronization-tmpl-level-xvzpt-3632956078
-      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
-      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(3:4)
-      phase: Pending
-      progress: 0/1
-      startedAt: "2024-09-17T00:11:53Z"
-      synchronizationStatus:
-        waiting: argo/Mutex/workflow
-      templateName: acquire-lock
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: Pod
-    synchronization-tmpl-level-xvzpt-4037094368:
-      boundaryID: synchronization-tmpl-level-xvzpt
-      displayName: synchronization-acquire-lock(2:3)
-      finishedAt: null
-      id: synchronization-tmpl-level-xvzpt-4037094368
-      message: 'Waiting for argo/Mutex/workflow lock. Lock status: 0/1'
-      name: synchronization-tmpl-level-xvzpt[0].synchronization-acquire-lock(2:3)
-      phase: Pending
-      progress: 0/1
-      startedAt: "2024-09-17T00:11:53Z"
-      synchronizationStatus:
-        waiting: argo/Mutex/workflow
-      templateName: acquire-lock
-      templateScope: local/synchronization-tmpl-level-xvzpt
-      type: Pod
-  phase: Running
-  progress: 0/5
-  startedAt: "2024-09-17T00:11:53Z"
-  synchronization:
-    mutex:
-      holding:
-      - holder: synchronization-tmpl-level-xvzpt-928517240
-        mutex: argo/Mutex/workflow
-      waiting:
-      - holder: argo/synchronization-tmpl-level-xvzpt/synchronization-tmpl-level-xvzpt-928517240
-        mutex: argo/Mutex/workflow
-  taskResultsCompletionStatus:
-    synchronization-tmpl-level-xvzpt-928517240: false
-`
-
 func TestMutexMigration(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	assert := assert.New(t)
@@ -1806,11 +1140,11 @@ func TestMutexMigration(t *testing.T) {
 	}, WorkflowExistenceFunc, false)
 	require.NoError(mgrErr)
 
-	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+	wfMutex := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 
 	t.Run("RunMigrationWorkflowLevel", func(t *testing.T) {
 		syncMgr.syncLockMap = make(map[string]semaphore)
-		wfMutex2 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigrationWorkflowLevel)
+		wfMutex2 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-v2-mutex-migration-workflow-level.yaml")
 
 		require.Len(wfMutex2.Status.Synchronization.Mutex.Holding, 1)
 		holderKey := getHolderKey(wfMutex2, "")
@@ -1852,7 +1186,7 @@ func TestMutexMigration(t *testing.T) {
 
 	t.Run("RunMigrationTemplateLevel", func(t *testing.T) {
 		syncMgr.syncLockMap = make(map[string]semaphore)
-		wfMutex3 := wfv1.MustUnmarshalWorkflow(wfV2MutexMigrationTemplateLevel)
+		wfMutex3 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-v2-mutex-migration-template-level.yaml")
 		require.Len(wfMutex3.Status.Synchronization.Mutex.Holding, 1)
 
 		numFound := 0
@@ -1904,7 +1238,7 @@ func getHoldingNameV1(holderKey string) string {
 func TestCheckHolderVersion(t *testing.T) {
 	t.Run("CheckHolderKeyWithNodeName", func(t *testing.T) {
 		assert := assert.New(t)
-		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		wfMutex := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 		key := getHolderKey(wfMutex, wfMutex.Name)
 
 		keyv2 := key
@@ -1918,7 +1252,7 @@ func TestCheckHolderVersion(t *testing.T) {
 
 	t.Run("CheckHolderKeyWithoutNodeName", func(t *testing.T) {
 		assert := assert.New(t)
-		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		wfMutex := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
 
 		key := getHolderKey(wfMutex, "")
 		keyv2 := key
@@ -2025,7 +1359,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a workflow with a semaphore referencing a non-existent ConfigMap
-		wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
 
 		// Try to acquire the lock
 		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -2077,7 +1411,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				require.NoError(t, err)
 
 				// Create a workflow with a database semaphore
-				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+				wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 
 				// Try to acquire the lock
 				status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -2101,7 +1435,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a workflow with a database semaphore
-		wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 
 		// Try to acquire the lock
 		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -2129,7 +1463,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				require.NotNil(t, syncManager.dbInfo.SessionProxy.Session(ctx))
 
 				// Create a workflow with a database semaphore
-				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+				wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 
 				// Try to acquire the lock
 				status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -2178,10 +1512,10 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
 
 			creationTime := metav1.NewTime(time.Now())
-			wf1 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf1 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 			wf1.Name = "holder-one"
 			wf1.CreationTimestamp = creationTime
-			wf2 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf2 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 			wf2.Name = "holder-two"
 			wf2.CreationTimestamp = creationTime
 
@@ -2227,7 +1561,7 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			assert.True(t, acquired, "holder-two must keep its lock after the limit was lowered")
 
 			// A new contender must wait: holders (2) exceed the lowered limit (1).
-			racer := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			racer := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 			racer.Name = "racer"
 			racer.CreationTimestamp = creationTime
 			acquired, _, _, _, err = mgr2.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
@@ -2280,10 +1614,10 @@ func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
 			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
 
 			creationTime := metav1.NewTime(time.Now())
-			wf1 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf1 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 			wf1.Name = "stale-holder"
 			wf1.CreationTimestamp = creationTime
-			wf2 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf2 := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 			wf2.Name = "live-holder"
 			wf2.CreationTimestamp = creationTime
 
