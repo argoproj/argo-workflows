@@ -302,12 +302,8 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			return s.authenticateClient(ctx, authorizationCredential.value)
 		}
 
-		// No enabled mode claimed this cookie credential. Same rule as above.
-		if s.Modes[Server] {
-			return s.authenticateServer()
-		}
-
-		return nil, nil, status.Error(codes.Unauthenticated, errTokenNotValid)
+		// No enabled mode claimed this cookie. Cookies are ambient, so skip it
+		// and keep looking. Server auth or the final error below handles the rest.
 	}
 
 	if s.Modes[Server] {

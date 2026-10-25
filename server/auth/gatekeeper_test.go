@@ -451,7 +451,6 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	})
-
 	t.Run("Unrecognised cookie credential runs as server", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
@@ -460,6 +459,15 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, wfClient, GetWfClient(ctx))
 		assert.Equal(t, kubeClient, GetKubeClient(ctx))
+	})
+	t.Run("Unrecognised cookie credential without Server is rejected", func(t *testing.T) {
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, &ssomocks.Interface{}, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer k8s-token"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		assert.Contains(t, err.Error(), "token not valid")
 	})
 	t.Run("Server only, Bearer token runs as server", func(t *testing.T) {
 		g, err := NewGatekeeper(Modes{Server: true}, clients, &rest.Config{Username: "my-username"}, nil, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
@@ -627,7 +635,14 @@ func TestServer_GetWFClient(t *testing.T) {
 		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
 	})
-
+	t.Run("Multiple cookies, unrecognised ones are skipped", func(t *testing.T) {
+		g, err := NewGatekeeper(Modes{Client: true}, clients, &rest.Config{Username: "my-username"}, nil, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		md := metadata.Pairs("cookie", "authorization=invalid1; authorization=Bearer valid; authorization=invalid2")
+		ctx, err := g.Context(metadata.NewIncomingContext(logging.TestContext(t.Context()), md))
+		require.NoError(t, err)
+		assert.NotEqual(t, wfClient, GetWfClient(ctx))
+	})
 	t.Run("RBAC namespace delegation per source", func(t *testing.T) {
 		const (
 			ssoEnv    = "SSO_DELEGATE_RBAC_TO_NAMESPACE"
