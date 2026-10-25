@@ -1,7 +1,5 @@
 # Conditional Artifacts and Parameters
 
-> v3.1 and after
-
 You can set Step/DAG level artifacts or parameters based on an [expression](variables.md#expression).
 Use `fromExpression` under a Step/DAG level output artifact and `expression` under a Step/DAG level output parameter.
 

@@ -4,7 +4,7 @@ A Workflow executor runs in the Pods that execute your workloads.
 It runs as both an init container and as a sidecar to the container you specify.
 It allows Argo to perform certain actions like monitoring Pod logs, providing and collecting artifacts, and managing container life-cycles.
 
-Historically there were multiple available executor types, but as of 3.4 the only available executor is called `emissary`.
+The only available executor is called `emissary`.
 
 ## Emissary Executor
 
