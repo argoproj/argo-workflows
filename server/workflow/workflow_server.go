@@ -251,7 +251,8 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 			archivedOffset = 0
 			archivedLimit = options.Limit - len(liveWfList.Items)
 		}
-		archivedWfList, err := s.wfArchive.ListWorkflows(ctx, options.WithLimit(archivedLimit).WithOffset(archivedOffset))
+		var archivedWfList wfv1.Workflows
+		archivedWfList, err = s.wfArchive.ListWorkflows(ctx, options.WithLimit(archivedLimit).WithOffset(archivedOffset))
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
