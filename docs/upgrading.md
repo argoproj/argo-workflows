@@ -212,7 +212,8 @@ If you need the longer deadline, raise or remove the smaller `activeDeadlineSeco
 ### Plugin templates' artifacts are loaded and saved
 
 Plugin templates could declare input and output artifacts, but nothing loaded or saved them.
-The Agent now does, as the `init` and `wait` containers do for a container template (see [Executor Plugins](executor_plugins.md#artifacts)).
+The Agent now does, as the `init` and `wait` containers do for a container template.
+The Artifacts section of Executor Plugins describes how.
 
 This changes how existing Plugin templates with artifacts behave:
 

@@ -7,4 +7,4 @@ Plugin templates can now have input and output artifacts, as container templates
 The Agent loads the input artifacts into a workspace it shares with the executor plugins before it calls them, and each artifact's `path` in the template a plugin gets is where that artifact is in the workspace.
 Once the plugin replies, the Agent saves the output artifacts it wrote there to the artifact repository.
 Archive strategies, keys, optional artifacts and artifact garbage collection work as they do for container templates.
-See [Executor Plugins](executor_plugins.md#artifacts) for how a plugin reads and writes artifacts, with the `executor-plugin-artifacts.yaml` example, and the [upgrading guide](upgrading.md) for how existing plugin templates with artifacts behave now.
+See [Executor Plugins](executor_plugins.md#artifacts) for how a plugin reads and writes artifacts, with the `executor-plugin-artifacts.yaml` example.
