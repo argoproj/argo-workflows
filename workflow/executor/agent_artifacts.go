@@ -45,10 +45,16 @@ import (
 // agentStagingDir is the agent's staging directory, in its /tmp volume.
 const agentStagingDir = "/tmp/argo/agent"
 
+// hasArtifacts reports whether a template declares input or output artifacts.
 func hasArtifacts(tmpl *wfv1.Template) bool {
 	return len(tmpl.Inputs.Artifacts) > 0 || len(tmpl.Outputs.Artifacts) > 0
 }
 
+// executePluginTemplateWithArtifacts executes a plugin template with artifacts:
+// it sets the task up on its first run and offers the template to the
+// plugins, then saves the output artifacts once a plugin replies with a
+// completed phase. It removes the task's files once the task is fulfilled, or
+// fails.
 func (ae *AgentExecutor) executePluginTemplateWithArtifacts(ctx context.Context, nodeID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	// the node ID names the task's directories
 	if !isPathElement(nodeID) {
@@ -377,6 +383,8 @@ func (ae *AgentExecutor) removeTask(ctx context.Context, nodeID string) {
 	}
 }
 
+// artifactDriver returns the driver that loads and saves art, which cannot be
+// an artifact plugin.
 func (ae *AgentExecutor) artifactDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
 	if art.Plugin != nil {
 		// artifact plugins run as sidecars of the pods that use them, and the
@@ -629,6 +637,9 @@ type agentResources struct {
 	secretDir string
 }
 
+// GetSecret returns the value of key in the secret name: from the volume the
+// controller mounted the secret as, if it did, else from the Kubernetes API,
+// which needs a Role allowing the agent's service account to get it.
 func (r agentResources) GetSecret(ctx context.Context, name, key string) (string, error) {
 	if !isPathElement(name) || !isPathElement(key) {
 		return "", argoerrs.Errorf(argoerrs.CodeBadRequest, "invalid secret name %q or key %q", name, key)
@@ -650,6 +661,8 @@ func (r agentResources) GetSecret(ctx context.Context, name, key string) (string
 	return string(secret), nil
 }
 
+// GetConfigMapKey returns the value of key in the configmap name, from the
+// Kubernetes API.
 func (r agentResources) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
 	configMap, err := r.clientSet.CoreV1().ConfigMaps(r.namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
