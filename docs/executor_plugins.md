@@ -335,7 +335,8 @@ spec:
 
 The Agent and its Executor Plugins share a workspace volume, mounted at `/argo/workspace` in each of their containers.
 A node with artifacts gets a directory of its own in the workspace, which its artifact paths are relative to.
-Before the Agent offers the node to the Executor Plugins, it lo `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
+Before the Agent offers the node to the Executor Plugins, it loads the input artifacts into the directory.
+In the template it sends, each artifact's `path` is the absolute path of that artifact in the directory, for example `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
 The Executor Plugin reads its input artifacts from, and writes its output artifacts to, those paths:
 
 ```python
