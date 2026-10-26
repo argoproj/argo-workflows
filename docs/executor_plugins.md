@@ -144,17 +144,17 @@ the script in the container.
 Some things to note here:
 
 - You only need to implement the calls you need.
-Return 404 and it won't be called again.
+  Return 404 and it won't be called again.
 - The path is the RPC method name.
 - You should check that the `Authorization` header contains the same value as `/var/run/argo/token`.
-Return 403 if not.
+  Return 403 if not.
 - The request body contains the template's input parameters.
 - The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.
 - If the response is `{}`, then the Executor Plugin is saying it cannot execute the Plugin template, e.g. it is a Slack Plugin,
-but the template is a Tekton job.
+  but the template is a Tekton job.
 - If the status code is 404, then the Executor Plugin will not be called again.
 - If you save the file as `server.*`, it will be copied to the sidecar container's `args` field.
-This is useful for building self-contained Executor Plugins in scripting languages like Python or Node.JS.
+  This is useful for building self-contained Executor Plugins in scripting languages like Python or Node.JS.
 
 Next, create a manifest named `plugin.yaml`:
 
@@ -211,7 +211,7 @@ spec:
   templates:
     - name: main
       plugin:
-        hello: { }
+        hello: {}
 ```
 
 You'll see the Workflow complete successfully.
@@ -322,14 +322,14 @@ spec:
                   from: "{{steps.produce.outputs.artifacts.report}}"
     - name: produce
       plugin:
-        hello: { }
+        hello: {}
       outputs:
         artifacts:
           - name: report
             path: /tmp/report.txt
     - name: consume
       plugin:
-        hello: { }
+        hello: {}
       inputs:
         artifacts:
           - name: report
@@ -337,9 +337,9 @@ spec:
 ```
 
 The Agent and its Executor Plugins share a workspace volume, mounted at `/argo/workspace` in each of their containers.
-A task with artifacts gets a directory of its own in the workspace, which its artifact paths are relative to.
-Before the Agent offers the task to the Executor Plugins, it loads the input artifacts into the directory.
-In the template it sends, each artifact's `path` is the absolute path of that artifact in the directory, e.g. `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
+A node with artifacts gets a directory of its own in the workspace, which its artifact paths are relative to.
+Before the Agent offers the node to the Executor Plugins, it loads the input artifacts into the directory.
+In the template it sends, each artifact's `path` is the absolute path of that artifact in the directory, for example `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
 The Executor Plugin reads its input artifacts from, and writes its output artifacts to, those paths:
 
 ```python
@@ -366,7 +366,7 @@ An Executor Plugin can also store an output artifact itself, and reply with its 
   "node": {
     "phase": "Succeeded",
     "outputs": {
-      "artifacts": [{"name": "report", "s3": {"key": "path/to/report.txt"}}]
+      "artifacts": [{ "name": "report", "s3": { "key": "path/to/report.txt" } }]
     }
   }
 }
@@ -379,15 +379,15 @@ Some things to note here:
 - The Agent reads the secrets of the workflow's artifact repository from its Pod, where they are mounted.
   It reads any other secret, such as one an artifact with a location of its own refers to, from the Kubernetes API, which needs a [Role](http-template.md#argo-agent-rbac) granting `get` on it.
 - [Artifact plugins](artifact-plugin.md) cannot store a Plugin template's artifacts.
-- The Executor Plugins share the workspace, so each of them can read and change every task's directory, not only those of the tasks it runs.
-  They cannot make the Agent read or write anything outside a task's directory: the Agent follows no symlink out of it, and downloads, archives and uploads artifacts in a directory of its own, which it copies them to and from.
-- The Agent loads and saves a task's artifacts in one of its [`ARGO_AGENT_TASK_WORKERS`](environment-variables.md) workers, which a large artifact takes up until it is done.
+- The Executor Plugins share the workspace, so each of them can read and change every node's directory, not only those of the nodes it runs.
+  They cannot make the Agent read or write anything outside a node's directory: the Agent follows no symlink out of it, and downloads, archives and uploads artifacts in a directory of its own, which it copies them to and from.
+- The Agent loads and saves a node's artifacts in one of its [`ARGO_AGENT_TASK_WORKERS`](environment-variables.md) workers, which a large artifact takes up until it is done.
   It does so within its resource limits, which [`ARGO_AGENT_CPU_LIMIT` and `ARGO_AGENT_MEMORY_LIMIT`](environment-variables.md) set.
 - The Agent's own directory is in its `/tmp`, an `emptyDir` volume, which uses the node's ephemeral storage.
   While the Agent saves an output artifact, the artifact can take up to twice its size there.
 - The workspace is an `emptyDir` volume, which lasts as long as the Agent Pod.
-  The Agent removes a task's directory when the task is done, except for what an Executor Plugin running as another user made in it.
-  If the Agent's container restarts, it carries on with the tasks it was running, without loading their input artifacts again.
+  The Agent removes a node's directory when the node is done, except for what an Executor Plugin running as another user made in it.
+  If the Agent's container restarts, it carries on with the nodes it was running, without loading their input artifacts again.
 - An Executor Plugin's container cannot mount a volume at `/argo/workspace`.
 
 ## Debugging
