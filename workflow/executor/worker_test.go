@@ -177,11 +177,12 @@ func TestCheckWorker_InputArtifactPaths(t *testing.T) {
 
 	// Nothing may be linked over the task's root, or inside it, where the
 	// link could replace the very file Prepare loaded.
-	ctx, we, _ = newWorkerExecutor(t, tmplWithInput("/"), time.Time{})
+	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(filepath.Join(t.TempDir(), "unset")), time.Time{})
+	we.Template.Inputs.Artifacts[0].Path = filepath.Dir(we.paths.Root)
 	err = checkWorker.Run(ctx, we)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "overlaps the task's own files")
-	ctx, we, _ = newWorkerExecutor(t, tmplWithInput("/"), time.Time{})
+	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(filepath.Join(t.TempDir(), "unset")), time.Time{})
 	we.Template.Inputs.Artifacts[0].Path = filepath.Join(we.paths.InputArtifacts, "in")
 	err = checkWorker.Run(ctx, we)
 	require.Error(t, err)
@@ -216,15 +217,16 @@ func TestCheckWorker_InputArtifactPaths(t *testing.T) {
 // fail the task rather than be skipped, wherever the plugin comes from.
 func TestCheckWorker_RefusesPluginInputs(t *testing.T) {
 	plugin := &wfv1.PluginArtifact{Name: "my-plugin", Configuration: "{}", Key: "k"}
+	in := filepath.Join(t.TempDir(), "in")
 	for name, tmpl := range map[string]wfv1.Template{
 		"artifact": {
 			Container: &apiv1.Container{Command: []string{"true"}},
-			Inputs:    wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: "/in", ArtifactLocation: wfv1.ArtifactLocation{Plugin: plugin}}}},
+			Inputs:    wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: in, ArtifactLocation: wfv1.ArtifactLocation{Plugin: plugin}}}},
 		},
 		"archive location": {
 			Container:       &apiv1.Container{Command: []string{"true"}},
 			ArchiveLocation: &wfv1.ArtifactLocation{Plugin: plugin},
-			Inputs:          wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: "/in", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "k"}}}}},
+			Inputs:          wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: in, ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "k"}}}}},
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
