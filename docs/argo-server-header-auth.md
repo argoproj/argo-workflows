@@ -73,7 +73,7 @@ Argo Server handles the secret in three ways:
 * If the secret is wrong, Argo Server rejects the request with `401`.
 * If the secret is missing, Argo Server ignores the identity headers and treats the request as having no header credentials.
 
-Rotate the secret like any other credential.
+Argo Server reads the secret at startup, so restart it after you rotate the secret.
 
 ### Trusting headers without authentication
 
