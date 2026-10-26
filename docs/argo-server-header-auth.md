@@ -74,6 +74,7 @@ Argo Server handles the secret in three ways:
 * If the secret is missing, Argo Server ignores the identity headers and treats the request as having no header credentials.
 
 Argo Server reads the secret at startup, so restart it after you rotate the secret.
+Update the proxy and the Secret together, because requests with the old value fail until the restart completes.
 
 ### Trusting headers without authentication
 
@@ -119,7 +120,7 @@ Otherwise, it rejects the request.
 ## RBAC
 
 If you do not enable RBAC for header users, every header user runs as the Argo Server service account.
-To give users different permissions, enable RBAC in the `header` configuration. *(verify the field name)*
+To give users different permissions, set `rbac.enabled: true` in the `header` configuration.
 
 Header users match the same service accounts and `workflows.argoproj.io/rbac-rule` annotations as [SSO RBAC](argo-server-sso.md#sso-rbac).
 If you enable both `sso` and `header`, a rule applies to users from either source.
