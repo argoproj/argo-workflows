@@ -265,6 +265,7 @@ func TestSaveInvalidArtifactLocation(t *testing.T) {
 	})
 }
 
+// TestSaveRetry checks that Save retries transient upload failures and stops on permanent ones.
 func TestSaveRetry(t *testing.T) {
 	t.Setenv("EXECUTOR_RETRY_BACKOFF_DURATION", "1ms")
 	t.Setenv("EXECUTOR_RETRY_BACKOFF_STEPS", "3")
