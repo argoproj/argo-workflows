@@ -143,15 +143,12 @@ the script in the container.
 
 Some things to note here:
 
-- You only need to implement the calls you need.
-  Return 404 and it won't be called again.
+- You only need to implement the calls you need. Return 404 and it won't be called again.
 - The path is the RPC method name.
-- You should check that the `Authorization` header contains the same value as `/var/run/argo/token`.
-  Return 403 if not.
+- You should check that the `Authorization` header contains the same value as `/var/run/argo/token`. Return 403 if not.
 - The request body contains the template's input parameters.
 - The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.
-- If the response is `{}`, then the Executor Plugin is saying it cannot execute the Plugin template, e.g. it is a Slack Plugin,
-  but the template is a Tekton job.
+- If the response is `{}`, then the Executor Plugin is saying it cannot execute the Plugin template, e.g. it is a Slack Plugin, but the template is a Tekton job.
 - If the status code is 404, then the Executor Plugin will not be called again.
 - If you save the file as `server.*`, it will be copied to the sidecar container's `args` field.
   This is useful for building self-contained Executor Plugins in scripting languages like Python or Node.JS.
