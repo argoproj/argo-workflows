@@ -103,11 +103,12 @@ func templatePaths(tmpl *wfv1.Template) []string {
 }
 
 // checkWorker fails the task before any work if the worker cannot run it:
-// no driver, an unsupported template, or an input artifact path where
-// linking would replace something. The worker's filesystem is the host's,
-// not a throwaway container root, so nothing already there may be removed
-// (a symlink of ours from an earlier attempt is the only exception), and
-// no input may be linked over the task's own root.
+// no driver, an unsupported template, an input artifact served by a
+// plugin, or an input artifact path where linking would replace something.
+// The worker's filesystem is the host's, not a throwaway container root,
+// so nothing already there may be removed (our own link from an earlier
+// attempt is the only exception), and no input may be linked over the
+// task's own root.
 func (we *WorkflowExecutor) checkWorker() error {
 	if we.mainDriver == nil {
 		return errors.New("the worker has no driver to run main")
@@ -116,17 +117,34 @@ func (we *WorkflowExecutor) checkWorker() error {
 		return err
 	}
 	for _, art := range we.Template.Inputs.Artifacts {
+		// A plugin serves artifacts from a sidecar the worker doesn't have,
+		// so Prepare would skip the artifact and main would run without it.
+		// The plugin can come from the archive location, so check where the
+		// artifact will be loaded from; one that can't be located is left
+		// for Prepare to report.
+		if art.HasLocationOrKey() {
+			if driverArt, err := we.newDriverArt(&art); err == nil && driverArt.Plugin != nil {
+				return fmt.Errorf("a worker cannot load input artifact %s from plugin %s", art.Name, driverArt.Plugin.Name)
+			}
+		}
 		if art.Path == "" {
 			continue
 		}
 		if rel, err := filepath.Rel(art.Path, we.paths.Root); err == nil && filepath.IsLocal(rel) || rel == "." {
 			return fmt.Errorf("input artifact %s path %s contains the task's own files", art.Name, art.Path)
 		}
-		if fi, err := os.Lstat(art.Path); err == nil && fi.Mode()&os.ModeSymlink == 0 {
+		if _, err := os.Lstat(art.Path); err == nil && !we.isOwnInputLink(art) {
 			return fmt.Errorf("input artifact %s path %s already exists; a worker will not replace it", art.Name, art.Path)
 		}
 	}
 	return nil
+}
+
+// isOwnInputLink reports whether art's path is the link runMain makes for
+// it: a symlink to exactly the file Prepare loaded for that artifact.
+func (we *WorkflowExecutor) isOwnInputLink(art wfv1.Artifact) bool {
+	target, err := os.Readlink(art.Path)
+	return err == nil && target == filepath.Join(we.paths.InputArtifacts, art.Name)
 }
 
 // createTaskDirs empties and recreates the task's own tree.
@@ -286,7 +304,7 @@ func (we *WorkflowExecutor) removeTaskRoot() error {
 		if art.Path == "" {
 			continue
 		}
-		if target, err := os.Readlink(art.Path); err == nil && target == filepath.Join(we.paths.InputArtifacts, art.Name) {
+		if we.isOwnInputLink(art) {
 			if err := os.Remove(art.Path); err != nil {
 				errs = append(errs, fmt.Errorf("failed to remove input artifact link %s: %w", art.Path, err))
 			}

@@ -181,6 +181,51 @@ func TestCheckWorker_InputArtifactPaths(t *testing.T) {
 
 	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(filepath.Join(t.TempDir(), "new")), time.Time{})
 	require.NoError(t, checkWorker.Run(ctx, we))
+
+	// A symlink is only replaced if it is our own link to this artifact.
+	userDir := t.TempDir()
+	foreign := filepath.Join(userDir, "foreign")
+	require.NoError(t, os.Symlink(existing, foreign))
+	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(foreign), time.Time{})
+	err = checkWorker.Run(ctx, we)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+
+	lookalike := filepath.Join(userDir, "lookalike")
+	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(lookalike), time.Time{})
+	require.NoError(t, os.Symlink(filepath.Join(we.paths.InputArtifacts, "other"), lookalike))
+	err = checkWorker.Run(ctx, we)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+
+	ours := filepath.Join(userDir, "ours")
+	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(ours), time.Time{})
+	require.NoError(t, os.Symlink(filepath.Join(we.paths.InputArtifacts, "in"), ours))
+	require.NoError(t, checkWorker.Run(ctx, we))
+}
+
+// A worker has no plugin sidecars, so an input a plugin would serve must
+// fail the task rather than be skipped, wherever the plugin comes from.
+func TestCheckWorker_RefusesPluginInputs(t *testing.T) {
+	plugin := &wfv1.PluginArtifact{Name: "my-plugin", Configuration: "{}", Key: "k"}
+	for name, tmpl := range map[string]wfv1.Template{
+		"artifact": {
+			Container: &apiv1.Container{Command: []string{"true"}},
+			Inputs:    wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: "/in", ArtifactLocation: wfv1.ArtifactLocation{Plugin: plugin}}}},
+		},
+		"archive location": {
+			Container:       &apiv1.Container{Command: []string{"true"}},
+			ArchiveLocation: &wfv1.ArtifactLocation{Plugin: plugin},
+			Inputs:          wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: "/in", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "k"}}}}},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, we, _ := newWorkerExecutor(t, tmpl, time.Time{})
+			err := checkWorker.Run(ctx, we)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "from plugin my-plugin")
+		})
+	}
 }
 
 func TestCheckWorker_NeedsDriver(t *testing.T) {
