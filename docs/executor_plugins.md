@@ -338,8 +338,7 @@ spec:
 
 The Agent and its Executor Plugins share a workspace volume, mounted at `/argo/workspace` in each of their containers.
 A node with artifacts gets a directory of its own in the workspace, which its artifact paths are relative to.
-Before the Agent offers the node to the Executor Plugins, it loads the input artifacts into the directory.
-In the template it sends, each artifact's `path` is the absolute path of that artifact in the directory, for example `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
+Before the Agent offers the node to the Executor Plugins, it lo `/argo/workspace/plugin-artifacts-1234567890/tmp/report.txt`.
 The Executor Plugin reads its input artifacts from, and writes its output artifacts to, those paths:
 
 ```python
@@ -383,7 +382,7 @@ Some things to note here:
   They cannot make the Agent read or write anything outside a node's directory: the Agent follows no symlink out of it, and downloads, archives and uploads artifacts in a directory of its own, which it copies them to and from.
 - The Agent loads and saves a node's artifacts in one of its [`ARGO_AGENT_TASK_WORKERS`](environment-variables.md) workers, which a large artifact takes up until it is done.
   It does so within its resource limits, which [`ARGO_AGENT_CPU_LIMIT` and `ARGO_AGENT_MEMORY_LIMIT`](environment-variables.md) set.
-- The Agent's own directory is in its `/tmp`, an `emptyDir` volume, which uses the node's ephemeral storage.
+- The Agent's own directory is in its `/tmp`, an `emptyDir` volume, which uses the Kubernetes Node's ephemeral storage.
   While the Agent saves an output artifact, the artifact can take up to twice its size there.
 - The workspace is an `emptyDir` volume, which lasts as long as the Agent Pod.
   The Agent removes a node's directory when the node is done, except for what an Executor Plugin running as another user made in it.
