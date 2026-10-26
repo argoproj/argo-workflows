@@ -1161,7 +1161,7 @@ func (we *WorkflowExecutor) retryTaskResult(ctx context.Context, limit time.Dura
 			return false, err
 		}
 	})
-	if retryCtx.Err() == nil {
+	if err == nil || retryCtx.Err() == nil {
 		return err
 	}
 	if lastErr != nil {
