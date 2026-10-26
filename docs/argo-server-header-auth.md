@@ -1,6 +1,6 @@
 # Header Authentication
 
-> v4.0 and after
+> v4.2 and after
 
 Header authentication lets a reverse proxy authenticate your users.
 The proxy forwards each user's identity to Argo Server in HTTP headers.
