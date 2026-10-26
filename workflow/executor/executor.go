@@ -1564,6 +1564,12 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		message = "Step exceeded its deadline"
 	}
 	logger.Info(ctx, message)
+	// Fail before the kill, as before the sink existed. Only pods monitor
+	// the deadline here, and there Fail just writes the termination
+	// message; once main is killed this process finishes the task and
+	// exits, and nothing waits for this goroutine, so a message written
+	// after the kill could be lost. A sink whose Fail retries a write must
+	// not be used here: it would hold up the kill.
 	we.sink.Fail(ctx, errors.New(message)) //nolint:staticcheck // the message is shown to users as is
 
 	containerNames = slices.DeleteFunc(containerNames, common.IsArtifactPluginSidecar)
