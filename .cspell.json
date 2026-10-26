@@ -89,6 +89,7 @@
     "workflowkey",
     "workflowtemplate",
     "workflowtemplates",
-    "zstd"
+    "zstd",
+    "pgsty"
   ]
 }
