@@ -40,32 +40,13 @@ flowchart TD
     SaveContainerLogs[<a href='#save_container_logs'>save_container_logs</a>]
     UnarchiveArtifact[<a href='#unarchive_artifact'>unarchive_artifact</a>]
     ArchiveArtifact[<a href='#archive_artifact'>archive_artifact</a>]
-    RunWaitContainer --> CaptureScriptResult
-    RunSupervisorContainer --> CaptureScriptResult
     RunWorkerTask --> CaptureScriptResult
-    RunWaitContainer --> CreateTaskResult
-    RunMainContainer --> CreateTaskResult
-    RunSupervisorContainer --> CreateTaskResult
     RunWorkerTask --> CreateTaskResult
-    RunInitContainer --> LoadArtifacts
-    RunSupervisorContainer --> LoadArtifacts
     RunWorkerTask --> LoadArtifacts
-    RunWaitContainer --> PatchTaskResult
-    RunMainContainer --> PatchTaskResult
-    RunSupervisorContainer --> PatchTaskResult
     RunWorkerTask --> PatchTaskResult
-    RunWaitContainer --> PatchTaskResultLabels
-    RunMainContainer --> PatchTaskResultLabels
-    RunSupervisorContainer --> PatchTaskResultLabels
     RunWorkerTask --> PatchTaskResultLabels
-    RunWaitContainer --> SaveArtifacts
-    RunSupervisorContainer --> SaveArtifacts
     RunWorkerTask --> SaveArtifacts
-    RunWaitContainer --> SaveLogs
-    RunSupervisorContainer --> SaveLogs
     RunWorkerTask --> SaveLogs
-    RunInitContainer --> StageFiles
-    RunSupervisorContainer --> StageFiles
     RunWorkerTask --> StageFiles
     LoadArtifacts --> LoadArtifact
     SaveArtifacts --> SaveArtifact
@@ -134,33 +115,25 @@ flowchart TD
     RunMainContainer --> RunWorkload
     RunWaitContainer --> SaveArtifacts
     RunSupervisorContainer --> SaveArtifacts
-    RunWorkerTask --> SaveArtifacts
     RunWaitContainer --> SaveLogs
     RunSupervisorContainer --> SaveLogs
-    RunWorkerTask --> SaveLogs
     RunInitContainer --> StageFiles
     RunSupervisorContainer --> StageFiles
-    RunWorkerTask --> StageFiles
     RunWaitContainer --> WaitWorkload
     RunSupervisorContainer --> WaitWorkload
     RunWaitContainer --> CaptureScriptResult
     RunSupervisorContainer --> CaptureScriptResult
-    RunWorkerTask --> CaptureScriptResult
     RunWaitContainer --> CreateTaskResult
     RunMainContainer --> CreateTaskResult
     RunSupervisorContainer --> CreateTaskResult
-    RunWorkerTask --> CreateTaskResult
     RunInitContainer --> LoadArtifacts
     RunSupervisorContainer --> LoadArtifacts
-    RunWorkerTask --> LoadArtifacts
     RunWaitContainer --> PatchTaskResult
     RunMainContainer --> PatchTaskResult
     RunSupervisorContainer --> PatchTaskResult
-    RunWorkerTask --> PatchTaskResult
     RunWaitContainer --> PatchTaskResultLabels
     RunMainContainer --> PatchTaskResultLabels
     RunSupervisorContainer --> PatchTaskResultLabels
-    RunWorkerTask --> PatchTaskResultLabels
     RunMainContainer --> ProcessDataTemplate
     ReconcileTaskResults --> ReconcileTaskResult
     SaveArtifacts --> SaveArtifact
@@ -322,7 +295,8 @@ Run the wait container of a workload.
 
 #### `run_worker_task`
 
-Run one task's whole flow in a worker process (no command runs a worker yet).
+Run one task's whole flow in a worker process.
+Workflows never emits this span, because no command runs a worker.
 
 |  attribute  |              explanation              |
 |-------------|---------------------------------------|

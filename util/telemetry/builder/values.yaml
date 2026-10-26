@@ -631,8 +631,10 @@ spans:
       - name: WorkflowName
       - name: WorkflowNamespace
   - name: RunWorkerTask
-    description: Run one task's whole flow in a worker process (no command runs a worker yet)
+    description: Run one task's whole flow in a worker process
     root: true
+    extendedDescription: |
+      Workflows never emits this span, because no command runs a worker.
     attributes:
       - name: WorkflowName
       - name: WorkflowNamespace
