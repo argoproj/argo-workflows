@@ -107,7 +107,7 @@ func templatePaths(tmpl *wfv1.Template) []string {
 // plugin, or an input artifact path where linking would replace something.
 // The worker's filesystem is the host's, not a throwaway container root,
 // so nothing already there may be removed (our own link from an earlier
-// attempt is the only exception), and no input may be linked over the
+// attempt is the only exception), and no input path may overlap the
 // task's own root.
 func (we *WorkflowExecutor) checkWorker() error {
 	if we.mainDriver == nil {
@@ -130,14 +130,24 @@ func (we *WorkflowExecutor) checkWorker() error {
 		if art.Path == "" {
 			continue
 		}
-		if rel, err := filepath.Rel(art.Path, we.paths.Root); err == nil && filepath.IsLocal(rel) || rel == "." {
-			return fmt.Errorf("input artifact %s path %s contains the task's own files", art.Name, art.Path)
+		if pathsOverlap(art.Path, we.paths.Root) {
+			return fmt.Errorf("input artifact %s path %s overlaps the task's own files", art.Name, art.Path)
 		}
 		if _, err := os.Lstat(art.Path); err == nil && !we.isOwnInputLink(art) {
 			return fmt.Errorf("input artifact %s path %s already exists; a worker will not replace it", art.Name, art.Path)
 		}
 	}
 	return nil
+}
+
+// pathsOverlap reports whether a and b are the same path or one is inside
+// the other.
+func pathsOverlap(a, b string) bool {
+	within := func(dir, path string) bool {
+		rel, err := filepath.Rel(dir, path)
+		return err == nil && filepath.IsLocal(rel)
+	}
+	return within(a, b) || within(b, a)
 }
 
 // isOwnInputLink reports whether art's path is the link runMain makes for

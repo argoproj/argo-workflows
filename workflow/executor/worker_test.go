@@ -175,9 +175,17 @@ func TestCheckWorker_InputArtifactPaths(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "already exists")
 
+	// Nothing may be linked over the task's root, or inside it, where the
+	// link could replace the very file Prepare loaded.
 	ctx, we, _ = newWorkerExecutor(t, tmplWithInput("/"), time.Time{})
 	err = checkWorker.Run(ctx, we)
 	require.Error(t, err)
+	assert.Contains(t, err.Error(), "overlaps the task's own files")
+	ctx, we, _ = newWorkerExecutor(t, tmplWithInput("/"), time.Time{})
+	we.Template.Inputs.Artifacts[0].Path = filepath.Join(we.paths.InputArtifacts, "in")
+	err = checkWorker.Run(ctx, we)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "overlaps the task's own files")
 
 	ctx, we, _ = newWorkerExecutor(t, tmplWithInput(filepath.Join(t.TempDir(), "new")), time.Time{})
 	require.NoError(t, checkWorker.Run(ctx, we))
@@ -273,3 +281,12 @@ func TestRemoveTaskRoot_NoRootIsNoOp(t *testing.T) {
 // A main that ignores SIGTERM is killed after the grace period.
 // When the worker stops (its context ends), main is stopped and the task
 // records why.
+
+func TestPathsOverlap(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "root")
+	assert.True(t, pathsOverlap(root, root))
+	assert.True(t, pathsOverlap(filepath.Join(root, "a", "b"), root), "inside")
+	assert.True(t, pathsOverlap(filepath.Dir(root), root), "containing")
+	assert.False(t, pathsOverlap(root+"-sibling", root), "a shared prefix is not overlap")
+	assert.False(t, pathsOverlap(filepath.Join(filepath.Dir(root), "other"), root))
+}
