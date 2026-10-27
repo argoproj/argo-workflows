@@ -86,7 +86,7 @@ spec:
 Notes:
 
 - `H` is resolved per position, so `H H * * *` does not use the same value for the minute and the hour.
-  Two `H` in the same field resolve to different values as well, so `H,H * * * *` resolves to something like `9,30 * * * *`, which spreads two runs across the hour.
+  Two `H` in the same field are hashed separately as well, so `H,H * * * *` resolves to something like `9,30 * * * *`, which spreads two runs across the hour.
 - A bare `H` in the day of month resolves within `1-28`, so that a schedule such as `H H H * *` runs in every month.
   An explicit range may go beyond that, up to the `1-31` cron itself accepts.
 - `H` cannot be used in the `@daily` style descriptors or in `@every 1h`.
@@ -98,7 +98,7 @@ The `spec.schedules` you configure are never rewritten.
 `argo cron get` resolves `H` itself and shows the result under `ResolvedSchedules`, so it is correct as soon as the `CronWorkflow` exists and stays correct when you edit a schedule.
 
 `status.resolvedSchedules` records the same mapping on the object, for `kubectl` and GitOps tooling.
-The Controller writes it the first time it schedules the `CronWorkflow`, so it does not appear immediately:
+The Controller writes it after you create the `CronWorkflow` and again after each edit, so it does not appear immediately:
 
 ```bash
 $ kubectl get cronworkflow my-cron-wf -o jsonpath-as-json='{.status.resolvedSchedules}'
