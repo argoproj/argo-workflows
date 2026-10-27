@@ -174,7 +174,6 @@ data:
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
 | `SSO_DELEGATE_RBAC_TO_NAMESPACE`           | `bool`   | `false` | Enable [SSO RBAC Namespace Delegation](argo-server-sso.md#sso-rbac-namespace-delegation) |
 
-
 CLI parameters of the Server can be specified as environment variables with the `ARGO_` prefix.
 For example:
 
