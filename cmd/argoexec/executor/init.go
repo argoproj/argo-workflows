@@ -138,7 +138,9 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
 	process := InitProcess(ctx, clientConfig)
 	task, _, _ := (&PodSource{VarRunArgo: varRunArgo}).Next(ctx) // yields once and never errors
-	// resource and data templates run in a legacy-layout pod.
+	// This process only runs the resource or data action. The pod's plan,
+	// and every read of main's files, is in its wait or supervisor
+	// container, which takes its own layout, so the layout here is unused.
 	return process.NewExecutor(task, executor.LayoutLegacy, podSink(process)(task))
 }
 
