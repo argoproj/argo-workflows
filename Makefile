@@ -74,8 +74,11 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 30m
 TEST_RETRIES          ?= 2
-# extra flags passed to `go test` for the unit `test` target (e.g. coverage flags in CI)
+# extra flags passed to `go test` for the unit `test` target
 GOTEST_FLAGS          ?=
+# when set, the unit `test` target writes a coverage profile to this path (CI uploads it to codecov)
+COVERAGE_PROFILE      ?=
+COVERAGE_DIR          := dist/coverage
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -468,7 +471,7 @@ GOMOD_TOOLCHAIN := go$(shell sed -n 's/^go //p' go.mod)
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -648,7 +651,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.13.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.13.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.15.0/install.sh | sh -s -- -b `go env GOPATH`/bin v2.15.0
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
@@ -688,7 +691,26 @@ ifneq ($(USE_NIX), true)
 else
 	go build ./...
 endif
+ifeq ($(COVERAGE_PROFILE),)
 	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 $(GOTEST_FLAGS))
+else
+	# Coverage goes to a directory, not -coverprofile: gotestsum reruns a failed
+	# test with the same arguments, and a rerun would overwrite the profile with
+	# just that test's coverage. Every run adds its counters to the directory.
+	rm -rf $(COVERAGE_DIR) && mkdir -p $(COVERAGE_DIR)
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 -covermode=atomic $(GOTEST_FLAGS) -args -test.gocoverdir=$(CURDIR)/$(COVERAGE_DIR))
+	# Match what -coverprofile reported: each tested package's coverage, and 0%
+	# for packages without tests (which -cover also instruments in other
+	# packages' test binaries, so the directory holds counts for them too).
+	go tool covdata textfmt -i=$(COVERAGE_DIR) -o $(COVERAGE_PROFILE) \
+		-pkg=$$(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... | paste -sd, -)
+	# With no packages, go test would test the current directory, so skip it.
+	pkgs=$$(go list -f '{{if not (or .TestGoFiles .XTestGoFiles)}}{{.ImportPath}}{{end}}' ./...); \
+	if [ -n "$$pkgs" ]; then \
+		go test -covermode=atomic -coverprofile=$(COVERAGE_DIR)/untested.out $$pkgs > /dev/null && \
+		tail -n +2 $(COVERAGE_DIR)/untested.out >> $(COVERAGE_PROFILE); \
+	fi
+endif
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
@@ -792,7 +814,7 @@ start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
 	# via the container IP in a devcontainer (the devcontainer CLI doesn't
 	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
 	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
-		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) \
+		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) --base-href=$(BASE_HREF) \
 		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) \
 		$(if $(DEBUG),--debug=$(DEBUG))
 

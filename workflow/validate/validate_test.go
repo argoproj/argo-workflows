@@ -1449,6 +1449,54 @@ func TestPodNameVariable(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var nodeTaskNameVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: node-task-name-variable
+spec:
+  entrypoint: node-task-name-variable
+  templates:
+  - name: node-task-name-variable
+    retryStrategy:
+      limit: 1
+    archiveLocation:
+      s3:
+        endpoint: s3.amazonaws.com
+        bucket: my-bucket
+        key: archive/{{workflow.name}}/{{node.taskName}}
+    container:
+      image: debian:9.4
+      command: [sh, -c]
+      args: ["echo {{node.taskName}}"]
+    outputs:
+      parameters:
+      - name: task-name
+        value: "{{node.taskName}}"
+      artifacts:
+      - name: my-out
+        path: /tmp/hello_world.txt
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: path/{{node.taskName}}/hello_world.tgz
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+`
+
+// TestNodeTaskNameVariable records that a template using {{node.taskName}}
+// passes lint. It can't fail yet: lint skips variables whose root isn't in
+// common.GlobalVarValidWorkflowVariablePrefix, which has no node. entry. It
+// guards against lint rejecting the variable once node. variables are checked.
+func TestNodeTaskNameVariable(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), nodeTaskNameVariable)
+	require.NoError(t, err)
+}
+
 func TestGlobalParamWithVariable(t *testing.T) {
 	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), nil, Opts{})
 
@@ -4271,4 +4319,30 @@ func TestPodResourceClaimsValidation(t *testing.T) {
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for HTTP templates")
 	err = validate(ctx, resourceClaimsOnStepsTemplate)
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
+}
+
+// Expression keywords are not task names: validation rejects them as undefined
+// dependencies, so the DAG evaluator never has to special-case them.
+func TestDAGDependsKeywordIsNotATask(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-depends-keyword-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        template: echo
+        depends: "A.Succeeded || false"
+  - name: echo
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "invalid dependency false")
 }

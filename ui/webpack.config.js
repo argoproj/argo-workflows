@@ -114,6 +114,11 @@ const config = {
         server: process.env.ARGO_UI_SECURE === 'true' ? 'https' : 'http',
         // this needs to be disabled to allow EventSource to work
         compress: false,
+        // Show compile and runtime errors in the overlay, but leave warnings (such as Sass deprecations) in the terminal:
+        // the overlay covers the whole page and blocks every click.
+        client: {
+            overlay: {errors: true, warnings: false, runtimeErrors: true}
+        },
         // Docs: https://github.com/bripkens/connect-history-api-fallback
         historyApiFallback: {
             disableDotRule: true,

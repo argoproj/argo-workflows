@@ -1,6 +1,6 @@
 # Annotations
 
-Argo Workflows now supports annotations as a new field in workflow templates.
+You can add annotations to templates.
 
 ## Adding Annotations to a template
 
