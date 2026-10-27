@@ -91,17 +91,24 @@ func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error)
 
 // markUnwrittenTaskSetNodesError marks the nodes dispatched this operation
 // whose tasks are not yet in the WorkflowTaskSet as Error, after writing them
-// failed. Tasks already in the taskset are left to the agent.
+// failed. Tasks already in the taskset are left to the agent. The taskset is
+// read from the API server rather than the informer, which may not have seen
+// an earlier write yet; if it can't be read, nothing is marked and the next
+// reconcile tries the write again.
 func (woc *wfOperationCtx) markUnwrittenTaskSetNodesError(ctx context.Context, err error) {
-	workflowTaskSet, getErr := woc.getWorkflowTaskSet()
-	if getErr != nil {
-		woc.log.WithError(getErr).Warn(ctx, "failed to get workflowtaskset, marking all dispatched taskset nodes as error")
+	var written map[string]wfv1.Template
+	workflowTaskSet, getErr := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	switch {
+	case apierr.IsNotFound(getErr):
+	case getErr != nil:
+		woc.log.WithError(getErr).Warn(ctx, "failed to get workflowtaskset, not marking unwritten taskset nodes as error")
+		return
+	default:
+		written = workflowTaskSet.Spec.Tasks
 	}
 	for nodeID := range woc.taskSet {
-		if workflowTaskSet != nil {
-			if _, ok := workflowTaskSet.Spec.Tasks[nodeID]; ok {
-				continue
-			}
+		if _, ok := written[nodeID]; ok {
+			continue
 		}
 		node, getErr := woc.wf.Status.Nodes.Get(nodeID)
 		if getErr != nil || node.Fulfilled() {

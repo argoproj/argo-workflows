@@ -54,4 +54,5 @@ An example agent role can be found in [the quick-start manifests](https://github
 The WorkflowTaskSet holds the full template of every HTTP and Plugin node that is pending or running in a Workflow, so a wide fan-out of these templates can exceed the Kubernetes object size limit (about 1.5 MiB with the default etcd configuration).
 When the controller cannot write a task to the WorkflowTaskSet because the WorkflowTaskSet would be too large, it marks that node `Error` with a message naming the size limit.
 Tasks already in the WorkflowTaskSet keep running.
-To stay below the limit, set [`parallelism`](parallelism.md) on the Workflow or on the steps or DAG template that fans out, or reduce the size of the templates.
+[`parallelism`](parallelism.md) does not count HTTP or Plugin nodes, so it does not limit this fan-out.
+To stay below the limit, run fewer HTTP or Plugin nodes at once, or reduce the size of their templates.

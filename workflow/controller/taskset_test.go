@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -216,5 +218,54 @@ func TestTaskSetRequestEntityTooLarge(t *testing.T) {
 		added := woc.wf.Status.Nodes[newID]
 		assert.Equal(t, wfv1.NodeError, added.Phase)
 		assert.Contains(t, added.Message, "size limit")
+	})
+
+	// newPatchTooLarge returns an operation context over a workflow whose
+	// taskset, as the informer has it, holds the running task only, with
+	// patches rejected as too large and gets answered by get.
+	newPatchTooLarge := func(ctx context.Context, t *testing.T, get k8stesting.ReactionFunc) (*wfOperationCtx, string) {
+		t.Helper()
+		wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+		runningID := wf.NodeID(wf.Name + "[0].running")
+		ts := &wfv1.WorkflowTaskSet{
+			ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+			Spec: wfv1.WorkflowTaskSetSpec{
+				Tasks: map[string]wfv1.Template{runningID: *wf.GetTemplateByName("http")},
+			},
+		}
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		t.Cleanup(cancel)
+		fake := controller.wfclientset.(*fakewfclientset.Clientset)
+		fake.PrependReactor("patch", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, tooLarge
+		})
+		fake.PrependReactor("get", "workflowtasksets", get)
+		return newWorkflowOperationCtx(ctx, wf, controller), wf.NodeID(wf.Name + "[0].new")
+	}
+
+	t.Run("TaskSetNewerThanInformer", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc, newID := newPatchTooLarge(ctx, t, func(k8stesting.Action) (bool, runtime.Object, error) {
+			// an earlier write the informer has not seen yet holds both tasks
+			wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+			return true, &wfv1.WorkflowTaskSet{
+				ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+				Spec: wfv1.WorkflowTaskSetSpec{Tasks: map[string]wfv1.Template{
+					wf.NodeID(wf.Name + "[0].running"): *wf.GetTemplateByName("http"),
+					wf.NodeID(wf.Name + "[0].new"):     *wf.GetTemplateByName("http"),
+				}},
+			}, nil
+		})
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[newID].Phase, "a task the API server has is left to the agent")
+	})
+
+	t.Run("TaskSetUnreadable", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc, newID := newPatchTooLarge(ctx, t, func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInternalError(errors.New("unavailable"))
+		})
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[newID].Phase, "nothing is errored until the taskset can be read")
 	})
 }
