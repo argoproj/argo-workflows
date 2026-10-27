@@ -286,7 +286,7 @@ func (pb *podBuilder) processPodSpecPatch(ctx context.Context, tmpl *wfv1.Templa
 	podSpecPatches := []string{}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[varkeys.PodName.Template()] = pod.Name
+		setPodNameParams(localParams, pod.Name)
 	}
 	toProcess := []string{}
 	if pb.in.execWfSpec.HasPodSpecPatch() {
@@ -918,12 +918,13 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
+// and node.taskName, which for a pod is its name
 func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
 		podParams[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
 	}
-	podParams[varkeys.PodName.Template()] = pod.Name
+	setPodNameParams(podParams, pod.Name)
 	specBytes, err := json.Marshal(pod)
 	if err != nil {
 		return nil, err
