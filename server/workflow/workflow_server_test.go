@@ -1577,7 +1577,7 @@ func TestListWorkflowsContinuesPastLiveWorkflows(t *testing.T) {
 	})
 
 	var liveObjs []runtime.Object
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		liveObjs = append(liveObjs, &v1alpha1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("live-wf-%02d", i),

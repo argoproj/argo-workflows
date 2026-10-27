@@ -276,10 +276,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		// the archive table does not contain the live rows the absolute offset counts.
 		hasMore := int64(options.Offset)+int64(len(wfs)) < liveWfCount
 		if !hasMore {
-			archiveOffset := options.Offset + len(wfs) - int(liveWfCount)
-			if archiveOffset < 0 {
-				archiveOffset = 0
-			}
+			archiveOffset := max(options.Offset+len(wfs)-int(liveWfCount), 0)
 			hasMore, err = s.wfArchive.HasMoreWorkflows(ctx, options.WithOffset(archiveOffset))
 			if err != nil {
 				return nil, sutils.ToStatusError(err, codes.Internal)
