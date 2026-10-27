@@ -142,19 +142,28 @@ func TestSessionProxyFailedReconnectIsShared(t *testing.T) {
 // caller that joins it stops waiting when its own ctx ends.
 func TestSessionProxyReconnectDoesNotBlockOtherCallers(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	cfg, dials := droppingDatabase(t)
-	sess := &lifecycleSessionStub{}
-	proxy := &SessionProxy{
-		sess:     sess,
-		dbConfig: &cfg, username: "argo", password: "argo",
-		maxRetries: 2, baseDelay: 500 * time.Millisecond, maxDelay: 500 * time.Millisecond, retryMultiple: 1,
+	// A database that accepts connections but never answers keeps the reconnect
+	// busy until connect_timeout, however the platform reports the failure.
+	sl := newSilentListener(t)
+	host, port := sl.hostPort(t)
+	cfg := config.DBConfig{
+		PostgreSQL: &config.PostgreSQLConfig{
+			DatabaseConfig: config.DatabaseConfig{Database: "argo", Host: host, Port: port},
+		},
+		ConnectionTimeoutSeconds: 1,
 	}
+	sess := &lifecycleSessionStub{}
+	proxy := &SessionProxy{sess: sess, dbConfig: &cfg, username: "argo", password: "argo", retryMultiple: 1}
 
 	reconnectDone := make(chan error, 1)
 	go func() {
 		reconnectDone <- proxy.With(ctx, func(db.Session) error { return io.ErrUnexpectedEOF })
 	}()
-	require.Eventually(t, func() bool { return dials.Load() > 0 }, 5*time.Second, time.Millisecond)
+	require.Eventually(t, func() bool {
+		sl.mu.Lock()
+		defer sl.mu.Unlock()
+		return len(sl.conns) > 0
+	}, 5*time.Second, time.Millisecond)
 
 	start := time.Now()
 	assert.Same(t, sess, proxy.Session(ctx), "Session() must not wait for the reconnect")
