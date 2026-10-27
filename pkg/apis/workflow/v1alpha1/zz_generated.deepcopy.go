@@ -6,7 +6,7 @@
 package v1alpha1
 
 import (
-	json "encoding/json"
+	jsontext "encoding/json/jsontext"
 
 	v1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -2449,7 +2449,7 @@ func (in *Object) DeepCopyInto(out *Object) {
 	*out = *in
 	if in.Value != nil {
 		in, out := &in.Value, &out.Value
-		*out = make(json.RawMessage, len(*in))
+		*out = make(jsontext.Value, len(*in))
 		copy(*out, *in)
 	}
 	return

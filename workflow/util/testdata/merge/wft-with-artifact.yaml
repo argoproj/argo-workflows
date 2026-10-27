@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-artifact
+spec:
+  entrypoint: argosay
+  arguments:
+    artifacts:
+      - name: my-uploaded-file
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: input-file/placeholder
+          accessKeySecret:
+            name: s3-creds
+            key: accessKey
+          secretKeySecret:
+            name: s3-creds
+            key: secretKey
+  templates:
+    - name: argosay
+      inputs:
+        artifacts:
+          - name: my-uploaded-file
+            path: /tmp/file
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo 'artifact loaded'"]
