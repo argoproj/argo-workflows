@@ -329,6 +329,102 @@ spec:
 		"Should be Succeeded once outputs.parameters are populated")
 }
 
+// TestBug_AssessNodeStatus_TimedOutNodeStaysFailed verifies that a pod node
+// failed by pendingTimeout is not set back to Pending by pod reconciliation
+// while its pod is still terminating.
+//
+// Regression #17300: the timeout marks the node Failed ("timeout"), sets
+// finishedAt, and deletes the pod asynchronously. The pod can still be
+// Pending at the next reconcile (e.g. terminating from PodInitializing),
+// and assessNodeStatus used to demote the node to Pending, keeping the
+// finishedAt from the timeout. Once the pod was gone, the missing-pod
+// check skipped the Pending node and nothing ever corrected it.
+func TestBug_AssessNodeStatus_TimedOutNodeStaysFailed(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pending-timeout-race
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      pendingTimeout: 10s
+      container:
+        image: alpine:3.20
+        command: ['true']
+`
+
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	nodeID := wf.Name
+	woc.wf.Status.Nodes = make(wfv1.Nodes)
+	woc.wf.Status.Nodes[nodeID] = wfv1.NodeStatus{
+		ID:           nodeID,
+		Name:         wf.Name,
+		TemplateName: "main",
+		Phase:        wfv1.NodeFailed,
+		Message:      "timeout",
+		Type:         wfv1.NodeTypePod,
+		StartedAt:    metav1.Now(),
+		FinishedAt:   metav1.Now(),
+	}
+
+	// The pod was deleted by the timeout but is still terminating, so it is
+	// still Pending.
+	now := metav1.Now()
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              wf.Name,
+			Namespace:         "default",
+			DeletionTimestamp: &now,
+			Labels: map[string]string{
+				"workflows.argoproj.io/workflow": wf.Name,
+			},
+		},
+		Status: apiv1.PodStatus{
+			Phase: apiv1.PodPending,
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name: "main",
+					State: apiv1.ContainerState{
+						Waiting: &apiv1.ContainerStateWaiting{Reason: "PodInitializing"},
+					},
+				},
+			},
+		},
+	}
+
+	node := woc.wf.Status.Nodes[nodeID]
+	updated := woc.assessNodeStatus(ctx, pod, &node)
+	assert.Nil(t, updated, "a fulfilled node must not be demoted to Pending by a pod that has not finished")
+
+	// A node that is still in flight is assessed as Pending as usual.
+	running := node.DeepCopy()
+	running.Phase = wfv1.NodeRunning
+	running.Message = ""
+	running.FinishedAt = metav1.Time{}
+	updated = woc.assessNodeStatus(ctx, pod, running)
+	require.NotNil(t, updated)
+	assert.Equal(t, wfv1.NodePending, updated.Phase)
+
+	// A pod that has finished may still replace the recorded phase.
+	finishedPod := pod.DeepCopy()
+	finishedPod.DeletionTimestamp = nil
+	finishedPod.Status.Phase = apiv1.PodSucceeded
+	finishedPod.Status.ContainerStatuses[0].State = apiv1.ContainerState{
+		Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0},
+	}
+	updated = woc.assessNodeStatus(ctx, finishedPod, &node)
+	require.NotNil(t, updated)
+	assert.Equal(t, wfv1.NodeSucceeded, updated.Phase)
+}
+
 // TestBug_Retry_AllowsUnresolvedTags pins the contract of the retry-path
 // SubstituteParams call (operator_template_execution.go, handleRetries).
 //
