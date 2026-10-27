@@ -1,7 +1,5 @@
 # HTTP Template
 
-> v3.2 and after
-
 `HTTP Template` is a type of template which can execute HTTP Requests.
 The body of the response is automatically exported into the `result` output parameter.
 
@@ -39,7 +37,7 @@ spec:
         #  response.statusCode: int, the response status code
         #  response.body: string, the response body
         #  response.headers: map[string][]string, the response headers
-        successCondition: "response.body contains \"google\"" # available since v3.3
+        successCondition: "response.body contains \"google\""
         body: "test body" # Change request body
 ```
 

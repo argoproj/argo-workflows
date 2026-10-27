@@ -19,7 +19,7 @@ type podLayout interface {
 	// auxContainer builds the auxiliary executor container that runs alongside
 	// the user containers: the `wait` container in the legacy layout, or the
 	// `supervisor` container in the init-less layout.
-	auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) *apiv1.Container
+	auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container
 
 	// templateRequiresAuxContainer reports whether the layout needs the aux
 	// container for a template that build's layout-independent rule would skip
@@ -37,7 +37,7 @@ type podLayout interface {
 	// layout (the supervisor runs as a regular container and takes on the
 	// pre-main responsibilities, so init-less pods schedule with zero init
 	// containers).
-	initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) ([]apiv1.Container, error)
+	initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error)
 
 	// argoexecBinaryPath returns where emissary finds the argoexec binary in a
 	// user container: copied to /var/run/argo by the init container (legacy),
@@ -51,7 +51,7 @@ type podLayout interface {
 	// wireArtifactPlugins attaches artifact-plugin containers/mounts to the pod
 	// using the layout's scheme: plugin init containers + sidecars driven by
 	// `wait` (legacy), or supervisor-driven plugin sidecars (init-less).
-	wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error
+	wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error
 
 	// decorateUserContainer applies layout-specific per-user-container changes.
 	// In the init-less layout this mounts the argoexec-bin image volume and (for
@@ -77,8 +77,9 @@ func newPodLayout(initless bool) podLayout {
 // outputs.
 type legacyLayout struct{}
 
-func (legacyLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) *apiv1.Container {
-	return pb.newWaitContainer(ctx, tmpl)
+// auxContainer is the `wait` container.
+func (legacyLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
+	return newWaitContainer(tmpl, execCfg, pb.deps.getExecutorLogOpts(ctx))
 }
 
 func (legacyLayout) templateRequiresAuxContainer(tmpl *wfv1.Template) bool {
@@ -92,8 +93,10 @@ func (legacyLayout) mainNeedsTemplateEnv(hasAuxCtr bool) bool {
 	return false
 }
 
-func (legacyLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) ([]apiv1.Container, error) {
-	return pb.deps.newInitContainers(ctx, tmpl)
+// initContainers are the standard init container and one per input artifact
+// plugin.
+func (legacyLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error) {
+	return pb.newInitContainers(ctx, tmpl, execCfg)
 }
 
 func (legacyLayout) argoexecBinaryPath() string {
@@ -104,8 +107,10 @@ func (legacyLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
 	return nil
 }
 
-func (legacyLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error {
-	return pb.deps.addArtifactPluginsLegacy(ctx, pod, tmpl, config)
+// wireArtifactPlugins adds the plugin init containers and the sidecars `wait`
+// drives.
+func (legacyLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error {
+	return pb.deps.addArtifactPluginsLegacy(ctx, pod, tmpl, config, execCfg)
 }
 
 func (legacyLayout) decorateUserContainer(c *apiv1.Container, hasAuxCtr bool) {}
@@ -116,8 +121,9 @@ func (legacyLayout) decorateUserContainer(c *apiv1.Container, hasAuxCtr bool) {}
 // argoexec binary reaches user containers through an image volume.
 type initlessLayout struct{}
 
-func (initlessLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) *apiv1.Container {
-	return pb.deps.newSupervisorContainer(ctx, tmpl)
+// auxContainer is the `supervisor` container.
+func (initlessLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) *apiv1.Container {
+	return newSupervisorContainer(tmpl, execCfg, pb.deps.getExecutorLogOpts(ctx))
 }
 
 func (initlessLayout) templateRequiresAuxContainer(tmpl *wfv1.Template) bool {
@@ -136,9 +142,10 @@ func (initlessLayout) mainNeedsTemplateEnv(hasAuxCtr bool) bool {
 	return !hasAuxCtr
 }
 
-func (initlessLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) ([]apiv1.Container, error) {
-	// Init-less pods schedule with zero init containers; the supervisor performs
-	// the pre-main responsibilities as a regular container.
+// initContainers is always empty: init-less pods schedule with zero init
+// containers, and the supervisor performs the pre-main responsibilities as a
+// regular container.
+func (initlessLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template, execCfg execContainerConfig) ([]apiv1.Container, error) {
 	return nil, nil
 }
 
@@ -147,11 +154,12 @@ func (initlessLayout) argoexecBinaryPath() string {
 }
 
 func (initlessLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
-	return []apiv1.Volume{pb.deps.buildArgoBinVolume()}
+	return []apiv1.Volume{argoBinVolume(pb.in.execCfg.image, pb.in.execCfg.imagePullPolicy)}
 }
 
-func (initlessLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error {
-	return pb.deps.addArtifactPluginsInitless(ctx, pod, tmpl)
+// wireArtifactPlugins adds the supervisor-driven plugin sidecars.
+func (initlessLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config, execCfg execContainerConfig) error {
+	return pb.deps.addArtifactPluginsInitless(ctx, pod, tmpl, execCfg)
 }
 
 func (initlessLayout) decorateUserContainer(c *apiv1.Container, hasAuxCtr bool) {

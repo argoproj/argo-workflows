@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: step-retry
+spec:
+  entrypoint: step-retry
+  templates:
+  - name: step-retry
+    retryStrategy:
+      limit: 1
+    steps:
+      - - name: whalesay-success
+          arguments:
+            parameters:
+            - name: message
+              value: success
+          template: whalesay
+      - - name: whalesay-failure
+          arguments:
+            parameters:
+            - name: message
+              value: failure
+          template: whalesay
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.message}}"]

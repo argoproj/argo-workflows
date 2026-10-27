@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -1445,6 +1446,54 @@ spec:
 
 func TestPodNameVariable(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), podNameVariable)
+	require.NoError(t, err)
+}
+
+var nodeTaskNameVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: node-task-name-variable
+spec:
+  entrypoint: node-task-name-variable
+  templates:
+  - name: node-task-name-variable
+    retryStrategy:
+      limit: 1
+    archiveLocation:
+      s3:
+        endpoint: s3.amazonaws.com
+        bucket: my-bucket
+        key: archive/{{workflow.name}}/{{node.taskName}}
+    container:
+      image: debian:9.4
+      command: [sh, -c]
+      args: ["echo {{node.taskName}}"]
+    outputs:
+      parameters:
+      - name: task-name
+        value: "{{node.taskName}}"
+      artifacts:
+      - name: my-out
+        path: /tmp/hello_world.txt
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: path/{{node.taskName}}/hello_world.tgz
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+`
+
+// TestNodeTaskNameVariable records that a template using {{node.taskName}}
+// passes lint. It can't fail yet: lint skips variables whose root isn't in
+// common.GlobalVarValidWorkflowVariablePrefix, which has no node. entry. It
+// guards against lint rejecting the variable once node. variables are checked.
+func TestNodeTaskNameVariable(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), nodeTaskNameVariable)
 	require.NoError(t, err)
 }
 
@@ -3633,6 +3682,86 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
 }
 
+var dynamicTemplateRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-template-ref-name
+spec:
+  templates:
+  - name: main
+    inputs:
+      parameters:
+        - name: workflow-name
+    steps:
+      - - name: run
+          templateRef:
+            name: "{{inputs.parameters.workflow-name}}"
+            template: main
+`
+
+func TestDynamicTemplateRefName(t *testing.T) {
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), dynamicTemplateRefName, Opts{})
+	require.NoError(t, err)
+}
+
+var dynamicClusterTemplateRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-cluster-template-ref-name
+spec:
+  templates:
+  - name: main
+    inputs:
+      parameters:
+        - name: workflow-name
+    dag:
+      tasks:
+        - name: run
+          templateRef:
+            name: "prefix-{{inputs.parameters.workflow-name}}"
+            template: main
+            clusterScope: true
+`
+
+// plainErrorWorkflowTemplateGetter returns an uncoded error like the offline lint client.
+type plainErrorWorkflowTemplateGetter struct{}
+
+func (plainErrorWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
+	return nil, fmt.Errorf("couldn't find workflow template %q", name)
+}
+
+// plainErrorClusterWorkflowTemplateGetter returns an uncoded error like the offline lint client.
+type plainErrorClusterWorkflowTemplateGetter struct{}
+
+func (plainErrorClusterWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return nil, fmt.Errorf("couldn't find cluster workflow template %q", name)
+}
+
+func TestDynamicTemplateRefNameWithUncodedGetterErrors(t *testing.T) {
+	getters := map[string]struct {
+		wftmplGetter  templateresolution.WorkflowTemplateNamespacedGetter
+		cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter
+	}{
+		"offline":   {plainErrorWorkflowTemplateGetter{}, plainErrorClusterWorkflowTemplateGetter{}},
+		"forbidden": {plainErrorWorkflowTemplateGetter{}, &templateresolution.NullClusterWorkflowTemplateGetter{}},
+	}
+	specs := map[string]string{
+		"steps":             dynamicTemplateRefName,
+		"dag cluster scope": dynamicClusterTemplateRefName,
+	}
+	for getterName, g := range getters {
+		for specName, spec := range specs {
+			t.Run(getterName+"/"+specName, func(t *testing.T) {
+				wftmpl := unmarshalWftmpl(spec)
+				err := WorkflowTemplate(logging.TestContext(t.Context()), g.wftmplGetter, g.cwftmplGetter, wftmpl, nil, Opts{})
+				require.NoError(t, err)
+			})
+		}
+	}
+}
+
 var inlineWorkflowTemplate14329 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -4190,4 +4319,30 @@ func TestPodResourceClaimsValidation(t *testing.T) {
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for HTTP templates")
 	err = validate(ctx, resourceClaimsOnStepsTemplate)
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
+}
+
+// Expression keywords are not task names: validation rejects them as undefined
+// dependencies, so the DAG evaluator never has to special-case them.
+func TestDAGDependsKeywordIsNotATask(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-depends-keyword-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        template: echo
+        depends: "A.Succeeded || false"
+  - name: echo
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "invalid dependency false")
 }

@@ -1,7 +1,5 @@
 # Tolerating Pod Deletion
 
-> v2.12 and after
-
 In Kubernetes, pods are cattle and can be deleted at any time. Deletion could be manually via `kubectl delete pod`, during a node drain, or for other reasons.
 
 This can be very inconvenient, your workflow will error, but for reasons outside of your control.
