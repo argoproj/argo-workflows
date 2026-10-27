@@ -1718,7 +1718,9 @@ func TestPodDefaultContainer(t *testing.T) {
 	assert.Equal(t, "b", pod.Annotations[common.AnnotationKeyDefaultContainer])
 }
 
-func TestGetDeadline(t *testing.T) {
+// TestCreateWorkflowPodDeadline checks the execution deadline reaches the pod as
+// ARGO_DEADLINE, read back by getPodDeadline.
+func TestCreateWorkflowPodDeadline(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
@@ -1734,6 +1736,39 @@ func TestGetDeadline(t *testing.T) {
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
 	deadline, _ = getPodDeadline(pod)
 	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
+}
+
+// TestExecContainerConfig checks the live and snapshot exec container configs
+// are both read from the controller and the workflow, and that only the live
+// one resolves the executor service account (build sets it on the snapshot's).
+func TestExecContainerConfig(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.cliExecutorImage = "argoexec:test"
+	controller.cliExecutorImagePullPolicy = string(apiv1.PullAlways)
+	controller.Config.InstanceID = "instance"
+	controller.Config.KubeConfig = &config.KubeConfig{SecretName: "kc"}
+	controller.Config.Executor = &apiv1.Container{Args: []string{"--x"}}
+
+	tmpl := &wfv1.Template{Name: "t", Container: &apiv1.Container{Image: "my-image"}, Executor: &wfv1.ExecutorConfig{ServiceAccountName: "exec-sa"}}
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "wf", UID: "wf-uid"},
+		Spec:       wfv1.WorkflowSpec{Entrypoint: "t", Templates: []wfv1.Template{*tmpl}},
+	}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	want := execContainerConfig{
+		image:           "argoexec:test",
+		imagePullPolicy: apiv1.PullAlways,
+		executor:        controller.Config.Executor,
+		kubeConfig:      controller.Config.KubeConfig,
+		instanceID:      "instance",
+		workflowUID:     "wf-uid",
+	}
+	assert.Equal(t, want, woc.newPodBuilder(ctx, "wf", nil, tmpl, &createWorkflowPodOpts{}).in.execCfg)
+	want.executorServiceAccountName = "exec-sa"
+	assert.Equal(t, want, woc.execContainerConfig(tmpl))
 }
 
 func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
@@ -2099,7 +2134,7 @@ func TestArtifactPluginSidecar(t *testing.T) {
 		ctx, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 
-		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg)
+		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg, woc.execContainerConfig(tmpl))
 		require.NoError(t, err)
 
 		// Volumes are normally added in addOutputArtifactsVolumes
@@ -2224,7 +2259,8 @@ func TestArtifactPluginSidecar(t *testing.T) {
 
 		// Skip workflow validation by not calling setExecWorkflow
 		// Test plugin init container creation directly
-		initContainers, err := woc.newInitContainers(ctx, tmpl)
+		pb := woc.newPodBuilder(ctx, "test-workflow", nil, tmpl, &createWorkflowPodOpts{})
+		initContainers, err := pb.newInitContainers(ctx, tmpl, pb.execContainerConfig(""))
 		require.NoError(t, err)
 
 		// Should have standard init container plus 2 plugin init containers
