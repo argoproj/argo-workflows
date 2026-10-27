@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -22,6 +23,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
+
+// agentPodRecreationDelay is how long after a Failed agent pod was created the
+// controller replaces it, so an agent pod that keeps failing is replaced at
+// most this often.
+const agentPodRecreationDelay = time.Minute
 
 func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
@@ -50,9 +56,46 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Info(ctx, "updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(ctx, pod)
-	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+	if newPhase != wfv1.NodeFailed && newPhase != wfv1.NodeError {
+		return
 	}
+	err := fmt.Errorf(`agent pod failed with reason:"%s"`, message)
+	if newPhase == wfv1.NodeFailed && woc.canRecreateAgentPod() {
+		woc.recreateAgentPod(ctx, pod, err)
+		return
+	}
+	woc.markTaskSetNodesError(ctx, err)
+}
+
+// canRecreateAgentPod reports whether a Failed agent pod may be replaced: the
+// controller creates the agent pods, and the workflow is not ending, so the
+// replacement would still have work to do.
+func (woc *wfOperationCtx) canRecreateAgentPod() bool {
+	return !woc.controller.Config.DisableAgentPodCreation &&
+		!woc.wf.Status.Fulfilled() &&
+		!woc.GetShutdownStrategy().Enabled() &&
+		(woc.workflowDeadline == nil || time.Now().UTC().Before(*woc.workflowDeadline))
+}
+
+// recreateAgentPod deletes a Failed agent pod, once agentPodRecreationDelay
+// has passed since it was created, so that reconcileAgentPod creates a
+// replacement. Like an agent container the kubelet restarts, the replacement
+// runs every task that has no result yet. There is no limit: as with a
+// crash-looping container, a task that never gets a result fails by its own
+// deadline or timeout. Each replacement is recorded as a Warning event on the
+// workflow, with the reason the pod failed.
+func (woc *wfOperationCtx) recreateAgentPod(ctx context.Context, pod *apiv1.Pod, cause error) {
+	log := woc.log.WithField("podName", pod.Name)
+	if wait := time.Until(pod.CreationTimestamp.Add(agentPodRecreationDelay)); wait > 0 {
+		log.WithField("wait", wait).Info(ctx, "Agent pod failed, waiting before recreating it")
+		woc.requeueAfter(wait)
+		return
+	}
+	log.Info(ctx, "Agent pod failed, recreating it")
+	woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "AgentPodFailed", fmt.Sprintf("%v; recreating it", cause))
+	// By UID, so that a replacement that already exists is never deleted.
+	woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+	woc.requeue()
 }
 
 func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {
