@@ -33,10 +33,23 @@ const defaultTemplate: Template = {
     }
 };
 
+// Parameters for the entrypoint selected in the dropdown. `<default>` is the synthetic
+// option and contributes no template parameters; workflow arguments are tracked separately.
+function parametersForEntrypoint(templates: Template[], entrypoint: string): Parameter[] {
+    return templates.find(template => template.name === entrypoint)?.inputs?.parameters || [];
+}
+
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
-    const [parameters, setParameters] = useState<Parameter[]>([]);
+    const templates = useMemo(() => {
+        return [defaultTemplate].concat(props.templates);
+    }, [props.templates]);
+    const initialEntrypoint = props.entrypoint || workflowEntrypoint;
+    const [entrypoint, setEntrypoint] = useState(initialEntrypoint);
+    // The dropdown is pre-selected from spec.entrypoint, but its onChange is the only
+    // other writer of this list. Seed it (and refresh it when the template changes)
+    // so those inputs show up without re-selecting the same entrypoint.
+    const [parameters, setParameters] = useState<Parameter[]>(() => parametersForEntrypoint(templates, initialEntrypoint));
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
@@ -78,9 +91,11 @@ export function SubmitWorkflowPanel(props: Props) {
         setWorkflowParameters(updatedParams);
     }, [props.history, setWorkflowParameters]);
 
-    const templates = useMemo(() => {
-        return [defaultTemplate].concat(props.templates);
-    }, [props.templates]);
+    useEffect(() => {
+        const nextEntrypoint = props.entrypoint || workflowEntrypoint;
+        setEntrypoint(nextEntrypoint);
+        setParameters(parametersForEntrypoint(templates, nextEntrypoint));
+    }, [props.entrypoint, templates]);
 
     const templateOptions = useMemo(() => {
         return templates.map(t => ({
@@ -134,9 +149,8 @@ export function SubmitWorkflowPanel(props: Props) {
                         value={entrypoint}
                         options={templateOptions}
                         onChange={selected => {
-                            const selectedTemp = templates.find(t => t.name === selected.value);
                             setEntrypoint(selected.value);
-                            setParameters(selectedTemp?.inputs?.parameters || []);
+                            setParameters(parametersForEntrypoint(templates, selected.value));
                         }}
                     />
                 </div>
