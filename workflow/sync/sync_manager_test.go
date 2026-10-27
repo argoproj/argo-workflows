@@ -1018,8 +1018,8 @@ func TestReleaseAllReleasesEverySemaphoreHolder(t *testing.T) {
 		"semaphore-tmpl-level-xjvln-2790796867",
 	}
 	for _, nodeName := range nodeNames {
-		status, _, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, nodeName, tmpl.Synchronization)
-		require.NoError(t, err)
+		status, _, msg, failedLockName, acquireErr := syncManager.TryAcquire(ctx, wf, nodeName, tmpl.Synchronization)
+		require.NoError(t, acquireErr)
 		assert.Empty(t, msg)
 		assert.Empty(t, failedLockName)
 		assert.True(t, status)
