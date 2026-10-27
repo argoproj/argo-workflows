@@ -377,7 +377,7 @@ jobs:
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version: '8'
-          distribution: adopt
+          distribution: temurin
           cache: maven
       - name: Set up k3d cluster and E2E tooling
         uses: ./.github/actions/e2e-cluster-up
