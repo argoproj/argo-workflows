@@ -986,9 +986,8 @@ func TestReleaseAllReleasesEverySemaphoreHolder(t *testing.T) {
 	require.NoError(t, err)
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
-	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
-	}, WorkflowExistenceFunc, false)
-	require.NoError(t, err)
+	syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	}, WorkflowExistenceFunc)
 
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
 	tmpl := wf.Spec.Templates[2]
