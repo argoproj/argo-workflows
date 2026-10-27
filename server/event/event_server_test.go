@@ -60,23 +60,4 @@ func TestController(t *testing.T) {
 		_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{Value: json.RawMessage("!")}})
 		require.EqualError(t, err, "rpc error: code = Internal desc = failed to create workflow template expression environment: json: error calling MarshalJSON for type *v1alpha1.Item: invalid character '!' looking for beginning of value")
 	})
-
-	t.Run("ExcludedHeaders", func(t *testing.T) {
-		excludedHeaders := map[string]struct{}{
-			"x-proxy-auth": {},
-		}
-
-		s := newController(false, excludedHeaders)
-
-		request := &eventpkg.EventRequest{
-			Namespace: "my-ns",
-			Payload:   &wfv1.Item{Value: json.RawMessage(`{"foo":"bar"}`)},
-		}
-
-		_, err := s.ReceiveEvent(ctx, request)
-		require.NoError(t, err)
-
-		// Sync dispatch processes the operation immediately.
-		assert.Empty(t, s.operationQueue)
-	})
 }

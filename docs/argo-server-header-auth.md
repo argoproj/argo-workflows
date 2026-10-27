@@ -74,7 +74,7 @@ Argo Server handles the secret in three ways:
 * If the secret is missing, Argo Server ignores the identity headers and treats the request as having no header credentials.
 
 Argo Server reads the secret at startup, so restart it after you rotate the secret.
-Update the proxy and the Secret together, because requests with the old value fail until the restart completes.
+Update the proxy and the Secret together, because requests with the new value fail until the restart completes.
 
 ### Trusting headers without authentication
 
