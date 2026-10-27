@@ -83,16 +83,14 @@ func TestSessionProxyFailedReconnectKeepsProxyOpen(t *testing.T) {
 	assert.Zero(t, sess.closeCalls, "a failed reconnect must not close the old session")
 }
 
-// While the database is down, callers that fail on the same session must share
-// one reconnect instead of each running a full retry budget under the lock.
-func TestSessionProxyFailedReconnectIsShared(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	// A "database" that accepts and drops every connection, so each dial is
-	// counted and fails with a network error.
-	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", "127.0.0.1:0")
+// droppingDatabase listens like a database that accepts and drops every
+// connection, so each dial is counted and fails with a network error.
+func droppingDatabase(t *testing.T) (config.DBConfig, *atomic.Int32) {
+	t.Helper()
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	t.Cleanup(func() { ln.Close() })
-	var dials atomic.Int32
+	dials := &atomic.Int32{}
 	go func() {
 		for {
 			conn, acceptErr := ln.Accept()
@@ -107,9 +105,16 @@ func TestSessionProxyFailedReconnectIsShared(t *testing.T) {
 	require.NoError(t, err)
 	port, err := strconv.Atoi(portStr)
 	require.NoError(t, err)
-	cfg := config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{
+	return config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{
 		DatabaseConfig: config.DatabaseConfig{Database: "argo", Host: host, Port: port},
-	}}
+	}}, dials
+}
+
+// While the database is down, callers that fail on the same session must share
+// one reconnect instead of each running a full retry budget in turn.
+func TestSessionProxyFailedReconnectIsShared(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cfg, dials := droppingDatabase(t)
 	proxy := &SessionProxy{
 		sess:     &lifecycleSessionStub{},
 		dbConfig: &cfg, username: "argo", password: "argo",
@@ -131,6 +136,41 @@ func TestSessionProxyFailedReconnectIsShared(t *testing.T) {
 	}
 	assert.Equal(t, budgetDials, dials.Load(), "queued callers should share one reconnect")
 	assert.Less(t, time.Since(start), 2*budgetTime+100*time.Millisecond)
+}
+
+// A reconnect in progress must not hold up callers that do not need it, and a
+// caller that joins it stops waiting when its own ctx ends.
+func TestSessionProxyReconnectDoesNotBlockOtherCallers(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cfg, dials := droppingDatabase(t)
+	sess := &lifecycleSessionStub{}
+	proxy := &SessionProxy{
+		sess:     sess,
+		dbConfig: &cfg, username: "argo", password: "argo",
+		maxRetries: 2, baseDelay: 500 * time.Millisecond, maxDelay: 500 * time.Millisecond, retryMultiple: 1,
+	}
+
+	reconnectDone := make(chan error, 1)
+	go func() {
+		reconnectDone <- proxy.With(ctx, func(db.Session) error { return io.ErrUnexpectedEOF })
+	}()
+	require.Eventually(t, func() bool { return dials.Load() > 0 }, 5*time.Second, time.Millisecond)
+
+	start := time.Now()
+	assert.Same(t, sess, proxy.Session(ctx), "Session() must not wait for the reconnect")
+	require.NoError(t, proxy.With(ctx, func(current db.Session) error {
+		assert.Same(t, sess, current)
+		return nil
+	}), "an operation that works must not wait for the reconnect")
+
+	shortCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
+	defer cancel()
+	err := proxy.With(shortCtx, func(db.Session) error { return io.ErrUnexpectedEOF })
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 400*time.Millisecond, "callers must not wait for the whole retry budget")
+
+	require.ErrorContains(t, <-reconnectDone, "reconnection failed")
+	assert.Zero(t, sess.closeCalls, "a failed reconnect must not close the old session")
 }
 
 func TestSessionProxyFailedExplicitReconnectPreservesClose(t *testing.T) {

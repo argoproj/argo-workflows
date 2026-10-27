@@ -328,7 +328,7 @@ type DBReconnectConfig struct {
 	MaxRetries int `json:"maxRetries"`
 	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
 	BaseDelaySeconds int `json:"baseDelaySeconds"`
-	// MaxDelaySeconds the absolute upper limit to wait before retrying. After a reconnect has failed, operations that hit a network error return that failure without reconnecting for this long. Default: 30
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
 	MaxDelaySeconds int `json:"maxDelaySeconds"`
 	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
 	RetryMultiple float64 `json:"retryMultiple"`
