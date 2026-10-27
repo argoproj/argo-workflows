@@ -18,8 +18,6 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -36,44 +34,128 @@ import (
 type AgentExecutor struct {
 	WorkflowName      string
 	workflowUID       string
-	ClientSet         kubernetes.Interface
 	WorkflowInterface workflow.Interface
-	RESTClient        rest.Interface
-	Namespace         string
-	consideredTasks   *sync.Map
-	plugins           []executorplugins.TemplateExecutor
+	process           *Process
 	taskWorkers       int
 	requeueTime       time.Duration
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-// NewAgentExecutor instantiates a new agent executor. taskWorkers and
-// requeueTime are parsed from the environment (ARGO_AGENT_TASK_WORKERS,
-// ARGO_AGENT_PATCH_RATE) at the composition root in cmd/argoexec.
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor, taskWorkers int, requeueTime time.Duration) *AgentExecutor {
+// NewAgentExecutor instantiates a new agent executor, whose tasks run in
+// process. taskWorkers and requeueTime are parsed from the environment
+// (ARGO_AGENT_TASK_WORKERS, ARGO_AGENT_PATCH_RATE) at the composition root
+// in cmd/argoexec.
+func NewAgentExecutor(process *Process, wfClient workflow.Interface, workflowName, workflowUID string, taskWorkers int, requeueTime time.Duration) *AgentExecutor {
 	return &AgentExecutor{
-		ClientSet:         clientSet,
-		RESTClient:        restClient,
-		Namespace:         namespace,
 		WorkflowName:      workflowName,
 		workflowUID:       workflowUID,
-		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		consideredTasks:   &sync.Map{},
-		plugins:           plugins,
+		WorkflowInterface: wfClient,
+		process:           process,
 		taskWorkers:       taskWorkers,
 		requeueTime:       requeueTime,
 	}
 }
 
-type task struct {
-	NodeID   string
-	Template wfv1.Template
-}
-
 type response struct {
 	NodeID string
 	Result *wfv1.NodeResult
+}
+
+// taskSetSource yields the tasks of the workflow's task set as the watch
+// delivers them. Every task worker's harness shares it.
+type taskSetSource struct {
+	tasks chan Task
+	// considered holds the node IDs already yielded, so a task is run once
+	// however many task set events list it, until its plugin asks for it
+	// again.
+	considered sync.Map
+}
+
+var _ TaskSource = &taskSetSource{}
+
+// Next returns the next task not yet considered. It is exhausted once ctx
+// is done.
+func (s *taskSetSource) Next(ctx context.Context) (Task, bool, error) {
+	for {
+		select {
+		case <-ctx.Done():
+			return Task{}, false, nil
+		case task := <-s.tasks:
+			// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
+			// than once unintentionally.
+			if _, ok := s.considered.LoadOrStore(task.Config.NodeID, true); ok {
+				logging.RequireLoggerFromContext(ctx).WithField("nodeID", task.Config.NodeID).Info(ctx, "Task is already considered")
+				continue
+			}
+			return task, true, nil
+		}
+	}
+}
+
+// requeue yields task again once after has passed.
+func (s *taskSetSource) requeue(task Task, after time.Duration) {
+	time.AfterFunc(after, func() {
+		s.considered.Delete(task.Config.NodeID)
+		s.tasks <- task
+	})
+}
+
+// sink returns the result sink for a task: results join the agent's
+// batched task set status patch.
+func (s *taskSetSource) sink(responses chan<- response) func(Task) ResultSink {
+	return func(task Task) ResultSink {
+		return &taskSetSink{
+			task:      task,
+			responses: responses,
+			requeue:   s.requeue,
+		}
+	}
+}
+
+// taskSetSink reports an agent task's result through the agent's patch
+// worker, which writes the results of all its tasks to the task set's
+// status together. There is no placeholder, progress or completion to
+// report: a result with a phase is the task's whole result.
+type taskSetSink struct {
+	task      Task
+	responses chan<- response
+	requeue   func(Task, time.Duration)
+}
+
+var _ ResultSink = &taskSetSink{}
+
+func (s *taskSetSink) Start(context.Context) error { return nil }
+
+// Report queues r for the next status patch, unless it has no phase yet.
+func (s *taskSetSink) Report(_ context.Context, r wfv1.NodeResult) error {
+	if r.Phase != "" {
+		s.responses <- response{NodeID: s.task.Config.NodeID, Result: &r}
+	}
+	return nil
+}
+
+func (s *taskSetSink) Progress(context.Context, wfv1.Progress) error { return nil }
+
+// Fail reports the task as errored: the agent could not run it.
+func (s *taskSetSink) Fail(ctx context.Context, err error) {
+	_ = s.Report(ctx, wfv1.NodeResult{
+		Phase:   wfv1.NodeError,
+		Message: fmt.Sprintf("error processing task: %s", err),
+	})
+}
+
+func (s *taskSetSink) Finalize(context.Context) error { return nil }
+
+// Requeue runs the task again once after has passed.
+func (s *taskSetSink) Requeue(after time.Duration) {
+	s.requeue(s.task, after)
+}
+
+// requeuer is a sink whose task can be run again later, as a plugin may
+// ask.
+type requeuer interface {
+	Requeue(after time.Duration)
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
@@ -84,13 +166,24 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 		WithField("requeueTime", ae.requeueTime).
 		Info(ctx, "Starting Agent")
 
-	taskQueue := make(chan task)
+	// The task workers stop taking tasks once the agent returns.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	source := &taskSetSource{tasks: make(chan Task)}
 	responseQueue := make(chan response)
-	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
+	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.process.Namespace)
 
 	go ae.patchWorker(ctx, taskSetInterface, responseQueue, ae.requeueTime)
 	for range ae.taskWorkers {
-		go ae.taskWorker(ctx, taskQueue, responseQueue)
+		h := &Harness{
+			Process: ae.process,
+			Source:  source,
+			Sink:    source.sink(responseQueue),
+			Role:    AgentRole,
+		}
+		// Each task's failure has already gone to its sink.
+		go func() { _ = h.Run(ctx) }()
 	}
 
 	for {
@@ -117,57 +210,48 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
-				taskQueue <- task{NodeID: nodeID, Template: tmpl}
+				source.tasks <- Task{Config: TaskConfig{
+					WorkflowName: ae.WorkflowName,
+					WorkflowUID:  types.UID(ae.workflowUID),
+					NodeID:       nodeID,
+					Template:     tmpl,
+				}}
 			}
 		}
 	}
 }
 
-func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
-	for {
-		workTask, ok := <-taskQueue
-		if !ok {
-			break
+// runAgentTask runs the task's HTTP or plugin template and reports its
+// result. A plugin may ask for the task to be run again later.
+func (we *WorkflowExecutor) runAgentTask(ctx context.Context) error {
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("nodeID", we.nodeID).InContext(ctx)
+
+	logger.Info(ctx, "Processing task")
+	result, requeue, err := we.processTask(ctx, we.Template)
+	if err != nil {
+		logger.WithError(err).Error(ctx, "Error in agent task")
+		result = &wfv1.NodeResult{
+			Phase:   wfv1.NodeError,
+			Message: fmt.Sprintf("error processing task: %s", err),
 		}
-		nodeID, tmpl := workTask.NodeID, workTask.Template
-		var logger logging.Logger
-		ctx, logger = logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID).InContext(ctx)
+		// Do not return here, the "errored" result still needs to be reported below
+	}
 
-		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
-		// than once unintentionally.
-		if _, ok := ae.consideredTasks.LoadOrStore(nodeID, true); ok {
-			logger.Info(ctx, "Task is already considered")
-			continue
-		}
+	logger.
+		WithField("phase", result.Phase).
+		WithField("message", result.Message).
+		WithField("requeue", requeue).
+		Info(ctx, "Sending result")
 
-		logger.Info(ctx, "Processing task")
-		result, requeue, err := ae.processTask(ctx, tmpl)
-		if err != nil {
-			logger.WithError(err).Error(ctx, "Error in agent task")
-			result = &wfv1.NodeResult{
-				Phase:   wfv1.NodeError,
-				Message: fmt.Sprintf("error processing task: %s", err),
-			}
-			// Do not return or continue here, the "errored" result still needs to be propagated to the responseQueue below
-		}
-
-		logger.
-			WithField("phase", result.Phase).
-			WithField("message", result.Message).
-			WithField("requeue", requeue).
-			Info(ctx, "Sending result")
-
-		if result.Phase != "" {
-			responseQueue <- response{NodeID: nodeID, Result: result}
-		}
-		if requeue > 0 {
-			time.AfterFunc(requeue, func() {
-				ae.consideredTasks.Delete(nodeID)
-
-				taskQueue <- workTask
-			})
+	if err := we.sink.Report(ctx, *result); err != nil {
+		return err
+	}
+	if requeue > 0 {
+		if r, ok := we.sink.(requeuer); ok {
+			r.Requeue(requeue)
 		}
 	}
+	return nil
 }
 
 func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {
@@ -230,13 +314,13 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 	}
 }
 
-func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
+func (we *WorkflowExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
 	var executeTemplate templateExecutor
 	switch {
 	case tmpl.HTTP != nil:
-		executeTemplate = ae.executeHTTPTemplate
+		executeTemplate = we.executeHTTPTemplate
 	case tmpl.Plugin != nil:
-		executeTemplate = ae.executePluginTemplate
+		executeTemplate = we.executePluginTemplate
 	default:
 		return nil, 0, fmt.Errorf("agent cannot execute: unknown task type: %v", tmpl.GetType())
 	}
@@ -249,7 +333,7 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 	return result, requeue, nil
 }
 
-func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+func (we *WorkflowExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	if tmpl.HTTP == nil {
 		return 0, nil
 	}
@@ -260,7 +344,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(*tmpl.HTTP.TimeoutSeconds)*time.Second)
 		defer cancel()
 	}
-	response, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
+	response, err := we.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
 	if err != nil {
 		return 0, err
 	}
@@ -323,7 +407,7 @@ var httpClients = map[bool]*http.Client{
 	true:  httpClientSkip,
 }
 
-func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
+func (we *WorkflowExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTemplate *wfv1.HTTP) (*http.Response, error) {
 	var (
 		request *http.Request
 		err     error
@@ -342,7 +426,7 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
-			secret, secretErr := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
+			secret, secretErr := util.GetSecrets(ctx, we.ClientSet, we.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
 			if secretErr != nil {
 				return nil, secretErr
 			}
@@ -363,19 +447,19 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	return response, nil
 }
 
-func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+func (we *WorkflowExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
 			ObjectMeta: executorplugins.ObjectMeta{
-				Name:      ae.WorkflowName,
-				Namespace: ae.Namespace,
-				UID:       ae.workflowUID,
+				Name:      we.WorkflowName(),
+				Namespace: we.Namespace,
+				UID:       string(we.workflowUID),
 			},
 		},
 		Template: &tmpl,
 	}
 	reply := &executorplugins.ExecuteTemplateReply{}
-	for _, plug := range ae.plugins {
+	for _, plug := range we.executorPlugins {
 		if err := plug.ExecuteTemplate(ctx, args, reply); err != nil {
 			return 0, err
 		} else if reply.Node != nil {

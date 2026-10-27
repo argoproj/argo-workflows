@@ -22,6 +22,13 @@ See [Telemetry Configuration](telemetry-configuration.md#tracing) for setup deta
 
 <!-- Generated documentation BEGIN -->
 
+### Trace: `RunAgentTask`
+
+```mermaid
+flowchart TD
+    RunAgentTask[<a href='#run_agent_task'>run_agent_task</a>]
+```
+
 ### Trace: `RunWorkerTask`
 
 ```mermaid
@@ -256,6 +263,15 @@ This span has no attributes.
 Reconciliation between actual and desired state for a single workflow.
 
 This span has no attributes.
+
+#### `run_agent_task`
+
+Run one HTTP or plugin task in the agent.
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
 
 #### `run_init_container`
 
