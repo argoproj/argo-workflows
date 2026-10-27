@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bufio"
+	"cmp"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -53,6 +54,27 @@ const (
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
+// defaultTaskResultBackoff spaces out task result retries: the delay grows
+// until it reaches Cap and then stays there. Only the retry timeout ends
+// the retries.
+var defaultTaskResultBackoff = wait.Backoff{
+	Duration: time.Second,
+	Factor:   2,
+	Jitter:   0.1,
+	Steps:    math.MaxInt32, // the delay only grows while steps remain
+	Cap:      30 * time.Second,
+}
+
+// defaultInterimResultRetryTimeout limits the retries of the task result
+// writes before the final ones: InitializeOutput's placeholder and the
+// progress reports. Neither waits long: a failed placeholder write errors
+// the step, as it always has, and the progress monitor sends the latest
+// progress again on its next tick. Waiting would hold up the
+// deadline monitor and the resource action, which start after
+// InitializeOutput. 30s is about what every write got before the retry
+// timeout existed, when the backoff gave up on reaching its cap.
+const defaultInterimResultRetryTimeout = 30 * time.Second
+
 // Process holds the state shared by every task an argoexec process runs:
 // API clients, the container runtime, tracing and pod-scoped settings. It
 // is built once per process by NewProcess; the per-task state lives in the
@@ -84,6 +106,13 @@ type Process struct {
 	initlessPod                  bool
 	retryBackoff                 wait.Backoff
 	resourceStateCheckInterval   time.Duration
+	// taskResultRetryTimeout limits the retries of the final task result
+	// writes and interimResultRetryTimeout those of the writes before
+	// them; taskResultBackoff spaces out the retries of both. NewProcess
+	// resolves their defaults.
+	taskResultRetryTimeout    time.Duration
+	interimResultRetryTimeout time.Duration
+	taskResultBackoff         wait.Backoff
 }
 
 // WorkflowExecutor runs one task (one template on one node) within a
@@ -162,6 +191,10 @@ type ProcessConfig struct {
 	// ResourceStateCheckInterval is the poll interval for resource template
 	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
 	ResourceStateCheckInterval time.Duration
+	// TaskResultRetryTimeout bounds how long writes to the task result retry
+	// transient errors (EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS); zero means
+	// retry.DefaultExecutorTaskResultRetryTimeout.
+	TaskResultRetryTimeout time.Duration
 }
 
 // TaskConfig carries the per-task values a WorkflowExecutor is constructed
@@ -259,6 +292,9 @@ func NewProcess(
 		initlessPod:                  cfg.InitlessPod,
 		retryBackoff:                 cfg.RetryBackoff,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
+		taskResultRetryTimeout:       cmp.Or(cfg.TaskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout),
+		interimResultRetryTimeout:    defaultInterimResultRetryTimeout,
+		taskResultBackoff:            defaultTaskResultBackoff,
 	}, nil
 }
 
@@ -1039,15 +1075,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	var count uint64
-	err := retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	err := we.retryTaskResult(ctx, we.taskResultRetryTimeout, func(ctx context.Context) error {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
@@ -1065,27 +1093,7 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 }
 
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	var count uint64
-	err := retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
-		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
-		if apierr.IsForbidden(err) {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
-		} else if err != nil && count%20 == 0 {
-			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
-		}
-		count++
-		return err
-	})
-	if err != nil {
+	if err := we.reportResultWithin(ctx, we.interimResultRetryTimeout, wfv1.NodeResult{}); err != nil {
 		we.AddError(ctx, err)
 	}
 }
@@ -1107,18 +1115,17 @@ func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
 }
 
+// reportResult writes one of the task's final results.
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
+	return we.reportResultWithin(ctx, we.taskResultRetryTimeout, result)
+}
+
+// reportResultWithin writes result, retrying transient errors for up to
+// limit.
+func (we *WorkflowExecutor) reportResultWithin(ctx context.Context, limit time.Duration, result wfv1.NodeResult) error {
 	var count uint64 // used to avoid spamming with these messages
 	logger := logging.RequireLoggerFromContext(ctx)
-	return retryutil.OnError(wait.Backoff{
-		Duration: time.Second,
-		Factor:   2.0,
-		Jitter:   0.2,
-		Steps:    math.MaxInt32, // effectively infinite retries
-		Cap:      30 * time.Second,
-	}, func(err error) bool {
-		return errorsutil.IsTransientErr(ctx, err)
-	}, func() error {
+	return we.retryTaskResult(ctx, limit, func(ctx context.Context) error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
 			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
@@ -1128,6 +1135,42 @@ func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeRe
 		count++
 		return err
 	})
+}
+
+// retryTaskResult calls op until it succeeds, and returns nil, or fails
+// with an error that isn't transient, and returns that error. op's ctx
+// ends once limit has passed or ctx is done, cutting off an attempt in
+// flight; retryTaskResult then returns the last transient error, or the
+// ctx error if there was none, wrapped to say it gave up if it was limit
+// that ran out.
+func (we *WorkflowExecutor) retryTaskResult(ctx context.Context, limit time.Duration, op func(ctx context.Context) error) error {
+	retryCtx, cancel := context.WithTimeout(ctx, limit)
+	defer cancel()
+	var lastErr error
+	err := we.taskResultBackoff.DelayFunc().Until(retryCtx, true, true, func(ctx context.Context) (bool, error) {
+		err := op(ctx)
+		switch {
+		case err == nil:
+			return true, nil
+		case ctx.Err() != nil:
+			return false, ctx.Err()
+		case errorsutil.IsTransientErr(ctx, err):
+			lastErr = err
+			return false, nil
+		default:
+			return false, err
+		}
+	})
+	if err == nil || retryCtx.Err() == nil {
+		return err
+	}
+	if lastErr != nil {
+		err = lastErr
+	}
+	if ctx.Err() == nil {
+		return fmt.Errorf("gave up writing task result after %s: %w", limit, err)
+	}
+	return err
 }
 
 // AddError adds an error to the list of encountered errors during execution
@@ -1428,7 +1471,19 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
 	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {
-		go we.monitorProgress(ctx, we.progressFile)
+		// Stop the monitor, and wait out any progress report in flight,
+		// before returning: the final reports that follow write the same
+		// task result and must not overlap it.
+		progressCtx, stopProgress := context.WithCancel(ctx)
+		progressDone := make(chan struct{})
+		go func() {
+			defer close(progressDone)
+			we.monitorProgress(progressCtx, we.progressFile)
+		}()
+		defer func() {
+			stopProgress()
+			<-progressDone
+		}()
 	} else {
 		logger.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
 	}
@@ -1524,7 +1579,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			if current == "" {
 				continue
 			}
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: current}); err != nil {
+			if err := we.reportResultWithin(ctx, we.interimResultRetryTimeout, wfv1.NodeResult{Progress: current}); err != nil {
 				logger.WithError(err).Info(ctx, "failed to report progress")
 			} else {
 				mu.Lock()

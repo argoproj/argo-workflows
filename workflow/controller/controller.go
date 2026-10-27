@@ -152,6 +152,9 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
+	// taskSetCompletionDelay sets a positive minimum delay for taskset completions,
+	// capped at requeueTime. Nil preserves the normal rate-limited path.
+	taskSetCompletionDelay *time.Duration
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -209,8 +212,16 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
-// NewWorkflowController instantiates a new WorkflowController
+// NewWorkflowController initializes a controller from its clients and startup configuration.
+// COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
+// WorkflowTaskSet results; unset or empty keeps normal rate limiting.
+// A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
+	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
+	if err != nil {
+		return nil, err
+	}
+
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -250,6 +261,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
+		taskSetCompletionDelay:     taskSetCompletionDelay,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
@@ -1633,6 +1645,8 @@ func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[strin
 	return make(map[string]int64)
 }
 
+// newWorkflowTaskSetInformer watches tasksets in the managed namespace and controller
+// instance, routing updates through the normal or configured completion-delay queue path.
 func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
@@ -1646,12 +1660,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, newObj any) {
-				key, err := cache.MetaNamespaceKeyFunc(newObj)
-				if err == nil {
-					wfc.wfQueue.AddRateLimited(key)
-				}
-			},
+			UpdateFunc: wfc.onWorkflowTaskSetUpdate,
 		})
 	return informer
 }

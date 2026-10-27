@@ -10,6 +10,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -18,6 +19,32 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 )
+
+// onWorkflowTaskSetUpdate keeps routine updates rate-limited, but optionally
+// applies a minimum completion delay, capped at the default requeue delay,
+// when a task result first becomes terminal.
+// Updates without a valid object key are ignored; repeated terminal results
+// retain normal rate limiting rather than triggering the completion delay again.
+func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
+	key, err := cache.MetaNamespaceKeyFunc(newObj)
+	if err != nil {
+		return
+	}
+	if wfc.taskSetCompletionDelay != nil {
+		previous := old.(*wfv1.WorkflowTaskSet)
+		current := newObj.(*wfv1.WorkflowTaskSet)
+		for id, result := range current.Status.Nodes {
+			if result.Phase.Fulfilled(nil) && !previous.Status.Nodes[id].Phase.Fulfilled(nil) {
+				// The workqueue coalesces pending keys and serializes work per key.
+				// processNextItem still rejects stale workflow versions and falls
+				// back to a rate-limited retry while the workflow informer catches up.
+				wfc.wfQueue.AddAfter(key, min(*wfc.taskSetCompletionDelay, wfc.requeueTime))
+				return
+			}
+		}
+	}
+	wfc.wfQueue.AddRateLimited(key)
+}
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
 	patchByte, err := json.Marshal(patch)
