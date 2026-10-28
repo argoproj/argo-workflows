@@ -312,6 +312,8 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	localParams[varkeys.RetriesLastDuration.Template()] = duration
 	localParams[varkeys.RetriesLastMessage.Template()] = message
 
+	localParams[varkeys.RetriesExitCodes.Template()] = retryExitCodes(childNodeIDs, woc.wf.Status.Nodes)
+
 	// Save the unsubstituted template for potential recursive retry calls.
 	// SubstituteParams replaces {{retries}} etc. in-place, so the recursive call
 	// needs the original template to correctly substitute the next retry's values.

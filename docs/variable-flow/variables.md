@@ -29,6 +29,7 @@ A runnable [variables-showcase.yaml](https://raw.githubusercontent.com/argoproj/
 | `item.<key>`                              | item          | string         | inside-loop                                                | Accessor into a map-typed loop iteration value                                                                                                                                                                                                                                                                                                                    |
 | `lastRetry.duration`                      | retry         | string         | inside-retry                                               | Duration of the previous attempt in seconds                                                                                                                                                                                                                                                                                                                       |
 | `lastRetry.exitCode`                      | retry         | string         | inside-retry                                               | Exit code of the previous attempt (or 0 on first attempt)                                                                                                                                                                                                                                                                                                         |
+| `lastRetry.exitCodes`                     | retry         | string         | inside-retry                                               | Comma-separated exit codes of all previous attempts, oldest first (empty on the first attempt)                                                                                                                                                                                                                                                                    |
 | `lastRetry.message`                       | retry         | string         | inside-retry                                               | Message of the previous attempt                                                                                                                                                                                                                                                                                                                                   |
 | `lastRetry.status`                        | retry         | string         | inside-retry                                               | Phase of the previous attempt (or empty on first)                                                                                                                                                                                                                                                                                                                 |
 | `node.name`                               | node-ctx      | string         | pre-dispatch, during-execute                               | Full node name                                                                                                                                                                                                                                                                                                                                                    |
@@ -188,13 +189,14 @@ A runnable [variables-showcase.yaml](https://raw.githubusercontent.com/argoproj/
 
 ### Retry
 
-|         Key          |  Type  | Availability |                        Description                        |
-|----------------------|--------|--------------|-----------------------------------------------------------|
-| `lastRetry.duration` | string | inside-retry | Duration of the previous attempt in seconds               |
-| `lastRetry.exitCode` | string | inside-retry | Exit code of the previous attempt (or 0 on first attempt) |
-| `lastRetry.message`  | string | inside-retry | Message of the previous attempt                           |
-| `lastRetry.status`   | string | inside-retry | Phase of the previous attempt (or empty on first)         |
-| `retries`            | string | inside-retry | 0-based retry attempt index                               |
+|          Key          |  Type  | Availability |                                          Description                                           |
+|-----------------------|--------|--------------|------------------------------------------------------------------------------------------------|
+| `lastRetry.duration`  | string | inside-retry | Duration of the previous attempt in seconds                                                    |
+| `lastRetry.exitCode`  | string | inside-retry | Exit code of the previous attempt (or 0 on first attempt)                                      |
+| `lastRetry.exitCodes` | string | inside-retry | Comma-separated exit codes of all previous attempts, oldest first (empty on the first attempt) |
+| `lastRetry.message`   | string | inside-retry | Message of the previous attempt                                                                |
+| `lastRetry.status`    | string | inside-retry | Phase of the previous attempt (or empty on first)                                              |
+| `retries`             | string | inside-retry | 0-based retry attempt index                                                                    |
 
 ### Node-ctx
 
@@ -256,6 +258,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `item.<key>`                              | •   | •         | •             | •      | •        | •     | •   | •    | •       | •    | •      |              |               |
 | `lastRetry.duration`                      |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
 | `lastRetry.exitCode`                      |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
+| `lastRetry.exitCodes`                     |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
 | `lastRetry.message`                       |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
 | `lastRetry.status`                        |     | •         | •             | •      | •        | •     | •   | •    |         | •    | •      |              |               |
 | `node.name`                               | •   | •         | •             | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
@@ -444,15 +447,16 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `item`       | item | string or json |
 | `item.<key>` | item | string         |
 
-### inside-retry (5 variables)
+### inside-retry (6 variables)
 
-|         Key          | Kind  |  Type  |
-|----------------------|-------|--------|
-| `lastRetry.duration` | retry | string |
-| `lastRetry.exitCode` | retry | string |
-| `lastRetry.message`  | retry | string |
-| `lastRetry.status`   | retry | string |
-| `retries`            | retry | string |
+|          Key          | Kind  |  Type  |
+|-----------------------|-------|--------|
+| `lastRetry.duration`  | retry | string |
+| `lastRetry.exitCode`  | retry | string |
+| `lastRetry.exitCodes` | retry | string |
+| `lastRetry.message`   | retry | string |
+| `lastRetry.status`    | retry | string |
+| `retries`             | retry | string |
 
 ### after-node-init (6 variables)
 
