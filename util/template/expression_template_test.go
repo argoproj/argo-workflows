@@ -140,6 +140,36 @@ func Test_getIdentifiers(t *testing.T) {
 			expression: "tasks.a.outputs.result ?? 'default'",
 			want:       []string{"tasks"},
 		},
+		{
+			name:       "in-operator guards the key it just tested for",
+			expression: "'bucket' in item ? item['bucket'] : ''",
+			want:       []string{"item"},
+		},
+		{
+			name:       "in-operator guard also accepts dot notation",
+			expression: "'bucket' in item ? item.bucket : ''",
+			want:       []string{"item"},
+		},
+		{
+			name:       "in-operator does not guard a key it did not test for",
+			expression: "'bucket' in item ? item.other : ''",
+			want:       []string{"item", "item.other"},
+		},
+		{
+			name:       "in-operator does not guard the false branch",
+			expression: "'bucket' in item ? '' : item.bucket",
+			want:       []string{"item", "item.bucket"},
+		},
+		{
+			name:       "in-operator guard reaches a nested receiver",
+			expression: "'result' in tasks.a.outputs ? tasks.a.outputs.result : ''",
+			want:       []string{"tasks", "tasks.a", "tasks.a.outputs"},
+		},
+		{
+			name:       "a ternary without an in-test guards nothing",
+			expression: "flag ? item.bucket : ''",
+			want:       []string{"flag", "item", "item.bucket"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -202,5 +232,19 @@ func Test_missingVarsInEnv(t *testing.T) {
 	t.Run("unparseable errors", func(t *testing.T) {
 		_, err := missingVarsInEnv("foo +", map[string]any{})
 		require.Error(t, err)
+	})
+	// #16002: an item that lacks the key is exactly the case the `in` test is
+	// written for, so it must not be reported missing and requeued forever.
+	t.Run("in-guarded key absent from the item is not missing", func(t *testing.T) {
+		env := map[string]any{"item": map[string]any{"type": "nextcloud"}}
+		missing, err := missingVarsInEnv("'bucket' in item ? item['bucket'] : ''", env)
+		require.NoError(t, err)
+		assert.Empty(t, missing)
+	})
+	t.Run("the same key read without the in test is still missing", func(t *testing.T) {
+		env := map[string]any{"item": map[string]any{"type": "nextcloud"}}
+		missing, err := missingVarsInEnv("item['bucket']", env)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"item.bucket"}, missing)
 	})
 }
