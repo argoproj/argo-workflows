@@ -706,7 +706,7 @@ func TestReleaseAllReleasesEverySemaphoreHolder(t *testing.T) {
 	}, WorkflowExistenceFunc, false)
 	require.NoError(t, err)
 
-	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-tmpl-semaphore.yaml")
 	tmpl := wf.Spec.Templates[2]
 
 	// Three nodes of the same workflow acquire the same semaphore, so the
