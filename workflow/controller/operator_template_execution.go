@@ -60,7 +60,7 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 	// Check the timeout and pendingTimeout deadlines for Pending nodes.
 	// This also covers the resource-forbidden and synchronization scenarios,
 	// where only the node exists, in a pending state, with no pod created.
-	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node, time.Now().UTC())
+	deadline, pendingDeadline, err := templateTimeoutDeadlines(processedTmpl, node, time.Now().UTC())
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
 		if node != nil && node.Type == wfv1.NodeTypePod {
@@ -286,7 +286,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 
 	localParams := make(map[string]string)
 	if processedTmpl.IsPodType() {
-		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, processedTmpl.Name)
+		setPodNameParams(localParams, woc.getPodName(nodeName, processedTmpl.Name))
 	}
 	localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
 
