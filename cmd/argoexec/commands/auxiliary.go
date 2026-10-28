@@ -75,7 +75,8 @@ func runAuxiliaryContainer(
 
 // pprofPort is the port ListenLoopback binds when ARGO_PPROF is set. It is
 // configurable because this process shares a network namespace with the user's
-// own containers, so the default may already be taken.
+// own containers and kubelet starts it first, so binding the default here can
+// take it away from one of theirs.
 func pprofPort() string {
 	if port := os.Getenv("ARGO_PPROF_PORT"); port != "" {
 		return port
