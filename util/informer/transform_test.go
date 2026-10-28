@@ -99,7 +99,18 @@ func TestStripLastAppliedConfiguration(t *testing.T) {
 		assert.Equal(t, "yes", un.GetAnnotations()["keep-me"])
 		assert.Equal(t, "my-template", un.GetName())
 	})
-	t.Run("object without the annotation is not mutated", func(t *testing.T) {
+	t.Run("an object carrying other annotations keeps all of them", func(t *testing.T) {
+		pod := &apiv1.Pod{ObjectMeta: metav1.ObjectMeta{
+			Name:        "my-pod",
+			Annotations: map[string]string{"keep-me": "yes", "and-me": "also"},
+		}}
+		want := pod.DeepCopy()
+		out, err := StripLastAppliedConfiguration(pod)
+		require.NoError(t, err)
+		assert.Same(t, pod, out)
+		assert.Equal(t, want, pod, "an object that never carried the annotation must come back unchanged")
+	})
+	t.Run("object with no annotations at all", func(t *testing.T) {
 		un := &unstructured.Unstructured{Object: map[string]any{
 			"apiVersion": "argoproj.io/v1alpha1",
 			"kind":       "WorkflowTemplate",
@@ -109,7 +120,7 @@ func TestStripLastAppliedConfiguration(t *testing.T) {
 		out, err := StripLastAppliedConfiguration(un)
 		require.NoError(t, err)
 		assert.Same(t, un, out)
-		assert.Equal(t, want, un, "an object that never carried the annotation must be left alone")
+		assert.Equal(t, want, un)
 	})
 	t.Run("non-object input passes through", func(t *testing.T) {
 		tombstone := cache.DeletedFinalStateUnknown{Key: "my-ns/my-template"}
@@ -119,8 +130,11 @@ func TestStripLastAppliedConfiguration(t *testing.T) {
 	})
 }
 
-func TestStripTemplateCacheFields(t *testing.T) {
-	un := &unstructured.Unstructured{Object: map[string]any{
+// templateWithBothFields is the shape these transforms exist for: a template
+// applied with client-side `kubectl apply`, so it carries both managedFields
+// and the annotation holding a copy of the whole spec.
+func templateWithBothFields() *unstructured.Unstructured {
+	return &unstructured.Unstructured{Object: map[string]any{
 		"apiVersion": "argoproj.io/v1alpha1",
 		"kind":       "WorkflowTemplate",
 		"metadata": map[string]any{
@@ -132,38 +146,40 @@ func TestStripTemplateCacheFields(t *testing.T) {
 			},
 		},
 	}}
-	out, err := StripTemplateCacheFields(un)
-	require.NoError(t, err)
-	assert.Same(t, un, out)
-	assert.Nil(t, un.GetManagedFields(), "managedFields must be stripped")
-	assert.NotContains(t, un.GetAnnotations(), apiv1.LastAppliedConfigAnnotation, "the apply annotation must be stripped")
-	assert.Equal(t, "yes", un.GetAnnotations()["keep-me"])
-	assert.Equal(t, "my-template", un.GetName())
 }
 
-// The shared tolerant-informer constructors use StripManagedFields, and
-// argo-server builds those same informers to serve templates to clients. So
-// this transform must leave the client-side-apply annotation alone: stripping
-// it there would let a get/modify/update round trip drop it from the live
-// object.
-func TestStripManagedFieldsKeepsLastAppliedConfiguration(t *testing.T) {
-	un := &unstructured.Unstructured{Object: map[string]any{
-		"apiVersion": "argoproj.io/v1alpha1",
-		"kind":       "WorkflowTemplate",
-		"metadata": map[string]any{
-			"name":          "my-template",
-			"managedFields": []any{map[string]any{"manager": "kubectl-client-side-apply"}},
-			"annotations": map[string]any{
-				apiv1.LastAppliedConfigAnnotation: `{"spec":{}}`,
-			},
-		},
-	}}
-	out, err := StripManagedFields(un)
-	require.NoError(t, err)
-	assert.Same(t, un, out)
-	assert.Nil(t, un.GetManagedFields(), "managedFields is loss-free to strip")
-	assert.Contains(t, un.GetAnnotations(), apiv1.LastAppliedConfigAnnotation,
-		"the apply annotation must survive: argo-server serves this cache to clients")
+// Both transforms drop managedFields; they differ only over the apply
+// annotation, and that difference is the point. The shared tolerant
+// constructors use StripManagedFields and argo-server builds those same
+// informers to serve templates to clients, so stripping the annotation there
+// would let a get/modify/update round trip drop it from the live object. Only
+// the controller, which never writes these objects back, may use
+// StripTemplateCacheFields.
+func TestTransformsDifferOverTheApplyAnnotation(t *testing.T) {
+	for _, tt := range []struct {
+		name               string
+		transform          cache.TransformFunc
+		keepsTheAnnotation bool
+		why                string
+	}{
+		{"StripManagedFields", StripManagedFields, true, "argo-server serves this cache to clients"},
+		{"StripTemplateCacheFields", StripTemplateCacheFields, false, "the controller only ever reads its cache"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			un := templateWithBothFields()
+			out, err := tt.transform(un)
+			require.NoError(t, err)
+			assert.Same(t, un, out)
+			assert.Nil(t, un.GetManagedFields(), "managedFields is loss-free to strip either way")
+			if tt.keepsTheAnnotation {
+				assert.Contains(t, un.GetAnnotations(), apiv1.LastAppliedConfigAnnotation, tt.why)
+			} else {
+				assert.NotContains(t, un.GetAnnotations(), apiv1.LastAppliedConfigAnnotation, tt.why)
+			}
+			assert.Equal(t, "yes", un.GetAnnotations()["keep-me"], "unrelated annotations always survive")
+			assert.Equal(t, "my-template", un.GetName())
+		})
+	}
 }
 
 // chain must stop at the first error and hand back what that transform
