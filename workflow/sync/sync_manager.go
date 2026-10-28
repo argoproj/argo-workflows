@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -46,7 +47,8 @@ func (sm *Manager) WithMetrics(ctx context.Context, m *wfmetrics.Metrics) *Manag
 	sm.metrics = m
 	if m != nil {
 		if err := m.RegisterLockGauges(sm.LockMetrics); err != nil {
-			sm.log.WithError(err).WithFatal().Error(ctx, "failed to register lock gauge callbacks")
+			sm.log.WithError(err).Error(ctx, "failed to register lock gauge callbacks")
+			os.Exit(1)
 		}
 	}
 	return sm
@@ -747,7 +749,14 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 				continue
 			}
 
-			for _, holderKey := range holding.Holders {
+			// LockReleased rewrites holding.Holders in place (slices.DeleteFunc
+			// compacts the shared backing array), so iterate over a copy:
+			// ranging over the live slice skips holders as it shrinks, leaking
+			// their semaphore slots. The mutex branch below copies for the
+			// same reason.
+			holders := make([]string, len(holding.Holders))
+			copy(holders, holding.Holders)
+			for _, holderKey := range holders {
 				syncLockHolder.release(ctx, holderKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
 				sm.log.WithFields(logging.Fields{"holderKey": holderKey, "semaphore": holding.Semaphore}).Info(ctx, "Lock released")

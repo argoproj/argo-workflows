@@ -35,8 +35,9 @@ data:
 
 ```
 
-In version 2.7+, the `config: |` key is optional. However, if the `config: |` key is not used, all nested maps under top level
-keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize.
+The `config: |` key is optional.
+However, if the `config: |` key is not used, all nested maps under top level keys should be strings.
+This makes it easier to generate the map with some configuration management tools like Kustomize.
 
 ```yaml
 # This file describes the config settings available in the workflow controller configmap
@@ -44,7 +45,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
-data:                      # "config: |" key is optional in 2.7+!
+data:                      # "config: |" key is optional!
   instanceID: my-ci-controller
   artifactRepository: |    # However, all nested maps must be strings
    archiveLogs: true

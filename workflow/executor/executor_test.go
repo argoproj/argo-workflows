@@ -4,8 +4,10 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,8 +20,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -649,9 +655,12 @@ func TestMonitorProgress(t *testing.T) {
 			Namespace:                    fakeNamespace,
 			AnnotationPatchTickDuration:  annotationPackTickDuration,
 			ReadProgressFileTickDuration: readProgressFileTickDuration,
+			TaskResultRetryTimeout:       90 * time.Second,
 		},
 	)
 	require.NoError(t, err)
+	assert.Equal(t, 90*time.Second, process.taskResultRetryTimeout)
+	assert.Equal(t, defaultTaskResultBackoff, process.taskResultBackoff)
 	we := process.NewExecutor(TaskConfig{
 		WorkflowName:        fakeWorkflow,
 		WorkflowUID:         fakeWorkflowUID,
@@ -748,9 +757,11 @@ func TestReportOutputs(t *testing.T) {
 		require.NoError(t, err)
 		we := WorkflowExecutor{
 			Process: &Process{
-				RuntimeExecutor:  &mockRuntimeExecutor,
-				taskResultClient: mockTaskResultClient,
-				Tracing:          tracing,
+				RuntimeExecutor:        &mockRuntimeExecutor,
+				taskResultClient:       mockTaskResultClient,
+				Tracing:                tracing,
+				taskResultRetryTimeout: time.Minute,
+				taskResultBackoff:      defaultTaskResultBackoff,
 			},
 			Template: templateWithArtifacts,
 		}
@@ -759,6 +770,166 @@ func TestReportOutputs(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)
+	})
+}
+
+// newFlakyTaskResultExecutor returns an executor whose task result API
+// fails with a transient error until outage has passed (forever if
+// outage is negative). Retries are scaled down to milliseconds: the
+// backoff reaches its cap after 15ms.
+func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration) (*WorkflowExecutor, *argofake.Clientset) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	tr, err := tracing.New(ctx, `argoexec`)
+	require.NoError(t, err)
+	clientset := argofake.NewClientset()
+	start := time.Now()
+	clientset.PrependReactor("*", "workflowtaskresults", func(k8stesting.Action) (bool, k8sruntime.Object, error) {
+		if outage < 0 || time.Since(start) < outage {
+			return true, nil, apierr.NewServiceUnavailable("API server unavailable")
+		}
+		return false, nil, nil
+	})
+	return &WorkflowExecutor{
+		Process: &Process{
+			taskResultClient:          clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
+			Tracing:                   tr,
+			taskResultRetryTimeout:    retryTimeout,
+			interimResultRetryTimeout: retryTimeout,
+			taskResultBackoff:         wait.Backoff{Duration: time.Millisecond, Factor: 2, Steps: math.MaxInt32, Cap: 10 * time.Millisecond},
+		},
+		workflow: fakeWorkflow,
+		nodeID:   fakeNodeID,
+	}, clientset
+}
+
+func TestDefaultTaskResultBackoff(t *testing.T) {
+	backoff := defaultTaskResultBackoff
+	backoff.Jitter = 0
+	delay := backoff.DelayFunc()
+	var delays []time.Duration
+	for range 8 {
+		delays = append(delays, delay())
+	}
+	s := time.Second
+	assert.Equal(t, []time.Duration{1 * s, 2 * s, 4 * s, 8 * s, 16 * s, 30 * s, 30 * s, 30 * s}, delays)
+}
+
+func TestTaskResultRetries(t *testing.T) {
+	t.Run("OutageLongerThanTimeoutFails", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, -1, 100*time.Millisecond)
+
+		start := time.Now()
+		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		require.Error(t, err)
+		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
+		require.ErrorContains(t, err, "gave up writing task result after 100ms: ")
+		assert.GreaterOrEqual(t, time.Since(start), 100*time.Millisecond)
+
+		we.InitializeOutput(ctx)
+		we.FinalizeOutput(ctx)
+		assert.Len(t, we.errors, 2)
+	})
+	t.Run("InterimWritesUseTheirOwnLimit", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, -1, time.Minute)
+		we.interimResultRetryTimeout = 50 * time.Millisecond
+
+		start := time.Now()
+		we.InitializeOutput(ctx)
+		assert.Less(t, time.Since(start), 10*time.Second)
+		require.Len(t, we.errors, 1)
+		assert.True(t, apierr.IsServiceUnavailable(we.errors[0]), "got %v", we.errors[0])
+	})
+	t.Run("OutagePastBackoffCapButShorterThanTimeoutSucceeds", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, clientset := newFlakyTaskResultExecutor(t, 200*time.Millisecond, time.Minute)
+
+		require.NoError(t, we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}))
+		result, err := clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace).Get(ctx, fakeNodeID, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.Progress("1/2"), result.Progress)
+	})
+	t.Run("CancelStopsRetrying", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+		we, _ := newFlakyTaskResultExecutor(t, -1, time.Minute)
+		time.AfterFunc(50*time.Millisecond, cancel)
+
+		start := time.Now()
+		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		assert.Less(t, time.Since(start), 10*time.Second)
+		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
+		assert.NotContains(t, err.Error(), "gave up", "the limit didn't run out")
+	})
+	t.Run("AttemptInFlightIsCutOff", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+
+		start := time.Now()
+		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+			select {
+			case <-ctx.Done():
+			case <-time.After(10 * time.Second):
+			}
+			return apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, ctx.Err())
+		})
+		elapsed := time.Since(start)
+		assert.GreaterOrEqual(t, elapsed, 50*time.Millisecond)
+		assert.Less(t, elapsed, 10*time.Second)
+		require.EqualError(t, err, "gave up writing task result after 50ms: context deadline exceeded")
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+	})
+	t.Run("AttemptInFlightIsCutOffAfterTransientError", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+
+		attempts := 0
+		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+			attempts++
+			if attempts == 1 {
+				return apierr.NewServiceUnavailable("API server unavailable")
+			}
+			select {
+			case <-ctx.Done():
+			case <-time.After(10 * time.Second):
+			}
+			return apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, ctx.Err())
+		})
+		assert.Equal(t, 2, attempts)
+		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last transient error, got %v", err)
+		assert.ErrorContains(t, err, "gave up writing task result after 50ms: ")
+	})
+	t.Run("NonTransientContextErrorIsNotReplaced", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, _ := newFlakyTaskResultExecutor(t, 0, time.Minute)
+
+		// The op's error wraps a context error, but the retries' own ctx is
+		// still live, so this isn't giving up: the error comes back as is.
+		failure := fmt.Errorf("reading response: %w", context.Canceled)
+		attempts := 0
+		err := we.retryTaskResult(ctx, time.Minute, func(context.Context) error {
+			attempts++
+			if attempts == 1 {
+				return apierr.NewServiceUnavailable("API server unavailable")
+			}
+			return failure
+		})
+		assert.Equal(t, 2, attempts)
+		assert.Equal(t, failure, err)
+	})
+	t.Run("NonTransientErrorIsNotRetried", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		we, clientset := newFlakyTaskResultExecutor(t, 0, time.Minute)
+		attempts := 0
+		clientset.PrependReactor("*", "workflowtaskresults", func(k8stesting.Action) (bool, k8sruntime.Object, error) {
+			attempts++
+			return true, nil, apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, nil)
+		})
+
+		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		assert.True(t, apierr.IsForbidden(err), "got %v", err)
+		assert.Equal(t, 1, attempts)
 	})
 }
 

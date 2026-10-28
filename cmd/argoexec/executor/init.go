@@ -55,7 +55,7 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 
 	podName, ok := os.LookupEnv(common.EnvVarPodName)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine pod name from environment variable %s", common.EnvVarPodName))
+		logger.Error(ctx, fmt.Sprintf("Unable to determine pod name from environment variable %s", common.EnvVarPodName))
 		os.Exit(1)
 	}
 
@@ -85,6 +85,7 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 			InitlessPod:                  common.IsInitlessPod(),
 			RetryBackoff:                 retry.ExecutorRetry(ctx),
 			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
+			TaskResultRetryTimeout:       retry.ExecutorTaskResultRetryTimeout(ctx),
 		},
 	)
 	CheckErr(err)

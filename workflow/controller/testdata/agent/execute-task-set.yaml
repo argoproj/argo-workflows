@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTaskSet
+metadata:
+  name: http-template-1
+  namespace: default
+spec:
+  tasks:
+    http-template-nxvtg-1265710817:
+      http:
+        url: http://openlibrary.org/people/george08/nofound.json
+      inputs:
+        parameters:
+        - name: url
+          value: http://openlibrary.org/people/george08/nofound.json
+      name: http
+status:
+  nodes:
+    http-template-1-3690327077:
+      outputs:
+        parameters:
+        - name: result
+          value: |
+            {
+              "swagger": "2.0",
+              "info": {
+                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
+                "version": "version not set"
+              },
+              "consumes": [
+                "application/json"
+              ],
+              "produces": [
+                "application/json"
+              ],
+              "paths": {},
+              "definitions": {}
+            }
+      phase: Succeeded
