@@ -57,6 +57,6 @@ If the pod itself fails, for example because the node evicts it, the controller 
 A request or plugin call can therefore run more than once, so make it safe to repeat.
 
 The controller replaces a failed pod no sooner than one minute after that pod was created, and records an `AgentPodFailed` Warning event on the Workflow, with the reason the pod failed, each time it does.
-There is no limit on the number of replacements: as with a crashing container, a task that never gets a result fails by its template `timeout` or the Workflow's `activeDeadlineSeconds`.
+There is no limit on the number of replacements: as with a crashing container, a task that never gets a result fails by the Workflow's `activeDeadlineSeconds`, or by its template `timeout` unless its plugin has reported it `Running`.
 Without either setting, the task can run until the Workflow stops for another reason.
 When the Workflow is stopping, terminating, or past its `activeDeadlineSeconds`, the controller errors the nodes of the tasks that have no result instead.
