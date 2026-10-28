@@ -46,6 +46,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
 
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespaceReady, setNamespaceReady] = useState(!!nsUtils.getNamespace(match.params.namespace));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [namePattern, setNamePattern] = useState('');
     const [labels, setLabels] = useState<string[]>(() => {
@@ -59,6 +60,17 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
         offset: queryParams.get('offset'),
         limit: parseLimit(queryParams.get('limit')) || savedOptions.paginationLimit || 500
     });
+
+    // Listen for managed namespace changes (e.g., on first load when /api/v1/info returns)
+    // In managed namespace mode, managed namespace always takes precedence over explicit path
+    useEffect(() => {
+        return nsUtils.onManagedNamespaceChange(managedNs => {
+            if (managedNs) {
+                setNamespace(managedNs);
+                setNamespaceReady(true);
+            }
+        });
+    }, []);
 
     useEffect(
         useQueryParams(history, p => {
@@ -86,6 +98,9 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     const [error, setError] = useState<Error>();
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();
     useEffect(() => {
+        if (!namespaceReady) {
+            return;
+        }
         services.workflowTemplate
             .list(namespace, labels, namePattern, pagination)
             .then(list => {
@@ -94,7 +109,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
             })
             .then(() => setError(null))
             .catch(setError);
-    }, [namespace, namePattern, labels.toString(), pagination.offset, pagination.limit]); // referential equality, so use values, not refs
+    }, [namespaceReady, namespace, namePattern, labels.toString(), pagination.offset, pagination.limit]); // referential equality, so use values, not refs
     useEffect(() => {
         storage.setItem('paginationLimit', pagination.limit, 0);
     }, [pagination.limit]);

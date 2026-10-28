@@ -8,6 +8,23 @@ export function setOnNamespaceChange(f: any) {
     onNamespaceChange = f;
 }
 
+// callback for when managed namespace changes
+let managedNamespaceChangeCallback = (ns?: string) => {
+    void ns;
+};
+export function setOnManagedNamespaceChange(f: (ns: string | undefined) => void) {
+    managedNamespaceChangeCallback = f;
+}
+
+// register callback and immediately invoke with current managed namespace (if any)
+// returns cleanup function
+export function onManagedNamespaceChange(f: (ns: string | undefined) => void): () => void {
+    // immediately invoke with current value to handle race where info already loaded
+    f(getManagedNamespace());
+    setOnManagedNamespaceChange(f);
+    return () => setOnManagedNamespaceChange(() => {});
+}
+
 function fixLocalStorageString(x: string): string {
     // empty string is valid, so we cannot use `truthy`
     if (x == null || x == 'null' || x == 'undefined') {
@@ -34,6 +51,7 @@ export function setManagedNamespace(value: string) {
     } else {
         localStorage.removeItem(managedNamespaceKey);
     }
+    managedNamespaceChangeCallback(getManagedNamespace());
 }
 
 export function getManagedNamespace() {
