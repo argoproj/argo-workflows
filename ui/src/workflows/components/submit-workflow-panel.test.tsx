@@ -99,4 +99,13 @@ describe('SubmitWorkflowPanel', () => {
         expect(screen.getByDisplayValue('hidden')).toBeInTheDocument();
         expect(screen.queryByDisplayValue('test')).not.toBeInTheDocument();
     });
+
+    it('shows one field per name when an entrypoint input matches a workflow argument', () => {
+        renderPanel('argosay', [argosay], [{name: 'message', value: 'from-args'}]);
+
+        expect(screen.getAllByText('message')).toHaveLength(1);
+        expect(screen.getByDisplayValue('from-args')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue('test')).not.toBeInTheDocument();
+        expect(screen.getByText('count')).toBeInTheDocument();
+    });
 });
