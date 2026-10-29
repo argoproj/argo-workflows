@@ -81,7 +81,7 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 // there too is what makes timeout and pendingTimeout behave the same with a
 // retryStrategy as without one (#17258).
 func (woc *wfOperationCtx) enforceTemplateTimeouts(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) error {
-	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node, time.Now().UTC())
+	deadline, pendingDeadline, err := templateTimeoutDeadlines(processedTmpl, node, time.Now().UTC())
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
 		if node != nil && node.Type == wfv1.NodeTypePod {
@@ -309,7 +309,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 
 	localParams := make(map[string]string)
 	if processedTmpl.IsPodType() {
-		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, processedTmpl.Name)
+		setPodNameParams(localParams, woc.getPodName(nodeName, processedTmpl.Name))
 	}
 	localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
 
@@ -366,9 +366,9 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	//
 	// This has to come after SubstituteParams, not before it. The timeout
 	// fields may reference retry variables (`pendingTimeout: "1{{retries}}s"`),
-	// and checkTemplateTimeouts reports an unparseable duration the same way it
-	// reports an expired one, so checking first failed such a template on its
-	// own placeholder instead of on its deadline.
+	// and templateTimeoutDeadlines reports an unparseable duration the same way
+	// it reports an expired one, so checking first failed such a template on
+	// its own placeholder instead of on its deadline.
 	if reenteringAttempt {
 		if timeoutErr := woc.enforceTemplateTimeouts(ctx, nodeName, node, processedTmpl); timeoutErr != nil {
 			timedOut, _ := woc.wf.GetNodeByName(nodeName)

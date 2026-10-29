@@ -1,0 +1,19 @@
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: step-1
+        template: child
+  - name: child
+    container:
+      image: my-image
+    outputs:
+      parameters:
+      - name: my-param
+        valueFrom:
+          path: /my-path

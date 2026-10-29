@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -38,25 +40,16 @@ const testStubExecutorImage = "argoproj/argoexec:build-unit-test"
 // stubPodBuilderDeps is a tiny hand-written implementation of podBuilderDeps.
 // It does the minimum work each method must do for build to produce a
 // representative pod, with NO fake.NewSimpleClientset and NO informer/cluster.
-// Where a dep mutates the pod (init/supervisor/exec containers, scheduling,
-// metadata, DNS), it reproduces just enough of the real behaviour to let the
-// assertions below distinguish the two layouts.
+// Everything build derives from the snapshot (exec containers, scheduling,
+// metadata, DNS, archive logs, template timeouts) runs for real; tests set
+// those inputs on pb.in.
 type stubPodBuilderDeps struct {
-	executorImage     string
-	archiveLogs       bool
-	initContainerName string // name of the init container legacyLayout asks for
-
-	// gotTimeoutNow records the now value build threads into checkTemplateTimeouts,
-	// so a test can assert build uses the captured snapshot time rather than the
-	// live wall-clock.
-	gotTimeoutNow time.Time
+	// node is what getNodeByName returns for any name.
+	node *wfv1.NodeStatus
 }
 
 func newStubDeps() *stubPodBuilderDeps {
-	return &stubPodBuilderDeps{
-		executorImage:     testStubExecutorImage,
-		initContainerName: common.InitContainerName,
-	}
+	return &stubPodBuilderDeps{}
 }
 
 // lookupImage returns a fixed entrypoint so build never reaches the network.
@@ -64,66 +57,27 @@ func (s *stubPodBuilderDeps) lookupImage(_ context.Context, _ string, _ entrypoi
 	return &entrypoint.Image{Entrypoint: []string{"/stub-entrypoint"}, Cmd: []string{"stub-cmd"}}, nil
 }
 
-// newExecContainer mirrors the real helper's essentials: an argoexec-image
-// container carrying the executor image (so build's "mount /tmp on the
-// executor container" branch fires).
-func (s *stubPodBuilderDeps) newExecContainer(name string, _ *wfv1.Template) *apiv1.Container {
-	return &apiv1.Container{Name: name, Image: s.executorImage}
-}
-
 func (s *stubPodBuilderDeps) getExecutorLogOpts(_ context.Context) []string {
 	return []string{"--loglevel", "info"}
 }
 
-func (s *stubPodBuilderDeps) addMetadata(_ *apiv1.Pod, _ *wfv1.Template) {}
-func (s *stubPodBuilderDeps) addDNSConfig(_ *apiv1.Pod)                  {}
-func (s *stubPodBuilderDeps) addSchedulingConstraints(_ context.Context, _ *apiv1.Pod, _ *wfv1.WorkflowSpec, _ *wfv1.Template, _ *wfv1.Template) {
-}
-
-func (s *stubPodBuilderDeps) IsArchiveLogs(_ *wfv1.Template) bool                { return s.archiveLogs }
-func (s *stubPodBuilderDeps) executorServiceAccountName(_ *wfv1.Template) string { return "" }
 func (s *stubPodBuilderDeps) createArtifactVolumeMounts(_ context.Context, _ *wfv1.Template) []apiv1.Volume {
 	return nil
 }
 func (s *stubPodBuilderDeps) addInputArtifactsVolumes(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template) error {
 	return nil
 }
-
-// newInitContainers reproduces the legacy layout's single standard init
-// container (argoexec init). This is what build copies the var-argo mount onto.
-func (s *stubPodBuilderDeps) newInitContainers(_ context.Context, _ *wfv1.Template) ([]apiv1.Container, error) {
-	return []apiv1.Container{{Name: s.initContainerName, Image: s.executorImage, Command: []string{"argoexec", "init"}}}, nil
+func (s *stubPodBuilderDeps) newArtifactPluginInitContainers(_ context.Context, _ *wfv1.Template, _ execContainerConfig) ([]apiv1.Container, error) {
+	return nil, nil
 }
-
-// newSupervisorContainer reproduces the init-less supervisor: an argoexec-image
-// container running `argoexec supervisor` and carrying ARGO_INITLESS_POD.
-func (s *stubPodBuilderDeps) newSupervisorContainer(_ context.Context, _ *wfv1.Template) *apiv1.Container {
-	return &apiv1.Container{
-		Name:    common.SupervisorContainerName,
-		Image:   s.executorImage,
-		Command: []string{"argoexec", "supervisor"},
-		Env:     []apiv1.EnvVar{{Name: common.EnvVarInitlessPod, Value: "true"}},
-	}
-}
-
-// buildArgoBinVolume reproduces the argoexec-bin image volume.
-func (s *stubPodBuilderDeps) buildArgoBinVolume() apiv1.Volume {
-	return apiv1.Volume{
-		Name: argoBinVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			Image: &apiv1.ImageVolumeSource{Reference: s.executorImage, PullPolicy: apiv1.PullIfNotPresent},
-		},
-	}
-}
-
-func (s *stubPodBuilderDeps) addArtifactPluginsLegacy(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template, _ *config.Config) error {
+func (s *stubPodBuilderDeps) addArtifactPluginsLegacy(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template, _ *config.Config, _ execContainerConfig) error {
 	return nil
 }
-func (s *stubPodBuilderDeps) addArtifactPluginsInitless(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template) error {
+func (s *stubPodBuilderDeps) addArtifactPluginsInitless(_ context.Context, _ *apiv1.Pod, _ *wfv1.Template, _ execContainerConfig) error {
 	return nil
 }
 
-func (s *stubPodBuilderDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) { return nil, nil }
+func (s *stubPodBuilderDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) { return s.node, nil }
 func (s *stubPodBuilderDeps) findRetryNode(_ string) *wfv1.NodeStatus          { return nil }
 func (s *stubPodBuilderDeps) retryStrategyForTemplate(_ *wfv1.Template) *wfv1.RetryStrategy {
 	return nil
@@ -133,10 +87,6 @@ func (s *stubPodBuilderDeps) retryNodeTemplate(_ context.Context, _ *wfv1.NodeSt
 }
 func (s *stubPodBuilderDeps) applyRetryOnDifferentHost(_ string, _ wfv1.RetryStrategy, _ *apiv1.Pod) {
 }
-func (s *stubPodBuilderDeps) checkTemplateTimeouts(_ *wfv1.Template, _ *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	s.gotTimeoutNow = now
-	return nil, nil, nil
-}
 func (s *stubPodBuilderDeps) getServiceAccountTokenName(_ context.Context, _ string) (string, error) {
 	return "", nil
 }
@@ -144,28 +94,6 @@ func (s *stubPodBuilderDeps) getPodGCDelay(_ context.Context, _ *wfv1.PodGC) tim
 	return 0
 }
 func (s *stubPodBuilderDeps) persistentVolumeClaims() []apiv1.Volume { return nil }
-
-// TestBuild_ThreadsSnapshotNowIntoTimeout asserts build() drives the template
-// timeout determination off the captured snapshot time (pb.in.now) rather than
-// the live wall-clock — a live time.Now() read inside checkTemplateTimeouts
-// would leak a clock into the otherwise-pure build via the deps boundary and
-// break determinism for a given snapshot.
-func TestBuild_ThreadsSnapshotNowIntoTimeout(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	tmpl := simpleContainerTemplate()
-	main := tmpl.Container.DeepCopy()
-
-	deps := newStubDeps()
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
-	// Pin the snapshot clock to a fixed instant well away from real time.Now().
-	snapshotNow := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
-	pb.in.now = snapshotNow
-
-	_, err := pb.build(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, snapshotNow, deps.gotTimeoutNow,
-		"build must pass the captured snapshot time into checkTemplateTimeouts, not the live wall-clock")
-}
 
 // newTestPodBuilder constructs a podBuilder entirely from literals — no woc, no
 // controller, no clientset. initless selects the layout, exactly as
@@ -186,10 +114,14 @@ func newTestPodBuilder(tmpl *wfv1.Template, mainCtrs []apiv1.Container, initless
 			globalParams:       common.Parameters{},
 			artifactRepository: &wfv1.ArtifactRepository{},
 			config:             &config.Config{},
-			executorImage:      testStubExecutorImage,
-			now:                time.Now().UTC(),
-			podNameVersion:     util.PodNameV2,
-			log:                logging.RequireLoggerFromContext(logging.TestContext(context.Background())),
+			execCfg: execContainerConfig{
+				image:       testStubExecutorImage,
+				executor:    &apiv1.Container{},
+				workflowUID: wf.UID,
+			},
+			now:            time.Now().UTC(),
+			podNameVersion: util.PodNameV2,
+			log:            logging.RequireLoggerFromContext(logging.TestContext(context.Background())),
 		},
 		deps:   deps,
 		layout: newPodLayout(initless),
@@ -240,6 +172,52 @@ func simpleContainerTemplate() *wfv1.Template {
 			Image:   "my-image",
 			Command: []string{"echo", "hi"},
 		},
+	}
+}
+
+// TestBuild_ExecContainerConfig checks every argoexec container of a built pod,
+// and the pod-level values shared with them, come from the snapshot's execCfg,
+// with the executor service account build resolves from the template.
+func TestBuild_ExecContainerConfig(t *testing.T) {
+	for _, initless := range []bool{false, true} {
+		t.Run(fmt.Sprintf("initless=%v", initless), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			tmpl := simpleContainerTemplate()
+			tmpl.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "exec-sa"}
+			main := tmpl.Container.DeepCopy()
+			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, initless, newStubDeps())
+			pb.in.execCfg.imagePullPolicy = apiv1.PullAlways
+			pb.in.execCfg.instanceID = "instance"
+
+			result, err := pb.build(ctx)
+			require.NoError(t, err)
+			pod := result.Pod
+
+			assert.Equal(t, "instance", pod.Labels[common.LabelKeyControllerInstanceID])
+			assert.True(t, hasVolume(pod.Spec.Volumes, common.ServiceAccountTokenVolumeName))
+			execCtrNames := []string{common.InitContainerName, common.WaitContainerName}
+			if initless {
+				execCtrNames = []string{common.SupervisorContainerName}
+				require.True(t, hasVolume(pod.Spec.Volumes, argoBinVolumeName))
+				for _, v := range pod.Spec.Volumes {
+					if v.Name == argoBinVolumeName {
+						assert.Equal(t, testStubExecutorImage, v.Image.Reference)
+						assert.Equal(t, apiv1.PullAlways, v.Image.PullPolicy)
+					}
+				}
+			}
+			for _, name := range execCtrNames {
+				ctr := containerByName(slices.Concat(pod.Spec.InitContainers, pod.Spec.Containers), name)
+				require.NotNil(t, ctr, name)
+				assert.Equal(t, testStubExecutorImage, ctr.Image, name)
+				assert.Equal(t, apiv1.PullAlways, ctr.ImagePullPolicy, name)
+				uid, _ := envValue(ctr, common.EnvVarWorkflowUID)
+				assert.Equal(t, "wf-uid", uid, name)
+				instance, _ := envValue(ctr, common.EnvVarInstanceID)
+				assert.Equal(t, "instance", instance, name)
+				assert.True(t, hasMount(ctr, common.ServiceAccountTokenVolumeName), name)
+			}
+		})
 	}
 }
 
@@ -418,9 +396,8 @@ func TestBuild_InitlessLayout_NoAuxContainer(t *testing.T) {
 		Command: []string{"argoexec", "resource", "get"},
 	}
 
-	deps := newStubDeps()
-	deps.archiveLogs = false // resource-without-logs: no aux container
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, deps)
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, newStubDeps())
+	pb.in.execWfSpec.ArchiveLogs = new(false) // resource-without-logs: no aux container
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -466,9 +443,8 @@ func TestBuild_InitlessResourceManifestFrom_SchedulesSupervisor(t *testing.T) {
 		Command: []string{"argoexec", "resource", "create"},
 	}
 
-	deps := newStubDeps()
-	deps.archiveLogs = false // would be supervisor-less were it not for manifestFrom
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, deps)
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, newStubDeps())
+	pb.in.execWfSpec.ArchiveLogs = new(false) // would be supervisor-less were it not for manifestFrom
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -501,9 +477,8 @@ func TestBuild_LegacyResourceManifestFrom_NoAuxContainer(t *testing.T) {
 		Command: []string{"argoexec", "resource", "create"},
 	}
 
-	deps := newStubDeps()
-	deps.archiveLogs = false
-	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, deps)
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, newStubDeps())
+	pb.in.execWfSpec.ArchiveLogs = new(false)
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -628,11 +603,10 @@ const envConfigMountName = "argo-env-config"
 
 // oversizedTemplate returns a container template whose JSON marshalling exceeds
 // common.MaxEnvVarLen, forcing build()'s ARGO_TEMPLATE offload branch. The bulk
-// lives in tmpl.Metadata.Annotations, which build()'s simplifiedTmpl step
-// preserves (only Inputs.Parameters are stripped), so the marshalled
-// ARGO_TEMPLATE value is guaranteed to be oversized. The stub addMetadata is a
-// no-op, so this does NOT inflate the pod object itself — only the template env
-// value, isolating the offloadEnvVarTemplate path.
+// lives in tmpl.Metadata.Annotations, which executorTemplate preserves (only
+// Inputs.Parameters are stripped), so the marshalled ARGO_TEMPLATE value is
+// guaranteed to be oversized. applyPodMetadata also copies the annotation onto
+// the pod; the tests only assert on the ARGO_TEMPLATE env and its ConfigMap.
 func oversizedTemplate() *wfv1.Template {
 	tmpl := simpleContainerTemplate()
 	tmpl.Metadata = wfv1.Metadata{
@@ -756,50 +730,40 @@ func TestBuild_OffloadContainerArgs(t *testing.T) {
 	assert.True(t, hasMount(mainCtr, envConfigMountName), "main container must mount the offload ConfigMap")
 }
 
-// templateTimeoutStubDeps is the build-test stub with a node and a fixed
-// template timeout deadline, so build applies the template timeout.
-type templateTimeoutStubDeps struct {
-	*stubPodBuilderDeps
-	templateDeadline *time.Time
-}
-
-func (d *templateTimeoutStubDeps) getNodeByName(_ string) (*wfv1.NodeStatus, error) {
-	return &wfv1.NodeStatus{}, nil
-}
-
-func (d *templateTimeoutStubDeps) checkTemplateTimeouts(_ *wfv1.Template, _ *wfv1.NodeStatus, _ time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	return d.templateDeadline, nil, nil
-}
-
 // TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds asserts the
 // template timeout lowers the pod's activeDeadlineSeconds to the time left
 // before the timeout, and never raises an activeDeadlineSeconds that is already
-// smaller, whichever source set it.
+// smaller, whichever source set it. The node is pending (unless running is set)
+// and started startedAgo, so its template times out timeout after that. The
+// snapshot clock is pinned far from the wall clock, so build using the live
+// clock instead of pb.in.now fails every case with a timeout.
 func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 	now := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
-	inAMinute := now.Add(time.Minute)
-	inASecond := now.Add(time.Second)
-	passed := now.Add(-10 * time.Second)
 	wfDeadline := now.Add(30 * time.Second)
 	tests := []struct {
 		name             string
 		tmplADS          string
 		workflowDeadline *time.Time
 		podSpecPatch     string
-		templateDeadline *time.Time
+		timeout          string
+		startedAgo       time.Duration
+		running          bool
 		wantADS          int64
 		wantErr          string
 	}{
 		{name: "no template timeout", tmplADS: "30", wantADS: 30},
-		{name: "template activeDeadlineSeconds smaller than timeout is kept", tmplADS: "30", templateDeadline: &inAMinute, wantADS: 30},
-		{name: "template activeDeadlineSeconds larger than timeout is clamped", tmplADS: "300", templateDeadline: &inAMinute, wantADS: 60},
-		{name: "no activeDeadlineSeconds takes the timeout", templateDeadline: &inAMinute, wantADS: 60},
-		{name: "workflow deadline smaller than timeout is kept", workflowDeadline: &wfDeadline, templateDeadline: &inAMinute, wantADS: 30},
-		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, templateDeadline: &inAMinute, wantADS: 30},
-		{name: "timeout nearly expired", tmplADS: "30", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
-		{name: "timeout nearly expired with a smaller activeDeadlineSeconds", tmplADS: "1", templateDeadline: &inASecond, wantErr: "node exceeded its deadline"},
-		{name: "timeout passed", tmplADS: "30", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
-		{name: "timeout passed longer ago than activeDeadlineSeconds", tmplADS: "5", templateDeadline: &passed, wantErr: "node exceeded its deadline"},
+		{name: "template activeDeadlineSeconds smaller than timeout is kept", tmplADS: "30", timeout: "1m", wantADS: 30},
+		{name: "template activeDeadlineSeconds larger than timeout is clamped", tmplADS: "300", timeout: "1m", wantADS: 60},
+		{name: "time already spent counts against the timeout", tmplADS: "300", timeout: "1m", startedAgo: 20 * time.Second, wantADS: 40},
+		{name: "no activeDeadlineSeconds takes the timeout", timeout: "1m", wantADS: 60},
+		{name: "workflow deadline smaller than timeout is kept", workflowDeadline: &wfDeadline, timeout: "1m", wantADS: 30},
+		{name: "podSpecPatch activeDeadlineSeconds smaller than timeout is kept", podSpecPatch: `{"activeDeadlineSeconds": 30}`, timeout: "1m", wantADS: 30},
+		{name: "podSpecPatch activeDeadlineSeconds larger than timeout is clamped", podSpecPatch: `{"activeDeadlineSeconds": 300}`, timeout: "1m", wantADS: 60},
+		{name: "timeout nearly expired", tmplADS: "30", timeout: "1s", wantErr: "node exceeded its deadline"},
+		{name: "timeout nearly expired with a smaller activeDeadlineSeconds", tmplADS: "1", timeout: "1s", wantErr: "node exceeded its deadline"},
+		{name: "pending node past its timeout times out", tmplADS: "30", timeout: "1m", startedAgo: 70 * time.Second, wantErr: ErrTimeout.Error()},
+		{name: "running node past its timeout fails", tmplADS: "30", timeout: "1m", startedAgo: 70 * time.Second, running: true, wantErr: "node exceeded its deadline"},
+		{name: "running node past its timeout fails even with a smaller activeDeadlineSeconds", tmplADS: "5", timeout: "1m", startedAgo: 70 * time.Second, running: true, wantErr: "node exceeded its deadline"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -809,9 +773,14 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 				tmpl.ActiveDeadlineSeconds = intstr.ParsePtr(tt.tmplADS)
 			}
 			tmpl.PodSpecPatch = tt.podSpecPatch
+			tmpl.Timeout = tt.timeout
 			main := tmpl.Container.DeepCopy()
 
-			deps := &templateTimeoutStubDeps{stubPodBuilderDeps: newStubDeps(), templateDeadline: tt.templateDeadline}
+			deps := newStubDeps()
+			deps.node = &wfv1.NodeStatus{Phase: wfv1.NodePending, StartedAt: metav1.NewTime(now.Add(-tt.startedAgo))}
+			if tt.running {
+				deps.node.Phase = wfv1.NodeRunning
+			}
 			pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
 			pb.in.now = now
 			pb.in.computedWorkflowDeadline = tt.workflowDeadline
