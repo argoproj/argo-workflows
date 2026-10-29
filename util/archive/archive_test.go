@@ -247,8 +247,8 @@ func TestZipPreservesModeAndModTime(t *testing.T) {
 		require.NoError(t, os.WriteFile(script, []byte("#!/bin/sh\necho hi\n"), 0o755))
 		// os.WriteFile applies the process umask, so the perm argument above is
 		// a ceiling, not the mode: under umask 077 the fixture lands at 0700
-		// and the executable bit this test is about is never set. Chmod ignores
-		// the umask, so the fixture is the same whoever runs it.
+		// rather than the 0755 this test asserts on. Chmod ignores the umask,
+		// so the fixture is the same whoever runs it.
 		require.NoError(t, os.Chmod(script, 0o755))
 		require.NoError(t, os.Chtimes(script, modTime, modTime))
 		return dir, script
@@ -266,7 +266,7 @@ func TestZipPreservesModeAndModTime(t *testing.T) {
 		info, err := os.Stat(source)
 		require.NoError(t, err)
 		if runtime.GOOS != "windows" {
-			require.Equal(t, os.FileMode(0o755), info.Mode().Perm(), "fixture is not executable, so the assertion below would prove nothing")
+			require.Equal(t, os.FileMode(0o755), info.Mode().Perm(), "fixture is not 0755, so the comparison below would not cover the group and other bits")
 		}
 		require.Equal(t, info.Mode().Perm(), entry.Mode().Perm(), "the archive must carry the file's mode")
 
