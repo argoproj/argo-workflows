@@ -92,8 +92,8 @@ schema = 3
     version = "v0.0.0-20200706003622-8a50f05110d2"
     hash = "sha256-la491SAfDVV2uyVQPHRthxJTKKYSwke0N1IU9iqoBwE="
   [mod."github.com/XSAM/otelsql"]
-    version = "v0.43.0"
-    hash = "sha256-jYd/cfx6dZHsMjpUInVsxbNjmPkoBUmMdVf7VRBZZ5E="
+    version = "v0.44.0"
+    hash = "sha256-/VW0TBtuJniqQ9d83NIJO95CiE/pK6xf5lJTP78JIss="
   [mod."github.com/ajg/form"]
     version = "v1.5.1"
     hash = "sha256-wHKZnoL8gW3YL8frdMIbs703ZX/NruuW5dV13PhxlG8="
