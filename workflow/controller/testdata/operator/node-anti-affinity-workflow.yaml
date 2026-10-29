@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-fail
+spec:
+  entrypoint: retry-fail
+  templates:
+  - name: retry-fail
+    retryStrategy:
+      limit: 2
+      retryPolicy: "Always"
+      affinity:
+        nodeAntiAffinity: {}
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        exit(1)
