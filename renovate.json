@@ -12,6 +12,12 @@
   "nix": {
     "enabled": true
   },
+  "maven": {
+    "enabled": false
+  },
+  "gitIgnoredAuthors": [
+    "41898282+github-actions[bot]@users.noreply.github.com"
+  ],
   "packageRules": [
     {
       "description": "Group k8s.io code-generator, proto vendor, and OpenAPI spec versions",
