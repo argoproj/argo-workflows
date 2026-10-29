@@ -5046,6 +5046,27 @@ spec:
       command: [sleep, "{{inputs.parameters.sleep_time}}"]
 `
 
+var retryTimeoutVarWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-var-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{retries}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
@@ -5150,6 +5171,17 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		pods, err := listPods(ctx, woc)
 		require.NoError(t, err)
 		assert.Empty(t, pods.Items)
+	})
+	t.Run("Retry timeout with {{retries}} variable", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(retryTimeoutVarWf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		// Workflow should be running (not failed with parse error)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 }
 

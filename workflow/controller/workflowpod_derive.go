@@ -163,6 +163,27 @@ func templateTimeoutDeadlines(tmpl *wfv1.Template, node *wfv1.NodeStatus, now ti
 	return deadline, pendingDeadline, nil
 }
 
+// templateTimeoutDeadlinesForPendingOnly checks only the pendingTimeout deadline
+// for Pending nodes. Used for templates with retryStrategy where the timeout
+// contains retry-scoped variables (e.g. {{retries}}) that are substituted later.
+func templateTimeoutDeadlinesForPendingOnly(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (pendingDeadline *time.Time, err error) {
+	if node == nil {
+		return nil, nil
+	}
+
+	if tmpl.PendingTimeout != "" && node.Phase == wfv1.NodePending {
+		pendingDeadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
+		if err != nil {
+			return nil, err
+		}
+		if now.After(*pendingDeadline) {
+			return nil, ErrTimeout
+		}
+	}
+
+	return pendingDeadline, nil
+}
+
 // applyTemplateDeadline lowers activeDeadlineSeconds to the whole seconds left
 // before templateDeadline (the node's StartedAt plus the template timeout, see
 // templateTimeoutDeadlines) as of now. It only ever lowers it: a smaller
