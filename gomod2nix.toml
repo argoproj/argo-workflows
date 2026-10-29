@@ -887,8 +887,8 @@ schema = 3
     version = "v0.70.0"
     hash = "sha256-N6TsUbaJghFvP6Snk4voebP6ZyQcu/lG7Oxmqd7BgVI="
   [mod."go.opentelemetry.io/contrib/propagators/envcar"]
-    version = "v0.70.0"
-    hash = "sha256-CuDOtdMNKRgqfxtMYYDO6a8XWRiqW8dGWEmb/8YRBjo="
+    version = "v0.72.0"
+    hash = "sha256-umyDXMg6qpXvykaY7Id4n8aF3V+9yXMoZVejk/vYo48="
   [mod."go.opentelemetry.io/otel"]
     version = "v1.47.0"
     hash = "sha256-D4dSqVH4J9tKmnQWZFANTZ3+frHUjFIgcsvJWPSwuU4="
