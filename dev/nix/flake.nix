@@ -212,7 +212,10 @@
                 rev = "v${version}";
                 sha256 = "sha256-x7WniZ4wpnuzUHM2ZC2P7Ns67bIp4V4F9f4xQEJONEk=";
               };
-              vendorHash = "sha256-cNMknwlU7ENwN67CtyU1YgYIXCJbh4b7Z3oUK7kkEkk=";
+              vendorHash = "sha256-8WTrPn2Y2n29t/0QBNGylgH7xMDvps4WwXfr4pSEymQ=";
+              # nixpkgs' prePatch rewrites Taskfile.yml test targets that don't exist in our pinned version;
+              # tests are disabled so the patching is unnecessary.
+              prePatch = "";
               doCheck = false;
             });
 
