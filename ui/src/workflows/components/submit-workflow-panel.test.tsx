@@ -32,7 +32,8 @@ function renderPanel(entrypoint: string, templates: Template[], workflowParamete
                 notifications: {} as any,
                 popup: {} as any,
                 history
-            }}>
+            }}
+        >
             <SubmitWorkflowPanel
                 kind='WorkflowTemplate'
                 namespace='argo'
@@ -83,7 +84,8 @@ describe('SubmitWorkflowPanel', () => {
                     notifications: {} as any,
                     popup: {} as any,
                     history: createMemoryHistory()
-                }}>
+                }}
+            >
                 <SubmitWorkflowPanel
                     kind='WorkflowTemplate'
                     namespace='argo'
