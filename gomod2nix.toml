@@ -685,6 +685,9 @@ schema = 3
   [mod."github.com/opencontainers/image-spec"]
     version = "v1.1.1"
     hash = "sha256-bxBjtl+6846Ed3QHwdssOrNvlHV6b+Dn17zPISSQGP8="
+  [mod."github.com/pandatix/go-abnf"]
+    version = "v0.5.1"
+    hash = "sha256-z5eiSDoCdS1MgACIZog4GmBZ+K6iN2vkubWnDtG+Fzk="
   [mod."github.com/pelletier/go-toml/v2"]
     version = "v2.3.1"
     hash = "sha256-5H8+UOtPOs+Yc+8oVT/3bugCCdbq3jFMH6eOW8dadyg="
@@ -719,8 +722,8 @@ schema = 3
     version = "v0.6.3"
     hash = "sha256-uYXpFkXMT4AXWJShrCRnu51vhGQAuAU3LFQhhGVJ+74="
   [mod."github.com/prometheus/common"]
-    version = "v0.72.0"
-    hash = "sha256-OXi+GGzrV31yeKtel2bImkF7PW4tKWyOcyTZB5WbkDI="
+    version = "v0.73.0"
+    hash = "sha256-2cM3km+xoZNLVXNQjBtVMdpDpUTZRJkRV/qx8PsvIg0="
   [mod."github.com/prometheus/otlptranslator"]
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
