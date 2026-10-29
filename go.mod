@@ -50,7 +50,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/klauspost/compress v1.20.1
-	github.com/klauspost/pgzip v1.2.7
+	github.com/klauspost/pgzip v1.3.0
 	github.com/lib/pq v1.12.3
 	github.com/minio/minio-go/v7 v7.3.0
 	github.com/moby/moby/api v1.55.0
