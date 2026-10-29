@@ -129,9 +129,9 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 	}
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement
-	for old, new := range substitutions {
-		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
-		manifest = rmatch.ReplaceAllString(manifest, new)
+	for expr, placeholder := range substitutions {
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(expr) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, placeholder)
 	}
 
 	return manifest
@@ -516,6 +516,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	if tmpl.IsPodType() {
 		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.RetryStrategy != nil {
 		localParams[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()

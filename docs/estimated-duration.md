@@ -1,7 +1,5 @@
 # Estimated Duration
 
-> v2.12 and after
-
 When you run a workflow, the controller will try to estimate its duration.
 
 This is based on the most recently successful workflow submitted from the same workflow template, cluster workflow template or cron workflow.

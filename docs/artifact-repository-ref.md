@@ -1,7 +1,5 @@
 # Artifact Repository Ref
 
-> v2.9 and after
-
 You can reduce duplication in your templates by configuring repositories that can be accessed by any workflow. This can also remove sensitive information from your templates.
 
 Create a suitable config map in either (a) your workflows namespace or (b) in the managed namespace:
@@ -14,7 +12,7 @@ metadata:
   # different config map in `artifactRepositoryRef.configMap`.
   name: my-artifact-repository
   annotations:
-    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    # If you want to use a specific key, put that key into this annotation.
     workflows.argoproj.io/default-artifact-repository: default-v1-s3-artifact-repository
 data:
   default-v1-s3-artifact-repository: |
