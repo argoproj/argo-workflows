@@ -10455,3 +10455,138 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
+
+var retryPendingTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-pending-timeout
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    pendingTimeout: 2s
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestPendingTimeoutFiresOnRetriedTemplate covers the second half of #17258: a
+// template with a retryStrategy ignored its own timeout and pendingTimeout, so
+// a pod that never leaves Pending (Unschedulable, unmet quota) kept the
+// workflow Running with no way out but terminating it.
+//
+// checkConstraints is handed the Retry node, which is always Running, and both
+// timeout checks act only on a Pending node. handleRetries then picks the
+// attempt node -- the one that is actually Pending -- and dispatched it without
+// checking. The same template without a retryStrategy fails on time, which is
+// what makes this a bug rather than a documented limitation of retries.
+func TestPendingTimeoutFiresOnRetriedTemplate(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(retryPendingTimeoutWf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// The pod is created but never scheduled, so the attempt node stays Pending.
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	time.Sleep(3 * time.Second)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	attempt := woc.wf.Status.Nodes.FindByDisplayName("stuck(0)")
+	require.NotNil(t, attempt, "the first attempt node must exist; nodes = %v", woc.wf.Status.Nodes)
+	assert.Equal(t, wfv1.NodeFailed, attempt.Phase, "the Pending attempt must fail once its pendingTimeout passes, as it does without a retryStrategy")
+}
+
+var retryPendingTimeoutWithVarWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-pending-timeout-var
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    pendingTimeout: "1{{retries}}s"
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestPendingTimeoutOnRetriedTemplateResolvesRetryVariables pins the ordering
+// between parameter substitution and the timeout check.
+//
+// The timeout fields may reference retry variables, and templateTimeoutDeadlines
+// reports an unparseable duration through the same error path as an expired
+// one -- enforceTemplateTimeouts then fails the node with "invalid timeout
+// format". Checking before common.SubstituteParams therefore failed a template
+// on its own placeholder rather than on its deadline, turning a workflow that
+// runs on main into one that fails.
+//
+// Here "1{{retries}}s" resolves to 10s on the first attempt, which has not
+// passed, so the attempt stays Pending exactly as it does without the retry
+// variable.
+func TestPendingTimeoutOnRetriedTemplateResolvesRetryVariables(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(retryPendingTimeoutWithVarWf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	time.Sleep(1 * time.Second)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotContains(t, node.Message, "invalid timeout format",
+			"node %q must not be failed on an unresolved placeholder", node.Name)
+		assert.NotContains(t, node.Message, "{{retries}}",
+			"node %q message leaked an unsubstituted variable", node.Name)
+	}
+
+	attempt := woc.wf.Status.Nodes.FindByDisplayName("stuck(0)")
+	require.NotNil(t, attempt, "the first attempt node must exist; nodes = %v", woc.wf.Status.Nodes)
+	assert.Equal(t, wfv1.NodePending, attempt.Phase, "10s has not passed, so the attempt is still Pending")
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+// TestPendingTimeoutOnRetriedTemplateStopsDispatch pins the early return in
+// handleRetries, not just the marking: once the attempt has timed out the
+// controller must stop handling it rather than carry on into dispatch with a
+// node it has just failed.
+func TestPendingTimeoutOnRetriedTemplateStopsDispatch(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(retryPendingTimeoutWf)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	time.Sleep(3 * time.Second)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1, "the timed-out attempt must not be dispatched again in the same operation")
+}
