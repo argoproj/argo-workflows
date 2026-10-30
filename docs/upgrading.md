@@ -209,6 +209,15 @@ Previously, a `timeout` longer than the template's `activeDeadlineSeconds`, the 
 Pods that relied on this now stop at the smaller deadline and fail with `DeadlineExceeded`.
 If you need the longer deadline, raise or remove the smaller `activeDeadlineSeconds`.
 
+### SSO RBAC rules see an empty `groups` list for users without groups
+
+In SSO RBAC rules, `groups` is now an empty list for a user without groups ([#15110](https://github.com/argoproj/argo-workflows/issues/15110)).
+Previously, a rule that refers to `groups` failed to evaluate for such a user, and the argo-server denied the user access, even if a rule with a lower precedence, such as `"true"`, would have matched.
+Now `'admin' in groups` is false for the user, and the argo-server moves on to the next rule.
+A rule that is true for an empty list now matches users without groups, for example a negated check such as `!('contractors' in groups)`, or `all(groups, # startsWith 'corp-')`.
+With `SSO_DELEGATE_RBAC_TO_NAMESPACE=true`, these users can now also get a namespace service account whose rule matches them, such as `"true"`.
+If you relied on these users being denied, require at least one group in the rule, for example `len(groups) > 0 && !('contractors' in groups)`.
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade
