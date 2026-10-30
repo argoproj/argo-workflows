@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel/propagation"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -14,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v4"
+	argoconfig "github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/util"
@@ -132,6 +136,22 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 	}
 }
 
+// TraceContextFromEnv reads the W3C trace context the controller gave a
+// task, as TRACEPARENT and TRACESTATE in the env lookupEnv reads, or nil if
+// it has no traceparent.
+func TraceContextFromEnv(lookupEnv func(string) (string, bool)) map[string]string {
+	carrier := propagation.MapCarrier{}
+	for _, key := range (propagation.TraceContext{}).Fields() {
+		if v, _ := lookupEnv(strings.ToUpper(key)); v != "" {
+			carrier.Set(key, v)
+		}
+	}
+	if carrier.Get("traceparent") == "" {
+		return nil
+	}
+	return carrier
+}
+
 // Init builds the executor for the one task a classic argoexec pod runs:
 // process-wide setup followed by the single task described by the
 // environment.
@@ -153,6 +173,21 @@ func TerminationGracePeriodDuration() time.Duration {
 		return time.Duration(x) * time.Second
 	}
 	return 30 * time.Second
+}
+
+// ReleaseReserve is the time a hot worker pool pod's containers keep back at
+// the end of the pod's grace period to release its task
+// (ARGO_RELEASE_RESERVE_SECONDS), the controller's default if unset.
+func ReleaseReserve() (time.Duration, error) {
+	reserve := (*argoconfig.HotWorkersConfig)(nil).GetReleaseReserveSeconds()
+	if v := os.Getenv(common.EnvVarReleaseReserveSeconds); v != "" {
+		var err error
+		reserve, err = strconv.ParseInt(v, 10, 64)
+		if err != nil || reserve < 0 {
+			return 0, fmt.Errorf("%s must be a whole number of seconds, not %q", common.EnvVarReleaseReserveSeconds, v)
+		}
+	}
+	return time.Duration(reserve) * time.Second, nil
 }
 
 // CheckErr is a convenience function to panic upon error
