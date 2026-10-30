@@ -419,6 +419,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
+	// Controller's copy only; see StripLastAppliedConfiguration in util/informer.
+	//nolint:errcheck // only errors once the informer has started, and it hasn't
+	wfc.wftmplInformer.Informer().SetTransform(informerutil.StripTemplateCacheFields)
 
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
@@ -771,6 +774,9 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	logger := logging.RequireLoggerFromContext(ctx)
 	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset) {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
+		// Controller's copy only; see the comment on wftmplInformer above.
+		//nolint:errcheck // only errors once the informer has started, and it hasn't
+		wfc.cwftmplInformer.Informer().SetTransform(informerutil.StripTemplateCacheFields)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
 		// since the above call is asynchronous, make sure we populate our cache before we try to use it later
