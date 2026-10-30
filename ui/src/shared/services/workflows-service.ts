@@ -20,7 +20,7 @@ function isNodePendingOrRunning(node: NodeStatus) {
     return node.phase === models.NODE_PHASE.PENDING || node.phase === models.NODE_PHASE.RUNNING;
 }
 
-function hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
+export function hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
     const node = workflow.status.nodes[nodeId];
     return node?.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
 }
@@ -266,6 +266,10 @@ export const WorkflowsService = {
         // Return archived logs when the node has finished and has a <container>-logs artifact for one of its main containers.
         return from(this.getWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
             switchMap(({workflow: updatedWorkflow, isPendingOrRunning}) => {
+                // A pooled node runs on a worker pod shared with other tasks, so it has only archived logs.
+                if (updatedWorkflow.status.nodes[nodeId]?.pooledTask) {
+                    return getLogsFromArtifact(updatedWorkflow);
+                }
                 if (!isPendingOrRunning && hasArtifactLogs(updatedWorkflow, nodeId, container)) {
                     return getLogsFromArtifact(updatedWorkflow).pipe(catchError(getLogsFromCluster));
                 }
