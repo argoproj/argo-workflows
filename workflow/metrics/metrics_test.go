@@ -29,6 +29,18 @@ func TestMetrics(t *testing.T) {
 	assert.Equal(t, []uint64{1, 0, 0, 0, 0, 0, 0}, val.BucketCounts)
 }
 
+func TestCompletionRequeueHistogramRegistrationError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	m, _, err := CreateDefaultTestMetrics(ctx)
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, m.Shutdown(ctx)) }()
+	utilization := m.GetInstrument(telemetry.InstrumentWorkflowReconcileUtilization.Name())
+	require.NotNil(t, utilization)
+	err = addCompletionRequeueHistograms(ctx, m)
+	require.ErrorContains(t, err, "Instrument called workflow_completion_requeue_delay already exists")
+	assert.Same(t, utilization, m.GetInstrument(telemetry.InstrumentWorkflowReconcileUtilization.Name()))
+}
+
 func TestErrors(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	m, _, err := CreateDefaultTestMetrics(ctx)
