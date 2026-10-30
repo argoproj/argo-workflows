@@ -150,6 +150,9 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 	for i, pr := range common.ParseObjects(ctx, data, opts.Strict) {
 		obj, err := pr.Object, pr.Err
 		if obj == nil {
+			// report parse errors even when the document could not be converted
+			// to a Kubernetes object, so users learn which file failed and why
+			res.addParseErr(fmt.Sprintf("object #%d", i+1), err)
 			continue // could not parse to kubernetes object
 		}
 		// we should prefer the object's namespace
@@ -201,7 +204,10 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 				)
 			}
 		case *wfv1.WorkflowEventBinding:
-			// noop
+			// there is no lint endpoint for this kind, but a parse error must still be
+			// reported, and res.Linted set, or the file is treated as never linted
+			res.addParseErr(getObjectName(wf.WorkflowEventBindingKind, v, i), err)
+			continue
 		case *wfv1.WorkflowTemplate:
 			objName = getObjectName(wf.WorkflowTemplateKind, v, i)
 			if opts.ServiceClients.WorkflowTemplatesClient == nil {
@@ -225,6 +231,16 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 	}
 
 	return res
+}
+
+// addParseErr records a parse error when parsing returned no typed object or
+// there is no lint endpoint for its kind. It is a no-op when err is nil.
+func (r *Result) addParseErr(objName string, err error) {
+	if err == nil {
+		return
+	}
+	r.Linted = true // the file was processed and found broken
+	r.Errs = append(r.Errs, fmt.Errorf("in %s: %w", objName, err))
 }
 
 func (l *Results) Msg() string {
