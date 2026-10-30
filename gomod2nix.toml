@@ -884,8 +884,8 @@ schema = 3
     version = "v0.72.0"
     hash = "sha256-VrHgwDwPBZJi9QFcnAJAA90HpCvmN92YcIl3rkMm3jg="
   [mod."go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"]
-    version = "v0.70.0"
-    hash = "sha256-jJfTEztGWbxltg3yHD3AqjMc91tw7iSj/FgV+zvMjjM="
+    version = "v0.72.0"
+    hash = "sha256-sNnIeJ9LYJV9Btp+Rg5xHw6aZ8DZW8ukJ8XoKPhqKqw="
   [mod."go.opentelemetry.io/contrib/instrumentation/runtime"]
     version = "v0.72.0"
     hash = "sha256-/y2GAqSsf5Qp8J0HsW6kNZjsjch3i8BBSHy3xTee4hE="
