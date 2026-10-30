@@ -1,5 +1,5 @@
 import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
-import {NodeStatus, Workflow} from './models';
+import {NodeStatus, PooledTaskState, PooledTaskStatus, Workflow} from './models';
 
 export const POD_NAME_V1 = 'v1';
 export const POD_NAME_V2 = 'v2';
@@ -43,6 +43,38 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
         prefix = prefix.substring(0, prefix.length - excess);
     }
     return `${prefix}-${hash}`;
+}
+
+// getPooledTaskState returns where a pooled task is in its hand-off, from its conditions:
+// Interrupted once the controller has interrupted it, Claimed while a worker holds it, and Enqueued otherwise
+// note: this is intended to be equivalent to the server-side Go code in pkg/apis/workflow/v1alpha1/pool_types.go#State
+export function getPooledTaskState(task: PooledTaskStatus): PooledTaskState {
+    const isTrue = (type: string) => (task.conditions || []).some(c => c.type === type && c.status === 'True');
+    if (isTrue('Interrupted')) {
+        return 'Interrupted';
+    }
+    return isTrue('Claimed') ? 'Claimed' : 'Enqueued';
+}
+
+export type PooledTaskMarker = 'queued' | 'unclaimed' | 'released';
+
+// getPooledTaskPodName returns the name a pooled node shows where a pod node shows its pod name:
+// the claiming worker pod once a worker has claimed the task, otherwise the task's `{{node.taskName}}`
+// with a marker saying why no worker holds it: queued while the node runs, then unclaimed or released once it has ended
+// note: this is intended to be equivalent to the server-side Go code in workflow/util/pod_name.go#PooledTaskPodName
+export function getPooledTaskPodName(task: PooledTaskStatus, ended: boolean): {name: string; marker?: PooledTaskMarker} {
+    const state = getPooledTaskState(task);
+    if (state !== 'Enqueued' && task.workerPodName) {
+        return {name: task.workerPodName};
+    }
+    if (state !== 'Enqueued') {
+        return {name: task.taskName};
+    }
+    if (!ended) {
+        return {name: task.taskName, marker: 'queued'};
+    }
+    const released = (task.conditions || []).some(c => c.type === 'Claimed' && c.status === 'False' && c.reason === 'Released');
+    return {name: task.taskName, marker: released ? 'released' : 'unclaimed'};
 }
 
 export function ensurePodNamePrefixLength(prefix: string): string {
