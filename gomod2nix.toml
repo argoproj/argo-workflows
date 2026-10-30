@@ -35,8 +35,8 @@ schema = 3
     version = "v1.23.3"
     hash = "sha256-lAIm7S5QMPxE910PvJUecFhFIls8WtCDqJnv5jxfaa4="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
-    version = "v1.14.1"
-    hash = "sha256-CD1NctWJC+HajfOPgV/9V6lLcVdPbJs+Lpp9woKq96c="
+    version = "v1.15.0"
+    hash = "sha256-0zoOakmhNW8HQ1jHDQQHZ07DrozAhqSZwVvCACt0HHE="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/containers/azcontainerregistry"]
     version = "v0.2.3"
     hash = "sha256-CWJLUdzbAwvZmTTRr/VTVoneIo3nOnDJyjYmhEuZnkA="
@@ -53,8 +53,8 @@ schema = 3
     version = "v0.0.0-20250102033503-faa5f7b0171c"
     hash = "sha256-4WYKJtxjnm3egDAh9ocTR+gy5UUqVoY3knHy9c17XIY="
   [mod."github.com/AzureAD/microsoft-authentication-library-for-go"]
-    version = "v1.8.0"
-    hash = "sha256-ZRFSnvX5I1Rw5sZk1pborwz8vCgv1Dzca7CUitKWfls="
+    version = "v1.10.1"
+    hash = "sha256-/rLq0Jln9MPmA1thVK0XDgQrhZOY2DuU2tu0gov09Ek="
   [mod."github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"]
     version = "v1.35.0"
     hash = "sha256-++3U3ooNJosPv8rTN1R0QhViPqkkWawH/LEZrsSvzp4="
