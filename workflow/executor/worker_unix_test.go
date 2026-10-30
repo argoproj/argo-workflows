@@ -54,6 +54,19 @@ func TestRunMain_StagesOutputParameter(t *testing.T) {
 	assert.Equal(t, "v", string(staged))
 }
 
+// Main gets the task's env after the template's, as a pod's main does.
+func TestRunMain_GivesMainTheTaskEnv(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "p")
+	tmpl := wfv1.Template{
+		Container: &apiv1.Container{Command: []string{"sh", "-c", `printf "$ARGO_NODE_ID" > ` + out}, Env: []apiv1.EnvVar{{Name: "ARGO_NODE_ID", Value: "the template's"}}},
+	}
+	ctx, we, _ := newWorkerExecutor(t, tmpl, time.Time{})
+	require.NoError(t, runMain.Run(ctx, we))
+	got, err := os.ReadFile(out)
+	require.NoError(t, err)
+	assert.Equal(t, "node-1", string(got))
+}
+
 type blockingSink struct {
 	recordingSink
 	entered chan struct{}

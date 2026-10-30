@@ -235,6 +235,8 @@ func (we *WorkflowExecutor) runMain(ctx context.Context) error {
 	for _, e := range c.Env {
 		env = append(env, e.Name+"="+e.Value)
 	}
+	// After the template's own, as a pod appends it to main's.
+	env = append(env, we.mainEnv...)
 	var watch *deadlineWatch
 	stopWatch := func() {
 		if watch != nil {
