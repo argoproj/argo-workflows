@@ -79,6 +79,44 @@ func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wf
 	return wf
 }
 
+func ConvertWorkflowTemplateToWorkflow(wftmpl *wfv1.WorkflowTemplate) *wfv1.Workflow {
+	wf := NewWorkflowFromWorkflowTemplate(wftmpl.Name, false)
+	if instanceID, ok := wftmpl.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	}
+	if wftmpl.Spec.WorkflowMetadata != nil {
+		maps.Copy(wf.Labels, wftmpl.Spec.WorkflowMetadata.Labels)
+		if len(wftmpl.Spec.WorkflowMetadata.Annotations) > 0 {
+			maps.Copy(wf.Annotations, wftmpl.Spec.WorkflowMetadata.Annotations)
+		}
+	}
+	if instanceID, ok := wftmpl.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	} else {
+		delete(wf.Labels, LabelKeyControllerInstanceID)
+	}
+	return wf
+}
+
+func ConvertClusterWorkflowTemplateToWorkflow(cwftmpl *wfv1.ClusterWorkflowTemplate) *wfv1.Workflow {
+	wf := NewWorkflowFromWorkflowTemplate(cwftmpl.Name, true)
+	if instanceID, ok := cwftmpl.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	}
+	if cwftmpl.Spec.WorkflowMetadata != nil {
+		maps.Copy(wf.Labels, cwftmpl.Spec.WorkflowMetadata.Labels)
+		if len(cwftmpl.Spec.WorkflowMetadata.Annotations) > 0 {
+			maps.Copy(wf.Annotations, cwftmpl.Spec.WorkflowMetadata.Annotations)
+		}
+	}
+	if instanceID, ok := cwftmpl.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	} else {
+		delete(wf.Labels, LabelKeyControllerInstanceID)
+	}
+	return wf
+}
+
 func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
@@ -87,10 +125,6 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 		},
 		ObjectMeta: objectMeta,
 		Spec:       cronWf.Spec.WorkflowSpec,
-	}
-
-	if instanceID, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
-		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
 	}
 
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
@@ -102,6 +136,12 @@ func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Wo
 		}
 
 		wf.Finalizers = append(wf.Finalizers, cronWf.Spec.WorkflowMetadata.Finalizers...)
+	}
+
+	if instanceID, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	} else {
+		delete(wf.Labels, LabelKeyControllerInstanceID)
 	}
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(&cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 
