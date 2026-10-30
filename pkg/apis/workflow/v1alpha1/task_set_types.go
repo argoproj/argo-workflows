@@ -18,6 +18,16 @@ type WorkflowTaskSet struct {
 
 type WorkflowTaskSetSpec struct {
 	Tasks map[string]Template `json:"tasks,omitempty" protobuf:"bytes,1,rep,name=tasks"`
+
+	// Pool is set on a pooled task's WorkflowTaskSet: the pool that runs it,
+	// resolved when the task was dispatched.
+	// +optional
+	Pool *PoolSpec `json:"pool,omitempty" protobuf:"bytes,2,opt,name=pool"`
+
+	// Dispatch is set on a pooled task's WorkflowTaskSet: the per-task
+	// settings a pod would get from its spec and environment.
+	// +optional
+	Dispatch *TaskDispatch `json:"dispatch,omitempty" protobuf:"bytes,3,opt,name=dispatch"`
 }
 
 type WorkflowTaskSetStatus struct {
