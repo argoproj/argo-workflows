@@ -3,9 +3,11 @@ package archive
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"crypto/rand"
 	"encoding/hex"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -207,4 +209,26 @@ func TestZipFile(t *testing.T) {
 		err = os.Remove(f.Name())
 		require.NoError(t, err)
 	})
+}
+
+func TestZipFileEntryName(t *testing.T) {
+	sourcePath := filepath.Join(t.TempDir(), "result.txt")
+	content := []byte("workflow result\n")
+	require.NoError(t, os.WriteFile(sourcePath, content, 0o600))
+
+	var buf bytes.Buffer
+	writer := zip.NewWriter(&buf)
+	require.NoError(t, ZipToWriter(logging.TestContext(t.Context()), sourcePath, writer))
+	require.NoError(t, writer.Close())
+
+	reader, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	require.NoError(t, err)
+	require.Len(t, reader.File, 1)
+	require.Equal(t, "result.txt", reader.File[0].Name)
+	file, err := reader.Open("result.txt")
+	require.NoError(t, err)
+	defer file.Close()
+	actual, err := io.ReadAll(file)
+	require.NoError(t, err)
+	require.Equal(t, content, actual)
 }

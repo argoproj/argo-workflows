@@ -220,7 +220,7 @@ func zipFile(sourcePath string, zw *zip.Writer) error {
 		return errors.InternalWrapError(err)
 	}
 	defer util.Close(f)
-	fileWriter, err := zw.Create(sourcePath)
+	fileWriter, err := zw.Create(filepath.Base(sourcePath))
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
