@@ -139,3 +139,29 @@ func TestReconcileTaskSetWithMemoization(t *testing.T) {
 		assert.NotEmpty(t, memo.Data["cache-demo-1"])
 	})
 }
+
+// A node that has already finished, such as one errored because its agent
+// pod failed, keeps its phase and message when the task set still holds a
+// stale result for it (#14200).
+func TestReconcileTaskSetKeepsFinishedNode(t *testing.T) {
+	const nodeID = "http-template-fqgsf-2338098285"
+	const message = `agent pod failed with reason:"The node was low on resource: ephemeral-storage."`
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/reconcile-task-set-with-memoization-workflow.yaml")
+	node := wf.Status.Nodes[nodeID]
+	node.Phase = wfv1.NodeError
+	node.Message = message
+	wf.Status.Nodes[nodeID] = node
+	var ts wfv1.WorkflowTaskSet
+	wfv1.MustUnmarshal("@testdata/taskset/reconcile-task-set-with-memoization-taskset.yaml", &ts)
+	ts.Status.Nodes[nodeID] = wfv1.NodeResult{Phase: wfv1.NodePending, Message: "Queuing"}
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, ts)
+	defer cancel()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	time.Sleep(1 * time.Second)
+	require.NoError(t, woc.reconcileTaskSet(ctx))
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes[nodeID].Phase)
+	assert.Equal(t, message, woc.wf.Status.Nodes[nodeID].Message)
+}

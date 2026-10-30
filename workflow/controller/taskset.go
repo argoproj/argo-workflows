@@ -177,6 +177,11 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 				woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
 				return err
 			}
+			// A node already finished, e.g. errored because the agent pod
+			// failed, must not be overwritten by a stale result.
+			if node.Fulfilled() {
+				continue
+			}
 
 			node.Outputs = taskResult.Outputs.DeepCopy()
 			node.Phase = taskResult.Phase

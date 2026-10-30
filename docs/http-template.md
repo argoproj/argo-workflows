@@ -48,3 +48,15 @@ The Agent and the Workflow Controller communicate through the `WorkflowTaskSet` 
 
 In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows.
 An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).
+
+## Argo Agent Pod Failures
+
+Each Workflow that uses the Agent runs it in one pod.
+If the Agent's container exits with an error, the kubelet restarts it, and the restarted Agent runs again every HTTP or Plugin task that has no result yet.
+If the pod itself fails, for example because the node evicts it, the controller deletes the pod and creates a replacement, which also runs every task that has no result yet.
+A request or plugin call can therefore run more than once, so make it safe to repeat.
+
+The controller replaces a failed pod no sooner than one minute after that pod was created, and records an `AgentPodFailed` Warning event on the Workflow, with the reason the pod failed, each time it does.
+There is no limit on the number of replacements: as with a crashing container, a task that never gets a result fails by the Workflow's `activeDeadlineSeconds`, or by its template `timeout` unless its plugin has reported it `Running`.
+Without either setting, the task can run until the Workflow stops for another reason.
+When the Workflow is stopping, terminating, or past its `activeDeadlineSeconds`, the controller errors the nodes of the tasks that have no result instead.

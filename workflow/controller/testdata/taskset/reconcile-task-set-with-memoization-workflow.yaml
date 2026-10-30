@@ -31,7 +31,7 @@ status:
         - name: result
           value: |
             { demo }
-      phase: Succeeded
+      phase: Pending
       templateName: http
       type: HTTP
   phase: Running
