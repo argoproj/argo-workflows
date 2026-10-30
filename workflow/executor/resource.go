@@ -303,8 +303,9 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 	return true, argoerrors.Errorf(argoerrors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
 }
 
-// SaveResourceParameters will save any resource output parameters
-func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
+// SaveResourceParameters will save any resource output parameters. final
+// says whether this is the task's last report; see ReportOutputs.
+func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string, final bool) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	outputs := we.capturedOutputs()
 	if len(outputs.Parameters) == 0 {
@@ -351,7 +352,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 		outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
-	err := we.ReportOutputs(ctx, nil)
+	err := we.ReportOutputs(ctx, nil, final)
 	return err
 }
 
