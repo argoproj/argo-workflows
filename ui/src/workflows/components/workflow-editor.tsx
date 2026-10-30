@@ -40,7 +40,7 @@ export function WorkflowEditor({
                     content: (
                         <ObjectEditor
                             type='io.argoproj.workflow.v1alpha1.Workflow'
-                            value={workflow}
+                            value={workflow || {}}
                             text={serialization}
                             lang={lang}
                             onLangChange={onLangChange}
@@ -51,17 +51,17 @@ export function WorkflowEditor({
                 {
                     key: 'parameters',
                     title: 'Parameters',
-                    content: <WorkflowParametersEditor value={workflow.spec} onChange={spec => onChange({...workflow, spec})} onError={onError} />
+                    content: <WorkflowParametersEditor value={workflow?.spec || {}} onChange={spec => onChange({...workflow, spec})} onError={onError} />
                 },
                 {
                     key: 'metadata',
                     title: 'MetaData',
-                    content: <MetadataEditor value={workflow.metadata} onChange={metadata => onChange({...workflow, metadata})} />
+                    content: <MetadataEditor value={workflow?.metadata || {}} onChange={metadata => onChange({...workflow, metadata})} />
                 },
                 {
                     key: 'graph',
                     title: 'Graph',
-                    content: <GraphViewer workflowDefinition={workflow} />
+                    content: workflow?.spec && workflow?.metadata && <GraphViewer workflowDefinition={workflow} />
                 }
             ]}
         />
