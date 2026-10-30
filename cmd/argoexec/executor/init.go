@@ -25,15 +25,25 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	executortracing "github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 // InitProcess builds the process-wide executor state from the pod's
 // environment: API clients, tracing, namespace and pod-scoped settings.
 // It runs once per process; the per-task half is TaskConfigFromEnv.
+func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *executor.Process {
+	process, _, _ := initProcess(ctx, clientConfig, nil)
+	return process
+}
+
+// initProcess is InitProcess, which also returns the API client's config
+// and the namespace, for a process that needs more clients. adjust, if
+// set, changes the process's config, as read from the environment, before
+// the process is built.
 //
 //nolint:contextcheck
-func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *executor.Process {
+func initProcess(ctx context.Context, clientConfig clientcmd.ClientConfig, adjust func(*executor.ProcessConfig)) (*executor.Process, *restclient.Config, string) {
 	version := argo.GetVersion()
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(version.Fields()).Info(ctx, "Starting Workflow Executor")
@@ -60,10 +70,21 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 		os.Exit(1)
 	}
 
-	// errors ignored because values are set by the controller and checked there.
-	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
-	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
-
+	cfg := executor.ProcessConfig{
+		PodName:                    podName,
+		PodUID:                     types.UID(os.Getenv(common.EnvVarPodUID)),
+		Namespace:                  namespace,
+		InstanceID:                 os.Getenv(common.EnvVarInstanceID),
+		TerminationGracePeriod:     TerminationGracePeriodDuration(),
+		ArtifactPluginNames:        os.Getenv(common.EnvVarArtifactPluginNames),
+		RemoveLocalArtPath:         os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
+		RetryBackoff:               retry.ExecutorRetry(ctx),
+		ResourceStateCheckInterval: env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
+		TaskResultRetryTimeout:     retry.ExecutorTaskResultRetryTimeout(ctx),
+	}
+	if adjust != nil {
+		adjust(&cfg)
+	}
 	process, err := executor.NewProcess(
 		ctx,
 		clientset,
@@ -72,65 +93,75 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 		func(paths executor.TaskPaths) executor.ContainerRuntimeExecutor {
 			return emissary.New(paths.VarRunArgo)
 		},
-		executor.ProcessConfig{
-			PodName:                      podName,
-			PodUID:                       types.UID(os.Getenv(common.EnvVarPodUID)),
-			Namespace:                    namespace,
-			AnnotationPatchTickDuration:  annotationPatchTickDuration,
-			ReadProgressFileTickDuration: progressFileTickDuration,
-			InstanceID:                   os.Getenv(common.EnvVarInstanceID),
-			TerminationGracePeriod:       TerminationGracePeriodDuration(),
-			ArtifactPluginNames:          os.Getenv(common.EnvVarArtifactPluginNames),
-			RemoveLocalArtPath:           os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
-			RetryBackoff:                 retry.ExecutorRetry(ctx),
-			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
-			TaskResultRetryTimeout:       retry.ExecutorTaskResultRetryTimeout(ctx),
-		},
+		cfg,
 	)
 	CheckErr(err)
-	return process
+	return process, config, namespace
 }
 
 // TaskConfigFromEnv reads the per-task values (template, node identity,
 // deadline) that the controller baked into the pod for the single task a
 // classic argoexec pod runs.
 func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
+	cfg, err := TaskConfigFromLookup(os.LookupEnv, varRunArgo)
+	CheckErr(err)
+	return cfg
+}
+
+// TaskConfigFromLookup is TaskConfigFromEnv with the environment read
+// through lookupEnv.
+func TaskConfigFromLookup(lookupEnv func(string) (string, bool), varRunArgo string) (executor.TaskConfig, error) {
+	getenv := func(key string) string {
+		v, _ := lookupEnv(key)
+		return v
+	}
 	tmpl := &wfv1.Template{}
-	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
+	envVarTemplateValue, ok := lookupEnv(common.EnvVarTemplate)
 	var templateBytes []byte
 	var err error
 	if !ok {
 		// Wait container reads template from the file written by init container,
 		// not from the env var.
 		templateBytes, err = os.ReadFile(varRunArgo + "/template")
-		CheckErr(err)
 	} else {
 		// Offload-sentinel resolution is shared with the emissary via
 		// common.ResolveTemplateEnvValue so the offload protocol stays in one place.
 		templateBytes, err = common.ResolveTemplateEnvValue(envVarTemplateValue, common.EnvConfigMountPath)
-		CheckErr(err)
 	}
-	CheckErr(json.Unmarshal(templateBytes, tmpl))
+	if err != nil {
+		return executor.TaskConfig{}, err
+	}
+	if err = json.Unmarshal(templateBytes, tmpl); err != nil {
+		return executor.TaskConfig{}, err
+	}
 
-	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
-	CheckErr(err)
+	deadline, err := time.Parse(time.RFC3339, getenv(common.EnvVarDeadline))
+	if err != nil {
+		return executor.TaskConfig{}, err
+	}
 
-	raw := common.SplitPluginNames(os.Getenv(common.EnvVarInputArtifactPluginNames))
-	inputPlugins := make([]wfv1.ArtifactPluginName, 0, len(raw))
-	for _, p := range raw {
+	var inputPlugins []wfv1.ArtifactPluginName
+	for _, p := range common.SplitPluginNames(getenv(common.EnvVarInputArtifactPluginNames)) {
 		inputPlugins = append(inputPlugins, wfv1.ArtifactPluginName(p))
 	}
 
+	// errors ignored because values are set by the controller and checked there.
+	progressPatchTickDuration, _ := time.ParseDuration(getenv(common.EnvVarProgressPatchTickDuration))
+	progressFileTickDuration, _ := time.ParseDuration(getenv(common.EnvVarProgressFileTickDuration))
+
 	return executor.TaskConfig{
-		WorkflowName:             os.Getenv(common.EnvVarWorkflowName),
-		WorkflowUID:              types.UID(os.Getenv(common.EnvVarWorkflowUID)),
-		NodeID:                   os.Getenv(common.EnvVarNodeID),
-		Template:                 *tmpl,
-		IncludeScriptOutput:      os.Getenv(common.EnvVarIncludeScriptOutput) == "true",
-		Deadline:                 deadline,
-		ProgressFile:             os.Getenv(common.EnvVarProgressFile),
-		InputArtifactPluginNames: inputPlugins,
-	}
+		WorkflowName:              getenv(common.EnvVarWorkflowName),
+		WorkflowUID:               types.UID(getenv(common.EnvVarWorkflowUID)),
+		NodeID:                    getenv(common.EnvVarNodeID),
+		Template:                  *tmpl,
+		IncludeScriptOutput:       getenv(common.EnvVarIncludeScriptOutput) == "true",
+		Deadline:                  deadline,
+		ProgressFile:              getenv(common.EnvVarProgressFile),
+		ProgressPatchTickDuration: progressPatchTickDuration,
+		ProgressFileTickDuration:  progressFileTickDuration,
+		TraceContext:              executortracing.TraceContextFromEnv(lookupEnv),
+		InputArtifactPluginNames:  inputPlugins,
+	}, nil
 }
 
 // Init builds the executor for the one task a classic argoexec pod runs:

@@ -833,24 +833,24 @@ func TestMonitorProgress(t *testing.T) {
 		nil,
 		func(TaskPaths) ContainerRuntimeExecutor { return &mocks.ContainerRuntimeExecutor{} },
 		ProcessConfig{
-			PodName:                      fakePodName,
-			PodUID:                       fakePodUID,
-			Namespace:                    fakeNamespace,
-			AnnotationPatchTickDuration:  annotationPackTickDuration,
-			ReadProgressFileTickDuration: readProgressFileTickDuration,
-			TaskResultRetryTimeout:       90 * time.Second,
+			PodName:                fakePodName,
+			PodUID:                 fakePodUID,
+			Namespace:              fakeNamespace,
+			TaskResultRetryTimeout: 90 * time.Second,
 		},
 	)
 	require.NoError(t, err)
 	assert.Equal(t, 90*time.Second, process.taskResultRetryTimeout)
 	assert.Equal(t, defaultTaskResultBackoff, process.taskResultBackoff)
 	cfg := TaskConfig{
-		WorkflowName:        fakeWorkflow,
-		WorkflowUID:         fakeWorkflowUID,
-		NodeID:              fakeNodeID,
-		Template:            wfv1.Template{},
-		IncludeScriptOutput: false,
-		Deadline:            time.Now(),
+		WorkflowName:              fakeWorkflow,
+		WorkflowUID:               fakeWorkflowUID,
+		NodeID:                    fakeNodeID,
+		Template:                  wfv1.Template{},
+		IncludeScriptOutput:       false,
+		Deadline:                  time.Now(),
+		ProgressPatchTickDuration: annotationPackTickDuration,
+		ProgressFileTickDuration:  readProgressFileTickDuration,
 	}
 	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, LayoutLegacy, process.NewTaskResultSink(cfg, false))
 

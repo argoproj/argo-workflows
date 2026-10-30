@@ -62,6 +62,7 @@ func TestPoolTask_ATaskDirectoryBeneathEachMount(t *testing.T) {
 	// Joined with a forward slash, as ScriptSource always is.
 	assert.Equal(t, path.Join(filepath.Join(common.ExecutorStagingEmptyDir, "wf-1"), "script"), p.ScriptSource())
 	assert.Equal(t, filepath.Join(pool, "wf-1", "ctr", common.MainContainerName), p.ContainerDir(common.MainContainerName))
+	assert.Equal(t, PodPaths().poolShared(), p.taskPool(), "a task's pool is the one it is beneath")
 	assert.Equal(t, pool, PodPaths().PoolDir(), "the pool directory main and the worker share")
 }
 

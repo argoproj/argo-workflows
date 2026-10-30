@@ -95,16 +95,16 @@ type Process struct {
 	memoizedMu         sync.Mutex
 	memoizedConfigMaps map[string]string
 
-	annotationPatchTickDuration  time.Duration
-	readProgressFileTickDuration time.Duration
-	instanceID                   string
-	terminationGracePeriod       time.Duration
-	artifactPluginNames          string
-	removeLocalArtPath           bool
-	retryBackoff                 wait.Backoff
-	environ                      []string
-	mainDriver                   maindriver.MainDriver
-	resourceStateCheckInterval   time.Duration
+	instanceID             string
+	terminationGracePeriod time.Duration
+	artifactPluginNames    string
+	removeLocalArtPath     bool
+	retryBackoff           wait.Backoff
+	environ                []string
+	mainDriver             maindriver.MainDriver
+	// pool is a pool pod's worker's process-wide state.
+	pool                       poolProcess
+	resourceStateCheckInterval time.Duration
 	// taskResultRetryTimeout limits the retries of the final task result
 	// writes and interimResultRetryTimeout those of the writes before
 	// them; taskResultBackoff spaces out the retries of both. NewProcess
@@ -133,10 +133,21 @@ type WorkflowExecutor struct {
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
-	progressFile        string
+	// activeDeadline is TaskConfig.ActiveDeadline.
+	activeDeadline time.Time
+	progressFile   string
+	// annotationPatchTickDuration is how often progress is reported and
+	// readProgressFileTickDuration how often the progress file is read;
+	// progress is monitored only when both are set.
+	annotationPatchTickDuration  time.Duration
+	readProgressFileTickDuration time.Duration
+	// mainEnv is the per-task env main gets on top of its own.
+	mainEnv []string
 	// inputArtifactPluginNames lists the artifact plugins the Prepare phase
 	// loads input artifacts from, one parallel stage each.
 	inputArtifactPluginNames []wfv1.ArtifactPluginName
+	// poolTask is the state of a pool pod's task, nil in any other layout.
+	poolTask *poolTask
 
 	// plan is the task's flow; nil until selectedPlan() derives it from the
 	// template.
@@ -170,11 +181,9 @@ type WorkflowExecutor struct {
 // they stay testable without env mutation and reusable outside the
 // one-task-per-process layout.
 type ProcessConfig struct {
-	PodName                      string
-	PodUID                       types.UID
-	Namespace                    string
-	AnnotationPatchTickDuration  time.Duration
-	ReadProgressFileTickDuration time.Duration
+	PodName   string
+	PodUID    types.UID
+	Namespace string
 	// InstanceID labels task results with the controller instance (ARGO_INSTANCE_ID).
 	InstanceID string
 	// TerminationGracePeriod mirrors the pod spec's terminationGracePeriodSeconds
@@ -197,30 +206,69 @@ type ProcessConfig struct {
 	// retry.DefaultExecutorTaskResultRetryTimeout.
 	TaskResultRetryTimeout time.Duration
 	// Environ is the environment a worker gives the commands it runs
-	// in-process, before the template's own env. Unused in a pod, where
-	// main is its own container.
+	// in-process, before the template's own env and the task's
+	// (TaskConfig.MainEnv). Unused in a pod, where main is its own
+	// container.
 	Environ []string
 	// MainDriver runs main in-process for the worker layout. Nil in a pod,
 	// where main runs in its own container.
 	MainDriver maindriver.MainDriver
+	// StopWorker makes a pool pod's worker stop taking work and exit with
+	// cause, once the task in hand is over: a task calls it when only the
+	// worker container's restart can end it, as when its claim can't be
+	// completed. Nil outside a pool pod.
+	StopWorker func(cause error)
+	// ReleaseReserve is the time a pool pod's worker keeps back at the end
+	// of the pod's grace period to release the task in hand once it is
+	// terminated (ARGO_RELEASE_RESERVE_SECONDS): the task is stopped at
+	// TerminationGracePeriod less this after Terminate, if main is still
+	// running it.
+	ReleaseReserve time.Duration
 }
 
 // TaskConfig carries the per-task values a WorkflowExecutor is constructed
 // from. In the one-task-per-process pod layout the composition root reads
 // them from the pod's environment exactly like ProcessConfig; a long-lived
-// worker would instead receive a fresh TaskConfig for each task it runs.
+// worker instead receives a fresh TaskConfig for each task it runs, built
+// from the same values sent with the task.
 type TaskConfig struct {
 	WorkflowName        string
 	WorkflowUID         types.UID
 	NodeID              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
-	Deadline            time.Time
+	// Deadline is when the task is stopped (ARGO_DEADLINE). A worker's also
+	// covers what the kubelet enforces for a pod through
+	// activeDeadlineSeconds.
+	Deadline time.Time
+	// ActiveDeadline is when the task's activeDeadlineSeconds end, if that
+	// is what Deadline is: a worker stops the task then, as the kubelet
+	// stops a pod, and fails it with the kubelet's message rather than
+	// Deadline's own. Zero in a pod, whose kubelet enforces it.
+	ActiveDeadline time.Time
 	// ProgressFile is the file watched for progress reports (ARGO_PROGRESS_FILE).
 	ProgressFile string
+	// ProgressPatchTickDuration is how often progress is reported
+	// (ARGO_PROGRESS_PATCH_TICK_DURATION) and ProgressFileTickDuration how
+	// often the progress file is read (ARGO_PROGRESS_FILE_TICK_DURATION);
+	// progress is monitored only when both are set.
+	ProgressPatchTickDuration time.Duration
+	ProgressFileTickDuration  time.Duration
+	// TraceContext is the W3C trace context the task's spans continue, as
+	// propagation.MapCarrier keys (TRACEPARENT and TRACESTATE in a pod).
+	TraceContext map[string]string
 	// InputArtifactPluginNames lists the artifact plugins that serve this
 	// task's input artifacts (see common.EnvVarInputArtifactPluginNames).
 	InputArtifactPluginNames []wfv1.ArtifactPluginName
+	// Command is what main runs when the template's container has no
+	// command: the image's entrypoint, followed by its cmd when the template
+	// has no args. Always nil in a pod, whose main container spec carries
+	// it; a pool pod's worker hands it to main.
+	Command []string
+	// EmptyDirs are where main mounts the pool pod's emptyDir volumes: a
+	// pool pod's worker empties them before and after each task, so no task
+	// sees another's files in them. Nil in a pod, whose volumes go with it.
+	EmptyDirs []string
 }
 
 // Task is one task as a Process runs it: what to run, and where its files
@@ -289,28 +337,31 @@ func NewProcess(
 		return nil, err
 	}
 	return &Process{
-		PodName:                      cfg.PodName,
-		podUID:                       cfg.PodUID,
-		ClientSet:                    clientset,
-		taskResultClient:             taskResultClient,
-		RESTClient:                   restClient,
-		Namespace:                    cfg.Namespace,
-		newRuntime:                   newRuntime,
-		Tracing:                      tracing,
-		memoizedConfigMaps:           map[string]string{},
-		annotationPatchTickDuration:  cfg.AnnotationPatchTickDuration,
-		readProgressFileTickDuration: cfg.ReadProgressFileTickDuration,
-		instanceID:                   cfg.InstanceID,
-		terminationGracePeriod:       cfg.TerminationGracePeriod,
-		artifactPluginNames:          cfg.ArtifactPluginNames,
-		removeLocalArtPath:           cfg.RemoveLocalArtPath,
-		retryBackoff:                 cfg.RetryBackoff,
-		environ:                      cfg.Environ,
-		mainDriver:                   cfg.MainDriver,
-		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
-		taskResultRetryTimeout:       cmp.Or(cfg.TaskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout),
-		interimResultRetryTimeout:    defaultInterimResultRetryTimeout,
-		taskResultBackoff:            defaultTaskResultBackoff,
+		PodName:                    cfg.PodName,
+		podUID:                     cfg.PodUID,
+		ClientSet:                  clientset,
+		taskResultClient:           taskResultClient,
+		RESTClient:                 restClient,
+		Namespace:                  cfg.Namespace,
+		newRuntime:                 newRuntime,
+		Tracing:                    tracing,
+		memoizedConfigMaps:         map[string]string{},
+		instanceID:                 cfg.InstanceID,
+		terminationGracePeriod:     cfg.TerminationGracePeriod,
+		artifactPluginNames:        cfg.ArtifactPluginNames,
+		removeLocalArtPath:         cfg.RemoveLocalArtPath,
+		retryBackoff:               cfg.RetryBackoff,
+		environ:                    cfg.Environ,
+		mainDriver:                 cfg.MainDriver,
+		resourceStateCheckInterval: cfg.ResourceStateCheckInterval,
+		taskResultRetryTimeout:     cmp.Or(cfg.TaskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout),
+		interimResultRetryTimeout:  defaultInterimResultRetryTimeout,
+		taskResultBackoff:          defaultTaskResultBackoff,
+		pool: poolProcess{
+			stopWorker:     cfg.StopWorker,
+			releaseReserve: cfg.ReleaseReserve,
+			terminatedCh:   make(chan struct{}),
+		},
 	}, nil
 }
 
@@ -319,22 +370,30 @@ func NewProcess(
 // once per task.
 func (p *Process) NewExecutor(task Task, layout Layout, sink ResultSink) *WorkflowExecutor {
 	cfg := task.Config
-	return &WorkflowExecutor{
-		Process:                  p,
-		paths:                    task.Paths,
-		layout:                   layout,
-		sink:                     sink,
-		RuntimeExecutor:          p.newRuntime(task.Paths),
-		workflow:                 cfg.WorkflowName,
-		workflowUID:              cfg.WorkflowUID,
-		nodeID:                   cfg.NodeID,
-		Template:                 cfg.Template,
-		IncludeScriptOutput:      cfg.IncludeScriptOutput,
-		Deadline:                 cfg.Deadline,
-		progressFile:             cfg.ProgressFile,
-		inputArtifactPluginNames: cfg.InputArtifactPluginNames,
-		errors:                   []error{},
+	we := &WorkflowExecutor{
+		Process:                      p,
+		paths:                        task.Paths,
+		layout:                       layout,
+		sink:                         sink,
+		RuntimeExecutor:              p.newRuntime(task.Paths),
+		workflow:                     cfg.WorkflowName,
+		workflowUID:                  cfg.WorkflowUID,
+		nodeID:                       cfg.NodeID,
+		Template:                     cfg.Template,
+		IncludeScriptOutput:          cfg.IncludeScriptOutput,
+		Deadline:                     cfg.Deadline,
+		activeDeadline:               cfg.ActiveDeadline,
+		progressFile:                 cfg.ProgressFile,
+		annotationPatchTickDuration:  cfg.ProgressPatchTickDuration,
+		readProgressFileTickDuration: cfg.ProgressFileTickDuration,
+		mainEnv:                      cfg.MainEnv(),
+		inputArtifactPluginNames:     cfg.InputArtifactPluginNames,
+		errors:                       []error{},
 	}
+	if layout == LayoutPool {
+		we.poolTask = newPoolTask(cfg)
+	}
+	return we
 }
 
 // outputArtifactsDir is where output artifacts are tarred before upload.
@@ -1436,24 +1495,8 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	ctx, span := we.Tracing.StartWaitWorkload(ctx)
 	defer span.End()
 	containerNames := we.Template.GetMainContainerNames()
-	// only monitor progress if both tick durations are >0
-	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {
-		// Stop the monitor, and wait out any progress report in flight,
-		// before returning: the final reports that follow write the same
-		// task result and must not overlap it.
-		progressCtx, stopProgress := context.WithCancel(ctx)
-		progressDone := make(chan struct{})
-		go func() {
-			defer close(progressDone)
-			we.monitorProgress(progressCtx, we.progressFile)
-		}()
-		defer func() {
-			stopProgress()
-			<-progressDone
-		}()
-	} else {
-		logger.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
-	}
+	stopProgress := we.startProgressMonitor(ctx)
+	defer stopProgress()
 
 	go we.monitorDeadline(ctx, containerNames)
 
@@ -1469,6 +1512,27 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
 	return nil
+}
+
+// startProgressMonitor monitors the task's progress, if both tick durations
+// are set, until the returned function is called. That function also waits
+// out any progress report in flight: the final reports that follow write
+// the same task result and must not overlap it.
+func (we *WorkflowExecutor) startProgressMonitor(ctx context.Context) (stop func()) {
+	if we.annotationPatchTickDuration == 0 || we.readProgressFileTickDuration == 0 {
+		logging.RequireLoggerFromContext(ctx).WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
+		return func() {}
+	}
+	progressCtx, stopProgress := context.WithCancel(ctx)
+	progressDone := make(chan struct{})
+	go func() {
+		defer close(progressDone)
+		we.monitorProgress(progressCtx, we.progressFile)
+	}()
+	return func() {
+		stopProgress()
+		<-progressDone
+	}
 }
 
 // waitMainContainers blocks until the given containers have completed, as

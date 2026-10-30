@@ -9,7 +9,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 // PodSource yields the one task a classic pod runs, described by the pod's
@@ -45,17 +44,13 @@ func podSink(process *executor.Process) func(executor.Task) executor.ResultSink 
 }
 
 // RunHarness runs the pod's task through role: the composition root for
-// the init, wait and supervisor commands.
+// the init, wait and supervisor commands. The task's spans continue the
+// trace context the controller gave the pod, which the task carries
+// (executor.TaskConfig.TraceContext).
 func RunHarness(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string, role executor.Role) error {
-	ctx = tracing.InjectTraceContext(ctx)
 	process := InitProcess(ctx, clientConfig)
-	defer func() {
-		if err := process.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
-			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
-		}
-	}()
-	stats.StartStatsTicker(5 * time.Minute)
-	defer stats.LogStats()
+	stopProcess := startProcess(ctx, process)
+	defer stopProcess()
 	h := &executor.Harness{
 		Process: process,
 		Source:  &PodSource{VarRunArgo: varRunArgo},
@@ -63,4 +58,17 @@ func RunHarness(ctx context.Context, clientConfig clientcmd.ClientConfig, varRun
 		Role:    role,
 	}
 	return h.Run(ctx)
+}
+
+// startProcess starts logging process's stats every five minutes, and
+// returns what stops it: the stats are logged once more and tracing shut
+// down.
+func startProcess(ctx context.Context, process *executor.Process) (stop func()) {
+	stats.StartStatsTicker(5 * time.Minute)
+	return func() {
+		stats.LogStats()
+		if err := process.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		}
+	}
 }

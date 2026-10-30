@@ -105,8 +105,8 @@ func (p TaskPaths) PoolTask(task string) (TaskPaths, error) {
 func (p TaskPaths) poolShared() TaskPaths {
 	return TaskPaths{
 		VarRunArgo:     filepath.Join(p.VarRunArgo, poolpod.DirName),
-		InputArtifacts: p.InputArtifacts,
-		Staging:        p.Staging,
+		InputArtifacts: filepath.Clean(p.InputArtifacts),
+		Staging:        filepath.Clean(p.Staging),
 		MainFS:         p.MainFS,
 		Scratch:        filepath.Join(p.Scratch, "outputs"),
 	}
@@ -116,6 +116,26 @@ func (p TaskPaths) poolShared() TaskPaths {
 // the worker offers tasks and main takes them.
 func (p TaskPaths) PoolDir() string {
 	return p.poolShared().VarRunArgo
+}
+
+// taskPool returns the shared directories (poolShared) of the pool pod
+// that p, a task's paths (PoolTask), are beneath.
+func (p TaskPaths) taskPool() TaskPaths {
+	return TaskPaths{
+		VarRunArgo:     filepath.Dir(p.VarRunArgo),
+		InputArtifacts: filepath.Dir(p.InputArtifacts),
+		Staging:        filepath.Dir(p.Staging),
+		MainFS:         p.MainFS,
+		Scratch:        filepath.Dir(p.Scratch),
+	}
+}
+
+// poolDirs lists p's VarRunArgo, InputArtifacts, Staging and Scratch. For
+// a pool pod's shared directories (poolShared) they are the directories its
+// tasks each have one of their own beneath, the pool directory first; for
+// one of its tasks, the task's own.
+func (p TaskPaths) poolDirs() []string {
+	return []string{p.VarRunArgo, p.InputArtifacts, p.Staging, p.Scratch}
 }
 
 // ContainerDir is where a container's exit code, logs and signal file live.

@@ -48,12 +48,7 @@ type taskResultSink struct {
 	nodeID      string
 	instanceID  string
 
-	// retryTimeout limits the retries of the final writes and
-	// interimRetryTimeout those of the placeholder and progress writes
-	// before them; backoff spaces out the retries of both.
-	retryTimeout        time.Duration
-	interimRetryTimeout time.Duration
-	backoff             wait.Backoff
+	resultRetry
 
 	// recordFailure selects how Fail attributes a failure. In a pod the
 	// termination log carries it (process death is task death); a worker
@@ -63,10 +58,11 @@ type taskResultSink struct {
 	// writeTerminate writes the pod's termination message.
 	writeTerminate func(msg string)
 
-	// mu guards failed and created: the deadline and progress goroutines
-	// report alongside the task's own flow.
+	failure firstFailure
+
+	// mu guards created: the deadline and progress goroutines report
+	// alongside the task's own flow.
 	mu      sync.Mutex
-	failed  bool
 	created bool
 }
 
@@ -87,6 +83,21 @@ func (p *Process) NewTaskResultSink(cfg TaskConfig, recordFailure bool) ResultSi
 		recordFailure:  recordFailure,
 		writeTerminate: util.WriteTerminateMessage,
 
+		resultRetry: p.resultRetry(),
+	}
+}
+
+// resultRetry is how writes to a task's result retry: retryTimeout limits
+// the retries of the final writes and interimRetryTimeout those of the
+// writes before them; backoff spaces out the retries of both.
+type resultRetry struct {
+	retryTimeout        time.Duration
+	interimRetryTimeout time.Duration
+	backoff             wait.Backoff
+}
+
+func (p *Process) resultRetry() resultRetry {
+	return resultRetry{
 		retryTimeout:        p.taskResultRetryTimeout,
 		interimRetryTimeout: p.interimResultRetryTimeout,
 		backoff:             p.taskResultBackoff,
@@ -110,14 +121,29 @@ func (s *taskResultSink) Fail(ctx context.Context, err error) {
 		s.writeTerminate(err.Error())
 		return
 	}
-	s.mu.Lock()
-	first := !s.failed
-	s.failed = true
-	s.mu.Unlock()
+	s.failure.record(ctx, s.Report, wfv1.NodeFailed, err)
+}
+
+// firstFailure records a task's first failure in its result, and ignores
+// the rest, as a worker's sinks do.
+type firstFailure struct {
+	// mu guards failed: the deadline and progress goroutines report
+	// alongside the task's own flow.
+	mu     sync.Mutex
+	failed bool
+}
+
+// record reports err through report as the task's failure, with phase,
+// unless a failure was recorded already.
+func (f *firstFailure) record(ctx context.Context, report func(context.Context, wfv1.NodeResult) error, phase wfv1.NodePhase, err error) {
+	f.mu.Lock()
+	first := !f.failed
+	f.failed = true
+	f.mu.Unlock()
 	if !first {
 		return
 	}
-	if reportErr := s.Report(ctx, wfv1.NodeResult{Phase: wfv1.NodeFailed, Message: err.Error()}); reportErr != nil {
+	if reportErr := report(ctx, wfv1.NodeResult{Phase: phase, Message: err.Error()}); reportErr != nil {
 		logging.RequireLoggerFromContext(ctx).WithError(reportErr).Error(ctx, "failed to record task failure")
 	}
 }
@@ -161,7 +187,7 @@ func (s *taskResultSink) write(ctx context.Context, limit time.Duration, result 
 // limit has passed or ctx is done, cutting off an attempt in flight; retry
 // then returns the last transient error, or the ctx error if there was
 // none, wrapped to say it gave up if it was limit that ran out.
-func (s *taskResultSink) retry(ctx context.Context, limit time.Duration, op func(ctx context.Context) error) error {
+func (s resultRetry) retry(ctx context.Context, limit time.Duration, op func(ctx context.Context) error) error {
 	retryCtx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
 	var lastErr error

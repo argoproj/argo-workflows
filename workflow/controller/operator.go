@@ -2023,11 +2023,7 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			continue
 		}
 
-		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
-		if t.Message != "" {
-			msg = fmt.Sprintf("%s: %s", msg, t.Message)
-		}
-		msg = fmt.Sprintf("%s: %s", ctr.Name, msg)
+		msg := common.ContainerFailureMessage(ctr.Name, t.Reason, int(t.ExitCode), t.Message)
 
 		switch {
 		case ctr.Name == common.InitContainerName:
