@@ -1,6 +1,8 @@
 package fixtures
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -273,9 +276,7 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName s
 func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *testing.T, object minio.ObjectInfo, err error)) {
 	t.t.Helper()
 
-	c, err := minio.New("localhost:9000", &minio.Options{
-		Creds: credentials.NewStaticV4("admin", "password", ""),
-	})
+	c, err := newMinioClient()
 
 	if err != nil {
 		t.t.Error(err)
@@ -284,6 +285,36 @@ func (t *Then) ExpectArtifactByKey(key string, bucketName string, f func(t *test
 	ctx := logging.TestContext(t.t.Context())
 	object, err := c.StatObject(ctx, bucketName, key, minio.StatObjectOptions{})
 	f(t.t, object, err)
+}
+
+// newMinioClient returns a client of the e2e MinIO, which the dev stack
+// forwards to localhost.
+func newMinioClient() (*minio.Client, error) {
+	return minio.New("localhost:9000", &minio.Options{
+		Creds: credentials.NewStaticV4("admin", "password", ""),
+	})
+}
+
+// ArtifactContent reads the object at key in bucketName from the e2e MinIO,
+// decompressing it if it is gzipped, as artifacts and logs may be. A
+// tarball's tar is left as it is.
+func ArtifactContent(t *testing.T, bucketName, key string) string {
+	t.Helper()
+	c, err := newMinioClient()
+	require.NoError(t, err)
+	obj, err := c.GetObject(logging.TestContext(t.Context()), bucketName, key, minio.GetObjectOptions{})
+	require.NoError(t, err)
+	defer obj.Close()
+	content, err := io.ReadAll(obj)
+	require.NoError(t, err, "reading %s", key)
+	if len(content) > 2 && content[0] == 0x1f && content[1] == 0x8b {
+		r, err := gzip.NewReader(bytes.NewReader(content))
+		require.NoError(t, err, "decompressing %s", key)
+		defer r.Close()
+		content, err = io.ReadAll(r)
+		require.NoError(t, err, "decompressing %s", key)
+	}
+	return string(content)
 }
 
 func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
