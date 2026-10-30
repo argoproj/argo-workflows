@@ -599,8 +599,8 @@ schema = 3
     version = "v1.1.2"
     hash = "sha256-vykcXvy2VBBAXnJott/XsGTT0gk2UL36JzZKfJ1KAUY="
   [mod."github.com/minio/minio-go/v7"]
-    version = "v7.3.0"
-    hash = "sha256-vshAV9zETYUb9ucAJhmdMzNNFdLwUkp9lKVI6RpWVJ4="
+    version = "v7.4.1"
+    hash = "sha256-A0722XXZwhi3lwZFi0j3rbOFN5nhplUpKn53WRVS7gc="
   [mod."github.com/mitchellh/copystructure"]
     version = "v1.2.0"
     hash = "sha256-VR9cPZvyW62IHXgmMw8ee+hBDThzd2vftgPksQYR/Mc="
@@ -689,8 +689,8 @@ schema = 3
     version = "v0.5.1"
     hash = "sha256-z5eiSDoCdS1MgACIZog4GmBZ+K6iN2vkubWnDtG+Fzk="
   [mod."github.com/pelletier/go-toml/v2"]
-    version = "v2.3.1"
-    hash = "sha256-5H8+UOtPOs+Yc+8oVT/3bugCCdbq3jFMH6eOW8dadyg="
+    version = "v2.4.3"
+    hash = "sha256-CyCjKBN+zUciGhQiaFpq54qv+NDITcuh5U2HmjArow4="
   [mod."github.com/peterbourgon/diskv"]
     version = "v2.0.1+incompatible"
     hash = "sha256-K4mEVjH0eyxyYHQRxdbmgJT0AJrfucUwGB2BplRRt9c="
@@ -749,8 +749,8 @@ schema = 3
     version = "v1.5.5"
     hash = "sha256-D1oP7mL4+sFaMU1S1WBmuwWYPMmr4ahi46SD4hPl/+0="
   [mod."github.com/santhosh-tekuri/jsonschema/v6"]
-    version = "v6.0.2"
-    hash = "sha256-rPRYeV00NRyt6rb+gFJRK1K4TlVxy92cocRK/X9Wef4="
+    version = "v6.0.3"
+    hash = "sha256-r/1mhajjfamfJZpu+CeUYr7bTQGQEkmF2f4UcSQZEbA="
   [mod."github.com/segmentio/fasthash"]
     version = "v1.0.3"
     hash = "sha256-Bm1sq6fFfoySkE6W7qib1drLBDQlOHMKJx8WyXzcNHM="
