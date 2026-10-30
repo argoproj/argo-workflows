@@ -36,9 +36,13 @@ When the workflow controller starts the `workflow` span, it reads `opentelemetry
 If it is valid, the `workflow` span becomes a child of that span, and everything below it (nodes, pods, the executor) is in the caller's trace.
 If it is missing or malformed, the workflow starts a new trace as usual.
 
-The workflow's trace ID is recorded in the `workflows.argoproj.io/trace-id` annotation, so it then matches the caller's trace ID.
+`argo resubmit` copies every annotation to the new workflow, `opentelemetry.io/traceparent` included.
+The resubmitted workflow therefore joins the caller's trace too, as another child of the same span, however long after the original it runs.
 
-Sampling follows the caller: if `traceparent` marks the trace as not sampled, the workflow's spans are not recorded either.
+The controller writes the workflow's trace ID to the `workflows.argoproj.io/trace-id` annotation, so the annotation shows the caller's trace ID.
+
+Sampling follows the caller: if `traceparent` marks the trace as not sampled, the controller and the executor don't record the workflow's spans either.
+This is the default, parent-based behavior; if you set [`OTEL_TRACES_SAMPLER`](https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler) to a sampler that ignores the parent, such as `always_on`, that sampler decides instead.
 
 A submitting application can produce these annotations with its OpenTelemetry SDK's propagator, by injecting the current context into a map and prefixing each key with `opentelemetry.io/`.
 
