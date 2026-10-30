@@ -53,6 +53,17 @@ func WorkerRestartedMessage(podName string) string {
 	return fmt.Sprintf("worker container of pod %s restarted", podName)
 }
 
+// ContainerFailureMessage is the message of a node whose container name
+// exited non-zero, as the controller words it from the container's
+// terminated state: its reason and exit code, then its own message, if any.
+func ContainerFailureMessage(name, reason string, exitCode int, message string) string {
+	msg := fmt.Sprintf("%s: %s (exit code %d)", name, reason, exitCode)
+	if message != "" {
+		msg += ": " + message
+	}
+	return msg
+}
+
 // RelWithin reports the path of target relative to base, and whether target is
 // base itself (rel == ".") or a descendant of it. It uses filepath.Rel rather
 // than hand-rolled string prefixing so path separators, trailing slashes and

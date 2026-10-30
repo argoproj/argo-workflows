@@ -472,3 +472,10 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 		assert.False(t, template.IsMissingVariableErr(err))
 	})
 }
+
+// A failed container's message names it, then gives its reason and exit
+// code, and its own message if it has one.
+func TestContainerFailureMessage(t *testing.T) {
+	assert.Equal(t, "main: Error (exit code 2)", ContainerFailureMessage("main", "Error", 2, ""))
+	assert.Equal(t, "wait: OOMKilled (exit code 137): out of memory", ContainerFailureMessage("wait", "OOMKilled", 137, "out of memory"))
+}
