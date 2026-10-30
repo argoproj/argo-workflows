@@ -47,6 +47,15 @@ var (
 	}}
 )
 
+// copyArgoexec copies the argoexec binary into dir and nothing else: the
+// whole job of `argoexec install`, a pool pod's init container. It needs
+// neither the template nor API access.
+func copyArgoexec(dir string) Stage {
+	return Stage{Name: "copy-argoexec", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.InstallBinary(dir)
+	}}
+}
+
 // loadArtifactsFromPlugin loads the input artifacts served by one artifact
 // plugin; the plan adds one of these per plugin, run in parallel.
 func loadArtifactsFromPlugin(name wfv1.ArtifactPluginName) Stage {
