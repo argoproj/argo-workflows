@@ -1,5 +1,4 @@
-# TODO: Upgrade to Ubuntu 24.04 when https://bugs.launchpad.net/ubuntu/+source/curl/+bug/2073448 is addressed
-FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
+FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu26.04
 
 # TARGETARCH is automatically set by BuildKit to the architecture (e.g. "amd64" or "arm64")
 # Docs: https://docs.docker.com/reference/dockerfile/#automatic-platform-args-in-the-global-scope

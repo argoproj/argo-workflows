@@ -28,7 +28,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     if: github.repository == 'argoproj/argo-workflows'
     permissions:
       contents: read
@@ -43,9 +43,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
-          # Workaround for segfaults under arm64:
-          # https://github.com/docker/setup-qemu-action/issues/198#issuecomment-2653791775
-          image: tonistiigi/binfmt:qemu-v7.0.0-28
+          # Pinned: qemu 9.2.0 segfaulted under arm64 (fixed in 9.2.2,
+          # https://github.com/docker/setup-qemu-action/issues/198), and qemu 7
+          # lacks syscalls the Ubuntu 26.04 userspace uses (ENOSYS from tar).
+          image: tonistiigi/binfmt:qemu-v10.2.3-68
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Login to registry
         if: ${{ github.event_name == 'push' }}
