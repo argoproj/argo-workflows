@@ -2,6 +2,7 @@ package gccontroller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,10 +14,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	testingclock "k8s.io/utils/clock/testing"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
@@ -575,5 +578,125 @@ func TestGetTTLStrategy(t *testing.T) {
 		wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
 		ttl = wf1.GetTTLStrategy()
 		assert.Nil(t, ttl)
+	})
+}
+
+func newCompletedWF(name string, phase wfv1.WorkflowPhase, created int64) *unstructured.Unstructured {
+	un := &unstructured.Unstructured{}
+	un.SetNamespace("argo")
+	un.SetName(name)
+	un.SetCreationTimestamp(metav1.NewTime(time.Unix(created, 0)))
+	un.SetLabels(map[string]string{
+		common.LabelKeyCompleted: "true",
+		common.LabelKeyPhase:     string(phase),
+	})
+	return un
+}
+
+func newRetentionController(t *testing.T, retentionPolicy *config.RetentionPolicy, phase wfv1.WorkflowPhase, completed int) *Controller {
+	t.Helper()
+	controller := newTTLController(t)
+	controller.retentionPolicy = retentionPolicy
+	controller.orderedQueue = map[wfv1.WorkflowPhase]Heap{
+		wfv1.WorkflowFailed:    NewHeap(),
+		wfv1.WorkflowError:     NewHeap(),
+		wfv1.WorkflowSucceeded: NewHeap(),
+	}
+	ctx := logging.TestContext(t.Context())
+	for i := range completed {
+		un := newCompletedWF(fmt.Sprintf("wf-%d", i), phase, int64(i))
+		require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+		controller.retentionEnqueue(ctx, un)
+	}
+	return controller
+}
+
+func addCompletedWF(ctx context.Context, t *testing.T, controller *Controller, un *unstructured.Unstructured) {
+	t.Helper()
+	require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+	controller.retentionEnqueue(ctx, un)
+}
+
+func queuedForDelete(controller *Controller, n int) func() bool {
+	return func() bool {
+		controller.orderedQueueLock.Lock()
+		defer controller.orderedQueueLock.Unlock()
+		return controller.workqueue.Len() == n
+	}
+}
+
+func TestUpdateRetentionPolicy(t *testing.T) {
+	t.Run("PolicySetAfterStart", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, nil, wfv1.WorkflowSucceeded, 3)
+		running := newCompletedWF("wf-running", wfv1.WorkflowRunning, 100)
+		running.SetLabels(map[string]string{common.LabelKeyPhase: string(wfv1.WorkflowRunning)})
+		require.NoError(t, controller.wfInformer.GetIndexer().Add(running))
+		require.Equal(t, 0, controller.workqueue.Len())
+
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
+		assert.Eventually(t, queuedForDelete(controller, 2), 5*time.Second, 10*time.Millisecond)
+	})
+	t.Run("FailedPolicySetAfterStart", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, nil, wfv1.WorkflowFailed, 3)
+
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 5, Failed: 1})
+		assert.Eventually(t, queuedForDelete(controller, 2), 5*time.Second, 10*time.Millisecond)
+	})
+	t.Run("LimitRaised", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 1}, wfv1.WorkflowSucceeded, 1)
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 5})
+
+		// workflows completing after the reload are kept under the new limit
+		addCompletedWF(ctx, t, controller, newCompletedWF("wf-new-0", wfv1.WorkflowSucceeded, 10))
+		addCompletedWF(ctx, t, controller, newCompletedWF("wf-new-1", wfv1.WorkflowSucceeded, 11))
+		assert.True(t, queuedForDelete(controller, 0)())
+	})
+	t.Run("LimitLowered", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 5}, wfv1.WorkflowSucceeded, 3)
+		require.Equal(t, 0, controller.workqueue.Len())
+
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
+		assert.Eventually(t, queuedForDelete(controller, 2), 5*time.Second, 10*time.Millisecond)
+	})
+	t.Run("PolicyRemoved", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 5}, wfv1.WorkflowSucceeded, 3)
+		controller.UpdateRetentionPolicy(ctx, nil)
+
+		un := newCompletedWF("wf-new", wfv1.WorkflowSucceeded, 10)
+		require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+		assert.NotPanics(t, func() { controller.retentionEnqueue(ctx, un) })
+		assert.True(t, queuedForDelete(controller, 0)())
+	})
+	t.Run("ReloadDuringDrain", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, nil, wfv1.WorkflowSucceeded, 20)
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
+		time.Sleep(60 * time.Millisecond)
+
+		// a reload while the backlog is still draining is not held up by it, and the
+		// drain switches to the new limit (keys already queued stay queued)
+		start := time.Now()
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 15})
+		assert.Less(t, time.Since(start), 300*time.Millisecond)
+		controller.orderedQueueLock.Lock()
+		queued := controller.workqueue.Len()
+		controller.orderedQueueLock.Unlock()
+		want := max(queued, 5)
+		assert.Eventually(t, queuedForDelete(controller, want), 5*time.Second, 10*time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
+		assert.True(t, queuedForDelete(controller, want)())
+	})
+	t.Run("PolicyRemovedThenAdded", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		controller := newRetentionController(t, &config.RetentionPolicy{Completed: 5}, wfv1.WorkflowSucceeded, 3)
+		controller.UpdateRetentionPolicy(ctx, nil)
+
+		controller.UpdateRetentionPolicy(ctx, &config.RetentionPolicy{Completed: 1})
+		assert.Eventually(t, queuedForDelete(controller, 2), 5*time.Second, 10*time.Millisecond)
 	})
 }

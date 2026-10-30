@@ -33,6 +33,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
 		wfc.throttler.UpdateNamespaceParallelismDefault(wfc.Config.NamespaceParallelism)
 	}
+	if gcCtrl := wfc.gcController.Load(); gcCtrl != nil {
+		gcCtrl.UpdateRetentionPolicy(ctx, wfc.Config.RetentionPolicy)
+	}
 
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
