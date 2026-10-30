@@ -1225,6 +1225,21 @@ func isTarball(ctx context.Context, filePath string) (bool, error) {
 	return err == nil, nil
 }
 
+// archiveEntryPath returns where an archive entry called name is extracted
+// under dest. skip is true for a directory entry that resolves to dest itself
+// (the archive root, such as "./"), which callers ignore because dest already
+// exists. ok is false for any other entry that does not resolve to a path
+// strictly inside dest, which callers must reject. untar and unzip share this
+// so their path checks cannot drift apart.
+func archiveEntryPath(dest, name string, isDir bool) (target string, skip bool, ok bool) {
+	cleanDest := filepath.Clean(dest)
+	target = filepath.Join(cleanDest, filepath.Clean(name))
+	if target == cleanDest {
+		return target, isDir, false
+	}
+	return target, false, strings.HasPrefix(target, cleanDest+string(os.PathSeparator))
+}
+
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
 func untar(ctx context.Context, tarPath string, destPath string) error {
@@ -1251,13 +1266,12 @@ func untar(ctx context.Context, tarPath string, destPath string) error {
 			case header == nil:
 				continue
 			}
-			target := filepath.Join(dest, filepath.Clean(header.Name))
-			cleanDest := filepath.Clean(dest)
-			if target == cleanDest && header.Typeflag == tar.TypeDir {
+			target, skip, ok := archiveEntryPath(dest, header.Name, header.Typeflag == tar.TypeDir)
+			if skip {
 				logger.WithFields(logging.Fields{"target": target, "typeflag": header.Typeflag}).Debug(ctx, "extracted archive root directory entry matches destination, skipping")
 				continue
 			}
-			if !strings.HasPrefix(target, cleanDest+string(os.PathSeparator)) {
+			if !ok {
 				return fmt.Errorf("illegal file path: %s", header.Name)
 			}
 			switch header.Typeflag {
@@ -1358,8 +1372,12 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 				}
 			}()
 
-			path := filepath.Join(dest, f.Name)
-			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
+			path, skip, ok := archiveEntryPath(dest, f.Name, f.FileInfo().IsDir())
+			if skip {
+				logging.RequireLoggerFromContext(ctx).WithField("name", f.Name).Debug(ctx, "extracted archive root directory entry matches destination, skipping")
+				return nil
+			}
+			if !ok {
 				return fmt.Errorf("%s: Illegal file path", path)
 			}
 

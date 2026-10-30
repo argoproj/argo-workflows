@@ -601,6 +601,104 @@ func TestUntarRootEntryNonDirRejected(t *testing.T) {
 	}
 }
 
+// buildZip writes a zip archive holding entries in order. A name ending in "/"
+// is a directory entry; any other name is a file holding content.
+func buildZip(t *testing.T, path string, entries []struct {
+	name    string
+	content string
+},
+) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	zw := zip.NewWriter(f)
+	for _, e := range entries {
+		h := &zip.FileHeader{Name: e.name, Method: zip.Store}
+		if strings.HasSuffix(e.name, "/") {
+			h.SetMode(os.ModeDir | 0o755)
+		} else {
+			h.SetMode(0o644)
+		}
+		w, err := zw.CreateHeader(h)
+		require.NoError(t, err)
+		if e.content != "" {
+			_, err = w.Write([]byte(e.content))
+			require.NoError(t, err)
+		}
+	}
+	require.NoError(t, zw.Close())
+}
+
+func TestUnzipRootDirEntryIsNoOp(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Directory entries that resolve to the archive root. Go's archive/zip and
+	// other writers can emit "./".
+	for _, rootName := range []string{"./", "a/../"} {
+		t.Run(rootName, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			zipPath := filepath.Join(tmpDir, "dataset.zip")
+			destDir := filepath.Join(tmpDir, "dest")
+
+			buildZip(t, zipPath, []struct {
+				name    string
+				content string
+			}{
+				{name: rootName},
+				{name: "./file.txt", content: "hello"},
+				{name: "./subdir/"},
+				{name: "./subdir/nested.txt", content: "nested"},
+			})
+
+			require.NoError(t, unzip(ctx, zipPath, destDir))
+
+			// The root entry must not add anything: dest holds exactly the archive's children.
+			entries, err := os.ReadDir(destDir)
+			require.NoError(t, err)
+			names := make([]string, 0, len(entries))
+			for _, e := range entries {
+				names = append(names, e.Name())
+			}
+			assert.Equal(t, []string{"file.txt", "subdir"}, names)
+
+			content, err := os.ReadFile(filepath.Join(destDir, "file.txt"))
+			require.NoError(t, err)
+			assert.Equal(t, "hello", string(content))
+
+			content, err = os.ReadFile(filepath.Join(destDir, "subdir", "nested.txt"))
+			require.NoError(t, err)
+			assert.Equal(t, "nested", string(content))
+		})
+	}
+}
+
+func TestUnzipRootOrTraversalEntryRejected(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// A file entry that resolves to the destination itself, and "../"
+	// traversal, are still rejected.
+	for _, name := range []string{".", "a/..", "../pwned", "a/../../pwned"} {
+		t.Run(name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			zipPath := filepath.Join(tmpDir, "malicious.zip")
+			destDir := filepath.Join(tmpDir, "dest")
+
+			buildZip(t, zipPath, []struct {
+				name    string
+				content string
+			}{
+				{name: name, content: "pwned"},
+			})
+
+			err := unzip(ctx, zipPath, destDir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "Illegal file path")
+			assert.NoFileExists(t, filepath.Join(tmpDir, "pwned"))
+		})
+	}
+}
+
 func TestUntarPathTraversalRejected(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	tmpDir := t.TempDir()
