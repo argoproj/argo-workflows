@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	gohttp "net/http"
+	"time"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/azure"
@@ -44,6 +45,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		var kmsEncryptionContext string
 		var enableEncryption bool
 		var caKey string
+		var tokenExpiration *time.Duration
 
 		if art.S3.AccessKeySecret != nil && art.S3.AccessKeySecret.Name != "" {
 			accessKeyBytes, err := ri.GetSecret(ctx, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
@@ -92,6 +94,11 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			caKey = caBytes
 		}
 
+		if art.S3.TokenExpirationInMinutes != nil {
+			d := *art.S3.TokenExpirationInMinutes
+			tokenExpiration = new(time.Duration(d) * time.Minute)
+		}
+
 		driver := s3.ArtifactDriver{
 			Endpoint:              art.S3.Endpoint,
 			AccessKey:             accessKey,
@@ -106,6 +113,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
+			TokenExpiration:       tokenExpiration,
 			AddressingStyle:       art.S3.AddressingStyle,
 		}
 
