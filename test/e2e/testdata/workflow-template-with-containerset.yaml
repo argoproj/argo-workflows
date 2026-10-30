@@ -12,6 +12,8 @@ spec:
       containerSet:
         retryStrategy:
           retries: "2"
+          # Keep c3 retrying long enough for the controller to observe c2 failing.
+          duration: "10s"
         containers:
           - name: c1
             image: argoproj/argosay:v2

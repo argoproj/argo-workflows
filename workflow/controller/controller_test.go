@@ -1696,7 +1696,7 @@ spec:
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodPending)
-	woc.execWf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	woc.operate(ctx)
 	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
 	assert.True(t, controller.PodController.TestingProcessNextItem(ctx))

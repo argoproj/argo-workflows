@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
+
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1077,4 +1079,18 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
+}
+
+func TestParameterRetryProofIsAtomicWithNativeRetry(t *testing.T) {
+	s, ctx := getWorkflowServer(t)
+	wf, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows("workflows").Get(ctx, "failed", metav1.GetOptions{})
+	require.NoError(t, err)
+	bad := parameterization.WithRetryProof(ctx, parameterization.NativeRetryProof{UID: "wrong", ResourceVersion: wf.ResourceVersion, Receipt: "test"})
+	_, err = s.RetryWorkflow(bad, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
+	require.Error(t, err)
+	good := parameterization.WithRetryProof(ctx, parameterization.NativeRetryProof{UID: string(wf.UID), ResourceVersion: wf.ResourceVersion, Receipt: "test"})
+	result, err := s.RetryWorkflow(good, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
+	require.NoError(t, err)
+	require.Equal(t, "test", result.Annotations[parameterization.Group+"/retry"])
+	require.Equal(t, wf.UID, result.UID)
 }

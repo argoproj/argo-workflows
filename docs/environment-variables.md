@@ -131,6 +131,10 @@ data:
 | Name                                       | Type     | Default | Description                                                                                                             |
 |--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------|
 | `ARGO_ARTIFACT_SERVER`                     | `bool`   | `true`  | Enable [Workflow Archive](workflow-archive.md) endpoints
+| `ARGO_PARAMETERIZATION_ALLOW_LOOPBACK_SECRET_INPUT` | `bool` | `false` | Permit HTTP secret input on the isolated loopback lab transport; has an effect only when `ARGO_PARAMETERIZATION_SECRET_BACKEND=kubernetes-encrypted`. |
+| `ARGO_PARAMETERIZATION_ENABLED` | `bool` | `false` | Enable the [structured parameter API](parameterization/getting-started.md). |
+| `ARGO_PARAMETERIZATION_HISTORY_KEY_FILE` | `string` | empty | Path to a shared history-cursor signing key; otherwise generate a process-local key. |
+| `ARGO_PARAMETERIZATION_SECRET_BACKEND` | `string` | empty | Set to `kubernetes-encrypted` only with cluster encryption at rest configured. |
 | `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
 | `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
 | `ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL`       | `time.Duration` | `1m` | How long a successful `SelfSubjectReview` of a `client` auth mode token is remembered before the API server is consulted again. `0` disables the cache. |
@@ -143,6 +147,10 @@ data:
 | `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |
 | `SSO_DELEGATE_RBAC_TO_NAMESPACE`           | `bool`   | `false` | Enable [SSO RBAC Namespace Delegation](argo-server-sso.md#sso-rbac-namespace-delegation)
+
+For multiple Server replicas, mount the same file containing exactly 32 random bytes and set `ARGO_PARAMETERIZATION_HISTORY_KEY_FILE` to its read-only path.
+Without this setting, each process generates its own key and a restart expires its history cursors.
+Never log or commit the key.
 
 CLI parameters of the Server can be specified as environment variables with the `ARGO_` prefix.
 For example:
