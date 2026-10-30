@@ -13,7 +13,7 @@ require (
 	github.com/XSAM/otelsql v0.44.0
 	github.com/alibabacloud-go/tea v1.5.3
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
-	github.com/aliyun/credentials-go v1.4.13
+	github.com/aliyun/credentials-go v1.4.14
 	github.com/andybalholm/brotli v1.2.7
 	github.com/argoproj/argo-events v1.9.11
 	github.com/argoproj/pkg v0.13.7-0.20250123033407-65f2d4777bfd
