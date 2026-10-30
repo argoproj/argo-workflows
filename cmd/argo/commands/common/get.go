@@ -510,6 +510,12 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, wfName, nodePrefix str
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
 		podName := util.GeneratePodName(wfName, nodeName, templateName, node.ID, podNameVersion)
+		if node.PooledTask != nil {
+			var marker string
+			if podName, marker = util.PooledTaskPodName(node.PooledTask, node.Fulfilled()); marker != "" {
+				podName += " (" + marker + ")"
+			}
+		}
 		args = []any{nodePrefix, fmtNodeName, fmtTemplateName, podName, duration, node.Message, ""}
 	} else {
 		args = []any{nodePrefix, fmtNodeName, fmtTemplateName, "", "", node.Message, ""}

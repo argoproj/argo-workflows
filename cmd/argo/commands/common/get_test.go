@@ -135,6 +135,39 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, "", node, getArgs)
 }
 
+// TestPrintPooledNode checks that a pooled node shows its task name, marked
+// as queued, until a worker claims it, then its claimant worker pod, and once
+// it has ended with no claimant, its task name marked unclaimed or released.
+func TestPrintPooledNode(t *testing.T) {
+	tests := []struct {
+		name    string
+		phase   wfv1.NodePhase
+		steps   []string
+		podName string
+	}{
+		{name: "queued", phase: wfv1.NodeRunning, podName: "testWF-work-123 (queued)"},
+		{name: "released", phase: wfv1.NodeRunning, steps: []string{"claim", "release"}, podName: "testWF-work-123 (queued)"},
+		{name: "claimed", phase: wfv1.NodeRunning, steps: []string{"claim"}, podName: "work-0123456789-abcde"},
+		{name: "interrupted", phase: wfv1.NodeRunning, steps: []string{"claim", "interrupt"}, podName: "work-0123456789-abcde"},
+		{name: "ended unclaimed", phase: wfv1.NodeFailed, podName: "testWF-work-123 (unclaimed)"},
+		{name: "ended after a release", phase: wfv1.NodeFailed, steps: []string{"claim", "release"}, podName: "testWF-work-123 (released)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := wfv1.NodeStatus{
+				ID:           "testWF-123",
+				Name:         "testWF[0].a",
+				DisplayName:  "a",
+				Type:         wfv1.NodeTypePod,
+				TemplateName: "work",
+				Phase:        tt.phase,
+				PooledTask:   pooledTask("testWF-work-123", "work-0123456789-abcde", tt.steps...),
+			}
+			testPrintNodeImpl(t, fmt.Sprintf("%s a\twork\t%s\t0s\t\t\n", JobStatusIconMap[tt.phase], tt.podName), node, GetFlags{})
+		})
+	}
+}
+
 // TestConvertToRenderTrees_ExpandedItemsUnderStepGroup checks, on hand-built
 // status, how `argo get` renders an expanded step's items.
 //
