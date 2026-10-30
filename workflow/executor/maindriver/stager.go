@@ -21,6 +21,10 @@ type PodStager struct {
 	VarRunArgo    string
 	ContainerName string
 	Template      *wfv1.Template
+	// SharedDirs creates the directories writable by everyone, given a
+	// zero umask, rather than rwxr-xr-x: a pool pod's worker, which may run
+	// as another user, removes them after the task.
+	SharedDirs bool
 }
 
 var _ OutputStager = PodStager{}
@@ -40,6 +44,13 @@ func (s PodStager) Stage(ctx context.Context, _ string, out Output) error {
 	}
 }
 
+func (s PodStager) dirMode() os.FileMode {
+	if s.SharedDirs {
+		return 0o777
+	}
+	return 0o755 // rwxr-xr-x
+}
+
 func (s PodStager) saveArtifact(ctx context.Context, srcPath string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
@@ -57,7 +68,7 @@ func (s PodStager) saveArtifact(ctx context.Context, srcPath string) error {
 		"dst": dstPath,
 	}).Info(ctx, "saving artifact")
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
+	if err := os.MkdirAll(z, s.dirMode()); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", z, err)
 	}
 	dst, err := os.Create(dstPath)
@@ -96,7 +107,7 @@ func (s PodStager) saveParameter(ctx context.Context, srcPath string) error {
 		"dst": dstPath,
 	}).Info(ctx, "saving parameter")
 	z := filepath.Dir(dstPath)
-	if mkdirErr := os.MkdirAll(z, 0o755); mkdirErr != nil { // chmod rwxr-xr-x
+	if mkdirErr := os.MkdirAll(z, s.dirMode()); mkdirErr != nil {
 		return fmt.Errorf("failed to create directory %s: %w", z, mkdirErr)
 	}
 	dst, err := os.Create(dstPath)

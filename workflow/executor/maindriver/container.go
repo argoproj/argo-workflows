@@ -111,18 +111,7 @@ func (Container) Run(ctx context.Context, task Task, stager OutputStager) (exitC
 }
 
 func stageOutputs(ctx context.Context, task Task, stager OutputStager, logs []Output) error {
-	outs := logs
-	for _, p := range task.Template.Outputs.Parameters {
-		if p.ValueFrom != nil && p.ValueFrom.Path != "" {
-			outs = append(outs, Output{Kind: OutputParameter, Path: p.ValueFrom.Path})
-		}
-	}
-	for _, a := range task.Template.Outputs.Artifacts {
-		if a.Path != "" {
-			outs = append(outs, Output{Kind: OutputArtifact, Path: a.Path})
-		}
-	}
-	for _, out := range outs {
+	for _, out := range append(logs, DeclaredOutputs(task.Template)...) {
 		if err := stager.Stage(ctx, task.NodeID, out); err != nil {
 			return fmt.Errorf("failed to hand over %s %s: %w", out.Kind, out.Path, err)
 		}

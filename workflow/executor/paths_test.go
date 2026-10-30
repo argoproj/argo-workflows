@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/poolpod"
 )
 
 func TestPodPaths_MatchLegacyConstants(t *testing.T) {
@@ -43,5 +44,30 @@ func TestWorkerPaths_RejectsNodeIDOutsideItsOwnDir(t *testing.T) {
 	for _, nodeID := range []string{"", ".", "..", "a/b", "../x", "/abs"} {
 		_, err := WorkerPaths("/w", nodeID)
 		assert.Error(t, err, "nodeID %q", nodeID)
+	}
+}
+
+func TestPoolTask_ATaskDirectoryBeneathEachMount(t *testing.T) {
+	p, err := PodPaths().PoolTask("wf-1")
+	require.NoError(t, err)
+	assert.Equal(t, TaskPaths{
+		VarRunArgo:     poolpod.Dir + "/wf-1",
+		InputArtifacts: common.ExecutorArtifactBaseDir + "/wf-1",
+		Staging:        common.ExecutorStagingEmptyDir + "/wf-1",
+		MainFS:         common.ExecutorMainFilesystemDir,
+		Scratch:        "/tmp/argo/outputs/wf-1",
+	}, p)
+	assert.Equal(t, common.ExecutorStagingEmptyDir+"/wf-1/script", p.ScriptSource())
+	assert.Equal(t, poolpod.Dir+"/wf-1/ctr/main", p.ContainerDir(common.MainContainerName))
+	assert.Equal(t, poolpod.Dir, PodPaths().PoolDir(), "the pool directory main and the worker share")
+}
+
+// The worker removes each task directory when the task is done, and the
+// pool directory holds the protocol's own files, so a task name must name
+// a directory of its own.
+func TestPoolTask_RejectsANameThatIsNotItsOwnDirectory(t *testing.T) {
+	for _, task := range []string{"", ".", "..", "a/b", "../x", poolpod.CurrentFile, ".current-1"} {
+		_, err := PodPaths().PoolTask(task)
+		assert.Error(t, err, "task %q", task)
 	}
 }

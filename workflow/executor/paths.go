@@ -7,14 +7,16 @@ import (
 	"strings"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/poolpod"
 )
 
 // TaskPaths is where one task's files live. A pod runs one task, so its
 // paths are the fixed locations the controller mounts (PodPaths); a worker
 // running several tasks in one process gives each its own tree
-// (WorkerPaths). Paths outside TaskPaths are still shared between tasks:
-// the template's own input and output paths, the resource manifest, and
-// the emissary's large-argument files.
+// (WorkerPaths); a pool pod gives each task its own directory beneath each
+// of the fixed locations (PoolTask). Paths outside TaskPaths are still
+// shared between tasks: the template's own input and output paths, the
+// resource manifest, and the emissary's large-argument files.
 type TaskPaths struct {
 	// Root is the directory holding all of the task's own files. A worker
 	// empties it before the task and removes it after, so it must never
@@ -68,6 +70,51 @@ func WorkerPaths(root, nodeID string) (TaskPaths, error) {
 		Staging:        filepath.Join(taskRoot, "staging"),
 		Scratch:        filepath.Join(taskRoot, "scratch"),
 	}, nil
+}
+
+// PoolTask returns the paths of one task in a hot worker pool pod whose
+// shared directories are p's (PodPaths in a pool pod), where the worker
+// stages tasks for the looping main container one after another through
+// the directories the controller mounts in both: each task's files are in
+// a directory of its own, named task, beneath each of them (poolShared).
+// Its VarRunArgo is also the task's directory in the pool pod's file
+// protocol (poolpod), in the pool directory. There is no Root: the worker
+// removes each directory once the task is done, so task must name a single
+// directory (poolpod.CheckTaskName).
+func (p TaskPaths) PoolTask(task string) (TaskPaths, error) {
+	if err := poolpod.CheckTaskName(task); err != nil {
+		return TaskPaths{}, err
+	}
+	shared := p.poolShared()
+	return TaskPaths{
+		VarRunArgo:     filepath.Join(shared.VarRunArgo, task),
+		InputArtifacts: filepath.Join(shared.InputArtifacts, task),
+		Staging:        filepath.Join(shared.Staging, task),
+		MainFS:         p.MainFS,
+		Scratch:        filepath.Join(shared.Scratch, task),
+	}, nil
+}
+
+// poolShared returns the directories of a pool pod whose paths are p's
+// that each of its tasks has a directory of its own beneath (PoolTask): the
+// pool directory, the input artifacts and staging directories, and
+// Scratch's outputs subdirectory, which a pool pod shares with its artifact
+// plugin sidecars, as a pod's /tmp/argo/outputs, so the tarballs Collect
+// writes to the task's Scratch/outputs are where the plugins can read them.
+func (p TaskPaths) poolShared() TaskPaths {
+	return TaskPaths{
+		VarRunArgo:     filepath.Join(p.VarRunArgo, poolpod.DirName),
+		InputArtifacts: p.InputArtifacts,
+		Staging:        p.Staging,
+		MainFS:         p.MainFS,
+		Scratch:        filepath.Join(p.Scratch, "outputs"),
+	}
+}
+
+// PoolDir is the pool directory of a pool pod whose paths are p: where
+// the worker offers tasks and main takes them.
+func (p TaskPaths) PoolDir() string {
+	return p.poolShared().VarRunArgo
 }
 
 // ContainerDir is where a container's exit code, logs and signal file live.
