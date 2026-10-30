@@ -70,6 +70,10 @@ func (wts *Server) GetWorkflowTemplate(ctx context.Context, req *workflowtemplat
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
+	if err := sutils.EvaluateParameterDefaults(ctx, &wfTmpl.Spec); err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
 	return wfTmpl, nil
 }
 
