@@ -2339,6 +2339,12 @@ spec:
                               description: |-
                                 AutomountServiceAccountToken enables mounting the service account token.
                                 The service account must be named <plugin-name>-executor-plugin.
+                                Mutually exclusive with automountWorkflowServiceAccountToken.
+                              type: boolean
+                            automountWorkflowServiceAccountToken:
+                              description: |-
+                                AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account.
+                                Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.
                               type: boolean
                             container:
                               description: Container defines the Kubernetes container
@@ -45323,6 +45329,12 @@ spec:
                                   description: |-
                                     AutomountServiceAccountToken enables mounting the service account token.
                                     The service account must be named <plugin-name>-executor-plugin.
+                                    Mutually exclusive with automountWorkflowServiceAccountToken.
+                                  type: boolean
+                                automountWorkflowServiceAccountToken:
+                                  description: |-
+                                    AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account.
+                                    Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.
                                   type: boolean
                                 container:
                                   description: Container defines the Kubernetes container
@@ -91351,6 +91363,12 @@ spec:
                               description: |-
                                 AutomountServiceAccountToken enables mounting the service account token.
                                 The service account must be named <plugin-name>-executor-plugin.
+                                Mutually exclusive with automountWorkflowServiceAccountToken.
+                              type: boolean
+                            automountWorkflowServiceAccountToken:
+                              description: |-
+                                AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account.
+                                Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.
                               type: boolean
                             container:
                               description: Container defines the Kubernetes container
@@ -151322,6 +151340,12 @@ spec:
                               description: |-
                                 AutomountServiceAccountToken enables mounting the service account token.
                                 The service account must be named <plugin-name>-executor-plugin.
+                                Mutually exclusive with automountWorkflowServiceAccountToken.
+                              type: boolean
+                            automountWorkflowServiceAccountToken:
+                              description: |-
+                                AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account.
+                                Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.
                               type: boolean
                             container:
                               description: Container defines the Kubernetes container
