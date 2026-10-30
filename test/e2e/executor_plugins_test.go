@@ -42,28 +42,36 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				RunAsNonRoot:   new(true),
 				SeccompProfile: &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 			}, spec.SecurityContext)
-			require.Len(t, spec.Volumes, 4)
+			require.Len(t, spec.Volumes, 7)
 			assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
 			assert.Equal(t, "var-run-argo", spec.Volumes[1].Name)
 			assert.Contains(t, spec.Volumes[2].Name, "kube-api-access-")
-			assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[3].Name)
+			assert.Equal(t, common.AgentWorkspaceVolumeName, spec.Volumes[3].Name)
+			assert.Equal(t, "tmp-dir-argo", spec.Volumes[4].Name)
+			// the secret of the namespace's artifact repository
+			assert.Contains(t, spec.Volumes[5].Name, "artifact-secret-")
+			assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[6].Name)
 
 			require.Len(t, spec.Containers, 3)
 			{
 				plug := requireFindContainerByName(t, spec.Containers, "hello-executor-plugin")
 				require.NotNil(t, plug)
 				require.Equal(t, "hello-executor-plugin", plug.Name)
-				require.Len(t, plug.VolumeMounts, 2)
+				require.Len(t, plug.VolumeMounts, 3)
 				assert.Equal(t, "var-run-argo", plug.VolumeMounts[0].Name)
-				assert.Contains(t, plug.VolumeMounts[1].Name, "kube-api-access-")
+				assert.Equal(t, common.AgentWorkspaceVolumeName, plug.VolumeMounts[1].Name)
+				assert.Contains(t, plug.VolumeMounts[2].Name, "kube-api-access-")
 			}
 			{
 				agent := requireFindContainerByName(t, spec.Containers, "main")
 				require.Equal(t, "main", agent.Name)
-				require.Len(t, agent.VolumeMounts, 3)
+				require.Len(t, agent.VolumeMounts, 6)
 				assert.Equal(t, "var-run-argo", agent.VolumeMounts[0].Name)
 				assert.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
-				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
+				assert.Equal(t, common.AgentWorkspaceVolumeName, agent.VolumeMounts[2].Name)
+				assert.Equal(t, "/tmp", agent.VolumeMounts[3].MountPath)
+				assert.Equal(t, common.SecretVolMountPath+"/my-minio-cred", agent.VolumeMounts[4].MountPath)
+				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[5].Name)
 				assert.Equal(t, &apiv1.SecurityContext{
 					RunAsUser:                new(int64(8737)),
 					RunAsNonRoot:             new(true),
@@ -80,6 +88,28 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			assert.Empty(t, wfts.Spec.Tasks)
 			assert.Empty(t, wfts.Status.Nodes)
 			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
+func (s *ExecutorPluginsSuite) TestTemplateExecutorArtifacts() {
+	s.Given().
+		Workflow("@testdata/plugins/executor/artifacts-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("produce"), func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+			require.NotNil(t, n.Outputs)
+			greeting := n.Outputs.GetArtifactByName("greeting")
+			require.NotNil(t, greeting)
+			key, err := greeting.GetKey()
+			require.NoError(t, err)
+			assert.Contains(t, key, "greeting.tgz")
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("consume"), func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+			require.NotNil(t, n.Outputs)
+			// the plugin echoes the content of its input artifacts as parameters
+			assert.Contains(t, n.Outputs.Parameters, wfv1.Parameter{Name: "greeting", Value: wfv1.AnyStringPtr("Hello greeting")})
 		})
 }
 

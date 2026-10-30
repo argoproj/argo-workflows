@@ -248,6 +248,14 @@ const (
 	// CACertificatesVolumeMountName is the name of the secret that contains the CA certificates.
 	CACertificatesVolumeMountName = "argo-workflows-agent-ca-certificates"
 
+	// AgentWorkspaceVolumeName and AgentWorkspacePath describe the emptyDir the
+	// agent pod shares between the agent and its executor plugin sidecars,
+	// mounted at the same path in each. A plugin task with artifacts gets a
+	// directory of its own under it, in which the agent places the input
+	// artifacts and from which it uploads the output artifacts.
+	AgentWorkspaceVolumeName = "argo-agent-workspace"
+	AgentWorkspacePath       = "/argo/workspace"
+
 	// VarRunArgoPath is the standard path for the shared volume
 	VarRunArgoPath = "/var/run/argo"
 

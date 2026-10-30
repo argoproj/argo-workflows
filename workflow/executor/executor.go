@@ -465,39 +465,49 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 }
 
 func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Artifact, tempArtPath, artPath string) error {
-	isTar := false
-	isZip := false
-	var err error
-
-	switch {
-	case art.GetArchive().None != nil:
-		// explicitly not a tar
-		isTar = false
-		isZip = false
-	case art.GetArchive().Tar != nil:
-		// explicitly a tar
-		isTar = true
-	case art.GetArchive().Zip != nil:
-		// explicitly a zip
-		isZip = true
-	default:
-		// auto-detect if tarball
-		// (don't try to autodetect zip files for backwards compatibility)
-		isTar, err = isTarball(ctx, tempArtPath)
-		if err != nil {
-			return err
-		}
+	isTar, isZip, err := artifactArchiveFormat(ctx, art, tempArtPath)
+	if err != nil {
+		return err
 	}
 
 	unarchiveCtx, span := we.Tracing.StartUnarchiveArtifact(ctx, artifactArchiveWord(isZip, isTar))
 	defer span.End()
 
+	return unarchive(unarchiveCtx, isTar, isZip, tempArtPath, artPath)
+}
+
+// artifactArchiveFormat reports how the artifact downloaded to tempArtPath is
+// archived: as the artifact's archive strategy says, or, without one, as a
+// tarball if it is one.
+func artifactArchiveFormat(ctx context.Context, art wfv1.Artifact, tempArtPath string) (isTar, isZip bool, err error) {
+	switch {
+	case art.GetArchive().None != nil:
+		// explicitly not a tar
+		return false, false, nil
+	case art.GetArchive().Tar != nil:
+		// explicitly a tar
+		return true, false, nil
+	case art.GetArchive().Zip != nil:
+		// explicitly a zip
+		return false, true, nil
+	default:
+		// auto-detect if tarball
+		// (don't try to autodetect zip files for backwards compatibility)
+		isTar, err = isTarball(ctx, tempArtPath)
+		return isTar, false, err
+	}
+}
+
+// unarchive moves the artifact downloaded to tempArtPath to artPath,
+// extracting it on the way if it is a tarball or a zip file.
+func unarchive(ctx context.Context, isTar, isZip bool, tempArtPath, artPath string) error {
+	var err error
 	switch {
 	case isTar:
 		err = untar(unarchiveCtx, tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	case isZip:
-		err = unzip(unarchiveCtx, tempArtPath, artPath)
+		err = unzip(ctx, tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	default:
 		err = os.Rename(tempArtPath, artPath)
@@ -617,21 +627,8 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 
 // fileBase is probably path.Base(filePath), but can be something else
 func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.Artifact, fileName, localArtPath string) error {
-	if !art.HasKey() {
-		key, err := we.Template.ArchiveLocation.GetKey()
-		if err != nil {
-			return err
-		}
-		artLocation, err := we.Template.ArchiveLocation.Get()
-		if err != nil {
-			return err
-		}
-		if err = art.SetType(artLocation); err != nil {
-			return err
-		}
-		if err := art.SetKey(path.Join(key, fileName)); err != nil {
-			return err
-		}
+	if err := keyArtifact(art, we.Template.ArchiveLocation, fileName); err != nil {
+		return err
 	}
 	driverArt, err := we.newDriverArt(art)
 	if err != nil {
@@ -648,6 +645,26 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 	we.maybeDeleteLocalArtPath(ctx, localArtPath)
 	logging.RequireLoggerFromContext(ctx).WithField("path", localArtPath).Info(ctx, "Successfully saved file")
 	return nil
+}
+
+// keyArtifact gives an artifact that has no key of its own the key fileName
+// under the archive location, in the archive location's storage.
+func keyArtifact(art *wfv1.Artifact, archiveLocation *wfv1.ArtifactLocation, fileName string) error {
+	if art.HasKey() {
+		return nil
+	}
+	key, err := archiveLocation.GetKey()
+	if err != nil {
+		return err
+	}
+	artLocation, err := archiveLocation.Get()
+	if err != nil {
+		return err
+	}
+	if err = art.SetType(artLocation); err != nil {
+		return err
+	}
+	return art.SetKey(path.Join(key, fileName))
 }
 
 func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localArtPath string) {
@@ -675,21 +692,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 	ctx, span := we.Tracing.StartArchiveArtifact(ctx)
 	defer span.End()
 	logger.WithField("name", art.Name).Info(ctx, "Staging artifact")
-	strategy := art.Archive
-	if strategy == nil {
-		// If no strategy is specified, default to the tar strategy
-		strategy = &wfv1.ArchiveStrategy{
-			Tar: &wfv1.TarStrategy{},
-		}
-	}
-	compressionLevel := gzip.NoCompression
-	if strategy.Tar != nil {
-		if l := strategy.Tar.CompressionLevel; l != nil {
-			compressionLevel = int(*l)
-		} else {
-			compressionLevel = gzip.DefaultCompression
-		}
-	}
+	strategy, compressionLevel := archiveStrategy(art)
 
 	if !we.isBaseImagePath(art.Path) {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
@@ -697,43 +700,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		// instead of copying it from the container.
 		mountedArtPath := filepath.Join(common.ExecutorMainFilesystemDir, art.Path)
 		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Staging from mirrored volume mount")
-		if strategy.None != nil {
-			fileName := filepath.Base(art.Path)
-			logger.WithField("fileName", fileName).Info(ctx, "No compression strategy needed, staging skipped")
-			if !file.Exists(mountedArtPath) {
-				return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
-			}
-			return fileName, mountedArtPath, nil
-		}
-		if strategy.Zip != nil {
-			fileName := fmt.Sprintf("%s.zip", art.Name)
-			localArtPath := filepath.Join(tempOutArtDir, fileName)
-			f, err := os.Create(localArtPath)
-			if err != nil {
-				return "", "", argoerrs.InternalWrapError(err)
-			}
-			zw := zip.NewWriter(f)
-			defer zw.Close()
-			err = archive.ZipToWriter(ctx, mountedArtPath, zw)
-			if err != nil {
-				return "", "", err
-			}
-			logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Successfully staged from mirrored volume mount")
-			return fileName, localArtPath, nil
-		}
-		fileName := fmt.Sprintf("%s.tgz", art.Name)
-		localArtPath := filepath.Join(tempOutArtDir, fileName)
-		f, err := os.Create(localArtPath)
-		if err != nil {
-			return "", "", argoerrs.InternalWrapError(err)
-		}
-		w := bufio.NewWriter(f)
-		err = archive.TarGzToWriter(ctx, mountedArtPath, compressionLevel, w)
-		if err != nil {
-			return "", "", err
-		}
-		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Successfully staged from mirrored volume mount")
-		return fileName, localArtPath, nil
+		return archiveLocalPath(ctx, art, mountedArtPath, tempOutArtDir)
 	}
 
 	fileName := fmt.Sprintf("%s.tgz", art.Name)
@@ -796,6 +763,86 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		return fileName, localArtPath, nil
 	}
 	return fileName, localArtPath, nil
+}
+
+// archiveStrategy returns the artifact's archive strategy, tar when it sets
+// none, and the gzip compression level to archive it with.
+func archiveStrategy(art *wfv1.Artifact) (*wfv1.ArchiveStrategy, int) {
+	strategy := art.Archive
+	if strategy == nil {
+		// If no strategy is specified, default to the tar strategy
+		strategy = &wfv1.ArchiveStrategy{
+			Tar: &wfv1.TarStrategy{},
+		}
+	}
+	compressionLevel := gzip.NoCompression
+	if strategy.Tar != nil {
+		if l := strategy.Tar.CompressionLevel; l != nil {
+			compressionLevel = int(*l)
+		} else {
+			compressionLevel = gzip.DefaultCompression
+		}
+	}
+	return strategy, compressionLevel
+}
+
+// archiveLocalPath stages the file or directory at srcPath, which this process
+// reads directly, for upload as art: it archives it into outDir as the
+// artifact's archive strategy asks, or leaves it in place for the none
+// strategy. It returns the file name the artifact is stored under and the
+// local path to upload.
+func archiveLocalPath(ctx context.Context, art *wfv1.Artifact, srcPath, outDir string) (string, string, error) {
+	logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": art.Path, "srcPath": srcPath})
+	strategy, compressionLevel := archiveStrategy(art)
+	if strategy.None != nil {
+		fileName := filepath.Base(art.Path)
+		logger.WithField("fileName", fileName).Info(ctx, "No compression strategy needed, staging skipped")
+		if !file.Exists(srcPath) {
+			return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
+		}
+		return fileName, srcPath, nil
+	}
+	if strategy.Zip != nil {
+		fileName := fmt.Sprintf("%s.zip", art.Name)
+		localArtPath := filepath.Join(outDir, fileName)
+		err := writeArchive(localArtPath, func(w io.Writer) error {
+			zw := zip.NewWriter(w)
+			if err := archive.ZipToWriter(ctx, srcPath, zw); err != nil {
+				_ = zw.Close()
+				return err
+			}
+			return zw.Close()
+		})
+		if err != nil {
+			return "", "", err
+		}
+		logger.Info(ctx, "Successfully staged")
+		return fileName, localArtPath, nil
+	}
+	fileName := fmt.Sprintf("%s.tgz", art.Name)
+	localArtPath := filepath.Join(outDir, fileName)
+	err := writeArchive(localArtPath, func(w io.Writer) error {
+		return archive.TarGzToWriter(ctx, srcPath, compressionLevel, bufio.NewWriter(w))
+	})
+	if err != nil {
+		return "", "", err
+	}
+	logger.Info(ctx, "Successfully staged")
+	return fileName, localArtPath, nil
+}
+
+// writeArchive creates the file at localArtPath, writes it with write and
+// closes it.
+func writeArchive(localArtPath string, write func(w io.Writer) error) error {
+	f, err := os.Create(localArtPath)
+	if err != nil {
+		return argoerrs.InternalWrapError(err)
+	}
+	err = write(f)
+	if closeErr := f.Close(); err == nil && closeErr != nil {
+		err = argoerrs.InternalWrapError(closeErr)
+	}
+	return err
 }
 
 // isBaseImagePath checks if the given artifact path resides in the base image layer of the container

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 
@@ -11,6 +12,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -21,6 +23,21 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
+)
+
+var (
+	// volumeAgentWorkspace is shared by the agent and its executor plugins,
+	// which plugin tasks with artifacts run in.
+	volumeAgentWorkspace = apiv1.Volume{
+		Name: common.AgentWorkspaceVolumeName,
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	volumeMountAgentWorkspace = apiv1.VolumeMount{
+		Name:      common.AgentWorkspaceVolumeName,
+		MountPath: common.AgentWorkspacePath,
+	}
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -165,6 +182,18 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
 		*tokenVolumeMount,
+	}
+	if len(pluginSidecars) > 0 {
+		// The pod outlives the tasks it was created for, so it is ready for
+		// plugin templates with artifacts whether or not these have any. As
+		// in a pod's executor container, artifact drivers and archiving get
+		// a writable /tmp.
+		secretVolumes, secretVolumeMounts := woc.agentArtifactSecretVolumes()
+		podVolumes = slices.Concat(podVolumes, []apiv1.Volume{volumeAgentWorkspace, volumeTmpDir}, secretVolumes)
+		podVolumeMounts = slices.Concat(podVolumeMounts, []apiv1.VolumeMount{
+			volumeMountAgentWorkspace,
+			{Name: volumeTmpDir.Name, MountPath: "/tmp"},
+		}, secretVolumeMounts)
 	}
 	if certVolume != nil && certVolumeMount != nil {
 		podVolumes = append(podVolumes, *certVolume)
@@ -346,7 +375,7 @@ func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug
 		ReadOnly:  true,
 		// only mount the token for this plugin, not others
 		SubPath: c.Name,
-	})
+	}, volumeMountAgentWorkspace)
 	if !s.AutomountServiceAccountToken {
 		return c, nil, nil
 	}
@@ -356,6 +385,40 @@ func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug
 	}
 	c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
 	return c, volume, nil
+}
+
+// agentArtifactSecretVolumes returns volumes for the agent to read the secrets
+// of the workflow's artifact repository from, and those of the artifacts of
+// the tasks the pod is created for, mounted where argoexec reads artifact
+// secrets. A secret the agent needs that is not among them it reads from the
+// Kubernetes API. The volumes are optional, so the agent starts when a
+// secret it never uses is missing, and named at random, as the service
+// account token's volume is, so plugins cannot mount them.
+func (woc *wfOperationCtx) agentArtifactSecretVolumes() ([]apiv1.Volume, []apiv1.VolumeMount) {
+	locations := []*wfv1.ArtifactLocation{woc.artifactRepository.ToArtifactLocation()}
+	for _, tmpl := range woc.taskSet {
+		locations = append(locations, tmpl.ArchiveLocation)
+		for _, art := range slices.Concat(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts) {
+			locations = append(locations, &art.ArtifactLocation)
+		}
+	}
+	volumesBySecret := make(map[string]apiv1.Volume)
+	createSecretVolumesFromArtifactLocations(volumesBySecret, locations, make(map[string]bool))
+
+	var volumes []apiv1.Volume
+	var volumeMounts []apiv1.VolumeMount
+	for i, secretName := range slices.Sorted(maps.Keys(volumesBySecret)) {
+		volume := volumesBySecret[secretName]
+		volume.Name = fmt.Sprintf("artifact-secret-%d-%s", i, rand.String(5))
+		volume.Secret.Optional = new(true)
+		volumes = append(volumes, volume)
+		volumeMounts = append(volumeMounts, apiv1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: common.SecretVolMountPath + "/" + secretName,
+			ReadOnly:  true,
+		})
+	}
+	return volumes, volumeMounts
 }
 
 func addresses(containers []apiv1.Container) []string {

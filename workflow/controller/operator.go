@@ -2473,7 +2473,7 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 		case wfv1.TemplateTypeData:
 			dispatchNode, dispatchErr = woc.executeData(ctx, nodeName, nodeScope, tmpl, orgTmpl, opts)
 		case wfv1.TemplateTypePlugin:
-			dispatchNode = woc.executePluginTemplate(ctx, nodeName, nodeScope, tmpl, orgTmpl, opts)
+			dispatchNode, dispatchErr = woc.executePluginTemplate(ctx, nodeName, nodeScope, tmpl, orgTmpl, opts)
 		case wfv1.TemplateTypeSuspend:
 			dispatchNode, dispatchErr = woc.executeSuspend(ctx, nodeName, nodeScope, tmpl, orgTmpl, opts)
 		default:

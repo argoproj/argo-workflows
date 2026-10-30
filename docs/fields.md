@@ -117,6 +117,8 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -636,6 +638,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -1125,6 +1129,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -1535,6 +1541,8 @@ Arguments to a template
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -1734,6 +1742,8 @@ ExecutorPlugin describes workflow-level executor plugin
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
@@ -2029,6 +2039,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -2540,6 +2552,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`dag-conditional-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-conditional-parameters.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
 - [`exit-handler-with-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-param.yaml)
@@ -2720,6 +2734,8 @@ Artifact indicates an artifact to place at a specified path
 - [`dag-conditional-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-conditional-artifacts.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`exit-handler-with-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-with-artifacts.yaml)
 
@@ -3308,6 +3324,8 @@ Data is a data template
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-raw.yaml)
 
 - [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
@@ -3490,6 +3508,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -3654,6 +3674,8 @@ Plugin is an Object with exactly one key
 <summary>Examples with this field (click to open)</summary>
 
 - [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
@@ -3844,6 +3866,8 @@ WorkflowStep is a reference to a template to execute in a series of step Note: C
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-diamond-steps.yaml)
 
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -4350,6 +4374,8 @@ PluginArtifact is the location of a plugin artifact
 
 - [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
@@ -4369,6 +4395,8 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 <summary>Examples with this field (click to open)</summary>
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-raw.yaml)
 
@@ -4485,6 +4513,8 @@ _No description available_
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
@@ -5139,6 +5169,8 @@ PluginArtifactRepository defines the controller configuration for a plugin artif
 
 - [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
@@ -5616,6 +5648,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handler-dag-level.yaml)
@@ -6004,6 +6038,8 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fun-with-gifs.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
@@ -6059,6 +6095,8 @@ PodSecurityContext holds pod-level security attributes and common container sett
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
 
@@ -6372,6 +6410,8 @@ A single application container that you want to run within a pod.
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -6797,6 +6837,8 @@ ContainerPort represents a network port in a single container.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
@@ -6835,6 +6877,8 @@ SecurityContext holds security configuration that will be applied to a container
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
 
@@ -7021,6 +7065,8 @@ Quantity is a fixed-point representation of a number. It provides convenient mar
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fun-with-gifs.yaml)
 
@@ -7467,6 +7513,8 @@ ImageVolumeSource represents a image volume resource.
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-code-output-variable.yaml)
 
@@ -8098,6 +8146,8 @@ Adds and removes POSIX capabilities from running containers.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
+
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
@@ -8193,6 +8243,8 @@ VolumeResourceRequirements describes the storage resource requirements for a vol
 - [`ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/ci.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dns-config.yaml)
+
+- [`executor-plugin-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/executor-plugin-artifacts.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fun-with-gifs.yaml)
 

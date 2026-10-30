@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: executor-plugin-artifacts-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: produce
+            template: produce
+        - - name: consume
+            template: consume
+            arguments:
+              artifacts:
+                - name: greeting
+                  from: "{{steps.produce.outputs.artifacts.greeting}}"
+          - name: print
+            template: print
+            arguments:
+              artifacts:
+                - name: greeting
+                  from: "{{steps.produce.outputs.artifacts.greeting}}"
+    - name: produce
+      plugin:
+        hello: { }
+      outputs:
+        artifacts:
+          - name: greeting
+            path: /tmp/greeting.txt
+    - name: consume
+      plugin:
+        hello: { }
+      inputs:
+        artifacts:
+          - name: greeting
+            path: /tmp/greeting.txt
+    - name: print
+      inputs:
+        artifacts:
+          - name: greeting
+            path: /tmp/greeting.txt
+      container:
+        image: argoproj/argosay:v2
+        args: [ assert_contains, /tmp/greeting.txt, Hello greeting ]

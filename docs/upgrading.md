@@ -209,6 +209,21 @@ Previously, a `timeout` longer than the template's `activeDeadlineSeconds`, the 
 Pods that relied on this now stop at the smaller deadline and fail with `DeadlineExceeded`.
 If you need the longer deadline, raise or remove the smaller `activeDeadlineSeconds`.
 
+### Plugin templates' artifacts are loaded and saved
+
+Plugin templates could declare input and output artifacts, but nothing loaded or saved them.
+The Agent now does, as the `init` and `wait` containers do for a container template.
+The Artifacts section of Executor Plugins describes how.
+
+This changes how existing Plugin templates with artifacts behave:
+
+* A required output artifact that the Executor Plugin neither writes to its path nor replies with a location for now turns a `Succeeded` node into an `Error` one.
+  Mark the artifact `optional: true` to keep the previous behavior.
+* The Agent loads the input artifacts before it calls the Executor Plugin, so it needs access to their storage, and errors the node when it cannot load a required one.
+
+The Agent Pod of a workflow with Executor Plugins also gets more volumes: an `emptyDir` workspace shared with the Executor Plugins, an `emptyDir` for the Agent's `/tmp`, and one for each secret of the workflow's artifact repository, mounted in the Agent's container only.
+An Executor Plugin's container cannot mount a volume at `/argo/workspace`.
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade
