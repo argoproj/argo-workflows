@@ -115,6 +115,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         setSelectedWorkflows(new Map<string, models.Workflow>());
     }
 
+    function changeNamespace(newNamespace: string) {
+        if (newNamespace !== namespace) {
+            setWorkflows(undefined);
+            setError(undefined);
+            clearSelectedWorkflows();
+            setNamespace(newNamespace);
+        }
+    }
+
     // run once on first render
     useEffect(() => {
         (async () => {
@@ -188,6 +197,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs
 
     useEffect(() => {
+        setWorkflows(undefined);
+        setError(undefined);
         const listWatch = new ListWatch(
             () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter, createdAfter, finishedBefore),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
@@ -255,7 +266,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                             labels={labels}
                             createdAfter={createdAfter}
                             finishedBefore={finishedBefore}
-                            setNamespace={setNamespace}
+                            setNamespace={changeNamespace}
                             setPhases={setPhases}
                             setLabels={setLabels}
                             setCreatedAfter={(date: Date) => {
@@ -276,7 +287,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                 <div className='columns small-12 xlarge-10'>
                     <ErrorNotice error={error} />
                     {!workflows ? (
-                        <Loading />
+                        error ? null : (
+                            <Loading />
+                        )
                     ) : workflows.length === 0 ? (
                         <ZeroState title='No workflows'>
                             <p>To create a new workflow, use the button above.</p>
