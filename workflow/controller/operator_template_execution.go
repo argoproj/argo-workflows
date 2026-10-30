@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -52,6 +53,20 @@ func (woc *wfOperationCtx) checkDeadline(ctx context.Context) error {
 }
 
 // checkConstraints checks deadline and parallelism.
+// containsRetryVar checks if a string contains retry-scoped variables that need substitution.
+// Handles whitespace variations (e.g., "{{ retries }}" vs "{{retries}}").
+func containsRetryVar(s string) bool {
+	// Normalize whitespace in template tags for detection
+	normalized := strings.ReplaceAll(s, "{{ ", "{{")
+	normalized = strings.ReplaceAll(normalized, " }}", "}}")
+	return strings.Contains(normalized, "{{retries}}") ||
+		strings.Contains(normalized, "{{retry.") ||
+		strings.Contains(normalized, "{{lastRetry.") ||
+		strings.Contains(normalized, "{{item.retry.") ||
+		strings.Contains(normalized, "{{item.retries}}")
+}
+
+// checkConstraints checks deadline and parallelism.
 func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template, boundaryID string) error {
 	if err := woc.checkDeadline(ctx); err != nil {
 		return err
@@ -60,26 +75,58 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 	// Check the timeout and pendingTimeout deadlines for Pending nodes.
 	// This also covers the resource-forbidden and synchronization scenarios,
 	// where only the node exists, in a pending state, with no pod created.
-	deadline, pendingDeadline, err := templateTimeoutDeadlines(processedTmpl, node, time.Now().UTC())
-	if err != nil {
-		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
-		if node != nil && node.Type == wfv1.NodeTypePod {
-			// delete the timed-out pod so the resources it was waiting for are freed.
-			// Deletion is by UID so a pod recreated by a retry cannot be affected.
-			if pod, exists, podErr := woc.podExists(node.ID); podErr != nil {
-				woc.log.WithError(podErr).Warn(ctx, "failed to check pod existence while cleaning up timed-out node")
-			} else if exists {
-				woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+	var deadline, pendingDeadline *time.Time
+	var err error
+	retryStrategy := woc.retryStrategy(processedTmpl)
+	hasRetryVars := retryStrategy != nil && containsRetryVar(processedTmpl.Timeout)
+
+	// Determine the template to use for timeout calculation
+	var tmplToCheck *wfv1.Template
+	if hasRetryVars {
+		// Timeout contains retry variables (e.g. {{retries}}) that are substituted later in handleRetries.
+		// If node is Pending (e.g., waiting for lock) OR is a task-set node (HTTP/Plugin),
+		// enforce timeout with retries=0. Otherwise skip timeout check.
+		if node != nil && (node.Phase == wfv1.NodePending || node.Type == wfv1.NodeTypeHTTP || node.Type == wfv1.NodeTypePlugin) {
+			tmplToCheck, err = woc.resolveTimeoutWithRetries(ctx, processedTmpl, "0")
+			if err != nil {
+				return err
+			}
+		} else if processedTmpl.PendingTimeout != "" {
+			// Running pod-based retry: skip timeout check, check pendingTimeout only
+			pendingDeadline, err = templateTimeoutDeadlinesForPendingOnly(processedTmpl, node, time.Now().UTC())
+			if err != nil {
+				return woc.markTimeoutError(ctx, processedTmpl, node, nodeName, err)
 			}
 		}
-		phase := wfv1.NodeFailed
-		if node != nil && node.NodeFlag != nil && node.NodeFlag.Hooked {
-			// A timed-out hook errored rather than failed: like a
-			// hook that could not run, it ends its task's boundary Error.
-			phase = wfv1.NodeError
+	} else {
+		// Normal case (no retryStrategy or has retryStrategy but no retry vars in timeout):
+		// check both timeout and pendingTimeout
+		tmplToCheck = processedTmpl
+	}
+
+	if tmplToCheck != nil {
+		// Use the resolved template (tmplToCheck) which has retry variables substituted
+		deadline, pendingDeadline, err = templateTimeoutDeadlines(tmplToCheck, node, time.Now().UTC())
+		if err != nil {
+			woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
+			if node != nil && node.Type == wfv1.NodeTypePod {
+				// delete the timed-out pod so the resources it was waiting for are freed.
+				// Deletion is by UID so a pod recreated by a retry cannot be affected.
+				if pod, exists, podErr := woc.podExists(node.ID); podErr != nil {
+					woc.log.WithError(podErr).Warn(ctx, "failed to check pod existence while cleaning up timed-out node")
+				} else if exists {
+					woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+				}
+			}
+			phase := wfv1.NodeFailed
+			if node != nil && node.NodeFlag != nil && node.NodeFlag.Hooked {
+				// A timed-out hook errored rather than failed: like a
+				// hook that could not run, it ends its task's boundary Error.
+				phase = wfv1.NodeError
+			}
+			_ = woc.markNodePhase(ctx, nodeName, phase, err.Error())
+			return err
 		}
-		_ = woc.markNodePhase(ctx, nodeName, phase, err.Error())
-		return err
 	}
 	// Ensure that we will check again soon after the earliest deadline
 	if deadline == nil || (pendingDeadline != nil && pendingDeadline.Before(*deadline)) {
@@ -93,6 +140,40 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 		return err
 	}
 	return nil
+}
+
+// resolveTimeoutWithRetries resolves the template timeout with the given retry count
+func (woc *wfOperationCtx) resolveTimeoutWithRetries(ctx context.Context, tmpl *wfv1.Template, retries string) (*wfv1.Template, error) {
+	localParams := map[string]string{
+		varkeys.Retries.Template():             retries,
+		varkeys.RetriesLastExitCode.Template(): "0",
+		varkeys.RetriesLastStatus.Template():   "",
+		varkeys.RetriesLastDuration.Template(): "0",
+		varkeys.RetriesLastMessage.Template():  "",
+	}
+	globalParams := woc.globalParams()
+	allParams := make(map[string]string)
+	maps.Copy(allParams, globalParams)
+	maps.Copy(allParams, localParams)
+	return common.SubstituteParams(ctx, tmpl.DeepCopy(), allParams, nil)
+}
+
+// markTimeoutError marks a node as failed/error due to timeout and returns the error
+func (woc *wfOperationCtx) markTimeoutError(ctx context.Context, processedTmpl *wfv1.Template, node *wfv1.NodeStatus, nodeName string, err error) error {
+	woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
+	if node != nil && node.Type == wfv1.NodeTypePod {
+		if pod, exists, podErr := woc.podExists(node.ID); podErr != nil {
+			woc.log.WithError(podErr).Warn(ctx, "failed to check pod existence while cleaning up timed-out node")
+		} else if exists {
+			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+		}
+	}
+	phase := wfv1.NodeFailed
+	if node != nil && node.NodeFlag != nil && node.NodeFlag.Hooked {
+		phase = wfv1.NodeError
+	}
+	_ = woc.markNodePhase(ctx, nodeName, phase, err.Error())
+	return err
 }
 
 // handleSynchronization attempts to acquire the lock.
