@@ -163,7 +163,7 @@ func TestEmissary(t *testing.T) {
 		],
 		"retryStrategy":
 		{
-			"retries": 1
+			"retries": 0
 		}
 	}
 }
@@ -194,7 +194,7 @@ func TestEmissary(t *testing.T) {
 		],
 		"retryStrategy":
 		{
-			"retries": 2
+			"retries": 1
 		}
 	}
 }
