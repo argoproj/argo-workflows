@@ -53,7 +53,7 @@ require (
 	github.com/klauspost/pgzip v1.2.7
 	github.com/lib/pq v1.12.3
 	github.com/minio/minio-go/v7 v7.3.0
-	github.com/moby/moby/api v1.55.0
+	github.com/moby/moby/api v1.56.1
 	github.com/nao1215/markdown v1.1.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/prometheus/client_golang v1.24.1
