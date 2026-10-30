@@ -4571,7 +4571,12 @@ MetricLabel is a single label for a prometheus metric
 
 ## RetryNodeAntiAffinity
 
-RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed. In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+RetryNodeAntiAffinity avoids running steps on the hosts that previous attempts ran on. In order to identify hosts, it uses "kubernetes.io/hostname".
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`type`|`string`|Type determines whether a retry excludes previously used hosts outright ("Required", the default) or merely de-prioritises them ("Preferred"). Use "Preferred" when a retry should still be able to run on a previously used host once every eligible host has been tried, rather than staying pending.|
 
 ## SyncDatabaseRef
 
