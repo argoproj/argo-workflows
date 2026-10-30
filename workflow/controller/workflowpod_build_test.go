@@ -46,6 +46,9 @@ const testStubExecutorImage = "argoproj/argoexec:build-unit-test"
 type stubPodBuilderDeps struct {
 	// node is what getNodeByName returns for any name.
 	node *wfv1.NodeStatus
+
+	// lookupOptions records the options build passes to lookupImage.
+	lookupOptions []entrypoint.Options
 }
 
 func newStubDeps() *stubPodBuilderDeps {
@@ -53,7 +56,8 @@ func newStubDeps() *stubPodBuilderDeps {
 }
 
 // lookupImage returns a fixed entrypoint so build never reaches the network.
-func (s *stubPodBuilderDeps) lookupImage(_ context.Context, _ string, _ entrypoint.Options) (*entrypoint.Image, error) {
+func (s *stubPodBuilderDeps) lookupImage(_ context.Context, _ string, options entrypoint.Options) (*entrypoint.Image, error) {
+	s.lookupOptions = append(s.lookupOptions, options)
 	return &entrypoint.Image{Entrypoint: []string{"/stub-entrypoint"}, Cmd: []string{"stub-cmd"}}, nil
 }
 
@@ -94,6 +98,21 @@ func (s *stubPodBuilderDeps) getPodGCDelay(_ context.Context, _ *wfv1.PodGC) tim
 	return 0
 }
 func (s *stubPodBuilderDeps) persistentVolumeClaims() []apiv1.Volume { return nil }
+
+func TestBuild_ForwardsImagePullPolicyToEntrypointLookup(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpl := simpleContainerTemplate()
+	tmpl.Container.Command = nil
+	main := tmpl.Container.DeepCopy()
+	main.ImagePullPolicy = apiv1.PullAlways
+
+	deps := newStubDeps()
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{*main}, false, deps)
+	_, err := pb.build(ctx)
+	require.NoError(t, err)
+	require.Len(t, deps.lookupOptions, 1)
+	assert.Equal(t, apiv1.PullAlways, deps.lookupOptions[0].ImagePullPolicy)
+}
 
 // newTestPodBuilder constructs a podBuilder entirely from literals — no woc, no
 // controller, no clientset. initless selects the layout, exactly as
