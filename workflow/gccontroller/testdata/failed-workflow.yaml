@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: 2018-08-27T20:41:38Z
+  generateName: hello-world-
+  generation: 1
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: hello-world-nrgbf
+  namespace: default
+  resourceVersion: "1063703"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-nrgbf
+  uid: 9866f345-aa39-11e8-b103-025000000001
+spec:
+  entrypoint: whalesay
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+status:
+  phase: Failed
+  startedAt: 2018-08-27T20:41:38Z
