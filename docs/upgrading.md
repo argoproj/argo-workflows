@@ -209,6 +209,18 @@ Previously, a `timeout` longer than the template's `activeDeadlineSeconds`, the 
 Pods that relied on this now stop at the smaller deadline and fail with `DeadlineExceeded`.
 If you need the longer deadline, raise or remove the smaller `activeDeadlineSeconds`.
 
+### `templateDefaults` now apply to the agent pod
+
+The agent pod, which runs a workflow's `http` and `plugin` nodes, ignored `spec.templateDefaults` entirely ([#15869](https://github.com/argoproj/argo-workflows/issues/15869)).
+Scheduling and metadata defaults that every other pod in the workflow received were not applied to it.
+
+The agent pod now gets `templateDefaults`, including any set in `workflowDefaults` in the `workflow-controller-configmap`.
+Only `nodeSelector`, `affinity`, `tolerations`, `schedulerName`, `priorityClassName`, `hostAliases`, `securityContext` and `metadata` take effect, and the agent pod ignores every other default.
+The `container`, `script`, `http`, `plugin` and `resource` defaults are dropped, because one agent pod is shared by every `http` and `plugin` node in the workflow.
+
+If your `templateDefaults` carries scheduling constraints that only your workflow's other pods can satisfy, the agent pod is now subject to them too and may stay `Pending`.
+Move those constraints onto the templates that need them, or widen them so the agent pod can also be scheduled.
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade
