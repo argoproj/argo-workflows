@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Pod
+status:
+  conditions:
+  - lastProbeTime:
+    lastTransitionTime: '2020-08-27T18:14:19Z'
+    status: 'True'
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://502dda61a8f05e08d10cffc972d2fb9226e82af7daaacff98e84727bb96f11e6
+    image: python:alpine3.23
+    imageID: docker-pullable://python@sha256:766a961bf699491995cc29e20958ef11fd63741ff41dcc70ec34355b39d52971
+    lastState:
+      waiting: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      waiting:
+        reason: ContainerCreating
+        message: 'Container is creating'
+  - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
+    image: argoproj/argoexec:v2.9.5
+    imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
+    lastState:
+      waiting: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      waiting: {}
+  hostIP: 192.168.65.3
+  phase: Failed
+  podIP: 10.1.28.244
+  podIPs:
+  - ip: 10.1.28.244
+  qosClass: BestEffort
+  startTime: '2020-08-27T18:14:19Z'
