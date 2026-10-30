@@ -75,8 +75,12 @@ type workflowPodWatchIntermediary struct {
 }
 
 func (w workflowPodWatchIntermediary) Send(e *workflowpkg.WorkflowPodWatchEvent) error {
-	w.events <- e
-	return nil
+	select {
+	case w.events <- e:
+		return nil
+	case <-w.ctx.Done():
+		return w.ctx.Err()
+	}
 }
 
 func (w workflowPodWatchIntermediary) Recv() (*workflowpkg.WorkflowPodWatchEvent, error) {
