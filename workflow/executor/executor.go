@@ -49,11 +49,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
-const (
-	// This directory temporarily stores the tarballs of the artifacts before uploading
-	tempOutArtDir = "/tmp/argo/outputs/artifacts"
-)
-
 // defaultTaskResultBackoff spaces out task result retries: the delay grows
 // until it reaches Cap and then stays there. Only the retry timeout ends
 // the retries.
@@ -76,9 +71,10 @@ var defaultTaskResultBackoff = wait.Backoff{
 const defaultInterimResultRetryTimeout = 30 * time.Second
 
 // Process holds the state shared by every task an argoexec process runs:
-// API clients, the container runtime, tracing and pod-scoped settings. It
-// is built once per process by NewProcess; the per-task state lives in the
-// WorkflowExecutor that Process.NewExecutor derives from it.
+// API clients, tracing and pod-scoped settings. It is built once per
+// process by NewProcess; the per-task state, including each task's
+// container runtime, lives in the WorkflowExecutor that
+// Process.NewExecutor derives from it.
 type Process struct {
 	PodName          string
 	podUID           types.UID
@@ -86,8 +82,10 @@ type Process struct {
 	taskResultClient argoprojv1.WorkflowTaskResultInterface
 	RESTClient       rest.Interface
 	Namespace        string
-	RuntimeExecutor  ContainerRuntimeExecutor
 	Tracing          *tracing.Tracing
+
+	// newRuntime builds the container runtime for a task from its paths.
+	newRuntime func(paths TaskPaths) ContainerRuntimeExecutor
 
 	// memoizedConfigMaps caches configmap lookups (used by some artifact
 	// drivers, e.g. HDFS for Kerberos config). memoizedMu guards it because
@@ -124,9 +122,12 @@ type Process struct {
 type WorkflowExecutor struct {
 	*Process
 
-	workflow            string
-	workflowUID         types.UID
-	nodeID              string
+	workflow    string
+	workflowUID types.UID
+	nodeID      string
+	paths       TaskPaths
+	// RuntimeExecutor reads and signals this task's containers.
+	RuntimeExecutor     ContainerRuntimeExecutor
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
@@ -215,6 +216,13 @@ type TaskConfig struct {
 	InputArtifactPluginNames []wfv1.ArtifactPluginName
 }
 
+// Task is one task as a Process runs it: what to run, and where its files
+// live.
+type Task struct {
+	Config TaskConfig
+	Paths  TaskPaths
+}
+
 type Initializer interface {
 	Init(tmpl wfv1.Template) error
 }
@@ -260,7 +268,7 @@ func NewProcess(
 	clientset kubernetes.Interface,
 	taskResultClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
-	cre ContainerRuntimeExecutor,
+	newRuntime func(paths TaskPaths) ContainerRuntimeExecutor,
 	cfg ProcessConfig,
 ) (*Process, error) {
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
@@ -280,7 +288,7 @@ func NewProcess(
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
 		Namespace:                    cfg.Namespace,
-		RuntimeExecutor:              cre,
+		newRuntime:                   newRuntime,
 		Tracing:                      tracing,
 		memoizedConfigMaps:           map[string]string{},
 		annotationPatchTickDuration:  cfg.AnnotationPatchTickDuration,
@@ -301,9 +309,12 @@ func NewProcess(
 // NewExecutor derives the executor for one task from the process-wide
 // state. It has no process-level side effects, so a Process may call it
 // once per task.
-func (p *Process) NewExecutor(cfg TaskConfig) *WorkflowExecutor {
+func (p *Process) NewExecutor(task Task) *WorkflowExecutor {
+	cfg := task.Config
 	return &WorkflowExecutor{
 		Process:                  p,
+		paths:                    task.Paths,
+		RuntimeExecutor:          p.newRuntime(task.Paths),
 		workflow:                 cfg.WorkflowName,
 		workflowUID:              cfg.WorkflowUID,
 		nodeID:                   cfg.NodeID,
@@ -314,6 +325,11 @@ func (p *Process) NewExecutor(cfg TaskConfig) *WorkflowExecutor {
 		inputArtifactPluginNames: cfg.InputArtifactPluginNames,
 		errors:                   []error{},
 	}
+}
+
+// outputArtifactsDir is where output artifacts are tarred before upload.
+func (we *WorkflowExecutor) outputArtifactsDir() string {
+	return path.Join(we.paths.Scratch, "outputs", "artifacts")
 }
 
 // capturedOutputs returns the task's output set, copying it from the
@@ -410,7 +426,7 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 	var artPath string
 	mnt := common.FindOverlappingVolume(&we.Template, art.Path)
 	if mnt == nil {
-		artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
+		artPath = path.Join(we.paths.InputArtifacts, art.Name)
 	} else {
 		// If we get here, it means the input artifact path overlaps with a user-specified
 		// volumeMount in the container. Because we also implement input artifacts as volume
@@ -418,7 +434,7 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 		// as opposed to the `input-artifacts` volume that is an implementation detail
 		// unbeknownst to the user.
 		logger.WithFields(logging.Fields{"path": art.Path, "mountPath": mnt.MountPath}).Info(ctx, "Specified artifact path overlaps with volume mount, extracting to volume mount")
-		artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
+		artPath = path.Join(we.paths.MainFS, art.Path)
 	}
 
 	// The artifact is downloaded to a temporary location, after which we determine if
@@ -526,8 +542,8 @@ func (we *WorkflowExecutor) StageFiles(ctx context.Context) error {
 	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
-		logger.WithField("path", common.ExecutorScriptSourcePath).Info(ctx, "Loading script source")
-		filePath = common.ExecutorScriptSourcePath
+		filePath = we.paths.ScriptSource()
+		logger.WithField("path", filePath).Info(ctx, "Loading script source")
 		body = []byte(we.Template.Script.Source)
 		mode = os.FileMode(0o755)
 	case wfv1.TemplateTypeResource:
@@ -560,7 +576,7 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	}
 
 	logger.Info(ctx, "Saving output artifacts")
-	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
+	err := os.MkdirAll(we.outputArtifactsDir(), os.ModePerm)
 	if err != nil {
 		return artifacts, argoerrs.InternalWrapError(err)
 	}
@@ -695,7 +711,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
-		mountedArtPath := filepath.Join(common.ExecutorMainFilesystemDir, art.Path)
+		mountedArtPath := filepath.Join(we.paths.MainFS, art.Path)
 		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Staging from mirrored volume mount")
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
@@ -707,7 +723,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		}
 		if strategy.Zip != nil {
 			fileName := fmt.Sprintf("%s.zip", art.Name)
-			localArtPath := filepath.Join(tempOutArtDir, fileName)
+			localArtPath := filepath.Join(we.outputArtifactsDir(), fileName)
 			f, err := os.Create(localArtPath)
 			if err != nil {
 				return "", "", argoerrs.InternalWrapError(err)
@@ -722,7 +738,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 			return fileName, localArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
-		localArtPath := filepath.Join(tempOutArtDir, fileName)
+		localArtPath := filepath.Join(we.outputArtifactsDir(), fileName)
 		f, err := os.Create(localArtPath)
 		if err != nil {
 			return "", "", argoerrs.InternalWrapError(err)
@@ -737,7 +753,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 	}
 
 	fileName := fmt.Sprintf("%s.tgz", art.Name)
-	localArtPath := filepath.Join(tempOutArtDir, fileName)
+	localArtPath := filepath.Join(we.outputArtifactsDir(), fileName)
 	logger.WithFields(logging.Fields{"path": art.Path, "localArtPath": localArtPath}).Info(ctx, "Copying from container base image layer")
 
 	err := we.RuntimeExecutor.CopyFile(ctx, containerName, art.Path, localArtPath, compressionLevel)
@@ -771,7 +787,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 		// If we are uploading a single file, we need to preserve original filename so that
 		// 1. minio client can infer its mime-type, based on file extension
 		// 2. the original filename is incorporated into the final path
-		localArtPath = path.Join(tempOutArtDir, fileName)
+		localArtPath = path.Join(we.outputArtifactsDir(), fileName)
 		err = os.Rename(unarchivedArtPath, localArtPath)
 		if err != nil {
 			return "", "", argoerrs.InternalWrapError(err)
@@ -781,7 +797,7 @@ func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName 
 	// the logic would go here, and compression would be moved out of the executors
 	if strategy.Zip != nil {
 		fileName = fmt.Sprintf("%s.zip", art.Name)
-		localArtPath = filepath.Join(tempOutArtDir, fileName)
+		localArtPath = filepath.Join(we.outputArtifactsDir(), fileName)
 		f, err := os.Create(localArtPath)
 		if err != nil {
 			return "", "", argoerrs.InternalWrapError(err)
@@ -868,7 +884,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 			}
 		} else {
 			logger.WithField("path", param.ValueFrom.Path).Info(ctx, "Copying from volume mount")
-			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
+			mountedPath := filepath.Join(we.paths.MainFS, param.ValueFrom.Path)
 			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
@@ -894,7 +910,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 	defer span.End()
 
 	var logArtifacts []wfv1.Artifact
-	tempLogsDir := "/tmp/argo/outputs/logs"
+	tempLogsDir := path.Join(we.paths.Scratch, "outputs", "logs")
 
 	if we.Template.SaveLogsAsArtifact() {
 		err := os.MkdirAll(tempLogsDir, os.ModePerm)

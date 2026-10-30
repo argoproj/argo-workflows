@@ -1,4 +1,4 @@
-package commands
+package executor
 
 import (
 	"os"
@@ -28,7 +28,7 @@ func TestLinkInputArtifacts_Normal(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 
 	info, err := os.Lstat(dstPath)
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func TestLinkInputArtifacts_MissingSourceIsSkipped(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 
 	_, err := os.Lstat(dstPath)
 	assert.True(t, os.IsNotExist(err), "no symlink must be created when source missing")
@@ -84,7 +84,7 @@ func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 
 	data, err := os.ReadFile(dstPath)
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 
 	info, err := os.Lstat(dstPath)
 	require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestLinkInputArtifacts_EmptyPathSkipped(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 }
 
 // TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume is the reported-bug
@@ -179,7 +179,7 @@ func TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume(t *testing.T) {
 		},
 	}
 
-	err = linkInputArtifactsAt(ctx, srcBase, tmpl)
+	err = linkInputArtifacts(ctx, srcBase, tmpl)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "volume mount")
 
@@ -221,7 +221,7 @@ func TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 
 	target, err := os.Readlink(artPath)
 	require.NoError(t, err)
@@ -256,7 +256,7 @@ func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, linkInputArtifacts(ctx, srcBase, tmpl))
 
 	target, err := os.Readlink(dstPath)
 	require.NoError(t, err)
@@ -272,9 +272,6 @@ func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
 func TestStageInputArtifacts_ArtifactAtWorkingDir(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
-	prevVarRunArgo := varRunArgo
-	varRunArgo = dir
-	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(filepath.Join(srcBase, "source"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "source", "README"), []byte("hello"), 0o644))
@@ -290,7 +287,7 @@ func TestStageInputArtifacts_ArtifactAtWorkingDir(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, stageInputArtifactsAt(ctx, srcBase, tmpl))
+	require.NoError(t, StageInputArtifacts(ctx, TaskPaths{VarRunArgo: dir, InputArtifacts: srcBase}, tmpl))
 
 	_, err := os.Getwd()
 	require.NoError(t, err, "cwd must be a live directory again")
@@ -305,9 +302,6 @@ func TestStageInputArtifacts_ArtifactAtWorkingDir(t *testing.T) {
 func TestStageInputArtifacts_FileArtifactAtWorkingDirFails(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
-	prevVarRunArgo := varRunArgo
-	varRunArgo = dir
-	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "source"), []byte("just a file"), 0o644))
@@ -322,7 +316,35 @@ func TestStageInputArtifacts_FileArtifactAtWorkingDirFails(t *testing.T) {
 		},
 	}
 
-	err := stageInputArtifactsAt(ctx, srcBase, tmpl)
+	err := StageInputArtifacts(ctx, TaskPaths{VarRunArgo: dir, InputArtifacts: srcBase}, tmpl)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must be a directory")
+}
+
+// A failed link must not leave the process in the shared directory: a
+// caller that keeps running (a worker) would otherwise start its next task
+// from there.
+func TestStageInputArtifacts_RestoresWorkingDirOnFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	dir := t.TempDir()
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(srcBase, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "a"), []byte("x"), 0o644))
+	// art.Path's parent is a regular file, so the link cannot be made.
+	blocker := filepath.Join(dir, "blocker")
+	require.NoError(t, os.WriteFile(blocker, nil, 0o644))
+	workDir := filepath.Join(dir, "workspace")
+	require.NoError(t, os.MkdirAll(workDir, 0o755))
+	t.Chdir(workDir)
+
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "a", Path: filepath.Join(blocker, "a")}},
+		},
+	}
+
+	require.Error(t, StageInputArtifacts(ctx, TaskPaths{VarRunArgo: dir, InputArtifacts: srcBase}, tmpl))
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	assert.Equal(t, workDir, wd)
 }
