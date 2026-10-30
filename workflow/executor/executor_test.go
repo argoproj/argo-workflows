@@ -882,10 +882,13 @@ func TestTaskResultRetries(t *testing.T) {
 	})
 	t.Run("AttemptInFlightIsCutOffAfterTransientError", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
-		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+		// The second attempt has to start before the limit runs out. A slow
+		// runner (Windows timers tick every ~15ms) can take well over 50ms
+		// to get there, so allow a second.
+		we, _ := newFlakyTaskResultExecutor(t, 0, time.Second)
 
 		attempts := 0
-		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+		err := we.retryTaskResult(ctx, time.Second, func(ctx context.Context) error {
 			attempts++
 			if attempts == 1 {
 				return apierr.NewServiceUnavailable("API server unavailable")
@@ -898,7 +901,7 @@ func TestTaskResultRetries(t *testing.T) {
 		})
 		assert.Equal(t, 2, attempts)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last transient error, got %v", err)
-		assert.ErrorContains(t, err, "gave up writing task result after 50ms: ")
+		assert.ErrorContains(t, err, "gave up writing task result after 1s: ")
 	})
 	t.Run("NonTransientContextErrorIsNotReplaced", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
