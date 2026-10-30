@@ -883,8 +883,8 @@ go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws
 go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.70.0/go.mod h1:NqUf6409NZF7OZMaBRtXOJDSaNg+5MZbE9HBg40IbMQ=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0 h1:Tq+E65HaNbZTeqcLw6QUhsV+/EIWdkfUH2CQzcrlE5M=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0/go.mod h1:A+EVhDakAj1waJBPhmTszZaSr08ww8MRRKy1nB1rqck=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 h1:LMuyCAyfalSjDyjdC65nK6N0zoTT63+E/u95X0JovZI=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0/go.mod h1:085m8qbm4hgc8rZWGDEa4vmyyo2c3nPxUslYUKUIU04=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 h1:LxwW/9ctSCv+QkE/cLR7M91ZIkXNMqJtEMi1vCw9U8s=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0/go.mod h1:tOsftB4SslBwwErVEPaenU2RpThXWPIU8DoJHEC4dyw=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.72.0 h1:rv8t3kKjyC2/9D99L1MZt4tJSZO4aYUmHus7L//iKKg=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.72.0/go.mod h1:ZzG+JmzLLvKzx6tMeLrw2l7F8ik2GeRZJALoPBqnM0c=
 go.opentelemetry.io/contrib/propagators/envcar v0.72.0 h1:qQD0vhMfPszrsmKawPJwbj4CvBqswbaotIzvZ1JOHtA=
