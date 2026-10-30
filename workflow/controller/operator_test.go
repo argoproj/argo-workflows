@@ -10455,3 +10455,64 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
+
+// A reconcile deadline hit while swapping back to the retry node must requeue without
+// changing the phase of the already fulfilled child node.
+func TestRetryNodeDeadlineExceededKeepsSucceededChild(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-deadline
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy:
+      limit: 1
+      retryPolicy: OnFailure
+    dag:
+      tasks:
+      - name: a
+        template: echo
+      - name: b
+        template: echo
+        dependencies: [a]
+  - name: echo
+    container:
+      image: alpine:3.20
+      command: [echo, ok]
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	recorder := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// A reconcile of the finished DAG can run out of time after the DAG child is Succeeded but
+	// before the retry node is re-entered. That window is only a part of the reconcile, so sweep
+	// the deadline across the duration of a whole reconcile to land in it.
+	start := time.Now()
+	newWorkflowOperationCtx(ctx, woc.wf.DeepCopy(), controller).operate(ctx)
+	total := time.Since(start)
+
+	require.Positive(t, total)
+	step := max(total/2000, time.Nanosecond)
+	for offset := time.Duration(0); offset < total; offset += step {
+		sweepWoc := newWorkflowOperationCtx(ctx, woc.wf.DeepCopy(), controller)
+		sweepWoc.deadline = time.Now().UTC().Add(offset)
+		sweepWoc.operate(ctx)
+		for len(recorder.Events) > 0 {
+			<-recorder.Events
+		}
+		for _, node := range sweepWoc.wf.Status.Nodes {
+			assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %s", node.Name)
+		}
+	}
+}
