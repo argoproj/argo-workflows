@@ -14,6 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -1816,4 +1818,18 @@ func TestArtGCStatusPods(t *testing.T) {
 		gcStatus.RecordArtifactGCPod("pod-b")
 		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
 	})
+}
+
+func TestIsPartOfExitHandlerRetryAttempt(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	nodes := Nodes{
+		"retry":   {ID: "retry", Name: "wf.onExit", DisplayName: "wf.onExit", Type: NodeTypeRetry, Children: []string{"attempt"}},
+		"attempt": {ID: "attempt", Name: "wf.onExit(0)", DisplayName: "wf.onExit(0)", Type: NodeTypePod},
+		"other":   {ID: "other", Name: "wf(0)", DisplayName: "wf(0)", Type: NodeTypePod},
+		"mainret": {ID: "mainret", Name: "wf", DisplayName: "wf", Type: NodeTypeRetry, Children: []string{"other"}},
+	}
+	attempt := nodes["attempt"]
+	assert.True(t, attempt.IsPartOfExitHandler(ctx, nodes))
+	other := nodes["other"]
+	assert.False(t, other.IsPartOfExitHandler(ctx, nodes))
 }
