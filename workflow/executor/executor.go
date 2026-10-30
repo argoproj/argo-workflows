@@ -243,6 +243,13 @@ type TemplateWriter interface {
 	WriteTemplate(tmpl wfv1.Template) error
 }
 
+// BinaryInstaller is implemented by runtime executors that can copy the
+// argoexec binary into a shared volume on its own, without the template.
+// Used by `argoexec install`, the init container of a pool pod.
+type BinaryInstaller interface {
+	InstallBinary(dir string) error
+}
+
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
@@ -1617,6 +1624,17 @@ func (we *WorkflowExecutor) WriteTemplate() error {
 		return w.WriteTemplate(we.Template)
 	}
 	return nil
+}
+
+// InstallBinary copies the argoexec binary into dir without writing the
+// template. Unlike Init and WriteTemplate it fails when the runtime
+// executor can't do it, because installing is the only thing it's for.
+func (we *WorkflowExecutor) InstallBinary(dir string) error {
+	i, ok := we.RuntimeExecutor.(BinaryInstaller)
+	if !ok {
+		return fmt.Errorf("runtime executor %T cannot install the argoexec binary", we.RuntimeExecutor)
+	}
+	return i.InstallBinary(dir)
 }
 
 func (we *WorkflowExecutor) KillArtifactSidecars(ctx context.Context) error {
