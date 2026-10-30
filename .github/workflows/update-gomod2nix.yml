@@ -35,7 +35,7 @@ jobs:
         # Skipped on forks without the app; the GITHUB_TOKEN fallback still
         # pushes, it just won't re-trigger CI.
         if: env.HAS_APP == 'true'
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.GOMOD2NIX_APP_ID }}
           private-key: ${{ secrets.GOMOD2NIX_APP_PRIVATE_KEY }}
@@ -56,7 +56,7 @@ jobs:
         run: gomod2nix
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c # v7.2.1
         with:
           commit_message: "chore(nix): update gomod2nix.toml"
           file_pattern: gomod2nix.toml

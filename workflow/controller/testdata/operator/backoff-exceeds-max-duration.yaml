@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: echo-r6v49
+spec:
+
+  entrypoint: echo
+  templates:
+  -
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.23
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: "120"
+        factor: 1
+        maxDuration: "60"
+      limit: 4
+status:
+  nodes:
+    echo-r6v49:
+      children:
+      - echo-r6v49-3721138751
+      displayName: echo-r6v49
+      id: echo-r6v49
+      name: echo-r6v49
+      phase: Running
+      startedAt: "2020-05-07T18:10:34Z"
+      templateName: echo
+      templateScope: local/echo-r6v49
+      type: Retry
+    echo-r6v49-3721138751:
+      displayName: echo-r6v49(0)
+      finishedAt: "2020-05-07T18:10:35Z"
+      hostNodeName: minikube
+      id: echo-r6v49-3721138751
+      message: failed with exit code 1
+      name: echo-r6v49(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: echo-r6v49/echo-r6v49-3721138751/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-07T18:10:34Z"
+      templateName: echo
+      templateScope: local/echo-r6v49
+      type: Pod
+      nodeFlag:
+        retried: true
+  phase: Running
+  resourcesDuration:
+    cpu: 1
+    memory: 0
+  startedAt: "2020-05-07T18:10:34Z"

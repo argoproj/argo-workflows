@@ -512,7 +512,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	// so we run the standard init container to copy it into the
 	// /var/run/argo volume
 	if len(drivers) > 0 {
-		initCtr := woc.standardInitContainer(ctx, &artifactDriverTmpl)
+		initCtr := standardInitContainer(&artifactDriverTmpl, woc.execContainerConfig(&artifactDriverTmpl), woc.getExecutorLogOpts(ctx))
 		initCtr.VolumeMounts = []corev1.VolumeMount{volumeMountVarArgo}
 		// Required for the init container to work
 		initCtr.Env = append(initCtr.Env, corev1.EnvVar{Name: common.EnvVarTemplate, Value: "{}"})

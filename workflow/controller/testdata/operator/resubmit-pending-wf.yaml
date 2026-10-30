@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resubmit-pending-wf
+  namespace: argo
+spec:
+
+  entrypoint: resubmit-pending
+  templates:
+  -
+    inputs: {}
+    metadata: {}
+    name: resubmit-pending
+    outputs: {}
+    script:
+      command:
+      - bash
+      image: busybox
+      name: ""
+      resources:
+        limits:
+          cpu: "10"
+      source: |
+        sleep 5
+status:
+  finishedAt: null
+  nodes:
+    resubmit-pending-wf:
+      displayName: resubmit-pending-wf
+      finishedAt: null
+      id: resubmit-pending-wf
+      message: Pending 156.62ms
+      name: resubmit-pending-wf
+      phase: Pending
+      startedAt: "2020-07-07T19:54:18Z"
+      templateName: resubmit-pending
+      templateScope: local/resubmit-pending-wf
+      type: Pod
+  phase: Running
+  startedAt: "2020-07-07T19:54:18Z"

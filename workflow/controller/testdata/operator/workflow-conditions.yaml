@@ -1,0 +1,9 @@
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - container:
+      image: docker/whalesay:latest
+    name: main
