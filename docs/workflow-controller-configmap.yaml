@@ -502,3 +502,16 @@ data:
   # Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
   # Defaults to false
   disableAgentPodCreation: "false"
+  # hotWorkers runs container and script templates that set `pool` on pools of long-lived worker pods
+  # instead of a pod per task. Off by default; all durations are whole seconds. >= v4.2
+  hotWorkers: |
+    enabled: false
+    # How long past a claimed task's deadline to wait for its worker before interrupting the task, and after
+    # interrupting a task to wait for its worker to confirm before treating the task as stopped.
+    leaseSlackSeconds: 300
+    # How long a pool is kept once no task uses it, unless the template's pool sets retentionSeconds.
+    defaultRetentionSeconds: 600
+    # The worker pods' termination grace period.
+    terminationGracePeriodSeconds: 30
+    # How long before the end of the grace period a stopping worker hands its task back. At least 3, and less than terminationGracePeriodSeconds.
+    releaseReserveSeconds: 10

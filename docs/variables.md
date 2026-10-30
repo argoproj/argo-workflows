@@ -242,7 +242,7 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
-| `node.taskName` | v4.2 and after: Name of this attempt of the container/script, the same as `pod.name`; the default artifact repository key format uses it |
+| `node.taskName` | v4.2 and after: Name of this attempt of the container/script, the same as `pod.name`; the default artifact repository key format uses it. For a template that runs on [hot workers](hot-workers.md), which has no pod of its own and can't use `pod.name`, it is the name its pod would have had |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
 | `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
@@ -316,7 +316,7 @@ For `Template`-level metrics:
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
-| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
+| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, `taskName` (the node's `node.taskName`), and `finishedAt`. `podName` is the pod the node ran in: its own pod, the worker pod holding a pooled node, or empty for a pooled node no worker holds. |
 
 ### Knowing where you are
 
