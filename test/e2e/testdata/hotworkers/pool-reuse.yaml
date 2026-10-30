@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pool-reuse-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: say
+            template: say
+        - - name: check
+            template: check
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{steps.say.outputs.parameters.message}}"
+              artifacts:
+                - name: message
+                  from: "{{steps.say.outputs.artifacts.message}}"
+    - name: say
+      pool:
+        name: e2e-reuse
+        retentionSeconds: 300
+      script:
+        image: argoproj/argosay:v2
+        command: [sh]
+        source: |
+          echo ":) Hello from {{workflow.name}}"
+          echo -n "{{workflow.name}}" > /tmp/message
+      outputs:
+        parameters:
+          - name: message
+            valueFrom:
+              path: /tmp/message
+        artifacts:
+          - name: message
+            path: /tmp/message
+    # No command: the image's entrypoint is looked up at dispatch.
+    - name: check
+      pool:
+        name: e2e-reuse
+        retentionSeconds: 300
+      inputs:
+        parameters:
+          - name: message
+        artifacts:
+          - name: message
+            path: /tmp/message
+      container:
+        image: argoproj/argosay:v2
+        args: [assert_contains, /tmp/message, "{{inputs.parameters.message}}"]
