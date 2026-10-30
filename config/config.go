@@ -143,11 +143,11 @@ type Config struct {
 	// addition to its existing post-main work.
 	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
 
-	// HotWorkers configures hot workers, which will run container and script
-	// templates that set `pool` on pools of long-lived worker pods instead of a
-	// pod for each attempt of a step or DAG task.
-	// EXPERIMENTAL and not yet functional: leave it off. See
-	// [#16530](https://github.com/argoproj/argo-workflows/issues/16530).
+	// HotWorkers runs container and script templates that set `pool` on pools of
+	// long-lived worker pods instead of a pod for each attempt of a step or DAG
+	// task. Off by default.
+	// EXPERIMENTAL: may change in incompatible ways.
+	// See [Hot Workers](https://argo-workflows.readthedocs.io/en/latest/hot-workers/) for more details.
 	HotWorkers *HotWorkersConfig `json:"hotWorkers,omitempty"`
 }
 
@@ -173,12 +173,12 @@ func (c *InitlessPodConfig) IsEnabled() bool {
 // controller starts and when it reads the changed configmap, so the controller
 // doesn't run until you fix the setting.
 //
-// EXPERIMENTAL and not yet functional — off by default, and may change in
-// incompatible ways. See Config.HotWorkers.
+// EXPERIMENTAL: off by default, and may change in incompatible ways. See
+// Config.HotWorkers.
 type HotWorkersConfig struct {
-	// Enabled turns hot workers on. Default is false; leave it off until hot
-	// workers are functional. The workflow controller reads it only when it
-	// starts, so restart the controller after changing it.
+	// Enabled turns hot workers on. Default is false. The workflow controller
+	// reads it only when it starts, so restart the controller after changing
+	// it.
 	Enabled bool `json:"enabled,omitempty"`
 
 	// LeaseSlackSeconds is how long past a claimed task's deadline the controller

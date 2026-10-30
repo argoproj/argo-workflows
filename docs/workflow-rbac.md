@@ -24,3 +24,5 @@ rules:
       - create
       - patch
 ```
+
+Templates that run on [hot workers](hot-workers.md) need more: see [the worker's service account](hot-workers.md#the-workers-service-account).
