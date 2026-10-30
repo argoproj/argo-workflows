@@ -48,6 +48,73 @@ func TestIncomingHeaderMatcher(t *testing.T) {
 	}
 }
 
+func TestSanitizeCookieHeader(t *testing.T) {
+	tests := []struct {
+		name     string
+		cookies  []string
+		expected []string
+	}{
+		{
+			name:     "no cookie header",
+			cookies:  nil,
+			expected: nil,
+		},
+		{
+			name:     "valid cookies preserved",
+			cookies:  []string{"authorization=Bearer abc.def.ghi; foo=bar"},
+			expected: []string{"authorization=Bearer abc.def.ghi; foo=bar"},
+		},
+		{
+			name:     "non-ASCII pair dropped, valid pairs kept",
+			cookies:  []string{"authorization=token123; theme=h\xc3\xa9llo; foo=bar"},
+			expected: []string{"authorization=token123; foo=bar"},
+		},
+		{
+			name:     "control character pair dropped",
+			cookies:  []string{"foo=bar; bad=a\x01b; authorization=token123"},
+			expected: []string{"foo=bar; authorization=token123"},
+		},
+		{
+			name:     "all pairs invalid removes header",
+			cookies:  []string{"bad=h\xc3\xa9llo"},
+			expected: nil,
+		},
+		{
+			name:     "multiple header values sanitized independently",
+			cookies:  []string{"foo=bar", "bad=h\xc3\xa9llo; ok=1"},
+			expected: []string{"foo=bar", "ok=1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(logging.TestContext(t.Context()), http.MethodGet, "/", nil)
+			require.NoError(t, err)
+			for _, c := range tt.cookies {
+				req.Header.Add("Cookie", c)
+			}
+			SanitizeCookieHeader(req)
+			assert.Equal(t, tt.expected, req.Header.Values("Cookie"))
+			for _, v := range req.Header.Values("Cookie") {
+				for i := 0; i < len(v); i++ {
+					assert.GreaterOrEqual(t, v[i], uint8(0x20))
+					assert.LessOrEqual(t, v[i], uint8(0x7e))
+				}
+			}
+		})
+	}
+
+	t.Run("authorization cookie still parseable", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(logging.TestContext(t.Context()), http.MethodGet, "/", nil)
+		require.NoError(t, err)
+		req.Header.Add("Cookie", "unrelated=h\xc3\xa9llo; authorization=Bearer token123; other=1")
+		SanitizeCookieHeader(req)
+		cookie, err := req.Cookie("authorization")
+		require.NoError(t, err)
+		assert.Equal(t, "Bearer token123", cookie.Value)
+	})
+}
+
 func TestNewMuxHandler(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	grpcHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
