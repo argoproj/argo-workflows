@@ -1197,6 +1197,9 @@ type Artifact struct {
 
 	// Has this been deleted?
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
+
+	// Description is the artifact description
+	Description *AnyString `json:"description,omitempty" protobuf:"bytes,14,opt,name=description"`
 }
 
 // GetArtifactGC returns the ArtifactGC that was defined by the artifact. If none was provided, a default value is returned.
