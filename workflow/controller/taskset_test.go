@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -9,9 +11,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
@@ -137,5 +143,129 @@ func TestReconcileTaskSetWithMemoization(t *testing.T) {
 		memo, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "cache-demo-1", v1.GetOptions{})
 		require.NoError(t, err)
 		assert.NotEmpty(t, memo.Data["cache-demo-1"])
+	})
+}
+
+var taskSetTooLargeWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: taskset-too-large
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: running
+            template: http
+          - name: new
+            template: http
+    - name: http
+      http:
+        url: https://www.google.com/
+`
+
+func TestTaskSetRequestEntityTooLarge(t *testing.T) {
+	tooLarge := apierr.NewRequestEntityTooLargeError("limit is 3145728")
+
+	t.Run("Create", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wf := wfv1.MustUnmarshalWorkflow(httpwf)
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		creates := 0
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("create", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			creates++
+			return true, nil, tooLarge
+		})
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes[wf.Name]
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		assert.Contains(t, node.Message, "size limit")
+		assert.Contains(t, node.Message, "limit is 3145728")
+		_, err := controller.kubeclientset.CoreV1().Pods(wf.Namespace).Get(ctx, woc.getAgentPodName(), v1.GetOptions{})
+		assert.True(t, apierr.IsNotFound(err), "no agent pod is created for a taskset that was never written")
+
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Equal(t, 1, creates, "the errored task is not written again")
+	})
+
+	t.Run("Patch", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+		runningID := wf.NodeID(wf.Name + "[0].running")
+		newID := wf.NodeID(wf.Name + "[0].new")
+		ts := &wfv1.WorkflowTaskSet{
+			ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+			Spec: wfv1.WorkflowTaskSetSpec{
+				Tasks: map[string]wfv1.Template{runningID: *wf.GetTemplateByName("http")},
+			},
+		}
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("patch", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, tooLarge
+		})
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		running := woc.wf.Status.Nodes[runningID]
+		assert.Equal(t, wfv1.NodePending, running.Phase, "a task already in the taskset is left to the agent")
+		added := woc.wf.Status.Nodes[newID]
+		assert.Equal(t, wfv1.NodeError, added.Phase)
+		assert.Contains(t, added.Message, "size limit")
+	})
+
+	// newPatchTooLarge returns an operation context over a workflow whose
+	// taskset, as the informer has it, holds the running task only, with
+	// patches rejected as too large and gets answered by get.
+	newPatchTooLarge := func(ctx context.Context, t *testing.T, get k8stesting.ReactionFunc) (*wfOperationCtx, string) {
+		t.Helper()
+		wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+		runningID := wf.NodeID(wf.Name + "[0].running")
+		ts := &wfv1.WorkflowTaskSet{
+			ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+			Spec: wfv1.WorkflowTaskSetSpec{
+				Tasks: map[string]wfv1.Template{runningID: *wf.GetTemplateByName("http")},
+			},
+		}
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		t.Cleanup(cancel)
+		fake := controller.wfclientset.(*fakewfclientset.Clientset)
+		fake.PrependReactor("patch", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, tooLarge
+		})
+		fake.PrependReactor("get", "workflowtasksets", get)
+		return newWorkflowOperationCtx(ctx, wf, controller), wf.NodeID(wf.Name + "[0].new")
+	}
+
+	t.Run("TaskSetNewerThanInformer", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc, newID := newPatchTooLarge(ctx, t, func(k8stesting.Action) (bool, runtime.Object, error) {
+			// an earlier write the informer has not seen yet holds both tasks
+			wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+			return true, &wfv1.WorkflowTaskSet{
+				ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+				Spec: wfv1.WorkflowTaskSetSpec{Tasks: map[string]wfv1.Template{
+					wf.NodeID(wf.Name + "[0].running"): *wf.GetTemplateByName("http"),
+					wf.NodeID(wf.Name + "[0].new"):     *wf.GetTemplateByName("http"),
+				}},
+			}, nil
+		})
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[newID].Phase, "a task the API server has is left to the agent")
+	})
+
+	t.Run("TaskSetUnreadable", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc, newID := newPatchTooLarge(ctx, t, func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInternalError(errors.New("unavailable"))
+		})
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[newID].Phase, "nothing is errored until the taskset can be read")
 	})
 }
