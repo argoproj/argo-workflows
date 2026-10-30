@@ -1,7 +1,5 @@
 # Cron Workflows
 
-> v2.5 and after
-
 `CronWorkflows` are workflows that run on a schedule.
 They are designed to wrap a `workflowSpec` and to mimic the options of Kubernetes `CronJobs`.
 In essence, `CronWorkflow` = `Workflow` + some specific cron options.
@@ -44,15 +42,15 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
-| `schedules`                  | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Required to be a non-empty list. |
+| `schedules`                  | None | List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Required to be a non-empty list. |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
 | `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
 | `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
 | `startingDeadlineSeconds`    | `0`                    | Seconds after [the last scheduled time](#crash-recovery) during which a missed `Workflow` will still be run. |
 | `successfulJobsHistoryLimit` | `3`                    | Number of successful `Workflows` to persist |
 | `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` to persist |
-| `stopStrategy.expression`    | `nil`                  | v3.6 and after: defines if the CronWorkflow should stop scheduling based on an expression, which if present must evaluate to false for the workflow to be created |
-| `when`                       | None | v3.6 and after: An optional [expression](walk-through/conditionals.md) which will be evaluated on each cron schedule hit and the workflow will only run if it evaluates to `true` |
+| `stopStrategy.expression`    | `nil`                  | Defines if the CronWorkflow should stop scheduling based on an expression, which if present must evaluate to false for the workflow to be created |
+| `when`                       | None | An optional [expression](walk-through/conditionals.md) which will be evaluated on each cron schedule hit and the workflow will only run if it evaluates to `true` |
 
 ### Cron Schedule Syntax
 
@@ -146,8 +144,6 @@ This will schedule at the first 01:30 on a skip backwards change.
 The second will not run because of the `when` expression, which prevents this workflow running more often than once every 2 hours.
 
 ### Automatically Stopping a `CronWorkflow`
-
-> v3.6 and after
 
 You can configure a `CronWorkflow` to automatically stop based on an [expression](variables.md#expression) with `stopStrategy.expression`.
 You can use the [variables](variables.md#cronworkflows) `cronworkflow.failed` and `cronworkflow.succeeded`.

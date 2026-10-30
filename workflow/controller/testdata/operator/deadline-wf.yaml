@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-9fvnv
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 3
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: approve
+        template: approve
+  - name: approve
+    suspend: {}
+  - container:
+      args:
+      - sleep 50
+      command:
+      - sh
+      - -c
+      image: alpine:3.23
+      resources:
+        requests:
+          memory: 1Gi
+    name: whalesay
+status:
+  finishedAt: null
+  nodes:
+    steps-9fvnv:
+      children:
+      - steps-9fvnv-3514116232
+      displayName: steps-9fvnv
+      finishedAt: null
+      id: steps-9fvnv
+      name: steps-9fvnv
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: main
+      templateScope: local/steps-9fvnv
+      type: Steps
+
+    steps-9fvnv-3514116232:
+      boundaryID: steps-9fvnv
+      children:
+      - steps-9fvnv-3700512507
+      displayName: '[0]'
+      finishedAt: null
+      id: steps-9fvnv-3514116232
+      name: steps-9fvnv[0]
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: main
+      templateScope: local/steps-9fvnv
+      type: StepGroup
+    steps-9fvnv-3700512507:
+      boundaryID: steps-9fvnv
+      displayName: approve
+      finishedAt: null
+      id: steps-9fvnv-3700512507
+      name: steps-9fvnv[0].approve
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: approve
+      templateScope: local/steps-9fvnv
+      type: Suspend
+  phase: Running
+  startedAt: "2020-07-24T16:39:25Z"

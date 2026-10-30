@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: unresolved-output-steps
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+  - name: unresolved-output-steps
+    steps:
+    - - name: whalesay
+        template: whalesay
+    outputs:
+      parameters:
+      - name: unresolved
+        valueFrom:
+          parameter: "{{steps.whalesay.outputs.parameters.unresolved}}"
