@@ -31,21 +31,32 @@
 
 .graph-options-panel {
   margin: 10px;
-  padding: 10px;
+  padding: 8px 10px;
   display: inline-block;
-  background-color: white;
-  box-shadow: 1px 1px 3px $argo-color-gray-5;
+  background-color: $white-color;
+  border: 1px solid $argo-color-gray-3;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba($argo-color-gray-9, 0.08);
   position: fixed;
+  z-index: 5;
 
   div.argo-dropdown, a {
-    padding: 5px;
+    padding: 6px;
     color: $argo-color-gray-6;
     border: 1px solid transparent;
-    border-radius: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background-color: $argo-color-gray-2;
+      color: $argo-color-gray-8;
+    }
 
     &.active {
-      background-color: $argo-color-gray-3;
-      border: 1px solid $argo-color-gray-4;
+      background-color: $argo-color-teal-1;
+      border: 1px solid $argo-color-teal-3;
+      color: $argo-color-teal-7;
     }
   }
 }

@@ -1,0 +1,366 @@
+/**
+ * CSS-only polish layer on top of argo-ui.
+ * Softens shadows, improves field contrast, and tightens hierarchy —
+ * without introducing a new design system.
+ */
+@import 'node_modules/argo-ui/src/styles/config';
+
+// ---------------------------------------------------------------------------
+// Page chrome
+// ---------------------------------------------------------------------------
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: $argo-color-gray-2;
+}
+
+.page__content-wrapper {
+    padding-bottom: 1.5rem;
+}
+
+.top-bar {
+    background: rgba($white-color, 0.92) !important;
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid $argo-color-gray-3;
+    box-shadow: 0 1px 0 rgba($argo-color-gray-9, 0.03);
+
+    &__breadcrumbs a,
+    &__breadcrumbs-last-item {
+        letter-spacing: 0.01em;
+    }
+
+    &__title {
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: $argo-color-gray-7;
+    }
+}
+
+
+.nav-bar {
+    // Classic Argo dark teal instead of the gray metal gradient
+    background: linear-gradient(180deg, $argo-color-teal-8 0%, darken($argo-color-teal-8, 4%) 55%, darken($argo-color-teal-8, 8%) 100%) !important;
+    box-shadow: 2px 0 12px rgba($argo-color-gray-9, 0.22);
+    border-right: 1px solid rgba($argo-color-teal-7, 0.45);
+    padding-top: 12px !important;
+    display: flex;
+    flex-direction: column;
+
+    &__logo {
+        position: relative !important;
+        top: auto !important;
+        padding: 10px 8px 12px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        flex: 1;
+        min-height: 0;
+
+        img {
+            display: block;
+            width: 42px;
+            max-width: 100% !important;
+            height: auto;
+            margin: 0 auto 10px;
+            border-radius: 10px;
+            background: rgba($argo-color-gray-9, 0.35);
+            box-shadow: 0 0 0 1px rgba($white-color, 0.12), 0 2px 8px rgba($argo-color-gray-9, 0.35);
+        }
+    }
+
+    &__version {
+        order: 99;
+        margin-top: auto;
+        padding: 10px 4px 8px;
+        font-size: 9px !important;
+        line-height: 1.25;
+        letter-spacing: 0.02em;
+        color: rgba($argo-color-gray-2, 0.65) !important;
+        word-break: break-all;
+    }
+
+    &__item {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        margin: 3px auto !important;
+        padding: 0 !important;
+        border-left: none !important;
+        border-radius: 10px;
+        font-size: 20px !important;
+        color: rgba($white-color, 0.78) !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+        i {
+            line-height: 1;
+        }
+
+        &:hover {
+            color: $white-color !important;
+            background-color: rgba($white-color, 0.1);
+        }
+
+        &.active {
+            color: $white-color !important;
+            background-color: $argo-color-teal-6;
+            box-shadow: 0 2px 8px rgba($argo-color-teal-8, 0.45), inset 0 0 0 1px rgba($white-color, 0.12);
+
+            &::before {
+                content: '';
+                position: absolute;
+                left: -7px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 3px;
+                height: 22px;
+                border-radius: 0 3px 3px 0;
+                background: $argo-color-teal-4;
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid $argo-color-teal-4;
+            outline-offset: 2px;
+        }
+    }
+
+    &__item-tooltip {
+        background-color: $argo-color-teal-8 !important;
+        border: 1px solid rgba($argo-color-teal-5, 0.35);
+        border-radius: 6px !important;
+        padding: 5px 8px !important;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        box-shadow: 0 4px 12px rgba($argo-color-gray-9, 0.25);
+        white-space: nowrap;
+
+        &::after {
+            border-right-color: $argo-color-teal-8 !important;
+        }
+    }
+
+    &.nav-bar--compact {
+        .nav-bar__logo img {
+            width: 36px;
+            margin-bottom: 8px;
+        }
+
+        .nav-bar__item {
+            width: 40px;
+            height: 40px;
+            margin: 2px auto !important;
+            font-size: 18px !important;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Cards & lists
+// ---------------------------------------------------------------------------
+
+.white-box {
+    border: 1px solid $argo-color-gray-3;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba($argo-color-gray-9, 0.04), 0 2px 8px rgba($argo-color-gray-9, 0.04);
+
+    h6 {
+        color: $argo-color-gray-7;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+    }
+}
+
+.argo-table-list {
+    &__head {
+        letter-spacing: 0.05em;
+        color: $argo-color-gray-6;
+        font-weight: 600;
+        padding: 0 0.25rem;
+    }
+
+    &__row {
+        border: 1px solid $argo-color-gray-3;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba($argo-color-gray-9, 0.04);
+        transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+
+        .title-text {
+            color: $argo-color-gray-8;
+            font-weight: 600;
+        }
+    }
+
+    &--clickable .argo-table-list__row:hover {
+        border-color: rgba($argo-color-teal-5, 0.55);
+        box-shadow: 0 2px 8px rgba($argo-color-teal-7, 0.1), 0 0 0 1px rgba($argo-color-teal-5, 0.35);
+        transform: translateY(-1px);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Buttons
+// ---------------------------------------------------------------------------
+
+.argo-button {
+    border-radius: 6px !important;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, color 0.15s ease;
+
+    i,
+    .fa,
+    .fas,
+    .far {
+        color: inherit;
+    }
+
+    &:not(:disabled):not(.disabled):hover {
+        transform: translateY(-0.5px);
+    }
+
+    &:not(:disabled):not(.disabled):active {
+        transform: translateY(0);
+    }
+}
+
+.argo-button--base {
+    color: $white-color !important;
+    background-color: $argo-color-teal-7 !important;
+    box-shadow: 0 1px 2px rgba($argo-color-teal-8, 0.25);
+
+    &:hover:not(:disabled):not(.disabled),
+    &:focus:not(:disabled):not(.disabled) {
+        color: $white-color !important;
+        background-color: $argo-color-teal-8 !important;
+        box-shadow: 0 2px 6px rgba($argo-color-teal-8, 0.35);
+    }
+
+    &:disabled,
+    &.disabled {
+        color: $argo-color-gray-6 !important;
+        background-color: $argo-color-gray-4 !important;
+        box-shadow: none;
+    }
+}
+
+.argo-button--base-o {
+    background-color: $white-color !important;
+    color: $argo-color-teal-7 !important;
+    box-shadow: inset 0 0 0 1px rgba($argo-color-teal-7, 0.55);
+
+    &:hover:not(:disabled):not(.disabled),
+    &:focus:not(:disabled):not(.disabled) {
+        color: $white-color !important;
+        background-color: $argo-color-teal-7 !important;
+        box-shadow: 0 1px 2px rgba($argo-color-teal-8, 0.25);
+    }
+
+    &:disabled,
+    &.disabled {
+        color: $argo-color-gray-6 !important;
+        background-color: $argo-color-gray-2 !important;
+        box-shadow: inset 0 0 0 1px $argo-color-gray-4;
+    }
+}
+
+.argo-button--special {
+    color: $white-color !important;
+
+    &:hover:not(:disabled):not(.disabled),
+    &:focus:not(:disabled):not(.disabled) {
+        color: $white-color !important;
+    }
+}
+
+.argo-button--link {
+    color: $argo-color-teal-7 !important;
+
+    &:hover:not(:disabled):not(.disabled) {
+        color: $argo-color-teal-8 !important;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Form fields — boxed inset so they don't wash out on white cards
+// ---------------------------------------------------------------------------
+
+.wf-filters-container,
+.white-box,
+.sliding-panel,
+.workflow-details__step-info {
+    .argo-field,
+    .argo-textarea,
+    input.argo-field,
+    textarea.argo-field {
+        box-sizing: border-box;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid rgba($argo-color-gray-6, 0.35) !important;
+        border-bottom-width: 1px !important;
+        border-radius: 6px;
+        background-color: $argo-color-gray-2 !important;
+        box-shadow: inset 0 1px 2px rgba($argo-color-gray-9, 0.04);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+        &:hover {
+            border-color: rgba($argo-color-gray-6, 0.55) !important;
+        }
+
+        &:focus {
+            outline: none;
+            border-color: $argo-color-teal-6 !important;
+            background-color: $white-color !important;
+            box-shadow: 0 0 0 3px rgba($argo-color-teal-5, 0.25);
+        }
+    }
+
+    .tags-input.argo-field {
+        min-height: 2.4rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    select,
+    .select,
+    .argo-select {
+        border-radius: 6px;
+    }
+}
+
+// Select / dropdown triggers that sit in filter panels
+.wf-filters-container {
+    .select__value,
+    .select__control,
+    [class*='select'] {
+        border-radius: 6px;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tabs & misc chrome
+// ---------------------------------------------------------------------------
+
+.tabs__nav-wrapper {
+    border-bottom: 1px solid $argo-color-gray-3;
+}
+
+.tabs__nav-item {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.sliding-panel__wrapper {
+    box-shadow: -4px 0 24px rgba($argo-color-gray-9, 0.12);
+}
+
+.pagination {
+    a,
+    button {
+        border-radius: 6px;
+    }
+}
