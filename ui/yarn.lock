@@ -8301,9 +8301,9 @@ sass-loader@^13.3.2:
     neo-async "^2.6.2"
 
 sass@^1.69.7:
-  version "1.105.0"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.105.0.tgz#deee89b5e6d2f4c712d3e1ef891a840b778fd68a"
-  integrity sha512-4EjSuRTyG8M4yRXXY1PT9OUV5zz23xBxJkbIAprohKHqf6HOU4MCpE3U3vAC+iO1gxobBjESNbcj8rYAQZWnyA==
+  version "1.107.0"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.107.0.tgz#2fc0e6fb63fcddb478bd9a7b05cfe7c08a2d3e5e"
+  integrity sha512-+whPilvVNoAD57xvdIPLQT0gXo4RD1lHYw+Uw8zYHlojaeaMDxK14tc0JmEsz/XMns48h3lpypisMP+3E8eHQA==
   dependencies:
     chokidar "^5.0.0"
     immutable "^5.1.5"
@@ -8594,9 +8594,9 @@ sockjs@^0.3.24:
     websocket-driver "^0.7.4"
 
 "source-map-js@>=0.6.2 <2.0.0":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/source-map-js/-/source-map-js-1.2.1.tgz#1ce5650fddd87abc099eda37dcff024c2667ae46"
-  integrity sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/source-map-js/-/source-map-js-1.2.2.tgz#79fb88d97535a21cb27162cb05d211b67acea4ab"
+  integrity sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==
 
 source-map-resolve@^0.5.0:
   version "0.5.3"
