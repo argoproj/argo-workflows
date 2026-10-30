@@ -68,6 +68,7 @@
     "govaluate",
     "grpcurl",
     "HEALTHZ",
+    "hotworkers",
     "instanceid",
     "Kaniko",
     "Killercoda",

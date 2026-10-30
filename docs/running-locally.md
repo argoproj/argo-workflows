@@ -134,7 +134,7 @@ To test SSO integration, use `PROFILE=sso`:
 make start PROFILE=sso
 ```
 
-Other profiles include `plugins` (executor plugins) and `telemetry` (OpenTelemetry tracing to an in-cluster collector).
+Other profiles include `plugins` (executor plugins), `hotworkers` (hot worker pools, run by `make test-hotworkers`) and `telemetry` (OpenTelemetry tracing to an in-cluster collector).
 
 Other `make start` options, passed through to the in-cluster manifests: `API=false` (skip the Argo Server),
 `SECURE=true` (serve the API over TLS) and `POD_STATUS_CAPTURE_FINALIZER=false` (disable the pod status capture
