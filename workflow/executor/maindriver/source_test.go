@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
@@ -55,4 +57,18 @@ func TestReadTemplate_NeitherAvailable(t *testing.T) {
 	dir := t.TempDir()
 	_, err := PodTaskConfig{VarRunArgo: dir, OffloadDir: dir}.readTemplate()
 	require.Error(t, err)
+}
+
+// An argument longer than exec allows is handed over in a file instead.
+func TestOffloadLargeArgs(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	dir := t.TempDir()
+	large := strings.Repeat("x", common.MaxEnvVarLen+1)
+	command, err := OffloadLargeArgs(ctx, []string{"cmd", "small", large}, dir)
+	require.NoError(t, err)
+	file := filepath.Join(dir, "argo_arg_1.txt")
+	assert.Equal(t, []string{"cmd", "small", "@" + file}, command)
+	data, err := os.ReadFile(file)
+	require.NoError(t, err)
+	assert.Equal(t, large, string(data))
 }

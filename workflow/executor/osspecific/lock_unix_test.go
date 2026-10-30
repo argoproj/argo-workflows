@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -140,4 +141,71 @@ func TestWaitForSharedLock_Cancellation(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("WaitForSharedLock did not return within 2s of ctx cancel")
 	}
+}
+
+func TestLockHeld(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "lock")
+
+	held, err := LockHeld(path)
+	require.NoError(t, err)
+	assert.False(t, held, "a lock file that doesn't exist is free")
+
+	f, err := Acquire(path)
+	require.NoError(t, err)
+	held, err = LockHeld(path)
+	require.NoError(t, err)
+	assert.True(t, held)
+
+	require.NoError(t, f.Close())
+	held, err = LockHeld(path)
+	require.NoError(t, err)
+	assert.False(t, held)
+
+	// The probe must not leave a lock behind that blocks the next holder.
+	f, err = Acquire(path)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+}
+
+func TestLockHeld_FreedOnProcessKill(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "lock")
+
+	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^$")
+	cmd.Env = append(os.Environ(), "GO_WANT_LOCK_HELPER_PROCESS=1", "GO_LOCK_HELPER_PATH="+path) //nolint:forbidigo // env is the only channel to a re-exec'd test helper process
+	stdout, err := cmd.StdoutPipe()
+	require.NoError(t, err)
+	require.NoError(t, cmd.Start())
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		_, _ = cmd.Process.Wait()
+	})
+	line, err := bufio.NewReader(stdout).ReadString('\n')
+	require.NoError(t, err)
+	require.Equal(t, "LOCKED\n", line)
+
+	held, err := LockHeld(path)
+	require.NoError(t, err)
+	assert.True(t, held)
+
+	require.NoError(t, cmd.Process.Signal(syscall.SIGKILL))
+	_, _ = cmd.Process.Wait()
+
+	held, err = LockHeld(path)
+	require.NoError(t, err)
+	assert.False(t, held)
+}
+
+func TestIsLockHeld(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "lock")
+	f, err := Acquire(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = f.Close() })
+
+	_, err = Acquire(path)
+	require.Error(t, err)
+	assert.True(t, IsLockHeld(err))
+
+	_, err = Acquire(filepath.Join(t.TempDir(), "missing", "lock"))
+	require.Error(t, err)
+	assert.False(t, IsLockHeld(err))
 }

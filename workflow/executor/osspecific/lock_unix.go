@@ -4,6 +4,7 @@ package osspecific
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -22,6 +23,36 @@ func Acquire(path string) (*os.File, error) {
 		return nil, fmt.Errorf("acquire exclusive lock on %q: %w", path, err)
 	}
 	return f, nil
+}
+
+// IsLockHeld reports whether err, from Acquire or a lock probe, means
+// another holder has the lock, rather than that the lock file couldn't be
+// opened.
+func IsLockHeld(err error) bool {
+	return errors.Is(err, unix.EWOULDBLOCK)
+}
+
+// LockHeld reports whether an exclusive holder has the lock at path, without
+// waiting. A lock file that doesn't exist is free.
+func LockHeld(path string) (bool, error) {
+	f, err := os.OpenFile(path, os.O_RDONLY, 0)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("open lock file %q: %w", path, err)
+	}
+	defer func() { _ = f.Close() }()
+	if err := unix.Flock(int(f.Fd()), unix.LOCK_SH|unix.LOCK_NB); err != nil {
+		if IsLockHeld(err) {
+			return true, nil
+		}
+		return false, fmt.Errorf("probe lock on %q: %w", path, err)
+	}
+	// Closing f releases the shared lock too; unlock first so the window in
+	// which it could make an exclusive Acquire fail is as short as possible.
+	_ = unix.Flock(int(f.Fd()), unix.LOCK_UN)
+	return false, nil
 }
 
 // WaitForSharedLock blocks until the exclusive holder of path releases
