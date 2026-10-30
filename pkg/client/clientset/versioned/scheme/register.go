@@ -3,6 +3,7 @@
 package scheme
 
 import (
+	parametersv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/parameterization/v1alpha1"
 	argoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -15,6 +16,7 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
+	parametersv1alpha1.AddToScheme,
 	argoprojv1alpha1.AddToScheme,
 }
 

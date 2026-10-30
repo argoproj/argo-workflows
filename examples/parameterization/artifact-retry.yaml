@@ -1,0 +1,122 @@
+# Install artifact-mappings.yaml first for the synthetic local file store.
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: artifact-retry-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    properties:
+      mode:
+        type: string
+    required:
+    - mode
+    additionalProperties: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artifact-retry-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: mode
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: producer
+        template: producer
+        dependencies:
+        - approve
+      - name: consume
+        template: consume
+        arguments:
+          parameters:
+          - name: mode
+            value: '{{workflow.parameters.mode}}'
+          artifacts:
+          - name: file
+            from: '{{tasks.producer.outputs.artifacts.file}}'
+        dependencies:
+        - producer
+  - name: approve
+    suspend: {}
+  - name: producer
+    metadata:
+      annotations:
+        parameters.workflows.example.io/result-reuse: same-inputs
+        parameters.workflows.example.io/artifact-checksums: '{"file":"checksum"}'
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "%s" "$CONTENT" > /tmp/file; sha256sum /tmp/file | cut -d" " -f1 >
+        /tmp/checksum
+      env:
+      - name: CONTENT
+        value: original-artifact-content
+    outputs:
+      parameters:
+      - name: checksum
+        valueFrom:
+          path: /tmp/checksum
+      artifacts:
+      - name: file
+        path: /tmp/file
+        archive:
+          none: {}
+        http:
+          url: http://artifact-demo-store:8080/{{workflow.name}}/file
+  - name: consume
+    metadata:
+      annotations:
+        parameters.workflows.example.io/retry-safe: idempotent
+    inputs:
+      parameters:
+      - name: mode
+      artifacts:
+      - name: file
+        path: /tmp/file
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$MODE" = good; test "$(cat /tmp/file)" = "$CONTENT"; sha256sum /tmp/file
+        | cut -d" " -f1 > /tmp/digest
+      env:
+      - name: MODE
+        value: '{{inputs.parameters.mode}}'
+      - name: CONTENT
+        value: original-artifact-content
+    outputs:
+      parameters:
+      - name: digest
+        valueFrom:
+          path: /tmp/digest
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: artifact-retry-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: artifact-retry-demo
+  parameterTemplate: artifact-retry-demo
+  mappings:
+  - path: /mode
+    parameter: mode
+    encoding: string

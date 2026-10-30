@@ -267,6 +267,7 @@ else
 endif
 
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
+PARAMETERIZATION_TYPES := $(shell find pkg/apis/parameterization -type f -name '*.go' -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
@@ -430,6 +431,7 @@ codegen: $(TOOL_MOCKERY) $(TOOL_BUF)
 endif
 codegen: types swagger manifests $(GENERATED_DOCS) vendor/modules.txt ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
+	./hack/parameterization-codegen.sh
 	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_MOCKERY) --config .mockery.yaml
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 
@@ -910,7 +912,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TYPES) vendor/modules.txt
 ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
 endif
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) vendor/modules.txt
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) $(PARAMETERIZATION_TYPES) vendor/modules.txt
 	export GOTOOLCHAIN=$(GOMOD_TOOLCHAIN); \
 	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.1); \
 	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \

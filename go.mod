@@ -73,6 +73,7 @@ require (
 	github.com/tidwall/gjson v1.20.0
 	github.com/upper/db/v4 v4.10.0
 	github.com/valyala/fasttemplate v1.2.2
+	github.com/xeipuuv/gojsonschema v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.70.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
@@ -328,7 +329,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0 // indirect
 	github.com/yudai/gojsondiff v1.0.0 // indirect

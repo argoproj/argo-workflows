@@ -4590,9 +4590,11 @@ spec:
       limit: 2
     container:
       image: alpine:3.23
+      command: [sh, -c, "sleep 600"]
   - name: run
     container:
       image: alpine:3.23
+      command: [sh, -c, "true"]
 `
 
 var daemonRetryAfterConsumerSteps = `
@@ -4616,9 +4618,11 @@ spec:
       limit: 2
     container:
       image: alpine:3.23
+      command: [sh, -c, "sleep 600"]
   - name: run
     container:
       image: alpine:3.23
+      command: [sh, -c, "true"]
 `
 
 // TestDaemonRetryAfterConsumer verifies that a daemon with a retryStrategy

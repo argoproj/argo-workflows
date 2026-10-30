@@ -62,6 +62,12 @@ exclude_docs: |
 
 nav:
   - Home: README.md
+  - Structured parameters (experimental):
+      - Getting started: parameterization/getting-started.md
+      - Resource contracts: parameterization/contracts.md
+      - Bound action results: parameterization/execution-results.md
+      - Testing: parameterization/testing.md
+      - Chinese walkthrough: parameterization/getting-started.zh.md
   - Getting Started:
       - quick-start.md
       - training.md

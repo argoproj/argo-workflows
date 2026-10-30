@@ -1,6 +1,7 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
 import React, {useContext, useState} from 'react';
 
+import {request as parameterRequest} from '../../parameterization/parameterization';
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
@@ -16,6 +17,8 @@ interface Props {
 
 export function RetryWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
+    const structured = !!props.workflow.metadata.annotations?.['parameters.workflows.example.io/revision'];
+    const [retryKey] = useState(() => crypto.randomUUID());
     const [overrideParameters, setOverrideParameters] = useState(false);
     const [restartSuccessful, setRestartSuccessful] = useState(false);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflow.spec.arguments.parameters || [])));
@@ -35,10 +38,16 @@ export function RetryWorkflowPanel(props: Props) {
         };
 
         try {
-            const submitted =
-                props.isArchived && !props.isWorkflowInCluster
-                    ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
-                    : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
+            const submitted = structured
+                ? await parameterRequest(props.workflow.metadata.namespace, 'retry', 'post', {
+                      workflow: props.workflow.metadata.name,
+                      uid: props.workflow.metadata.uid,
+                      resourceVersion: props.workflow.metadata.resourceVersion,
+                      idempotencyKey: retryKey
+                  })
+                : props.isArchived && !props.isWorkflowInCluster
+                  ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
+                  : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
             navigation.goto(uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}#`)); // add # at the end to reset query params to close panel
         } catch (err) {
             setError(err);
@@ -59,7 +68,14 @@ export function RetryWorkflowPanel(props: Props) {
                 <div key='override-parameters' style={{marginBottom: 25}}>
                     <label>Override Parameters</label>
                     <div className='columns small-9'>
-                        <Checkbox checked={overrideParameters} onChange={setOverrideParameters} />
+                        {structured ? (
+                            <span>
+                                Original revision retained. To change typed parameters, save and preview a new revision in Structured parameters. A new submission creates a new
+                                Workflow.
+                            </span>
+                        ) : (
+                            <Checkbox checked={overrideParameters} onChange={setOverrideParameters} />
+                        )}
                     </div>
                 </div>
 
@@ -81,7 +97,11 @@ export function RetryWorkflowPanel(props: Props) {
                 <div key='restart-successful' style={{marginBottom: 25}}>
                     <label>Restart Successful</label>
                     <div className='columns small-9'>
-                        <Checkbox checked={restartSuccessful} onChange={setRestartSuccessful} />
+                        {structured ? (
+                            <span>Successful nodes are retained. Native retry resumes failed branches in the same Workflow.</span>
+                        ) : (
+                            <Checkbox checked={restartSuccessful} onChange={setRestartSuccessful} />
+                        )}
                     </div>
                 </div>
 
