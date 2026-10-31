@@ -12,6 +12,12 @@
   "nix": {
     "enabled": true
   },
+  "maven": {
+    "enabled": false
+  },
+  "gitIgnoredAuthors": [
+    "41898282+github-actions[bot]@users.noreply.github.com"
+  ],
   "customManagers": [
     {
       "description": "Update tool versions annotated with `# renovate:` in hack/k8s-versions.sh",
