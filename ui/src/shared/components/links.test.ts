@@ -18,7 +18,17 @@ describe('process URL', () => {
                 finishedAt: '2021-01-01T10:30:00Z'
             }
         };
-        expect(processURL('https://logging?from=${status.startedAtEpoch}&to=${status.finishedAtEpoch}', object)).toBe('https://logging?from=1609497000000&to=1609497000000');
+        expect(processURL('https://logging?from=${status.startedAtEpoch}&to=${status.finishedAtEpoch}', object)).toBe('https://logging?from=1609497000000&to=1609497000999');
+    });
+
+    test('epoch timestamp with sub-second precision', () => {
+        const object = {
+            status: {
+                startedAt: '2021-01-01T10:30:00.123Z',
+                finishedAt: '2021-01-01T10:30:01.456Z'
+            }
+        };
+        expect(processURL('https://logging?from=${status.startedAtEpoch}&to=${status.finishedAtEpoch}', object)).toBe('https://logging?from=1609497000123&to=1609497001456');
     });
 
     test('epoch timestamp with ongoing workflow', () => {

@@ -14,13 +14,24 @@ function toEpoch(datetime: string) {
     }
 }
 
+// Kubernetes serializes timestamps with second precision, so the real finish time can be up to a second
+// later than the one we receive. Use the last millisecond of that second so time-range queries built from
+// the link (e.g. for logs) cover everything up to the actual end.
+function toFinishedEpoch(datetime: string) {
+    const epoch = toEpoch(datetime);
+    if (datetime && epoch % 1000 === 0) {
+        return epoch + 999;
+    }
+    return epoch;
+}
+
 function addEpochTimestamp(jsonObject: {metadata: ObjectMeta; workflow?: Workflow; status?: any}) {
     if (jsonObject === undefined || jsonObject.status.startedAt === undefined) {
         return;
     }
 
     jsonObject.status.startedAtEpoch = toEpoch(jsonObject.status.startedAt);
-    jsonObject.status.finishedAtEpoch = toEpoch(jsonObject.status.finishedAt);
+    jsonObject.status.finishedAtEpoch = toFinishedEpoch(jsonObject.status.finishedAt);
 }
 
 function splitWithMetadataKnowledge(replaceable: string) {
