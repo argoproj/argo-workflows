@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-param-
+spec:
+  entrypoint: my-steps
+  templates:
+  - name: my-steps
+    steps:
+    - - name: step1
+        template: whalesay
+    outputs:
+      parameters:
+      - name: myoutput
+        valueFrom:
+          path: /abc
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          path: /abc
