@@ -14,13 +14,15 @@ function toEpoch(datetime: string) {
     }
 }
 
+const fractionalSeconds = /:\d{2}\.\d+/;
+
 // Kubernetes serializes timestamps with second precision, so the real finish time can be up to a second
-// later than the one we receive. Use the last millisecond of that second so time-range queries built from
-// the link (e.g. for logs) cover everything up to the actual end.
+// later than the one we receive. Round such timestamps up to the next whole second so time-range queries
+// built from the link (e.g. for logs) cover everything up to the actual end.
 function toFinishedEpoch(datetime: string) {
     const epoch = toEpoch(datetime);
-    if (datetime && epoch % 1000 === 0) {
-        return epoch + 999;
+    if (datetime && !fractionalSeconds.test(datetime)) {
+        return epoch + 1000;
     }
     return epoch;
 }
