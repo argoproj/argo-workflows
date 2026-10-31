@@ -35,6 +35,7 @@ metadata:
 When the workflow controller starts the `workflow` span, it reads `opentelemetry.io/traceparent`.
 If it is valid, the `workflow` span becomes a child of that span, and everything below it (nodes, pods, the executor) is in the caller's trace.
 If it is missing or malformed, the workflow starts a new trace as usual.
+A workflow queued by [controller-level parallelism](parallelism.md#controller-level) ignores the annotation.
 
 `argo resubmit` copies every annotation to the new workflow, `opentelemetry.io/traceparent` included.
 The resubmitted workflow therefore joins the caller's trace too, as another child of the same span, however long after the original it runs.
