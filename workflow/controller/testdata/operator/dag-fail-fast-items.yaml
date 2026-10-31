@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-failfast-items
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    parallelism: 2
+    failFast: true
+    dag:
+      tasks:
+      - name: s
+        template: work
+        withItems: [p1, p2, p3, p4, p5]
+  - name: work
+    container: {image: alpine, command: [echo]}
