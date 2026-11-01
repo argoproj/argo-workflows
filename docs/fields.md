@@ -451,6 +451,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-inline-workflowtemplate.yaml)
 
+- [`enum-from-workflow-template.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/enum-from-workflow-template.yaml)
+
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
@@ -3009,6 +3011,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 |`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
 |`description`|`string`|Description is the parameter description|
 |`enum`|`Array< string >`|Enum holds a list of string values to choose from, for the actual value of the parameter|
+|`enumFrom`|[`EnumFrom`](#enumfrom)|EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. Cannot be used together with Enum.|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value|
@@ -4402,6 +4405,17 @@ S3Artifact is the location of an S3 artifact
 |`sessionTokenSecret`|[`SecretKeySelector`](#secretkeyselector)|SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
+## EnumFrom
+
+EnumFrom lists Kubernetes resources to offer as a parameter's values when it is submitted from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only affects how the parameter is asked for: the submitted value is not checked against the list.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`jsonPath`|`string`|JSONPath extracts the values from each listed resource, e.g. `{.metadata.name}`|
+|`labelSelector`|`string`|LabelSelector filters the listed resources, e.g. `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.|
+|`resource`|[`ResourceSelector`](#resourceselector)|Resource is the kind of resource to list|
+
 ## ValueFrom
 
 ValueFrom describes a location in which to obtain the value to a parameter
@@ -5294,6 +5308,35 @@ S3EncryptionOptions used to determine encryption options during s3 operations
 |`kmsEncryptionContext`|`string`|KmsEncryptionContext is a json blob that contains an encryption context. See https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#encrypt_context for more information|
 |`kmsKeyId`|`string`|KMSKeyId tells the driver to encrypt the object using the specified KMS Key.|
 |`serverSideCustomerKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.|
+
+## ResourceSelector
+
+ResourceSelector identifies the resources an EnumFrom lists
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
+
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
+
+- [`k8s-patch-json-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-pod.yaml)
+
+- [`k8s-patch-json-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-json-workflow.yaml)
+
+- [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
+
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`apiVersion`|`string`|APIVersion of the resource, e.g. `v1` or `apps/v1`|
+|`kind`|`string`|Kind of the resource, e.g. `Namespace` or `Deployment`. Secrets are not allowed.|
+|`namespace`|`string`|Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.|
 
 ## SuppliedValueFrom
 
