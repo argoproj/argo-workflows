@@ -333,8 +333,10 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 		return err
 	}
 
-	err = fn(sess.sess.WithContext(ctx))
-	sess.release()
+	err = func() error {
+		defer sess.release()
+		return fn(sess.sess.WithContext(ctx))
+	}()
 	if err == nil {
 		return nil
 	}

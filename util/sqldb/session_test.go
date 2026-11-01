@@ -240,3 +240,37 @@ func TestSessionProxyReconnectWhileSessionInUse(t *testing.T) {
 	assert.Empty(t, r.panicked, "a statement on the session in use panicked after a reconnect")
 	assert.NoError(t, r.err, "a statement on the session in use failed after a reconnect")
 }
+
+// releaseProbeSession satisfies only the calls SessionProxy.With makes around
+// the callback, so the reference-counting tests below need no database.
+type releaseProbeSession struct {
+	db.Session
+	closed bool
+}
+
+func (s *releaseProbeSession) WithContext(ctx context.Context) db.Session { return s }
+func (s *releaseProbeSession) Close() error                               { s.closed = true; return nil }
+
+func TestSessionProxyWithReleasesReferenceOnPanic(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	probe := &releaseProbeSession{}
+	live := &liveSession{sess: probe}
+	sp := &SessionProxy{sess: live}
+
+	// The happy path still balances the reference.
+	require.NoError(t, sp.With(ctx, func(db.Session) error { return nil }))
+	require.Equal(t, int32(0), live.refs.Load())
+
+	// A panicking callback must also release the reference, so a later
+	// reconnect or Close is not blocked forever on a phantom caller.
+	assert.Panics(t, func() {
+		_ = sp.With(ctx, func(db.Session) error { panic("callback panic") })
+	})
+	require.Equal(t, int32(0), live.refs.Load(),
+		"With must release its session reference even when fn panics")
+
+	// With the reference released, retiring the session must actually close
+	// it instead of leaking the session for the life of the process.
+	live.retire()
+	assert.True(t, probe.closed, "retired session with no remaining references must be closed")
+}
