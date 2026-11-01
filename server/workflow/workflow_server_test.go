@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
+
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1535,4 +1537,18 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 	server := NewServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
 
 	return server, ctx
+}
+
+func TestParameterRetryProofIsAtomicWithNativeRetry(t *testing.T) {
+	s, ctx := getWorkflowServer(t)
+	wf, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows("workflows").Get(ctx, "failed", metav1.GetOptions{})
+	require.NoError(t, err)
+	bad := parameterization.WithRetryProof(ctx, parameterization.NativeRetryProof{UID: "wrong", ResourceVersion: wf.ResourceVersion, Receipt: "test"})
+	_, err = s.RetryWorkflow(bad, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
+	require.Error(t, err)
+	good := parameterization.WithRetryProof(ctx, parameterization.NativeRetryProof{UID: string(wf.UID), ResourceVersion: wf.ResourceVersion, Receipt: "test"})
+	result, err := s.RetryWorkflow(good, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
+	require.NoError(t, err)
+	require.Equal(t, "test", result.Annotations[parameterization.Group+"/retry"])
+	require.Equal(t, wf.UID, result.UID)
 }

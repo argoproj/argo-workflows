@@ -5433,8 +5433,6 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
 
-	// containerSet: a failed container must not cause a still-running
-	// sibling to be terminated early.
 	containerSetTmpl := wfv1.Template{
 		ContainerSet: &wfv1.ContainerSetTemplate{
 			Containers: []wfv1.ContainerNode{
@@ -5443,21 +5441,30 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 			},
 		},
 	}
-	pod = apiv1.Pod{
-		Status: apiv1.PodStatus{
-			ContainerStatuses: []apiv1.ContainerStatus{
-				{
-					Name:  "c1",
-					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
-				},
-				{
-					Name:  "c2",
-					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
-				},
-			},
-		},
+	for _, tc := range []struct {
+		name       string
+		terminated apiv1.ContainerStateTerminated
+		want       bool
+	}{
+		{"ordinary failure preserves sibling retries", apiv1.ContainerStateTerminated{ExitCode: 1}, false},
+		{"executor error preserves sibling retries", apiv1.ContainerStateTerminated{ExitCode: 64}, false},
+		{"success preserves running sibling", apiv1.ContainerStateTerminated{ExitCode: 0}, false},
+		{"OOM killed main", apiv1.ContainerStateTerminated{Reason: "OOMKilled", ExitCode: 137}, true},
+		{"SIGKILL main", apiv1.ContainerStateTerminated{Signal: 9, ExitCode: 137}, true},
+		{"SIGKILL without signal metadata", apiv1.ContainerStateTerminated{ExitCode: 137}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			casePod := apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: "c1", State: apiv1.ContainerState{Terminated: &tc.terminated}},
+				{Name: "c2", State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}},
+			}}}
+			assert.Equal(t, tc.want, podHasContainerNeedingTermination(&casePod, containerSetTmpl))
+			casePod.Status.ContainerStatuses[0], casePod.Status.ContainerStatuses[1] = casePod.Status.ContainerStatuses[1], casePod.Status.ContainerStatuses[0]
+			assert.Equal(t, tc.want, podHasContainerNeedingTermination(&casePod, containerSetTmpl))
+			casePod.Status.ContainerStatuses[1].Name = common.WaitContainerName
+			assert.False(t, podHasContainerNeedingTermination(&casePod, containerSetTmpl), "a wait container must not terminate running main containers")
+		})
 	}
-	assert.False(t, podHasContainerNeedingTermination(&pod, containerSetTmpl))
 
 	// containerSet: once every sibling has exited (regardless of code) the
 	// pod must be terminated so the wait container finishes.

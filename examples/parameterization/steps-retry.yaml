@@ -1,0 +1,154 @@
+# Isolated local synthetic acceptance demo. No business services or real credentials.
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: steps-retry-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - value
+    - items
+    additionalProperties: false
+    properties:
+      value:
+        type: string
+      items:
+        type: array
+        minItems: 1
+        items:
+          type: string
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: steps-retry-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: value
+    - name: items
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: value
+    steps:
+    - - name: stable
+        template: group
+        arguments:
+          parameters:
+          - name: payload
+            value: valid
+          - name: items
+            value: '{{workflow.parameters.items}}'
+      - name: vary
+        template: group
+        arguments:
+          parameters:
+          - name: payload
+            value: '{{inputs.parameters.value}}'
+          - name: items
+            value: '{{workflow.parameters.items}}'
+    - - name: report
+        template: change
+        arguments:
+          parameters:
+          - name: payload
+            value: '{{steps.vary.outputs.parameters.result}}'
+  - name: group
+    inputs:
+      parameters:
+      - name: payload
+      - name: items
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          parameter: '{{steps.change.outputs.parameters.result}}'
+    steps:
+    - - name: approve
+        template: approve
+    - - name: keep
+        template: keep
+        withParam: '{{inputs.parameters.items}}'
+        arguments:
+          parameters:
+          - name: item
+            value: '{{item}}'
+    - - name: change
+        template: change
+        arguments:
+          parameters:
+          - name: payload
+            value: '{{=inputs[''parameters''][''payload'']}}'
+  - name: approve
+    suspend: {}
+  - name: keep
+    inputs:
+      parameters:
+      - name: item
+    metadata:
+      annotations:
+        parameters.workflows.example.io/result-reuse: same-inputs
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "%s" "$ITEM" > /tmp/result
+      env:
+      - name: ITEM
+        value: '{{inputs.parameters.item}}'
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          path: /tmp/result
+  - name: change
+    inputs:
+      parameters:
+      - name: payload
+    metadata:
+      annotations:
+        parameters.workflows.example.io/result-reuse: same-inputs
+        parameters.workflows.example.io/retry-safe: idempotent
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "$PAYLOAD" = valid; printf "%s" "$PAYLOAD" > /tmp/result
+      env:
+      - name: PAYLOAD
+        value: '{{inputs.parameters.payload}}'
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          path: /tmp/result
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: steps-retry-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: steps-retry-demo
+  parameterTemplate: steps-retry-demo
+  mappings:
+  - path: /value
+    parameter: value
+    encoding: string
+  - path: /items
+    parameter: items
+    encoding: json

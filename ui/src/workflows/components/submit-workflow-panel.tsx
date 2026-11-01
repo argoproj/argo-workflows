@@ -2,6 +2,7 @@ import {Select} from 'argo-ui/src/components/select/select';
 import {History} from 'history';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 
+import {BindingLinks} from '../../parameterization/binding-links';
 import {uiUrl} from '../../shared/base';
 import {ArtifactsInput, ArtifactUploadResponse} from '../../shared/components/artifacts-input';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -121,6 +122,9 @@ export function SubmitWorkflowPanel(props: Props) {
                 {props.namespace}/{props.name}
             </h5>
             {error && <ErrorNotice error={error} />}
+            {(props.kind === 'WorkflowTemplate' || props.kind === 'ClusterWorkflowTemplate') && (
+                <BindingLinks namespace={props.namespace} workflowTemplate={props.name} clusterScope={props.kind === 'ClusterWorkflowTemplate'} />
+            )}
             <div className='white-box'>
                 {props.onNamespaceChange && (
                     <div key='namespace' style={{marginBottom: 25}}>

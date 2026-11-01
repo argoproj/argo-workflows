@@ -1,0 +1,103 @@
+.parameterization {
+    max-width: 1280px;
+    margin: 24px auto;
+    padding: 24px;
+    background: white;
+    .parameter-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        margin: 18px 0;
+    }
+    label {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    input,
+    select {
+        padding: 8px;
+        border: 1px solid #b7c4cb;
+        border-radius: 4px;
+        min-width: 200px;
+    }
+    button {
+        padding: 7px 12px;
+        margin: 4px;
+        cursor: pointer;
+    }
+    .parameter-group {
+        margin: 12px 0 12px 16px;
+        border-left: 2px solid #dce5eb;
+        padding: 12px;
+    }
+    summary {
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .parameter-field {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 12px;
+    }
+    .parameter-field > span {
+        min-width: 180px;
+    }
+    small {
+        color: #596e79;
+        font-size: 12px;
+    }
+    .parameter-item {
+        border-bottom: 1px solid #dce5eb;
+        margin: 12px;
+        padding: 8px;
+    }
+    .error {
+        background: #ffeded;
+        padding: 16px;
+        color: #9b2626;
+    }
+    pre {
+        max-height: 480px;
+        overflow: auto;
+        padding: 16px;
+        background: #f5f7f9;
+    }
+    table {
+        width: 100%;
+    }
+    .parameter-resource-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+        gap: 24px;
+        @media (max-width: 900px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+    td,
+    th {
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+    }
+}
+.parameterization .revision-diff {
+    details { margin: 12px 0; }
+    details details { margin-left: 16px; }
+    table { table-layout: fixed; min-width: 560px; }
+    .revision-diff-table { overflow-x: auto; max-width: 100%; }
+    label { flex-wrap: wrap; }
+    > p { overflow-wrap: anywhere; }
+    td { overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; max-height: 240px; }
+}
+.parameterization {
+    [role='tablist'] { display: flex; flex-wrap: wrap; border-bottom: 1px solid #dce5eb; }
+    [role='tab'][aria-selected='true'] { border-bottom: 3px solid #0062ff; font-weight: bold; }
+    textarea { min-width: 280px; min-height: 120px; font-family: monospace; }
+    .parameter-table { overflow-x: auto; }
+    input[type='checkbox'] { min-width: auto; }
+}

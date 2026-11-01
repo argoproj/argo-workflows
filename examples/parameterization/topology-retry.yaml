@@ -1,0 +1,129 @@
+# Isolated local demo: author-approved loop expansion replacement.
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: topology-retry-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    properties:
+      items:
+        type: array
+        items:
+          type: string
+        maxItems: 8
+    required:
+    - items
+    additionalProperties: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: topology-retry-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: items
+  templates:
+  - name: main
+    metadata:
+      annotations:
+        parameters.workflows.example.io/retry-loop-calls: '["expand"]'
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: stable
+        template: echo
+        arguments:
+          parameters:
+          - name: value
+            value: stable
+        dependencies:
+        - approve
+      - name: expand
+        template: echo
+        withParam: '{{workflow.parameters.items}}'
+        arguments:
+          parameters:
+          - name: value
+            value: '{{item}}'
+        dependencies:
+        - stable
+      - name: report
+        template: report
+        arguments:
+          parameters:
+          - name: value
+            value: '{{tasks.expand.outputs.parameters.value}}'
+        dependencies:
+        - expand
+  - name: approve
+    suspend: {}
+  - name: echo
+    metadata:
+      annotations:
+        parameters.workflows.example.io/retry-safe: idempotent
+        parameters.workflows.example.io/result-reuse: same-inputs
+    inputs:
+      parameters:
+      - name: value
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "%s" "$VALUE" >/tmp/value
+      env:
+      - name: VALUE
+        value: '{{inputs.parameters.value}}'
+    outputs:
+      parameters:
+      - name: value
+        valueFrom:
+          path: /tmp/value
+  - name: report
+    metadata:
+      annotations:
+        parameters.workflows.example.io/retry-safe: idempotent
+        parameters.workflows.example.io/result-reuse: same-inputs
+    inputs:
+      parameters:
+      - name: value
+        default: '[]'
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "%s" "$VALUE" >/tmp/value
+      env:
+      - name: VALUE
+        value: '{{inputs.parameters.value}}'
+    outputs:
+      parameters:
+      - name: value
+        valueFrom:
+          path: /tmp/value
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: topology-retry-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: topology-retry-demo
+  parameterTemplate: topology-retry-demo
+  mappings:
+  - path: /items
+    parameter: items
+    encoding: json

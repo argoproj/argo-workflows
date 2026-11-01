@@ -1,0 +1,17 @@
+region: demo-north
+environment: test
+zones:
+- name: zone-a
+  subnets:
+  - id: one
+    cidr: 10.10.1.0/24
+  - id: two
+    cidr: 10.10.2.0/24
+- name: zone-b
+  subnets:
+  - id: one
+    cidr: 10.20.1.0/24
+roles:
+- admin
+- dns
+fail: false
