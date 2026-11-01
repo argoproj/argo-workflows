@@ -1259,3 +1259,42 @@ func TestWaitMainContainers(t *testing.T) {
 		rt.AssertExpectations(t)
 	})
 }
+
+// TestNewDriverArtPartialS3Location tests that an S3 artifact with a bucket but no endpoint
+// keeps its own bucket, and only takes the missing fields from the archive location.
+func TestNewDriverArtPartialS3Location(t *testing.T) {
+	we := WorkflowExecutor{
+		Template: wfv1.Template{
+			ArchiveLocation: &wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{
+						Endpoint:    "s3.amazonaws.com",
+						Bucket:      "archive-bucket",
+						Region:      "eu-central-1",
+						UseSDKCreds: true,
+					},
+					Key: "my-wf/my-pod",
+				},
+			},
+		},
+	}
+	art := &wfv1.Artifact{
+		Name: "my-artifact",
+		Path: "/tmp/my-artifact",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{
+				S3Bucket: wfv1.S3Bucket{
+					Bucket: "my-bucket",
+				},
+				Key: "my-key",
+			},
+		},
+	}
+
+	driverArt, err := we.newDriverArt(art)
+	require.NoError(t, err)
+	assert.Equal(t, "my-bucket", driverArt.S3.Bucket)
+	assert.Equal(t, "my-key", driverArt.S3.Key)
+	assert.Equal(t, "s3.amazonaws.com", driverArt.S3.Endpoint)
+	assert.Equal(t, "eu-central-1", driverArt.S3.Region)
+}

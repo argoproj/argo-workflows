@@ -1503,6 +1503,7 @@ func (a *ArtifactLocation) AppendToKey(x string) error {
 
 // Relocate copies all location info from the parameter, except the key.
 // But only if it does not have a location already.
+// For S3, fields that are already set (e.g. the bucket) are kept, and only the missing ones are copied.
 func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 	if a.HasLocation() {
 		return nil
@@ -1514,7 +1515,18 @@ func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 	if err != nil {
 		return err
 	}
+	s3 := a.S3
 	*a = *l.DeepCopy()
+	if s3 != nil && a.S3 != nil {
+		// Unset fields are omitted when marshaling, so only the fields set on the artifact are applied.
+		data, err := json.Marshal(s3.S3Bucket)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(data, &a.S3.S3Bucket); err != nil {
+			return err
+		}
+	}
 	return a.SetKey(key)
 }
 
