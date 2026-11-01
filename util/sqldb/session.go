@@ -61,23 +61,30 @@ type liveSession struct {
 // was retired and this was the last reference.
 func (l *liveSession) release() {
 	l.refs.Add(-1)
-	l.tryClose()
+	_ = l.tryClose()
 }
 
 // retire closes the session once every caller that took a reference has
 // released it. It must only be called after the proxy no longer hands out
-// the session, so no new references can appear.
-func (l *liveSession) retire() {
+// the session, so no new references can appear. The close error is returned
+// only when the session closes here: a deferred close on the last release
+// has no caller left to report it to.
+func (l *liveSession) retire() error {
 	l.retired.Store(true)
-	l.tryClose()
+	return l.tryClose()
 }
 
-func (l *liveSession) tryClose() {
+// tryClose closes the session if it is retired and has no references left,
+// and returns the close error when this call performs the close.
+func (l *liveSession) tryClose() error {
 	if l.retired.Load() && l.refs.Load() == 0 {
+		var err error
 		l.closeOnce.Do(func() {
-			_ = l.sess.Close()
+			err = l.sess.Close()
 		})
+		return err
 	}
+	return nil
 }
 
 // SessionProxyConfig contains configuration for creating a SessionProxy
@@ -395,7 +402,7 @@ func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
 			old := sp.sess
 			sp.sess = nil
 			sp.closed = true
-			old.retire()
+			_ = old.retire()
 		}
 
 		err = sp.connect(ctx)
@@ -451,7 +458,7 @@ func (sp *SessionProxy) Close() error {
 	if sp.sess != nil {
 		old := sp.sess
 		sp.sess = nil
-		old.retire()
+		return old.retire()
 	}
 
 	return nil

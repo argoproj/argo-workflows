@@ -245,11 +245,12 @@ func TestSessionProxyReconnectWhileSessionInUse(t *testing.T) {
 // the callback, so the reference-counting tests below need no database.
 type releaseProbeSession struct {
 	db.Session
-	closed bool
+	closed   bool
+	closeErr error
 }
 
 func (s *releaseProbeSession) WithContext(ctx context.Context) db.Session { return s }
-func (s *releaseProbeSession) Close() error                               { s.closed = true; return nil }
+func (s *releaseProbeSession) Close() error                               { s.closed = true; return s.closeErr }
 
 func TestSessionProxyWithReleasesReferenceOnPanic(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
@@ -271,6 +272,28 @@ func TestSessionProxyWithReleasesReferenceOnPanic(t *testing.T) {
 
 	// With the reference released, retiring the session must actually close
 	// it instead of leaking the session for the life of the process.
-	live.retire()
+	require.NoError(t, live.retire())
 	assert.True(t, probe.closed, "retired session with no remaining references must be closed")
+}
+
+func TestSessionProxyCloseReturnsSessionError(t *testing.T) {
+	probe := &releaseProbeSession{closeErr: errors.New("close failed")}
+	sp := &SessionProxy{sess: &liveSession{sess: probe}}
+
+	// An unused session closes on Close, which must report the session's own
+	// close error instead of dropping it.
+	require.ErrorIs(t, sp.Close(), probe.closeErr)
+	assert.True(t, probe.closed)
+	require.NoError(t, sp.Close(), "a second Close is a no-op")
+
+	// While a With caller still holds the session, Close only retires it and
+	// returns nil; the deferred close runs on the last release.
+	probe = &releaseProbeSession{closeErr: errors.New("close failed")}
+	live := &liveSession{sess: probe}
+	live.refs.Add(1)
+	sp = &SessionProxy{sess: live}
+	require.NoError(t, sp.Close())
+	assert.False(t, probe.closed, "a session still in use must not be closed")
+	live.release()
+	assert.True(t, probe.closed)
 }
