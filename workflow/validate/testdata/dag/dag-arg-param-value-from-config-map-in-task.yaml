@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  entrypoint: root
+  templates:
+    - name: template
+      inputs:
+        parameters:
+          - name: data
+      container:
+        name: main
+        image: alpine
+    - name: root
+      dag:
+        tasks:
+          - name: task
+            template: template
+            arguments:
+              parameters:
+                - name: data
+                  valueFrom:
+                    configMapKeyRef:
+                      name: my-config
+                      key: my-data
+                    default: my-default
