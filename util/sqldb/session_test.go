@@ -181,3 +181,62 @@ func TestSessionWithCancelsStatement(t *testing.T) {
 		return count == 0
 	}, 10*time.Second, 200*time.Millisecond)
 }
+
+// A reconnect must not break a caller that is still using the session it
+// took before the reconnect: With hands fn a session and releases the lock,
+// so fn can still be running when another caller reconnects.
+func TestSessionProxyReconnectWhileSessionInUse(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("This test uses the Linux container image and therefore cannot be performed on the Windows platform")
+	}
+	ctx := logging.TestContext(t.Context())
+	cfg, terminate, err := setupPostgresContainer(ctx, t)
+	require.NoError(t, err)
+	t.Cleanup(terminate)
+	proxy, err := NewSessionProxy(ctx, SessionProxyConfig{DBConfig: cfg, Username: userName, Password: password})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = proxy.Close() })
+
+	query := func(s db.Session) error {
+		row, err := s.SQL().QueryRow("SELECT 1")
+		if err != nil {
+			return err
+		}
+		var one int
+		return row.Scan(&one)
+	}
+
+	inFn := make(chan struct{})
+	release := make(chan struct{})
+	type result struct {
+		err      error
+		panicked string
+	}
+	results := make(chan result, 1)
+	go func() {
+		var r result
+		defer func() {
+			if p := recover(); p != nil {
+				r.panicked = fmt.Sprint(p)
+			}
+			results <- r
+		}()
+		r.err = proxy.With(ctx, func(s db.Session) error {
+			if err := query(s); err != nil {
+				return err
+			}
+			close(inFn)
+			<-release
+			// The next statement on the session taken before the reconnect.
+			return query(s)
+		})
+	}()
+
+	<-inFn
+	require.NoError(t, proxy.Reconnect(ctx))
+	close(release)
+	r := <-results
+
+	assert.Empty(t, r.panicked, "a statement on the session in use panicked after a reconnect")
+	assert.NoError(t, r.err, "a statement on the session in use failed after a reconnect")
+}
