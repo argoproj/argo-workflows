@@ -23,10 +23,10 @@ func TestLabel(t *testing.T) {
 		assert.Len(t, obj.GetLabels(), 1)
 		assert.Equal(t, "foo", obj.GetLabels()[common.LabelKeyControllerInstanceID])
 	})
-	t.Run("Remove", func(t *testing.T) {
+	t.Run("PreserveExisting", func(t *testing.T) {
 		obj := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}
 		NewService("").Label(obj)
-		assert.Empty(t, obj.GetLabels())
+		assert.Equal(t, "bar", obj.GetLabels()[common.LabelKeyControllerInstanceID])
 	})
 }
 
