@@ -141,6 +141,31 @@ message WorkflowSubmitRequest {
   github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.SubmitOpts submitOptions = 4;
 }
 
+// ResolveParameterEnumRequest identifies a parameter with an enumFrom on a stored object. The server reads the
+// enumFrom from that object rather than accepting one from the client, so callers can only run lookups that a
+// template author has defined.
+message ResolveParameterEnumRequest {
+  // Namespace the workflow will run in. Namespaced resources are listed here unless enumFrom sets a namespace.
+  string namespace = 1;
+  // Kind of the object holding the parameter: WorkflowTemplate, ClusterWorkflowTemplate, CronWorkflow or Workflow.
+  string resourceKind = 2;
+  // Name of the object holding the parameter. WorkflowTemplates, CronWorkflows and Workflows are read from namespace.
+  string resourceName = 3;
+  // Name of the parameter whose enumFrom to resolve.
+  string parameterName = 4;
+  // Optional. Look the parameter up in this template's inputs instead of spec.arguments.
+  string templateName = 5;
+  // Current values of other parameters, substituted into {{workflow.parameters.<name>}} references.
+  map<string, string> parameters = 6;
+}
+
+message ResolveParameterEnumResponse {
+  // Distinct values extracted from the listed resources, sorted.
+  repeated string values = 1;
+  // True if more resources or values existed than the Argo Server returns; values then holds only the first ones.
+  bool truncated = 2;
+}
+
 service WorkflowService {
   rpc CreateWorkflow(WorkflowCreateRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http) = {
@@ -238,6 +263,13 @@ service WorkflowService {
   rpc SubmitWorkflow(WorkflowSubmitRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http) = {
       post: "/api/v1/workflows/{namespace}/submit"
+      body: "*"
+    };
+  }
+
+  rpc ResolveParameterEnum(ResolveParameterEnumRequest) returns (ResolveParameterEnumResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/workflows/{namespace}/resolve-enum"
       body: "*"
     };
   }

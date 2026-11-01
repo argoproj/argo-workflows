@@ -187,6 +187,18 @@ func getAuthHeaders(md metadata.MD) []string {
 	return authorizations
 }
 
+// CallerKey returns a hash of the credentials on the incoming request, for keying per-caller caches.
+// Requests with the same key and namespace act as the same Kubernetes identity. The credentials themselves are not exposed.
+func CallerKey(ctx context.Context) string {
+	md, _ := metadata.FromIncomingContext(ctx)
+	h := sha256.New()
+	for _, a := range getAuthHeaders(md) {
+		h.Write([]byte(a))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
@@ -407,4 +419,8 @@ func mergeServerRestConfig(argoServerConfig *rest.Config, newConfig *rest.Config
 	newConfig.UserAgent = argoServerConfig.UserAgent
 	// TO DO: Merge other common configurations，such as RateLimiter.
 	return newConfig
+}
+
+func GetDynamicClient(ctx context.Context) dynamic.Interface {
+	return ctx.Value(DynamicKey).(dynamic.Interface)
 }

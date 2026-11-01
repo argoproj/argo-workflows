@@ -5311,6 +5311,28 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.EnumFrom": {
+      "description": "EnumFrom lists Kubernetes resources to offer as a parameter's values when it is submitted from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only affects how the parameter is asked for: the submitted value is not checked against the list.",
+      "properties": {
+        "jsonPath": {
+          "description": "JSONPath extracts the values from each listed resource, e.g. `{.metadata.name}`",
+          "type": "string"
+        },
+        "labelSelector": {
+          "description": "LabelSelector filters the listed resources, e.g. `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+          "type": "string"
+        },
+        "resource": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceSelector",
+          "description": "Resource is the kind of resource to list"
+        }
+      },
+      "required": [
+        "resource",
+        "jsonPath"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.Event": {
       "properties": {
         "selector": {
@@ -6488,6 +6510,10 @@
           },
           "type": "array"
         },
+        "enumFrom": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EnumFrom",
+          "description": "EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. Cannot be used together with Enum."
+        },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
           "type": "string"
@@ -6627,6 +6653,77 @@
       },
       "required": [
         "data"
+      ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ResolveParameterEnumRequest": {
+      "description": "ResolveParameterEnumRequest identifies a parameter with an enumFrom on a stored object. The server reads the\nenumFrom from that object rather than accepting one from the client, so callers can only run lookups that a\ntemplate author has defined.",
+      "properties": {
+        "namespace": {
+          "description": "Namespace the workflow will run in. Namespaced resources are listed here unless enumFrom sets a namespace.",
+          "type": "string"
+        },
+        "parameterName": {
+          "description": "Name of the parameter whose enumFrom to resolve.",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Current values of other parameters, substituted into {{io.argoproj.workflow.v1alpha1.parameters.\u003cname\u003e}} references.",
+          "type": "object"
+        },
+        "resourceKind": {
+          "description": "Kind of the object holding the parameter: WorkflowTemplate, ClusterWorkflowTemplate, CronWorkflow or Workflow.",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Name of the object holding the parameter. WorkflowTemplates, CronWorkflows and Workflows are read from namespace.",
+          "type": "string"
+        },
+        "templateName": {
+          "description": "Optional. Look the parameter up in this template's inputs instead of spec.arguments.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ResolveParameterEnumResponse": {
+      "properties": {
+        "truncated": {
+          "description": "True if more resources or values existed than the Argo Server returns; values then holds only the first ones.",
+          "type": "boolean"
+        },
+        "values": {
+          "description": "Distinct values extracted from the listed resources, sorted.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.ResourceSelector": {
+      "description": "ResourceSelector identifies the resources an EnumFrom lists",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion of the resource, e.g. `v1` or `apps/v1`",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind of the resource, e.g. `Namespace` or `Deployment`. Secrets are not allowed.",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind"
       ],
       "type": "object"
     },
