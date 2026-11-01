@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-items-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-items
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+          - Hello"Argo
