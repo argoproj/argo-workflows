@@ -2103,6 +2103,44 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        enumFrom:
+                          description: |-
+                            EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                            Cannot be used together with Enum.
+                          properties:
+                            jsonPath:
+                              description: JSONPath extracts the values from each
+                                listed resource, e.g. `{.metadata.name}`
+                              type: string
+                            labelSelector:
+                              description: |-
+                                LabelSelector filters the listed resources, e.g. `tier=web`.
+                                It may reference other workflow parameters, so the list can depend on another parameter's value.
+                              type: string
+                            resource:
+                              description: Resource is the kind of resource to list
+                              properties:
+                                apiVersion:
+                                  description: APIVersion of the resource, e.g. `v1`
+                                    or `apps/v1`
+                                  type: string
+                                kind:
+                                  description: Kind of the resource, e.g. `Namespace`
+                                    or `Deployment`. Secrets are not allowed.
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                    It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                  type: string
+                              required:
+                              - apiVersion
+                              - kind
+                              type: object
+                          required:
+                          - jsonPath
+                          - resource
+                          type: object
                         globalName:
                           description: |-
                             GlobalName exports an output parameter to the global scope, making it available as
@@ -5062,6 +5100,45 @@ spec:
                                   type: string
                                 minItems: 1
                                 type: array
+                              enumFrom:
+                                description: |-
+                                  EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                  Cannot be used together with Enum.
+                                properties:
+                                  jsonPath:
+                                    description: JSONPath extracts the values from
+                                      each listed resource, e.g. `{.metadata.name}`
+                                    type: string
+                                  labelSelector:
+                                    description: |-
+                                      LabelSelector filters the listed resources, e.g. `tier=web`.
+                                      It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                    type: string
+                                  resource:
+                                    description: Resource is the kind of resource
+                                      to list
+                                    properties:
+                                      apiVersion:
+                                        description: APIVersion of the resource, e.g.
+                                          `v1` or `apps/v1`
+                                        type: string
+                                      kind:
+                                        description: Kind of the resource, e.g. `Namespace`
+                                          or `Deployment`. Secrets are not allowed.
+                                        type: string
+                                      namespace:
+                                        description: |-
+                                          Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                          It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                        type: string
+                                    required:
+                                    - apiVersion
+                                    - kind
+                                    type: object
+                                required:
+                                - jsonPath
+                                - resource
+                                type: object
                               globalName:
                                 description: |-
                                   GlobalName exports an output parameter to the global scope, making it available as
@@ -9142,6 +9219,28 @@ spec:
                                           type: string
                                         minItems: 1
                                         type: array
+                                      enumFrom:
+                                        properties:
+                                          jsonPath:
+                                            type: string
+                                          labelSelector:
+                                            type: string
+                                          resource:
+                                            properties:
+                                              apiVersion:
+                                                type: string
+                                              kind:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            required:
+                                            - apiVersion
+                                            - kind
+                                            type: object
+                                        required:
+                                        - jsonPath
+                                        - resource
+                                        type: object
                                       globalName:
                                         type: string
                                       name:
@@ -9820,6 +9919,28 @@ spec:
                                                 type: string
                                               minItems: 1
                                               type: array
+                                            enumFrom:
+                                              properties:
+                                                jsonPath:
+                                                  type: string
+                                                labelSelector:
+                                                  type: string
+                                                resource:
+                                                  properties:
+                                                    apiVersion:
+                                                      type: string
+                                                    kind:
+                                                      type: string
+                                                    namespace:
+                                                      type: string
+                                                  required:
+                                                  - apiVersion
+                                                  - kind
+                                                  type: object
+                                              required:
+                                              - jsonPath
+                                              - resource
+                                              type: object
                                             globalName:
                                               type: string
                                             name:
@@ -11973,6 +12094,28 @@ spec:
                                 type: string
                               minItems: 1
                               type: array
+                            enumFrom:
+                              properties:
+                                jsonPath:
+                                  type: string
+                                labelSelector:
+                                  type: string
+                                resource:
+                                  properties:
+                                    apiVersion:
+                                      type: string
+                                    kind:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - apiVersion
+                                  - kind
+                                  type: object
+                              required:
+                              - jsonPath
+                              - resource
+                              type: object
                             globalName:
                               type: string
                             name:
@@ -12755,6 +12898,28 @@ spec:
                                 type: string
                               minItems: 1
                               type: array
+                            enumFrom:
+                              properties:
+                                jsonPath:
+                                  type: string
+                                labelSelector:
+                                  type: string
+                                resource:
+                                  properties:
+                                    apiVersion:
+                                      type: string
+                                    kind:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - apiVersion
+                                  - kind
+                                  type: object
+                              required:
+                              - jsonPath
+                              - resource
+                              type: object
                             globalName:
                               type: string
                             name:
@@ -15684,6 +15849,28 @@ spec:
                                         type: string
                                       minItems: 1
                                       type: array
+                                    enumFrom:
+                                      properties:
+                                        jsonPath:
+                                          type: string
+                                        labelSelector:
+                                          type: string
+                                        resource:
+                                          properties:
+                                            apiVersion:
+                                              type: string
+                                            kind:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          required:
+                                          - apiVersion
+                                          - kind
+                                          type: object
+                                      required:
+                                      - jsonPath
+                                      - resource
+                                      type: object
                                     globalName:
                                       type: string
                                     name:
@@ -16355,6 +16542,28 @@ spec:
                                               type: string
                                             minItems: 1
                                             type: array
+                                          enumFrom:
+                                            properties:
+                                              jsonPath:
+                                                type: string
+                                              labelSelector:
+                                                type: string
+                                              resource:
+                                                properties:
+                                                  apiVersion:
+                                                    type: string
+                                                  kind:
+                                                    type: string
+                                                  namespace:
+                                                    type: string
+                                                required:
+                                                - apiVersion
+                                                - kind
+                                                type: object
+                                            required:
+                                            - jsonPath
+                                            - resource
+                                            type: object
                                           globalName:
                                             type: string
                                           name:
@@ -23708,6 +23917,46 @@ spec:
                                             type: string
                                           minItems: 1
                                           type: array
+                                        enumFrom:
+                                          description: |-
+                                            EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                            Cannot be used together with Enum.
+                                          properties:
+                                            jsonPath:
+                                              description: JSONPath extracts the values
+                                                from each listed resource, e.g. `{.metadata.name}`
+                                              type: string
+                                            labelSelector:
+                                              description: |-
+                                                LabelSelector filters the listed resources, e.g. `tier=web`.
+                                                It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                              type: string
+                                            resource:
+                                              description: Resource is the kind of
+                                                resource to list
+                                              properties:
+                                                apiVersion:
+                                                  description: APIVersion of the resource,
+                                                    e.g. `v1` or `apps/v1`
+                                                  type: string
+                                                kind:
+                                                  description: Kind of the resource,
+                                                    e.g. `Namespace` or `Deployment`.
+                                                    Secrets are not allowed.
+                                                  type: string
+                                                namespace:
+                                                  description: |-
+                                                    Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                                    It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                                  type: string
+                                              required:
+                                              - apiVersion
+                                              - kind
+                                              type: object
+                                          required:
+                                          - jsonPath
+                                          - resource
+                                          type: object
                                         globalName:
                                           description: |-
                                             GlobalName exports an output parameter to the global scope, making it available as
@@ -25125,6 +25374,48 @@ spec:
                                                   type: string
                                                 minItems: 1
                                                 type: array
+                                              enumFrom:
+                                                description: |-
+                                                  EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                                  Cannot be used together with Enum.
+                                                properties:
+                                                  jsonPath:
+                                                    description: JSONPath extracts
+                                                      the values from each listed
+                                                      resource, e.g. `{.metadata.name}`
+                                                    type: string
+                                                  labelSelector:
+                                                    description: |-
+                                                      LabelSelector filters the listed resources, e.g. `tier=web`.
+                                                      It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                                    type: string
+                                                  resource:
+                                                    description: Resource is the kind
+                                                      of resource to list
+                                                    properties:
+                                                      apiVersion:
+                                                        description: APIVersion of
+                                                          the resource, e.g. `v1`
+                                                          or `apps/v1`
+                                                        type: string
+                                                      kind:
+                                                        description: Kind of the resource,
+                                                          e.g. `Namespace` or `Deployment`.
+                                                          Secrets are not allowed.
+                                                        type: string
+                                                      namespace:
+                                                        description: |-
+                                                          Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                                          It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                                        type: string
+                                                    required:
+                                                    - apiVersion
+                                                    - kind
+                                                    type: object
+                                                required:
+                                                - jsonPath
+                                                - resource
+                                                type: object
                                               globalName:
                                                 description: |-
                                                   GlobalName exports an output parameter to the global scope, making it available as
@@ -29307,6 +29598,45 @@ spec:
                                   type: string
                                 minItems: 1
                                 type: array
+                              enumFrom:
+                                description: |-
+                                  EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                  Cannot be used together with Enum.
+                                properties:
+                                  jsonPath:
+                                    description: JSONPath extracts the values from
+                                      each listed resource, e.g. `{.metadata.name}`
+                                    type: string
+                                  labelSelector:
+                                    description: |-
+                                      LabelSelector filters the listed resources, e.g. `tier=web`.
+                                      It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                    type: string
+                                  resource:
+                                    description: Resource is the kind of resource
+                                      to list
+                                    properties:
+                                      apiVersion:
+                                        description: APIVersion of the resource, e.g.
+                                          `v1` or `apps/v1`
+                                        type: string
+                                      kind:
+                                        description: Kind of the resource, e.g. `Namespace`
+                                          or `Deployment`. Secrets are not allowed.
+                                        type: string
+                                      namespace:
+                                        description: |-
+                                          Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                          It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                        type: string
+                                    required:
+                                    - apiVersion
+                                    - kind
+                                    type: object
+                                required:
+                                - jsonPath
+                                - resource
+                                type: object
                               globalName:
                                 description: |-
                                   GlobalName exports an output parameter to the global scope, making it available as
@@ -30714,6 +31044,45 @@ spec:
                                   type: string
                                 minItems: 1
                                 type: array
+                              enumFrom:
+                                description: |-
+                                  EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                  Cannot be used together with Enum.
+                                properties:
+                                  jsonPath:
+                                    description: JSONPath extracts the values from
+                                      each listed resource, e.g. `{.metadata.name}`
+                                    type: string
+                                  labelSelector:
+                                    description: |-
+                                      LabelSelector filters the listed resources, e.g. `tier=web`.
+                                      It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                    type: string
+                                  resource:
+                                    description: Resource is the kind of resource
+                                      to list
+                                    properties:
+                                      apiVersion:
+                                        description: APIVersion of the resource, e.g.
+                                          `v1` or `apps/v1`
+                                        type: string
+                                      kind:
+                                        description: Kind of the resource, e.g. `Namespace`
+                                          or `Deployment`. Secrets are not allowed.
+                                        type: string
+                                      namespace:
+                                        description: |-
+                                          Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                          It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                        type: string
+                                    required:
+                                    - apiVersion
+                                    - kind
+                                    type: object
+                                required:
+                                - jsonPath
+                                - resource
+                                type: object
                               globalName:
                                 description: |-
                                   GlobalName exports an output parameter to the global scope, making it available as
@@ -36747,6 +37116,46 @@ spec:
                                           type: string
                                         minItems: 1
                                         type: array
+                                      enumFrom:
+                                        description: |-
+                                          EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                          Cannot be used together with Enum.
+                                        properties:
+                                          jsonPath:
+                                            description: JSONPath extracts the values
+                                              from each listed resource, e.g. `{.metadata.name}`
+                                            type: string
+                                          labelSelector:
+                                            description: |-
+                                              LabelSelector filters the listed resources, e.g. `tier=web`.
+                                              It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                            type: string
+                                          resource:
+                                            description: Resource is the kind of resource
+                                              to list
+                                            properties:
+                                              apiVersion:
+                                                description: APIVersion of the resource,
+                                                  e.g. `v1` or `apps/v1`
+                                                type: string
+                                              kind:
+                                                description: Kind of the resource,
+                                                  e.g. `Namespace` or `Deployment`.
+                                                  Secrets are not allowed.
+                                                type: string
+                                              namespace:
+                                                description: |-
+                                                  Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                                  It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                                type: string
+                                            required:
+                                            - apiVersion
+                                            - kind
+                                            type: object
+                                        required:
+                                        - jsonPath
+                                        - resource
+                                        type: object
                                       globalName:
                                         description: |-
                                           GlobalName exports an output parameter to the global scope, making it available as
@@ -38131,6 +38540,47 @@ spec:
                                                 type: string
                                               minItems: 1
                                               type: array
+                                            enumFrom:
+                                              description: |-
+                                                EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+                                                Cannot be used together with Enum.
+                                              properties:
+                                                jsonPath:
+                                                  description: JSONPath extracts the
+                                                    values from each listed resource,
+                                                    e.g. `{.metadata.name}`
+                                                  type: string
+                                                labelSelector:
+                                                  description: |-
+                                                    LabelSelector filters the listed resources, e.g. `tier=web`.
+                                                    It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                                  type: string
+                                                resource:
+                                                  description: Resource is the kind
+                                                    of resource to list
+                                                  properties:
+                                                    apiVersion:
+                                                      description: APIVersion of the
+                                                        resource, e.g. `v1` or `apps/v1`
+                                                      type: string
+                                                    kind:
+                                                      description: Kind of the resource,
+                                                        e.g. `Namespace` or `Deployment`.
+                                                        Secrets are not allowed.
+                                                      type: string
+                                                    namespace:
+                                                      description: |-
+                                                        Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+                                                        It may reference other workflow parameters, so the list can depend on another parameter's value.
+                                                      type: string
+                                                  required:
+                                                  - apiVersion
+                                                  - kind
+                                                  type: object
+                                              required:
+                                              - jsonPath
+                                              - resource
+                                              type: object
                                             globalName:
                                               description: |-
                                                 GlobalName exports an output parameter to the global scope, making it available as
@@ -43867,6 +44317,28 @@ spec:
                                   type: string
                                 minItems: 1
                                 type: array
+                              enumFrom:
+                                properties:
+                                  jsonPath:
+                                    type: string
+                                  labelSelector:
+                                    type: string
+                                  resource:
+                                    properties:
+                                      apiVersion:
+                                        type: string
+                                      kind:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    required:
+                                    - apiVersion
+                                    - kind
+                                    type: object
+                                required:
+                                - jsonPath
+                                - resource
+                                type: object
                               globalName:
                                 type: string
                               name:
@@ -44549,6 +45021,28 @@ spec:
                                   type: string
                                 minItems: 1
                                 type: array
+                              enumFrom:
+                                properties:
+                                  jsonPath:
+                                    type: string
+                                  labelSelector:
+                                    type: string
+                                  resource:
+                                    properties:
+                                      apiVersion:
+                                        type: string
+                                      kind:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    required:
+                                    - apiVersion
+                                    - kind
+                                    type: object
+                                required:
+                                - jsonPath
+                                - resource
+                                type: object
                               globalName:
                                 type: string
                               name:
@@ -45250,6 +45744,28 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        enumFrom:
+                          properties:
+                            jsonPath:
+                              type: string
+                            labelSelector:
+                              type: string
+                            resource:
+                              properties:
+                                apiVersion:
+                                  type: string
+                                kind:
+                                  type: string
+                                namespace:
+                                  type: string
+                              required:
+                              - apiVersion
+                              - kind
+                              type: object
+                          required:
+                          - jsonPath
+                          - resource
+                          type: object
                         globalName:
                           type: string
                         name:
