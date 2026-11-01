@@ -1,6 +1,8 @@
 # Key-Only Artifacts
 
 A key-only artifact is an input or output artifact where you only specify the key, omitting the bucket, secrets etc. When these are omitted, the bucket/secrets from the configured artifact repository is used.
+For S3, the fields you set on the artifact, such as `bucket`, are kept, and only the missing ones are taken from the artifact repository.
+A boolean set to `false` on the artifact, such as `useSDKCreds`, does not override `true` from the artifact repository.
 
 This allows you to move the configuration of the artifact repository out of the workflow specification.
 

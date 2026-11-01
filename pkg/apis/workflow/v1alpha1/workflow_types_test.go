@@ -427,6 +427,17 @@ func TestArtifactLocation_Relocate(t *testing.T) {
 		assert.Equal(t, "my-bucket", l.S3.Bucket, "bucket copied from argument")
 		assert.Equal(t, "my-key", l.S3.Key, "key is unchanged")
 	})
+	t.Run("PartialS3Location", func(t *testing.T) {
+		repo := &ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Endpoint: "my-endpoint", Bucket: "repo-bucket", Region: "my-region", UseSDKCreds: true}, Key: "other-key"}}
+		l := &ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket"}, Key: "my-key"}}
+		require.NoError(t, l.Relocate(repo))
+		assert.Equal(t, "my-endpoint", l.S3.Endpoint, "endpoint copied from argument")
+		assert.Equal(t, "my-region", l.S3.Region, "region copied from argument")
+		assert.True(t, l.S3.UseSDKCreds, "credentials copied from argument")
+		assert.Equal(t, "my-bucket", l.S3.Bucket, "bucket is unchanged")
+		assert.Equal(t, "my-key", l.S3.Key, "key is unchanged")
+		assert.Equal(t, "repo-bucket", repo.S3.Bucket, "argument is unchanged")
+	})
 }
 
 func TestArtifactLocation_Get(t *testing.T) {
