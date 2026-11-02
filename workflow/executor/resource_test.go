@@ -19,7 +19,6 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
@@ -331,12 +330,12 @@ func Test_saveResourceParameters(t *testing.T) {
 	require.NoError(t, err)
 	newExecutor := func(params ...wfv1.Parameter) *WorkflowExecutor {
 		return &WorkflowExecutor{
+			RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
 			Process: &Process{
-				PodName:         fakePodName,
-				Namespace:       fakeNamespace,
-				ClientSet:       fake.NewClientset(),
-				RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
-				Tracing:         tracingObj,
+				PodName:   fakePodName,
+				Namespace: fakeNamespace,
+				ClientSet: fake.NewClientset(),
+				Tracing:   tracingObj,
 			},
 			nodeID:   fakeNodeID,
 			Template: wfv1.Template{Outputs: wfv1.Outputs{Parameters: params}},
@@ -514,25 +513,25 @@ func Test_saveResourceParameters(t *testing.T) {
 func TestSaveResourceParameters(t *testing.T) {
 	tracingObj, err := tracing.New(logging.TestContext(t.Context()), `argoexec`)
 	require.NoError(t, err)
-	newExecutor := func(params ...wfv1.Parameter) (*WorkflowExecutor, *argofake.Clientset) {
-		argoClientset := argofake.NewClientset()
+	newExecutor := func(params ...wfv1.Parameter) (*WorkflowExecutor, *reportingSink) {
+		sink := &reportingSink{}
 		we := &WorkflowExecutor{
+			RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
 			Process: &Process{
-				PodName:          fakePodName,
-				Namespace:        fakeNamespace,
-				ClientSet:        fake.NewClientset(),
-				RuntimeExecutor:  &mocks.ContainerRuntimeExecutor{},
-				Tracing:          tracingObj,
-				taskResultClient: argoClientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
+				PodName:   fakePodName,
+				Namespace: fakeNamespace,
+				ClientSet: fake.NewClientset(),
+				Tracing:   tracingObj,
 			},
+			sink:     sink,
 			nodeID:   fakeNodeID,
 			Template: wfv1.Template{Outputs: wfv1.Outputs{Parameters: params}},
 		}
-		return we, argoClientset
+		return we, sink
 	}
 
 	t.Run("reports the resolved output parameters", func(t *testing.T) {
-		we, argoClientset := newExecutor(wfv1.Parameter{
+		we, sink := newExecutor(wfv1.Parameter{
 			Name:      "name",
 			ValueFrom: &wfv1.ValueFrom{JSONPath: "{.metadata.name}"},
 		})
@@ -546,12 +545,13 @@ func TestSaveResourceParameters(t *testing.T) {
 
 		require.Len(t, calls, 1)
 		assert.Equal(t, "my-pod", we.capturedOutputs().Parameters[0].Value.String())
-		assert.NotEmpty(t, argoClientset.Actions(), "the resolved parameters must be reported")
+		require.Len(t, sink.reports, 1, "the resolved parameters must be reported")
+		assert.Equal(t, "my-pod", sink.reports[0].Outputs.Parameters[0].Value.String())
 	})
 
 	// A failure to resolve the parameters must propagate and must not report a partial result.
 	t.Run("resolution failure propagates and reports nothing", func(t *testing.T) {
-		we, argoClientset := newExecutor(wfv1.Parameter{
+		we, sink := newExecutor(wfv1.Parameter{
 			Name:      "name",
 			ValueFrom: &wfv1.ValueFrom{JSONPath: "{.metadata.name}"},
 		})
@@ -563,17 +563,28 @@ func TestSaveResourceParameters(t *testing.T) {
 		err := we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boom")
-		assert.Empty(t, argoClientset.Actions(), "nothing should be reported when resolution failed")
+		assert.Empty(t, sink.reports, "nothing should be reported when resolution failed")
 	})
 
 	// Must keep short-circuiting before ReportOutputs when the template has no output parameters,
 	// otherwise every resource template would start writing a task result.
 	t.Run("no output parameters reports nothing", func(t *testing.T) {
-		we, argoClientset := newExecutor()
+		we, sink := newExecutor()
 		ctx := logging.TestContext(t.Context())
 		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
-		assert.Empty(t, argoClientset.Actions(), "no task result should be written when there are no output parameters")
+		assert.Empty(t, sink.reports, "no task result should be written when there are no output parameters")
 	})
+}
+
+// reportingSink records what is reported and ignores everything else.
+type reportingSink struct {
+	recordingSink
+	reports []wfv1.NodeResult
+}
+
+func (s *reportingSink) Report(_ context.Context, r wfv1.NodeResult) error {
+	s.reports = append(s.reports, r)
+	return nil
 }
 
 func Test_runKubectl(t *testing.T) {
