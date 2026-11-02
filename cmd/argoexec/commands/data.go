@@ -41,10 +41,9 @@ func execData(ctx context.Context) error {
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	//nolint:contextcheck
 	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
-	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
 	errHandler := wfExecutor.HandleError(bgCtx)
 	defer errHandler()
-	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
+	defer wfExecutor.FinalizeOutput(bgCtx) // Writes the outputs with LabelKeyReportOutputsCompleted set to true.
 
 	err := wfExecutor.Data(ctx)
 	if err != nil {
