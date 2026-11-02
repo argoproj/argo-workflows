@@ -267,6 +267,55 @@ func Test_createAgentPod_templateDefaults(t *testing.T) {
 	}
 }
 
+// A securityContext from templateDefaults must not cost the agent pod its
+// hardening floor. applySchedulingConstraints assigns the supplied context
+// outright, so before keepAgentPodSecurityFloor a default that set only fsGroup
+// took RuntimeDefault away from every executor plugin sidecar in the pod --
+// a sidecar that declares no seccomp profile of its own inherits the pod's.
+func Test_createAgentPod_securityContextKeepsTheFloor(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		SecurityContext: &apiv1.PodSecurityContext{FSGroup: new(int64(2000))},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+	require.NotNil(t, pod.Spec.SecurityContext)
+
+	assert.Equal(t, int64(2000), *pod.Spec.SecurityContext.FSGroup,
+		"the supplied field must still be applied")
+	require.NotNil(t, pod.Spec.SecurityContext.SeccompProfile,
+		"the agent pod must keep a seccomp profile its plugin sidecars inherit")
+	assert.Equal(t, apiv1.SeccompProfileTypeRuntimeDefault, pod.Spec.SecurityContext.SeccompProfile.Type)
+	require.NotNil(t, pod.Spec.SecurityContext.RunAsNonRoot)
+	assert.True(t, *pod.Spec.SecurityContext.RunAsNonRoot)
+}
+
+// The floor fills nil fields, it does not overrule a decision. Someone who
+// explicitly asks for the agent pod to run as root has said so, and getting
+// RunAsNonRoot back silently would be worse than refusing outright.
+func Test_keepAgentPodSecurityFloor_doesNotOverrideAnExplicitValue(t *testing.T) {
+	spec := &apiv1.PodSpec{SecurityContext: &apiv1.PodSecurityContext{
+		RunAsNonRoot:   new(false),
+		SeccompProfile: &apiv1.SeccompProfile{Type: apiv1.SeccompProfileTypeUnconfined},
+	}}
+
+	keepAgentPodSecurityFloor(spec)
+
+	require.NotNil(t, spec.SecurityContext.RunAsNonRoot)
+	assert.False(t, *spec.SecurityContext.RunAsNonRoot, "an explicit false must survive")
+	assert.Equal(t, apiv1.SeccompProfileTypeUnconfined, spec.SecurityContext.SeccompProfile.Type,
+		"an explicit Unconfined must survive")
+	require.NotNil(t, spec.SecurityContext.RunAsUser, "the unset field still gets the floor")
+	assert.Equal(t, int64(8737), *spec.SecurityContext.RunAsUser)
+}
+
 func TestDisableAgentPodCreation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/disable-agent-pod-creation.yaml")

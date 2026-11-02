@@ -23,6 +23,41 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
+// keepAgentPodSecurityFloor fills in whatever the applied pod security context
+// left unset from MinimalPodSC.
+//
+// applySchedulingConstraints assigns the supplied securityContext outright:
+//
+//	spec.SecurityContext = tmpl.SecurityContext
+//
+// which is right for a workload pod, because it has no default to lose --
+// MinimalPodSC is used by the agent pod and the artifact-GC pod and nowhere
+// else. The agent pod does have one, and it matters: it runs executor plugin
+// sidecars, and a container that declares no seccomp profile of its own
+// inherits the pod's. A securityContext that sets only `fsGroup` would
+// therefore take `RuntimeDefault` away from every plugin sidecar in the pod.
+//
+// So supplied fields win and unset ones fall back to the floor. A field that is
+// set keeps its value, `runAsNonRoot: false` included: only nil is filled in.
+// podSpecPatch runs after this and still overrides everything, which is the
+// escape hatch for anyone who needs the agent pod unhardened.
+func keepAgentPodSecurityFloor(spec *apiv1.PodSpec) {
+	minimal := common.MinimalPodSC()
+	if spec.SecurityContext == nil {
+		spec.SecurityContext = minimal
+		return
+	}
+	if spec.SecurityContext.RunAsNonRoot == nil {
+		spec.SecurityContext.RunAsNonRoot = minimal.RunAsNonRoot
+	}
+	if spec.SecurityContext.RunAsUser == nil {
+		spec.SecurityContext.RunAsUser = minimal.RunAsUser
+	}
+	if spec.SecurityContext.SeccompProfile == nil {
+		spec.SecurityContext.SeccompProfile = minimal.SeccompProfile
+	}
+}
+
 func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
 }
@@ -241,6 +276,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to apply templateDefaults to the agent pod: %w", err)
 	}
 	applySchedulingConstraints(&pod.Spec, woc.execWf.Spec.DeepCopy(), tmpl, nil)
+	keepAgentPodSecurityFloor(&pod.Spec)
 	applyPodMetadata(&pod.ObjectMeta, &woc.execWf.Spec, tmpl)
 	applyDNSConfig(&pod.Spec, &woc.execWf.Spec)
 
