@@ -209,11 +209,9 @@ func TestMergeToDoesNotChangeThePatch(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := range workers {
 		targets[i] = wfv1.MustUnmarshalWorkflow("@testdata/merge/base-nil.yaml")
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			errs[i] = MergeTo(patchWf, targets[i])
-		}()
+		})
 	}
 	wg.Wait()
 
