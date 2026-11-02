@@ -129,6 +129,83 @@ func TestTemplateTimeoutDeadlines(t *testing.T) {
 	})
 }
 
+// TestArtifactLocationSecrets checks the secrets each artifact location's
+// driver reads, which both a pod's secret volumes and a pool worker's
+// credentials come from.
+func TestArtifactLocationSecrets(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		location *wfv1.ArtifactLocation
+		want     []string
+	}{
+		{name: "none"},
+		{
+			name: "S3",
+			location: &wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{S3Bucket: wfv1.S3Bucket{
+				AccessKeySecret:    secretRef("s3", "access"),
+				SecretKeySecret:    secretRef("s3", "secret"),
+				SessionTokenSecret: secretRef("s3", "session"),
+				CASecret:           secretRef("s3", "ca"),
+				EncryptionOptions:  &wfv1.S3EncryptionOptions{EnableEncryption: true, ServerSideCustomerKeySecret: secretRef("s3", "sse-c")},
+			}}},
+			want: []string{"s3/access", "s3/secret", "s3/session", "s3/sse-c", "s3/ca"},
+		},
+		{
+			name: "S3 without encryption",
+			location: &wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{S3Bucket: wfv1.S3Bucket{
+				CASecret:          secretRef("s3", "ca"),
+				EncryptionOptions: &wfv1.S3EncryptionOptions{ServerSideCustomerKeySecret: secretRef("s3", "sse-c")},
+			}}},
+			want: []string{"s3/ca"},
+		},
+		{
+			name: "Artifactory",
+			location: &wfv1.ArtifactLocation{Artifactory: &wfv1.ArtifactoryArtifact{ArtifactoryAuth: wfv1.ArtifactoryAuth{
+				UsernameSecret: secretRef("artifactory", "user"),
+				PasswordSecret: secretRef("artifactory", "password"),
+			}}},
+			want: []string{"artifactory/user", "artifactory/password"},
+		},
+		{
+			name: "HDFS",
+			location: &wfv1.ArtifactLocation{HDFS: &wfv1.HDFSArtifact{HDFSConfig: wfv1.HDFSConfig{HDFSKrbConfig: wfv1.HDFSKrbConfig{
+				KrbCCacheSecret: secretRef("hdfs", "ccache"),
+				KrbKeytabSecret: secretRef("hdfs", "keytab"),
+			}}}},
+			want: []string{"hdfs/ccache", "hdfs/keytab"},
+		},
+		{
+			name: "HTTP",
+			location: &wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{Auth: &wfv1.HTTPAuth{
+				BasicAuth:  wfv1.BasicAuth{UsernameSecret: secretRef("http", "user"), PasswordSecret: secretRef("http", "password")},
+				ClientCert: wfv1.ClientCertAuth{ClientCertSecret: secretRef("http", "cert"), ClientKeySecret: secretRef("http", "key")},
+				OAuth2: wfv1.OAuth2Auth{
+					ClientIDSecret:     secretRef("http", "client-id"),
+					ClientSecretSecret: secretRef("http", "client-secret"),
+					TokenURLSecret:     secretRef("http", "token-url"),
+				},
+			}}},
+			want: []string{"http/user", "http/password", "http/cert", "http/key", "http/client-id", "http/client-secret", "http/token-url"},
+		},
+		{
+			name:     "HTTP OAuth2",
+			location: &wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{Auth: &wfv1.HTTPAuth{OAuth2: wfv1.OAuth2Auth{ClientIDSecret: secretRef("http", "client-id")}}}},
+			want:     []string{"http/client-id"},
+		},
+		{name: "HTTP without auth", location: &wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{}}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var got []string
+			for _, s := range artifactLocationSecrets(tt.location) {
+				if s != nil {
+					got = append(got, s.Name+"/"+s.Key)
+				}
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestApplyTemplateDeadline(t *testing.T) {
 	inAMinute := deriveTestNow.Add(time.Minute)
 	inTwoSeconds := deriveTestNow.Add(2 * time.Second)

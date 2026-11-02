@@ -480,6 +480,60 @@ func populateAllPluginArtifactTimeouts(tmpl *wfv1.Template, cfg *config.Config) 
 	}
 }
 
+// templateArtifactLocations lists the artifact locations whose secrets a task's
+// executor reads: the template's archive location, then its output and input
+// artifacts, then its data source artifact. Entries may be nil.
+func templateArtifactLocations(tmpl *wfv1.Template) []*wfv1.ArtifactLocation {
+	locations := []*wfv1.ArtifactLocation{tmpl.ArchiveLocation}
+	for i := range tmpl.Outputs.Artifacts {
+		locations = append(locations, &tmpl.Outputs.Artifacts[i].ArtifactLocation)
+	}
+	for i := range tmpl.Inputs.Artifacts {
+		locations = append(locations, &tmpl.Inputs.Artifacts[i].ArtifactLocation)
+	}
+	if tmpl.Data != nil {
+		if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
+			locations = append(locations, &art.ArtifactLocation)
+		}
+	}
+	return locations
+}
+
+// artifactLocationSecrets returns the secrets an artifact location's driver
+// reads. Entries may be nil or incomplete; callers skip those.
+func artifactLocationSecrets(l *wfv1.ArtifactLocation) []*apiv1.SecretKeySelector {
+	switch {
+	case l == nil:
+		return nil
+	case l.S3 != nil:
+		secrets := []*apiv1.SecretKeySelector{l.S3.AccessKeySecret, l.S3.SecretKeySecret, l.S3.SessionTokenSecret}
+		if l.S3.EncryptionOptions != nil && l.S3.EncryptionOptions.EnableEncryption {
+			secrets = append(secrets, l.S3.EncryptionOptions.ServerSideCustomerKeySecret)
+		}
+		return append(secrets, l.S3.CASecret)
+	case l.Git != nil:
+		return []*apiv1.SecretKeySelector{l.Git.UsernameSecret, l.Git.PasswordSecret, l.Git.SSHPrivateKeySecret}
+	case l.Artifactory != nil:
+		return []*apiv1.SecretKeySelector{l.Artifactory.UsernameSecret, l.Artifactory.PasswordSecret}
+	case l.HDFS != nil:
+		return []*apiv1.SecretKeySelector{l.HDFS.KrbCCacheSecret, l.HDFS.KrbKeytabSecret}
+	case l.OSS != nil:
+		return []*apiv1.SecretKeySelector{l.OSS.AccessKeySecret, l.OSS.SecretKeySecret}
+	case l.GCS != nil:
+		return []*apiv1.SecretKeySelector{l.GCS.ServiceAccountKeySecret}
+	case l.HTTP != nil && l.HTTP.Auth != nil:
+		auth := l.HTTP.Auth
+		return []*apiv1.SecretKeySelector{
+			auth.BasicAuth.UsernameSecret, auth.BasicAuth.PasswordSecret,
+			auth.ClientCert.ClientCertSecret, auth.ClientCert.ClientKeySecret,
+			auth.OAuth2.ClientIDSecret, auth.OAuth2.ClientSecretSecret, auth.OAuth2.TokenURLSecret,
+		}
+	case l.Azure != nil:
+		return []*apiv1.SecretKeySelector{l.Azure.AccountKeySecret}
+	}
+	return nil
+}
+
 // executorTemplate is the template as the executor receives it (ARGO_TEMPLATE),
 // simplified by clearing the already-substituted `inputs.parameters` and
 // preserving `inputs.artifacts`.
@@ -565,10 +619,7 @@ func buildExecContainer(name string, tmpl *wfv1.Template, cfg execContainerConfi
 		}
 	}
 	if cfg.kubeConfig != nil {
-		path := cfg.kubeConfig.MountPath
-		if path == "" {
-			path = common.KubeConfigDefaultMountPath
-		}
+		path := kubeConfigMountPath(cfg.kubeConfig)
 		name := kubeConfigVolumeName(cfg.kubeConfig)
 		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      name,
