@@ -1142,6 +1142,15 @@ func kubeConfigVolumeName(kc *config.KubeConfig) string {
 	return common.KubeConfigDefaultVolumeName
 }
 
+// kubeConfigMountPath returns the configured kubeconfig mount path, or the
+// default when none is set.
+func kubeConfigMountPath(kc *config.KubeConfig) string {
+	if kc.MountPath != "" {
+		return kc.MountPath
+	}
+	return common.KubeConfigDefaultMountPath
+}
+
 // newExecContainer builds an argoexec container from the live controller and
 // workflow configuration (see wfOperationCtx.execContainerConfig).
 func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
@@ -1755,33 +1764,9 @@ func createSecretVolumesAndMounts(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.
 	allVolumesMap := make(map[string]apiv1.Volume)
 	uniqueKeyMap := make(map[string]bool)
 
-	createArchiveLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
-
-	for _, art := range tmpl.Outputs.Artifacts {
-		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
-	}
-	for _, art := range tmpl.Inputs.Artifacts {
-		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
-	}
-
-	if tmpl.Data != nil {
-		if art, needed := tmpl.Data.Source.GetArtifactIfNeeded(); needed {
-			createSecretVolume(allVolumesMap, *art, uniqueKeyMap)
-		}
-	}
+	createSecretVolumesFromArtifactLocations(allVolumesMap, templateArtifactLocations(tmpl), uniqueKeyMap)
 
 	return secretVolumesAndMountsFromMap(allVolumesMap)
-}
-
-func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
-	if tmpl.ArchiveLocation == nil {
-		return
-	}
-	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{tmpl.ArchiveLocation}, uniqueKeyMap)
-}
-
-func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
-	createSecretVolumesFromArtifactLocations(volMap, []*wfv1.ArtifactLocation{&art.ArtifactLocation}, keyMap)
 }
 
 func createSecretVolumesAndMountsFromArtifactLocations(artifactLocations []*wfv1.ArtifactLocation) ([]apiv1.Volume, []apiv1.VolumeMount) {
@@ -1795,48 +1780,8 @@ func createSecretVolumesAndMountsFromArtifactLocations(artifactLocations []*wfv1
 
 func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, artifactLocations []*wfv1.ArtifactLocation, keyMap map[string]bool) {
 	for _, artifactLocation := range artifactLocations {
-		if artifactLocation == nil {
-			continue
-		}
-		switch {
-		case artifactLocation.S3 != nil:
-			createSecretVal(volMap, artifactLocation.S3.AccessKeySecret, keyMap)
-			createSecretVal(volMap, artifactLocation.S3.SecretKeySecret, keyMap)
-			if artifactLocation.S3.SessionTokenSecret != nil {
-				createSecretVal(volMap, artifactLocation.S3.SessionTokenSecret, keyMap)
-			}
-			sseCUsed := artifactLocation.S3.EncryptionOptions != nil && artifactLocation.S3.EncryptionOptions.EnableEncryption && artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret != nil
-			if sseCUsed {
-				createSecretVal(volMap, artifactLocation.S3.EncryptionOptions.ServerSideCustomerKeySecret, keyMap)
-			}
-			if artifactLocation.S3.CASecret != nil {
-				createSecretVal(volMap, artifactLocation.S3.CASecret, keyMap)
-			}
-		case artifactLocation.Git != nil:
-			createSecretVal(volMap, artifactLocation.Git.UsernameSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.Git.PasswordSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.Git.SSHPrivateKeySecret, keyMap)
-		case artifactLocation.Artifactory != nil:
-			createSecretVal(volMap, artifactLocation.Artifactory.UsernameSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.Artifactory.PasswordSecret, keyMap)
-		case artifactLocation.HDFS != nil:
-			createSecretVal(volMap, artifactLocation.HDFS.KrbCCacheSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HDFS.KrbKeytabSecret, keyMap)
-		case artifactLocation.OSS != nil:
-			createSecretVal(volMap, artifactLocation.OSS.AccessKeySecret, keyMap)
-			createSecretVal(volMap, artifactLocation.OSS.SecretKeySecret, keyMap)
-		case artifactLocation.GCS != nil:
-			createSecretVal(volMap, artifactLocation.GCS.ServiceAccountKeySecret, keyMap)
-		case artifactLocation.HTTP != nil && artifactLocation.HTTP.Auth != nil:
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.BasicAuth.UsernameSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.BasicAuth.PasswordSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.ClientCert.ClientCertSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.ClientCert.ClientKeySecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
-			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
-		case artifactLocation.Azure != nil:
-			createSecretVal(volMap, artifactLocation.Azure.AccountKeySecret, keyMap)
+		for _, secret := range artifactLocationSecrets(artifactLocation) {
+			createSecretVal(volMap, secret, keyMap)
 		}
 	}
 }
