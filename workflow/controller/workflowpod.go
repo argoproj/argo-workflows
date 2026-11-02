@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/pool"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
@@ -1203,17 +1204,10 @@ func (pb *podBuilder) addVolumeReferences(ctx context.Context, pod *apiv1.Pod, v
 
 	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
 	getVolByName := func(name string) *apiv1.Volume {
-		// Find a volume from template-local volumes.
-		for _, vol := range tmpl.Volumes {
-			if vol.Name == name {
-				return &vol
-			}
-		}
-		// Find a volume from global volumes.
-		for _, vol := range vols {
-			if vol.Name == name {
-				return &vol
-			}
+		// Template-local volumes first, then global volumes, as a pooled
+		// template's mounts resolve.
+		if vol, _ := pool.MountVolume(tmpl, vols, name); vol != nil {
+			return vol
 		}
 		// Find a volume from pvcs.
 		for _, pvc := range pvcs {

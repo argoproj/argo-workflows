@@ -207,6 +207,9 @@ func TestFoldBoundarySchedulingConstraints(t *testing.T) {
 		{"boundary", &wfv1.Template{}, boundary},
 		{"workflow", &wfv1.Template{}, &wfv1.Template{}},
 		{"no boundary", &wfv1.Template{}, nil},
+		// Each constraint is picked on its own: the template's node selector,
+		// the boundary's tolerations and the workflow's affinity.
+		{"mixed", &wfv1.Template{NodeSelector: own.NodeSelector}, &wfv1.Template{Tolerations: boundary.Tolerations}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			var want, got apiv1.PodSpec

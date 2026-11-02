@@ -71,7 +71,8 @@ func buildPoolSpec(ctx context.Context, in *podBuilderInputs, x poolSpecExtras) 
 		TerminationGracePeriodSeconds: in.config.HotWorkers.GetTerminationGracePeriodSeconds(),
 		ReleaseReserveSeconds:         in.config.HotWorkers.GetReleaseReserveSeconds(),
 	}
-	// Both are checked by validation once the template is substituted.
+	// Validation checks both as written; once dispatch is wired the
+	// controller validates the substituted template before building its pool.
 	if r, ok, err := pool.InitialReplicas.Value(tmpl.Pool.InitialReplicas); err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "pool.%s", err)
 	} else if ok {
@@ -88,8 +89,8 @@ func buildPoolSpec(ctx context.Context, in *podBuilderInputs, x poolSpecExtras) 
 		return nil, err
 	}
 	// After the copy, which names any other template type's field as rejected.
-	if t := tmpl.GetType(); t != wfv1.TemplateTypeContainer && t != wfv1.TemplateTypeScript {
-		return nil, errors.Errorf(errors.CodeBadRequest, "only container and script templates can be pooled, not %s", t)
+	if !pool.Pooled(tmpl) {
+		return nil, errors.Errorf(errors.CodeBadRequest, "only container and script templates can be pooled, not %s", tmpl.GetType())
 	}
 	if spec.WorkflowSpec, err = pool.HashedWorkflowSpec(wfSpec); err != nil {
 		return nil, err
@@ -215,16 +216,16 @@ func poolArtifactPlugins(ctx context.Context, tmpl *wfv1.Template, in *podBuilde
 		names = append(names, tmpl.ArchiveLocation.Plugin.Name)
 	}
 	slices.Sort(names)
-	names = slices.Compact(names)
-	var plugins []wfv1.PoolArtifactPlugin
-	for _, name := range names {
-		if name == "" {
-			continue
-		}
-		driver, err := in.config.GetArtifactDriver(name)
-		if err != nil {
-			return nil, err
-		}
+	names = slices.DeleteFunc(slices.Compact(names), func(name wfv1.ArtifactPluginName) bool { return name == "" })
+	if len(names) == 0 {
+		return nil, nil
+	}
+	drivers, err := in.config.GetArtifactDrivers(names)
+	if err != nil {
+		return nil, err
+	}
+	plugins := make([]wfv1.PoolArtifactPlugin, 0, len(drivers))
+	for _, driver := range drivers {
 		plugins = append(plugins, wfv1.PoolArtifactPlugin{Name: driver.Name, Image: driver.Image, ConnectionTimeoutSeconds: driver.ConnectionTimeoutSeconds})
 	}
 	return plugins, nil

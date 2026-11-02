@@ -8,11 +8,11 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-// MountVolume resolves a mount of tmpl's called name as a pod's are (see
-// addVolumeReferences in the controller): to the template's own volume of
-// that name, or else to the one of volumes, the workflow's, own saying
-// which. It is nil for neither, which for a pod would be one of the
-// workflow's volumeClaimTemplates.
+// MountVolume resolves a mount of tmpl's called name, for pods
+// (addVolumeReferences in the controller) and pooled templates alike: to the
+// template's own volume of that name, or else to the one of volumes, the
+// workflow's, own saying which. It is nil for neither, which for a pod would
+// be one of the workflow's volumeClaimTemplates.
 func MountVolume(tmpl *wfv1.Template, volumes []apiv1.Volume, name string) (volume *apiv1.Volume, own bool) {
 	byName := func(v apiv1.Volume) bool { return v.Name == name }
 	if i := slices.IndexFunc(tmpl.Volumes, byName); i >= 0 {
