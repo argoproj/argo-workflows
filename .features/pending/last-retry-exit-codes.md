@@ -1,4 +1,4 @@
-Description: Add lastRetry.exitCodes variable exposing all previous attempt exit codes
+Description: Add lastRetry.exitCodes variable exposing previous attempt exit codes
 Authors: [Liron Shabtai](https://github.com/lirons-legit)
 Component: General
 Issues: 12849
