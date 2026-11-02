@@ -39,6 +39,148 @@ spec:
             type: object
           spec:
             properties:
+              dispatch:
+                properties:
+                  activeDeadlineSeconds:
+                    format: int64
+                    type: integer
+                  command:
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  deadline:
+                    format: date-time
+                    type: string
+                  includeScriptOutput:
+                    type: boolean
+                  inputArtifactPlugins:
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  progressFileTickDuration:
+                    type: string
+                  progressPatchTickDuration:
+                    type: string
+                  taskName:
+                    type: string
+                  traceContext:
+                    additionalProperties:
+                      type: string
+                    type: object
+                required:
+                - taskName
+                type: object
+              pool:
+                properties:
+                  artifactPlugins:
+                    items:
+                      properties:
+                        command:
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        connectionTimeoutSeconds:
+                          format: int32
+                          type: integer
+                        image:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - image
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  artifactRepository:
+                    x-kubernetes-preserve-unknown-fields: true
+                  artifactSecrets:
+                    items:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          default: ""
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - key
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  automountServiceAccountToken:
+                    type: boolean
+                  controllerVersion:
+                    type: string
+                  executor:
+                    x-kubernetes-preserve-unknown-fields: true
+                  executorImage:
+                    type: string
+                  executorImagePullPolicy:
+                    type: string
+                  executorLogArgs:
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  executorServiceAccountTokenSecretName:
+                    type: string
+                  initialReplicas:
+                    format: int32
+                    type: integer
+                  initlessPod:
+                    type: boolean
+                  instanceID:
+                    type: string
+                  kubeConfig:
+                    properties:
+                      mountPath:
+                        type: string
+                      secretKey:
+                        type: string
+                      secretName:
+                        type: string
+                      volumeName:
+                        type: string
+                    required:
+                    - mountPath
+                    - secretKey
+                    - secretName
+                    - volumeName
+                    type: object
+                  mainContainer:
+                    x-kubernetes-preserve-unknown-fields: true
+                  name:
+                    type: string
+                  releaseReserveSeconds:
+                    format: int64
+                    type: integer
+                  retentionSeconds:
+                    format: int64
+                    type: integer
+                  serviceAccountName:
+                    type: string
+                  template:
+                    x-kubernetes-preserve-unknown-fields: true
+                  terminationGracePeriodSeconds:
+                    format: int64
+                    type: integer
+                  workflowSpec:
+                    x-kubernetes-preserve-unknown-fields: true
+                required:
+                - controllerVersion
+                - executorImage
+                - initialReplicas
+                - name
+                - releaseReserveSeconds
+                - retentionSeconds
+                - terminationGracePeriodSeconds
+                type: object
               tasks:
                 additionalProperties:
                   properties:
@@ -6776,6 +6918,19 @@ spec:
                       type: object
                     podSpecPatch:
                       type: string
+                    pool:
+                      properties:
+                        initialReplicas:
+                          format: int32
+                          minimum: 1
+                          type: integer
+                        name:
+                          type: string
+                        retentionSeconds:
+                          format: int64
+                          minimum: 0
+                          type: integer
+                      type: object
                     priorityClassName:
                       type: string
                     resource:
