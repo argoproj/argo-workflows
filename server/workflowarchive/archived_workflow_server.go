@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 
 	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
@@ -33,11 +34,11 @@ type archivedWorkflowServer struct {
 	wfArchive             sqldb.WorkflowArchive
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
-	wfDefaults            *wfv1.Workflow
+	wfDefaults            namespacedefaults.Func
 }
 
 // NewWorkflowArchiveServer returns a new archivedWorkflowServer
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfDefaults *wfv1.Workflow) workflowarchivepkg.ArchivedWorkflowServiceServer {
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfDefaults namespacedefaults.Func) workflowarchivepkg.ArchivedWorkflowServiceServer {
 	return &archivedWorkflowServer{wfArchive, offloadNodeStatusRepo, hydrator.New(offloadNodeStatusRepo), wfDefaults}
 }
 
@@ -234,7 +235,12 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 	}
 	creator.LabelCreator(ctx, newWF)
 
-	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, w.wfDefaults, &wfv1.SubmitOpts{})
+	wfDefaults, err := namespacedefaults.Resolve(ctx, w.wfDefaults, req.Namespace)
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	created, err := util.SubmitWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, wfDefaults, &wfv1.SubmitOpts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
