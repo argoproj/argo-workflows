@@ -36,12 +36,8 @@ func (d panicky) Run(ctx context.Context, task maindriver.Task, stager maindrive
 
 // Several tasks run one after another in one process through one harness:
 // each gets its own executor, paths and result, a failure (exit code,
-// deadline, panic) is attributed to its own task, and the next task still
-// runs.
-//
-// Known gap (by design for now): user paths are not cleaned between tasks,
-// so a stale file at a declared output path from an earlier task could be
-// read as a later task's optional output.
+// deadline, panic) is attributed to its own task, the next task still
+// runs, and no task can report an earlier task's output as its own.
 func TestWorkerHarness_RunsTasksInOneProcess(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	results := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults("ns")
@@ -83,6 +79,11 @@ func TestWorkerHarness_RunsTasksInOneProcess(t *testing.T) {
 			Container: &apiv1.Container{Command: []string{"cat", input}},
 			Inputs:    wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: input, ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "hello"}}}}},
 		}, true),
+		// Declares n1's output path but never writes it.
+		task("n6", wfv1.Template{
+			Container: sh("true"),
+			Outputs:   wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", ValueFrom: &wfv1.ValueFrom{Path: param}}}},
+		}, false),
 	}
 	// n4's deadline starts when it is taken from the source, so it expires
 	// while n4 runs, not before.
@@ -132,6 +133,15 @@ func TestWorkerHarness_RunsTasksInOneProcess(t *testing.T) {
 	require.NotNil(t, r5.Outputs)
 	require.NotNil(t, r5.Outputs.Result)
 	assert.Equal(t, "hello", *r5.Outputs.Result)
+
+	r6 := get("n6")
+	assert.Equal(t, wfv1.NodeFailed, r6.Phase, "n6's required output was never written")
+	if r6.Outputs != nil {
+		for _, p := range r6.Outputs.Parameters {
+			assert.Nil(t, p.Value, "n6 must not report n1's output")
+		}
+	}
+	assert.NoFileExists(t, param)
 
 	for _, task := range tasks {
 		assert.NoDirExists(t, task.Paths.Root)

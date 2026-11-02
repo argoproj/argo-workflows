@@ -213,6 +213,66 @@ func TestCheckWorker_InputArtifactPaths(t *testing.T) {
 	require.NoError(t, checkWorker.Run(ctx, we))
 }
 
+// Main's outputs are staged from whatever is at their paths, so a worker
+// refuses a task whose output path already holds something: it would be
+// reported as this task's output even if main never wrote it.
+func TestCheckWorker_OutputPaths(t *testing.T) {
+	userDir := t.TempDir()
+	tmplWithOutput := func(path string) wfv1.Template {
+		return wfv1.Template{
+			Container: &apiv1.Container{Command: []string{"true"}},
+			Outputs:   wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", ValueFrom: &wfv1.ValueFrom{Path: path}}}},
+		}
+	}
+	stale := filepath.Join(userDir, "stale")
+	require.NoError(t, os.WriteFile(stale, []byte("from an earlier task"), 0o644))
+	ctx, we, _ := newWorkerExecutor(t, tmplWithOutput(stale), time.Time{})
+	err := checkWorker.Run(ctx, we)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "output path "+stale+" already exists")
+
+	ctx, we, _ = newWorkerExecutor(t, tmplWithOutput(filepath.Join(userDir, "new")), time.Time{})
+	require.NoError(t, checkWorker.Run(ctx, we))
+
+	// An output at an input's path may find our own link there, as the
+	// input itself may.
+	ours := filepath.Join(userDir, "ours")
+	tmpl := tmplWithOutput(ours)
+	tmpl.Inputs = wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: ours}}}
+	ctx, we, _ = newWorkerExecutor(t, tmpl, time.Time{})
+	require.NoError(t, os.Symlink(filepath.Join(we.paths.InputArtifacts, "in"), ours))
+	require.NoError(t, checkWorker.Run(ctx, we))
+}
+
+// Cleanup removes what the task left at its output paths, so a later task
+// declaring the same path can't report it, and nothing undeclared.
+func TestRemoveTaskRoot_RemovesOutputs(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	userDir := t.TempDir()
+	param := filepath.Join(userDir, "param")
+	artDir := filepath.Join(userDir, "art")
+	undeclared := filepath.Join(userDir, "undeclared")
+	tmpl := wfv1.Template{
+		Container: &apiv1.Container{Command: []string{"true"}},
+		Outputs: wfv1.Outputs{
+			Parameters: []wfv1.Parameter{{Name: "p", ValueFrom: &wfv1.ValueFrom{Path: param}}},
+			Artifacts:  wfv1.Artifacts{{Name: "a", Path: artDir}},
+		},
+	}
+	_, we, _ := newWorkerExecutor(t, tmpl, time.Time{})
+	require.NoError(t, os.WriteFile(param, []byte("p"), 0o644))
+	require.NoError(t, os.MkdirAll(artDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(artDir, "f"), []byte("a"), 0o644))
+	require.NoError(t, os.WriteFile(undeclared, []byte("u"), 0o644))
+
+	require.NoError(t, removeTaskRoot.Run(ctx, we))
+
+	assert.NoFileExists(t, param)
+	assert.NoDirExists(t, artDir)
+	assert.FileExists(t, undeclared)
+	assert.NoDirExists(t, we.paths.Root)
+}
+
 // A worker has no plugin sidecars, so an input a plugin would serve must
 // fail the task rather than be skipped, wherever the plugin comes from.
 func TestCheckWorker_RefusesPluginInputs(t *testing.T) {

@@ -89,6 +89,12 @@ func templatePaths(tmpl *wfv1.Template) []string {
 			paths = append(paths, a.Path)
 		}
 	}
+	return append(paths, outputPaths(tmpl)...)
+}
+
+// outputPaths lists the paths a template declares outputs at.
+func outputPaths(tmpl *wfv1.Template) []string {
+	var paths []string
 	for _, p := range tmpl.Outputs.Parameters {
 		if p.ValueFrom != nil && p.ValueFrom.Path != "" {
 			paths = append(paths, p.ValueFrom.Path)
@@ -104,11 +110,13 @@ func templatePaths(tmpl *wfv1.Template) []string {
 
 // checkWorker fails the task before any work if the worker cannot run it:
 // no driver, an unsupported template, an input artifact served by a
-// plugin, or an input artifact path where linking would replace something.
-// The worker's filesystem is the host's, not a throwaway container root,
-// so nothing already there may be removed (our own link from an earlier
-// attempt is the only exception), and no input path may overlap the
-// task's own root.
+// plugin, an input artifact path where linking would replace something, or
+// an output path that already exists. The worker's filesystem is the
+// host's, not a throwaway container root, so nothing already there may be
+// removed (our own link from an earlier attempt is the only exception), and
+// no input path may overlap the task's own root. Main's outputs are staged
+// from whatever is at their paths, so a file already at one would be
+// reported as this task's output even if main never wrote it.
 func (we *WorkflowExecutor) checkWorker() error {
 	if we.mainDriver == nil {
 		return errors.New("the worker has no driver to run main")
@@ -137,6 +145,11 @@ func (we *WorkflowExecutor) checkWorker() error {
 			return fmt.Errorf("input artifact %s path %s already exists; a worker will not replace it", art.Name, art.Path)
 		}
 	}
+	for _, path := range outputPaths(&we.Template) {
+		if _, err := os.Lstat(path); err == nil && !we.isOwnInputLinkAt(path) {
+			return fmt.Errorf("output path %s already exists; a worker would report it as this task's output", path)
+		}
+	}
 	return nil
 }
 
@@ -155,6 +168,17 @@ func pathsOverlap(a, b string) bool {
 func (we *WorkflowExecutor) isOwnInputLink(art wfv1.Artifact) bool {
 	target, err := os.Readlink(art.Path)
 	return err == nil && target == filepath.Join(we.paths.InputArtifacts, art.Name)
+}
+
+// isOwnInputLinkAt reports whether path is the link runMain makes for one
+// of the task's input artifacts.
+func (we *WorkflowExecutor) isOwnInputLinkAt(path string) bool {
+	for _, art := range we.Template.Inputs.Artifacts {
+		if art.Path == path && we.isOwnInputLink(art) {
+			return true
+		}
+	}
+	return false
 }
 
 // createTaskDirs empties and recreates the task's own tree.
@@ -301,10 +325,13 @@ func (we *WorkflowExecutor) watchDeadline(ctx context.Context, pid int) *deadlin
 	return w
 }
 
-// removeTaskRoot removes the task's root and the input-artifact symlinks
-// runMain made (a link at the artifact's path pointing at exactly the
-// file Prepare loaded for it). checkWorker refused to link over anything
-// else, and declared output paths are the user's, so those stay.
+// removeTaskRoot removes the task's root, the input-artifact symlinks
+// runMain made (a link at the artifact's path pointing at exactly the file
+// Prepare loaded for it), and whatever is at the task's output paths.
+// checkWorker refused to run the task if anything else was at those paths,
+// so all of it is the task's, and removing it leaves nothing for a later
+// task to report as its own output, as a pod's filesystem goes with the
+// pod.
 func (we *WorkflowExecutor) removeTaskRoot() error {
 	if we.paths.Root == "" {
 		return nil
@@ -318,6 +345,11 @@ func (we *WorkflowExecutor) removeTaskRoot() error {
 			if err := os.Remove(art.Path); err != nil {
 				errs = append(errs, fmt.Errorf("failed to remove input artifact link %s: %w", art.Path, err))
 			}
+		}
+	}
+	for _, path := range outputPaths(&we.Template) {
+		if err := os.RemoveAll(path); err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove output %s: %w", path, err))
 		}
 	}
 	if err := os.RemoveAll(we.paths.Root); err != nil {
