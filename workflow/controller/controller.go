@@ -1571,7 +1571,7 @@ func (wfc *WorkflowController) setWorkflowDefaults(ctx context.Context, wf *wfv1
 		return nil
 	}
 	// MergeTo lets the target win, so the workflow's own values survive.
-	return util.MergeTo(defaults, wf)
+	return common.MergeTo(defaults, wf)
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {
