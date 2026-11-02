@@ -554,7 +554,7 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 func TestCronWorkflowDefaultsResolvedPerNamespace(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
 
 	t.Run("NilResolverIsTolerated", func(t *testing.T) {
 		woc := &cronWfOperationCtx{cronWf: &cronWf, log: logging.RequireLoggerFromContext(ctx)}
@@ -586,7 +586,7 @@ func TestCronWorkflowDefaultsResolvedPerNamespace(t *testing.T) {
 func TestCronWorkflowDefaultsErrorSurfacesOnValidate(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
 
 	cs := fake.NewClientset()
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
