@@ -156,8 +156,8 @@ type LedgerEntry struct {
 // ShutdownOutcome is what Shutdown did to one task.
 type ShutdownOutcome struct {
 	Key
-	// Found is the claim Drop found on a task the ledger had as enqueued; it
-	// was then interrupted.
+	// Found is the claim Drop found on a task the ledger had as enqueued,
+	// which Shutdown then interrupts; Err is set if that failed.
 	Found *Claim
 	// Finished is set when no claim holds the task any more, so the node can
 	// finish now. Otherwise the task was interrupted and its worker has yet to
@@ -202,7 +202,9 @@ type Dispatcher interface {
 	// reconcile may not be cached yet), one at a time. It returns the refs it
 	// found gone: deleted, or already deleted or replaced. A ref without a UID
 	// is skipped. Every other ref failed to delete, and err says why; while
-	// err is set, their TaskSets may remain.
+	// err is set, their TaskSets may remain. Delete the workflow's results
+	// only once it returns nil: a TaskSet left without its claim looks
+	// claimable, and a worker would run its task again.
 	Completion(ctx context.Context, namespace string, cached, ledgers []TaskSetRef) (gone []TaskSetRef, err error)
 	// Discard deletes a result that isn't the claim the node's ledger
 	// accepts, such as a claim on an older TaskSet of the node, which would
@@ -277,7 +279,8 @@ type Consumer interface {
 	// the time the caller sees them; Claim decides.
 	Candidates(ctx context.Context) ([]Candidate, error)
 	// Claim claims a candidate. It fails with ErrClaimLost if another worker
-	// holds the claim. Once the claim is created it reads the TaskSet, and if
+	// holds the claim. A claim its create made though the create failed, as
+	// when the response was lost, is read back and kept. Once the claim is created it reads the TaskSet, and if
 	// that fails it withdraws the claim and returns why: ErrTaskGone if the
 	// TaskSet was deleted or replaced, otherwise the read's error. If the
 	// withdrawal fails too, the claim may remain and the error says so.

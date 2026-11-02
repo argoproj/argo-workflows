@@ -126,6 +126,14 @@ func newTaskSet(task Task) *wfv1.WorkflowTaskSet {
 }
 
 func (d *dispatcher) Enqueue(ctx context.Context, task Task) (Enqueued, error) {
+	enqueued, err := d.enqueue(ctx, task)
+	if err != nil {
+		err = fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, task.TaskSetName(), err)
+	}
+	return enqueued, err
+}
+
+func (d *dispatcher) enqueue(ctx context.Context, task Task) (Enqueued, error) {
 	name := task.TaskSetName()
 	taskSet, err := d.store.createTaskSet(ctx, newTaskSet(task))
 	adopted := errors.Is(err, errAlreadyExists)
@@ -133,15 +141,15 @@ func (d *dispatcher) Enqueue(ctx context.Context, task Task) (Enqueued, error) {
 		taskSet, err = d.store.getTaskSet(ctx, task.Namespace, name)
 	}
 	if err != nil {
-		return Enqueued{}, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, err)
+		return Enqueued{}, err
 	}
 	if _, ok := TaskSetRefFromMeta(taskSet); !ok {
-		return Enqueued{}, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, ErrNameTaken)
+		return Enqueued{}, ErrNameTaken
 	}
 	if adopted && taskSet.DeletionTimestamp != nil {
 		// Deleted, as when the controller replaced it, and held by a
 		// finalizer: no worker claims it, so it can't be adopted.
-		return Enqueued{}, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, ErrStaleTaskSet)
+		return Enqueued{}, ErrStaleTaskSet
 	}
 	if adopted && !OwnedByWorkflow(taskSet, task.WorkflowUID) {
 		// Only one workflow holds a name at a time, so a pooled TaskSet that
@@ -152,20 +160,20 @@ func (d *dispatcher) Enqueue(ctx context.Context, task Task) (Enqueued, error) {
 			WithFields(logging.Fields{"namespace": task.Namespace, "taskSet": name, "uid": taskSet.UID}).
 			Info(ctx, "Replacing a WorkflowTaskSet left by an earlier workflow")
 		if err = d.removeTaskSet(ctx, task.Key, taskSet.UID); err != nil {
-			return Enqueued{}, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, err)
+			return Enqueued{}, err
 		}
 		taskSet, err = d.store.createTaskSet(ctx, newTaskSet(task))
 		if errors.Is(err, errAlreadyExists) {
-			return Enqueued{}, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, ErrStaleTaskSet)
+			return Enqueued{}, ErrStaleTaskSet
 		}
 		if err != nil {
-			return Enqueued{}, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, err)
+			return Enqueued{}, err
 		}
 		adopted = false
 	}
 	enqueued := Enqueued{TaskSet: taskSet, Adopted: adopted}
 	if taskSet.Spec.Pool == nil || taskSet.Spec.Dispatch == nil {
-		return enqueued, fmt.Errorf("enqueueing WorkflowTaskSet %s/%s: %w", task.Namespace, name, ErrFieldsDropped)
+		return enqueued, ErrFieldsDropped
 	}
 	if adopted {
 		logging.RequireLoggerFromContext(ctx).
@@ -359,12 +367,7 @@ func (c *consumer) Candidates(ctx context.Context) ([]Candidate, error) {
 // would look claimable, and a worker would run its task again.
 func (c *consumer) newResult(candidate Candidate) *wfv1.WorkflowTaskResult {
 	result := common.NewTaskResult(candidate.Namespace, candidate.ResultName(), candidate.WorkflowName, candidate.WorkflowUID, candidate.InstanceID)
-	result.OwnerReferences = append(result.OwnerReferences, metav1.OwnerReference{
-		APIVersion: workflow.APIVersion,
-		Kind:       workflow.WorkflowTaskSetKind,
-		Name:       candidate.TaskSetName(),
-		UID:        candidate.TaskSetUID,
-	})
+	result.OwnerReferences = append(result.OwnerReferences, common.TaskSetOwnerReference(candidate.TaskSetName(), candidate.TaskSetUID))
 	maps.Copy(result.Labels, map[string]string{
 		common.LabelKeyPoolName:     candidate.PoolName,
 		common.LabelKeyPoolHash:     candidate.PoolHash,
@@ -381,6 +384,9 @@ func (c *consumer) Claim(ctx context.Context, candidate Candidate) (Claimed, err
 		return nil, fmt.Errorf("claiming %s/%s from pool %s: %w", ns, name, candidate.PoolHash, ErrWrongPool)
 	}
 	result, err := c.store.createResult(ctx, c.newResult(candidate))
+	if err != nil {
+		result, err = c.readBack(ctx, candidate, err)
+	}
 	if errors.Is(err, errAlreadyExists) {
 		return nil, fmt.Errorf("claiming %s/%s: %w", ns, name, ErrClaimLost)
 	}
@@ -420,6 +426,29 @@ func (c *consumer) Claim(ctx context.Context, candidate Candidate) (Claimed, err
 		h.cancel = sync.OnceFunc(c.watcher.Watch(context.WithoutCancel(ctx), claim, h.stop.stop))
 	}
 	return h, nil
+}
+
+// readBack returns the claim on candidate that a create failing with err
+// may still have made, as when the create's response was lost. Such a
+// claim, left alone, would never run: the TaskSet has a result, so no worker
+// sees it as a candidate again, and this worker's pod looks alive to the
+// controller. A claim is this create's only if it carries this worker pod's
+// UID and the candidate's TaskSet UID and isn't complete; any other result
+// means the claim is lost, and none, or a failed read, returns err.
+func (c *consumer) readBack(ctx context.Context, candidate Candidate, err error) (*wfv1.WorkflowTaskResult, error) {
+	result, getErr := c.store.getResult(ctx, candidate.Namespace, candidate.ResultName())
+	if getErr != nil {
+		return nil, err
+	}
+	claim, ok := ClaimFromResult(result)
+	if !ok || claim.WorkerPodUID != c.worker.PodUID || claim.TaskSetUID != candidate.TaskSetUID || claim.Completed {
+		return nil, errAlreadyExists
+	}
+	logging.RequireLoggerFromContext(ctx).
+		WithFields(logging.Fields{"namespace": candidate.Namespace, "result": candidate.ResultName()}).
+		WithError(err).
+		Info(ctx, "Kept the claim a failed create made")
+	return result, nil
 }
 
 func (c *consumer) FailOwn(ctx context.Context, message string) ([]Key, error) {

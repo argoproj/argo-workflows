@@ -106,7 +106,8 @@ func TestWatchedCandidates(t *testing.T) {
 		// Started after the claim, so its caches start with it.
 		c := b.watchedConsumer(t, testWorker("worker-a"))
 
-		found := make(chan []Candidate)
+		// Buffered, so the call can return after a failed test stopped waiting.
+		found := make(chan []Candidate, 1)
 		go func() {
 			candidates, err := c.Candidates(ctx)
 			assert.NoError(t, err)
@@ -205,6 +206,8 @@ func TestWatchedClaimNotifications(t *testing.T) {
 			eventuallyStopped(t, h, StopLost)
 		})
 	})
+	// Seen as a change to another result of the claim's name, with no
+	// deletion of the claim's own.
 	t.Run("Replaced", func(t *testing.T) {
 		forEachBackend(t, func(t *testing.T, b *backend) {
 			task := testTask("node-1")
@@ -213,9 +216,8 @@ func TestWatchedClaimNotifications(t *testing.T) {
 			r, ok := b.result(t, task.Key)
 			require.True(t, ok)
 			replacement := r.DeepCopy()
-			replacement.ResourceVersion = ""
 			replacement.Labels[common.LabelKeyWorkerPodUID] = "worker-b-uid"
-			require.NoError(t, b.replaceResult(replacement))
+			require.NoError(t, b.swapResult(replacement))
 			eventuallyStopped(t, h, StopLost)
 		})
 	})
@@ -274,6 +276,37 @@ func TestWatchesTellLagFromLoss(t *testing.T) {
 	require.NoError(t, b.replaceResult(replacement))
 	watches.resultChanged(older, false)
 	eventuallyStopped(t, h, StopLost)
+}
+
+// A live read that fails says nothing about the claim, which the claim's
+// next write finds out.
+func TestWatchesLeaveAClaimWhoseLiveReadFails(t *testing.T) {
+	b := newKubeBackend()
+	ctx := logging.TestContext(t.Context())
+	task := testTask("node-1")
+	b.enqueue(t, task)
+	idle := func(obj runtime.Object) cache.SharedIndexInformer {
+		return cache.NewSharedIndexInformer(&cache.ListWatch{}, obj, 0, cache.Indexers{})
+	}
+	w := testWorker("worker-a")
+	watches := newWatches(kubeStore{client: b.clientset}, w, idle(&wfv1.WorkflowTaskSet{}), idle(&wfv1.WorkflowTaskResult{}))
+	h, err := NewConsumer(b.clientset, w, watches.Sources()).Claim(ctx, b.candidate(t, task.Key))
+	require.NoError(t, err)
+
+	var reads atomic.Int32
+	b.setFault(func(op Op) error {
+		if op.Verb == "get" && op.Resource == ResourceResults {
+			reads.Add(1)
+			return errTransient
+		}
+		return nil
+	})
+	t.Cleanup(func() { b.setFault(nil) })
+	older := common.NewTaskResult(testNamespace, task.ResultName(), "my-wf", "wf-uid", "")
+	older.UID = "older-uid"
+	watches.resultChanged(older, false)
+	require.Eventually(t, func() bool { return reads.Load() > 0 }, 5*time.Second, 10*time.Millisecond)
+	neverStopped(t, h)
 }
 
 // TestWatchedWorkersClaimEachTaskOnce runs workers and tasks concurrently, as
@@ -359,6 +392,24 @@ func TestNewWatchesOverMetadata(t *testing.T) {
 		taskSet("claimed", "hash-1", true),
 		taskSet("other-pool", "hash-2", false),
 	)...)
+	// The candidates filter by pool hash too, so only the requests show the
+	// selector is applied.
+	var mu sync.Mutex
+	selectors := map[string][]string{}
+	client.PrependReactor("*", "*", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if list, ok := action.(k8stesting.ListAction); ok {
+			mu.Lock()
+			selectors[action.GetResource().Resource] = append(selectors[action.GetResource().Resource], list.GetListRestrictions().Labels.String())
+			mu.Unlock()
+		}
+		return false, nil, nil
+	})
+	client.PrependWatchReactor("*", func(action k8stesting.Action) (bool, watch.Interface, error) {
+		mu.Lock()
+		selectors[action.GetResource().Resource] = append(selectors[action.GetResource().Resource], action.(k8stesting.WatchAction).GetWatchRestrictions().Labels.String())
+		mu.Unlock()
+		return false, nil, nil
+	})
 	ctx := logging.TestContext(t.Context())
 	watches := NewWatches(fake.NewClientset(), client, testWorker("worker-a"))
 	watches.Run(ctx)
@@ -366,6 +417,19 @@ func TestNewWatchesOverMetadata(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	assert.Equal(t, "free", got[0].NodeID)
+	want := common.LabelKeyPoolHash + "=hash-1"
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(selectors[ResourceTaskSets]) >= 2 && len(selectors[ResourceResults]) >= 2
+	}, 5*time.Second, 10*time.Millisecond, "a list and a watch of each")
+	mu.Lock()
+	defer mu.Unlock()
+	for _, resource := range []string{ResourceTaskSets, ResourceResults} {
+		for _, got := range selectors[resource] {
+			assert.Equal(t, want, got, resource)
+		}
+	}
 }
 
 // A worker not allowed a verb it uses on its pool's TaskSets or results

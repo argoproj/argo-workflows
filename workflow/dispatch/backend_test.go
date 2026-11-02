@@ -33,6 +33,10 @@ type backend struct {
 	// replaceResult deletes the result of result's name, unconditionally, and
 	// creates result in its place. A fault may call it, to stage a race.
 	replaceResult func(result *wfv1.WorkflowTaskResult) error
+	// swapResult puts result, with a new UID, in place of the existing
+	// result of its name in one change, so a watch sees it changed, not
+	// deleted.
+	swapResult func(result *wfv1.WorkflowTaskResult) error
 	// fake is set for the fake backend.
 	fake *Fake
 	// clientset is set for the Kubernetes backend.
@@ -51,6 +55,21 @@ func newFakeBackend() *backend {
 			f.DeleteResult(result.Namespace, result.Name)
 			_, err := f.CreateResult(result)
 			return err
+		},
+		swapResult: func(result *wfv1.WorkflowTaskResult) error {
+			key := result.Namespace + "/" + result.Name
+			f.mu.Lock()
+			if _, ok := f.results[key]; !ok {
+				f.mu.Unlock()
+				return notFound(ResourceResults, result.Namespace, result.Name)
+			}
+			stored := result.DeepCopy()
+			f.stamp(&stored.ObjectMeta)
+			f.results[key] = stored
+			notify := f.changedLocked(key)
+			f.mu.Unlock()
+			notify()
+			return nil
 		},
 		fake: f,
 	}
@@ -139,6 +158,12 @@ func newKubeBackend() *backend {
 			obj.UID = uuid.NewUUID()
 			obj.CreationTimestamp = metav1.Now().Rfc3339Copy()
 			return tracker.Create(gvr, obj, result.Namespace)
+		},
+		swapResult: func(result *wfv1.WorkflowTaskResult) error {
+			obj := result.DeepCopy()
+			obj.UID = uuid.NewUUID()
+			obj.ResourceVersion = ""
+			return tracker.Update(wfv1.SchemeGroupVersion.WithResource(ResourceResults), obj, result.Namespace)
 		},
 		clientset: clientset,
 	}

@@ -81,6 +81,47 @@ func TestKubeInvalidPatchOfOwnResultIsNotALostClaim(t *testing.T) {
 	}
 }
 
+// The API server reports a failed patch test as Invalid, as it does an
+// invalid object, so the live result decides: one that is gone is a lost
+// claim, and a read that fails keeps both errors.
+func TestKubeInvalidPatchIsJudgedByTheLiveResult(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		readErr error
+		lost    bool
+	}{
+		{name: "gone", readErr: apierr.NewNotFound(wfv1.SchemeGroupVersion.WithResource(ResourceResults).GroupResource(), "node-1"), lost: true},
+		{name: "unreadable", readErr: errTransient},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b := newKubeBackend()
+			ctx := logging.TestContext(t.Context())
+			task := testTask("node-1")
+			b.enqueue(t, task)
+			h := b.claim(t, testWorker("worker-a"), task.Key)
+			invalid := apierr.NewInvalid(wfv1.SchemeGroupVersion.WithKind("WorkflowTaskResult").GroupKind(), "node-1", nil)
+			b.setFault(func(op Op) error {
+				switch {
+				case op.Verb == "patch":
+					return invalid
+				case op.Verb == "get" && op.Resource == ResourceResults:
+					return tc.readErr
+				}
+				return nil
+			})
+			err := h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded})
+			b.setFault(nil)
+			assert.True(t, apierr.IsInvalid(err))
+			if tc.lost {
+				require.ErrorIs(t, err, ErrClaimLost)
+				return
+			}
+			require.ErrorIs(t, err, errTransient)
+			require.NotErrorIs(t, err, ErrClaimLost)
+		})
+	}
+}
+
 func TestKubeCandidatesNeedASource(t *testing.T) {
 	b := newKubeBackend()
 	_, err := b.consumer(testWorker("worker-a")).Candidates(t.Context())
