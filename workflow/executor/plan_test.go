@@ -131,7 +131,7 @@ func TestPostMain_RecordsErrorsAndContinues(t *testing.T) {
 }
 
 func TestPlanFor_InitlessLayout(t *testing.T) {
-	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, true, []wfv1.ArtifactPluginName{"s3", "gcs"})
+	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, LayoutInitless, []wfv1.ArtifactPluginName{"s3", "gcs"})
 
 	assert.Equal(t, []string{
 		"write-template",
@@ -143,14 +143,14 @@ func TestPlanFor_InitlessLayout(t *testing.T) {
 }
 
 func TestPlanFor_InitlessNoPlugins(t *testing.T) {
-	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, true, nil)
+	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, LayoutInitless, nil)
 	assert.Equal(t, "parallel(load-artifacts)", plan.Prepare[2].Name)
 }
 
 // The legacy layout installs the binary and never loads plugin artifacts in
 // this container: each plugin has its own artifact-plugin-init container.
 func TestPlanFor_LegacyLayout(t *testing.T) {
-	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, false, []wfv1.ArtifactPluginName{"s3"})
+	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, LayoutLegacy, []wfv1.ArtifactPluginName{"s3"})
 
 	assert.Equal(t, []string{"install-argoexec", "stage-files", "load-artifacts"}, stageNames(plan.Prepare))
 	assert.Equal(t, []string{"initialize-output", "wait"}, stageNames(plan.Run))
@@ -158,9 +158,9 @@ func TestPlanFor_LegacyLayout(t *testing.T) {
 }
 
 func TestPlanFor_ResourceTemplateCollectsLogsOnly(t *testing.T) {
-	for _, initless := range []bool{false, true} {
-		plan := planFor(&wfv1.Template{Resource: &wfv1.ResourceTemplate{Action: "get"}}, initless, nil)
-		assert.Equal(t, []string{"report-logs"}, stageNames(plan.Collect), "initless=%v", initless)
+	for _, layout := range []Layout{LayoutLegacy, LayoutInitless} {
+		plan := planFor(&wfv1.Template{Resource: &wfv1.ResourceTemplate{Action: "get"}}, layout, nil)
+		assert.Equal(t, []string{"report-logs"}, stageNames(plan.Collect), "layout=%v", layout)
 	}
 }
 
@@ -174,9 +174,12 @@ func TestPlansAreWellFormed(t *testing.T) {
 		"resource":  {Resource: &wfv1.ResourceTemplate{}},
 	}
 	for name, tmpl := range templates {
-		for _, initless := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%s/initless=%v", name, initless), func(t *testing.T) {
-				plan := planFor(tmpl, initless, []wfv1.ArtifactPluginName{"s3"})
+		for _, layout := range []Layout{LayoutLegacy, LayoutInitless, LayoutWorker} {
+			if layout == LayoutWorker && name == "resource" {
+				continue // the worker runs container and script templates only
+			}
+			t.Run(fmt.Sprintf("%s/layout=%v", name, layout), func(t *testing.T) {
+				plan := planFor(tmpl, layout, []wfv1.ArtifactPluginName{"s3"})
 				seen := map[string]bool{}
 				for phase, stages := range map[string][]Stage{"Prepare": plan.Prepare, "Run": plan.Run, "Collect": plan.Collect} {
 					require.NotEmpty(t, stages, "phase %s has no stages", phase)

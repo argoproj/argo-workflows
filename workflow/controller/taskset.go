@@ -15,6 +15,7 @@ import (
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
@@ -88,6 +89,35 @@ func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error)
 	}
 }
 
+// markUnwrittenTaskSetNodesError marks the nodes dispatched this operation
+// whose tasks are not yet in the WorkflowTaskSet as Error, after writing them
+// failed. Tasks already in the taskset are left to the agent. The taskset is
+// read from the API server rather than the informer, which may not have seen
+// an earlier write yet; if it can't be read, nothing is marked and the next
+// reconcile tries the write again.
+func (woc *wfOperationCtx) markUnwrittenTaskSetNodesError(ctx context.Context, err error) {
+	var written map[string]wfv1.Template
+	workflowTaskSet, getErr := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	switch {
+	case apierr.IsNotFound(getErr):
+	case getErr != nil:
+		woc.log.WithError(getErr).Warn(ctx, "failed to get workflowtaskset, not marking unwritten taskset nodes as error")
+		return
+	default:
+		written = workflowTaskSet.Spec.Tasks
+	}
+	for nodeID := range woc.taskSet {
+		if _, ok := written[nodeID]; ok {
+			continue
+		}
+		node, getErr := woc.wf.Status.Nodes.Get(nodeID)
+		if getErr != nil || node.Fulfilled() {
+			continue
+		}
+		woc.markNodeError(ctx, node.Name, err)
+	}
+}
+
 func (woc *wfOperationCtx) hasTaskSetNodes() bool {
 	return woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 		return node.IsTaskSetNode()
@@ -129,6 +159,11 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	if err := woc.reconcileTaskSet(ctx); err != nil {
 		woc.log.WithError(err).Error(ctx, "error in workflowtaskset reconciliation")
+		// The same write fails on every reconcile, so error the tasks that do not
+		// fit rather than leave them pending with no message.
+		if argokubeerr.IsRequestEntityTooLargeErr(err) {
+			woc.markUnwrittenTaskSetNodesError(ctx, fmt.Errorf("WorkflowTaskSet would exceed the Kubernetes object size limit; reduce the number or size of HTTP and plugin templates running at once: %w", err))
+		}
 		return
 	}
 	if err := woc.reconcileAgentPod(ctx); err != nil {

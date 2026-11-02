@@ -13,9 +13,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// PodSource yields the one task that a pod spec delivers, and then no more
-// tasks. In the init-less layout, call Next only after the supervisor is READY.
-type PodSource struct {
+// PodTaskConfig is what a pod spec delivers to the emissary about its task.
+type PodTaskConfig struct {
 	// VarRunArgo is the shared argoexec directory, normally /var/run/argo.
 	VarRunArgo string
 	// TemplateEnv is the value of ARGO_TEMPLATE, used when the template file
@@ -31,31 +30,25 @@ type PodSource struct {
 	Command             []string
 	Env                 []string
 	IncludeScriptOutput bool
-
-	done bool
 }
 
-var _ TaskSource = &PodSource{}
-
-func (s *PodSource) Next(ctx context.Context) (Task, bool, error) {
-	if s.done {
-		return Task{}, false, nil
-	}
-	s.done = true
+// PodTask builds the one task a pod spec delivers. In the init-less layout,
+// call it only after the supervisor is READY: the template is read here.
+func PodTask(ctx context.Context, s PodTaskConfig) (Task, error) {
 	if len(s.Command) == 0 {
-		return Task{}, false, errors.New("no command to run")
+		return Task{}, errors.New("no command to run")
 	}
 	command, err := s.command(ctx)
 	if err != nil {
-		return Task{}, false, err
+		return Task{}, err
 	}
 	data, err := s.readTemplate()
 	if err != nil {
-		return Task{}, false, fmt.Errorf("failed to read template: %w", err)
+		return Task{}, fmt.Errorf("failed to read template: %w", err)
 	}
 	tmpl := &wfv1.Template{}
 	if err := json.Unmarshal(data, tmpl); err != nil {
-		return Task{}, false, fmt.Errorf("failed to unmarshal template: %w", err)
+		return Task{}, fmt.Errorf("failed to unmarshal template: %w", err)
 	}
 	return Task{
 		NodeID:              s.NodeID,
@@ -64,10 +57,10 @@ func (s *PodSource) Next(ctx context.Context) (Task, bool, error) {
 		Env:                 s.Env,
 		IncludeScriptOutput: s.IncludeScriptOutput,
 		WorkDir:             filepath.Join(s.VarRunArgo, "ctr", s.ContainerName),
-	}, true, nil
+	}, nil
 }
 
-func (s *PodSource) command(ctx context.Context) ([]string, error) {
+func (s PodTaskConfig) command(ctx context.Context) ([]string, error) {
 	command := append([]string{}, s.Command...)
 	// Check if args were offloaded to a file (for large args that exceed exec limit)
 	if s.ArgsFile == "" {
@@ -115,7 +108,7 @@ func (s *PodSource) command(ctx context.Context) ([]string, error) {
 //
 // Offload-sentinel resolution is shared with the legacy init container via
 // common.ResolveTemplateEnvValue.
-func (s *PodSource) readTemplate() ([]byte, error) {
+func (s PodTaskConfig) readTemplate() ([]byte, error) {
 	filePath := filepath.Join(s.VarRunArgo, "template")
 	if data, err := os.ReadFile(filePath); err == nil {
 		return data, nil

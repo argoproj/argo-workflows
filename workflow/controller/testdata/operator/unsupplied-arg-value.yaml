@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-unsupplied-param-
+spec:
+  arguments:
+    parameters:
+    - name: missing
+  entrypoint: whalesay
+  templates:
+  -
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}

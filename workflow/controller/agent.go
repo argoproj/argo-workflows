@@ -232,9 +232,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	tmpl := &wfv1.Template{}
 	// Agent pods have no boundary node, so there is no boundary template to apply.
-	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, nil)
-	woc.addMetadata(pod, tmpl)
-	woc.addDNSConfig(pod)
+	applySchedulingConstraints(&pod.Spec, woc.execWf.Spec.DeepCopy(), tmpl, nil)
+	applyPodMetadata(&pod.ObjectMeta, &woc.execWf.Spec, tmpl)
+	applyDNSConfig(&pod.Spec, &woc.execWf.Spec)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
 		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
