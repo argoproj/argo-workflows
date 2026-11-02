@@ -26,7 +26,7 @@ type Container struct{}
 
 var _ MainDriver = Container{}
 
-func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode int, err error) {
+func (Container) Run(ctx context.Context, task Task, stager OutputStager) (exitCode int, err error) {
 	if task.Template == nil {
 		return exitCodeUnknown, errors.New("task has no template")
 	}
@@ -39,10 +39,10 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode 
 	}
 	var logs []Output
 	// A failed startup can leave outputs of an earlier retry in place. Give
-	// their paths to the sink even when this attempt cannot start. The sink
-	// decides if each file exists and needs staging.
+	// their paths to the stager even when this attempt cannot start. The
+	// stager decides if each file exists and needs staging.
 	defer func() {
-		if outputErr := putOutputs(ctx, task, sink, logs); outputErr != nil {
+		if outputErr := stageOutputs(ctx, task, stager, logs); outputErr != nil {
 			err = outputErr
 		}
 	}()
@@ -92,7 +92,7 @@ func (Container) Run(ctx context.Context, task Task, sink ResultSink) (exitCode 
 	return exitCodeFromErr(waitErr), waitErr
 }
 
-func putOutputs(ctx context.Context, task Task, sink ResultSink, logs []Output) error {
+func stageOutputs(ctx context.Context, task Task, stager OutputStager, logs []Output) error {
 	outs := logs
 	for _, p := range task.Template.Outputs.Parameters {
 		if p.ValueFrom != nil && p.ValueFrom.Path != "" {
@@ -105,7 +105,7 @@ func putOutputs(ctx context.Context, task Task, sink ResultSink, logs []Output) 
 		}
 	}
 	for _, out := range outs {
-		if err := sink.Put(ctx, task.NodeID, out); err != nil {
+		if err := stager.Stage(ctx, task.NodeID, out); err != nil {
 			return fmt.Errorf("failed to hand over %s %s: %w", out.Kind, out.Path, err)
 		}
 	}

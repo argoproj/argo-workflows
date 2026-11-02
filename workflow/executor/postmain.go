@@ -18,10 +18,10 @@ import (
 // artifacts. Main is still waited for and its logs captured so the
 // failure is surfaced cleanly.
 //
-// The caller owns tracing init/shutdown and the defer stack
-// (errHandler, FinalizeOutput, KillArtifactSidecars, stats). bgCtx is a
-// span-scoped background context used for calls that must not be
-// cancelled with the parent ctx so that outputs are still captured
+// The Harness running the task's Role owns tracing, failure reporting
+// and the role's Finally stages (FinalizeOutput, KillArtifactSidecars).
+// bgCtx is a span-scoped background context used for calls that must not
+// be cancelled with the parent ctx so that outputs are still captured
 // during termination.
 func (we *WorkflowExecutor) PostMain(ctx, bgCtx context.Context, preMainFailed bool) error {
 	plan := we.selectedPlan()

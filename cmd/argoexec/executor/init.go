@@ -138,17 +138,8 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 // environment.
 func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
 	process := InitProcess(ctx, clientConfig)
-	wfExecutor := process.NewExecutor(executor.Task{Config: TaskConfigFromEnv(varRunArgo), Paths: PodPaths(varRunArgo)})
-
-	logging.RequireLoggerFromContext(ctx).
-		WithFields(argo.GetVersion().Fields()).
-		WithField("namespace", wfExecutor.Namespace).
-		WithField("podName", wfExecutor.PodName).
-		WithField("templateName", wfExecutor.Template.Name).
-		WithField("includeScriptOutput", wfExecutor.IncludeScriptOutput).
-		WithField("deadline", wfExecutor.Deadline).
-		Info(ctx, "Executor initialized")
-	return wfExecutor
+	task, _, _ := (&PodSource{VarRunArgo: varRunArgo}).Next(ctx) // yields once and never errors
+	return process.NewExecutor(task, podSink(process)(task))
 }
 
 // TerminationGracePeriodDuration returns the terminationGracePeriodSeconds of

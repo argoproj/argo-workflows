@@ -16,9 +16,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-type recordingSink []Output
+type recordingStager []Output
 
-func (s *recordingSink) Put(_ context.Context, _ string, out Output) error {
+func (s *recordingStager) Stage(_ context.Context, _ string, out Output) error {
 	*s = append(*s, out)
 	return nil
 }
@@ -28,7 +28,7 @@ func TestContainerRun(t *testing.T) {
 	dir := t.TempDir()
 	param := filepath.Join(dir, "param")
 	tmpl := &wfv1.Template{Outputs: wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", ValueFrom: &wfv1.ValueFrom{Path: param}}}}}
-	var sink recordingSink
+	var stager recordingStager
 	var pid int
 
 	code, err := Container{}.Run(ctx, Task{
@@ -38,7 +38,7 @@ func TestContainerRun(t *testing.T) {
 		IncludeScriptOutput: true,
 		WorkDir:             dir,
 		OnStart:             func(p int) { pid = p },
-	}, &sink)
+	}, &stager)
 
 	require.Error(t, err)
 	assert.Equal(t, 3, code)
@@ -46,14 +46,14 @@ func TestContainerRun(t *testing.T) {
 	stdout, err := os.ReadFile(filepath.Join(dir, "stdout"))
 	require.NoError(t, err)
 	assert.Equal(t, "hi\n", string(stdout))
-	assert.Equal(t, recordingSink{
+	assert.Equal(t, recordingStager{
 		{Kind: OutputStdout, Path: filepath.Join(dir, "stdout")},
 		{Kind: OutputCombined, Path: filepath.Join(dir, "combined")},
 		{Kind: OutputParameter, Path: param},
-	}, sink)
+	}, stager)
 }
 
-func TestPodSourceDriverSink(t *testing.T) {
+func TestPodTaskDriverStager(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	varRunArgo := t.TempDir()
 	param := filepath.Join(t.TempDir(), "param")
@@ -63,52 +63,46 @@ func TestPodSourceDriverSink(t *testing.T) {
 	argsFile := filepath.Join(t.TempDir(), "args.json")
 	require.NoError(t, os.WriteFile(argsFile, []byte(`["echo v > `+param+`"]`), 0o644))
 
-	src := &PodSource{VarRunArgo: varRunArgo, ArgsFile: argsFile, NodeID: "n1", ContainerName: "main", Command: []string{"sh", "-c"}}
-	task, ok, err := src.Next(ctx)
+	task, err := PodTask(ctx, PodTaskConfig{VarRunArgo: varRunArgo, ArgsFile: argsFile, NodeID: "n1", ContainerName: "main", Command: []string{"sh", "-c"}})
 	require.NoError(t, err)
-	require.True(t, ok)
 	assert.Equal(t, []string{"sh", "-c", "echo v > " + param}, task.Command)
 	assert.Equal(t, filepath.Join(varRunArgo, "ctr", "main"), task.WorkDir)
 
-	code, err := Container{}.Run(ctx, task, PodSink{VarRunArgo: varRunArgo, ContainerName: "main", Template: task.Template})
+	code, err := Container{}.Run(ctx, task, PodStager{VarRunArgo: varRunArgo, ContainerName: "main", Template: task.Template})
 	require.NoError(t, err)
 	assert.Equal(t, 0, code)
 	staged, err := os.ReadFile(varRunArgo + "/outputs/parameters/" + param)
 	require.NoError(t, err)
 	assert.Equal(t, "v\n", string(staged))
-
-	_, ok, err = src.Next(ctx)
-	require.NoError(t, err)
-	assert.False(t, ok)
 }
 
-type failingSink struct{ err error }
+type failingStager struct{ err error }
 
-func (s failingSink) Put(context.Context, string, Output) error { return s.err }
+func (s failingStager) Stage(context.Context, string, Output) error { return s.err }
 
 // A handover failure must not hide the command's exit code.
-func TestContainerRun_SinkErrorKeepsExitCode(t *testing.T) {
+func TestContainerRun_StagerErrorKeepsExitCode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	tmpl := &wfv1.Template{Outputs: wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "p", ValueFrom: &wfv1.ValueFrom{Path: "/nonexistent"}}}}}
-	sinkErr := errors.New("sink down")
+	stagerErr := errors.New("stager down")
 
-	code, err := Container{}.Run(ctx, Task{Template: tmpl, Command: []string{"sh", "-c", "exit 7"}}, failingSink{sinkErr})
+	code, err := Container{}.Run(ctx, Task{Template: tmpl, Command: []string{"sh", "-c", "exit 7"}}, failingStager{stagerErr})
 
 	assert.Equal(t, 7, code)
-	require.ErrorIs(t, err, sinkErr)
+	require.ErrorIs(t, err, stagerErr)
 }
 
 func TestContainerRun_RejectsBadTask(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	var sink recordingSink
+	var stager recordingStager
 
-	_, err := Container{}.Run(ctx, Task{Command: []string{"true"}}, &sink)
+	_, err := Container{}.Run(ctx, Task{Command: []string{"true"}}, &stager)
 	require.EqualError(t, err, "task has no template")
 
-	_, err = Container{}.Run(ctx, Task{Template: &wfv1.Template{}, Command: []string{"true"}, IncludeScriptOutput: true}, &sink)
+	_, err = Container{}.Run(ctx, Task{Template: &wfv1.Template{}, Command: []string{"true"}, IncludeScriptOutput: true}, &stager)
 	require.EqualError(t, err, "task has no workdir to capture logs in")
 
-	assert.Empty(t, sink)
+	assert.Empty(t, stager)
 }
 
 func TestContainerRun_Env(t *testing.T) {
@@ -118,14 +112,14 @@ func TestContainerRun_Env(t *testing.T) {
 
 	run := func(env []string) string {
 		t.Helper()
-		var sink recordingSink
+		var stager recordingStager
 		code, err := Container{}.Run(ctx, Task{
 			Template:            &wfv1.Template{},
 			Command:             []string{"sh", "-c", "echo \"$MAINDRIVER_TEST_INHERITED/$MAINDRIVER_TEST_SET\""},
 			Env:                 env,
 			IncludeScriptOutput: true,
 			WorkDir:             dir,
-		}, &sink)
+		}, &stager)
 		require.NoError(t, err)
 		require.Equal(t, 0, code)
 		out, err := os.ReadFile(filepath.Join(dir, "stdout"))
@@ -142,9 +136,9 @@ func TestContainerRun_ArchivedLogsCapture(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	tmpl := &wfv1.Template{ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}}
-	var sink recordingSink
+	var stager recordingStager
 
-	code, err := Container{}.Run(ctx, Task{Template: tmpl, Command: []string{"sh", "-c", "echo out; echo err >&2"}, WorkDir: dir}, &sink)
+	code, err := Container{}.Run(ctx, Task{Template: tmpl, Command: []string{"sh", "-c", "echo out; echo err >&2"}, WorkDir: dir}, &stager)
 
 	require.NoError(t, err)
 	assert.Equal(t, 0, code)
@@ -152,8 +146,8 @@ func TestContainerRun_ArchivedLogsCapture(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(combined), "out\n")
 	assert.Contains(t, string(combined), "err\n")
-	assert.Equal(t, recordingSink{
+	assert.Equal(t, recordingStager{
 		{Kind: OutputStdout, Path: filepath.Join(dir, "stdout")},
 		{Kind: OutputCombined, Path: filepath.Join(dir, "combined")},
-	}, sink)
+	}, stager)
 }

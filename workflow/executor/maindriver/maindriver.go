@@ -40,28 +40,21 @@ const (
 type Output struct {
 	Kind OutputKind
 	// Path is where the file is now. It may not exist: optional outputs are
-	// the sink's decision.
+	// the stager's decision.
 	Path string
 }
 
-// ResultSink receives a task's output files.
-type ResultSink interface {
-	Put(ctx context.Context, nodeID string, out Output) error
-}
-
-// TaskSource yields the tasks a worker runs, one at a time.
-type TaskSource interface {
-	// Next returns the next task. Check err first. ok=false means that the
-	// source has no more tasks.
-	Next(ctx context.Context) (task Task, ok bool, err error)
+// OutputStager receives a task's output files as main produces them.
+type OutputStager interface {
+	Stage(ctx context.Context, nodeID string, out Output) error
 }
 
 // MainDriver runs a task's main command exactly once. Retries, liveness,
 // signal delivery and every other concern of the pod layout belong to the
 // caller.
 type MainDriver interface {
-	// Run blocks until the command exits and the sink receives its outputs.
+	// Run blocks until the command exits and the stager receives its outputs.
 	// exitCode is the exit code of the command, whatever err is. A handover
 	// error replaces the exit error and stops further handover.
-	Run(ctx context.Context, task Task, sink ResultSink) (exitCode int, err error)
+	Run(ctx context.Context, task Task, stager OutputStager) (exitCode int, err error)
 }

@@ -266,13 +266,6 @@ const (
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
-	// StatusMarkerPath is the marker file the supervisor writes atomically once
-	// pre-main setup concludes (init-less pod mode). The emissary in main waits
-	// for it before exec'ing the user command. Its contents encode the outcome:
-	// empty means success; a non-empty body is the failure reason, which the
-	// emissary logs before exiting non-zero.
-	StatusMarkerPath = VarRunArgoPath + "/status"
-
 	// ExitCodeSupervisorPreMainFailure is the exit code main's emissary uses
 	// when the supervisor's status marker reports a failure before exec'ing the user
 	// command (init-less pod mode). 65 = sysexits.h EX_DATAERR, chosen to be
