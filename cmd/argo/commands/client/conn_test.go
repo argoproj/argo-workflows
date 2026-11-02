@@ -42,3 +42,63 @@ func TestCreateOfflineClient(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestNewAPIClientRequiresClientCertificateAndKey(t *testing.T) {
+	originalOverrides := overrides
+	originalArgoServerOpts := ArgoServerOpts
+	t.Cleanup(func() {
+		overrides = originalOverrides
+		ArgoServerOpts = originalArgoServerOpts
+	})
+
+	tests := []struct {
+		name       string
+		clientCert string
+		clientKey  string
+	}{
+		{
+			name:       "certificate without key",
+			clientCert: "client.crt",
+		},
+		{
+			name:      "key without certificate",
+			clientKey: "client.key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			overrides.AuthInfo.ClientCertificate = tt.clientCert
+			overrides.AuthInfo.ClientKey = tt.clientKey
+
+			_, _, err := NewAPIClient(logging.TestContext(t.Context()))
+
+			require.EqualError(t, err, "--client-certificate and --client-key must be provided together")
+		})
+	}
+}
+
+func TestNewAPIClientUsesExplicitCertificateAuthority(t *testing.T) {
+	originalOverrides := overrides
+	originalArgoServerOpts := ArgoServerOpts
+	originalOffline := Offline
+	originalOfflineFiles := OfflineFiles
+	t.Cleanup(func() {
+		overrides = originalOverrides
+		ArgoServerOpts = originalArgoServerOpts
+		Offline = originalOffline
+		OfflineFiles = originalOfflineFiles
+	})
+
+	overrides.AuthInfo.ClientCertificate = ""
+	overrides.AuthInfo.ClientKey = ""
+	overrides.ClusterInfo.CertificateAuthority = "ca.crt"
+	overrides.ClusterInfo.ProxyURL = ""
+	Offline = true
+	OfflineFiles = nil
+
+	_, _, err := NewAPIClient(logging.TestContext(t.Context()))
+
+	require.NoError(t, err)
+	assert.Equal(t, "ca.crt", ArgoServerOpts.CACert)
+}

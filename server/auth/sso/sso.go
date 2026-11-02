@@ -2,9 +2,9 @@ package sso
 
 import (
 	"context"
-	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
@@ -45,6 +46,9 @@ type Interface interface {
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
+	LogoutURL() string
+	LogoutRedirectURL() string
+	ClientID() string
 }
 
 var _ Interface = &sso{}
@@ -53,13 +57,14 @@ type Config = config.SSOConfig
 
 type sso struct {
 	config            *oauth2.Config
+	logoutURL         string
+	logoutRedirectURL string
 	issuer            string
 	idTokenVerifier   *oidc.IDTokenVerifier
 	httpClient        *http.Client
 	baseHRef          string
 	secure            bool
-	privateKey        crypto.PrivateKey
-	signer            jose.Signer
+	encryptionKey     []byte
 	encrypter         jose.Encrypter
 	rbacConfig        *config.RBACConfig
 	expiry            time.Duration
@@ -67,6 +72,21 @@ type sso struct {
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
 	logger            logging.Logger
+}
+
+// LogoutURL returns the OIDC end-session endpoint discovered from the provider.
+func (s *sso) LogoutURL() string {
+	return s.logoutURL
+}
+
+// LogoutRedirectURL returns the configured post-logout redirect URL.
+func (s *sso) LogoutRedirectURL() string {
+	return s.logoutRedirectURL
+}
+
+// ClientID returns the OIDC client identifier used by the SSO configuration.
+func (s *sso) ClientID() string {
+	return s.config.ClientID
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -80,6 +100,7 @@ func (s *sso) IsRBACEnabled() bool {
 type providerInterface interface {
 	Endpoint() oauth2.Endpoint
 	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
+	Claims(v any) error
 }
 
 type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
@@ -100,6 +121,7 @@ func newSso(
 	baseHRef string,
 	secure bool,
 ) (Interface, error) {
+	baseHRef = authcookie.NormalizePath(baseHRef)
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
@@ -134,6 +156,17 @@ func newSso(
 	provider, err := factory(oidcContext, c.Issuer)
 	if err != nil {
 		return nil, err
+	}
+	// Claims is implemented by oidc.Provider and contains the discovery
+	// metadata, including the optional end_session_endpoint.
+	var providerMetadata struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	var logoutURL string
+	if claimsErr := provider.Claims(&providerMetadata); claimsErr == nil {
+		logoutURL = providerMetadata.EndSessionEndpoint
+	} else {
+		logging.RequireLoggerFromContext(ctx).WithError(claimsErr).Warn(ctx, "Failed to read OIDC provider metadata; provider logout disabled")
 	}
 	var clientIDObj *apiv1.Secret
 	if c.ClientID.Name == c.ClientSecret.Name {
@@ -191,14 +224,17 @@ func newSso(
 		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: privateKey}, nil)
+	// The server both mints and verifies these tokens, so symmetric AEAD is
+	// sufficient: encryption with A256GCM also authenticates, and go-jose v4
+	// only permits encrypt-only JWTs with symmetric algorithms. Asymmetric
+	// encryption needed a nested signature, which pushed the cookie over the
+	// 4KB browser limit (https://github.com/argoproj/argo-workflows/issues/16744).
+	// The AES key is derived from the RSA key already stored in the secret so
+	// that existing installations don't need a secret migration.
+	encryptionKey := sha256.Sum256(x509.MarshalPKCS1PrivateKey(privateKey))
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.DIRECT, Key: encryptionKey[:]}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create JWT signer: %w", err)
-	}
-	encrypterOptions := (&jose.EncrypterOptions{Compression: jose.DEFLATE}).WithContentType("JWT")
-	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, encrypterOptions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
+		return nil, fmt.Errorf("failed to create JWT encrypter: %w", err)
 	}
 
 	var filterGroupsRegex []*regexp.Regexp
@@ -212,7 +248,7 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "logoutRedirectUrl": c.LogoutRedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
@@ -221,12 +257,13 @@ func newSso(
 
 	return &sso{
 		config:            config,
+		logoutURL:         logoutURL,
+		logoutRedirectURL: c.LogoutRedirectURL,
 		idTokenVerifier:   idTokenVerifier,
 		baseHRef:          baseHRef,
 		httpClient:        httpClient,
 		secure:            secure,
-		privateKey:        privateKey,
-		signer:            signer,
+		encryptionKey:     encryptionKey[:],
 		encrypter:         encrypter,
 		rbacConfig:        c.RBAC,
 		expiry:            c.GetSessionExpiry(),
@@ -347,7 +384,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		PreferredUsername:       c.PreferredUsername,
 		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
-	raw, err := jwt.SignedAndEncrypted(s.signer, s.encrypter).Claims(argoClaims).Serialize()
+	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).Serialize()
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to encrypt and serialize the jwt token")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -355,14 +392,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	value := Prefix + raw
 	s.logger.Debug(r.Context(), "handing oauth2 callback")
-	http.SetCookie(w, &http.Cookie{
-		Value:    value,
-		Name:     "authorization",
-		Path:     s.baseHRef,
-		Expires:  time.Now().Add(s.expiry),
-		SameSite: http.SameSiteStrictMode,
-		Secure:   s.secure,
-	})
+	authcookie.SetAuthCookie(w, value, s.baseHRef, time.Now().Add(s.expiry), s.secure)
 
 	finalRedirectURL := cookie.Value
 	if !isValidFinalRedirectURL(cookie.Value) {
@@ -394,24 +424,14 @@ func isValidFinalRedirectURL(redirect string) bool {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
-	enc, err := jose.ParseEncrypted(strings.TrimPrefix(authorization, Prefix), []jose.KeyAlgorithm{jose.RSA_OAEP_256}, []jose.ContentEncryption{jose.A256GCM})
+	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix), []jose.KeyAlgorithm{jose.DIRECT}, []jose.ContentEncryption{jose.A256GCM})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)
 	}
 
-	payload, err := enc.Decrypt(s.privateKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt token: %w", err)
-	}
-
-	tok, err := jwt.ParseSigned(string(payload), []jose.SignatureAlgorithm{jose.RS256})
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse signed token: %w", err)
-	}
-
 	c := &types.Claims{}
-	if err := tok.Claims(s.privateKey.(*rsa.PrivateKey).Public(), c); err != nil {
-		return nil, fmt.Errorf("failed to verify signed token: %w", err)
+	if err := tok.Claims(s.encryptionKey, c); err != nil {
+		return nil, fmt.Errorf("failed to decrypt token: %w", err)
 	}
 
 	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {

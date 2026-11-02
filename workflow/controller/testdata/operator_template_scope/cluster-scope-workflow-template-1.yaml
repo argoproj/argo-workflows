@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: test-template-scope-1
+spec:
+  templates:
+  - name: steps
+    steps:
+    - - name: hello
+        template: hello
+      - name: other-wftmpl
+        templateRef:
+          name: test-template-scope-2
+          template: steps
+  - name: hello
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        print("hello world")

@@ -1,107 +1,21 @@
 package commands
 
 import (
-	"context"
-	"fmt"
-	"time"
-
-	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel/trace"
 
-	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
+	argoexecexecutor "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
+// NewWaitCommand is the legacy wait container: everything after main starts.
 func NewWaitCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := waitContainer(cmd.Context())
-			if err != nil {
-				return fmt.Errorf("%w", err)
-			}
-			return nil
+			// Returned unwrapped: main() reads the exit code with a type assertion.
+			return argoexecexecutor.RunHarness(cmd.Context(), clientConfig, varRunArgo, wfexecutor.WaitRole)
 		},
 	}
 	return &command
-}
-
-//nolint:contextcheck
-func waitContainer(ctx context.Context) error {
-	ctx = tracing.InjectTraceContext(ctx)
-	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
-	defer func() {
-		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
-			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
-		}
-	}()
-	ctx, span := wfExecutor.Tracing.StartRunWaitContainer(ctx, wfExecutor.WorkflowName(), wfExecutor.Namespace)
-	defer span.End()
-
-	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	//nolint:contextcheck
-	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
-
-	errHandler := wfExecutor.HandleError(bgCtx)
-	defer errHandler()                     // Must be placed at the bottom of defers stack.
-	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
-	defer func() {
-		err := wfExecutor.KillArtifactSidecars(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(bgCtx, err)
-		}
-	}()
-	defer stats.LogStats()
-
-	stats.StartStatsTicker(5 * time.Minute)
-
-	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
-	wfExecutor.InitializeOutput(bgCtx)
-
-	// Wait for main container to complete
-	err := wfExecutor.Wait(ctx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	if wfExecutor.Template.Resource != nil {
-		// Save log artifacts for resource template
-		err = wfExecutor.ReportOutputsLogs(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(ctx, err)
-		}
-		return wfExecutor.HasError()
-	}
-
-	// Capture output script result
-	err = wfExecutor.CaptureScriptResult(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Saving output parameters
-	err = wfExecutor.SaveParameters(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Saving output artifacts
-	artifacts, err := wfExecutor.SaveArtifacts(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Save log artifacts
-	logArtifacts := wfExecutor.SaveLogs(bgCtx)
-	artifacts = append(artifacts, logArtifacts...)
-
-	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	return wfExecutor.HasError()
 }

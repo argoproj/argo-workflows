@@ -16,7 +16,7 @@ To enable the OpenTelemetry protocol you must set the environment variable `OTEL
 This must be set on the workflow-controller, and ideally on all the containers (`main`, `init`, and `wait`) in the workload.
 You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
 The OpenTelemetry operator can also instrument your workload pods so that they emit spans as part of workflow tracing and this is the recommended setup.
-It will not be enabled if left blank, unlike some other implementations.
+It will not be enabled unless `OTEL_EXPORTER_OTLP_ENDPOINT` or the applicable signal-specific endpoint is configured and non-empty.
 
 You can configure the protocol using the environment variables documented in the [OpenTelemetry standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
@@ -44,7 +44,7 @@ You can configure the [temporality](https://opentelemetry.io/docs/specs/otel/met
 
 ```yaml
 metricsConfig: |
-  # >= 3.6. Which temporality to use for OpenTelemetry. Default is "Cumulative"
+  # Which temporality to use for OpenTelemetry. Default is "Cumulative"
   temporality: Delta
 ```
 
@@ -121,7 +121,10 @@ kubectl -n argo port-forward deploy/workflow-controller 9090:9090
 ```
 
 !!! Note "UTF-8 in Prometheus metrics"
-    Version `v3.7` of Argo upgraded the `github.com/prometheus/client_golang` library, changing the `NameValidationScheme` to `UTF8Validation`. This allows metric names to retain their original delimiters (e.g., .), instead of replacing them with underscores. To maintain the legacy behavior, you can set the environment variable `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME`. For more details, refer to the official [Prometheus documentation](https://prometheus.io/docs/guides/utf8/).
+    Argo uses the `UTF8Validation` `NameValidationScheme` from the `github.com/prometheus/client_golang` library.
+    This allows metric names to retain their original delimiters (e.g., .), instead of replacing them with underscores.
+    To use the legacy behavior, you can set the environment variable `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME`.
+    For more details, refer to the official [Prometheus documentation](https://prometheus.io/docs/guides/utf8/).
 
 ### Common Metrics Settings
 

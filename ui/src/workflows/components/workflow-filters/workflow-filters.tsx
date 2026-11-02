@@ -101,7 +101,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <p className='wf-filters-container__title'>Namespace</p>
                     <NamespaceFilter value={props.namespace} onChange={props.setNamespace} extraNamespaces={getUniqueNamespaces(props.workflows)} />
                 </div>
-                <div className='columns small-2 xlarge-12'>
+                <div className='columns small-2 xlarge-12' data-testid='workflow-name-filter'>
                     <DropDown
                         isMenu
                         closeOnInsideClick

@@ -12,7 +12,7 @@ package deprecation
 import (
 	"context"
 
-	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
+	"github.com/argoproj/argo-workflows/v4/util/wfcontext"
 )
 
 type metricsFunc func(context.Context, string, string)
@@ -42,6 +42,6 @@ func Initialize(m metricsFunc) {
 
 func Record(ctx context.Context, deprecation Type) {
 	if metricsF != nil {
-		metricsF(ctx, deprecation.asString(), wfctx.ObjectNamespace(ctx))
+		metricsF(ctx, deprecation.asString(), wfcontext.ObjectNamespace(ctx))
 	}
 }

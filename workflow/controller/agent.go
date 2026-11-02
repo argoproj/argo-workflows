@@ -2,24 +2,32 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v4/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
+
+// agentPodRecreationDelay is how long after a Failed agent pod was created the
+// controller replaces it, so an agent pod that keeps failing is replaced at
+// most this often.
+const agentPodRecreationDelay = time.Minute
 
 func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
@@ -48,9 +56,57 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Info(ctx, "updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(ctx, pod)
-	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+	if newPhase != wfv1.NodeFailed && newPhase != wfv1.NodeError {
+		return
 	}
+	err := fmt.Errorf(`agent pod failed with reason:"%s"`, message)
+	if newPhase == wfv1.NodeFailed && woc.canRecreateAgentPod() {
+		woc.recreateAgentPod(ctx, pod, err)
+		return
+	}
+	woc.markTaskSetNodesError(ctx, err)
+}
+
+// canRecreateAgentPod reports whether a Failed agent pod may be replaced: the
+// controller creates the agent pods, and the workflow is not ending, so the
+// replacement would still have work to do.
+func (woc *wfOperationCtx) canRecreateAgentPod() bool {
+	return !woc.controller.Config.DisableAgentPodCreation &&
+		!woc.wf.Status.Fulfilled() &&
+		!woc.GetShutdownStrategy().Enabled() &&
+		(woc.workflowDeadline == nil || time.Now().UTC().Before(*woc.workflowDeadline))
+}
+
+// recreateAgentPod deletes a Failed agent pod, once agentPodRecreationDelay
+// has passed since it was created, so that reconcileAgentPod creates a
+// replacement. Like an agent container the kubelet restarts, the replacement
+// runs every task that has no result yet. There is no limit: as with a
+// crash-looping container, a task that never gets a result fails by its own
+// deadline or timeout. Each replacement is recorded as a Warning event on the
+// workflow, with the reason the pod failed.
+func (woc *wfOperationCtx) recreateAgentPod(ctx context.Context, pod *apiv1.Pod, cause error) {
+	log := woc.log.WithField("podName", pod.Name)
+	if wait := time.Until(woc.agentPodRecheckTime(pod)); wait > 0 {
+		log.WithField("wait", wait).Info(ctx, "Agent pod failed, waiting before recreating it")
+		woc.requeueAfter(wait)
+		return
+	}
+	log.Info(ctx, "Agent pod failed, recreating it")
+	woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "AgentPodFailed", fmt.Sprintf("%v; recreating it", cause))
+	// By UID, so that a replacement that already exists is never deleted.
+	woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+	woc.requeue()
+}
+
+// agentPodRecheckTime is when to look at a Failed agent pod again:
+// agentPodRecreationDelay after it was created, or the workflow deadline if that
+// is sooner, so the deadline errors its tasks on time.
+func (woc *wfOperationCtx) agentPodRecheckTime(pod *apiv1.Pod) time.Time {
+	recheckAt := pod.CreationTimestamp.Add(agentPodRecreationDelay)
+	if woc.workflowDeadline != nil && woc.workflowDeadline.Before(recheckAt) {
+		return *woc.workflowDeadline
+	}
+	return recheckAt
 }
 
 func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {
@@ -137,7 +193,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
-		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
+		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, woc.controller.requeueTime.String())},
 		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
 		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
 	}
@@ -229,14 +285,15 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
-	woc.addMetadata(pod, tmpl)
-	woc.addDNSConfig(pod)
+	// Agent pods have no boundary node, so there is no boundary template to apply.
+	applySchedulingConstraints(&pod.Spec, woc.execWf.Spec.DeepCopy(), tmpl, nil)
+	applyPodMetadata(&pod.ObjectMeta, &woc.execWf.Spec, tmpl)
+	applyDNSConfig(&pod.Spec, &woc.execWf.Spec)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
 		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
 		if patchErr != nil {
-			return nil, errors.Wrap(patchErr, "", "Error applying PodSpecPatch")
+			return nil, argoerrors.Wrap(patchErr, "", "Error applying PodSpecPatch")
 		}
 		pod.Spec = *patchedPodSpec
 	}
@@ -247,20 +304,44 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	log.Debug(ctx, "Creating Agent pod")
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	// Submission goes through the SHARED createPodFromBuild primitive
+	// (workflowpod_submit.go), the same impure half the workload path uses. The
+	// agent pod carries none of the workload-only machinery (no podLayout, no
+	// init-less/legacy split, no node-status side effects), so it wraps the bare
+	// pod in a podBuildResult and submits it directly.
+	// The fresh flag (genuine create vs AlreadyExists recovery) is irrelevant
+	// here: agent pods are not subject to workflow parallelism limits and do
+	// not count toward activePods, so it is deliberately discarded.
+	created, _, err := woc.createPodFromBuild(ctx, &podBuildResult{Pod: pod}, log)
 	if err != nil {
 		log.WithError(err).Info(ctx, "Failed to create Agent pod")
-		if apierr.IsAlreadyExists(err) {
-			// get a reference to the currently existing Pod since the created pod returned before was nil.
-			if existing, getErr := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); getErr == nil {
-				return existing, nil
+		// The agent's transient-error contract: requeue and report no pod,
+		// rather than propagating the error up through reconcileAgentPod.
+		// createPodFromBuild routes the agent through the shared rate limiter,
+		// which returns ErrResourceRateLimitReached when throttled; treat it
+		// like the workload path's requeueIfTransientErr condition so a
+		// rate-limited agent pod creation requeues gracefully instead of
+		// surfacing a hard error.
+		if errorsutil.IsTransientErr(ctx, err) || errors.Is(err, ErrResourceRateLimitReached) {
+			// The rate limiter runs before Create, so on the rate-limited path
+			// the AlreadyExists→Get recovery inside createPodFromBuild never
+			// runs. A pod created by a prior reconcile that has not yet reached
+			// the informer (checked at the top of this function) must be
+			// recovered with a direct Get rather than requeued as though no pod
+			// existed.
+			if errors.Is(err, ErrResourceRateLimitReached) {
+				if existing, getErr := woc.getPod(ctx, podName); getErr == nil {
+					log.Info(ctx, "Recovered existing Agent pod on rate-limited create")
+					return existing, nil
+				}
 			}
-		}
-		if errorsutil.IsTransientErr(ctx, err) {
 			woc.requeue()
-			return created, nil
+			return nil, nil
 		}
-		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %w", err))
+		// createPodFromBuild wraps non-transient failures generically; add the
+		// agent-pod context so an agent-pod creation failure is distinguishable
+		// from a workload-pod one in logs/status.
+		return nil, fmt.Errorf("failed to create Agent pod: %w", err)
 	}
 	log.Info(ctx, "Created Agent pod")
 	return created, nil
@@ -272,29 +353,63 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
-	for namespace := range namespaces {
-		for _, plug := range woc.controller.executorPlugins[namespace] {
-			s := plug.Spec.Sidecar
-			c := s.Container.DeepCopy()
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      volumeMountVarArgo.Name,
-				MountPath: volumeMountVarArgo.MountPath,
-				ReadOnly:  true,
-				// only mount the token for this plugin, not others
-				SubPath: c.Name,
-			})
-			if s.AutomountServiceAccountToken {
-				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	wFPlugins, err := woc.execWf.Spec.AsExecutorPluginSpec()
+	if err != nil {
+		return nil, nil, err
+	}
+	isGetPluginsFromWorkflow := len(wFPlugins) > 0
+	if isGetPluginsFromWorkflow && !woc.controller.enableWorkflowLevelExecutorPlugins {
+		return nil, nil, fmt.Errorf(
+			"workflow-level executor plugins are disabled in the controller. To enable them, set the environment variable ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true",
+		)
+	}
+	if isGetPluginsFromWorkflow {
+		for _, plugin := range wFPlugins {
+			sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, plugin)
+			if err != nil {
+				return nil, nil, err
+			}
+			sidecars = append(sidecars, *sidecar)
+			if pluginVolume != nil {
+				volumes = append(volumes, *pluginVolume)
+			}
+		}
+	} else {
+		for namespace := range namespaces {
+			for _, plug := range woc.controller.executorPlugins[namespace] {
+				sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, *plug)
 				if err != nil {
 					return nil, nil, err
 				}
-				volumes = append(volumes, *volume)
-				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+				sidecars = append(sidecars, *sidecar)
+				if pluginVolume != nil {
+					volumes = append(volumes, *pluginVolume)
+				}
 			}
-			sidecars = append(sidecars, *c)
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug spec.Plugin) (*apiv1.Container, *apiv1.Volume, error) {
+	s := plug.Spec.Sidecar
+	c := s.Container.DeepCopy()
+	c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+		Name:      volumeMountVarArgo.Name,
+		MountPath: volumeMountVarArgo.MountPath,
+		ReadOnly:  true,
+		// only mount the token for this plugin, not others
+		SubPath: c.Name,
+	})
+	if !s.AutomountServiceAccountToken {
+		return c, nil, nil
+	}
+	volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	if err != nil {
+		return nil, nil, err
+	}
+	c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+	return c, volume, nil
 }
 
 func addresses(containers []apiv1.Container) []string {

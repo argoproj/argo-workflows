@@ -19,9 +19,11 @@ This document outlines environment variables that can be used to customize behav
 | `ARGO_PROGRESS_FILE_TICK_DURATION`       | `time.Duration`     | `3s`                                                                                        | How often the progress file is read by the executor. Set to 0 to disable self reporting progress.                                                                                                                                                                        |
 | `ARGO_REMOVE_PVC_PROTECTION_FINALIZER`   | `bool`              | `true`                                                                                      | Remove the `kubernetes.io/pvc-protection` finalizer from persistent volume claims (PVC) after marking PVCs created for the workflow for deletion, so deleted is not blocked until the pods are deleted.  [#6629](https://github.com/argoproj/argo-workflows/issues/6629) |
 | `ARGO_TRACE`                             | `string`            | ``                                                                                          | Whether to enable tracing statements in Argo components.                                                                                                                                                                                                                 |
+| `ARGO_ARTIFACT_GC_RETRY_WINDOW`          | `time.Duration`     | `60m`                                                                                       | How long after a workflow completes (or is deleted) the controller keeps retrying a failed attempt to start artifact GC before abandoning it.                                                                                                                             |
 | `ARGO_AGENT_PATCH_RATE`                  | `time.Duration`     | `DEFAULT_REQUEUE_TIME`                                                                      | Rate that the Argo Agent will patch the workflow task-set.                                                                                                                                                                                                               |
 | `ARGO_AGENT_CPU_LIMIT`                   | `resource.Quantity` | `100m`                                                                                      | CPU resource limit for the agent.                                                                                                                                                                                                                                        |
 | `ARGO_AGENT_MEMORY_LIMIT`                | `resource.Quantity` | `256m`                                                                                      | Memory resource limit for the agent.                                                                                                                                                                                                                                     |
+| `COMPLETED_REQUEUE_TIME_MS` | `int` | `DEFAULT_REQUEUE_TIME` | Prototype minimum delay in milliseconds before reconciling after a completion, currently only for HTTP and executor-plugin nodes in a WorkflowTaskSet ([details](#completed_requeue_time_ms)). |
 | `ARGO_POD_STATUS_CAPTURE_FINALIZER`      | `bool`              | `false`                                                                                     | The finalizer blocks the deletion of pods until the controller captures their status.
 | `BUBBLE_ENTRY_TEMPLATE_ERR`              | `bool`              | `true`                                                                                      | Whether to bubble up template errors to workflow.                                                                                                                                                                                                                        |
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
@@ -52,6 +54,8 @@ This document outlines environment variables that can be used to customize behav
 | `RETRY_BACKOFF_STEPS`                    | `int`               | `5`                                                                                         | The retry back-off steps when retrying API calls.                                                                                                                                                                                                                        |
 | `RETRY_HOST_NAME_LABEL_KEY`              | `string`            | `kubernetes.io/hostname`                                                                    | The label key for host name used when retrying templates.                                                                                                                                                                                                                |
 | `TRANSIENT_ERROR_PATTERN`                | `string`            | `""`                                                                                        | The regular expression that represents additional patterns for transient errors.                                                                                                                                                                                         |
+| `WORKFLOW_COMPRESSION_ALGORITHM`         | `string`            | `gzip`                                                                                      | The algorithm used to compress node statuses of large workflows: "`gzip`", "`zstd`", or "`brotli`". Decompression auto-detects the algorithm, but workflows written with a non-`gzip` algorithm cannot be read by versions without support for it, so only change this after all components are upgraded. See [node status compression](offloading-large-workflows.md#node-status-compression). |
+| `WORKFLOW_COMPRESSION_LEVEL`             | `int`               | per algorithm                                                                               | The compression level for `WORKFLOW_COMPRESSION_ALGORITHM`. Range and default depend on the algorithm: `gzip` 1-9 (default 6), `zstd` 1-4 (default 2), `brotli` 0-11 (default 6). See [node status compression](offloading-large-workflows.md#node-status-compression) for size/speed trade-offs.                                                          |
 | `WF_DEL_PROPAGATION_POLICY`              | `string`            | `""`                                                                                        | The deletion propagation policy for workflows.                                                                                                                                                                                                                           |
 | `WORKFLOW_GC_PERIOD`                     | `time.Duration`     | `5m`                                                                                        | The periodicity for GC of workflows.                                                                                                                                                                                                                                     |
 | `SEMAPHORE_NOTIFY_DELAY`                 | `time.Duration`     | `1s`                                                                                        | Tuning Delay when notifying semaphore waiters about availability in the semaphore                                                                                                                                                                                        |
@@ -95,6 +99,31 @@ spec:
               value: 30s
 ```
 
+### COMPLETED_REQUEUE_TIME_MS
+
+This opt-in prototype sets the minimum delay before reconciling a workflow after a completion, currently applying only to HTTP and executor-plugin nodes whose results arrive through a [WorkflowTaskSet](http-template.md#argo-agent-rbac).
+Use it for short nodes that spend longer waiting for reconciliation than running.
+Specify a positive integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.
+`DEFAULT_REQUEUE_TIME` caps the completion delay and remains the delay for all other updates, including pod and WorkflowTaskResult completions.
+Leave the setting unset or empty to keep normal rate limiting.
+The controller fails to start if the value is zero, negative, not an integer, or too large to represent as an internal duration.
+
+The agent batches results on its own ticker at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
+Results can wait up to that patch interval before reaching the controller; this setting does not change agent batching.
+To see much benefit, lower `ARGO_AGENT_PATCH_RATE` alongside this setting, for example:
+
+```yaml
+env:
+  - name: COMPLETED_REQUEUE_TIME_MS
+    value: "250"
+  - name: ARGO_AGENT_PATCH_RATE
+    value: "1s"
+```
+
+This is a completion scheduling delay, not a minimum interval between all reconciliations: other events may enqueue a workflow sooner.
+The prototype has no per-workflow throttling, so a large executor-plugin fan-out can reconcile at roughly the configured rate, increasing load on the controller, API server and etcd.
+Gains may vary under load: if the workflow informer is behind the controller's last write, the controller rejects the reconcile as outdated and waits the full `DEFAULT_REQUEUE_TIME` before retrying.
+
 ## Executor
 
 | Name                                   | Type            | Default | Description                                                                                            |
@@ -107,9 +136,9 @@ spec:
 | `EXECUTOR_RETRY_BACKOFF_FACTOR`        | `float`         | `1.6`   | The retry back-off factor when the workflow executor performs retries.                                 |
 | `EXECUTOR_RETRY_BACKOFF_JITTER`        | `float`         | `0.5`   | The retry back-off jitter when the workflow executor performs retries.                                 |
 | `EXECUTOR_RETRY_BACKOFF_STEPS`         | `int`           | `5`     | The retry back-off steps when the workflow executor performs retries.                                  |
+| `EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS` | `int` | `600` | How long, in seconds, the workflow executor retries each final task result write (outputs, completion) through transient errors before giving up; the placeholder write when the pod starts gives up after 30 seconds whatever this is set to, and progress writes give up after 30 seconds and the executor tries again on the next update; the backoff schedule is fixed and not affected by `EXECUTOR_RETRY_BACKOFF_*`; the value must be positive, and non-positive values use the default. |
 | `REMOVE_LOCAL_ART_PATH`                | `bool`          | `false` | Whether to remove local artifacts.                                                                     |
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
-| `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s`    | The time interval for wait container to check whether the containers have completed.                   |
 
 You can set environment variables for the Executor in your [`workflow-controller-configmap`](workflow-controller-configmap.md) like the following:
 
@@ -132,7 +161,9 @@ data:
 |--------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------|
 | `ARGO_ARTIFACT_SERVER`                     | `bool`   | `true`  | Enable [Workflow Archive](workflow-archive.md) endpoints
 | `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
+| `ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES`    | `int`    | `1073741824` | Maximum total request body size accepted by the input artifact upload endpoint, in bytes. Requests over this size receive `413 Request Entity Too Large`.  |
 | `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
+| `ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL`       | `time.Duration` | `1m` | How long a successful `SelfSubjectReview` of a `client` auth mode token is remembered before the API server is consulted again. `0` disables the cache. |
 | `CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS`   | `bool`   | `false` | Disable validation checks for artifact plugin sidecars. For CI/testing use only.                                        |
 | `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |

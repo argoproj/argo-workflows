@@ -25,6 +25,14 @@ func run() int {
 	err := commands.NewRootCommand().ExecuteContext(ctx)
 	if err != nil {
 		if exitError, ok := err.(errors.Exited); ok {
+			// An Exited error that wraps a cause (e.g. the init-less supervisor
+			// pre-main failure) carries a descriptive message worth surfacing as the
+			// termination message; a bare exit-status error (the user command's own
+			// exit) wraps nothing and reports only its code. The cause is already
+			// logged at its source.
+			if _, ok := err.(interface{ Unwrap() error }); ok {
+				util.WriteTerminateMessage(err.Error())
+			}
 			if exitError.ExitCode() >= 0 {
 				return exitError.ExitCode()
 			}

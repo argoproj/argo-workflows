@@ -93,40 +93,40 @@ func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Art
 	return res.Body, nil
 }
 
-// Save writes the artifact to the URL
-func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
-	cleanPath := filepath.Clean(path)
-	f, err := os.Open(cleanPath)
-	if err != nil {
-		return err
-	}
-	var req *http.Request
-	var url string
-	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
-		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
+// buildPutRequest constructs the PUT request for the artifact's Artifactory or
+// HTTP destination, applying auth and headers. Exactly one of the two locations
+// must be set; both or neither is a configuration error.
+func (h *ArtifactDriver) buildPutRequest(ctx context.Context, body io.Reader, outputArtifact *wfv1.Artifact) (*http.Request, string, error) {
+	switch {
+	case outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil:
+		url := outputArtifact.Artifactory.URL
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 		if err != nil {
-			return err
+			return nil, "", err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
-	} else {
-		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
+		return req, url, nil
+	case outputArtifact.Artifactory == nil && outputArtifact.HTTP != nil:
+		url := outputArtifact.HTTP.URL
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 		if err != nil {
-			return err
+			return nil, "", err
 		}
-		for _, h := range outputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
+		for _, header := range outputArtifact.HTTP.Headers {
+			req.Header.Add(header.Name, header.Value)
 		}
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
 		}
+		return req, url, nil
+	default:
+		return nil, "", errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
-	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
-	req.GetBody = func() (io.ReadCloser, error) {
-		return os.Open(cleanPath)
-	}
+}
 
+// doPutRequest sends req and fails on a non-2xx response. what describes the
+// operation in error messages, e.g. "saving file /tmp/x" or "saving stream".
+func (h *ArtifactDriver) doPutRequest(req *http.Request, url, what string) error {
 	res, err := h.Client.Do(req)
 	if err != nil {
 		return err
@@ -135,9 +135,49 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 		_ = res.Body.Close()
 	}()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving file %s to %s failed with reason: %s", path, url, res.Status)
+		return errors.InternalErrorf("%s to %s failed with reason: %s", what, url, res.Status)
 	}
 	return nil
+}
+
+// Save writes the artifact to the URL
+func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
+	cleanPath := filepath.Clean(path)
+	f, err := os.Open(cleanPath)
+	if err != nil {
+		return err
+	}
+	req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
+	if err != nil {
+		// The request never gets sent, so nothing else will close f.
+		_ = f.Close()
+		return err
+	}
+	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
+	req.GetBody = func() (io.ReadCloser, error) {
+		return os.Open(cleanPath)
+	}
+	return h.doPutRequest(req, url, fmt.Sprintf("saving file %s", path))
+}
+
+// SaveStream saves an artifact from an io.Reader to HTTP URL
+//
+// By default req.GetBody is not set: reader is a one-shot io.Reader that cannot be
+// reopened, so a 307/308 redirect (e.g. webHDFS) cannot be followed with a re-sent
+// body and surfaces as a request error. Destinations that need redirect support can
+// set HTTP.SaveStreamViaFile to buffer the stream to a temp file and delegate to Save,
+// which sets GetBody.
+func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	if outputArtifact.HTTP != nil && outputArtifact.HTTP.SaveStreamViaFile {
+		return common.SaveStreamViaTempFile(reader, "http-upload-*", func(path string) error {
+			return h.Save(ctx, path, outputArtifact)
+		})
+	}
+	req, url, err := h.buildPutRequest(ctx, reader, outputArtifact)
+	if err != nil {
+		return err
+	}
+	return h.doPutRequest(req, url, "saving stream")
 }
 
 // Delete is unsupported for the http artifacts

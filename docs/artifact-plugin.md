@@ -129,7 +129,7 @@ protoc --csharp_out=. --grpc_out=. --plugin=protoc-gen-grpc=grpc_csharp_plugin a
 
 ### 3. Implement Required Methods
 
-Your GRPC server must implement these six methods from the `ArtifactService` interface:
+Your GRPC server must implement these six required methods from the `ArtifactService` interface, plus two optional ones for streaming uploads:
 
 #### Required Methods
 
@@ -157,6 +157,20 @@ Your GRPC server must implement these six methods from the `ArtifactService` int
     - Streams artifact content directly to clients
     - Used for efficient artifact downloads in the UI
     - Could be implemented as Load() and then streaming the data from the local file, which is what some built-in drivers do, but this is not recommended as it is not efficient.
+
+#### Optional Methods
+
+These methods are **experimental**: they ship ahead of their in-tree consumer, so their framing and capability handshake may change. A plugin that implements them should expect churn until a consumer lands.
+
+1. **`SaveStream(stream SaveStreamArtifactRequest)` → `SaveArtifactResponse`**
+    - Client-streaming counterpart to `Save`: accepts an artifact's content chunk by chunk instead of requiring it to already be at a local path
+    - The first frame carries `output_artifact` (metadata only); every subsequent frame carries a `chunk` of content
+    - Optional. If your plugin doesn't implement this, Argo buffers the incoming content to a temp file and calls `Save` instead. Implement it if your storage system can accept a stream directly, to avoid that extra buffering.
+
+2. **`GetCapabilities(GetCapabilitiesRequest)` → `GetCapabilitiesResponse`**
+    - Reports whether the plugin implements `SaveStream`, via `supports_save_stream`
+    - Argo calls this **before** it starts reading the artifact's content, since a partially consumed stream can't be rewound to fall back to `Save`
+    - If unimplemented (older plugins), Argo treats that the same as `supports_save_stream: false` and uses the `Save` fallback
 
 #### Implementation Notes
 

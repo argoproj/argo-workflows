@@ -1684,6 +1684,7 @@ into the Pod's container.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | auth | [HTTPAuth](#http-auth)| `HTTPAuth` |  | |  |  |
 | headers | [][Header](#header)| `[]*Header` |  | | Headers are an optional list of headers to send with HTTP requests for artifacts |  |
+| saveStreamViaFile | boolean| `bool` |  | | SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,</br>so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When</br>false (the default) SaveStream sends the reader directly and cannot follow such a</br>redirect, since a one-shot reader cannot be replayed. |  |
 | url | string| `string` |  | | URL of the artifact |  |
 
 
@@ -2886,6 +2887,27 @@ when volume is mounted.
 
 
 
+### <span id="pod-resource-claim"></span> PodResourceClaim
+
+
+> It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
+Containers that need access to the ResourceClaim reference it with this name.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| name | string| `string` |  | | Name uniquely identifies this resource claim inside the pod.</br>This must be a DNS_LABEL. |  |
+| resourceClaimName | string| `string` |  | | ResourceClaimName is the name of a ResourceClaim object in the same</br>namespace as this pod.</br>Exactly one of ResourceClaimName and ResourceClaimTemplateName must</br>be set. |  |
+| resourceClaimTemplateName | string| `string` |  | | ResourceClaimTemplateName is the name of a ResourceClaimTemplate</br>object in the same namespace as this pod.</br>The template will be used to create a new ResourceClaim, which will</br>be bound to this pod. When this pod is deleted, the ResourceClaim</br>will also be deleted. The pod name and resource name, along with a</br>generated component, will be used to form a unique name for the</br>ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.</br>This field is immutable and no changes will be made to the</br>corresponding ResourceClaim by the control plane after creating the</br>ResourceClaim.</br>Exactly one of ResourceClaimName and ResourceClaimTemplateName must</br>be set. |  |
+
+
+
 ### <span id="pod-s-e-linux-change-policy"></span> PodSELinuxChangePolicy
 
 
@@ -3884,8 +3906,8 @@ of the first container processes are calculated.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| mutexes | [][Mutex](#mutex)| `[]*Mutex` |  | | v3.6 and after: Mutexes holds the list of Mutex lock details |  |
-| semaphores | [][SemaphoreRef](#semaphore-ref)| `[]*SemaphoreRef` |  | | v3.6 and after: Semaphores holds the list of Semaphores configuration |  |
+| mutexes | [][Mutex](#mutex)| `[]*Mutex` |  | | Mutexes holds the list of Mutex lock details |  |
+| semaphores | [][SemaphoreRef](#semaphore-ref)| `[]*SemaphoreRef` |  | | Semaphores holds the list of Semaphores configuration |  |
 
 
 
@@ -3995,10 +4017,13 @@ of the first container processes are calculated.
 | nodeSelector | map of string| `map[string]string` |  | | NodeSelector is a selector to schedule this step of the workflow to be</br>run on the selected node(s). Overrides the selector set at the workflow level. |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total. </br>*Minimum value: 1.*|  |
+| pendingTimeout | string| `string` |  | | PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.</br>It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.</br>This duration may not be applied to Step or DAG templates. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
+| podResources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |
+| resourceClaims | [][PodResourceClaim](#pod-resource-claim)| `[]*PodResourceClaim` |  | | ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.</br>Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.</br>Replaces the workflow-level resourceClaims as a whole rather than merging with it.</br>Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.</br>A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.</br>Requires the DynamicResourceAllocation feature gate to be enabled on the cluster. </br>*Optional.*|  |
 | retryStrategy | [RetryStrategy](#retry-strategy)| `RetryStrategy` |  | |  |  |
 | schedulerName | string| `string` |  | | If specified, the pod will be dispatched by specified scheduler.</br>Or it will be dispatched by workflow scope scheduler if specified.</br>If neither specified, the pod will be dispatched by default scheduler. </br>*Optional.*|  |
 | script | [ScriptTemplate](#script-template)| `ScriptTemplate` |  | |  |  |

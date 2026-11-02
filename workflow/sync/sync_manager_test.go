@@ -855,6 +855,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
+		// Distinct creation times so the queue order is the submission order
+		// this test walks through; tied times are ordered by name.
+		wf1.CreationTimestamp = metav1.Time{Time: wf.CreationTimestamp.Add(time.Second)}
+		wf2.CreationTimestamp = metav1.Time{Time: wf.CreationTimestamp.Add(2 * time.Second)}
 		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
@@ -975,6 +979,65 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		key = getHolderKey(wf, "semaphore-tmpl-level-xjvln-1607747183")
 		assert.Equal(t, key, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 	})
+}
+
+// TestReleaseAllReleasesEverySemaphoreHolder is a regression test for
+// semaphore slots leaking on workflow termination: ReleaseAll ranged over
+// holding.Holders while LockReleased rewrote that same slice via
+// slices.DeleteFunc, so holders after the first were skipped and never
+// released.
+func TestReleaseAllReleasesEverySemaphoreHolder(t *testing.T) {
+	kube := fake.NewClientset()
+	cm := v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-config",
+			Namespace: "default",
+		},
+		Data: map[string]string{
+			"template": "3",
+		},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	}, WorkflowExistenceFunc, false)
+	require.NoError(t, err)
+
+	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
+	tmpl := wf.Spec.Templates[2]
+
+	// Three nodes of the same workflow acquire the same semaphore, so the
+	// workflow's Holding entry for it ends up with three holders.
+	nodeNames := []string{
+		"semaphore-tmpl-level-xjvln-3448864205",
+		"semaphore-tmpl-level-xjvln-1607747183",
+		"semaphore-tmpl-level-xjvln-2790796867",
+	}
+	for _, nodeName := range nodeNames {
+		status, _, msg, failedLockName, acquireErr := syncManager.TryAcquire(ctx, wf, nodeName, tmpl.Synchronization)
+		require.NoError(t, acquireErr)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+	}
+	require.NotNil(t, wf.Status.Synchronization)
+	require.NotNil(t, wf.Status.Synchronization.Semaphore)
+	require.Len(t, wf.Status.Synchronization.Semaphore.Holding, 1)
+	assert.Len(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders, 3)
+
+	syncManager.ReleaseAll(ctx, wf)
+	assert.Nil(t, wf.Status.Synchronization)
+
+	// Every holder's slot must have been released, not just the first one.
+	sema := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+	require.NotNil(t, sema)
+	holders, err := sema.getCurrentHolders(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, holders)
 }
 
 type mockGetSyncLimit struct {
@@ -1948,13 +2011,13 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			now := time.Now()
 			staleTime := now.Add(-info.Config.InactiveControllerTimeout * 2) // Double the inactive timeout
 
-			_, err = info.SessionProxy.Session().Collection(info.Config.ControllerTable).Insert(&syncdb.ControllerHealthRecord{
+			_, err = info.SessionProxy.Session(ctx).Collection(info.Config.ControllerTable).Insert(&syncdb.ControllerHealthRecord{
 				Controller: activeController,
 				Time:       now,
 			})
 			require.NoError(t, err)
 
-			_, err = info.SessionProxy.Session().Collection(info.Config.ControllerTable).Insert(&syncdb.ControllerHealthRecord{
+			_, err = info.SessionProxy.Session(ctx).Collection(info.Config.ControllerTable).Insert(&syncdb.ControllerHealthRecord{
 				Controller: inactiveController,
 				Time:       staleTime,
 			})
@@ -1964,21 +2027,21 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			lockName1 := "test-lock-active"
 			lockName2 := "test-lock-inactive"
 
-			_, err = info.SessionProxy.Session().Collection(info.Config.LockTable).Insert(&syncdb.LockRecord{
+			_, err = info.SessionProxy.Session(ctx).Collection(info.Config.LockTable).Insert(&syncdb.LockRecord{
 				Name:       lockName1,
 				Controller: activeController,
 				Time:       now,
 			})
 			require.NoError(t, err)
 
-			_, err = info.SessionProxy.Session().Collection(info.Config.LockTable).Insert(&syncdb.LockRecord{
+			_, err = info.SessionProxy.Session(ctx).Collection(info.Config.LockTable).Insert(&syncdb.LockRecord{
 				Name:       lockName2,
 				Controller: inactiveController,
 				Time:       now, // Time doesn't matter, controller is what matters
 			})
 			require.NoError(t, err)
 
-			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", "foo/test-semaphore", 100)
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", "foo/test-semaphore", 100)
 			require.NoError(t, err)
 			// Initialize a semaphore so it gets added to the syncLockMap
 			testsem, err := newDatabaseSemaphore(ctx, "test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
@@ -1987,7 +2050,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			syncLockMap["sem/test-semaphore"] = testsem
 
 			// Verify both lock records exist initially
-			lockCount, err := info.SessionProxy.Session().Collection(info.Config.LockTable).Count()
+			lockCount, err := info.SessionProxy.Session(ctx).Collection(info.Config.LockTable).Count()
 			require.NoError(t, err)
 			assert.Equal(t, uint64(2), lockCount, "Should have two lock records initially")
 
@@ -1998,7 +2061,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 
 			// Check that only the active controller's lock remains
 			var remainingLocks []syncdb.LockRecord
-			err = info.SessionProxy.Session().SQL().Select("*").From(info.Config.LockTable).All(&remainingLocks)
+			err = info.SessionProxy.Session(ctx).SQL().Select("*").From(info.Config.LockTable).All(&remainingLocks)
 			require.NoError(t, err)
 
 			assert.Len(t, remainingLocks, 1, "Should have one lock record remaining")
@@ -2122,7 +2185,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				syncManager := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {
 				}, WorkflowExistenceFunc)
 				require.NotNil(t, syncManager)
-				require.NotNil(t, syncManager.dbInfo.SessionProxy.Session())
+				require.NotNil(t, syncManager.dbInfo.SessionProxy.Session(ctx))
 
 				// Create a workflow with a database semaphore
 				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
@@ -2167,7 +2230,7 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			defer cleanup()
 
 			// Original limit: 2.
-			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
 			require.NoError(t, err)
 
 			// --- Controller instance #1: two workflows acquire the semaphore. ---
@@ -2194,7 +2257,7 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			require.NotNil(t, wf2.Status.Synchronization)
 
 			// --- Limit lowered to 1 while the controller is down. ---
-			_, err = info.SessionProxy.Session().SQL().Exec("UPDATE sync_limit SET sizelimit = ? WHERE name = ?", 1, dbLimitKey)
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("UPDATE sync_limit SET sizelimit = ? WHERE name = ?", 1, dbLimitKey)
 			require.NoError(t, err)
 
 			// --- Controller instance #2: restart. Initialize from the running workflows. ---
@@ -2269,7 +2332,7 @@ func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
 			require.NoError(t, err)
 			defer cleanup()
 
-			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
 			require.NoError(t, err)
 
 			// --- Controller instance #1: two workflows acquire the semaphore. ---
@@ -2293,7 +2356,7 @@ func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
 			require.NotNil(t, wf2.Status.Synchronization)
 
 			// --- wf1's held row disappears while the controller is down. ---
-			_, err = info.SessionProxy.Session().SQL().Exec("DELETE FROM sync_state WHERE name = ? AND workflowkey = ?", "sem/"+dbLimitKey, "default/stale-holder")
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("DELETE FROM sync_state WHERE name = ? AND workflowkey = ?", "sem/"+dbLimitKey, "default/stale-holder")
 			require.NoError(t, err)
 
 			// --- Controller instance #2: restart. Initialize from the running workflows. ---

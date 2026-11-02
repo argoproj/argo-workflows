@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+  - name: supervisor
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 1
+        reason: Error
+        message: "user command failed"
+  - name: supervisor
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed

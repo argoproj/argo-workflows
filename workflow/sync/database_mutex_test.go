@@ -96,3 +96,28 @@ func TestDatabaseMutexQueueOrder(t *testing.T) {
 		})
 	}
 }
+
+// The waiting message reports available slots over the limit, matching the
+// in-memory locks, so a held mutex reads "0/1" whichever backend holds it.
+func TestDatabaseMutexWaitingMessageShowsAvailability(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			mutex, tx, deferfunc := createTestDatabaseMutex(ctx, t, "test-mutex", "default", func(string) {}, dbType)
+			defer deferfunc()
+
+			now := time.Now()
+			require.NoError(t, mutex.addToQueue(ctx, "default/workflow1", 0, now))
+			require.NoError(t, mutex.addToQueue(ctx, "default/workflow2", 0, now.Add(time.Second)))
+
+			acquired, _, err := mutex.tryAcquire(ctx, "default/workflow1", tx)
+			require.NoError(t, err)
+			require.True(t, acquired)
+
+			acquired, msg, err := mutex.tryAcquire(ctx, "default/workflow2", tx)
+			require.NoError(t, err)
+			assert.False(t, acquired)
+			assert.Contains(t, msg, "Lock status: 0/1")
+		})
+	}
+}

@@ -56,8 +56,10 @@
     "cronworkflows",
     "cwft",
     "daemoned",
+    "embeddoc",
     "featuregen",
     "ffsv",
+	"gcflags",
     "gloglevel",
     "GOPATH",
     "goroutines",
@@ -68,6 +70,8 @@
     "Kaniko",
     "Killercoda",
     "klog",
+	"multiclient",
+	"mainctrfs",
     "mypassword",
     "nonroot",
     "podpriority",
@@ -80,11 +84,14 @@
     "STRFTIMECHAR",
     "TASKNAME",
     "taskresult",
+    "taskset",
     "tmple",
     "Triaging",
     "wftmpl",
     "workflowkey",
     "workflowtemplate",
-    "workflowtemplates"
+    "workflowtemplates",
+    "zstd",
+    "pgsty"
   ]
 }

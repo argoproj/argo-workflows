@@ -207,12 +207,18 @@ func TestPriorityAcrossNamespaces(t *testing.T) {
 func TestParallelismUpdate(t *testing.T) {
 	assert := assert.New(t)
 	throttler := NewMultiThrottler(4, 0, func(Key) {})
-	throttler.Add("a/0", 0, time.Now())
-	throttler.Add("b/0", 0, time.Now())
-	throttler.Add("c/0", 0, time.Now())
-	throttler.Add("d/0", 0, time.Now())
-	throttler.Add("e/0", 0, time.Now())
-	throttler.Add("f/0", 0, time.Now())
+	// Each item is in its own namespace, so admission order is decided across
+	// namespaces by creationTime. Use strictly increasing times rather than
+	// time.Now() for every Add: on coarse-resolution clocks (e.g. Windows) the
+	// calls can return identical instants, and the resulting ties are broken by
+	// map-iteration order, making this test flaky.
+	now := time.Now()
+	throttler.Add("a/0", 0, now)
+	throttler.Add("b/0", 0, now.Add(1*time.Millisecond))
+	throttler.Add("c/0", 0, now.Add(2*time.Millisecond))
+	throttler.Add("d/0", 0, now.Add(3*time.Millisecond))
+	throttler.Add("e/0", 0, now.Add(4*time.Millisecond))
+	throttler.Add("f/0", 0, now.Add(5*time.Millisecond))
 
 	assert.True(throttler.Admit("a/0"))
 	assert.True(throttler.Admit("b/0"))
@@ -234,4 +240,50 @@ func TestNamespaceParallelismUpdate(t *testing.T) {
 	throttler.Add("argo/b", 0, time.Now())
 	assert.True(throttler.Admit("argo/a"))
 	assert.False(throttler.Admit("argo/b"))
+}
+
+// TestNamespaceParallelismDefaultUpdate verifies that raising the default namespace parallelism
+// at runtime admits a previously throttled workflow in a namespace without an explicit override.
+func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
+	assert := assert.New(t)
+	throttler := NewMultiThrottler(4, 1, func(Key) {})
+	throttler.Add("default/a", 0, time.Now())
+	throttler.Add("default/b", 0, time.Now())
+	throttler.Add("default/c", 0, time.Now())
+	assert.True(throttler.Admit("default/a"))
+	assert.False(throttler.Admit("default/b"))
+	assert.False(throttler.Admit("default/c"))
+
+	// Raising the default limit must apply to namespaces without an explicit override,
+	// and must admit all newly eligible workflows at once, not just one.
+	throttler.UpdateNamespaceParallelismDefault(3)
+	assert.True(throttler.Admit("default/b"))
+	assert.True(throttler.Admit("default/c"))
+}
+
+func TestPriorityQueueTieBreaksOnKey(t *testing.T) {
+	created := time.Now()
+	pq := &priorityQueue{itemByKey: make(map[string]*item)}
+	// Same priority and creation time: only the key can order these.
+	pq.add("ns/wf-c", 0, created)
+	pq.add("ns/wf-a", 0, created)
+	pq.add("ns/wf-b", 0, created)
+	// Removing the front is what reshuffles a heap with no tie-break.
+	pq.add("ns/wf-0", 0, created)
+	pq.remove("ns/wf-0")
+
+	var order []string
+	for pq.Len() > 0 {
+		order = append(order, pq.pop().key)
+	}
+	assert.Equal(t, []string{"ns/wf-a", "ns/wf-b", "ns/wf-c"}, order)
+}
+
+func TestQueueLess(t *testing.T) {
+	earlier := time.Now()
+	later := earlier.Add(time.Second)
+	assert.True(t, queueLess(1, later, "b", 0, earlier, "a"), "higher priority wins over time and key")
+	assert.True(t, queueLess(0, earlier, "b", 0, later, "a"), "earlier creation wins over key")
+	assert.True(t, queueLess(0, earlier, "a", 0, earlier, "b"), "key breaks a full tie")
+	assert.False(t, queueLess(0, earlier, "a", 0, earlier, "a"), "identical entries are not less")
 }

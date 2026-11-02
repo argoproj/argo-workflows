@@ -33,8 +33,12 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
-			val := scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
-			varkeys.InputsParameterByName.Set(scope.scope, val, param.Name)
+			p := scope.tmpl.Inputs.GetParameterByName(param.Name)
+			if p.Value != nil {
+				varkeys.InputsParameterByName.Set(scope.scope, p.Value.String(), param.Name)
+			} else if p.Default != nil {
+				varkeys.InputsParameterByName.Set(scope.scope, p.Default.String(), param.Name)
+			}
 		}
 		for _, param := range scope.tmpl.Inputs.Artifacts {
 			art := scope.tmpl.Inputs.GetArtifactByName(param.Name)
@@ -42,6 +46,13 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 		}
 	}
 	return scope
+}
+
+// clone returns a copy of s that can be written to without changing s.
+func (s *wfScope) clone() *wfScope {
+	c := &wfScope{tmpl: s.tmpl, scope: variables.NewScope()}
+	c.scope.Merge(s.scope)
+	return c
 }
 
 // getParametersAny returns the scope's parameters merged over the given globals, preserving nil
@@ -61,6 +72,15 @@ func (s *wfScope) getParametersAny(globals common.Parameters) map[string]any {
 		}
 	}
 	return params
+}
+
+// getParameters returns the scope's string-valued parameters as a flat string map, DROPPING absent
+// optionals (nil values for skipped/omitted outputs with no default) and artifacts. Used by the
+// substitution surfaces that operate on a plain string map and cannot represent absence — item /
+// withParam / withSequence expansion (via the dag.Substitutor) and retry-node local params. Callers
+// that must distinguish absent from empty (arguments, when-clause `??` fallbacks) use getParametersAny.
+func (s *wfScope) getParameters() common.Parameters {
+	return common.Parameters(s.scope.AsStringMap())
 }
 
 // absentOptionalRef reports whether an argument value is a single pure reference (e.g.
@@ -112,8 +132,8 @@ func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
 // fails terminally rather than leaving the workflow stuck. No-op for any node
 // that actually produced outputs. includeArtifacts additionally registers empty placeholders for the
 // template's declared output artifacts: steps relies on this to keep artifact references resolvable,
-// while DAG deliberately leaves them unresolved (resolveDependencyReferences omits optional artifacts
-// and errors on required ones).
+// while DAG deliberately leaves them unresolved (resolveArtifactArguments drops optional
+// artifacts and errors on required ones).
 func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
 	if node == nil || node.Outputs != nil {
 		return
@@ -190,6 +210,38 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 	// IsSkipped is true only for a placeholder written via Key.SetSkipped (a skipped/omitted node
 	// output with no producer default), i.e. an absent optional.
 	return val, s.scope.IsSkipped(tag), err
+}
+
+// resolveArtifactArguments resolves the from/fromExpression of artifact
+// arguments to concrete storage locations. An optional artifact that cannot
+// be resolved, or that resolves to an empty placeholder (from a skipped or
+// omitted step, #16839), is dropped. It returns a fresh slice, so the
+// caller's backing array isn't mutated.
+func (s *wfScope) resolveArtifactArguments(ctx context.Context, arts wfv1.Artifacts) (wfv1.Artifacts, error) {
+	if len(arts) == 0 {
+		return arts, nil
+	}
+	resolved := make(wfv1.Artifacts, 0, len(arts))
+	for i := range arts {
+		art := arts[i]
+		if art.From == "" && art.FromExpression == "" {
+			resolved = append(resolved, art)
+			continue
+		}
+		resolvedArt, err := s.resolveArtifact(ctx, &art)
+		if err != nil {
+			if art.Optional {
+				continue
+			}
+			return nil, err
+		}
+		if resolvedArt == nil || (art.Optional && !resolvedArt.HasLocationOrKey()) {
+			continue
+		}
+		resolvedArt.Name = art.Name
+		resolved = append(resolved, *resolvedArt)
+	}
+	return resolved, nil
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {

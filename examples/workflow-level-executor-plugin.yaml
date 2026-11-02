@@ -1,0 +1,81 @@
+# This example demonstrates configuring an executor plugin directly in the
+# Workflow spec. The workflow-controller must be started with
+# ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true
+# When spec.executorPlugins is set, executor plugins configured in the
+# workflow-controller ConfigMap are ignored for this workflow.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-level-executor-plugin-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+spec:
+  entrypoint: main
+  executorPlugins:
+    - metadata:
+        name: workflow-level-hello-executor-plugin
+      spec:
+        sidecar:
+          container:
+            name: workflow-level-hello-executor-plugin
+            image: python:alpine3.23
+            command:
+              - python
+              - -c
+            args:
+              - |
+                import json
+                from http.server import BaseHTTPRequestHandler, HTTPServer
+
+                class Plugin(BaseHTTPRequestHandler):
+                    def args(self):
+                        return json.loads(self.rfile.read(int(self.headers.get("Content-Length"))))
+
+                    def reply(self, reply):
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(json.dumps(reply).encode("UTF-8"))
+
+                    def unsupported(self):
+                        self.send_response(404)
+                        self.end_headers()
+
+                    def do_POST(self):
+                        if self.path == "/api/v1/template.execute":
+                            args = self.args()
+                            if "workflowLevelHello" in args["template"].get("plugin", {}):
+                                self.reply({
+                                    "node": {
+                                        "phase": "Succeeded",
+                                        "message": "Hello from a workflow-level executor plugin!"
+                                    }
+                                })
+                            else:
+                                self.reply({})
+                        else:
+                            self.unsupported()
+
+                if __name__ == "__main__":
+                    httpd = HTTPServer(("", 4356), Plugin)
+                    httpd.serve_forever()
+            ports:
+              - containerPort: 4356
+            resources:
+              limits:
+                cpu: 200m
+                memory: 64Mi
+              requests:
+                cpu: 100m
+                memory: 32Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+
+  templates:
+    - name: main
+      plugin:
+        workflowLevelHello: {}

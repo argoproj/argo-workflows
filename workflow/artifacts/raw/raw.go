@@ -39,6 +39,11 @@ func (a *ArtifactDriver) Save(ctx context.Context, path string, artifact *wfv1.A
 	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
 }
 
+// SaveStream is unsupported for raw output artifacts
+func (a *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, artifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
+}
+
 // Delete is unsupported for raw output artifacts
 func (a *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported

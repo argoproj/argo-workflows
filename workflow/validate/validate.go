@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -128,9 +129,9 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 	}
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement
-	for old, new := range substitutions {
-		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
-		manifest = rmatch.ReplaceAllString(manifest, new)
+	for expr, placeholder := range substitutions {
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(expr) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, placeholder)
 	}
 
 	return manifest
@@ -193,6 +194,9 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	}
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
+	}
+	if err = validateExecutorPlugins(wf.Spec); err != nil {
+		return err
 	}
 
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
@@ -339,6 +343,10 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		return errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
 	}
 
+	if err := validatePodResources("spec.podResources", wf.Spec.PodResources); err != nil {
+		return err
+	}
+
 	// Check if all templates can be resolved.
 	// If the Workflow is using a WorkflowTemplateRef, then the templates of the referred WorkflowTemplate will be validated.
 	if hasWorkflowTemplateRef {
@@ -374,6 +382,16 @@ func getUniqueKeys(labelSources ...[]string) map[string]struct{} {
 func WorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 	if len(wfSpec.Templates) > 0 {
 		return errors.Errorf(errors.CodeBadRequest, "Templates is invalid field in spec if workflow referred WorkflowTemplate reference")
+	}
+	return nil
+}
+
+func validateExecutorPlugins(wfSpec wfv1.WorkflowSpec) error {
+	if len(wfSpec.ExecutorPlugins) == 0 {
+		return nil
+	}
+	if _, err := wfSpec.AsExecutorPluginSpec(); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "spec.executorPlugins: %s", err)
 	}
 	return nil
 }
@@ -473,6 +491,18 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		return err
 	}
 
+	if tmpl.PodResources != nil {
+		switch tmpl.GetType() {
+		case wfv1.TemplateTypeHTTP, wfv1.TemplateTypePlugin:
+			// These templates run on the shared agent pod, which has fixed container
+			// sizing, so a per-template pod budget can never be applied.
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.podResources is not supported for %s templates", tmpl.Name, tmpl.GetType())
+		}
+		if err := validatePodResources(fmt.Sprintf("templates.%s.podResources", tmpl.Name), tmpl.PodResources); err != nil {
+			return err
+		}
+	}
+
 	scope, err := validateInputs(tmpl)
 	if err != nil {
 		return err
@@ -486,6 +516,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	if tmpl.IsPodType() {
 		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.RetryStrategy != nil {
 		localParams[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()
@@ -517,6 +549,18 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 
+	// Claims are attached to the pod a template runs, so a template that never
+	// creates one has nowhere to put them: Steps, DAG and Suspend orchestrate
+	// other templates, and HTTP and Plugin run on the shared agent pod.
+	//
+	// Which kind a template is can itself be written as a parameter, so this is
+	// asked of the substituted template rather than the one as written.
+	if len(tmpl.ResourceClaims) > 0 && !newTmpl.IsPodType() {
+		return errors.Errorf(errors.CodeBadRequest,
+			"templates.%s.resourceClaims is not supported for %s templates, which do not create a pod",
+			tmpl.Name, newTmpl.GetType())
+	}
+
 	if newTmpl.Timeout != "" {
 		if !newTmpl.IsLeaf() {
 			return fmt.Errorf("%s template doesn't support timeout field", newTmpl.GetType())
@@ -526,6 +570,10 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		if atoiErr == nil {
 			return fmt.Errorf("%s has invalid duration format in timeout", newTmpl.Name)
 		}
+	}
+
+	if newTmpl.PendingTimeout != "" && !newTmpl.IsLeaf() {
+		return fmt.Errorf("%s template doesn't support pendingTimeout field", newTmpl.GetType())
 	}
 
 	templateScope := tmplCtx.GetTemplateScope()
@@ -610,6 +658,10 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 			logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "template reference needs resolution")
 			return nil, nil
 		}
+		if strings.Contains(tmplRef.Name, template.PlaceholderPrefix) {
+			// internal placeholder indicates the referenced template is dynamic, it cannot be resolved until runtime
+			return nil, nil
+		}
 	} else if tmplName != "" {
 		_, err := tmplCtx.GetTemplateByName(ctx, tmplName)
 		if err != nil {
@@ -649,6 +701,26 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	}
 
 	return resolvedTmpl, tctx.validateTemplate(ctx, resolvedTmpl, tmplCtx, args, workflowTemplateValidation)
+}
+
+// validatePodResources validates pod-level resources, which Kubernetes restricts to
+// cpu, memory and hugepages-*, with no claims. Anything else would pass submission
+// and then be rejected by the API server at pod creation, mid-workflow.
+func validatePodResources(errPrefix string, r *apiv1.ResourceRequirements) error {
+	if r == nil {
+		return nil
+	}
+	if len(r.Claims) > 0 {
+		return errors.Errorf(errors.CodeBadRequest, "%s.claims is not supported for pod-level resources", errPrefix)
+	}
+	for _, list := range []apiv1.ResourceList{r.Limits, r.Requests} {
+		for name := range list {
+			if name != apiv1.ResourceCPU && name != apiv1.ResourceMemory && !strings.HasPrefix(string(name), apiv1.ResourceHugePagesPrefix) {
+				return errors.Errorf(errors.CodeBadRequest, "%s: %q is not a valid pod-level resource, only cpu, memory and hugepages-* are supported", errPrefix, name)
+			}
+		}
+	}
+	return nil
 }
 
 // validateTemplateType validates that only one template type is defined
@@ -834,6 +906,20 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 			if !tmpl.ContainerSet.HasContainerNamed("main") {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers must have a container named \"main\" for input or output", tmpl.Name)
 			}
+		}
+		for _, c := range tmpl.ContainerSet.GetContainers() {
+			if common.IsArgoSidecar(c.Name) {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers: %q is a reserved Argo container name", tmpl.Name, c.Name)
+			}
+		}
+	}
+	// Reserve the Argo-managed auxiliary container names (wait, supervisor, and the
+	// artifact-plugin sidecar prefix): a user container with one of these names is
+	// misclassified by common.IsArgoSidecar and collides with the controller's own
+	// container, so reject it at submission with a clear error.
+	for _, s := range tmpl.Sidecars {
+		if common.IsArgoSidecar(s.Name) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.sidecars: %q is a reserved Argo container name", tmpl.Name, s.Name)
 		}
 	}
 	if tmpl.Resource != nil {
@@ -1341,7 +1427,7 @@ func (d *dagValidationContext) GetTaskDependenciesWithDependencyTypes(ctx contex
 		return dependencies
 	}
 	task := d.GetTask(ctx, taskName)
-	dependencies, _ := common.GetTaskDependencies(ctx, task, d)
+	dependencies := common.GetTaskDependencies(ctx, task, d)
 	d.dependencies[taskName] = dependencies
 	return d.dependencies[taskName]
 }
@@ -1584,7 +1670,7 @@ func sortDAGTasks(ctx context.Context, tmpl *wfv1.Template, tctx *dagValidationC
 	for index := range tmpl.DAG.Tasks {
 		task := tmpl.DAG.Tasks[index]
 		taskMap[task.Name] = &task
-		dependenciesMap, _ := common.GetTaskDependencies(ctx, &task, tctx)
+		dependenciesMap := common.GetTaskDependencies(ctx, &task, tctx)
 		var dependencies []string
 		for taskName := range dependenciesMap {
 			dependencies = append(dependencies, taskName)

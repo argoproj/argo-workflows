@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-script-steps
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: daemon
+        template: script
+    - - name: after
+        template: noop
+  - name: script
+    daemon: true
+    script:
+      image: alpine
+      command: [sh]
+      source: |
+        sleep 999999
+  - name: noop
+    container:
+      image: alpine
+      command: [sh, -c, "true"]

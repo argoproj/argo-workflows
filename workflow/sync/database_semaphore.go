@@ -40,12 +40,14 @@ func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWo
 		isMutex:      false,
 	}
 	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
-	var err error
-	limit := sem.getLimit(ctx)
-	if limit == 0 {
-		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	// Resolve the limit directly through limitGetter rather than getLimit(), since
+	// getLimit() falls back to the cache's zero-value on a fetch error, which would
+	// make a genuine error indistinguishable from a semaphore that legitimately
+	// starts at limit 0 (e.g. an "approval gate" held closed until raised).
+	if _, _, err := sem.limitGetter.get(ctx, dbKey); err != nil {
+		return nil, fmt.Errorf("failed to initialize semaphore %s: %w", name, err)
 	}
-	return sem, err
+	return sem, nil
 }
 
 func (s *databaseSemaphore) longDBKey() string {
@@ -77,8 +79,13 @@ func (s *databaseSemaphore) getLimit(ctx context.Context) int {
 	logger.WithField("dbKey", s.shortDBKey).Info(ctx, "getLimit")
 	limit, _, err := s.limitGetter.get(ctx, s.shortDBKey)
 	if err != nil {
-		logger.WithField("name", s.name).WithError(err).Error(ctx, "Failed to get limit")
-		return 0
+		// Fall back to the last known limit (returned by the cache alongside
+		// the error) rather than misreporting a transient failure as limit 0.
+		logger.WithFields(logging.Fields{
+			"name":          s.name,
+			"fallbackLimit": limit,
+		}).WithError(err).Error(ctx, "Failed to get limit, using last known limit")
+		return limit
 	}
 	return limit
 }
@@ -161,6 +168,19 @@ func (s *databaseSemaphore) queueOrdered(ctx context.Context, sessionProxy *sqld
 		logger.WithError(err).Error(ctx, "Failed to get ordered queue for semaphore notification")
 		return nil, err
 	}
+	// Re-sort in Go so ties are broken exactly as the in-memory queue breaks
+	// them. A holder needs the front of every queue it is in, and database
+	// text collation does not necessarily match Go string ordering.
+	slices.SortStableFunc(queue, func(a, b syncdb.StateRecord) int {
+		switch {
+		case queueLess(a.Priority, a.Time, a.Key, b.Priority, b.Time, b.Key):
+			return -1
+		case queueLess(b.Priority, b.Time, b.Key, a.Priority, a.Time, a.Key):
+			return 1
+		default:
+			return 0
+		}
+	})
 	return queue, nil
 }
 
@@ -221,7 +241,7 @@ func (s *databaseSemaphore) addToQueue(ctx context.Context, holderKey string, pr
 }
 
 func (s *databaseSemaphore) removeFromQueue(ctx context.Context, holderKey string) error {
-	err := s.queries.RemoveFromQueue(ctx, s.longDBKey(), holderKey)
+	err := s.queries.RemoveFromQueue(ctx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 	return err
 }
 
@@ -255,7 +275,9 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		}).Info(ctx, "CheckAcquire - already held")
 		return false, true, ""
 	}
-	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), len(holders), limit)
+	// Available slots over limit, the convention the in-memory locks have
+	// used since 3.0, so "0/1" reads the same for both lock types.
+	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), limit-len(holders), limit)
 
 	if len(holders) >= limit {
 		logger.WithFields(logging.Fields{

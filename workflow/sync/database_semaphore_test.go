@@ -41,7 +41,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 
 			// Update the controller heartbeat to be older than the inactive controller timeout
 			staleTime := time.Now().Add(-info.Config.InactiveControllerTimeout * 2)
-			_, err := info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session(ctx).SQL().Update(info.Config.ControllerTable).
 				Set("time", staleTime).
 				Where(db.Cond{"controller": info.Config.ControllerName}).
 				Exec()
@@ -58,7 +58,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 			assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as inactive")
 
 			// Now update the controller heartbeat to be current
-			_, err = info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
+			_, err = info.SessionProxy.Session(ctx).SQL().Update(info.Config.ControllerTable).
 				Set("time", time.Now()).
 				Where(db.Cond{"controller": info.Config.ControllerName}).
 				Exec()
@@ -87,7 +87,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 				Controller: otherController,
 				Time:       time.Now(),
 			}
-			_, err := info.SessionProxy.Session().Collection(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session(ctx).Collection(info.Config.ControllerTable).
 				Insert(controllerRecord)
 			require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 				Held:       false,
 				Time:       time.Now(),
 			}
-			_, err = info.SessionProxy.Session().Collection(info.Config.StateTable).
+			_, err = info.SessionProxy.Session(ctx).Collection(info.Config.StateTable).
 				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
@@ -114,7 +114,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 
 			// Now mark the other controller as inactive by setting its timestamp to be old
 			staleTime := time.Now().Add(-info.Config.InactiveControllerTimeout * 2)
-			_, err = info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
+			_, err = info.SessionProxy.Session(ctx).SQL().Update(info.Config.ControllerTable).
 				Set("time", staleTime).
 				Where(db.Cond{"controller": otherController}).
 				Exec()
@@ -149,7 +149,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 				Controller: otherController,
 				Time:       time.Now(),
 			}
-			_, err := info.SessionProxy.Session().Collection(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session(ctx).Collection(info.Config.ControllerTable).
 				Insert(controllerRecord)
 			require.NoError(t, err)
 
@@ -161,7 +161,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 				Held:       false,
 				Time:       time.Now(),
 			}
-			_, err = info.SessionProxy.Session().Collection(info.Config.StateTable).
+			_, err = info.SessionProxy.Session(ctx).Collection(info.Config.StateTable).
 				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
@@ -259,7 +259,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 
 			// Verify by checking the database directly
 			var allHolders []syncdb.StateRecord
-			err := info.SessionProxy.Session().SQL().
+			err := info.SessionProxy.Session(ctx).SQL().
 				Select("*").
 				From(info.Config.StateTable).
 				Where(db.Cond{"held": true}).
@@ -315,7 +315,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				assert.Equal(t, 5, limit, "Limit should still be 5")
 
 				// Update the semaphore limit in the database
-				_, err := info.SessionProxy.Session().SQL().
+				_, err := info.SessionProxy.Session(ctx).SQL().
 					Update(info.Config.LimitTable).
 					Set(syncdb.LimitSizeField, 10).
 					Where(db.Cond{syncdb.LimitNameField: s.shortDBKey}).
@@ -356,7 +356,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				mockNow = mockNow.Add(1 * time.Millisecond)
 
 				// Update the semaphore limit in the database
-				_, err := info.SessionProxy.Session().SQL().
+				_, err := info.SessionProxy.Session(ctx).SQL().
 					Update(info.Config.LimitTable).
 					Set(syncdb.LimitSizeField, 7).
 					Where(db.Cond{syncdb.LimitNameField: s.shortDBKey}).

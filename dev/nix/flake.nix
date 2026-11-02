@@ -1,4 +1,4 @@
-# NOTE: all dependencies changed here must also be changed in the Makefile. 
+# NOTE: all dependencies changed here must also be changed in the Makefile.
 
 {
   inputs = {
@@ -30,7 +30,7 @@
           # Keep these aligned with the matching go install targets in the Makefile.
           toolVersions = {
             kubeauto = "0.0.7";
-            mockery = "3.5.1";
+            mockery = "3.8.1";
             controllerTools = "0.18.0";
             codeGenerator = "0.35.1";
             gogoProtobuf = "1.3.2";
@@ -53,7 +53,7 @@
           initialFilteredSrc = filter {
             root = ../../.;
             include = [
-              "." # Way easier to tell it what to exclude than what to include so include all. 
+              "." # Way easier to tell it what to exclude than what to include so include all.
               "devenv.yaml"
             ];
             exclude = [
@@ -210,9 +210,12 @@
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-x7WniZ4wpnuzUHM2ZC2P7Ns67bIp4V4F9f4xQEJONEk=";
+                sha256 = "sha256-HCbnifYWE/3CG85dt0FPWT9hLSQbgOXuOKTBJHO0S2U=";
               };
-              vendorHash = "sha256-cNMknwlU7ENwN67CtyU1YgYIXCJbh4b7Z3oUK7kkEkk=";
+              vendorHash = "sha256-ksfAHdPdOd8ELS0CSBg+E7KPd5xX/uGeLPn9HiItjdI=";
+              # nixpkgs' prePatch rewrites Taskfile.yml test targets that no longer exist in v3.8.x;
+              # tests are disabled so the patching is unnecessary.
+              prePatch = "";
               doCheck = false;
             });
 
@@ -387,14 +390,14 @@
               shellHook = ''
                 unset GOROOT;
                 unset GOPATH;
-                if ! k3d cluster get argo-dev &>/dev/null; then
-                  echo "Creating k3d cluster 'argo-dev'..."
-                  k3d cluster create argo-dev
-                fi
+                # Create the k3d cluster Tilt deploys into (context k3d-k3s-default);
+                # idempotent, the same one `make start` uses. Then run `make start`
+                # (or `tilt up`) to build and run the stack in-cluster.
+                make k3d-up
               '';
-              inputsFrom = [ 
+              inputsFrom = [
                 (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
-                config.packages.${package.name} 
+                config.packages.${package.name}
               ];
               packages = with pkgs; [
                 (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
@@ -420,7 +423,6 @@
                 jq
                 nodejs
                 pythonEnv
-                clang-tools
                 protobuf
                 myyarn
                 diffutils
@@ -430,6 +432,7 @@
                 golangci-lint
                 gotools
                 kubectl
+                tilt
                 k3d
                 docker
                 gettext
@@ -465,7 +468,6 @@
                     jq
                     nodejs
                     pythonEnv
-                    clang-tools
                     protobuf
                     myyarn
                     diffutils
@@ -475,6 +477,7 @@
                     golangci-lint
                     gotools
                     kubectl
+                    tilt
                     k3d
                     docker
                     gettext
@@ -487,9 +490,8 @@
                     ./hack/free-port.sh 2746;
                     ./hack/free-port.sh 8080;
                     yarn --cwd ui install;
-                    sleep 5;
                     clear;
-                    echo "Development shell is now ready, note that port-forwarding is running in the background"
+                    echo "Development shell is now ready. Run 'make start' (or 'tilt up') to build and run the stack in-cluster via Tilt."
                   '';
                 })
               ];

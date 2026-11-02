@@ -14,6 +14,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
@@ -51,6 +52,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 			}
 		},
 	)
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
