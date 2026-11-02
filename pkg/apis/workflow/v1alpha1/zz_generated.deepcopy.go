@@ -2649,12 +2649,12 @@ func (in *Pool) DeepCopyInto(out *Pool) {
 	*out = *in
 	if in.InitialReplicas != nil {
 		in, out := &in.InitialReplicas, &out.InitialReplicas
-		*out = new(int32)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	if in.RetentionSeconds != nil {
 		in, out := &in.RetentionSeconds, &out.RetentionSeconds
-		*out = new(int64)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	return

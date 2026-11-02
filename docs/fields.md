@@ -2331,7 +2331,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podResources`|[`ResourceRequirements`](#resourcerequirements)|PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
-|`pool`|[`Pool`](#pool)|Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/|
+|`pool`|[`Pool`](#pool)|Pool is reserved for hot workers, which will run a template's tasks on a pool of long-lived worker pods instead of a pod per task. EXPERIMENTAL and not yet functional. See https://github.com/argoproj/argo-workflows/issues/16530|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
 |`resourceClaims`|`Array<`[`PodResourceClaim`](#podresourceclaim)`>`|ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. Replaces the workflow-level resourceClaims as a whole rather than merging with it. Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod. A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.|
@@ -3667,9 +3667,9 @@ Pool runs a container or script template's tasks on a pool of long-lived worker 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`initialReplicas`|`integer`|InitialReplicas is the number of worker pods a new pool starts with. It applies only when the pool is created. Defaults to 1.|
-|`name`|`string`|Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `<workflowtemplate>-<template>` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a variable, such as `{{inputs.parameters.pool}}`, and is then checked once substituted.|
-|`retentionSeconds`|`integer`|RetentionSeconds is how long the pool is kept once no task uses it. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention.|
+|`initialReplicas`|[`IntOrString`](#intorstring)|InitialReplicas is the number of worker pods a new pool starts with, at least 1. It applies only when the pool is created. Defaults to 1. It is a whole number, or a template variable that resolves to one.|
+|`name`|`string`|Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `<workflowtemplate>-<template>` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a template variable, such as `inputs.parameters.pool`, and is then checked once substituted.|
+|`retentionSeconds`|[`IntOrString`](#intorstring)|RetentionSeconds is how long the pool is kept once no task uses it, at least 0. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention. It is a whole number, or a template variable that resolves to one.|
 
 ## ResourceTemplate
 
@@ -4105,7 +4105,7 @@ PooledTaskStatus is the controller's record of a pooled node's task.
 |`poolHash`|`string`|PoolHash is the hash of the pool the task was dispatched to.|
 |`poolName`|`string`|PoolName is the name of the pool the task was dispatched to.|
 |`releases`|`integer`|Releases is how many times a worker has released the task.|
-|`taskName`|`string`|TaskName is the task's `{{node.taskName}}`.|
+|`taskName`|`string`|TaskName is the task's `node.taskName`.|
 |`taskSetUID`|`string`|TaskSetUID is the UID of the task's WorkflowTaskSet. Only results that carry it are applied to the node.|
 |`workerPodName`|`string`|WorkerPodName is the name of the claiming worker pod.|
 |`workerPodUID`|`string`|WorkerPodUID is the UID of the claiming worker pod.|

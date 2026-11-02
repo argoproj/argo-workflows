@@ -6921,15 +6921,17 @@ spec:
                     pool:
                       properties:
                         initialReplicas:
-                          format: int32
-                          minimum: 1
-                          type: integer
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          x-kubernetes-int-or-string: true
                         name:
                           type: string
                         retentionSeconds:
-                          format: int64
-                          minimum: 0
-                          type: integer
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          x-kubernetes-int-or-string: true
                       type: object
                     priorityClassName:
                       type: string

@@ -16,7 +16,7 @@ Name | Type | Description | Notes
 **poolHash** | **String** | PoolHash is the hash of the pool the task was dispatched to. | 
 **poolName** | **String** | PoolName is the name of the pool the task was dispatched to. | 
 **releases** | **Integer** | Releases is how many times a worker has released the task. |  [optional]
-**taskName** | **String** | TaskName is the task&#39;s &#x60;{{node.taskName}}&#x60;. | 
+**taskName** | **String** | TaskName is the task&#39;s &#x60;node.taskName&#x60;. | 
 **taskSetUID** | **String** | TaskSetUID is the UID of the task&#39;s WorkflowTaskSet. Only results that carry it are applied to the node. | 
 **workerPodName** | **String** | WorkerPodName is the name of the claiming worker pod. |  [optional]
 **workerPodUID** | **String** | WorkerPodUID is the UID of the claiming worker pod. |  [optional]
