@@ -86,7 +86,7 @@ func (woc *wfOperationCtx) canRecreateAgentPod() bool {
 // workflow, with the reason the pod failed.
 func (woc *wfOperationCtx) recreateAgentPod(ctx context.Context, pod *apiv1.Pod, cause error) {
 	log := woc.log.WithField("podName", pod.Name)
-	if wait := time.Until(pod.CreationTimestamp.Add(agentPodRecreationDelay)); wait > 0 {
+	if wait := time.Until(woc.agentPodRecheckTime(pod)); wait > 0 {
 		log.WithField("wait", wait).Info(ctx, "Agent pod failed, waiting before recreating it")
 		woc.requeueAfter(wait)
 		return
@@ -96,6 +96,17 @@ func (woc *wfOperationCtx) recreateAgentPod(ctx context.Context, pod *apiv1.Pod,
 	// By UID, so that a replacement that already exists is never deleted.
 	woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
 	woc.requeue()
+}
+
+// agentPodRecheckTime is when to look at a Failed agent pod again:
+// agentPodRecreationDelay after it was created, or the workflow deadline if that
+// is sooner, so the deadline errors its tasks on time.
+func (woc *wfOperationCtx) agentPodRecheckTime(pod *apiv1.Pod) time.Time {
+	recheckAt := pod.CreationTimestamp.Add(agentPodRecreationDelay)
+	if woc.workflowDeadline != nil && woc.workflowDeadline.Before(recheckAt) {
+		return *woc.workflowDeadline
+	}
+	return recheckAt
 }
 
 func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {

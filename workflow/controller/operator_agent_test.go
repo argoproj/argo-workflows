@@ -247,6 +247,24 @@ func TestAgentPodRecreationDelay(t *testing.T) {
 	assert.Len(t, agentPodFailedEvents(woc.controller), 10)
 }
 
+// While a Failed agent pod waits to be replaced, the workflow is checked again
+// at its deadline if that comes first, so the deadline errors its tasks on time.
+func TestAgentPodRecheckTime(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc, pod := newFailedAgentPodWoc(ctx, t)
+	pod.CreationTimestamp = metav1.NewTime(time.Now().Add(-agentPodRecreationDelay / 2))
+	recreateAt := pod.CreationTimestamp.Add(agentPodRecreationDelay)
+
+	assert.Equal(t, recreateAt, woc.agentPodRecheckTime(pod), "no deadline")
+
+	deadline := recreateAt.Add(time.Second)
+	woc.workflowDeadline = &deadline
+	assert.Equal(t, recreateAt, woc.agentPodRecheckTime(pod), "deadline after the wait")
+
+	deadline = time.Now().Add(time.Second)
+	assert.Equal(t, deadline, woc.agentPodRecheckTime(pod), "deadline before the wait")
+}
+
 func TestAgentPodNotRecreatedWhenWorkflowEnding(t *testing.T) {
 	for name, ending := range map[string]func(woc *wfOperationCtx){
 		"Stop":      func(woc *wfOperationCtx) { woc.execWf.Spec.Shutdown = wfv1.ShutdownStrategyStop },
