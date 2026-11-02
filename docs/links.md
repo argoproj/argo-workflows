@@ -22,8 +22,7 @@ These are useful if we want to add links to logging facilities like [Grafana](ht
 
 * `${status.startedAtEpoch}`: Start time-stamp of the workflow/pod, in the Unix epoch time format in **milliseconds**, e.g. `1609497000000`.
 * `${status.finishedAtEpoch}`: End time-stamp of the workflow/pod, in the Unix epoch time format in  **milliseconds**, e.g. `1609497001000`.
-  Kubernetes records time-stamps to the second, so when the end time-stamp has no fractional seconds, this variable is rounded up to the next whole second, which keeps the whole run inside a time range that ends at it.
-  An end time-stamp with fractional seconds, such as `2021-01-01T10:30:00.456Z`, is used as it is.
+  Kubernetes records time-stamps to the second, so this variable rounds the end time-stamp up to the next whole second, which keeps the whole run inside a time range that ends at it.
   If the workflow/pod is still running, this variable represents the current time.
 
 In addition to the above variables, we can access all [workflow fields](fields.md#workflow) under `${workflow}`.
