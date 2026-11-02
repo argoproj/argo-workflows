@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -41,6 +42,32 @@ import (
 // set keeps its value, `runAsNonRoot: false` included: only nil is filled in.
 // podSpecPatch runs after this and still overrides everything, which is the
 // escape hatch for anyone who needs the agent pod unhardened.
+// dropNodeScopedMetadata removes labels and annotations that still hold an
+// unresolved placeholder.
+//
+// A workload pod resolves these in substitutePodParams, which knows the node it
+// is building a pod for. One agent pod serves every http and plugin node in the
+// workflow, so there is no node to resolve {{pod.name}}, {{node.taskName}} or
+// {{inputs.parameters.x}} against, and nothing sensible to put in their place.
+// Workflow-scoped placeholders are already gone by here -- substituteGlobalVariables
+// runs over the whole spec, templateDefaults included -- so what is left is
+// node-scoped.
+//
+// Dropping them rather than passing them through is the difference between a
+// missing label and a broken workflow: "{{pod.name}}" is not a legal label
+// value, so the API would reject the agent pod and every http and plugin node
+// would sit unscheduled.
+func dropNodeScopedMetadata(ctx context.Context, log logging.Logger, meta *wfv1.Metadata) {
+	for _, m := range []map[string]string{meta.Labels, meta.Annotations} {
+		for key, value := range m {
+			if strings.Contains(value, "{{") {
+				log.Debug(ctx, "Dropping node-scoped templateDefaults metadata from the shared agent pod")
+				delete(m, key)
+			}
+		}
+	}
+}
+
 func keepAgentPodSecurityFloor(spec *apiv1.PodSpec) {
 	minimal := common.MinimalPodSC()
 	if spec.SecurityContext == nil {
@@ -277,6 +304,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 	applySchedulingConstraints(&pod.Spec, woc.execWf.Spec.DeepCopy(), tmpl, nil)
 	keepAgentPodSecurityFloor(&pod.Spec)
+	dropNodeScopedMetadata(ctx, log, &tmpl.Metadata)
 	applyPodMetadata(&pod.ObjectMeta, &woc.execWf.Spec, tmpl)
 	applyDNSConfig(&pod.Spec, &woc.execWf.Spec)
 

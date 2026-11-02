@@ -267,6 +267,34 @@ func Test_createAgentPod_templateDefaults(t *testing.T) {
 	}
 }
 
+// A node-scoped placeholder in templateDefaults metadata has nothing to resolve
+// against on a pod shared by every http and plugin node. Left in place,
+// "{{pod.name}}" is not a legal label value and the API rejects the whole agent
+// pod, so the workflow's http nodes never run at all.
+func Test_createAgentPod_dropsNodeScopedMetadata(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		Metadata: wfv1.Metadata{
+			Labels:      map[string]string{"pod": "{{pod.name}}", "team": "platform"},
+			Annotations: map[string]string{"task": "{{node.taskName}}", "owner": "platform"},
+		},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	assert.NotContains(t, pod.Labels, "pod", "a node-scoped label must not reach the agent pod")
+	assert.NotContains(t, pod.Annotations, "task", "a node-scoped annotation must not reach the agent pod")
+	assert.Equal(t, "platform", pod.Labels["team"], "the resolvable entries still apply")
+	assert.Equal(t, "platform", pod.Annotations["owner"])
+}
+
 // A securityContext from templateDefaults must not cost the agent pod its
 // hardening floor. applySchedulingConstraints assigns the supplied context
 // outright, so before keepAgentPodSecurityFloor a default that set only fsGroup
