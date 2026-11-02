@@ -106,3 +106,19 @@ func TestMergeToDoesNotChangeThePatch(t *testing.T) {
 		assert.Contains(t, target.Spec.WorkflowMetadata.LabelsFrom, "foo")
 	}
 }
+
+func TestMergeWorkflowSpecs(t *testing.T) {
+	got, err := MergeWorkflowSpecs(
+		&wfv1.WorkflowSpec{Entrypoint: "wf", ServiceAccountName: "wf-sa"},
+		nil,
+		&wfv1.WorkflowSpec{Entrypoint: "template", Parallelism: new(int64(2))},
+		&wfv1.WorkflowSpec{Entrypoint: "defaults", ServiceAccountName: "default-sa", PodPriorityClassName: "low"},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, &wfv1.WorkflowSpec{Entrypoint: "wf", ServiceAccountName: "wf-sa", Parallelism: new(int64(2)), PodPriorityClassName: "low"}, got,
+		"each spec fills in only what the ones before it leave unset, and a nil spec is skipped")
+
+	got, err = MergeWorkflowSpecs(nil, &wfv1.WorkflowSpec{Entrypoint: "template"})
+	require.NoError(t, err)
+	assert.Nil(t, got, "nothing to merge into")
+}
