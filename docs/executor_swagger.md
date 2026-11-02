@@ -2965,9 +2965,9 @@ worker pods, one task at a time per worker pod, instead of a pod per task.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| initialReplicas | int32 (formatted integer)| `int32` |  | | InitialReplicas is the number of worker pods a new pool starts with.</br>It applies only when the pool is created. Defaults to 1. </br>*Optional; Minimum value: 1.*|  |
-| name | string| `string` |  | | Name of the pool. Templates with the same pool name and the same pod</br>settings share a pool. Defaults to `<workflowtemplate>-<template>` for a</br>template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to</br>the template's name. It must be a DNS label of at most 35 characters. It</br>may hold a variable, such as `{{inputs.parameters.pool}}`, and is then</br>checked once substituted. </br>*Optional.*|  |
-| retentionSeconds | int64 (formatted integer)| `int64` |  | | RetentionSeconds is how long the pool is kept once no task uses it.</br>The most recently dispatched task's value applies. Defaults to the</br>controller's hot workers retention. </br>*Optional; Minimum value: 0.*|  |
+| initialReplicas | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
+| name | string| `string` |  | | Name of the pool. Templates with the same pool name and the same pod</br>settings share a pool. Defaults to `<workflowtemplate>-<template>` for a</br>template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to</br>the template's name. It must be a DNS label of at most 35 characters. It</br>may hold a template variable, such as `inputs.parameters.pool`, and is</br>then checked once substituted. </br>*Optional.*|  |
+| retentionSeconds | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 
 
 

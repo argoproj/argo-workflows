@@ -5782,14 +5782,28 @@ func (m *Pool) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.RetentionSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.RetentionSeconds))
+		{
+			size, err := m.RetentionSeconds.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x1a
 	}
 	if m.InitialReplicas != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.InitialReplicas))
+		{
+			size, err := m.InitialReplicas.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x12
 	}
 	i -= len(m.Name)
 	copy(dAtA[i:], m.Name)
@@ -12371,10 +12385,12 @@ func (m *Pool) Size() (n int) {
 	l = len(m.Name)
 	n += 1 + l + sovGenerated(uint64(l))
 	if m.InitialReplicas != nil {
-		n += 1 + sovGenerated(uint64(*m.InitialReplicas))
+		l = m.InitialReplicas.Size()
+		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if m.RetentionSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.RetentionSeconds))
+		l = m.RetentionSeconds.Size()
+		n += 1 + l + sovGenerated(uint64(l))
 	}
 	return n
 }
@@ -15460,8 +15476,8 @@ func (this *Pool) String() string {
 	}
 	s := strings.Join([]string{`&Pool{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`InitialReplicas:` + valueToStringGenerated(this.InitialReplicas) + `,`,
-		`RetentionSeconds:` + valueToStringGenerated(this.RetentionSeconds) + `,`,
+		`InitialReplicas:` + strings.Replace(fmt.Sprintf("%v", this.InitialReplicas), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`RetentionSeconds:` + strings.Replace(fmt.Sprintf("%v", this.RetentionSeconds), "IntOrString", "intstr.IntOrString", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -33525,10 +33541,10 @@ func (m *Pool) Unmarshal(dAtA []byte) error {
 			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 0 {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InitialReplicas", wireType)
 			}
-			var v int32
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGenerated
@@ -33538,17 +33554,33 @@ func (m *Pool) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int32(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.InitialReplicas = &v
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.InitialReplicas == nil {
+				m.InitialReplicas = &intstr.IntOrString{}
+			}
+			if err := m.InitialReplicas.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 3:
-			if wireType != 0 {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RetentionSeconds", wireType)
 			}
-			var v int64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGenerated
@@ -33558,12 +33590,28 @@ func (m *Pool) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.RetentionSeconds = &v
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RetentionSeconds == nil {
+				m.RetentionSeconds = &intstr.IntOrString{}
+			}
+			if err := m.RetentionSeconds.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
