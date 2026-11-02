@@ -2,8 +2,12 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,8 +67,25 @@ func TestUnpooledObjectsRoundTripUnchanged(t *testing.T) {
 	assert.Equal(t, spec, protoRoundTrip(t, spec))
 }
 
-// TestPooledObjectsRoundTrip checks every pool field survives JSON and
-// protobuf, so none is missing a tag or generated code.
+// TestPoolFieldsAreTagged checks every field of the pool types has a JSON
+// and a protobuf tag. encoding/json falls back to the Go field name without
+// one, so a round trip alone wouldn't notice.
+func TestPoolFieldsAreTagged(t *testing.T) {
+	for _, typ := range []reflect.Type{
+		reflect.TypeFor[Pool](), reflect.TypeFor[PoolSpec](), reflect.TypeFor[PoolArtifactPlugin](),
+		reflect.TypeFor[PoolKubeConfig](), reflect.TypeFor[TaskDispatch](), reflect.TypeFor[PooledTaskStatus](),
+	} {
+		for field := range typ.Fields() {
+			name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+			assert.NotEmpty(t, name, "%s.%s has no json tag", typ.Name(), field.Name)
+			assert.NotEqual(t, "-", name, "%s.%s isn't serialised", typ.Name(), field.Name)
+			assert.NotEmpty(t, field.Tag.Get("protobuf"), "%s.%s has no protobuf tag", typ.Name(), field.Name)
+		}
+	}
+}
+
+// TestPooledObjectsRoundTrip checks every pool field, each set to a value,
+// survives JSON and protobuf, so none is missing generated code.
 func TestPooledObjectsRoundTrip(t *testing.T) {
 	// metav1.Time unmarshals into time.Local, so build the times there.
 	now := metav1.Unix(time.Date(2026, 10, 14, 9, 0, 0, 0, time.UTC).Unix(), 0)
@@ -73,7 +94,7 @@ func TestPooledObjectsRoundTrip(t *testing.T) {
 	tmpl := &Template{
 		Name:      "main",
 		Container: &apiv1.Container{Image: "argoproj/argosay:v2"},
-		Pool:      &Pool{Name: "my-pool", InitialReplicas: new(int32(2)), RetentionSeconds: new(int64(600))},
+		Pool:      &Pool{Name: "my-pool", InitialReplicas: new(intstr.FromInt32(2)), RetentionSeconds: new(intstr.FromString("{{inputs.parameters.retention}}"))},
 	}
 	gotTmpl, _ := jsonRoundTrip(t, tmpl)
 	assert.Equal(t, tmpl, gotTmpl)
@@ -115,11 +136,11 @@ func TestPooledObjectsRoundTrip(t *testing.T) {
 			ExecutorServiceAccountTokenSecretName: "executor-token",
 			ArtifactRepository:                    &ArtifactRepository{S3: &S3ArtifactRepository{KeyFormat: "{{workflow.name}}/{{node.taskName}}"}},
 			ArtifactSecrets:                       []apiv1.SecretKeySelector{{LocalObjectReference: apiv1.LocalObjectReference{Name: "s3"}, Key: "accessKey"}},
-			ArtifactPlugins:                       []PoolArtifactPlugin{{Name: "my-plugin", Image: "plugin:v1", ConnectionTimeoutSeconds: 5}},
+			ArtifactPlugins:                       []PoolArtifactPlugin{{Name: "my-plugin", Image: "plugin:v1", ConnectionTimeoutSeconds: 5, Command: []string{"/plugin", "serve"}}},
 			InstanceID:                            "instance",
 			ControllerVersion:                     "v4.2.0",
 			Executor:                              &apiv1.Container{Args: []string{"--x"}},
-			MainContainer:                         &apiv1.Container{Resources: apiv1.ResourceRequirements{}},
+			MainContainer:                         &apiv1.Container{Env: []apiv1.EnvVar{{Name: "MAIN_DEFAULT", Value: "yes"}}},
 			ExecutorImage:                         "quay.io/argoproj/argoexec:latest",
 			ExecutorImagePullPolicy:               apiv1.PullIfNotPresent,
 			ExecutorLogArgs:                       []string{"--loglevel", "info"},
@@ -157,7 +178,9 @@ func TestPooledTaskConditions(t *testing.T) {
 	task := &PooledTaskStatus{TaskName: "wf-main-123"}
 
 	assert.Equal(t, PooledTaskEnqueued, task.State(), "a ledger with no conditions is enqueued")
-	task.Enqueue(enqueuedAt)
+	require.True(t, task.Enqueue(enqueuedAt))
+	assert.False(t, task.Enqueue(claimedAt), "only a new ledger can be enqueued")
+	assert.Equal(t, enqueuedAt, task.EnqueuedAt)
 	assert.Equal(t, PooledTaskEnqueued, task.State())
 	assert.Equal(t, enqueuedAt, task.EnqueuedAt)
 	assert.Nil(t, task.ClaimedAt())
@@ -170,6 +193,9 @@ func TestPooledTaskConditions(t *testing.T) {
 	assert.Equal(t, &claimedAt, task.ClaimedAt())
 	assert.Equal(t, "pod-1", task.WorkerPodName)
 	assert.Equal(t, int32(2), task.WorkerRestartCount)
+	claimed := task.DeepCopy()
+	assert.False(t, task.Enqueue(releasedAt), "a claimed task can't be enqueued")
+	assert.Equal(t, claimed, task, "and keeps its claimant")
 
 	require.True(t, task.Release(releasedAt))
 	assert.Equal(t, PooledTaskEnqueued, task.State())
@@ -195,4 +221,7 @@ func TestPooledTaskConditions(t *testing.T) {
 	assert.Equal(t, PooledTaskInterrupted, task.State())
 	assert.Equal(t, "pod-3", task.WorkerPodName)
 	assert.Len(t, task.Conditions, 2)
+	interrupted := task.DeepCopy()
+	assert.False(t, task.Enqueue(reclaimedAt), "an interrupted task can't be enqueued")
+	assert.Equal(t, interrupted, task, "and keeps its enqueue time")
 }
