@@ -39,6 +39,7 @@ type recordingSink struct{ failures []string }
 
 func (s *recordingSink) Start(context.Context) error                   { return nil }
 func (s *recordingSink) Report(context.Context, wfv1.NodeResult) error { return nil }
+func (s *recordingSink) Send(context.Context, wfv1.NodeResult) error   { return nil }
 func (s *recordingSink) Progress(context.Context, wfv1.Progress) error { return nil }
 func (s *recordingSink) Fail(_ context.Context, err error) {
 	s.failures = append(s.failures, err.Error())
@@ -235,6 +236,27 @@ func TestHarness_FailureReportedBeforeFinally(t *testing.T) {
 	sinks = got
 	_ = h.Run(ctx)
 	assert.Equal(t, []string{"failed"}, failuresAtFinally)
+}
+
+// A Finally stage's failure must be reported before the next stage, which
+// may be the one that marks the outputs complete.
+func TestHarness_FinallyFailureReportedBeforeNextStage(t *testing.T) {
+	var failuresAtFinalize []string
+	var sinks map[string]*recordingSink
+	ctx, h, got := newTestHarness(t, &sliceSource{tasks: tasks("a")}, testRole(
+		func(context.Context, context.Context, *WorkflowExecutor) error { return nil },
+		Stage{Name: "cleanup", Run: func(context.Context, *WorkflowExecutor) error {
+			return errors.New("cleanup failed")
+		}},
+		Stage{Name: "finalize", Run: func(context.Context, *WorkflowExecutor) error {
+			failuresAtFinalize = append([]string(nil), sinks["a"].failures...)
+			return nil
+		}},
+	))
+	sinks = got
+	_ = h.Run(ctx)
+	assert.Equal(t, []string{"cleanup failed"}, failuresAtFinalize)
+	assert.Equal(t, []string{"cleanup failed"}, sinks["a"].failures, "reported once")
 }
 
 // An error a role returns without recording it still reaches the sink.
