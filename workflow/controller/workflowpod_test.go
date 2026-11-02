@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1527,6 +1528,273 @@ func TestPodSpecPatchPodName(t *testing.T) {
 	}
 }
 
+var nodeTaskNameWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: task-name
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: produce
+  - name: produce
+    %s
+    outputs:
+      parameters:
+      - name: task-name
+        value: "{{node.taskName}}"
+      - name: pod-name
+        value: "{{pod.name}}"
+      artifacts:
+      - name: out
+        path: /tmp/out
+    container:
+      image: argoproj/argosay:v2
+      args: ["{{node.taskName}}"]
+`
+
+// TestNodeTaskNameIsPodName checks that {{node.taskName}} in the pod spec
+// resolves to the pod's name for both pod name formats, with and without a
+// retry strategy, and that the default archive key format resolves to the key
+// pods have always used, workflow name then pod name. The pod spec is
+// substituted with the pod's name as it is built, so this doesn't cover the
+// values the controller resolves itself; TestNodeTaskNameInMetricLabel,
+// TestNodeTaskNameInNodeInputs and TestNodeTaskNameInMemoizeKey do.
+func TestNodeTaskNameIsPodName(t *testing.T) {
+	tests := []struct {
+		name           string
+		podNameVersion string
+		retryStrategy  string
+		wantPodName    string
+	}{
+		{name: "v1", podNameVersion: "v1", wantPodName: "task-name-819054678"},
+		{name: "v2", podNameVersion: "v2", wantPodName: "task-name-produce-819054678"},
+		{name: "v1 retry", podNameVersion: "v1", retryStrategy: "retryStrategy: {limit: 1}", wantPodName: "task-name-453092565"},
+		{name: "v2 retry", podNameVersion: "v2", retryStrategy: "retryStrategy: {limit: 1}", wantPodName: "task-name-produce-453092565"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("POD_NAMES", tt.podNameVersion)
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(nodeTaskNameWf, tt.retryStrategy))
+			woc := newWoc(ctx, *wf)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			pod := pods.Items[0]
+			assert.Equal(t, tt.wantPodName, pod.Name)
+
+			tmpl, err := getPodTemplate(&pod)
+			require.NoError(t, err)
+			assert.Equal(t, pod.Name, tmpl.Outputs.Parameters[0].Value.String())
+			assert.Equal(t, pod.Name, tmpl.Outputs.Parameters[1].Value.String())
+			assert.Equal(t, []string{pod.Name}, tmpl.Container.Args)
+			mainCtr := containerByName(pod.Spec.Containers, common.MainContainerName)
+			require.NotNil(t, mainCtr)
+			assert.Equal(t, []string{pod.Name}, mainCtr.Args)
+
+			require.NotNil(t, tmpl.ArchiveLocation)
+			require.NotNil(t, tmpl.ArchiveLocation.S3)
+			assert.Equal(t, "task-name/"+pod.Name, tmpl.ArchiveLocation.S3.Key)
+		})
+	}
+}
+
+var nodeTaskNameMetricWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: task-name
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: produce
+  - name: produce
+    %s
+    metrics:
+      prometheus:
+      - name: task_name_duration
+        help: Duration of the task
+        labels:
+        - key: task
+          value: "{{node.taskName}}"
+        gauge:
+          realtime: true
+          value: "{{duration}}"
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestNodeTaskNameInMetricLabel checks that {{node.taskName}} resolves to the
+// pod's name in a value the controller resolves itself rather than in the pod
+// spec, here a metric label, with and without a retry strategy.
+func TestNodeTaskNameInMetricLabel(t *testing.T) {
+	tests := []struct {
+		name          string
+		retryStrategy string
+	}{
+		{name: "no retry"},
+		{name: "retry", retryStrategy: "retryStrategy: {limit: 1}"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(nodeTaskNameMetricWf, tt.retryStrategy))
+			woc := newWoc(ctx, *wf)
+			woc.operate(ctx)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+
+			attribs := attribute.NewSet(attribute.String("task", pods.Items[0].Name))
+			_, err = testExporter.GetFloat64GaugeValue(ctx, "task_name_duration", &attribs)
+			require.NoError(t, err)
+		})
+	}
+}
+
+var nodeTaskNameInputsWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: task-name
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: produce
+  - name: produce
+    %s
+    inputs:
+      parameters:
+      - name: task-name
+        default: "{{node.taskName}}"
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestNodeTaskNameInNodeInputs checks that {{node.taskName}} resolves to the
+// pod's name in the inputs recorded on the pod's node, with and without a
+// retry strategy. The node takes its inputs from the processed template, which
+// is substituted before the pod is built: without a retry strategy when the
+// template is prepared, with one for each attempt.
+func TestNodeTaskNameInNodeInputs(t *testing.T) {
+	tests := []struct {
+		name          string
+		retryStrategy string
+	}{
+		{name: "no retry"},
+		{name: "retry", retryStrategy: "retryStrategy: {limit: 1}"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(nodeTaskNameInputsWf, tt.retryStrategy))
+			woc := newWoc(ctx, *wf)
+			woc.operate(ctx)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+
+			node := woc.wf.Status.Nodes.Find(func(n wfv1.NodeStatus) bool { return n.Type == wfv1.NodeTypePod })
+			require.NotNil(t, node)
+			require.NotNil(t, node.Inputs)
+			assert.Equal(t, pods.Items[0].Name, node.Inputs.GetParameterByName("task-name").Value.String())
+		})
+	}
+}
+
+var nodeTaskNameMemoizeWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: task-name
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: produce
+  - name: produce
+    memoize:
+      key: "{{node.taskName}}"
+      cache:
+        configMap:
+          name: task-name-cache
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestNodeTaskNameInMemoizeKey checks that {{node.taskName}} resolves to the
+// pod's name in a memoization key, which the controller looks up before it
+// builds the pod.
+func TestNodeTaskNameInMemoizeKey(t *testing.T) {
+	t.Setenv("POD_NAMES", "v2")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wfv1.MustUnmarshalWorkflow(nodeTaskNameMemoizeWf))
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.Find(nodeWithTemplateName("produce"))
+	require.NotNil(t, node)
+	require.NotNil(t, node.MemoizationStatus, node.Message)
+	assert.Equal(t, "task-name-produce-819054678", node.MemoizationStatus.Key)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+	assert.Equal(t, node.MemoizationStatus.Key, pods.Items[0].Name)
+}
+
+var nodeTaskNameWfPodSpecPatchWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: task-name
+spec:
+  entrypoint: main
+  podSpecPatch: '{"containers":[{"name":"main","env":[{"name":"TASK_NAME","value":"{{node.taskName}}"}]}]}'
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: produce
+  - name: produce
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestNodeTaskNameInWorkflowPodSpecPatch checks that {{node.taskName}} in a
+// workflow-level podSpecPatch resolves to the pod's name.
+func TestNodeTaskNameInWorkflowPodSpecPatch(t *testing.T) {
+	for _, podNameVersion := range []string{"v1", "v2"} {
+		t.Run(podNameVersion, func(t *testing.T) {
+			t.Setenv("POD_NAMES", podNameVersion)
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx, *wfv1.MustUnmarshalWorkflow(nodeTaskNameWfPodSpecPatchWf))
+			woc.operate(ctx)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			pod := pods.Items[0]
+
+			mainCtr := containerByName(pod.Spec.Containers, common.MainContainerName)
+			require.NotNil(t, mainCtr)
+			assert.Contains(t, mainCtr.Env, apiv1.EnvVar{Name: "TASK_NAME", Value: pod.Name})
+		})
+	}
+}
+
 func TestMainContainerCustomization(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	mainCtrSpec := &apiv1.Container{
@@ -1718,7 +1986,9 @@ func TestPodDefaultContainer(t *testing.T) {
 	assert.Equal(t, "b", pod.Annotations[common.AnnotationKeyDefaultContainer])
 }
 
-func TestGetDeadline(t *testing.T) {
+// TestCreateWorkflowPodDeadline checks the execution deadline reaches the pod as
+// ARGO_DEADLINE, read back by getPodDeadline.
+func TestCreateWorkflowPodDeadline(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
@@ -1734,6 +2004,39 @@ func TestGetDeadline(t *testing.T) {
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{executionDeadline: executionDeadline})
 	deadline, _ = getPodDeadline(pod)
 	assert.Equal(t, executionDeadline.Format(time.RFC3339), deadline.Format(time.RFC3339))
+}
+
+// TestExecContainerConfig checks the live and snapshot exec container configs
+// are both read from the controller and the workflow, and that only the live
+// one resolves the executor service account (build sets it on the snapshot's).
+func TestExecContainerConfig(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.cliExecutorImage = "argoexec:test"
+	controller.cliExecutorImagePullPolicy = string(apiv1.PullAlways)
+	controller.Config.InstanceID = "instance"
+	controller.Config.KubeConfig = &config.KubeConfig{SecretName: "kc"}
+	controller.Config.Executor = &apiv1.Container{Args: []string{"--x"}}
+
+	tmpl := &wfv1.Template{Name: "t", Container: &apiv1.Container{Image: "my-image"}, Executor: &wfv1.ExecutorConfig{ServiceAccountName: "exec-sa"}}
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "wf", UID: "wf-uid"},
+		Spec:       wfv1.WorkflowSpec{Entrypoint: "t", Templates: []wfv1.Template{*tmpl}},
+	}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	want := execContainerConfig{
+		image:           "argoexec:test",
+		imagePullPolicy: apiv1.PullAlways,
+		executor:        controller.Config.Executor,
+		kubeConfig:      controller.Config.KubeConfig,
+		instanceID:      "instance",
+		workflowUID:     "wf-uid",
+	}
+	assert.Equal(t, want, woc.newPodBuilder(ctx, "wf", nil, tmpl, &createWorkflowPodOpts{}).in.execCfg)
+	want.executorServiceAccountName = "exec-sa"
+	assert.Equal(t, want, woc.execContainerConfig(tmpl))
 }
 
 func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
@@ -2099,7 +2402,7 @@ func TestArtifactPluginSidecar(t *testing.T) {
 		ctx, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 
-		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg)
+		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg, woc.execContainerConfig(tmpl))
 		require.NoError(t, err)
 
 		// Volumes are normally added in addOutputArtifactsVolumes
@@ -2224,7 +2527,8 @@ func TestArtifactPluginSidecar(t *testing.T) {
 
 		// Skip workflow validation by not calling setExecWorkflow
 		// Test plugin init container creation directly
-		initContainers, err := woc.newInitContainers(ctx, tmpl)
+		pb := woc.newPodBuilder(ctx, "test-workflow", nil, tmpl, &createWorkflowPodOpts{})
+		initContainers, err := pb.newInitContainers(ctx, tmpl, pb.execContainerConfig(""))
 		require.NoError(t, err)
 
 		// Should have standard init container plus 2 plugin init containers

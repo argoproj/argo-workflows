@@ -36,3 +36,28 @@ func TestStageLiteralsLiveInRegistry(t *testing.T) {
 		})
 	}
 }
+
+// TestRoleLiteralsLiveInRegistry enforces that roles.go is the one place
+// roles are declared, as stages.go is for stages.
+func TestRoleLiteralsLiveInRegistry(t *testing.T) {
+	files, err := filepath.Glob("*.go")
+	require.NoError(t, err)
+	fset := token.NewFileSet()
+	for _, file := range files {
+		if file == "roles.go" || strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, file, nil, 0)
+		require.NoError(t, err)
+		ast.Inspect(f, func(n ast.Node) bool {
+			lit, ok := n.(*ast.CompositeLit)
+			if !ok {
+				return true
+			}
+			if ident, ok := lit.Type.(*ast.Ident); ok && ident.Name == "Role" {
+				t.Errorf("%s: Role literal outside roles.go; declare roles in the registry", fset.Position(lit.Pos()))
+			}
+			return true
+		})
+	}
+}

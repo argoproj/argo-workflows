@@ -242,6 +242,7 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
+| `node.taskName` | v4.2 and after: Name of this attempt of the container/script, the same as `pod.name`; the default artifact repository key format uses it |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
 | `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |

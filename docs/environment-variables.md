@@ -138,6 +138,7 @@ Gains may vary under load: if the workflow informer is behind the controller's l
 | `EXECUTOR_RETRY_BACKOFF_FACTOR`        | `float`         | `1.6`   | The retry back-off factor when the workflow executor performs retries.                                 |
 | `EXECUTOR_RETRY_BACKOFF_JITTER`        | `float`         | `0.5`   | The retry back-off jitter when the workflow executor performs retries.                                 |
 | `EXECUTOR_RETRY_BACKOFF_STEPS`         | `int`           | `5`     | The retry back-off steps when the workflow executor performs retries.                                  |
+| `EXECUTOR_TASK_RESULT_RETRY_TIMEOUT_SECONDS` | `int` | `600` | How long, in seconds, the workflow executor retries each final task result write (outputs, completion) through transient errors before giving up; the placeholder write when the pod starts gives up after 30 seconds whatever this is set to, and progress writes give up after 30 seconds and the executor tries again on the next update; the backoff schedule is fixed and not affected by `EXECUTOR_RETRY_BACKOFF_*`; the value must be positive, and non-positive values use the default. |
 | `REMOVE_LOCAL_ART_PATH`                | `bool`          | `false` | Whether to remove local artifacts.                                                                     |
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 
@@ -158,7 +159,7 @@ data:
 
 ### Profiling the executor
 
-The `wait` and `supervisor` containers expose the Go profiling endpoints when you set `ARGO_PPROF` to `true`.
+The executor containers -- `init`, `wait` and `supervisor` -- expose the Go profiling endpoints when you set `ARGO_PPROF` to `true`.
 Use this when an executor container grows in memory or CPU over the life of a step, which you cannot diagnose from outside the process.
 
 Set the variable on the executor in your `workflow-controller-configmap`:
