@@ -117,6 +117,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact":                schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifactRepository":      schema_pkg_apis_workflow_v1alpha1_PluginArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC":                         schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Pool":                          schema_pkg_apis_workflow_v1alpha1_Pool(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolArtifactPlugin":            schema_pkg_apis_workflow_v1alpha1_PoolArtifactPlugin(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolKubeConfig":                schema_pkg_apis_workflow_v1alpha1_PoolKubeConfig(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolSpec":                      schema_pkg_apis_workflow_v1alpha1_PoolSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PooledTaskStatus":              schema_pkg_apis_workflow_v1alpha1_PooledTaskStatus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Prometheus":                    schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact":                   schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate":              schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
@@ -142,6 +147,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SynchronizationStatus":         schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TTLStrategy":                   schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TarStrategy":                   schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TaskDispatch":                  schema_pkg_apis_workflow_v1alpha1_TaskDispatch(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template":                      schema_pkg_apis_workflow_v1alpha1_Template(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef":                   schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TransformationStep":            schema_pkg_apis_workflow_v1alpha1_TransformationStep(ref),
@@ -4518,12 +4524,18 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"pooledTask": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PooledTask records the task of a node whose template has a pool, which runs on a pool's worker pod instead of its own pod. Nil for other nodes.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PooledTaskStatus"),
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeFlag", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeFlag", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PooledTaskStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -5177,6 +5189,478 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_Pool(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Pool runs a container or script template's tasks on a pool of long-lived worker pods, one task at a time per worker pod, instead of a pod per task.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `<workflowtemplate>-<template>` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a variable, such as `{{inputs.parameters.pool}}`, and is then checked once substituted.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"initialReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InitialReplicas is the number of worker pods a new pool starts with. It applies only when the pool is created. Defaults to 1.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"retentionSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetentionSeconds is how long the pool is kept once no task uses it. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_PoolArtifactPlugin(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PoolArtifactPlugin is an artifact driver plugin run as a sidecar of a pool's pods.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the artifact driver plugin.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Image of the artifact driver plugin.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"connectionTimeoutSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ConnectionTimeoutSeconds is the timeout for connecting to the plugin.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Command is the image's entrypoint, which the plugin's sidecar runs, looked up at dispatch as a pod's plugin containers look it up.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"name", "image"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_PoolKubeConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PoolKubeConfig is the kubeconfig Secret the argoexec containers of a pool's pods mount.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"secretName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecretName of the kubeconfig Secret.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"secretKey": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecretKey of the kubeconfig in the Secret.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"volumeName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "VolumeName of the kubeconfig volume.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"mountPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MountPath of the kubeconfig.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"secretName", "secretKey", "volumeName", "mountPath"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_PoolSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PoolSpec is everything a pool's worker pods are built from, resolved by the controller when it dispatches a pooled task. The pool's hash is computed from it, excluding InitialReplicas and RetentionSeconds.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the resolved pool name.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"initialReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InitialReplicas is the number of worker pods a new pool starts with.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"retentionSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetentionSeconds is how long the pool is kept once no task uses it.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"template": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Template holds the merged template's fields that are the same for every task in the pool. Per-task fields are cleared.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
+						},
+					},
+					"workflowSpec": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkflowSpec holds the workflow-level fields that feed the pool's pods.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+						},
+					},
+					"serviceAccountName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServiceAccountName is the resolved service account the pool's pods run as.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"automountServiceAccountToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AutomountServiceAccountToken is the resolved automountServiceAccountToken.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"executorServiceAccountTokenSecretName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutorServiceAccountTokenSecretName is the Secret holding the executor service account's token, set when the executor runs as its own service account. It is mounted only in the worker container.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"artifactRepository": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactRepository is the selected artifact repository, with its key format as written.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
+						},
+					},
+					"artifactSecrets": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactSecrets are the secrets the artifact repository and the template's input, output and data-source artifacts read. They are mounted only in the worker container.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.SecretKeySelector"),
+									},
+								},
+							},
+						},
+					},
+					"artifactPlugins": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactPlugins are the artifact driver plugins the template's artifacts use, run as sidecars of the pool's pods.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolArtifactPlugin"),
+									},
+								},
+							},
+						},
+					},
+					"instanceID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InstanceID is the controller instance ID.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"controllerVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ControllerVersion is the version of the controller that dispatched the task.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"executor": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Executor is the effective executor container configuration.",
+							Ref:         ref("k8s.io/api/core/v1.Container"),
+						},
+					},
+					"mainContainer": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MainContainer is the controller's main container defaults.",
+							Ref:         ref("k8s.io/api/core/v1.Container"),
+						},
+					},
+					"executorImage": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutorImage is the effective argoexec image.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"executorImagePullPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutorImagePullPolicy is the effective argoexec image pull policy.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"executorLogArgs": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutorLogArgs are the log flags passed to every argoexec container.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"kubeConfig": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KubeConfig is the kubeconfig the argoexec containers use, when the controller is configured with one.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolKubeConfig"),
+						},
+					},
+					"initlessPod": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InitlessPod selects the init-less pod layout.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"terminationGracePeriodSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TerminationGracePeriodSeconds is the worker pods' termination grace period.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"releaseReserveSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ReleaseReserveSeconds is how long before the end of the grace period a worker stops a running task so it can release it.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+				Required: []string{"name", "initialReplicas", "retentionSeconds", "controllerVersion", "executorImage", "terminationGracePeriodSeconds", "releaseReserveSeconds"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolArtifactPlugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolKubeConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_PooledTaskStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PooledTaskStatus is the controller's record of a pooled node's task.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"poolName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PoolName is the name of the pool the task was dispatched to.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"poolHash": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PoolHash is the hash of the pool the task was dispatched to.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"taskName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TaskName is the task's `{{node.taskName}}`.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"taskSetUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TaskSetUID is the UID of the task's WorkflowTaskSet. Only results that carry it are applied to the node.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"enqueuedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnqueuedAt is when the task's WorkflowTaskSet was created or adopted.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"deadline": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Deadline is the task's absolute deadline, as dispatched.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"activeDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ActiveDeadlineSeconds limits how long the task may run once claimed, as dispatched.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"claimUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ClaimUID is the UID of the WorkflowTaskResult the claiming worker created.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"workerPodName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkerPodName is the name of the claiming worker pod.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"workerPodUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkerPodUID is the UID of the claiming worker pod.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"workerRestartCount": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkerRestartCount is the claiming pod's worker container restart count when the claim was first seen.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"type",
+								},
+								"x-kubernetes-list-type":       "map",
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Conditions record the task's hand-off to a worker: Claimed and Interrupted. Its state is derived from them (State). Change them only through Enqueue, Claim, Release and Interrupt.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+									},
+								},
+							},
+						},
+					},
+					"releases": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Releases is how many times a worker has released the task.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"poolName", "poolHash", "taskName", "taskSetUID", "enqueuedAt"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -6622,6 +7106,118 @@ func schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref common.ReferenceCallback)
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_TaskDispatch(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "TaskDispatch is the per-task part of a pooled task that a pod would get from its spec and environment.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"taskName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TaskName is the task's `{{node.taskName}}`: the name its pod would have.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"includeScriptOutput": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IncludeScriptOutput captures the task's stdout as its result.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"inputArtifactPlugins": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "InputArtifactPlugins are the artifact driver plugins the task's input artifacts use.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Command is the command to run when the template's container has no command: the image's entrypoint, followed by the image's cmd when the task has no arguments of its own.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"deadline": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Deadline is the task's absolute deadline: the earliest of the workflow deadline (except for exit handler tasks), the retry strategy's maxDuration, and the node's start plus the template's timeout.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"activeDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ActiveDeadlineSeconds limits how long the task may run once claimed.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"traceContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TraceContext is the W3C trace context the task's spans continue.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"progressPatchTickDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProgressPatchTickDuration is how often the task's progress is reported. Progress is not reported when this or ProgressFileTickDuration is unset.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+					"progressFileTickDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProgressFileTickDuration is how often the task's progress file is read.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
+						},
+					},
+				},
+				Required: []string{"taskName"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -7006,11 +7602,17 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"pool": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Pool"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Pool", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -8917,11 +9519,23 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetSpec(ref common.ReferenceC
 							},
 						},
 					},
+					"pool": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Pool is set on a pooled task's WorkflowTaskSet: the pool that runs it, resolved when the task was dispatched.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolSpec"),
+						},
+					},
+					"dispatch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Dispatch is set on a pooled task's WorkflowTaskSet: the per-task settings a pod would get from its spec and environment.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TaskDispatch"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PoolSpec", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TaskDispatch", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"},
 	}
 }
 

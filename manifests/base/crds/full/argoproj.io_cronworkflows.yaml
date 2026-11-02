@@ -13009,6 +13009,19 @@ spec:
                         type: object
                       podSpecPatch:
                         type: string
+                      pool:
+                        properties:
+                          initialReplicas:
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          name:
+                            type: string
+                          retentionSeconds:
+                            format: int64
+                            minimum: 0
+                            type: integer
+                        type: object
                       priorityClassName:
                         type: string
                       resource:
@@ -31368,6 +31381,38 @@ spec:
                             PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                             container fields which are not strings (e.g. resource limits).
                           type: string
+                        pool:
+                          description: |-
+                            Pool runs this template's tasks on a pool of long-lived worker pods
+                            instead of a pod per task. Only container and script templates can be pooled.
+                            Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail.
+                            See https://argo-workflows.readthedocs.io/en/latest/hot-workers/
+                          properties:
+                            initialReplicas:
+                              description: |-
+                                InitialReplicas is the number of worker pods a new pool starts with.
+                                It applies only when the pool is created. Defaults to 1.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                            name:
+                              description: |-
+                                Name of the pool. Templates with the same pool name and the same pod
+                                settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                                template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                                the template's name. It must be a DNS label of at most 35 characters. It
+                                may hold a variable, such as `{{inputs.parameters.pool}}`, and is then
+                                checked once substituted.
+                              type: string
+                            retentionSeconds:
+                              description: |-
+                                RetentionSeconds is how long the pool is kept once no task uses it.
+                                The most recently dispatched task's value applies. Defaults to the
+                                controller's hot workers retention.
+                              format: int64
+                              minimum: 0
+                              type: integer
+                          type: object
                         priorityClassName:
                           description: PriorityClassName to apply to workflow pods.
                           type: string

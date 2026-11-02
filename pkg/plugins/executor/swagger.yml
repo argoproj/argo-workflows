@@ -3467,6 +3467,39 @@ definitions:
                 $ref: '#/definitions/WindowsSecurityContextOptions'
         title: PodSecurityContext holds pod-level security attributes and common container settings.
         type: object
+    Pool:
+        description: |-
+            Pool runs a container or script template's tasks on a pool of long-lived
+            worker pods, one task at a time per worker pod, instead of a pod per task.
+        properties:
+            initialReplicas:
+                description: |-
+                    InitialReplicas is the number of worker pods a new pool starts with.
+                    It applies only when the pool is created. Defaults to 1.
+                    +kubebuilder:validation:Minimum=1
+                    +optional
+                format: int32
+                type: integer
+            name:
+                description: |-
+                    Name of the pool. Templates with the same pool name and the same pod
+                    settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                    template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                    the template's name. It must be a DNS label of at most 35 characters. It
+                    may hold a variable, such as `{{inputs.parameters.pool}}`, and is then
+                    checked once substituted.
+                    +optional
+                type: string
+            retentionSeconds:
+                description: |-
+                    RetentionSeconds is how long the pool is kept once no task uses it.
+                    The most recently dispatched task's value applies. Defaults to the
+                    controller's hot workers retention.
+                    +kubebuilder:validation:Minimum=0
+                    +optional
+                format: int64
+                type: integer
+        type: object
     PortworxVolumeSource:
         properties:
             fsType:
@@ -4822,6 +4855,8 @@ definitions:
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                     container fields which are not strings (e.g. resource limits).
                 type: string
+            pool:
+                $ref: '#/definitions/Pool'
             priorityClassName:
                 description: PriorityClassName to apply to workflow pods.
                 type: string
