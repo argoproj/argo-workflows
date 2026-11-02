@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
@@ -254,30 +253,8 @@ func (s *taskResultSink) patchLabels(ctx context.Context, labels map[string]stri
 func (s *taskResultSink) create(ctx context.Context, result wfv1.NodeResult) error {
 	ctx, span := s.tracing.StartCreateTaskResult(ctx)
 	defer span.End()
-	taskResult := &wfv1.WorkflowTaskResult{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: workflow.APIVersion,
-			Kind:       workflow.WorkflowTaskResultKind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: s.nodeID,
-		},
-		NodeResult: result,
-	}
-	taskResult.SetLabels(map[string]string{
-		common.LabelKeyWorkflow:               s.workflow,
-		common.LabelKeyReportOutputsCompleted: "false",
-	})
-	taskResult.SetOwnerReferences([]metav1.OwnerReference{{
-		APIVersion: workflow.APIVersion,
-		Kind:       workflow.WorkflowKind,
-		Name:       s.workflow,
-		UID:        s.workflowUID,
-	}})
-
-	if s.instanceID != "" {
-		taskResult.Labels[common.LabelKeyControllerInstanceID] = s.instanceID
-	}
+	taskResult := common.NewTaskResult("", s.nodeID, s.workflow, s.workflowUID, s.instanceID)
+	taskResult.NodeResult = result
 	_, err := s.client.Create(ctx,
 		taskResult,
 		metav1.CreateOptions{},
