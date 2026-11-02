@@ -1,6 +1,6 @@
 package v1alpha1
 
-// the workflow's phase
+// WorkflowPhase is the phase of a workflow (e.g. Running, Succeeded, Failed).
 type WorkflowPhase string
 
 const (

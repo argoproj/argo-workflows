@@ -1834,7 +1834,7 @@ func RegisterWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			return
 		}
 
-		forward_WorkflowService_WatchEvents_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+		forward_WorkflowService_WatchEvents_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return wrapEventAsProtoMessage(resp.Recv()) }, mux.GetForwardResponseOptions()...)
 
 	})
 

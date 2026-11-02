@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+        arguments:
+          parameters:
+          - name: param1
+            value: value1
+    - - name: release
+        template: whalesay
+
+  - name: approve
+    inputs:
+      parameters:
+      - name: param1
+    suspend: {}
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]

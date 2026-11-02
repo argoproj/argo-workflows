@@ -1,6 +1,6 @@
 # not fix for line length
 MD013: false
-# mkdocs uses 4 spaces indent
+# properdocs uses 4 spaces indent
 MD007:
   indent: 4
 MD024:

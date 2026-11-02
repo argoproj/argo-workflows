@@ -26,7 +26,11 @@ import {CronWorkflowRow} from './cron-workflow-row';
 
 import './cron-workflow-list.scss';
 
-const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/cron-workflows/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argo-workflows.readthedocs.io/en/latest/cron-workflows/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function CronWorkflowList({match, location, history}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
@@ -51,16 +55,13 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
 
     // save history
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
-        history.push(
+        (isFirstRender.current ? history.replace : history.push)(
             historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 sidePanel
             })
         );
+        isFirstRender.current = false;
     }, [namespace, sidePanel]);
 
     // internal state

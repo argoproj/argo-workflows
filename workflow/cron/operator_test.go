@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -19,40 +19,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
-
-var scheduledWf = `
-  apiVersion: argoproj.io/v1alpha1
-  kind: CronWorkflow
-  metadata:
-    creationTimestamp: "2020-02-28T18:31:32Z"
-    generation: 69
-    name: hello-world
-    namespace: argo
-    resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
-    uid: f230ee83-2ddc-435e-b27c-f0ca63293100
-  spec:
-    schedules:
-      - '* * * * *'
-    startingDeadlineSeconds: 30
-    workflowSpec:
-      entrypoint: whalesay
-      templates:
-      - container:
-          args:
-          - "\U0001F553 hello world"
-          command:
-          - cowsay
-          image: docker/whalesay:latest
-          name: ""
-          resources: {}
-        inputs: {}
-        metadata: {}
-        name: whalesay
-        outputs: {}
-  status:
-    lastScheduledTime: "2020-02-28T19:05:00Z"
-`
 
 func TestRunOutstandingWorkflows(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
@@ -68,13 +34,13 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	time.Sleep(toWait)
 
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
 
 	// Second value at runtime should be 30-31
 
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(-1 * time.Minute)}
 	// StartingDeadlineSeconds is after the current second, so cron should be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(35))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(35))
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -86,7 +52,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.Equal(t, inferScheduledTime(ctx).Unix(), missedExecutionTime.Unix())
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(25))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(25))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -112,7 +78,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: cronWf.Status.LastScheduledTime.In(testLocation)}
 
 	// StartingDeadlineSeconds is after the current second, so cron should be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(35))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(35))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -125,7 +91,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.Equal(t, inferScheduledTime(ctx).Unix(), missedExecutionTime.Unix())
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(25))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(25))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -228,38 +194,12 @@ func (f fakeLister) List() ([]*v1alpha1.Workflow, error) {
 
 var _ util.WorkflowLister = &fakeLister{}
 
-var invalidWf = `
-  apiVersion: argoproj.io/v1alpha1
-  kind: CronWorkflow
-  metadata:
-    name: hello-world
-  spec:
-    schedules:
-      - '* * * * *'
-    startingDeadlineSeconds: 30
-    workflowSpec:
-      entrypoint: whalesay
-      templates:
-      - container:
-          args:
-          - "\U0001F553 hello world"
-          command:
-          - cowsay
-          image: docker/whalesay:latest
-          name: ""
-          resources: {}
-        inputs: {}
-        metadata: {}
-        name: "bad template name"
-        outputs: {}
-`
-
 func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(invalidWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/invalid-wf.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	testMetrics, err := metrics.New(logging.TestContext(t.Context()), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
@@ -281,42 +221,11 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	assert.Contains(t, submissionErrorCond.Message, "'bad template name' is invalid")
 }
 
-var specError = `
-apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: hello-world
-spec:
-  concurrencyPolicy: Replace
-  failedJobsHistoryLimit: 4
-  schedules:
-    - 10 * * 12737123 *
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  timezone: America/Los_Angeles
-  workflowSpec:
-    entrypoint: whalesay
-    templates:
-    -
-      container:
-        args:
-        - "\U0001F553 hello world"
-        command:
-        - cowsay
-        image: docker/whalesay:latest
-        name: ""
-        resources: {}
-      inputs: {}
-      metadata: {}
-      name: whalesay
-      outputs: {}
-`
-
 func TestSpecError(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(specError), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/spec-error.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	ctx := logging.TestContext(t.Context())
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
@@ -341,9 +250,9 @@ func TestSpecError(t *testing.T) {
 func TestScheduleTimeParam(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	testMetrics, _ := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
@@ -365,38 +274,12 @@ func TestScheduleTimeParam(t *testing.T) {
 	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
 }
 
-const lastUsedSchedule = `apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test
-spec:
-  concurrencyPolicy: Forbid
-  failedJobsHistoryLimit: 1
-  schedules:
-    - 41 12 * * *
-  successfulJobsHistoryLimit: 1
-  timezone: America/New_York
-  workflowSpec:
-    arguments: {}
-    entrypoint: job
-    templates:
-    - container:
-        args:
-        - /bin/echo "hello argo"
-        command:
-        - /bin/sh
-        - -c
-        image: alpine
-        imagePullPolicy: Always
-      name: job
-`
-
 func TestLastUsedSchedule(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	ctx := logging.TestContext(t.Context())
-	v1alpha1.MustUnmarshal([]byte(lastUsedSchedule), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/last-used-schedule.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
@@ -419,58 +302,10 @@ func TestLastUsedSchedule(t *testing.T) {
 	assert.Equal(t, woc.cronWf.Spec.GetScheduleWithTimezoneString(), woc.cronWf.GetLatestSchedule())
 }
 
-var forbidMissedSchedule = `apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  annotations:
-    cronworkflows.argoproj.io/last-used-schedule: CRON_TZ=America/Los_Angeles 0-36/1
-      21-22 * * *
-  creationTimestamp: "2022-02-04T05:33:24Z"
-  generation: 2
-  name: hello-world
-  namespace: argo
-  resourceVersion: "341102"
-  uid: 9ac888d8-95e3-4f93-8983-0d46c6c7d62a
-spec:
-  concurrencyPolicy: Forbid
-  failedJobsHistoryLimit: 4
-  schedules:
-    - 0-36/1 21-22 * * *
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  timezone: America/Los_Angeles
-  workflowSpec:
-    arguments: {}
-    entrypoint: whalesay
-    templates:
-    - container:
-        args:
-        - sleep 600
-        command:
-        - sh
-        - -c
-        image: alpine:3.23
-        name: ""
-        resources: {}
-      inputs: {}
-      metadata: {}
-      name: whalesay
-      outputs: {}
-status:
-  active:
-  - apiVersion: argoproj.io/v1alpha1
-    kind: Workflow
-    name: hello-world-1643952840
-    namespace: argo
-    resourceVersion: "341101"
-    uid: c56a8f98-ff46-4815-9d6f-d9db5cfcd941
-  lastScheduledTime: "2022-02-04T05:34:00Z"
-`
-
 func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(forbidMissedSchedule), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/forbid-missed-schedule.yaml", &cronWf)
 	// StartingDeadlineSeconds is after the current second, so cron should be run
 	// startingDeadlineSeconds := int64(35)
 	// cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
@@ -487,47 +322,12 @@ func TestMissedScheduleAfterCronScheduleWithForbid(t *testing.T) {
 	})
 }
 
-var multipleSchedulesWf = `
-  apiVersion: argoproj.io/v1alpha1
-  kind: CronWorkflow
-  metadata:
-    creationTimestamp: "2020-02-28T18:31:32Z"
-    generation: 69
-    name: hello-world
-    namespace: argo
-    resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
-    uid: f230ee83-2ddc-435e-b27c-f0ca63293100
-  spec:
-    schedules:
-    - "* * * * *"
-    - "0 * * * *"
-    startingDeadlineSeconds: 30
-    workflowSpec:
-      entrypoint: whalesay
-      templates:
-      - container:
-          args:
-          - "\U0001F553 hello world"
-          command:
-          - cowsay
-          image: docker/whalesay:latest
-          name: ""
-          resources: {}
-        inputs: {}
-        metadata: {}
-        name: whalesay
-        outputs: {}
-  status:
-    lastScheduledTime: "2020-02-28T19:05:00Z"
-`
-
 func TestMultipleSchedules(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(multipleSchedulesWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/multiple-schedules-wf.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
@@ -550,44 +350,11 @@ func TestMultipleSchedules(t *testing.T) {
 	assert.NotEmpty(t, wf.GetAnnotations()[common.AnnotationKeyCronWfScheduledTime])
 }
 
-var specErrWithEmptySchedules = `
-  apiVersion: argoproj.io/v1alpha1
-  kind: CronWorkflow
-  metadata:
-    creationTimestamp: "2020-02-28T18:31:32Z"
-    generation: 69
-    name: hello-world
-    namespace: argo
-    resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
-    uid: f230ee83-2ddc-435e-b27c-f0ca63293100
-  spec:
-    schedules: []
-    startingDeadlineSeconds: 30
-    workflowSpec:
-      entrypoint: whalesay
-      templates:
-      - container:
-          args:
-          - "\U0001F553 hello world"
-          command:
-          - cowsay
-          image: docker/whalesay:latest
-          name: ""
-          resources: {}
-        inputs: {}
-        metadata: {}
-        name: whalesay
-        outputs: {}
-  status:
-    lastScheduledTime: "2020-02-28T19:05:00Z"
-`
-
 func TestSpecErrorWithEmptySchedules(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(specErrWithEmptySchedules), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/spec-err-with-empty-schedules.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	ctx := logging.TestContext(t.Context())
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
@@ -609,46 +376,11 @@ func TestSpecErrorWithEmptySchedules(t *testing.T) {
 	assert.Contains(t, submissionErrorCond.Message, "cron workflow must have at least one schedule")
 }
 
-var specErrWithValidAndInvalidSchedules = `
-  apiVersion: argoproj.io/v1alpha1
-  kind: CronWorkflow
-  metadata:
-    creationTimestamp: "2020-02-28T18:31:32Z"
-    generation: 69
-    name: hello-world
-    namespace: argo
-    resourceVersion: "53389"
-    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
-    uid: f230ee83-2ddc-435e-b27c-f0ca63293100
-  spec:
-    schedules:
-    - "* * * * *"
-    - "10 * * 12737123 *"
-    startingDeadlineSeconds: 30
-    workflowSpec:
-      entrypoint: whalesay
-      templates:
-      - container:
-          args:
-          - "\U0001F553 hello world"
-          command:
-          - cowsay
-          image: docker/whalesay:latest
-          name: ""
-          resources: {}
-        inputs: {}
-        metadata: {}
-        name: whalesay
-        outputs: {}
-  status:
-    lastScheduledTime: "2020-02-28T19:05:00Z"
-`
-
 func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(specErrWithValidAndInvalidSchedules), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/spec-err-with-valid-and-invalid-schedules.yaml", &cronWf)
 
-	cs := fake.NewSimpleClientset()
+	cs := fake.NewClientset()
 	ctx := logging.TestContext(t.Context())
 	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
@@ -685,7 +417,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 	time.Sleep(toWait)
 
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(multipleSchedulesWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/multiple-schedules-wf.yaml", &cronWf)
 
 	// Second value at runtime should be 30-31
 
@@ -766,7 +498,7 @@ func TestRunOutstandingWorkflowsWithMultipleSchedules(t *testing.T) {
 func TestEvaluateWhen(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
 
 	cronWf.Spec.When = "{{= cronworkflow.lastScheduledTime == nil || ( (now() - cronworkflow.lastScheduledTime).Seconds() > 30) }}"
 	result, err := evalWhen(ctx, &cronWf)
@@ -804,7 +536,7 @@ func TestEvaluateWhen(t *testing.T) {
 func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	var cronWf v1alpha1.CronWorkflow
-	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
 	param := v1alpha1.Parameter{Name: "scheduled-time", Value: v1alpha1.AnyStringPtr("{{workflow.scheduledTime}}")}
 	params := []v1alpha1.Parameter{param}
 	argument := v1alpha1.Arguments{Parameters: params}
@@ -815,4 +547,66 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	result, err := evalWhen(ctx, &cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
+}
+
+// Namespace defaults are looked up per namespace rather than fixed at controller startup,
+// so what matters is that the CronWorkflow's own namespace reaches the resolver.
+func TestCronWorkflowDefaultsResolvedPerNamespace(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
+
+	t.Run("NilResolverIsTolerated", func(t *testing.T) {
+		woc := &cronWfOperationCtx{cronWf: &cronWf, log: logging.RequireLoggerFromContext(ctx)}
+		wfDefaults, err := woc.workflowDefaults(ctx)
+		require.NoError(t, err)
+		assert.Nil(t, wfDefaults)
+	})
+
+	t.Run("ResolvedForTheCronWorkflowsNamespace", func(t *testing.T) {
+		var asked string
+		woc := &cronWfOperationCtx{
+			cronWf: &cronWf,
+			log:    logging.RequireLoggerFromContext(ctx),
+			wfDefaults: func(_ context.Context, namespace string) (*v1alpha1.Workflow, error) {
+				asked = namespace
+				return &v1alpha1.Workflow{Spec: v1alpha1.WorkflowSpec{ServiceAccountName: "from-namespace"}}, nil
+			},
+		}
+		wfDefaults, err := woc.workflowDefaults(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, cronWf.Namespace, asked, "defaults must be resolved for the CronWorkflow's own namespace")
+		require.NotNil(t, wfDefaults)
+		assert.Equal(t, "from-namespace", wfDefaults.Spec.ServiceAccountName)
+	})
+}
+
+// A broken namespace defaults ConfigMap must surface on the CronWorkflow rather than being
+// skipped, which is the same fail-loudly behaviour ordinary workflows get.
+func TestCronWorkflowDefaultsErrorSurfacesOnValidate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal("@testdata/scheduled-wf.yaml", &cronWf)
+
+	cs := fake.NewClientset()
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
+	require.NoError(t, err)
+
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:      &cronWf,
+		log:         logging.RequireLoggerFromContext(ctx),
+		metrics:     testMetrics,
+		wfDefaults: func(context.Context, string) (*v1alpha1.Workflow, error) {
+			return nil, fmt.Errorf("namespace has 2 ConfigMaps labelled workflows.argoproj.io/configmap-type=WorkflowDefaults")
+		},
+	}
+
+	err = woc.validateCronWorkflow(ctx)
+	require.Error(t, err, "an unusable namespace defaults ConfigMap must not be silently skipped")
+	require.Len(t, woc.cronWf.Status.Conditions, 1)
+	assert.Equal(t, v1alpha1.ConditionTypeSpecError, woc.cronWf.Status.Conditions[0].Type)
+	assert.Contains(t, woc.cronWf.Status.Conditions[0].Message, "WorkflowDefaults")
 }

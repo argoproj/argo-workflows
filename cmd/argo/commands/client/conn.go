@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -57,6 +58,14 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	// Reuse the explicit kubectl client certificate flags in server mode.
+	ArgoServerOpts.ClientCert = overrides.AuthInfo.ClientCertificate
+	ArgoServerOpts.ClientKey = overrides.AuthInfo.ClientKey
+	ArgoServerOpts.CACert = overrides.ClusterInfo.CertificateAuthority
+	if (ArgoServerOpts.ClientCert == "") != (ArgoServerOpts.ClientKey == "") {
+		return nil, nil, errors.New("--client-certificate and --client-key must be provided together")
+	}
+
 	var proxy func(*http.Request) (*url.URL, error)
 	if overrides.ClusterInfo.ProxyURL != "" {
 		proxyURL, err := url.Parse(overrides.ClusterInfo.ProxyURL)
@@ -73,7 +82,8 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 				authString, err := GetAuthString(ctx)
 				if err != nil {
 					logger := logging.RequireLoggerFromContext(ctx)
-					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
+					logger.WithError(err).Error(ctx, "Failed to get auth string")
+					os.Exit(1)
 				}
 				return authString
 			},
@@ -98,7 +108,8 @@ func Namespace(ctx context.Context) string {
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
 		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithFatal().WithError(err).Error(ctx, "Failed to get namespace")
+		logger.WithError(err).Error(ctx, "Failed to get namespace")
+		os.Exit(1)
 	}
 	return namespace
 }

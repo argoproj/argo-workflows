@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: taskgroup-defer
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: g
+        template: leaf
+        onExit: leaf
+        withItems: [1, 2]
+  - name: leaf
+    container:
+      image: argoproj/argosay:v2

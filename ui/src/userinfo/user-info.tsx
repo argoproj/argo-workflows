@@ -49,7 +49,8 @@ export function UserInfo() {
                         {userInfo.groups && userInfo.groups.length > 0 && (
                             <dl>
                                 <dt>Groups:</dt>
-                                <dd>{userInfo.groups.join(', ')}</dd>
+                                {/* Sort alphabetically to ensure readability when there are many groups */}
+                                <dd>{[...userInfo.groups].sort().join(', ')}</dd>
                             </dl>
                         )}
                         {userInfo.name && (

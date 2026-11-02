@@ -18,7 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-// waitWorkflows waits for the given workflowNames.
+// WaitWorkflows waits for the given workflowNames.
 func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true

@@ -1,0 +1,78 @@
+// Shared domain types for the PR Readiness Helper. Type-only module: it
+// strips to nothing at runtime, so always import from it with `import type`.
+
+export type SignalState = 'pending' | 'failure' | 'success' | 'not-applicable';
+
+export interface SignalMatch {
+  check: string;
+  app?: string;
+}
+
+export interface SignalConfig {
+  id: string;
+  match: SignalMatch;
+  title: string;
+  guidance: string;
+  stepGuidance?: Record<string, string> | null;
+}
+
+export interface Config {
+  signals: SignalConfig[];
+  ignoreChecks: string[];
+  coveredApps: string[];
+}
+
+export interface CheckRun {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  html_url: string;
+  id?: number;
+  app?: { slug: string } | null;
+}
+
+export interface Signal {
+  id: string;
+  title: string;
+  guidance: string;
+  stepGuidance: Record<string, string> | null;
+  state: SignalState;
+  url: string | null;
+}
+
+export interface JobStep {
+  name: string;
+  conclusion: string | null;
+}
+
+export interface TemplateIssue {
+  section: string;
+  problem: string;
+}
+
+export interface TemplateVerdict {
+  compliant: boolean;
+  issues: TemplateIssue[];
+}
+
+export type CommentVariant = 'issues' | 'waiting' | 'allclear';
+
+export interface Decision {
+  variant: CommentVariant | null;
+  shouldComment: boolean;
+  blocking: boolean;
+  failing: string[];
+  templateBlocking: boolean;
+}
+
+export interface GitHubUser {
+  login: string;
+  type: string;
+}
+
+// The subset of a pull request needed to follow a stack of PRs to its base.
+export interface StackablePr {
+  number: number;
+  base: { ref: string; repo: { full_name: string } | null };
+  head: { ref: string; repo: { full_name: string } | null };
+}

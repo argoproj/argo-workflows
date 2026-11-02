@@ -22,13 +22,12 @@ spec:
               - '-c'
             args:
               - |
-                /bin/bash <<'EOF'
                 echo "hello one"
-                apt update -y
-                apt install stress -y
-                echo 'stress --vm 1 --vm-bytes 512M --vm-hang 100' > abc.sh
-                bash abc.sh
-                EOF
+                # Allocate a 512MB buffer in a single read, which exceeds the
+                # 50Mi cgroup limit and triggers an OOM kill. This avoids the
+                # flaky `apt install stress` dance which depends on reaching
+                # external package mirrors from CI.
+                dd if=/dev/zero of=/dev/null bs=512M count=1
           - name: two
             resources:
               requests:

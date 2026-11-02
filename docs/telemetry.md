@@ -1,5 +1,7 @@
 # Telemetry
 
+For a hands-on walk through, see the [Getting Started with OpenTelemetry](telemetry-getting-started.md) guide.
+
 Argo Workflows emits the standard signals: traces, metrics and logs.
 
 ## Metrics

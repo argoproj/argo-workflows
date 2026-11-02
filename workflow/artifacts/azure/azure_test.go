@@ -10,7 +10,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
@@ -97,7 +96,7 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 		Protocol:      sas.ProtocolHTTPSandHTTP,
 		StartTime:     time.Now().UTC().Add(time.Second * -10),
 		ExpiryTime:    time.Now().UTC().Add(15 * time.Minute),
-		Permissions:   to.Ptr(sas.ContainerPermissions{Read: true, Write: true, List: true}).String(),
+		Permissions:   new(sas.ContainerPermissions{Read: true, Write: true, List: true}).String(),
 		ContainerName: driver.Container,
 	}.SignWithSharedKey(credential)
 	if err != nil {
@@ -157,4 +156,21 @@ func TestIsSASAccountKey(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
+}
+
+// TestArtifactDriverMissingAccountKey tests that newAzureContainerClient — the
+// first step of SaveStream — fails without credentials
+func TestArtifactDriverMissingAccountKey(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	driver := ArtifactDriver{
+		AccountKey:  "", // No account key
+		Container:   "test",
+		Endpoint:    "http://127.0.0.1:10000/devstoreaccount1",
+		UseSDKCreds: false,
+	}
+
+	_, err := driver.newAzureContainerClient(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accountKey secret is required")
 }

@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -20,7 +22,7 @@ import (
 )
 
 var (
-	wfClientset   = fakewfclientset.NewSimpleClientset()
+	wfClientset   = fakewfclientset.NewClientset()
 	wftmplGetter  = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
 	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 )
@@ -71,434 +73,181 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 const invalidErr = "is invalid"
 
-var dupTemplateNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-`
-
-var dupInputNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: dup
-        value: "value"
-      - name: dup
-        value: "value"
-    container:
-      image: docker/whalesay:latest
-`
-
-var emptyName = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: ""
-        value: "value"
-    container:
-      image: docker/whalesay:latest
-`
-
 func TestDuplicateOrEmptyNames(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, dupTemplateNames)
+	err := validate(ctx, "@testdata/basic/dup-template-names.yaml")
 	require.ErrorContains(t, err, "not unique")
 
-	err = validate(ctx, dupInputNames)
+	err = validate(ctx, "@testdata/basic/dup-input-names.yaml")
 	require.ErrorContains(t, err, "not unique")
 
-	err = validate(ctx, emptyName)
+	err = validate(ctx, "@testdata/basic/empty-name.yaml")
 	require.ErrorContains(t, err, "name is required")
 }
 
-var unresolvedInput = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:{{inputs.parameters.unresolved}}
-`
-
-var unresolvedStepInput = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: entry-step
-  arguments:
-    parameters: []
-  templates:
-    - steps:
-        - - name: a
-            arguments:
-              parameters:
-                - name: message
-                  value: "{{inputs.parameters.message}}"
-            template: whalesay
-      name: entry-step
-      inputs:
-        parameters:
-          - name: message
-            value: hello world
-    - name: whalesay
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-`
-
-var unresolvedOutput = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: unresolved-output-steps
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-  - name: unresolved-output-steps
-    steps:
-    - - name: whalesay
-        template: whalesay
-    outputs:
-      parameters:
-      - name: unresolved
-        valueFrom:
-          parameter: "{{steps.whalesay.outputs.parameters.unresolved}}"
-`
-
 func TestUnresolved(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, unresolvedInput)
+	err := validate(ctx, "@testdata/basic/unresolved-input.yaml")
 	require.ErrorContains(t, err, "failed to resolve")
 
-	err = validate(ctx, unresolvedStepInput)
+	err = validate(ctx, "@testdata/basic/unresolved-step-input.yaml")
 	require.ErrorContains(t, err, "failed to resolve")
 
-	err = validate(ctx, unresolvedOutput)
+	err = validate(ctx, "@testdata/basic/unresolved-output.yaml")
 	require.ErrorContains(t, err, "failed to resolve")
 }
-
-var ioArtifactPaths = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: artifact-path-placeholders-
-spec:
-  entrypoint: head-lines
-  arguments:
-    parameters:
-    - name: lines-count
-      value: 3
-    artifacts:
-    - name: text
-      raw:
-        data: |
-          1
-          2
-          3
-          4
-          5
-  templates:
-  - name: head-lines
-    inputs:
-      parameters:
-      - name: lines-count
-      artifacts:
-      - name: text
-        path: /inputs/text/data
-    outputs:
-      parameters:
-      - name: actual-lines-count
-        valueFrom:
-          path: /outputs/actual-lines-count/data
-      artifacts:
-      - name: text
-        path: /outputs/text/data
-    container:
-      image: busybox
-      command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
-`
 
 func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, ioArtifactPaths)
+	err := validate(ctx, "@testdata/basic/io-artifact-paths.yaml")
 	require.NoError(t, err)
 }
-
-var outputParameterPath = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: get-current-date-
-spec:
-  entrypoint: get-current-date
-  templates:
-  - name: get-current-date
-    outputs:
-      parameters:
-      - name: current-date
-        valueFrom:
-          path: /tmp/current-date
-    container:
-      image: busybox
-      command: [sh, -c, 'date > {{outputs.parameters.current-date.path}}']
-`
 
 func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, outputParameterPath)
+	err := validate(ctx, "@testdata/basic/output-parameter-path.yaml")
 	require.NoError(t, err)
 }
 
-var stepOutputReferences = `
+func TestExecutorPluginsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tests := []struct {
+		name      string
+		plugins   string
+		wantError string
+	}{
+		{
+			name: "EmptyList",
+			plugins: `
+  executorPlugins: []
+`,
+		},
+		{
+			name: "Valid",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+		},
+		{
+			name: "MissingName",
+			plugins: `
+  executorPlugins:
+  - spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: executor plugin metadata name is mandatory",
+		},
+		{
+			name: "InvalidSidecar",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: at least one port is mandatory",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validate(ctx, `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: step-output-ref-
+  generateName: workflow-level-executor-plugin-
 spec:
-  entrypoint: whalesay
+  entrypoint: main
+`+tt.plugins+`
   templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        value: "value"
+  - name: main
     container:
-      image: docker/whalesay:latest
-    outputs:
-      parameters:
-      - name: outparam
-        valueFrom:
-          path: /etc/hosts
-  - name: stepref
-    steps:
-    - - name: one
-        template: whalesay
-    - - name: two
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.outputs.parameters.outparam}}"
-`
+      image: busybox
+`)
+			if tt.wantError == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantError)
+		})
+	}
+}
 
 func TestStepOutputReference(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, stepOutputReferences)
+	err := validate(ctx, "@testdata/basic/step-output-references.yaml")
 	require.NoError(t, err)
 }
-
-var stepStatusReferences = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: status-ref-
-spec:
-  entrypoint: statusref
-  templates:
-  - name: statusref
-    steps:
-    - - name: one
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "Hello, world"
-    - - name: two
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.status}}"
-  - name: say
-    inputs:
-      parameters:
-      - name: message
-        value: "value"
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo {{inputs.parameters.message}}"]
-`
 
 func TestStepStatusReference(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, stepStatusReferences)
+	err := validate(ctx, "@testdata/basic/step-status-references.yaml")
 	require.NoError(t, err)
 }
 
-var stepStatusReferencesNoFutureReference = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: status-ref-
-spec:
-  entrypoint: statusref
-  templates:
-  - name: statusref
-    steps:
-    - - name: one
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.two.status}}"
-    - - name: two
-        template: say
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.status}}"
-  - name: say
-    inputs:
-      parameters:
-      - name: message
-        value: "value"
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo {{inputs.parameters.message}}"]
-`
-
 func TestStepStatusReferenceNoFutureReference(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	err := validate(ctx, stepStatusReferencesNoFutureReference)
+	err := validate(ctx, "@testdata/basic/step-status-references-no-future-reference.yaml")
 	// Can't reference the status of steps that have not run yet
 	require.ErrorContains(t, err, "failed to resolve {{steps.two.status}}")
 }
 
-var stepArtReferences = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: step-art-ref-
-spec:
-  entrypoint: stepref
-  templates:
-  - name: generate
-    container:
-      image: alpine:3.23
-      command: [echo, generate]
-    outputs:
-      artifacts:
-      - name: generated_hosts
-        path: /etc/hosts
-
-  - name: echo
-    inputs:
-      parameters:
-      - name: message
-      artifacts:
-      - name: passthrough
-        path: /tmp/passthrough
-    container:
-      image: alpine:3.23
-      command: [echo, "{{inputs.parameters.message}}"]
-    outputs:
-      parameters:
-      - name: hosts
-        valueFrom:
-          path: /etc/hosts
-      artifacts:
-      - name: someoutput
-        path: /tmp/passthrough
-
-  - name: stepref
-    steps:
-    - - name: one
-        template: generate
-    - - name: two
-        template: echo
-        arguments:
-          parameters:
-          - name: message
-            value: val
-          artifacts:
-          - name: passthrough
-            from: "{{steps.one.outputs.artifacts.generated_hosts}}"
-`
-
 func TestStepArtReference(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), stepArtReferences)
+	err := validate(logging.TestContext(t.Context()), "@testdata/basic/step-art-references.yaml")
 	require.NoError(t, err)
 }
-
-var paramWithValueFromConfigMapRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: simple-config
-            key: msg
-    container:
-      image: docker/whalesay:latest
-`
 
 func TestParamWithValueFromConfigMapRef(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), paramWithValueFromConfigMapRef)
+	err := validate(logging.TestContext(t.Context()), "@testdata/basic/param-with-value-from-config-map-ref.yaml")
 	require.NoError(t, err)
 }
 
-var paramWithoutValue = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-`
-
 func TestParamWithoutValue(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), paramWithoutValue)
+	err := validate(logging.TestContext(t.Context()), "@testdata/basic/param-without-value.yaml")
 	require.ErrorContains(t, err, "not supplied")
 }
 
@@ -1339,6 +1088,54 @@ func TestPodNameVariable(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var nodeTaskNameVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: node-task-name-variable
+spec:
+  entrypoint: node-task-name-variable
+  templates:
+  - name: node-task-name-variable
+    retryStrategy:
+      limit: 1
+    archiveLocation:
+      s3:
+        endpoint: s3.amazonaws.com
+        bucket: my-bucket
+        key: archive/{{workflow.name}}/{{node.taskName}}
+    container:
+      image: debian:9.4
+      command: [sh, -c]
+      args: ["echo {{node.taskName}}"]
+    outputs:
+      parameters:
+      - name: task-name
+        value: "{{node.taskName}}"
+      artifacts:
+      - name: my-out
+        path: /tmp/hello_world.txt
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: path/{{node.taskName}}/hello_world.tgz
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+`
+
+// TestNodeTaskNameVariable records that a template using {{node.taskName}}
+// passes lint. It can't fail yet: lint skips variables whose root isn't in
+// common.GlobalVarValidWorkflowVariablePrefix, which has no node. entry. It
+// guards against lint rejecting the variable once node. variables are checked.
+func TestNodeTaskNameVariable(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), nodeTaskNameVariable)
+	require.NoError(t, err)
+}
+
 func TestGlobalParamWithVariable(t *testing.T) {
 	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), nil, Opts{})
 
@@ -1611,6 +1408,31 @@ spec:
 
 func TestUndefinedTemplateRef(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), undefinedTemplateRef)
+	require.ErrorContains(t, err, "not found")
+}
+
+// templateRefWithPlaceholderInName references a non-existent template whose
+// name contains the word "placeholder". Before the fix, the substring check
+// at validateTemplateHolder would silently skip validation for this reference
+// instead of returning a "not found" error.
+var templateRefWithPlaceholderInName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: placeholder-name-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    steps:
+      - - name: call-A
+          templateRef:
+            name: foo
+            template: run-placeholder-task
+`
+
+func TestTemplateRefWithPlaceholderInNameIsNotSkipped(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), templateRefWithPlaceholderInName)
 	require.ErrorContains(t, err, "not found")
 }
 
@@ -2866,6 +2688,30 @@ func TestMaxLengthName(t *testing.T) {
 	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
 
+func TestCronWorkflowInvalidTimezoneRejected(t *testing.T) {
+	cwf := &wfv1.CronWorkflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-cron-wf", Namespace: metav1.NamespaceDefault},
+		Spec: wfv1.CronWorkflowSpec{
+			Schedules: []string{"0 * * * *"},
+			Timezone:  "Not/A_Real_Timezone",
+			WorkflowSpec: wfv1.WorkflowSpec{
+				Entrypoint: "whalesay",
+				Templates: []wfv1.Template{
+					{
+						Name: "whalesay",
+						Container: &corev1.Container{
+							Image:   "docker/whalesay:latest",
+							Command: []string{"cowsay"},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
+	require.ErrorContains(t, err, `invalid timezone "Not/A_Real_Timezone"`)
+}
+
 var invalidContainerSetDependencyNotFound = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2894,6 +2740,45 @@ spec:
 func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), invalidContainerSetDependencyNotFound)
 	require.ErrorContains(t, err, "templates.main.containerSet.containers.b dependency 'c' not defined")
+}
+
+func TestReservedAuxContainerNames(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	containerSetSupervisor := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: supervisor
+            image: argoproj/argosay:v2
+`
+	err := validate(ctx, containerSetSupervisor)
+	require.ErrorContains(t, err, "reserved Argo container name")
+
+	sidecarWait := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+      sidecars:
+        - name: wait
+          image: argoproj/argosay:v2
+`
+	err = validate(ctx, sidecarWait)
+	require.ErrorContains(t, err, "reserved Argo container name")
 }
 
 func TestInvalidContainerSetNoMainContainer(t *testing.T) {
@@ -3436,6 +3321,357 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
 }
 
+var dynamicTemplateRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-template-ref-name
+spec:
+  templates:
+  - name: main
+    inputs:
+      parameters:
+        - name: workflow-name
+    steps:
+      - - name: run
+          templateRef:
+            name: "{{inputs.parameters.workflow-name}}"
+            template: main
+`
+
+func TestDynamicTemplateRefName(t *testing.T) {
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), dynamicTemplateRefName, Opts{})
+	require.NoError(t, err)
+}
+
+var dynamicClusterTemplateRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-cluster-template-ref-name
+spec:
+  templates:
+  - name: main
+    inputs:
+      parameters:
+        - name: workflow-name
+    dag:
+      tasks:
+        - name: run
+          templateRef:
+            name: "prefix-{{inputs.parameters.workflow-name}}"
+            template: main
+            clusterScope: true
+`
+
+// plainErrorWorkflowTemplateGetter returns an uncoded error like the offline lint client.
+type plainErrorWorkflowTemplateGetter struct{}
+
+func (plainErrorWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
+	return nil, fmt.Errorf("couldn't find workflow template %q", name)
+}
+
+// plainErrorClusterWorkflowTemplateGetter returns an uncoded error like the offline lint client.
+type plainErrorClusterWorkflowTemplateGetter struct{}
+
+func (plainErrorClusterWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return nil, fmt.Errorf("couldn't find cluster workflow template %q", name)
+}
+
+func TestDynamicTemplateRefNameWithUncodedGetterErrors(t *testing.T) {
+	getters := map[string]struct {
+		wftmplGetter  templateresolution.WorkflowTemplateNamespacedGetter
+		cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter
+	}{
+		"offline":   {plainErrorWorkflowTemplateGetter{}, plainErrorClusterWorkflowTemplateGetter{}},
+		"forbidden": {plainErrorWorkflowTemplateGetter{}, &templateresolution.NullClusterWorkflowTemplateGetter{}},
+	}
+	specs := map[string]string{
+		"steps":             dynamicTemplateRefName,
+		"dag cluster scope": dynamicClusterTemplateRefName,
+	}
+	for getterName, g := range getters {
+		for specName, spec := range specs {
+			t.Run(getterName+"/"+specName, func(t *testing.T) {
+				wftmpl := unmarshalWftmpl(spec)
+				err := WorkflowTemplate(logging.TestContext(t.Context()), g.wftmplGetter, g.cwftmplGetter, wftmpl, nil, Opts{})
+				require.NoError(t, err)
+			})
+		}
+	}
+}
+
+var inlineWorkflowTemplate14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-inline-template-14329
+spec:
+  templates:
+  - inputs:
+      parameters:
+      - name: params1
+      - name: params2
+    name: main
+    steps:
+    - - name: inline-main
+        arguments:
+          parameters:
+          - name: params1
+            value: '{{inputs.parameters.params1}}'
+          - name: params2
+            value: '{{inputs.parameters.params2}}'
+        inline:
+          inputs:
+            parameters:
+            - name: params1
+            - name: params2
+          script:
+            command:
+            - sh
+            image: alpine:3.18
+            source: |
+              echo PARAM1={{inputs.parameters.params1}}
+              echo PARAM2={{inputs.parameters.params2}}
+`
+
+var inlineWorkflow14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-inline-
+spec:
+  arguments:
+    parameters:
+    - name: params1
+      value: foo1
+    - name: params2
+      value: bar1
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - arguments:
+          parameters:
+          - name: params1
+            value: '{{workflow.parameters.params1}}'
+          - name: params2
+            value: '{{workflow.parameters.params2}}'
+        name: inline
+        templateRef:
+          name: test-inline-template-14329
+          template: main
+`
+
+func TestInlineTemplateNotContaminatedByPlaceholders(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(inlineWorkflowTemplate14329)
+	err := createWorkflowTemplate(ctx, wftmpl)
+	require.NoError(t, err)
+	defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+	wf := wfv1.MustUnmarshalWorkflow(inlineWorkflow14329)
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+
+	for key, tmpl := range wf.Status.StoredTemplates {
+		if tmpl.Script != nil {
+			if strings.Contains(tmpl.Script.Source, "placeholder") {
+				t.Errorf("stored template %q has placeholder-contaminated script source: %s", key, tmpl.Script.Source)
+			}
+		}
+	}
+}
+
+var dynamicStepNameWorkflowTemplate15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-dynamic-step-name-15896
+spec:
+  templates:
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        continueOn:
+          failed: true
+    - - name: check-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        when: "{{steps.run-{{inputs.parameters.date}}.status}} != Succeeded"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+var dynamicStepNameWorkflow15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-dynamic-step-name-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+        templateRef:
+          name: test-dynamic-step-name-15896
+          template: day-loop
+`
+
+var dynamicStepNameWorkflowLocal15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-dynamic-step-name-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        template: day-loop
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        continueOn:
+          failed: true
+    - - name: check-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        when: "{{steps.run-{{inputs.parameters.date}}.status}} != Succeeded"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+// TestDynamicStepNameWithInputParameters verifies that using {{inputs.parameters.xxx}}
+// in step names does not cause validation errors due to placeholder contamination.
+// Regression test for https://github.com/argoproj/argo-workflows/issues/15896
+func TestDynamicStepNameWithInputParameters(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Test with templateRef (the original regression scenario)
+	t.Run("WithTemplateRef", func(t *testing.T) {
+		wftmpl := wfv1.MustUnmarshalWorkflowTemplate(dynamicStepNameWorkflowTemplate15896)
+		err := createWorkflowTemplate(ctx, wftmpl)
+		require.NoError(t, err)
+		defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflow15896)
+		err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		require.NoError(t, err, "workflow with dynamic step names via templateRef should pass validation")
+	})
+
+	// Test with inline templates (local workflow, no templateRef)
+	t.Run("WithInlineSteps", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflowLocal15896)
+		err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		require.NoError(t, err, "workflow with dynamic step names in local templates should pass validation")
+	})
+}
+
+var dynamicStepNameInvalidSkeleton15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-invalid-skeleton-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        template: day-loop
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run_{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+// TestDynamicStepNameInvalidSkeletonStillFails verifies that an invalid literal
+// skeleton around a placeholder (here an underscore in "run_{{...}}") is still
+// rejected. The placeholder is replaced with a safe token for validation, so
+// the surrounding characters are still checked.
+func TestDynamicStepNameInvalidSkeletonStillFails(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameInvalidSkeleton15896)
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "is invalid")
+}
+
 var parameterizedGlobalArtifactsWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3562,4 +3798,190 @@ func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), workflowWithoutParameterizedArtifacts)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
+}
+
+var podResourcesInvalidResourceName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      nvidia.com/gpu: "1"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesClaims = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podResources:
+      claims:
+      - name: gpu
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      cpu: "1"
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "1"
+    http:
+      url: https://example.com
+`
+
+var podResourcesValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "2"
+        memory: 512Mi
+    container:
+      image: alpine:3.23
+`
+
+func TestPodResourcesValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, podResourcesInvalidResourceName)
+	require.ErrorContains(t, err, `spec.podResources: "nvidia.com/gpu" is not a valid pod-level resource`)
+	err = validate(ctx, podResourcesClaims)
+	require.ErrorContains(t, err, "templates.main.podResources.claims is not supported")
+	err = validate(ctx, podResourcesOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.podResources is not supported for HTTP templates")
+	err = validate(ctx, podResourcesValid)
+	require.NoError(t, err)
+}
+
+var resourceClaimsValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: shared
+    resourceClaimName: existing-claim
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    http:
+      url: https://example.com
+`
+
+var resourceClaimsOnStepsTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`
+
+// TestPodResourceClaimsValidation: a claim is attached to the pod a template
+// runs, so a template that never creates one has nowhere to put it. Which kind
+// a template is can be written as a parameter, so this is asked of the
+// substituted template. Everything else about a claim is the API server's to
+// judge at pod admission.
+func TestPodResourceClaimsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, resourceClaimsValid)
+	require.NoError(t, err)
+	err = validate(ctx, resourceClaimsOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for HTTP templates")
+	err = validate(ctx, resourceClaimsOnStepsTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
+}
+
+// Expression keywords are not task names: validation rejects them as undefined
+// dependencies, so the DAG evaluator never has to special-case them.
+func TestDAGDependsKeywordIsNotATask(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-depends-keyword-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        template: echo
+        depends: "A.Succeeded || false"
+  - name: echo
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "invalid dependency false")
 }

@@ -6,7 +6,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// translate a K8S errors into gRPC error - assume that we want to surface this - which we may not
+// TranslateError translates a K8S error into a gRPC error, assuming that we want to surface it.
 func TranslateError(err error) error {
 	switch {
 	case err == nil:

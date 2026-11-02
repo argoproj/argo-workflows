@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podSpecPatch: '{"containers"}' # not a valid JSON here
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]

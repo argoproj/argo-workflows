@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-skipped-volume-default-
+spec:
+  entrypoint: main
+  volumes:
+    - name: cfg
+      configMap:
+        name: "{{tasks.producer.outputs.parameters.cm-name}}"
+        optional: true
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: producer
+            template: produce
+            when: "false" # -> Skipped, produces no real output
+          - name: consumer
+            template: consume
+            depends: "producer.Succeeded || producer.Skipped"
+    - name: produce
+      outputs:
+        parameters:
+          - name: cm-name
+            valueFrom:
+              path: /tmp/out.txt
+              default: "rescued-config" # <- substituted into spec.volumes when the node is skipped
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "real-config", "/tmp/out.txt"]
+    - name: consume
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "hello"]
+        volumeMounts:
+          - name: cfg
+            mountPath: /cfg

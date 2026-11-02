@@ -188,7 +188,7 @@ status:
       id: artifact-passing-z9j6n-2656044291
       name: artifact-passing-z9j6n[0].generate-artifact
       outputs:
-        result: '["foo/script.py","script.py"]'
+        result: '["foo/script.py", "script.py"]'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:00Z"
       templateName: generate-artifacts

@@ -19,6 +19,23 @@ By disabling the leader election process, you can avoid unnecessary communicatio
 
 By using the `PriorityClass`, you can ensure that the Workflow Controller Pod is scheduled before other Pods in the cluster.
 
+### Deployment rollout strategy
+
+When leader election is disabled, the Deployment's rollout strategy must not surge a second Pod.
+The default `RollingUpdate` strategy with `maxSurge: 25%` rounds up to `maxSurge: 1` for a single-replica Deployment, so on every rollout (image bump, ConfigMap change, resource edit) the new Pod becomes Ready before the old Pod is terminated.
+Without a leader lease, both Pods reconcile the same Workflows during that window, which can duplicate Pod creations, clobber Workflow status updates, and cause their informer caches to diverge.
+
+Set the Deployment's `spec.strategy` to `Recreate` so the old Pod is terminated before the new Pod starts:
+
+```yaml
+spec:
+  strategy:
+    type: Recreate
+```
+
+This produces a few seconds of controller downtime during each rollout.
+Running Workflows keep executing; reconciliation resumes when the new Pod is Ready.
+
 ### Multiple Workflow Controller Replicas
 
 It is possible to run multiple replicas of the Workflow Controller to provide high-availability.
@@ -27,6 +44,8 @@ Ensure that leader election is enabled (either by omitting the `LEADER_ELECTION_
 Only one replica of the Workflow Controller will actively manage Workflows at any given time.
 The other replicas will be on standby, ready to take over if the active replica fails.
 This means that you are guaranteeing resource allocations for replicas that are not actively contributing to the running of Workflows.
+
+With leader election enabled, the default `RollingUpdate` Deployment strategy is safe: only the replica holding the lease reconciles Workflows, so a surging replica simply waits to acquire the lease when the previous leader steps down.
 
 The leader election process requires frequent communication with the Kubernetes API.
 When running Workflows at scale, the Kubernetes API may become unresponsive, causing the leader election to take longer than 10 seconds (`LEADER_ELECTION_RENEW_DEADLINE`) to respond, which will disrupt the controller.

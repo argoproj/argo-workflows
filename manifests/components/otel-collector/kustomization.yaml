@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - otel-collector-config.yaml
+  - otel-collector-deployment.yaml
+  - otel-collector-service.yaml
+
+patches:
+  - path: overlays/workflow-controller-deployment.yaml

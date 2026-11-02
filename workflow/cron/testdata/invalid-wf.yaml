@@ -1,0 +1,23 @@
+  apiVersion: argoproj.io/v1alpha1
+  kind: CronWorkflow
+  metadata:
+    name: hello-world
+  spec:
+    schedules:
+      - '* * * * *'
+    startingDeadlineSeconds: 30
+    workflowSpec:
+      entrypoint: whalesay
+      templates:
+      - container:
+          args:
+          - "\U0001F553 hello world"
+          command:
+          - cowsay
+          image: docker/whalesay:latest
+          name: ""
+          resources: {}
+        inputs: {}
+        metadata: {}
+        name: "bad template name"
+        outputs: {}

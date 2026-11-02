@@ -3,18 +3,18 @@ owners:
 - terrytangyuan
 
 approvers:
-- alexec
 - alexmt
-- edlee2121
 - isubasinghe
 - jessesuen
 - juliev0
 - masonm
-- sarabala1979
 - tczhao
 
 reviewers:
+- alexec
 - blkperl
 - eduardodbr
+- edlee2121
 - jswxstw
+- sarabala1979
 - shuangkun

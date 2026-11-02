@@ -2,6 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1ArtifactRepositoryRef
 
+ArtifactRepositoryRef is a reference to an artifact repository config map.
 
 ## Properties
 

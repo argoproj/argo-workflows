@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Knetic/govaluate"
@@ -27,9 +28,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -45,7 +48,7 @@ type cronWfOperationCtx struct {
 	cronWf          *v1alpha1.CronWorkflow
 	wfClientset     versioned.Interface
 	wfClient        typed.WorkflowInterface
-	wfDefaults      *v1alpha1.Workflow
+	wfDefaults      namespacedefaults.Func
 	cronWfIf        typed.CronWorkflowInterface
 	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
@@ -59,7 +62,7 @@ type cronWfOperationCtx struct {
 
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
-	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults namespacedefaults.Func,
 ) *cronWfOperationCtx {
 	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
@@ -126,7 +129,13 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	wf := common.ConvertCronWorkflowToWorkflowWithProperties(ctx, woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
 
-	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
+	wfDefaults, err := woc.workflowDefaults(ctx)
+	if err != nil {
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to resolve workflow defaults: %s", err))
+		return
+	}
+
+	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
 		if apierrors.IsAlreadyExists(err) {
@@ -142,10 +151,21 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 }
 
+// workflowDefaults resolves the defaults for this CronWorkflow's namespace. It tolerates a
+// nil resolver so a cronWfOperationCtx built without one still works.
+func (woc *cronWfOperationCtx) workflowDefaults(ctx context.Context) (*v1alpha1.Workflow, error) {
+	return namespacedefaults.Resolve(ctx, woc.wfDefaults, woc.cronWf.Namespace)
+}
+
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
+	wfDefaults, err := woc.workflowDefaults(ctx)
+	if err != nil {
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
+		return err
+	}
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
+	err = validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, wfDefaults)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
@@ -227,10 +247,12 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 		return false, err
 	}
 	env := make(map[string]any)
-	addSetField := func(name string, value any) {
-		env[fmt.Sprintf("%s.%s", variablePrefix, name)] = value
+	setField := func(name string, value any) {
+		// `name` is the full canonical "cronworkflow.X" — store flat for
+		// template substitution against {{cronworkflow.X}}.
+		env[name] = value
 	}
-	err = expressionEnv(cron, addSetField)
+	err = expressionEnv(cron, setField)
 	if err != nil {
 		return false, err
 	}
@@ -295,8 +317,7 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
 				continue
 			}
-			var alreadyShutdownErr util.AlreadyShutdownError
-			if errors.As(err, &alreadyShutdownErr) {
+			if alreadyShutdownErr, ok := errors.AsType[util.AlreadyShutdownError](err); ok {
 				woc.log.Warn(ctx, alreadyShutdownErr.Error())
 				continue
 			}
@@ -494,13 +515,18 @@ func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase
 	}
 }
 
-func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value any)) error {
-	addSetField("name", cron.Name)
-	addSetField("namespace", cron.Namespace)
-	addSetField("labels", cron.Labels)
-	addSetField("annotations", cron.Labels)
-	addSetField("failed", cron.Status.Failed)
-	addSetField("succeeded", cron.Status.Succeeded)
+// expressionEnv populates a CronWorkflow expression scope. The setField
+// callback receives the full canonical name (e.g. "cronworkflow.failed")
+// drawn from util/variables/keys; how it stores the entry — flat for
+// template substitution, or nested under "cronworkflow" for expr-lang
+// member-access — is the caller's choice.
+func expressionEnv(cron *v1alpha1.CronWorkflow, setField func(name string, value any)) error {
+	setField(varkeys.CronWorkflowName.Template(), cron.Name)
+	setField(varkeys.CronWorkflowNamespace.Template(), cron.Namespace)
+	setField(varkeys.CronWorkflowLabels.Template(), cron.Labels)
+	setField(varkeys.CronWorkflowAnnotations.Template(), cron.Labels)
+	setField(varkeys.CronWorkflowFailed.Template(), cron.Status.Failed)
+	setField(varkeys.CronWorkflowSucceeded.Template(), cron.Status.Succeeded)
 
 	labelsStr, err := json.Marshal(&cron.Labels)
 	if err != nil {
@@ -512,8 +538,8 @@ func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, va
 		return err
 	}
 
-	addSetField("annotations.json", annotationsStr)
-	addSetField("labels.json", labelsStr)
+	setField(varkeys.CronWorkflowAnnotationsJSON.Template(), annotationsStr)
+	setField(varkeys.CronWorkflowLabelsJSON.Template(), labelsStr)
 
 	var tm *time.Time
 	tm = nil
@@ -522,7 +548,7 @@ func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, va
 		tm = &cron.Status.LastScheduledTime.Time
 	}
 
-	addSetField("lastScheduledTime", tm)
+	setField(varkeys.CronWorkflowLastScheduledTime.Template(), tm)
 
 	return nil
 }
@@ -532,12 +558,16 @@ func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 		return false, nil
 	}
 	prefixedEnv := make(map[string]any)
-	addSetField := func(name string, value any) {
-		prefixedEnv[name] = value
+	prefix := variablePrefix + "."
+	setField := func(name string, value any) {
+		// `name` is the canonical "cronworkflow.X". Strip the
+		// "cronworkflow." prefix because we expose the inner map under the
+		// "cronworkflow" key for expr-lang member access.
+		prefixedEnv[strings.TrimPrefix(name, prefix)] = value
 	}
 	env := make(map[string]any)
 	env[variablePrefix] = prefixedEnv
-	err := expressionEnv(woc.cronWf, addSetField)
+	err := expressionEnv(woc.cronWf, setField)
 	if err != nil {
 		return false, err
 	}

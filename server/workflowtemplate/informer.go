@@ -2,6 +2,7 @@ package workflowtemplate
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"k8s.io/client-go/dynamic"
@@ -41,7 +42,7 @@ func NewInformer(restConfig *rest.Config, managedNamespace string) (*Informer, e
 	}, nil
 }
 
-// Start informer in separate go-routine and block until cache sync
+// Run starts the informer in a separate go-routine and blocks until cache sync.
 func (wti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 	go wti.informer.Informer().Run(stopCh)
 
@@ -49,14 +50,16 @@ func (wti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 		stopCh,
 		wti.informer.Informer().HasSynced,
 	) {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Timed out waiting for caches to sync")
+		logging.RequireLoggerFromContext(ctx).Error(ctx, "Timed out waiting for caches to sync")
+		os.Exit(1)
 	}
 }
 
-// if namespace contains empty string Lister will use the namespace provided during initialization
+// Getter returns a WorkflowTemplateNamespacedGetter. If namespace is empty, the Lister will use the namespace provided during initialization.
 func (wti *Informer) Getter(ctx context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
 	if wti.informer == nil {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Template informer not started")
+		logging.RequireLoggerFromContext(ctx).Error(ctx, "Template informer not started")
+		os.Exit(1)
 	}
 	if namespace == "" {
 		namespace = wti.managedNamespace

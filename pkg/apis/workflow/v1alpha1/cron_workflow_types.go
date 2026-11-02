@@ -30,6 +30,7 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// ConcurrencyPolicy defines how to treat concurrent executions of a CronWorkflow.
 // +kubebuilder:validation:Enum=Allow;Forbid;Replace
 type ConcurrencyPolicy string
 
@@ -61,19 +62,19 @@ type CronWorkflowSpec struct {
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
 	// WorkflowMetadata contains some metadata of the workflow to be run
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
-	// v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+	// StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
-	// v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
+	// Schedules is a list of schedules to run the Workflow in Cron format
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/?-]+\s+){4}[0-9*,/?-]+)$`
+	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?-]+\s+){4}[A-Za-z0-9*,/?-]+)$`
 	Schedules []string `json:"schedules" protobuf:"bytes,11,opt,name=schedules"`
-	// v3.6 and after: When is an expression that determines if a run should be scheduled.
+	// When is an expression that determines if a run should be scheduled.
 	When string `json:"when,omitempty" protobuf:"bytes,12,opt,name=when"`
 }
 
-// StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
+// StopStrategy defines if the CronWorkflow should stop scheduling based on an expression.
 type StopStrategy struct {
-	// v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables
+	// Expression is an expression that stops scheduling workflows when true. Use the variables
 	// `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 }
@@ -89,13 +90,13 @@ type CronWorkflowStatus struct {
 	// Conditions is a list of conditions the CronWorkflow may have
 	// +optional
 	Conditions Conditions `json:"conditions" protobuf:"bytes,3,rep,name=conditions"`
-	// v3.6 and after: Succeeded counts how many times child workflows succeeded
+	// Succeeded counts how many times child workflows succeeded
 	// +optional
 	Succeeded int64 `json:"succeeded" protobuf:"varint,4,rep,name=succeeded"`
-	// v3.6 and after: Failed counts how many times child workflows failed
+	// Failed counts how many times child workflows failed
 	// +optional
 	Failed int64 `json:"failed" protobuf:"varint,5,rep,name=failed"`
-	// v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
+	// Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
 	// +optional
 	Phase CronWorkflowPhase `json:"phase" protobuf:"varint,6,rep,name=phase"`
 }
@@ -145,8 +146,8 @@ func (c *CronWorkflowSpec) GetScheduleString() string {
 	return c.getScheduleString(false)
 }
 
-// GetScheduleString returns the schedule expression with timezone, if available. If multiple
-// expressions are configured it returns a comma separated list of cron expressions
+// GetScheduleWithTimezoneString returns the schedule expression with timezone, if available. If multiple
+// expressions are configured it returns a comma separated list of cron expressions.
 func (c *CronWorkflowSpec) GetScheduleWithTimezoneString() string {
 	return c.getScheduleString(true)
 }

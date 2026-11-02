@@ -130,9 +130,9 @@ func (e HierarchyErrors) Error() string {
 		return ""
 	}
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%d hierarchy violation(s):\n", len(e)))
+	fmt.Fprintf(&sb, "%d hierarchy violation(s):\n", len(e))
 	for _, err := range e {
-		sb.WriteString(fmt.Sprintf("  - %s\n", err.Error()))
+		fmt.Fprintf(&sb, "  - %s\n", err.Error())
 	}
 	return sb.String()
 }

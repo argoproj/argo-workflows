@@ -47,6 +47,20 @@ func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncService
 	return http1.SyncServiceClient(h), nil
 }
 
-func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client, proxy func(*http.Request) (*url.URL, error)) (context.Context, Client, error) {
-	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient, proxy)), nil
+func newHTTP1Client(ctx context.Context, opts ArgoServerOpts, auth string, proxy func(*http.Request) (*url.URL, error)) (context.Context, Client, error) {
+	facade, err := http1.NewFacade(http1.FacadeConfig{
+		BaseURL:            opts.GetURL(),
+		Authorization:      auth,
+		InsecureSkipVerify: opts.InsecureSkipVerify,
+		Headers:            opts.Headers,
+		HTTPClient:         opts.HTTP1Client,
+		Proxy:              proxy,
+		ClientCert:         opts.ClientCert,
+		ClientKey:          opts.ClientKey,
+		CACert:             opts.CACert,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return ctx, httpClient(facade), nil
 }

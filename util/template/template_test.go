@@ -14,7 +14,7 @@ type SimpleValue struct {
 	Value string `json:"value,omitempty"`
 }
 
-func processTemplate(t *testing.T, tmpl SimpleValue, replaceMap map[string]string) SimpleValue {
+func processTemplate(t *testing.T, tmpl SimpleValue, replaceMap map[string]any) SimpleValue {
 	tmplBytes, err := json.Marshal(tmpl)
 	require.NoError(t, err)
 	ctx := logging.TestContext(t.Context())
@@ -47,7 +47,7 @@ func Test_Template_Replace(t *testing.T) {
 		for name, tc := range testCases {
 			t.Run(name, func(t *testing.T) {
 				tmpl := SimpleValue{Value: tc.input}
-				newTmpl := processTemplate(t, tmpl, map[string]string{})
+				newTmpl := processTemplate(t, tmpl, map[string]any{})
 				assert.Equal(t, tc.want, newTmpl.Value)
 			})
 		}
@@ -56,10 +56,10 @@ func Test_Template_Replace(t *testing.T) {
 	t.Run("SimpleWithEscapedCharacters", func(t *testing.T) {
 		testCases := map[string]struct {
 			input, want string
-			replaceMap  map[string]string
+			replaceMap  map[string]any
 		}{
-			"SimpleSingleQuoteAsString": {input: `{{customParam}}`, want: `This is ' John`, replaceMap: map[string]string{"customParam": `This is ' John`}},
-			"SimpleDoubleQuoteAsString": {input: `{{customParam}}`, want: `This is " John`, replaceMap: map[string]string{"customParam": `This is " John`}},
+			"SimpleSingleQuoteAsString": {input: `{{customParam}}`, want: `This is ' John`, replaceMap: map[string]any{"customParam": `This is ' John`}},
+			"SimpleDoubleQuoteAsString": {input: `{{customParam}}`, want: `This is " John`, replaceMap: map[string]any{"customParam": `This is " John`}},
 		}
 		for name, tc := range testCases {
 			t.Run(name, func(t *testing.T) {
@@ -84,7 +84,7 @@ func Test_Template_Replace(t *testing.T) {
 		for name, tc := range testCases {
 			t.Run(name, func(t *testing.T) {
 				tmpl := SimpleValue{Value: tc.input}
-				newTmpl := processTemplate(t, tmpl, map[string]string{})
+				newTmpl := processTemplate(t, tmpl, map[string]any{})
 				assert.Equal(t, tc.want, newTmpl.Value)
 			})
 		}
@@ -96,7 +96,7 @@ func Test_Template_Replace(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		// Input must be valid JSON.
 		input := `{"key": "{{outer-{{inner}}}}"}`
-		replaceMap := map[string]string{
+		replaceMap := map[string]any{
 			"inner":        "suffix",
 			"outer-suffix": "final-value",
 		}
@@ -125,7 +125,7 @@ func Test_Template_Replace(t *testing.T) {
 		// Value: "{{A {{B {{C}}}}}}"
 		// JSON: {"key": "..."}
 		input := `{"key": "{{A {{B {{C}}}}}}"}`
-		replaceMap := map[string]string{
+		replaceMap := map[string]any{
 			"C":      "valC",
 			"B valC": "valB",  // The tag becomes "{{B valC}}" -> resolves to "valB"
 			"A valB": "final", // The tag becomes "{{A valB}}" -> resolves to "final"

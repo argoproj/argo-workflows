@@ -25,8 +25,8 @@ func (w selfDestructingFile) Close() error {
 	return err
 }
 
-// Use ArtifactDriver.Load() to get a stream, which we can use for all implementations of ArtifactDriver.OpenStream()
-// that aren't yet implemented the "right way" and/or for those that don't have a natural way of streaming
+// LoadToStream uses ArtifactDriver.Load() to get a stream, which can be used for all implementations of ArtifactDriver.OpenStream()
+// that aren't yet implemented the "right way" and/or for those that don't have a natural way of streaming.
 func LoadToStream(ctx context.Context, a *wfv1.Artifact, g ArtifactDriver) (io.ReadCloser, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("type", reflect.TypeOf(g)).Info(ctx, "Efficient artifact streaming is not supported")

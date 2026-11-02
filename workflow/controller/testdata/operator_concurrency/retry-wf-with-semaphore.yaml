@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: script-wf
+  namespace: default
+spec:
+  entrypoint: step1
+  retryStrategy:
+    limit: 10
+  templates:
+    - name: step1
+      steps:
+        - - name: hello1
+            template: whalesay
+        - - name: hello2
+            template: whalesay
+    - name: whalesay
+      synchronization:
+        semaphores:
+          - configMapKeyRef:
+              key: template
+              name: my-config
+      container:
+        args:
+          - "hello world"
+        command:
+          - cowsay
+        image: "docker/whalesay:latest"

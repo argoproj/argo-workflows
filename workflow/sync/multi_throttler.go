@@ -23,6 +23,9 @@ type Throttler interface {
 	Remove(key Key)
 	// UpdateParallelism
 	UpdateParallelism(limit int)
+	// UpdateNamespaceParallelismDefault updates the controller-config default limit for namespaces
+	// without an explicit Namespace label override.
+	UpdateNamespaceParallelismDefault(limit int)
 	// UpdateNamespaceParallelism updates the namespace parallelism
 	UpdateNamespaceParallelism(namespace string, limit int)
 	// ResetNamespaceParallelism sets the namespace parallelism to the default value
@@ -79,9 +82,11 @@ func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 }
 
 func (m *multiThrottler) namespaceCount(namespace string) (int, int) {
-	setLimit, has := m.namespaceParallelism[namespace]
-	if !has {
-		m.namespaceParallelism[namespace] = m.namespaceParallelismDefault
+	var setLimit int
+	if lim, has := m.namespaceParallelism[namespace]; has {
+		setLimit = lim
+	} else {
+		// Use the live default so UpdateNamespaceParallelismDefault applies without a restart.
 		setLimit = m.namespaceParallelismDefault
 	}
 	if setLimit == 0 {
@@ -154,14 +159,23 @@ func (m *multiThrottler) UpdateParallelism(limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.totalParallelism = limit
-	m.queueThrottled()
+	m.drainThrottled()
+}
+
+// UpdateNamespaceParallelismDefault updates the default per-namespace parallelism limit
+// applied to namespaces without an explicit override, and re-queues throttled items.
+func (m *multiThrottler) UpdateNamespaceParallelismDefault(limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.namespaceParallelismDefault = limit
+	m.drainThrottled()
 }
 
 func (m *multiThrottler) UpdateNamespaceParallelism(namespace string, limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.namespaceParallelism[namespace] = limit
-	m.queueThrottled()
+	m.drainThrottled()
 }
 
 func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
@@ -170,9 +184,19 @@ func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
 	delete(m.namespaceParallelism, namespace)
 }
 
-func (m *multiThrottler) queueThrottled() {
+// drainThrottled repeatedly admits eligible queued workflows until no further
+// capacity is available. Used when a parallelism limit is raised so that all newly
+// eligible workflows are released immediately, rather than one per subsequent event.
+func (m *multiThrottler) drainThrottled() {
+	for m.queueThrottled() {
+	}
+}
+
+// queueThrottled admits at most one eligible queued workflow and returns true if it
+// admitted one, so callers can loop to drain all newly eligible workflows.
+func (m *multiThrottler) queueThrottled() bool {
 	if m.totalParallelism != 0 && len(m.running) >= m.totalParallelism {
-		return
+		return false
 	}
 
 	minPq := &priorityQueue{itemByKey: make(map[string]*item)}
@@ -185,7 +209,7 @@ func (m *multiThrottler) queueThrottled() {
 
 		namespace, _, err := cache.SplitMetaNamespaceKey(currItem.key)
 		if err != nil {
-			return
+			return false
 		}
 		if !m.namespaceAllows(namespace) {
 			continue
@@ -199,7 +223,9 @@ func (m *multiThrottler) queueThrottled() {
 		m.pending[bestNamespace].pop()
 		m.running[bestItem.key] = true
 		m.queue(bestItem.key)
+		return true
 	}
+	return false
 }
 
 type item struct {
@@ -243,10 +269,27 @@ func (pq *priorityQueue) remove(key Key) {
 func (pq priorityQueue) Len() int { return len(pq.items) }
 
 func (pq priorityQueue) Less(i, j int) bool {
-	if pq.items[i].priority == pq.items[j].priority {
-		return pq.items[i].creationTime.Before(pq.items[j].creationTime)
+	a, b := pq.items[i], pq.items[j]
+	return queueLess(a.priority, a.creationTime, a.key, b.priority, b.creationTime, b.key)
+}
+
+// queueLess is the single ordering rule for every lock queue: higher priority
+// first, then earlier creation time, then holder key in byte order. The key is
+// the tie-break because creation time comes from the Kubernetes
+// creationTimestamp, which has second resolution, so workflows submitted in
+// the same second and every node of a template-level lock tie on it. A holder
+// must be at the front of the queue of every lock it requests, and the
+// in-memory heap and the database each keep their own queue, so both must
+// resolve ties identically or two waiters can each be blocked by the other
+// forever. Keep this in sync with the ORDER BY in syncdb.GetOrderedQueue.
+func queueLess(aPriority int32, aTime time.Time, aKey string, bPriority int32, bTime time.Time, bKey string) bool {
+	if aPriority != bPriority {
+		return aPriority > bPriority
 	}
-	return pq.items[i].priority > pq.items[j].priority
+	if !aTime.Equal(bTime) {
+		return aTime.Before(bTime)
+	}
+	return aKey < bKey
 }
 
 func (pq priorityQueue) Swap(i, j int) {

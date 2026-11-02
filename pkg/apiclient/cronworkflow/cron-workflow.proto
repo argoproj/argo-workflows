@@ -1,11 +1,12 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow";
-
-import "google/api/annotations.proto";
-import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package cronworkflow;
+
+import "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1/generated.proto";
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow";
 
 message LintCronWorkflowRequest {
   string namespace = 1;
@@ -31,7 +32,7 @@ message GetCronWorkflowRequest {
 
 message UpdateCronWorkflowRequest {
   // DEPRECATED: This field is ignored.
-  string name = 1 [ deprecated = true ];
+  string name = 1 [deprecated = true];
   string namespace = 2;
   github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.CronWorkflow cronWorkflow = 3;
 }
@@ -42,8 +43,7 @@ message DeleteCronWorkflowRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
 
-message CronWorkflowDeletedResponse {
-}
+message CronWorkflowDeletedResponse {}
 
 message CronWorkflowSuspendRequest {
   string name = 1;
@@ -58,14 +58,14 @@ message CronWorkflowResumeRequest {
 service CronWorkflowService {
   rpc LintCronWorkflow(LintCronWorkflowRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.CronWorkflow) {
     option (google.api.http) = {
-      post : "/api/v1/cron-workflows/{namespace}/lint"
-      body : "*"
+      post: "/api/v1/cron-workflows/{namespace}/lint"
+      body: "*"
     };
   }
   rpc CreateCronWorkflow(CreateCronWorkflowRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.CronWorkflow) {
     option (google.api.http) = {
-      post : "/api/v1/cron-workflows/{namespace}"
-      body : "*"
+      post: "/api/v1/cron-workflows/{namespace}"
+      body: "*"
     };
   }
 
@@ -79,8 +79,8 @@ service CronWorkflowService {
 
   rpc UpdateCronWorkflow(UpdateCronWorkflowRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.CronWorkflow) {
     option (google.api.http) = {
-      put : "/api/v1/cron-workflows/{namespace}/{name}"
-      body : "*"
+      put: "/api/v1/cron-workflows/{namespace}/{name}"
+      body: "*"
     };
   }
 
@@ -90,15 +90,15 @@ service CronWorkflowService {
 
   rpc ResumeCronWorkflow(CronWorkflowResumeRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.CronWorkflow) {
     option (google.api.http) = {
-      put : "/api/v1/cron-workflows/{namespace}/{name}/resume"
-      body : "*"
+      put: "/api/v1/cron-workflows/{namespace}/{name}/resume"
+      body: "*"
     };
   }
 
   rpc SuspendCronWorkflow(CronWorkflowSuspendRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.CronWorkflow) {
     option (google.api.http) = {
-      put : "/api/v1/cron-workflows/{namespace}/{name}/suspend"
-      body : "*"
+      put: "/api/v1/cron-workflows/{namespace}/{name}/suspend"
+      body: "*"
     };
   }
 }

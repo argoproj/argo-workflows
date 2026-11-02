@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artifact-test-1
+  namespace: test-namespace
+spec:
+  entrypoint: main
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: https://a.server.io/file
+    - name: data-file
+      http:
+        url: https://b.server.io/data
+
+  templates:
+    - name: main
+      steps:
+        - - name: process-data
+            template: process
+
+    - name: process
+      inputs:
+        artifacts:
+          - name: binary-file
+            path: /usr/local/bin/binfile
+            mode: 0755
+          - name: data-file
+            path: /tmp/data
+            mode: 0755
+      container:
+        image: busybox
+        command: [sh, -c]
+        args: ["binary-file /tmp/data"]

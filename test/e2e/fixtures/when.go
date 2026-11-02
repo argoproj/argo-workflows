@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 
 	"github.com/upper/db/v4"
 
@@ -231,9 +230,9 @@ var (
 	ToBePending = ToHavePhase(wfv1.WorkflowPending)
 )
 
-// `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
-// This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
-// creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
+// ToBeDone replaces `ToFinish` and also makes sure the workflow is both complete and not pending archiving.
+// This additional check is not needed for most use cases, however in `AfterTest` we delete the workflow and this
+// creates a lot of warning messages in the logs that are caused by misuse rather than actual problems.
 var ToBeDone Condition = func(wf *wfv1.Workflow) (bool, string) {
 	toBeCompleted, _ := ToBeCompleted(wf)
 	return toBeCompleted && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", "to be done"
@@ -295,7 +294,7 @@ func describeListOptions(opts metav1.ListOptions) string {
 	return out
 }
 
-// Wait for a workflow to meet a condition:
+// WaitForWorkflow waits for a workflow to meet a condition.
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
 //
@@ -372,7 +371,7 @@ func (w *When) WaitForWorkflow(options ...any) *When {
 	}
 }
 
-// Waits for workflow to be created with different name than the current one
+// WaitForNewWorkflow waits for a workflow to be created with a different name than the current one.
 func (w *When) WaitForNewWorkflow(condition Condition) *When {
 	w.t.Helper()
 	if w.wf == nil {
@@ -551,7 +550,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: new(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)
@@ -900,7 +899,7 @@ func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 	return w
 }
 
-// test condition function on Workflow
+// WorkflowCondition tests a condition function on the current Workflow.
 func (w *When) WorkflowCondition(condition func(wf *wfv1.Workflow) bool) bool {
 	return condition(w.wf)
 }

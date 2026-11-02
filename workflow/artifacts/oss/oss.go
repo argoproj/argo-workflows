@@ -275,6 +275,13 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 	return err
 }
 
+// SaveStream saves an artifact from an io.Reader to OSS compliant storage
+func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return common.SaveStreamViaTempFile(reader, "oss-upload-*", func(path string) error {
+		return ossDriver.Save(ctx, path, outputArtifact)
+	})
+}
+
 // Delete deletes an artifact from an OSS compliant storage
 func (ossDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
@@ -405,8 +412,7 @@ func isTransientOSSErr(ctx context.Context, err error) bool {
 	if errutil.IsTransientErr(ctx, err) {
 		return true
 	}
-	var ossErr oss.ServiceError
-	if errors.As(err, &ossErr) {
+	if ossErr, ok := errors.AsType[oss.ServiceError](err); ok {
 		if slices.Contains(ossTransientErrorCodes, ossErr.Code) {
 			return true
 		}
@@ -513,8 +519,7 @@ func putDirectory(ctx context.Context, bucket *oss.Bucket, objectName, dir strin
 
 // IsOssErrCode tests if an err is an oss.ServiceError with the specified code
 func IsOssErrCode(err error, code string) bool {
-	var serr oss.ServiceError
-	if errors.As(err, &serr) {
+	if serr, ok := errors.AsType[oss.ServiceError](err); ok {
 		if serr.Code == code {
 			return true
 		}
@@ -548,11 +553,10 @@ func GetOssDirectory(ctx context.Context, bucket *oss.Bucket, objectName, path s
 		return err
 	}
 	for _, f := range files {
-		innerName, err := filepath.Rel(objectName, f)
+		fpath, err := common.LocalPathForObject(path, objectName, f)
 		if err != nil {
-			return fmt.Errorf("get Rel path from %s to %s error: %w", f, objectName, err)
+			return err
 		}
-		fpath := filepath.Join(path, innerName)
 		if strings.HasSuffix(f, "/") {
 			err = os.MkdirAll(fpath, 0o700)
 			if err != nil {

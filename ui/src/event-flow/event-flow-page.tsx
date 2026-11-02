@@ -37,6 +37,9 @@ import {ID} from './id';
 
 import './event-flow-page.scss';
 
+// The list includes archived workflows, so an unbounded list can be huge and very expensive for the database.
+const workflowsLimit = 500;
+
 export function EventFlowPage({history, location, match}: RouteComponentProps<any>) {
     // boiler-plate
     const {navigation} = useContext(Context);
@@ -118,7 +121,7 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
         }
         const listWatch = new ListWatch<Workflow>(
             () =>
-                services.workflows.list(namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], null, [
+                services.workflows.list(namespace, null, ['events.argoproj.io/sensor', 'events.argoproj.io/trigger'], {limit: workflowsLimit}, [
                     'metadata',
                     'items.metadata.name',
                     'items.metadata.namespace',
@@ -256,14 +259,23 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [
+                    <NamespaceFilter
+                        key='namespace-filter'
+                        value={namespace}
+                        onChange={setNamespace}
+                        extraNamespaces={nsUtils.getUniqueNamespaces([...(eventSources || []), ...(sensors || []), ...(workflows || [])])}
+                    />
+                ]
             }}>
             <ErrorNotice error={error} />
             {emptyGraph ? (
                 <ZeroState>
                     <p>Argo Events allow you to trigger workflows, lambdas, and other actions when an event such as a webhooks, message, or a cron schedule occurs.</p>
                     <p>
-                        <a href='https://argoproj.github.io/argo-events/'>Learn more</a>
+                        <a href='https://argoproj.github.io/argo-events/' target='_blank' rel='noreferrer'>
+                            Learn more
+                        </a>
                     </p>
                 </ZeroState>
             ) : (
@@ -295,6 +307,14 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                             <Footnote>
                                 <InfoIcon /> Event-flow is proxy for events. It is based on the pod logs of the event sources and sensors, so should be treated only as indicative
                                 of activity.
+                            </Footnote>
+                        </div>
+                    )}
+                    {showWorkflows && (
+                        <div className='argo-container'>
+                            <Footnote>
+                                <InfoIcon /> Up to {workflowsLimit} workflows across all triggers are loaded initially, plus any created while this page is open. Triggers that have
+                                not run recently may show no workflows.
                             </Footnote>
                         </div>
                     )}

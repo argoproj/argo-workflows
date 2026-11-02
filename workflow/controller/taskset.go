@@ -4,19 +4,48 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 )
+
+// onWorkflowTaskSetUpdate keeps routine updates rate-limited, but optionally
+// applies a minimum completion delay, capped at the default requeue delay,
+// when a task result first becomes terminal.
+// Updates without a valid object key are ignored; repeated terminal results
+// retain normal rate limiting rather than triggering the completion delay again.
+func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
+	key, err := cache.MetaNamespaceKeyFunc(newObj)
+	if err != nil {
+		return
+	}
+	if wfc.taskSetCompletionDelay != nil {
+		previous := old.(*wfv1.WorkflowTaskSet)
+		current := newObj.(*wfv1.WorkflowTaskSet)
+		for id, result := range current.Status.Nodes {
+			if result.Phase.Fulfilled(nil) && !previous.Status.Nodes[id].Phase.Fulfilled(nil) {
+				// The workqueue coalesces pending keys and serializes work per key.
+				// processNextItem still rejects stale workflow versions and falls
+				// back to a rate-limited retry while the workflow informer catches up.
+				wfc.wfQueue.AddAfter(key, min(*wfc.taskSetCompletionDelay, wfc.requeueTime))
+				return
+			}
+		}
+	}
+	wfc.wfQueue.AddRateLimited(key)
+}
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
 	patchByte, err := json.Marshal(patch)
@@ -30,9 +59,9 @@ func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, sub
 	return nil
 }
 
-func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]any, nodesPatch map[string]any) {
+func (woc *wfOperationCtx) getDeleteTaskAndNodePatch(nodes wfv1.Nodes) (tasksPatch map[string]any, nodesPatch map[string]any) {
 	deletedNode := make(map[string]any)
-	for _, node := range woc.wf.Status.Nodes {
+	for _, node := range nodes {
 		if node.IsTaskSetNode() && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
@@ -60,17 +89,49 @@ func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error)
 	}
 }
 
+// markUnwrittenTaskSetNodesError marks the nodes dispatched this operation
+// whose tasks are not yet in the WorkflowTaskSet as Error, after writing them
+// failed. Tasks already in the taskset are left to the agent. The taskset is
+// read from the API server rather than the informer, which may not have seen
+// an earlier write yet; if it can't be read, nothing is marked and the next
+// reconcile tries the write again.
+func (woc *wfOperationCtx) markUnwrittenTaskSetNodesError(ctx context.Context, err error) {
+	var written map[string]wfv1.Template
+	workflowTaskSet, getErr := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	switch {
+	case apierr.IsNotFound(getErr):
+	case getErr != nil:
+		woc.log.WithError(getErr).Warn(ctx, "failed to get workflowtaskset, not marking unwritten taskset nodes as error")
+		return
+	default:
+		written = workflowTaskSet.Spec.Tasks
+	}
+	for nodeID := range woc.taskSet {
+		if _, ok := written[nodeID]; ok {
+			continue
+		}
+		node, getErr := woc.wf.Status.Nodes.Get(nodeID)
+		if getErr != nil || node.Fulfilled() {
+			continue
+		}
+		woc.markNodeError(ctx, node.Name, err)
+	}
+}
+
 func (woc *wfOperationCtx) hasTaskSetNodes() bool {
 	return woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 		return node.IsTaskSetNode()
 	})
 }
 
-func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	if !woc.hasTaskSetNodes() {
+func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context, nodes wfv1.Nodes) error {
+	// Avoid sending empty patches when there are no completed taskset nodes to remove.
+	if !nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.IsTaskSetNode() && node.Fulfilled()
+	}) {
 		return nil
 	}
-	tasksPatch, nodesPatch := woc.getDeleteTaskAndNodePatch()
+	tasksPatch, nodesPatch := woc.getDeleteTaskAndNodePatch(nodes)
 	if woc.wf.Status.Fulfilled() {
 		tasksPatch["metadata"] = metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -98,6 +159,11 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	if err := woc.reconcileTaskSet(ctx); err != nil {
 		woc.log.WithError(err).Error(ctx, "error in workflowtaskset reconciliation")
+		// The same write fails on every reconcile, so error the tasks that do not
+		// fit rather than leave them pending with no message.
+		if argokubeerr.IsRequestEntityTooLargeErr(err) {
+			woc.markUnwrittenTaskSetNodesError(ctx, fmt.Errorf("WorkflowTaskSet would exceed the Kubernetes object size limit; reduce the number or size of HTTP and plugin templates running at once: %w", err))
+		}
 		return
 	}
 	if err := woc.reconcileAgentPod(ctx); err != nil {
@@ -120,8 +186,8 @@ func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(ctx context.Context
 		// If any of the node's children need an HTTP reconciliation, the parent node will also need one
 		childNodeName, err := woc.wf.Status.Nodes.GetName(child)
 		if err != nil {
-			woc.log.WithField("nodeID", child).WithFatal().Error(ctx, "was unable to get child node name for nodeID")
-			panic("unable to obtain child node name")
+			woc.log.WithField("nodeID", child).Error(ctx, "was unable to get child node name for nodeID")
+			os.Exit(1)
 		}
 		if woc.nodeRequiresTaskSetReconciliation(ctx, childNodeName) {
 			return true
@@ -146,6 +212,11 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 				woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
 				return err
 			}
+			// A node already finished, e.g. errored because the agent pod
+			// failed, must not be overwritten by a stale result.
+			if node.Fulfilled() {
+				continue
+			}
 
 			node.Outputs = taskResult.Outputs.DeepCopy()
 			node.Phase = taskResult.Phase
@@ -153,6 +224,10 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.FinishedAt = metav1.Now()
 
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			// The node is finished with the template it was dispatched with
+			// (the task set holds it), as the Engine has already run.
+			tmpl := workflowTaskSet.Spec.Tasks[nodeID]
+			woc.handleNodeFulfilled(ctx, node, &tmpl)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)

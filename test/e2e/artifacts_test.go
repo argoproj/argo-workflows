@@ -32,12 +32,26 @@ type ArtifactsSuite struct {
 	fixtures.E2ESuite
 }
 
+// artifactGCPodsRecouped counts the GC pods that have finished and been recouped. Pods are recorded in the status
+// when they are created, so the size of the map alone says nothing about whether they have run.
+func artifactGCPodsRecouped(wf *wfv1.Workflow) int {
+	if wf.Status.ArtifactGCStatus == nil {
+		return 0
+	}
+	recouped := 0
+	for _, done := range wf.Status.ArtifactGCStatus.PodsRecouped {
+		if done {
+			recouped++
+		}
+	}
+	return recouped
+}
+
 func (s *ArtifactsSuite) TestInputOnMount() {
 	s.Given().
 		Workflow("@testdata/input-on-mount-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
@@ -307,16 +321,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			SubmitWorkflow().
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
-				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-					condition := "for artifacts to exist"
-
+				fixtures.Condition(func(_ *wfv1.Workflow) (bool, string) {
 					_, err1 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 					_, err2 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
-
-					if err1 == nil && err2 == nil {
-						return true, condition
-					}
-					return false, condition
+					return err1 == nil && err2 == nil, "for artifacts to exist"
 				}))
 
 		then = when.Then()
@@ -674,7 +682,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				WaitForWorkflow(
 					fixtures.WorkflowCompletionOkay(true),
 					fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-						return (len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
+						return (artifactGCPodsRecouped(wf) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
 							fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
 					}))
 
@@ -826,8 +834,7 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 		when.WaitForWorkflow(
 			fixtures.WorkflowCompletionOkay(true),
 			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-				return wf.Status.ArtifactGCStatus != nil &&
-					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
+				return artifactGCPodsRecouped(wf) == 1, "for pod to have been recouped"
 			})).
 			Then().
 			ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -1257,6 +1264,42 @@ spec:
       command: [sh, -c]
       args: ["ls -l"]
       workingDir: /tmp/git
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+// TestGitArtifactAtWorkingDir covers issue #16728: an input artifact staged
+// at the container's workingDir must be visible through the inherited cwd.
+// Unlike TestGitArtifactDepthClone above, the script exits non-zero when it
+// isn't (`ls` succeeds even in a deleted cwd).
+func (s *ArtifactsSuite) TestGitArtifactAtWorkingDir() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-workingdir-
+spec:
+  entrypoint: probe
+  templates:
+  - name: probe
+    inputs:
+      artifacts:
+      - name: source
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    script:
+      image: argoproj/argosay:v2
+      command: [sh]
+      workingDir: /tmp/git
+      source: |
+        set -eu
+        pwd
+        test -f README.md
 `).
 		When().
 		SubmitWorkflow().

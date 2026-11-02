@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: gauge-metric
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      metrics:
+        prometheus:
+          - name: custom_gauge_add
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              operation: Add
+              value: "10"
+          - name: custom_gauge_sub
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              operation: Sub
+              value: "5"
+          - name: custom_gauge_set
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              operation: Set
+              value: "50"
+          - name: custom_gauge_default
+            labels:
+              - key: name
+                value: random-int
+            help: "A custom gauge"
+            gauge:
+              value: "15"
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+

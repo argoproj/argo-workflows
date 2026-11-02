@@ -7,7 +7,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
-// Store is a wrapper around informer
+// ClientStore is a wrapper around informer.
 type ClientStore struct {
 }
 

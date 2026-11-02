@@ -22,7 +22,7 @@ All metrics can also be conditionally emitted by defining a `when` clause.
 This `when` clause works the same as elsewhere in a workflow.
 
 A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)).
-Within the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
+Within the metric type a `value` must be specified. This value can be either a literal value or be an [Argo variable](variables.md).
 
 When defining a `histogram`, `buckets` must also be provided (see below).
 

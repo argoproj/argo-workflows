@@ -40,7 +40,7 @@ func interfaceToClusterWorkflowTemplate(object any) (*wfv1.ClusterWorkflowTempla
 	return v, nil
 }
 
-// Get ClusterWorkflowTemplates from Informer
+// ClusterWorkflowTemplateFromInformerGetter gets ClusterWorkflowTemplates from an Informer.
 type ClusterWorkflowTemplateFromInformerGetter struct {
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
 }

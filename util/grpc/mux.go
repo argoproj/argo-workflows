@@ -4,9 +4,6 @@ import (
 	"net/http"
 	"net/textproto"
 	"strings"
-
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 func IncomingHeaderMatcher(key string) (string, bool) {
@@ -38,17 +35,12 @@ func IncomingHeaderMatcher(key string) (string, bool) {
 
 // NewMuxHandler returns an HTTP handler that allows serving both gRPC and
 // HTTP requests over the same port, both with and without TLS enabled.
-// From: https://pkg.go.dev/golang.org/x/net@v0.41.0/http2/h2c#NewHandler
-// "If a request is an h2c connection, it's hijacked and redirected to
-// s.ServeConn. Otherwise the returned Handler just forwards requests to h. This
-// works because h2c is designed to be parseable as valid HTTP/1, but ignored by
-// any HTTP server that does not handle h2c. Therefore we leverage the HTTP/1
-// compatible parts of the Go http library to parse and recognize h2c requests.
-// Once a request is recognized as h2c, we hijack the connection and convert it
-// to an HTTP/2 connection which is understandable to s.ServeConn. (s.ServeConn
-// understands HTTP/2 except for the h2c part of it.)"
+// It dispatches HTTP/2 requests with a gRPC content type to the gRPC handler
+// and forwards all other requests to the HTTP handler. Unencrypted HTTP/2 (h2c)
+// support is enabled by the serving [http.Server] via its Protocols field; see
+// the call site in the Argo server.
 func NewMuxHandler(grpcServerHandler http.Handler, httpServerHandler http.Handler) http.Handler {
-	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Match against "Content-Type", which is guaranteed to start with "application/grpc" for gRPC requests.
 		// Spec: https://chromium.googlesource.com/external/github.com/grpc/grpc/+/HEAD/doc/PROTOCOL-HTTP2.md
 		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
@@ -56,5 +48,5 @@ func NewMuxHandler(grpcServerHandler http.Handler, httpServerHandler http.Handle
 		} else {
 			httpServerHandler.ServeHTTP(w, r)
 		}
-	}), &http2.Server{})
+	})
 }

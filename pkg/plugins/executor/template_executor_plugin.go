@@ -9,6 +9,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
+// ExecuteTemplateRequest is the request object for template execution.
 // swagger:parameters executeTemplate
 type ExecuteTemplateRequest struct {
 	// in: body
@@ -23,6 +24,7 @@ type ExecuteTemplateArgs struct {
 	Template *wfv1.Template `json:"template"`
 }
 
+// ExecuteTemplateResponse is the response object for template execution.
 // swagger:response executeTemplate
 type ExecuteTemplateResponse struct {
 	// in: body

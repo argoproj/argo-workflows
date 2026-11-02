@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-output-default-aggregate
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          parameter: "{{tasks.producer.outputs.parameters.msg}}"
+          default: "default-from-aggregator"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+          default: "default-from-producer"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]

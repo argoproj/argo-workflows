@@ -21,14 +21,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v4/util"
-	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -44,11 +42,16 @@ type AgentExecutor struct {
 	Namespace         string
 	consideredTasks   *sync.Map
 	plugins           []executorplugins.TemplateExecutor
+	taskWorkers       int
+	requeueTime       time.Duration
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+// NewAgentExecutor instantiates a new agent executor. taskWorkers and
+// requeueTime are parsed from the environment (ARGO_AGENT_TASK_WORKERS,
+// ARGO_AGENT_PATCH_RATE) at the composition root in cmd/argoexec.
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor, taskWorkers int, requeueTime time.Duration) *AgentExecutor {
 	return &AgentExecutor{
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
@@ -58,6 +61,8 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
 		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
+		taskWorkers:       taskWorkers,
+		requeueTime:       requeueTime,
 	}
 }
 
@@ -74,19 +79,17 @@ type response struct {
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
-	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("taskWorkers", taskWorkers).
-		WithField("requeueTime", requeueTime).
+	logger.WithField("taskWorkers", ae.taskWorkers).
+		WithField("requeueTime", ae.requeueTime).
 		Info(ctx, "Starting Agent")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
-	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime)
-	for range taskWorkers {
+	go ae.patchWorker(ctx, taskSetInterface, responseQueue, ae.requeueTime)
+	for range ae.taskWorkers {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
 
@@ -268,7 +271,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		return 0, err
 	}
 
-	outputs := wfv1.Outputs{Result: ptr.To(string(bodyBytes))}
+	outputs := wfv1.Outputs{Result: new(string(bodyBytes))}
 	phase := wfv1.NodeSucceeded
 	message := ""
 	if tmpl.HTTP.SuccessCondition == "" {

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: job
+            template: exit0
+            hooks:
+              running:
+                expression: steps['job'].status == "Running"
+                template: hook
+              failed:
+                expression: steps['job'].status == "Failed"
+                template: hook
+    - name: hook
+      script:
+        image: alpine:3.23
+        command: [/bin/sh]
+        source: |
+          sleep 5
+    - name: exit0
+      script:
+        image: alpine:3.23
+        command: [/bin/sh]
+        source: |
+          exit 0

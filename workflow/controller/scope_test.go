@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v4/util/logging"
-
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
@@ -17,7 +17,7 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 
 	artifact := unmarshalArtifact(artifactString)
 
-	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, *artifact, "test", "art")
 
 	// Ensure that normal artifact resolution without adding subpaths works
 	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
@@ -42,7 +42,7 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	originalArtifact := artifact.DeepCopy()
 	artifactWithSubPath := unmarshalArtifact(subPathArtifactString)
 
-	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, *artifact, "test", "art")
 
 	// Ensure that normal artifact resolution without adding subpaths works
 	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
@@ -55,7 +55,7 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
 	// Ensure that subpath template values are also resolved
-	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "some", "test", "subkey")
 
 	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
@@ -266,42 +266,183 @@ func TestResolveParameters(t *testing.T) {
 	}
 
 	scope := createScope(&tmpl)
-	scope.addParamToScope("steps.t1.outputs.parameters.result", "4")
-	scope.addParamToScope("workflows.arguments.param", "head")
-	scope.addParamToScope("steps.coin-flip.outputs.parameters.result", "5")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "4", "t1", "result")
+	varkeys.WorkflowParametersByName.Set(scope.scope, "head", "param")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "5", "coin-flip", "result")
 
 	valFrom := &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
 	}
-	result, err := scope.resolveParameter(valFrom)
+	result, _, err := scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("2", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Parameter: "{{steps.t1.outputs.parameters.result}}",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("4", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
+		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result : workflow.parameters.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("head", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result :workflows.arguments.param",
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result : workflow.parameters.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result :workflows.arguments.param",
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result : workflow.parameters.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
+}
+
+// TestSkippedOptionalExpressionResolution verifies the *string/nil-for-optional model: a skipped
+// output (no producer default) is stored as nil, so a ValueFrom.Expression can fall back via `??`,
+// while a legitimately empty output ("") is NOT treated as absent.
+func TestSkippedOptionalExpressionResolution(t *testing.T) {
+	const ref = "tasks.producer.outputs.parameters.msg"
+	const expr = "tasks.producer.outputs.parameters.msg ?? 'fallback-from-expr'"
+
+	t.Run("skipped resolves to fallback", func(t *testing.T) {
+		scope := createScope(nil)
+		// skipped, no producer default -> nil + marked skipped
+		varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, nil, "producer", "msg")
+		val, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: expr})
+		require.NoError(t, err)
+		assert.Equal(t, "fallback-from-expr", val)
+	})
+
+	t.Run("real empty value is preserved", func(t *testing.T) {
+		scope := createScope(nil)
+		// produced an empty string -> NOT absent
+		varkeys.TasksNodeRef.OutputsParameterByName.Set(scope.scope, "", "producer", "msg")
+		val, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: expr})
+		require.NoError(t, err)
+		assert.Empty(t, val)
+	})
+
+	t.Run("unhandled nil errors like inline expressions", func(t *testing.T) {
+		scope := createScope(nil)
+		// skipped, no producer default -> nil + marked skipped
+		varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, nil, "producer", "msg")
+		_, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: ref})
+		require.ErrorContains(t, err, "failed to evaluate expression")
+	})
+}
+
+// TestAbsentOptionalRefRequiresTag verifies that absentOptionalRef only matches a real pure
+// "{{...}}" reference: a literal argument value that merely spells out a scope key is data, not a
+// reference, and must not be treated as a skipped-output ref (which would get the argument silently
+// replaced with the absent-optional sentinel); composite and nested values are not pure references either.
+func TestAbsentOptionalRefRequiresTag(t *testing.T) {
+	const ref = "tasks.producer.outputs.parameters.msg"
+	scope := createScope(nil)
+	varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, nil, "producer", "msg")
+	varkeys.TasksNodeRef.OutputsParameterByName.Set(scope.scope, "value", "real", "msg")
+
+	assert.True(t, scope.absentOptionalRef("{{"+ref+"}}"), "a pure tag referencing the skipped output should match")
+	assert.True(t, scope.absentOptionalRef("{{ "+ref+" }}"), "inner whitespace is trimmed like simple-tag resolution")
+	assert.False(t, scope.absentOptionalRef(ref), "a brace-less literal equal to a scope key is data, not a reference")
+	assert.False(t, scope.absentOptionalRef("x-{{"+ref+"}}-y"), "composite values are not pure references")
+	assert.False(t, scope.absentOptionalRef("{{outer-{{"+ref+"}}}}"), "nested tags are not pure references")
+	assert.False(t, scope.absentOptionalRef("{{tasks.real.outputs.parameters.msg}}"), "a reference to a produced value is not absent")
+	assert.False(t, scope.absentOptionalRef("{{tasks.unknown.outputs.parameters.msg}}"), "an unknown key is unresolved, not absent")
+}
+
+// TestBug_ResolveArtifactArguments_DoesNotMutateSourceArtifacts verifies that resolving
+// arguments does not write through to the caller's Artifacts backing array.
+// Regression: scope.go args.Artifacts[i] = *resolvedArt mutated the
+// shared slice because args wfv1.Arguments was passed by value but the
+// slice header's backing array was shared with the task spec.
+func TestBug_ResolveArtifactArguments_DoesNotMutateSourceArtifacts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scope := createScope(nil)
+	varkeys.TasksNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{
+		Name: "out",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{Key: "k"},
+		},
+	}, "producer", "out")
+
+	source := wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+		Name: "in",
+		From: "{{tasks.producer.outputs.artifacts.out}}",
+	}}}
+	expectedFrom := source.Artifacts[0].From
+
+	_, err := scope.resolveArtifactArguments(ctx, source.Artifacts)
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedFrom, source.Artifacts[0].From,
+		"source.Artifacts[0].From must not be mutated by resolveArtifactArguments")
+	assert.Nil(t, source.Artifacts[0].S3,
+		"source.Artifacts[0].S3 must not be populated by resolveArtifactArguments")
+}
+
+// TestBug_ResolveArtifactArguments_OptionalArtifactDropped verifies that an optional
+// artifact whose source cannot be resolved is omitted from the resulting
+// Arguments.Artifacts (matching legacy resolveDependencyReferences). The
+// pre-fix code left the unresolved entry in place, causing downstream
+// ProcessArgs to see a stale From/FromExpression reference.
+func TestBug_ResolveArtifactArguments_OptionalArtifactDropped(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scope := createScope(nil)
+	// No producer registered — resolution will fail.
+
+	source := wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+		Name:     "in",
+		From:     "{{tasks.nonexistent.outputs.artifacts.out}}",
+		Optional: true,
+	}}}
+
+	resolved, err := scope.resolveArtifactArguments(ctx, source.Artifacts)
+	require.NoError(t, err)
+	assert.Empty(t, resolved,
+		"optional artifact that failed to resolve must be dropped from arguments")
+}
+
+func TestCreateScope_NilParamValue(t *testing.T) {
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Parameters: []wfv1.Parameter{
+				{Name: "has-value", Value: wfv1.AnyStringPtr("hello")},
+				{Name: "no-value", Default: wfv1.AnyStringPtr("default-val")},
+			},
+		},
+	}
+	assert.NotPanics(t, func() {
+		scope := createScope(tmpl)
+		assert.Equal(t, "hello", scope.scope.AsAnyMap()["inputs.parameters.has-value"])
+		assert.Equal(t, "default-val", scope.scope.AsAnyMap()["inputs.parameters.no-value"])
+	})
+}
+
+// TestResolveArtifactArgumentsSkipsOptionalArtifactFromSkippedStep verifies that an
+// optional artifact whose source resolves to an empty placeholder (the output of
+// a skipped or omitted step) is dropped from the arguments rather than passed on
+// as an input with no location (#16839).
+func TestResolveArtifactArgumentsSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scope := createScope(nil)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{}, "generate", "message")
+	args := wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+		Name:     "message",
+		From:     "{{steps.generate.outputs.artifacts.message}}",
+		Optional: true,
+	}}}
+
+	resolved, err := scope.resolveArtifactArguments(ctx, args.Artifacts)
+
+	require.NoError(t, err)
+	assert.Empty(t, resolved)
 }

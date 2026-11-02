@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-bug-
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: hello-steps
+        template: memoized
+    - - name: whatever
+        template: hello
+
+  - name: memoized
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          parameter: "{{steps.hello-step.outputs.result}}"
+    steps:
+    - - name: hello-step
+        template: hello
+    memoize:
+      key: "memoized-bug-steps-0"
+      cache:
+        configMap:
+          name: my-config
+
+  - name: hello
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo Hello"]

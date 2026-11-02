@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 **expression** | **String** | Expression, if defined, is evaluated to specify the value for the parameter |  [optional]
 **jqFilter** | **String** | JQFilter expression against the resource object in resource templates |  [optional]
 **jsonPath** | **String** | JSONPath of a resource to retrieve an output parameter value from in resource templates |  [optional]
-**parameter** | **String** | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. &#39;{{steps.mystep.outputs.myparam}}&#39;) |  [optional]
+**parameter** | **String** | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam) |  [optional]
 **path** | **String** | Path in the container to retrieve an output parameter value from in container templates |  [optional]
 **supplied** | **Object** | SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc. |  [optional]
 

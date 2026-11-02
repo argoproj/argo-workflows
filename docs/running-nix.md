@@ -13,7 +13,7 @@ Here are the steps to follow:
 ## Warning
 
 This is still bare-bones at the moment, any feature in the Makefile not mentioned here is excluded for now.
-In practice, this means that only a `make start UI=true` equivalent is supported at the moment.
+In practice, this means that only a `make start` equivalent is supported at the moment.
 As an additional caveat, there are no LDFlags set in the build; as a result the UI will show `0.0.0-unknown` for the version.
 
 ## How do I upgrade a dependency?
@@ -23,7 +23,7 @@ This is fairly trivial in Nix, the idea is to just change the version string to 
 
 ### Changing a python dependency version
 
-If we look at the `mkdocs` dependency, we see a call to `buildPythonPackage`, to change the version we need to just modify the version string.
+If we look at the `properdocs` dependency, we see a call to `buildPythonPackage`, to change the version we need to just modify the version string.
 Doing this will display a failure because the hash from the `fetchPypi` command will now differ, it will also display the correct hash, copy this hash
 and replace the existing hash value.
 

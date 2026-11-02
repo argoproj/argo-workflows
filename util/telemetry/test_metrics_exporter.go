@@ -12,7 +12,7 @@ import (
 // TestScopeName is the name that the metrics running under test will have
 const TestScopeName string = "argo-workflows-test"
 
-// TestExporter is an opentelemetry metrics exporter, purely for use within
+// TestMetricsExporter is an OpenTelemetry metrics exporter, purely for use within
 // tests. It is not possible to query the values of an instrument via the otel
 // SDK, so this exporter provides methods by which you can request
 // metrics by name+attributes and therefore inspect whether they exist, and

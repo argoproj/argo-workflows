@@ -1,7 +1,5 @@
 # Webhooks
 
-> v2.11 and after
-
 Many clients can send events via the [events](events.md) API endpoint using a standard authorization header. However, for clients that are unable to do so (e.g. because they use signature verification as proof of origin), additional configuration is required.
 
 In the namespace that will receive the event, create [access token](access-token.md) resources for your client:
@@ -13,6 +11,8 @@ In the namespace that will receive the event, create [access token](access-token
 Additionally create:
 
 * A secret named `argo-workflows-webhook-clients` listing the service accounts: [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
+
+Webhook request bodies are limited to a maximum size of 2MB.
 
 The secret `argo-workflows-webhook-clients` tells Argo:
 

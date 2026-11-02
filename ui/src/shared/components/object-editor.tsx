@@ -133,7 +133,9 @@ export function ObjectEditor<T>({type, value, text, lang, onChange, onLangChange
                 <div>
                     <i className='fa fa-info-circle' />{' '}
                     {lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
-                    <a href='https://argo-workflows.readthedocs.io/en/latest/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/ide-setup/' target='_blank' rel='noreferrer'>
+                        Learn how to get auto-completion in your IDE.
+                    </a>
                 </div>
             )}
         </>

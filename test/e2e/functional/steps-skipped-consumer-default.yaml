@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-skipped-consumer-default-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: producer
+            template: produce
+            when: "false" # -> Skipped, produces no real output
+        - - name: consumer
+            template: consume
+            arguments:
+              parameters:
+                - name: in
+                  value: "{{steps.producer.outputs.parameters.msg}}"
+    - name: produce
+      outputs:
+        parameters:
+          - name: msg
+            valueFrom:
+              path: /tmp/out.txt # NOTE: no default here
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "real-value", "/tmp/out.txt"]
+    - name: consume
+      inputs:
+        parameters:
+          - name: in
+            default: "fallback-from-input" # <- applies because the reference was to a skipped output
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "consumer got: [{{inputs.parameters.in}}]"]

@@ -3,7 +3,7 @@ package webhook
 import (
 	"net/http"
 
-	"gopkg.in/go-playground/webhooks.v5/gitlab"
+	"github.com/go-playground/webhooks/v6/gitlab"
 )
 
 func gitlabMatch(secret string, r *http.Request) bool {

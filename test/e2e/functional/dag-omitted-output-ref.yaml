@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-omitted-output-ref-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: stage-a
+            template: stage-a
+          - name: stage-b
+            template: stage-b
+            depends: "stage-a.Failed"
+          - name: stage-c
+            template: stage-c
+            depends: "stage-a && (stage-b || stage-b.Omitted)"
+            arguments:
+              parameters:
+                - name: message-from-a
+                  value: "{{tasks.stage-a.outputs.parameters.output-message}}"
+                - name: message-from-b
+                  value: "{{tasks.stage-b.outputs.parameters.output-message}}"
+    - name: stage-a
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "hello from stage A", "/tmp/output.txt"]
+    - name: stage-b
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "hello from stage B", "/tmp/output.txt"]
+    - name: stage-c
+      inputs:
+        parameters:
+          - name: message-from-a
+          - name: message-from-b
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "stage-c received: [{{inputs.parameters.message-from-a}}] and [{{inputs.parameters.message-from-b}}]"]

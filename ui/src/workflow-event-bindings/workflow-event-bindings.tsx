@@ -29,7 +29,11 @@ const introductionText = (
         from a remote system.
     </>
 );
-const learnMore = <a href={'https://argo-workflows.readthedocs.io/en/latest/events/'}>Learn more</a>;
+const learnMore = (
+    <a href={'https://argo-workflows.readthedocs.io/en/latest/events/'} target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function WorkflowEventBindings({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -101,7 +105,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                     {title: 'Workflow Event Bindings', path: uiUrl('workflow-event-bindings')},
                     {title: namespace, path: uiUrl('workflow-event-bindings/' + namespace)}
                 ],
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} extraNamespaces={nsUtils.getUniqueNamespaces(workflowEventBindings)} />]
             }}>
             <ErrorNotice error={error} />
             {!workflowEventBindings ? (

@@ -33,7 +33,13 @@ argo list`;
         <>
             <Notice>
                 <h4>Using Your Login With The CLI</h4>
-                <p>Download the latest CLI before you start.</p>
+                <p>
+                    Download the{' '}
+                    <a href='https://github.com/argoproj/argo-workflows/releases/latest' target='_blank' rel='noreferrer'>
+                        latest CLI
+                    </a>{' '}
+                    before you start.
+                </p>
                 <div style={{fontFamily: 'monospace', whiteSpace: 'pre', margin: 20}}>{argoToken ? text.replace(argoToken, '[REDACTED]') : text}</div>
                 <p>For help with options such as ARGO_INSECURE_SKIP_VERIFY, ARGO_NAMESPACE and ARGO_INSTANCEID, run: `argo --help`.</p>
                 <div>

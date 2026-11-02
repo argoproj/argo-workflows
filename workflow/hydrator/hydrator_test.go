@@ -16,7 +16,7 @@ import (
 )
 
 func TestHydrator(t *testing.T) {
-	cleanup := packer.SetMaxWorkflowSize(260)
+	cleanup := packer.SetMaxWorkflowSize(230)
 	defer cleanup()
 	ctx := logging.TestContext(t.Context())
 	t.Run("Dehydrate", func(t *testing.T) {
@@ -126,4 +126,12 @@ func TestHydrator(t *testing.T) {
 			require.NoError(t, err)
 		})
 	})
+}
+
+func TestNewReadsAlwaysOffloadNodeStatus(t *testing.T) {
+	t.Setenv("ALWAYS_OFFLOAD_NODE_STATUS", "true")
+	assert.True(t, New(nil).(*hydrator).alwaysOffloadNodeStatus)
+
+	t.Setenv("ALWAYS_OFFLOAD_NODE_STATUS", "false")
+	assert.False(t, New(nil).(*hydrator).alwaysOffloadNodeStatus)
 }

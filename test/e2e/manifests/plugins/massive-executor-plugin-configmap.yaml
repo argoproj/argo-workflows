@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: massive-executor-plugin
+  labels:
+    workflows.argoproj.io/configmap-type: ExecutorPlugin
+  annotations:
+    workflows.argoproj.io/description: |
+      This plugin returns a massive string (~100000 chars).
+data:
+  sidecar.automountServiceAccountToken: "false"
+  sidecar.container: |
+    args:
+    - |
+      import json
+      import random
+      import string
+      from http.server import BaseHTTPRequestHandler, HTTPServer
+
+      with open("/var/run/argo/token") as f:
+          token = f.read().strip()
+
+      def gen_text():
+        base = "HELLO_WORLD_123 "
+        return base * (100_000 // len(base))
+
+      class Plugin(BaseHTTPRequestHandler):
+
+          def args(self):
+              return json.loads(self.rfile.read(int(self.headers.get('Content-Length'))))
+
+          def reply(self, reply):
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(json.dumps(reply).encode("UTF-8"))
+
+          def unsupported(self):
+              self.send_response(404)
+              self.end_headers()
+
+          def do_POST(self):
+              if self.path == '/api/v1/template.execute':
+                  args = self.args()
+
+                  if 'massive' in args['template'].get('plugin', {}):
+                      text = gen_text()
+                      self.reply({
+                          'node': {
+                              'phase': 'Succeeded',
+                              'message': 'Massive payload generated',
+                              'outputs': {
+                                  'parameters': [
+                                      {
+                                          'name': 'big-text',
+                                          'value': text
+                                      }
+                                  ]
+                              }
+                          }
+                      })
+                  else:
+                      self.reply(None)
+              else:
+                  self.unsupported()
+
+      if __name__ == '__main__':
+          httpd = HTTPServer(('', 4356), Plugin)
+          httpd.serve_forever()
+    command:
+    - python
+    - -c
+    image: python:alpine3.23
+    name: massive-executor-plugin
+    ports:
+    - containerPort: 4356
+    resources:
+      limits:
+        cpu: 200m
+        memory: 64Mi
+      requests:
+        cpu: 100m
+        memory: 32Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true

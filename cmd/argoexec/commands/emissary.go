@@ -1,49 +1,55 @@
 package commands
 
 import (
-	"compress/gzip"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
 	"k8s.io/client-go/util/retry"
 
+	argoexecexecutor "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/archive"
-	"github.com/argoproj/argo-workflows/v4/util/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
-var (
-	varRunArgo          = common.VarRunArgoPath
-	containerName       = os.Getenv(common.EnvVarContainerName)
-	includeScriptOutput = os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
-	template            = &wfv1.Template{}
-)
+// varRunArgo is a var, not a const, so tests can point it at a temp dir.
+var varRunArgo = common.VarRunArgoPath
 
-func injectTraceParent(ctx context.Context) {
-	carrier := propagation.MapCarrier{}
+// injectTraceParent returns env with the W3C trace context of ctx appended.
+// The controller injects a TRACEPARENT naming the pod-level span; the user
+// command should instead see the main-container span started here as its
+// parent. exec.Cmd uses the last value of a duplicated key, so appending
+// overrides the inherited one.
+//
+// This only rewrites the environment handed to the child. argoexec does not
+// touch its own context variables, which the OpenTelemetry environment carrier
+// specification asks to be treated as immutable process-startup input.
+func injectTraceParent(ctx context.Context, env []string) []string {
+	carrier := &envcar.Carrier{SetEnvFunc: func(key, value string) {
+		env = append(env, key+"="+value)
+	}}
 	propagation.TraceContext{}.Inject(ctx, carrier)
-
-	for k, v := range carrier {
-		os.Setenv(strings.ToUpper(k), v)
-	}
+	return env
 }
 
 func NewEmissaryCommand() *cobra.Command {
@@ -51,260 +57,491 @@ func NewEmissaryCommand() *cobra.Command {
 		Use:          "emissary",
 		SilenceUsage: true, // this prevents confusing usage message being printed when we SIGTERM
 		RunE: func(cmd *cobra.Command, args []string) error {
-			exitCode := 64
-			ctx := cmd.Context()
-			logger := logging.RequireLoggerFromContext(ctx)
-			defer func() {
-				err := os.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
-				if err != nil {
-					logger.WithError(err).Error(ctx, "failed to write exit code")
-				}
-			}()
-
-			tracer, err := tracing.New(ctx, `argoexec`)
-			if err != nil {
-				logger.WithFatal().WithError(err).Error(ctx, "failed to initialize tracing")
-				return err
-			}
-			defer func() {
-				if deferErr := tracer.Shutdown(context.WithoutCancel(ctx)); deferErr != nil {
-					logger.WithError(deferErr).Error(ctx, "Failed to shutdown tracing")
-				}
-			}()
-
-			ctx = tracing.InjectTraceContext(ctx)
-			workflowName := os.Getenv(common.EnvVarWorkflowName)
-			namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-			ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
-			defer span.End()
-			injectTraceParent(ctx)
-
-			osspecific.AllowGrantingAccessToEveryone()
-
-			// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
-			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
-			// write to it with different users.
-			// This also indicates we've started.
-			if err = os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
-				return fmt.Errorf("failed to create ctr directory: %w", err)
-			}
-
-			name, args := args[0], args[1:]
-
-			// Check if args were offloaded to a file (for large args that exceed exec limit)
-			if argsFile := os.Getenv(common.EnvVarContainerArgsFile); argsFile != "" {
-				logger.WithField("argsFile", argsFile).Info(ctx, "Reading container args from file")
-				argsData, readErr := os.ReadFile(argsFile)
-				if readErr != nil {
-					return fmt.Errorf("failed to read container args file %s: %w", argsFile, readErr)
-				}
-				var fileArgs []string
-				if err = json.Unmarshal(argsData, &fileArgs); err != nil {
-					return fmt.Errorf("failed to unmarshal container args: %w", err)
-				}
-				args = append(args, fileArgs...)
-				logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
-
-				// Check for a large args and offload to file if needed
-				// This avoids the exec() "argument list too long" error
-				// Downstream programs should support @filename for parsing large args
-				for i := 0; i < len(args); i++ {
-					if len(args[i]) > common.MaxEnvVarLen {
-						filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
-						if err = os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
-							return fmt.Errorf("failed to write large arg %d to file: %w", i, err)
-						}
-						logger.WithFields(logging.Fields{
-							"argIndex": i,
-							"size":     len(args[i]),
-							"filePath": filePath,
-						}).Info(ctx, "Offloaded large argument to file. Downstream program must support @filename syntax")
-						args[i] = "@" + filePath
-					}
-				}
-			}
-
-			data, err := os.ReadFile(varRunArgo + "/template")
-			if err != nil {
-				return fmt.Errorf("failed to read template: %w", err)
-			}
-
-			if err = json.Unmarshal(data, template); err != nil {
-				return fmt.Errorf("failed to unmarshal template: %w", err)
-			}
-
-			// setup signal handlers
-			signals := make(chan os.Signal, 1)
-			defer close(signals)
-			signal.Notify(signals)
-			defer signal.Reset()
-
-			for _, x := range template.ContainerSet.GetGraph() {
-				if x.Name == containerName {
-					for _, y := range x.Dependencies {
-						logger.WithField("dependency", y).Info(ctx, "waiting for dependency")
-					WaitForDependency:
-						for {
-							select {
-							// If we receive a terminated or killed signal, we should exit immediately.
-							case s := <-signals:
-								switch s {
-								case osspecific.Term:
-									// exit with 128 + 15 (SIGTERM)
-									return errors.NewExitErr(143)
-								case os.Kill:
-									// exit with 128 + 9 (SIGKILL)
-									return errors.NewExitErr(137)
-								}
-							default:
-								data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-								exitCode, err = strconv.Atoi(string(data))
-								if err != nil {
-									time.Sleep(time.Second)
-									continue
-								}
-								if exitCode != 0 {
-									return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
-								}
-
-								break WaitForDependency
-							}
-						}
-					}
-				}
-			}
-
-			name, err = exec.LookPath(name)
-			if err != nil {
-				return fmt.Errorf("failed to find name in PATH: %w", err)
-			}
-
-			if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
-				for {
-					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
-					// in order to break out of the sleep and release the container from
-					// the debugging state.
-					if _, statErr := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(statErr) {
-						time.Sleep(time.Second)
-						continue
-					}
-					break
-				}
-			}
-
-			backoff, err := template.GetRetryStrategy()
-			if err != nil {
-				return fmt.Errorf("failed to get retry strategy: %w", err)
-			}
-
-			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-				command, closer, err := startCommand(ctx, name, args, template)
-				if err != nil {
-					return fmt.Errorf("failed to start command: %w", err)
-				}
-				defer closer()
-
-				go func() {
-					for s := range signals {
-						if osspecific.CanIgnoreSignal(s) {
-							logger.WithField("signal", s).Debug(ctx, "ignore signal")
-							continue
-						}
-
-						logger.WithField("signal", s).Debug(ctx, "forwarding signal")
-						_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
-					}
-				}()
-				pid := command.Process.Pid
-				innerCtx, cancel := context.WithCancel(ctx)
-				defer cancel()
-				startFileSignalHandler(innerCtx, pid)
-				for _, sidecarName := range template.GetSidecarNames() {
-					if sidecarName == containerName {
-						em, err := emissary.New()
-						if err != nil {
-							return fmt.Errorf("failed to create emissary: %w", err)
-						}
-
-						go func() {
-							mainContainerNames := template.GetMainContainerNames()
-							err = em.Wait(innerCtx, mainContainerNames)
-							if err != nil {
-								logger.WithError(err).WithFields(logging.Fields{
-									"mainContainerNames": mainContainerNames,
-								}).Error(innerCtx, "failed to wait for main container(s)")
-							}
-
-							logger.WithFields(logging.Fields{
-								"mainContainerNames": mainContainerNames,
-								"containerName":      containerName,
-							}).Info(innerCtx, "main container(s) exited, terminating container")
-							err = em.Kill(innerCtx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
-							if err != nil {
-								logger.WithField("containerName", containerName).WithError(err).Error(innerCtx, "failed to terminate/kill container")
-							}
-						}()
-
-						break
-					}
-				}
-
-				return osspecific.Wait(command.Process)
-			})
-			logger.WithError(cmdErr).Info(ctx, "sub-process exited")
-
-			if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
-				for {
-					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
-					// in order to break out of the sleep and release the container from
-					// the debugging state.
-					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
-						time.Sleep(time.Second)
-						continue
-					}
-					break
-				}
-			}
-
-			if cmdErr == nil {
-				exitCode = 0
-			} else if exitError, ok := cmdErr.(errors.Exited); ok {
-				if exitError.ExitCode() >= 0 {
-					exitCode = exitError.ExitCode()
-				} else {
-					exitCode = 137 // SIGTERM
-				}
-			}
-
-			if containerName == common.MainContainerName {
-				for _, x := range template.Outputs.Parameters {
-					if x.ValueFrom != nil && x.ValueFrom.Path != "" {
-						if err := saveParameter(ctx, x.ValueFrom.Path); err != nil {
-							return err
-						}
-					}
-				}
-				for _, x := range template.Outputs.Artifacts {
-					if x.Path != "" {
-						if err := saveArtifact(ctx, x.Path); err != nil {
-							return err
-						}
-					}
-				}
-			} else {
-				logger.Info(ctx, "not saving outputs - not main container")
-			}
-
-			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
+			containerName := os.Getenv(common.EnvVarContainerName)
+			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
+			return runEmissary(cmd.Context(), containerName, newPodTask(containerName, includeScriptOutput, args), maindriver.Container{})
 		},
 	}
 }
 
-func startCommand(ctx context.Context, name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
+// newPodTask returns a loader for the one task a pod spec delivers, from env
+// and argv. runEmissary calls it once the supervisor (if any) is ready.
+func newPodTask(containerName string, includeScriptOutput bool, args []string) func(context.Context) (maindriver.Task, error) {
+	cfg := maindriver.PodTaskConfig{
+		VarRunArgo:          varRunArgo,
+		TemplateEnv:         os.Getenv(common.EnvVarTemplate),
+		OffloadDir:          common.EnvConfigMountPath,
+		ArgsFile:            os.Getenv(common.EnvVarContainerArgsFile),
+		NodeID:              os.Getenv(common.EnvVarNodeID),
+		ContainerName:       containerName,
+		Command:             args,
+		Env:                 os.Environ(),
+		IncludeScriptOutput: includeScriptOutput,
+	}
+	return func(ctx context.Context) (maindriver.Task, error) {
+		return maindriver.PodTask(ctx, cfg)
+	}
+}
+
+// runEmissary is the emissary body, with everything the command parses from
+// the environment passed in as parameters so it is testable without env or
+// package-level state.
+func runEmissary(ctx context.Context, containerName string, loadTask func(context.Context) (maindriver.Task, error), driver maindriver.MainDriver) error {
+	exitCode := 64 // The exitcode file gets the exit code of the task.
+	logger := logging.RequireLoggerFromContext(ctx)
+	// Registered before the exit code defer so that it runs after it: releasing
+	// the liveness lock is what tells a dependent the exit code is readable, so
+	// the lock must outlive the write. Acquired further down, once the ctr
+	// directory exists, hence the nil check.
+	var lockFile *os.File
+	defer func() {
+		if lockFile != nil {
+			_ = lockFile.Close()
+		}
+	}()
+	defer func() {
+		err := os.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
+		if err != nil {
+			logger.WithError(err).Error(ctx, "failed to write exit code")
+		}
+	}()
+
+	tracer, err := tracing.New(ctx, `argoexec`)
+	if err != nil {
+		logger.WithError(err).Error(ctx, "failed to initialize tracing")
+		os.Exit(1) //nolint:gocritic // preserves the previous WithFatal behavior, which also skipped defers
+	}
+	defer func() {
+		if deferErr := tracer.Shutdown(context.WithoutCancel(ctx)); deferErr != nil {
+			logger.WithError(deferErr).Error(ctx, "Failed to shutdown tracing")
+		}
+	}()
+
+	ctx = tracing.InjectTraceContext(ctx)
+	workflowName := os.Getenv(common.EnvVarWorkflowName)
+	namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
+	defer span.End()
+
+	osspecific.AllowGrantingAccessToEveryone()
+
+	// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
+	// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
+	// write to it with different users.
+	// This also indicates we've started.
+	if err = os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
+		return fmt.Errorf("failed to create ctr directory: %w", err)
+	}
+
+	// Liveness lock: the kernel releases it on process death for any
+	// reason, so dependents waiting on a shared lock wake up even if
+	// this process is OOM-killed or SIGKILLed before writing exitcode.
+	lockFile, err = osspecific.Acquire(filepath.Join(varRunArgo, "ctr", containerName, "lock"))
+	if err != nil {
+		// Dependents block on the ready marker before anything else, and the
+		// controller no longer terminates the pod while a sibling is still
+		// running, so without it they would hang. Publish it best-effort;
+		// they then read the exitcode written by the defer above.
+		if writeErr := os.WriteFile(filepath.Join(varRunArgo, "ctr", containerName, "ready"), nil, 0o644); writeErr != nil {
+			logger.WithError(writeErr).Error(ctx, "failed to write ready marker after lock failure")
+		}
+		return fmt.Errorf("failed to acquire container lock: %w", err)
+	}
+
+	// Ready marker must be written after the lock is held so dependents
+	// don't attempt a shared-lock acquire before it is in place.
+	if err = os.WriteFile(filepath.Join(varRunArgo, "ctr", containerName, "ready"), nil, 0o644); err != nil {
+		return fmt.Errorf("failed to write ready marker: %w", err)
+	}
+
+	// In init-less pod mode the supervisor, not an init container, writes
+	// /var/run/argo/template. Supervisor and main start concurrently, so
+	// block until supervisor signals readiness (or failure) before reading
+	// the template. Gated on an env var so legacy pods are unaffected.
+	waitForReady := os.Getenv(common.EnvVarWaitForReady) == "true"
+	if waitForReady {
+		if waitErr := waitForSupervisorReady(ctx); waitErr != nil {
+			// Distinct exit code so the controller attributes the failure
+			// to supervisor pre-main setup rather than the user command.
+			// The process exit code (not just the exitcode file) must carry
+			// the sentinel, because inferFailedReason keys off the container's
+			// terminated exit code; wrap so main propagates 65 while keeping
+			// waitErr's message.
+			exitCode = common.ExitCodeSupervisorPreMainFailure
+			logger.WithError(waitErr).Error(ctx, "supervisor failed before main container started")
+			return argoerrors.NewExitErrWithCause(exitCode, waitErr)
+		}
+	}
+
+	// runTask runs one task and returns its exit code and error.
+	runTask := func(ctx context.Context, task maindriver.Task) (int, error) {
+		code := 64
+		if task.Template == nil {
+			return code, errors.New("task has no template")
+		}
+		template := task.Template
+
+		// os/exec uses the last value of a duplicate key.
+		task.Env = injectTraceParent(ctx, slices.Clone(task.Env))
+
+		// In init-less pod mode, main can't use the legacy per-artifact
+		// SubPath bind mount (kubelet races the supervisor's write). The
+		// input-artifacts volume is mounted whole at /argo/inputs/artifacts
+		// and the emissary symlinks each input artifact into its expected
+		// path once supervisor has finished writing (guaranteed by the
+		// ready-marker wait above). Only `main` runs this — ContainerSet
+		// children and sidecars don't get artifact paths symlinked in.
+		if waitForReady && containerName == common.MainContainerName {
+			if stageErr := wfexecutor.StageInputArtifacts(ctx, argoexecexecutor.PodPaths(varRunArgo), template); stageErr != nil {
+				// As above: propagate the sentinel as the process exit code so
+				// inferFailedReason attributes this to supervisor pre-main setup.
+				code = common.ExitCodeSupervisorPreMainFailure
+				logger.WithError(stageErr).Error(ctx, "failed to stage input artifacts before main container started")
+				return code, argoerrors.NewExitErrWithCause(code, stageErr)
+			}
+		}
+
+		// setup signal handlers
+		signals := make(chan os.Signal, 1)
+		defer close(signals)
+		signal.Notify(signals)
+		defer signal.Reset()
+
+		if waitErr := waitForDependencies(ctx, logger, template, containerName, signals); waitErr != nil {
+			return code, waitErr
+		}
+
+		// Resolve the path before the retry loop, so that a missing binary does not cause a retry.
+		name, err := exec.LookPath(task.Command[0])
+		if err != nil {
+			return code, fmt.Errorf("failed to find name in PATH: %w", err)
+		}
+		task.Command = append([]string{name}, task.Command[1:]...)
+
+		if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
+			// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
+			// in order to break out of the wait and release the container from
+			// the debugging state.
+			if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/before"); waitErr != nil {
+				return code, fmt.Errorf("failed waiting for debug-pause-before marker: %w", waitErr)
+			}
+		}
+
+		backoff, err := template.GetRetryStrategy()
+		if err != nil {
+			return code, fmt.Errorf("failed to get retry strategy: %w", err)
+		}
+
+		// Stage outputs once after retries, not per attempt.
+		var outputs outputCollector
+		cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
+			// Each attempt has its own scope, so that a retry never signals the pid of an old attempt.
+			innerCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			var stopForwarding func()
+			defer func() {
+				if stopForwarding != nil {
+					stopForwarding()
+				}
+			}()
+			task.OnStart = func(pid int) {
+				stopForwarding = forwardSignals(innerCtx, signals, pid, false)
+				startFileSignalHandler(innerCtx, pid, containerName)
+				if slices.Contains(template.GetSidecarNames(), containerName) {
+					go terminateWhenMainExits(innerCtx, logger, template, containerName)
+				}
+			}
+			outputs = nil
+			var runErr error
+			code, runErr = driver.Run(ctx, task, &outputs)
+			return runErr
+		})
+		logger.WithError(cmdErr).Info(ctx, "sub-process exited")
+
+		if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
+			// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
+			// in order to break out of the wait and release the container from
+			// the debugging state.
+			if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/after"); waitErr != nil {
+				// An aborted pause must not release dependents as successful,
+				// even when the command itself succeeded.
+				return 64, fmt.Errorf("failed waiting for debug-pause-after marker: %w", waitErr)
+			}
+		}
+
+		// The stager stages outputs only for the main container.
+		var stager maindriver.OutputStager = maindriver.PodStager{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
+		for _, out := range outputs {
+			if err := stager.Stage(ctx, task.NodeID, out); err != nil {
+				return code, err
+			}
+		}
+
+		return code, cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
+	}
+
+	task, loadErr := loadTask(ctx)
+	if loadErr != nil {
+		return loadErr
+	}
+	var runErr error
+	exitCode, runErr = runTask(ctx, task)
+	return runErr
+}
+
+// outputCollector records an attempt's outputs for staging after retries.
+type outputCollector []maindriver.Output
+
+func (c *outputCollector) Stage(_ context.Context, _ string, out maindriver.Output) error {
+	*c = append(*c, out)
+	return nil
+}
+
+// terminateWhenMainExits stops this sidecar when the main containers of the
+// template exit.
+func terminateWhenMainExits(ctx context.Context, logger logging.Logger, template *wfv1.Template, containerName string) {
+	em := emissary.New(varRunArgo)
+	mainContainerNames := template.GetMainContainerNames()
+	if err := em.Wait(ctx, mainContainerNames); err != nil {
+		logger.WithError(err).WithFields(logging.Fields{
+			"mainContainerNames": mainContainerNames,
+		}).Error(ctx, "failed to wait for main container(s)")
+	}
+
+	logger.WithFields(logging.Fields{
+		"mainContainerNames": mainContainerNames,
+		"containerName":      containerName,
+	}).Info(ctx, "main container(s) exited, terminating container")
+	if err := em.Kill(ctx, []string{containerName}, argoexecexecutor.TerminationGracePeriodDuration()); err != nil {
+		logger.WithField("containerName", containerName).WithError(err).Error(ctx, "failed to terminate/kill container")
+	}
+}
+
+// waitForSupervisorReady blocks until the supervisor's status marker reports a
+// terminal outcome (READY/FAILED), or until the supervisor is presumed dead.
+// Used only in init-less pod mode where main and supervisor start concurrently.
+// VarRunArgoPath itself is guaranteed to exist because the emissary has
+// already created /var/run/argo/ctr/<name> earlier in main, which MkdirAll'd
+// the full parent chain.
+func waitForSupervisorReady(ctx context.Context) error {
+	return waitForSupervisorReadyAt(ctx, wfexecutor.StatusMarkerPath(argoexecexecutor.PodPaths(varRunArgo)), supervisorHeartbeatTimeout, supervisorStatusPollInterval)
+}
+
+// waitForSupervisorReadyAt is the parameterized form used by tests; production
+// calls waitForSupervisorReady with the constants.
+//
+// The supervisor rewrites the marker as RUNNING on a heartbeat (see
+// startStatusHeartbeat). main treats a marker that has neither appeared nor
+// advanced within timeout as a dead supervisor and fails fast rather than
+// hanging to the pod deadline. An inotify watcher gives low-latency pickup of
+// the terminal READY/FAILED write; a parallel ticker (period pollInterval)
+// checks for staleness, because inotify cannot signal the *absence* of writes.
+func waitForSupervisorReadyAt(ctx context.Context, statusPath string, timeout, pollInterval time.Duration) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.Info(ctx, "waiting for supervisor status marker")
+	start := time.Now()
+
+	watchCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	resCh := make(chan error, 1)
+	finish := func(err error) {
+		select {
+		case resCh <- err:
+		default: // a result already landed; first one wins
+		}
+		cancel()
+	}
+
+	// Low-latency terminal detection: re-evaluate on every write to the marker
+	// (heartbeats and the terminal write both fire here).
+	go func() {
+		werr := file.WatchFile(watchCtx, statusPath, func() {
+			if done, err := evaluateSupervisorStatus(statusPath, timeout, start); done {
+				finish(err)
+			}
+		})
+		if werr != nil && watchCtx.Err() == nil {
+			finish(fmt.Errorf("watching supervisor status: %w", werr))
+		}
+	}()
+
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-resCh:
+			if err == nil {
+				logger.Info(ctx, "supervisor is ready")
+			}
+			return err
+		case <-ticker.C:
+			if done, err := evaluateSupervisorStatus(statusPath, timeout, start); done {
+				finish(err)
+			}
+		}
+	}
+}
+
+// evaluateSupervisorStatus reads the status marker once and decides whether main
+// can stop waiting. done=false means keep waiting. start is main's wait-start
+// reference, used to bound the case where the marker never appears at all. It is
+// safe to call concurrently — it only reads the filesystem.
+func evaluateSupervisorStatus(statusPath string, timeout time.Duration, start time.Time) (done bool, err error) {
+	fi, statErr := os.Stat(statusPath)
+	if statErr != nil {
+		if os.IsNotExist(statErr) {
+			if time.Since(start) > timeout {
+				return true, fmt.Errorf("supervisor presumed dead: status marker never appeared within %s", timeout)
+			}
+			return false, nil
+		}
+		return true, fmt.Errorf("stat supervisor status: %w", statErr)
+	}
+	body, readErr := os.ReadFile(statusPath)
+	if readErr != nil {
+		// Stat just succeeded, so a read failure here means we raced the
+		// supervisor's atomic rename (the old inode vanished between stat and
+		// read). Treat it as transient and re-evaluate on the next tick/event
+		// rather than failing the wait.
+		//nolint:nilerr // deliberate: swallow the transient read error and retry
+		return false, nil
+	}
+	token, message := wfexecutor.ParseStatusMarker(body)
+	switch token {
+	case wfexecutor.StatusReady:
+		return true, nil
+	case wfexecutor.StatusFailed:
+		return true, fmt.Errorf("supervisor reported pre-main failure: %s", message)
+	default:
+		// RUNNING, or a transient/partial read: the supervisor is alive only if
+		// it is still heartbeating, i.e. the marker's mtime is fresh.
+		if time.Since(fi.ModTime()) > timeout {
+			return true, fmt.Errorf("supervisor presumed dead: no status update within %s", timeout)
+		}
+		return false, nil
+	}
+}
+
+// exitCodeFromErr maps the result of waiting on a sub-process to a numeric exit
+// code: 0 on success, the process's own exit code when it exited normally, or
+// 137 when it was signalled with no usable code. For any other (non-exit) error
+// the current code is preserved, matching the legacy behaviour where such errors
+// left the caller's default exit code in place.
+func exitCodeFromErr(cmdErr error, current int) int {
+	if cmdErr == nil {
+		return 0
+	}
+	if exitError, ok := cmdErr.(argoerrors.Exited); ok {
+		if exitError.ExitCode() >= 0 {
+			return exitError.ExitCode()
+		}
+		return 137 // SIGTERM
+	}
+	return current
+}
+
+// waitForDependencies blocks on each of the current container's
+// containerSet dependencies. SIGTERM and SIGKILL received during the wait
+// cancel it and produce exit code 143 or 137 respectively.
+func waitForDependencies(ctx context.Context, logger logging.Logger, template *wfv1.Template, containerName string, signals <-chan os.Signal) error {
+	var deps []string
+	for _, x := range template.ContainerSet.GetGraph() {
+		if x.Name == containerName {
+			deps = x.Dependencies
+			break
+		}
+	}
+	if len(deps) == 0 {
+		return nil
+	}
+
+	depCtx, cancelDepWait := context.WithCancel(ctx)
+	defer cancelDepWait()
+
+	signalDone := make(chan struct{})
+	depSignalExitCode := make(chan int, 1)
+	go func() {
+		for {
+			select {
+			case <-signalDone:
+				return
+			case s, ok := <-signals:
+				if !ok {
+					return
+				}
+				if osspecific.CanIgnoreSignal(s) {
+					continue
+				}
+				switch s {
+				case osspecific.Term:
+					depSignalExitCode <- 143
+					cancelDepWait()
+					return
+				case os.Kill:
+					depSignalExitCode <- 137
+					cancelDepWait()
+					return
+				}
+			}
+		}
+	}()
+
+	var depErr error
+	for _, y := range deps {
+		logger.WithField("dependency", y).Info(ctx, "waiting for dependency")
+		if err := waitForDependency(depCtx, y); err != nil {
+			depErr = err
+			break
+		}
+	}
+
+	close(signalDone)
+	select {
+	case ec := <-depSignalExitCode:
+		return argoerrors.NewExitErr(ec)
+	default:
+	}
+	return depErr
+}
+
+// waitForDependency blocks until depName's ready marker exists, its lock is
+// released (i.e. its process has exited for any reason), and then reads its
+// exitcode file. A missing exitcode means the dep died without reporting.
+func waitForDependency(ctx context.Context, depName string) error {
+	depDir := filepath.Clean(varRunArgo + "/ctr/" + depName)
+	// Pre-create in case the dep container hasn't started yet, so fsnotify
+	// has a directory to watch.
+	if err := os.MkdirAll(depDir, 0o777); err != nil {
+		return fmt.Errorf("failed to create dependency dir: %w", err)
+	}
+	if err := file.WaitForCreate(ctx, filepath.Join(depDir, "ready")); err != nil {
+		return err
+	}
+	if err := osspecific.WaitForSharedLock(ctx, filepath.Join(depDir, "lock")); err != nil {
+		return err
+	}
+	data, readErr := os.ReadFile(filepath.Join(depDir, "exitcode"))
+	if readErr != nil {
+		return fmt.Errorf("dependency %q died without reporting exit code", depName)
+	}
+	code, parseErr := strconv.Atoi(strings.TrimSpace(string(data)))
+	if parseErr != nil {
+		return fmt.Errorf("dependency %q died without reporting exit code", depName)
+	}
+	if code != 0 {
+		return fmt.Errorf("dependency %q exited with non-zero code: %d", depName, code)
+	}
+	return nil
+}
+
+func startCommand(ctx context.Context, name string, args []string, template *wfv1.Template, containerName string, includeScriptOutput bool) (*exec.Cmd, func(), error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	command := exec.CommandContext(ctx, name, args...)
-	command.Env = os.Environ()
+	command.Env = injectTraceParent(ctx, os.Environ())
 
 	var closer = func() {}
 	var stdout io.Writer = os.Stdout
@@ -319,6 +556,8 @@ func startCommand(ctx context.Context, name string, args []string, template *wfv
 		}
 		combinedf, err := os.OpenFile(varRunArgo+"/ctr/"+containerName+"/combined", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
+			// Close stdoutf to avoid leaking the file descriptor opened above.
+			_ = stdoutf.Close()
 			return nil, nil, fmt.Errorf("failed to open combined: %w", err)
 		}
 		stdout = io.MultiWriter(stdout, stdoutf, combinedf)
@@ -346,77 +585,4 @@ func startCommand(ctx context.Context, name string, args []string, template *wfv
 	}
 
 	return command, closer, nil
-}
-
-func saveArtifact(ctx context.Context, srcPath string) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-
-	if common.FindOverlappingVolume(template, srcPath) != nil {
-		logger.WithField("srcPath", srcPath).Info(ctx, "no need to save artifact - on overlapping volume")
-		return nil
-	}
-	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
-		return nil
-	}
-	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
-	logger.WithFields(logging.Fields{
-		"src": srcPath,
-		"dst": dstPath,
-	}).Info(ctx, "saving artifact")
-	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
-		return fmt.Errorf("failed to create directory %s: %w", z, err)
-	}
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return fmt.Errorf("failed to create destination %s: %w", dstPath, err)
-	}
-	defer func() { _ = dst.Close() }()
-	if err = archive.TarGzToWriter(ctx, srcPath, gzip.DefaultCompression, dst); err != nil {
-		return fmt.Errorf("failed to tarball the output %s to %s: %w", srcPath, dstPath, err)
-	}
-	if err = dst.Close(); err != nil {
-		return fmt.Errorf("failed to close %s: %w", dstPath, err)
-	}
-	return nil
-}
-
-func saveParameter(ctx context.Context, srcPath string) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-
-	if common.FindOverlappingVolume(template, srcPath) != nil {
-		logger.WithField("src", srcPath).Info(ctx, "no need to save parameter - on overlapping volume")
-		return nil
-	}
-	src, err := os.Open(filepath.Clean(srcPath))
-	if os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to open %s: %w", srcPath, err)
-	}
-	defer func() { _ = src.Close() }()
-	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
-	logger.WithFields(logging.Fields{
-		"src": srcPath,
-		"dst": dstPath,
-	}).Info(ctx, "saving parameter")
-	z := filepath.Dir(dstPath)
-	if mkdirErr := os.MkdirAll(z, 0o755); mkdirErr != nil { // chmod rwxr-xr-x
-		return fmt.Errorf("failed to create directory %s: %w", z, mkdirErr)
-	}
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return fmt.Errorf("failed to create %s: %w", srcPath, err)
-	}
-	defer func() { _ = dst.Close() }()
-	if _, err = io.Copy(dst, src); err != nil {
-		return fmt.Errorf("failed to copy %s to %s: %w", srcPath, dstPath, err)
-	}
-	if err = dst.Close(); err != nil {
-		return fmt.Errorf("failed to close %s: %w", dstPath, err)
-	}
-	return nil
 }

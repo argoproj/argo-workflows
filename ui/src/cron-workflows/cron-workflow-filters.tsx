@@ -5,6 +5,7 @@ import {CheckboxFilter} from '../shared/components/checkbox-filter/checkbox-filt
 import {NamespaceFilter} from '../shared/components/namespace-filter';
 import {TagsInput} from '../shared/components/tags-input/tags-input';
 import * as models from '../shared/models';
+import {getUniqueNamespaces} from '../shared/namespaces';
 
 import './cron-workflow-filters.scss';
 
@@ -45,6 +46,7 @@ export function CronWorkflowFilters({cronWorkflows, namespace, labels, states, o
                         onChange={ns => {
                             onChange(ns, labels, states);
                         }}
+                        extraNamespaces={getUniqueNamespaces(cronWorkflows)}
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>

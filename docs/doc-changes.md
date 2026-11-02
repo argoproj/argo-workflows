@@ -26,12 +26,12 @@ This command also checks the docs for spelling, broken links, and lint issues.
 
 ### Entering a PR
 
-See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
+Follow the [pull request checklist](pull-requests.md).
 
 On entering a PR, our CI will run the same checks as `make docs-serve`, and fail the build if any issues are found.
 
 Additionally, your PR will be published to a temporary URL, which you can access by clicking on the "Details" link next to the `docs/readthedocs.org:argo-workflows` check.
-This can can be used to preview your changes and do a [visual diff](https://docs.readthedocs.com/platform/stable/visual-diff.html).
+This can be used to preview your changes and do a [visual diff](https://docs.readthedocs.com/platform/stable/visual-diff.html).
 
 ## Tips
 
