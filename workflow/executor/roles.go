@@ -130,6 +130,8 @@ var (
 			}
 			return we.PostMain(ctx, bgCtx, false)
 		},
-		Finally: []Stage{finalizeOutput, removeTaskRoot},
+		// Cleanup can fail the task, so it runs before the outputs are
+		// marked complete: nothing is reported after that.
+		Finally: []Stage{removeTaskRoot, finalizeOutput},
 	}
 )
