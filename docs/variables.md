@@ -257,7 +257,7 @@ podSpecPatch: |
 | `pod.name` | Pod name of the container/script |
 | `node.taskName` | v4.2 and after: Name of this attempt of the container/script, the same as `pod.name`; the default artifact repository key format uses it |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
-| `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry, plus `exitCodes`, the comma-separated exit codes of all previous attempts |
+| `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry, plus `exitCodes`, the comma-separated exit codes of the previous attempts that have one |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
