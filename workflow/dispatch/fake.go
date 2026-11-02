@@ -14,14 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// Resources a Fake's Op names.
+// Resources the protocol calls, as an Op names them.
 const (
-	ResourceTaskSets = "workflowtasksets"
-	ResourceResults  = "workflowtaskresults"
+	ResourceTaskSets = workflow.WorkflowTaskSetPlural
+	ResourceResults  = workflow.WorkflowTaskResultPlural
 )
 
 // Op is one API call a Fake is about to make, for fault injection.
@@ -46,7 +46,7 @@ type Fake struct {
 	taskSets map[string]*fakeTaskSet
 	results  map[string]*wfv1.WorkflowTaskResult
 	health   map[string]Health
-	watches  map[string][]*fakeWatch
+	watches  claimWatches
 	seq      uint64
 	// changed is closed and replaced on every change.
 	changed chan struct{}
@@ -59,20 +59,13 @@ type fakeTaskSet struct {
 	seq uint64
 }
 
-type fakeWatch struct {
-	claim  Claim
-	notify func(StopReason)
-	// interrupted is set once notify was told of the interrupt.
-	interrupted bool
-}
-
 // NewFake returns an empty Fake.
 func NewFake() *Fake {
 	return &Fake{
 		taskSets: map[string]*fakeTaskSet{},
 		results:  map[string]*wfv1.WorkflowTaskResult{},
 		health:   map[string]Health{},
-		watches:  map[string][]*fakeWatch{},
+		watches:  claimWatches{},
 		changed:  make(chan struct{}),
 		now:      time.Now,
 	}
@@ -220,8 +213,7 @@ func (f *Fake) changedLocked(resultKey string) func() {
 		case result == nil || result.UID != w.claim.UID:
 			calls = append(calls, func() { w.notify(StopLost) })
 			continue
-		case result.Labels[common.LabelKeyInterrupt] == "true" && !w.interrupted:
-			w.interrupted = true
+		case w.interruptedBy(result):
 			calls = append(calls, func() { w.notify(StopInterrupted) })
 		}
 		kept = append(kept, w)
@@ -403,29 +395,26 @@ type fakeCandidates struct {
 
 func (c fakeCandidates) Candidates(ctx context.Context) ([]Candidate, error) {
 	f := c.fake
-	for {
+	next := func() <-chan struct{} {
 		f.mu.Lock()
+		defer f.mu.Unlock()
+		return f.changed
+	}
+	return waitForCandidates(ctx, next, func() []Candidate {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		hasResult := func(key string) bool {
+			_, ok := f.results[key]
+			return ok
+		}
 		var found []Candidate
 		for _, ts := range f.sortedTaskSets() {
-			candidate, ok := CandidateFromTaskSet(ts.obj)
-			if !ok || candidate.Namespace != c.worker.Namespace || candidate.PoolHash != c.worker.PoolHash {
-				continue
-			}
-			if _, claimed := f.results[candidate.Namespace+"/"+candidate.ResultName()]; !claimed {
+			if candidate, ok := c.worker.candidate(ts.obj, hasResult); ok {
 				found = append(found, candidate)
 			}
 		}
-		changed := f.changed
-		f.mu.Unlock()
-		if len(found) > 0 {
-			return found, nil
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-changed:
-		}
-	}
+		return found
+	})
 }
 
 type fakeWatcher struct {
@@ -435,9 +424,9 @@ type fakeWatcher struct {
 func (w fakeWatcher) Watch(_ context.Context, claim Claim, notify func(StopReason)) func() {
 	f := w.fake
 	key := claim.Namespace + "/" + claim.ResultName()
-	watch := &fakeWatch{claim: claim, notify: notify}
+	watch := &claimWatch{claim: claim, notify: notify}
 	f.mu.Lock()
-	f.watches[key] = append(f.watches[key], watch)
+	f.watches.add(key, watch)
 	// Report anything that happened before the watch started.
 	pending := f.changedLocked(key)
 	f.mu.Unlock()
@@ -445,6 +434,6 @@ func (w fakeWatcher) Watch(_ context.Context, claim Claim, notify func(StopReaso
 	return func() {
 		f.mu.Lock()
 		defer f.mu.Unlock()
-		f.watches[key] = slices.DeleteFunc(f.watches[key], func(other *fakeWatch) bool { return other == watch })
+		f.watches.remove(key, watch)
 	}
 }

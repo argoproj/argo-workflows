@@ -46,18 +46,46 @@ type Watches struct {
 	// changed is closed and replaced on every event.
 	changed chan struct{}
 	// claims are the watched claims by result name.
-	claims map[string][]*claimWatch
+	claims claimWatches
 }
 
+// claimWatch is one watched claim, of a Watches or a Fake.
 type claimWatch struct {
-	// ctx is the watch's, for its live reads: it outlives the call that
-	// started the watch.
+	// ctx is the watch's, for a Watches' live reads: it outlives the call
+	// that started the watch.
 	//nolint:containedctx
 	ctx    context.Context
 	claim  Claim
 	notify func(StopReason)
 	// interrupted is set once notify was told of the interrupt.
 	interrupted bool
+}
+
+// interruptedBy reports whether result, the claim's own, newly interrupts
+// it, and if so marks it told.
+func (cw *claimWatch) interruptedBy(result metav1.Object) bool {
+	if cw.interrupted || result.GetLabels()[common.LabelKeyInterrupt] != "true" {
+		return false
+	}
+	cw.interrupted = true
+	return true
+}
+
+// claimWatches are watched claims by the key of their result.
+type claimWatches map[string][]*claimWatch
+
+func (ws claimWatches) add(key string, cw *claimWatch) {
+	ws[key] = append(ws[key], cw)
+}
+
+// remove stops watching cw, reporting whether it was watched.
+func (ws claimWatches) remove(key string, cw *claimWatch) bool {
+	watched := slices.Contains(ws[key], cw)
+	ws[key] = slices.DeleteFunc(ws[key], func(other *claimWatch) bool { return other == cw })
+	if len(ws[key]) == 0 {
+		delete(ws, key)
+	}
+	return watched
 }
 
 // NewWatches returns the watches of worker's pool, over metadata-only
@@ -146,7 +174,7 @@ func newWatches(st store, worker Worker, taskSets, results cache.SharedIndexInfo
 		taskSets: taskSets,
 		results:  results,
 		changed:  make(chan struct{}),
-		claims:   map[string][]*claimWatch{},
+		claims:   claimWatches{},
 	}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started
 	taskSets.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -180,11 +208,21 @@ func (w *Watches) Candidates(ctx context.Context) ([]Candidate, error) {
 	if !cache.WaitForCacheSync(ctx.Done(), w.taskSets.HasSynced, w.results.HasSynced) {
 		return nil, ctx.Err()
 	}
-	for {
+	next := func() <-chan struct{} {
 		w.mu.Lock()
-		changed := w.changed
-		w.mu.Unlock()
-		if found := w.candidates(); len(found) > 0 {
+		defer w.mu.Unlock()
+		return w.changed
+	}
+	return waitForCandidates(ctx, next, w.candidates)
+}
+
+// waitForCandidates returns what find finds, waiting for the change next's
+// channel signals while it finds nothing. next is called before each find,
+// so a change while finding isn't missed.
+func waitForCandidates(ctx context.Context, next func() <-chan struct{}, find func() []Candidate) ([]Candidate, error) {
+	for {
+		changed := next()
+		if found := find(); len(found) > 0 {
 			return found, nil
 		}
 		select {
@@ -195,20 +233,30 @@ func (w *Watches) Candidates(ctx context.Context) ([]Candidate, error) {
 	}
 }
 
+// candidate returns the TaskSet as a candidate if it is one of the worker's
+// pool and hasResult, given a result's namespace/name key, says it has none.
+func (w Worker) candidate(taskSet metav1.Object, hasResult func(key string) bool) (Candidate, bool) {
+	c, ok := CandidateFromTaskSet(taskSet)
+	if !ok || c.Namespace != w.Namespace || c.PoolHash != w.PoolHash || hasResult(c.Namespace+"/"+c.ResultName()) {
+		return Candidate{}, false
+	}
+	return c, true
+}
+
 // candidates are the cached TaskSets of the worker's pool with no cached
 // result, oldest first.
 func (w *Watches) candidates() []Candidate {
+	hasResult := func(key string) bool {
+		_, ok, _ := w.results.GetStore().GetByKey(key)
+		return ok
+	}
 	var found []Candidate
 	for _, obj := range w.taskSets.GetStore().List() {
 		m, err := meta.Accessor(obj)
 		if err != nil {
 			continue
 		}
-		c, ok := CandidateFromTaskSet(m)
-		if !ok || c.Namespace != w.worker.Namespace || c.PoolHash != w.worker.PoolHash {
-			continue
-		}
-		if _, claimed, _ := w.results.GetStore().GetByKey(c.Namespace + "/" + c.ResultName()); !claimed {
+		if c, ok := w.worker.candidate(m, hasResult); ok {
 			found = append(found, c)
 		}
 	}
@@ -232,7 +280,7 @@ func (w *Watches) Watch(ctx context.Context, claim Claim, notify func(StopReason
 	cw := &claimWatch{ctx: ctx, claim: claim, notify: notify}
 	name := claim.ResultName()
 	w.mu.Lock()
-	w.claims[name] = append(w.claims[name], cw)
+	w.claims.add(name, cw)
 	w.mu.Unlock()
 	if obj, ok, _ := w.results.GetStore().GetByKey(claim.Namespace + "/" + name); ok {
 		w.resultChanged(obj, false)
@@ -240,20 +288,8 @@ func (w *Watches) Watch(ctx context.Context, claim Claim, notify func(StopReason
 	return func() {
 		w.mu.Lock()
 		defer w.mu.Unlock()
-		w.unwatchLocked(cw)
+		w.claims.remove(name, cw)
 	}
-}
-
-// unwatchLocked stops watching cw, reporting whether it was watched. w.mu
-// must be held.
-func (w *Watches) unwatchLocked(cw *claimWatch) bool {
-	name := cw.claim.ResultName()
-	watched := slices.Contains(w.claims[name], cw)
-	w.claims[name] = slices.DeleteFunc(w.claims[name], func(other *claimWatch) bool { return other == cw })
-	if len(w.claims[name]) == 0 {
-		delete(w.claims, name)
-	}
-	return watched
 }
 
 // resultChanged tells the claims on a result what its event means for
@@ -280,8 +316,7 @@ func (w *Watches) resultChanged(obj any, deleted bool) {
 		case deleted:
 			calls = append(calls, func() { cw.notify(StopLost) })
 			continue
-		case m.GetLabels()[common.LabelKeyInterrupt] == "true" && !cw.interrupted:
-			cw.interrupted = true
+		case cw.interruptedBy(m):
 			calls = append(calls, func() { cw.notify(StopInterrupted) })
 		}
 		kept = append(kept, cw)
@@ -316,7 +351,7 @@ func (w *Watches) checkLive(cw *claimWatch) {
 		return
 	}
 	w.mu.Lock()
-	watched := w.unwatchLocked(cw)
+	watched := w.claims.remove(cw.claim.ResultName(), cw)
 	w.mu.Unlock()
 	if watched {
 		cw.notify(StopLost)

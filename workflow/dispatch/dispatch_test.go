@@ -4,6 +4,7 @@ import (
 	"errors"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -328,6 +329,47 @@ var protocolTests = []struct {
 		require.ErrorIs(t, err, errTransient)
 		_, ok := b.result(t, task.Key)
 		assert.True(t, ok, "the claim remains")
+	}},
+	// A create whose response is lost has still made the claim, and nothing
+	// else would run the task: the TaskSet has a result, so it is no
+	// worker's candidate.
+	{"ClaimKeepsTheClaimAFailedCreateMade", func(t *testing.T, b *backend) {
+		task := testTask("node-1")
+		b.enqueue(t, task)
+		candidate := b.candidate(t, task.Key)
+		w := testWorker("worker-a")
+		b.setFault(createsThenFails(t, b, (&consumer{worker: w}).newResult(candidate)))
+		h, err := b.consumer(w).Claim(logging.TestContext(t.Context()), candidate)
+		b.setFault(nil)
+		require.NoError(t, err)
+		r, ok := b.result(t, task.Key)
+		require.True(t, ok)
+		assert.Equal(t, r.UID, h.Claim().UID)
+		assert.Equal(t, w.PodUID, h.Claim().WorkerPodUID)
+	}},
+	{"ClaimAfterAFailedCreateLeavesAnotherWorkersClaim", func(t *testing.T, b *backend) {
+		task := testTask("node-1")
+		b.enqueue(t, task)
+		candidate := b.candidate(t, task.Key)
+		other := (&consumer{worker: testWorker("worker-b")}).newResult(candidate)
+		b.setFault(createsThenFails(t, b, other))
+		_, err := b.consumer(testWorker("worker-a")).Claim(logging.TestContext(t.Context()), candidate)
+		b.setFault(nil)
+		require.ErrorIs(t, err, ErrClaimLost)
+		r, ok := b.result(t, task.Key)
+		require.True(t, ok)
+		assert.Equal(t, "worker-b-uid", r.Labels[common.LabelKeyWorkerPodUID])
+	}},
+	{"ClaimAfterAFailedCreateThatMadeNothingFails", func(t *testing.T, b *backend) {
+		task := testTask("node-1")
+		b.enqueue(t, task)
+		b.setFault(failing("create", ResourceResults, task.ResultName()))
+		_, err := b.consumer(testWorker("worker-a")).Claim(logging.TestContext(t.Context()), b.candidate(t, task.Key))
+		b.setFault(nil)
+		require.ErrorIs(t, err, errTransient)
+		require.NotErrorIs(t, err, ErrClaimLost)
+		_, ok := b.result(t, task.Key)
+		assert.False(t, ok)
 	}},
 	{"ClaimRefusesAnotherPool", func(t *testing.T, b *backend) {
 		task := testTask("node-1")
@@ -687,13 +729,13 @@ var protocolTests = []struct {
 		h := b.claim(t, testWorker("worker-a"), task.Key)
 		b.setFault(func(op Op) error {
 			if op.Verb == "delete" && op.Resource == ResourceTaskSets {
-				return errors.New("transient")
+				return errTransient
 			}
 			return nil
 		})
 		err := b.dispatcher.Interrupt(logging.TestContext(t.Context()), task.Key, ts.UID, h.Claim().UID)
 		b.setFault(nil)
-		require.Error(t, err)
+		require.ErrorIs(t, err, errTransient)
 		require.NotErrorIs(t, err, ErrClaimLost)
 		r, _ := b.result(t, task.Key)
 		assert.NotContains(t, r.Labels, common.LabelKeyInterrupt)
@@ -806,13 +848,13 @@ var protocolTests = []struct {
 		refs := []TaskSetRef{{NodeID: "failing", UID: failing.UID}, {NodeID: "deleted", UID: deleted.UID}}
 		b.setFault(func(op Op) error {
 			if op.Verb == "delete" && op.Name == failing.Name {
-				return errors.New("transient")
+				return errTransient
 			}
 			return nil
 		})
 		gone, err := b.dispatcher.Completion(ctx, testNamespace, refs, nil)
 		b.setFault(nil)
-		require.Error(t, err)
+		require.ErrorIs(t, err, errTransient)
 		assert.Equal(t, []TaskSetRef{refs[1]}, gone)
 		_, ok := b.taskSet(t, Key{Namespace: testNamespace, NodeID: "failing"})
 		assert.True(t, ok)
@@ -924,6 +966,20 @@ var errTransient = errors.New("transient")
 func failing(verb, resource, name string) func(Op) error {
 	return func(op Op) error {
 		if op.Verb == verb && op.Resource == resource && op.Name == name {
+			return errTransient
+		}
+		return nil
+	}
+}
+
+// createsThenFails is a fault that, on the first create of a result, makes
+// result in its place and then fails the create, as when the create's
+// response is lost. Only the first: the Fake's replaceResult creates too.
+func createsThenFails(t *testing.T, b *backend, result *wfv1.WorkflowTaskResult) func(Op) error {
+	var fired atomic.Bool
+	return func(op Op) error {
+		if op.Verb == "create" && op.Resource == ResourceResults && fired.CompareAndSwap(false, true) {
+			assert.NoError(t, b.replaceResult(result))
 			return errTransient
 		}
 		return nil
