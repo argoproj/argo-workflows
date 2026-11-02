@@ -72,10 +72,17 @@ func anyVarNotInEnv(expression string, env map[string]any) *string {
 	return nil
 }
 
+// unescapeExpression undoes the JSON character escapes in an expression
+// from a JSON-marshaled template.
+func unescapeExpression(expression string) (string, error) {
+	var unescaped string
+	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unescaped)
+	return unescaped, err
+}
+
 func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string, env map[string]any, strictRegex *regexp.Regexp) (int, error) {
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
-	var unmarshalledExpression string
-	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
+	unmarshalledExpression, err := unescapeExpression(expression)
 	if err != nil {
 		// If we can't unmarshal, we can't parse. Fallback to expressionReplaceCore to handle it (likely error).
 		return expressionReplaceCore(ctx, w, expression, env, false)
@@ -218,8 +225,7 @@ func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, 
 
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
-	var unmarshalledExpression string
-	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
+	unmarshalledExpression, err := unescapeExpression(expression)
 	if err != nil && allowUnresolved {
 		log.WithError(err).Debug(ctx, "unresolved is allowed")
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
