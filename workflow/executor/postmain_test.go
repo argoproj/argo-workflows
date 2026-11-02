@@ -32,12 +32,13 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 	tracingObj, err := tracing.New(ctx, `argoexec`)
 	require.NoError(t, err)
 	return &WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: mockRuntime,
 		Process: &Process{
 			PodName:            fakePodName,
 			podUID:             types.UID(fakePodUID),
 			ClientSet:          fake.NewClientset(),
 			Namespace:          fakeNamespace,
-			RuntimeExecutor:    mockRuntime,
 			taskResultClient:   argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
 			Tracing:            tracingObj,
 			memoizedConfigMaps: map[string]string{},
