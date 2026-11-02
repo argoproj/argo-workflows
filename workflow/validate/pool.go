@@ -24,11 +24,12 @@ import (
 //
 // Validation calls it on each template as written, and again with the
 // workflow's templateDefaults merged in when pool.Pooled says the merged
-// template is pooled. The controller does the same for the merged template it
-// dispatches, with the execution workflow's spec, to catch what only merging
-// shows. It finds {{pod.name}} only in a template whose variables aren't
-// substituted yet, and checks a pool name holding a variable only once it is
-// substituted.
+// template is pooled. Once dispatch is wired, the controller also calls it on
+// the merged, substituted template it dispatches, with the execution
+// workflow's spec, to catch what only merging and substitution show. It finds
+// a {{pod.name}} tag only in a template whose variables aren't substituted
+// yet, and skips a pool name or number holding a variable, which is checked
+// once substituted.
 func Poolable(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error {
 	if tmpl.Pool == nil {
 		return nil
@@ -43,7 +44,7 @@ func Poolable(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error {
 	if err := pool.CheckTemplate(prefix, tmpl); err != nil {
 		return err
 	}
-	if err := rejectPodName(prefix, tmpl); err != nil {
+	if err := rejectPodNameTag(prefix, tmpl); err != nil {
 		return err
 	}
 	for _, art := range tmpl.Inputs.Artifacts {
@@ -84,7 +85,7 @@ func validatePool(prefix string, p *wfv1.Pool) error {
 		number pool.Number
 		value  *intstr.IntOrString
 	}{{pool.InitialReplicas, p.InitialReplicas}, {pool.RetentionSeconds, p.RetentionSeconds}} {
-		if pool.HasVariable(setting.value) {
+		if pool.IsVariable(setting.value) {
 			continue
 		}
 		if _, _, err := setting.number.Value(setting.value); err != nil {
@@ -94,22 +95,22 @@ func validatePool(prefix string, p *wfv1.Pool) error {
 	return nil
 }
 
-// rejectPodName fails if tmpl refers to {{pod.name}}, in a simple tag or an
-// expression: a pooled task has no pod of its own.
-func rejectPodName(prefix string, tmpl *wfv1.Template) error {
+// rejectPodNameTag fails if tmpl has a {{pod.name}} tag: a pooled task has
+// no pod of its own. It checks tags as validation checks every variable;
+// expressions aren't checked until they are substituted, when a pooled task
+// has no pod.name to give them.
+func rejectPodNameTag(prefix string, tmpl *wfv1.Template) error {
 	data, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	vars, err := template.Variables(string(data))
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s: %s", prefix, err)
-	}
-	if slices.Contains(vars, varkeys.PodName.Template()) {
-		return errors.Errorf(errors.CodeBadRequest, "%s: {{%s}} can't be used in a pooled template, which has no pod of its own; use {{%s}}",
-			prefix, varkeys.PodName.Template(), varkeys.NodeTaskName.Template())
-	}
-	return nil
+	return template.Validate(string(data), func(tag string) error {
+		if strings.TrimSpace(tag) == varkeys.PodName.Template() {
+			return errors.Errorf(errors.CodeBadRequest, "%s: {{%s}} can't be used in a pooled template, which has no pod of its own; use {{%s}}",
+				prefix, varkeys.PodName.Template(), varkeys.NodeTaskName.Template())
+		}
+		return nil
+	})
 }
 
 // rejectVolumeClaimMounts fails if tmpl mounts one of wfSpec's
@@ -166,28 +167,14 @@ func (tctx *templateValidationCtx) pooledWorkflowSpec(tmpl *wfv1.Template) (*wfv
 		return nil, nil
 	}
 	if tctx.poolSpec == nil {
-		spec, err := mergeWorkflowSpecs(tctx.poolSpecs)
+		spec, err := common.MergeWorkflowSpecs(tctx.poolSpecs...)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "merging the workflow spec for pooled templates: %s", err)
+		}
+		if spec == nil {
+			spec = &wfv1.WorkflowSpec{}
 		}
 		tctx.poolSpec = spec
 	}
 	return tctx.poolSpec, nil
-}
-
-// mergeWorkflowSpecs merges specs, highest priority first, with the merge
-// the controller uses for a workflow, its WorkflowTemplate and the workflow
-// defaults (JoinWorkflowSpec in workflow/util, which imports this package,
-// adds fix-ups for fields pooled templates' checks don't read).
-func mergeWorkflowSpecs(specs []*wfv1.WorkflowSpec) (*wfv1.WorkflowSpec, error) {
-	if len(specs) == 0 {
-		return &wfv1.WorkflowSpec{}, nil
-	}
-	merged := &wfv1.Workflow{Spec: *specs[0].DeepCopy()}
-	for _, spec := range specs[1:] {
-		if err := common.MergeTo(&wfv1.Workflow{Spec: *spec.DeepCopy()}, merged); err != nil {
-			return nil, err
-		}
-	}
-	return &merged.Spec, nil
 }

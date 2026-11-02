@@ -8,6 +8,26 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
+// MergeWorkflowSpecs merges specs, highest priority first, as a workflow is
+// merged with its WorkflowTemplate and the workflow defaults: each spec only
+// fills in what the ones before it leave unset (MergeTo). Nil specs are
+// skipped, and it returns nil if the first is nil.
+func MergeWorkflowSpecs(specs ...*wfv1.WorkflowSpec) (*wfv1.WorkflowSpec, error) {
+	if len(specs) == 0 || specs[0] == nil {
+		return nil, nil
+	}
+	merged := &wfv1.Workflow{Spec: *specs[0].DeepCopy()}
+	for _, spec := range specs[1:] {
+		if spec == nil {
+			continue
+		}
+		if err := MergeTo(&wfv1.Workflow{Spec: *spec.DeepCopy()}, merged); err != nil {
+			return nil, err
+		}
+	}
+	return &merged.Spec, nil
+}
+
 // MergeTo will merge one workflow (the "patch" workflow) into another (the "target" workflow.
 // If the target workflow defines a field, this take precedence over the patch.
 func MergeTo(patch, target *wfv1.Workflow) error {

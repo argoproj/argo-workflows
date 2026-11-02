@@ -81,9 +81,6 @@ func TestPoolableRejectsUnpoolableFields(t *testing.T) {
 		{"pod.name", func(_ *wfv1.Workflow, tmpl *wfv1.Template) { tmpl.Container.Args = []string{"{{pod.name}}"} },
 			"templates.pooled: {{pod.name}} can't be used in a pooled template, which has no pod of its own; use {{node.taskName}}"},
 		{"pod.name with spaces", func(_ *wfv1.Workflow, tmpl *wfv1.Template) { tmpl.Container.Args = []string{"{{ pod.name }}"} }, "{{pod.name}} can't be used"},
-		{"pod.name in an expression", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
-			tmpl.Container.Env = []apiv1.EnvVar{{Name: "POD", Value: "{{=sprig.upper(pod.name)}}"}}
-		}, "{{pod.name}} can't be used"},
 		{"pod.name in a script", func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
 			asScript(wf, tmpl)
 			tmpl.Script.Source = "echo {{pod.name}}"
@@ -166,6 +163,12 @@ func TestPoolableAllows(t *testing.T) {
 		}},
 		{"claims the pooled template doesn't mount", func(wf *wfv1.Workflow, _ *wfv1.Template) {
 			wf.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "claim"}}}
+		}},
+		// Validation checks variable tags, not expressions, for every
+		// template; a pooled task's expression has no pod.name to read when
+		// it is substituted.
+		{"pod.name in an expression", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.Env = []apiv1.EnvVar{{Name: "POD", Value: "{{=pod.name ?? 'none'}}"}}
 		}},
 		{"pod.name in a template that isn't pooled", func(wf *wfv1.Workflow, _ *wfv1.Template) {
 			wf.Spec.Templates = append(wf.Spec.Templates, wfv1.Template{Name: "pod", Container: &apiv1.Container{Image: "busybox", Args: []string{"{{pod.name}}"}}})
@@ -276,8 +279,7 @@ func TestPoolableWorkflowLevel(t *testing.T) {
 			tmpl.Container.VolumeMounts = []apiv1.VolumeMount{{Name: "claim", MountPath: "/claim"}}
 		}, wfDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{VolumeClaimTemplates: []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "claim"}}}}},
 			want: "volume 'claim' is one of spec.volumeClaimTemplates"},
-		{name: "the template's own claims win", change: func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
-			wf.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "other"}}}
+		{name: "the template's own claims win", change: func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
 			tmpl.Container.VolumeMounts = []apiv1.VolumeMount{{Name: "claim", MountPath: "/claim"}}
 			tmpl.Volumes = []apiv1.Volume{{Name: "claim", VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}}}}
 		}, wfDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{VolumeClaimTemplates: []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "claim"}}}}}},

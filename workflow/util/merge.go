@@ -211,19 +211,11 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 	if wfSpec == nil {
 		return nil, nil
 	}
-	targetWf := wfv1.Workflow{Spec: *wfSpec.DeepCopy()}
-	if wftSpec != nil {
-		err := common.MergeTo(&wfv1.Workflow{Spec: *wftSpec.DeepCopy()}, &targetWf)
-		if err != nil {
-			return nil, err
-		}
+	mergedSpec, err := common.MergeWorkflowSpecs(wfSpec, wftSpec, wfDefaultSpec)
+	if err != nil {
+		return nil, err
 	}
-	if wfDefaultSpec != nil {
-		err := common.MergeTo(&wfv1.Workflow{Spec: *wfDefaultSpec.DeepCopy()}, &targetWf)
-		if err != nil {
-			return nil, err
-		}
-	}
+	targetWf := wfv1.Workflow{Spec: *mergedSpec}
 
 	// This condition will update the workflow Spec suspend value if merged value is different.
 	// This scenario will happen when Workflow with WorkflowTemplateRef has suspend template

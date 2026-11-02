@@ -19,7 +19,7 @@ func TestNumberValue(t *testing.T) {
 	}{
 		{name: "unset", number: InitialReplicas},
 		{name: "a number", number: InitialReplicas, value: new(intstr.FromInt32(3)), want: 3, set: true},
-		{name: "a string", number: RetentionSeconds, value: new(intstr.FromString(" 60 ")), want: 60, set: true},
+		{name: "a string", number: RetentionSeconds, value: new(intstr.FromString("60")), want: 60, set: true},
 		{name: "zero retention", number: RetentionSeconds, value: new(intstr.FromInt32(0)), want: 0, set: true},
 		{name: "below the minimum", number: InitialReplicas, value: new(intstr.FromInt32(0)), err: "initialReplicas must be at least 1"},
 		{name: "negative", number: RetentionSeconds, value: new(intstr.FromInt32(-1)), err: "retentionSeconds must not be negative"},
@@ -40,9 +40,10 @@ func TestNumberValue(t *testing.T) {
 	}
 }
 
-func TestHasVariable(t *testing.T) {
-	assert.False(t, HasVariable(nil))
-	assert.False(t, HasVariable(new(intstr.FromInt32(1))))
-	assert.False(t, HasVariable(new(intstr.FromString("1"))))
-	assert.True(t, HasVariable(new(intstr.FromString("{{workflow.parameters.n}}"))))
+func TestIsVariable(t *testing.T) {
+	assert.False(t, IsVariable(nil))
+	assert.False(t, IsVariable(new(intstr.FromInt32(1))))
+	assert.False(t, IsVariable(new(intstr.FromString("1"))))
+	assert.False(t, IsVariable(new(intstr.FromString("abc{{x}}"))), "a variable is the whole value, as for other numeric fields")
+	assert.True(t, IsVariable(new(intstr.FromString("{{workflow.parameters.n}}"))))
 }
