@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // Pool runs a container or script template's tasks on a pool of long-lived
@@ -14,23 +15,23 @@ type Pool struct {
 	// settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
 	// template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
 	// the template's name. It must be a DNS label of at most 35 characters. It
-	// may hold a variable, such as `{{inputs.parameters.pool}}`, and is then
-	// checked once substituted.
+	// may hold a template variable, such as `inputs.parameters.pool`, and is
+	// then checked once substituted.
 	// +optional
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
-	// InitialReplicas is the number of worker pods a new pool starts with.
-	// It applies only when the pool is created. Defaults to 1.
-	// +kubebuilder:validation:Minimum=1
+	// InitialReplicas is the number of worker pods a new pool starts with, at
+	// least 1. It applies only when the pool is created. Defaults to 1. It is a
+	// whole number, or a template variable that resolves to one.
 	// +optional
-	InitialReplicas *int32 `json:"initialReplicas,omitempty" protobuf:"varint,2,opt,name=initialReplicas"`
+	InitialReplicas *intstr.IntOrString `json:"initialReplicas,omitempty" protobuf:"bytes,2,opt,name=initialReplicas"`
 
-	// RetentionSeconds is how long the pool is kept once no task uses it.
-	// The most recently dispatched task's value applies. Defaults to the
-	// controller's hot workers retention.
-	// +kubebuilder:validation:Minimum=0
+	// RetentionSeconds is how long the pool is kept once no task uses it, at
+	// least 0. The most recently dispatched task's value applies. Defaults to
+	// the controller's hot workers retention. It is a whole number, or a
+	// template variable that resolves to one.
 	// +optional
-	RetentionSeconds *int64 `json:"retentionSeconds,omitempty" protobuf:"varint,3,opt,name=retentionSeconds"`
+	RetentionSeconds *intstr.IntOrString `json:"retentionSeconds,omitempty" protobuf:"bytes,3,opt,name=retentionSeconds"`
 }
 
 // PoolSpec is everything a pool's worker pods are built from, resolved by the
@@ -180,7 +181,7 @@ type PoolKubeConfig struct {
 // TaskDispatch is the per-task part of a pooled task that a pod would get
 // from its spec and environment.
 type TaskDispatch struct {
-	// TaskName is the task's `{{node.taskName}}`: the name its pod would have.
+	// TaskName is the task's `node.taskName`: the name its pod would have.
 	TaskName string `json:"taskName" protobuf:"bytes,1,opt,name=taskName"`
 
 	// IncludeScriptOutput captures the task's stdout as its result.
@@ -265,7 +266,7 @@ type PooledTaskStatus struct {
 	// PoolHash is the hash of the pool the task was dispatched to.
 	PoolHash string `json:"poolHash" protobuf:"bytes,2,opt,name=poolHash"`
 
-	// TaskName is the task's `{{node.taskName}}`.
+	// TaskName is the task's `node.taskName`.
 	TaskName string `json:"taskName" protobuf:"bytes,3,opt,name=taskName"`
 
 	// TaskSetUID is the UID of the task's WorkflowTaskSet. Only results that
@@ -355,10 +356,15 @@ func (s *PooledTaskStatus) Released() bool {
 }
 
 // Enqueue records the task as waiting for its first claim, its TaskSet
-// created or adopted at at.
-func (s *PooledTaskStatus) Enqueue(at metav1.Time) {
+// created or adopted at at. It returns false, changing nothing, unless the
+// ledger is new: a ledger that has been enqueued keeps its claim history.
+func (s *PooledTaskStatus) Enqueue(at metav1.Time) bool {
+	if len(s.Conditions) > 0 {
+		return false
+	}
 	s.EnqueuedAt = at
 	s.setCondition(PooledTaskConditionClaimed, metav1.ConditionFalse, PooledTaskReasonEnqueued, "", at)
+	return true
 }
 
 // Claim records a worker's claim: its result's UID and creation time, and the
