@@ -563,8 +563,8 @@ schema = 3
     version = "v1.3.0"
     hash = "sha256-RsS/MDJbVzVB+i74whqABgwZJWMw+AutF6HhJBVgbag="
   [mod."github.com/klauspost/pgzip"]
-    version = "v1.2.7"
-    hash = "sha256-HRAbr8J+vEOa3TB3ObAJyuMv13USdEONt+KHvzFxqkU="
+    version = "v1.3.0"
+    hash = "sha256-F6pCaASPReNIX9W7PZrDoV9QPcWMS/Y7C/evwputO6g="
   [mod."github.com/kylelemons/godebug"]
     version = "v1.1.0"
     hash = "sha256-DJ0re9mGqZb6PROQI8NPC0JVyDHdZ/y4uehNH7MbczY="
