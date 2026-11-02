@@ -11857,7 +11857,7 @@
           "type": "string"
         },
         "pool": {
-          "description": "Pool is reserved for hot workers, which will run a template's tasks on a pool of long-lived worker pods instead of a pod per task. EXPERIMENTAL and not yet functional. See https://github.com/argoproj/argo-workflows/issues/16530",
+          "description": "Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Pool"
         },
         "priorityClassName": {
