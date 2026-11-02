@@ -25,6 +25,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/maindriver"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
@@ -58,14 +59,15 @@ func NewEmissaryCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			containerName := os.Getenv(common.EnvVarContainerName)
 			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
-			return runEmissary(cmd.Context(), containerName, newPodSource(containerName, includeScriptOutput, args), maindriver.Container{})
+			return runEmissary(cmd.Context(), containerName, newPodTask(containerName, includeScriptOutput, args), maindriver.Container{})
 		},
 	}
 }
 
-// newPodSource builds the one task a pod spec delivers, from env and argv.
-func newPodSource(containerName string, includeScriptOutput bool, args []string) maindriver.TaskSource {
-	return &maindriver.PodSource{
+// newPodTask returns a loader for the one task a pod spec delivers, from env
+// and argv. runEmissary calls it once the supervisor (if any) is ready.
+func newPodTask(containerName string, includeScriptOutput bool, args []string) func(context.Context) (maindriver.Task, error) {
+	cfg := maindriver.PodTaskConfig{
 		VarRunArgo:          varRunArgo,
 		TemplateEnv:         os.Getenv(common.EnvVarTemplate),
 		OffloadDir:          common.EnvConfigMountPath,
@@ -76,13 +78,16 @@ func newPodSource(containerName string, includeScriptOutput bool, args []string)
 		Env:                 os.Environ(),
 		IncludeScriptOutput: includeScriptOutput,
 	}
+	return func(ctx context.Context) (maindriver.Task, error) {
+		return maindriver.PodTask(ctx, cfg)
+	}
 }
 
 // runEmissary is the emissary body, with everything the command parses from
 // the environment passed in as parameters so it is testable without env or
 // package-level state.
-func runEmissary(ctx context.Context, containerName string, source maindriver.TaskSource, driver maindriver.MainDriver) error {
-	exitCode := 64 // The exitcode file gets the exit code of the last task.
+func runEmissary(ctx context.Context, containerName string, loadTask func(context.Context) (maindriver.Task, error), driver maindriver.MainDriver) error {
+	exitCode := 64 // The exitcode file gets the exit code of the task.
 	logger := logging.RequireLoggerFromContext(ctx)
 	// Registered before the exit code defer so that it runs after it: releasing
 	// the liveness lock is what tells a dependent the exit code is readable, so
@@ -187,7 +192,7 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		// ready-marker wait above). Only `main` runs this — ContainerSet
 		// children and sidecars don't get artifact paths symlinked in.
 		if waitForReady && containerName == common.MainContainerName {
-			if stageErr := stageInputArtifacts(ctx, template); stageErr != nil {
+			if stageErr := wfexecutor.StageInputArtifacts(ctx, argoexecexecutor.PodPaths(varRunArgo), template); stageErr != nil {
 				// As above: propagate the sentinel as the process exit code so
 				// inferFailedReason attributes this to supervisor pre-main setup.
 				code = common.ExitCodeSupervisorPreMainFailure
@@ -264,10 +269,10 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 			}
 		}
 
-		// The sink stages outputs only for the main container.
-		var sink maindriver.ResultSink = maindriver.PodSink{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
+		// The stager stages outputs only for the main container.
+		var stager maindriver.OutputStager = maindriver.PodStager{VarRunArgo: varRunArgo, ContainerName: containerName, Template: template}
 		for _, out := range outputs {
-			if err := sink.Put(ctx, task.NodeID, out); err != nil {
+			if err := stager.Stage(ctx, task.NodeID, out); err != nil {
 				return code, err
 			}
 		}
@@ -275,32 +280,19 @@ func runEmissary(ctx context.Context, containerName string, source maindriver.Ta
 		return code, cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 	}
 
-	ran := false
-	for {
-		task, ok, err := source.Next(ctx)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			break
-		}
-		ran = true
-		var taskErr error
-		exitCode, taskErr = runTask(ctx, task)
-		if taskErr != nil {
-			return taskErr
-		}
+	task, loadErr := loadTask(ctx)
+	if loadErr != nil {
+		return loadErr
 	}
-	if !ran {
-		return errors.New("no task to run")
-	}
-	return nil
+	var runErr error
+	exitCode, runErr = runTask(ctx, task)
+	return runErr
 }
 
 // outputCollector records an attempt's outputs for staging after retries.
 type outputCollector []maindriver.Output
 
-func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output) error {
+func (c *outputCollector) Stage(_ context.Context, _ string, out maindriver.Output) error {
 	*c = append(*c, out)
 	return nil
 }
@@ -308,11 +300,7 @@ func (c *outputCollector) Put(_ context.Context, _ string, out maindriver.Output
 // terminateWhenMainExits stops this sidecar when the main containers of the
 // template exit.
 func terminateWhenMainExits(ctx context.Context, logger logging.Logger, template *wfv1.Template, containerName string) {
-	em, err := emissary.New()
-	if err != nil {
-		logger.WithError(err).Error(ctx, "failed to create emissary")
-		return
-	}
+	em := emissary.New(varRunArgo)
 	mainContainerNames := template.GetMainContainerNames()
 	if err := em.Wait(ctx, mainContainerNames); err != nil {
 		logger.WithError(err).WithFields(logging.Fields{
@@ -329,116 +317,6 @@ func terminateWhenMainExits(ctx context.Context, logger logging.Logger, template
 	}
 }
 
-func stageInputArtifacts(ctx context.Context, tmpl *wfv1.Template) error {
-	return stageInputArtifactsAt(ctx, common.ExecutorArtifactBaseDir, tmpl)
-}
-
-// stageInputArtifactsAt is the parameterized form used by tests; production
-// calls stageInputArtifacts with the constants. It links each input artifact
-// into place and re-enters the working directory afterwards, stepping off it
-// for the duration: linking replaces the cwd when an artifact's path is the
-// container's workingDir, Windows refuses to delete a directory in use as a
-// working directory, and a child forked with the deleted directory as cwd
-// would see getcwd() fail and relative paths resolve to nothing. The final
-// chdir follows the symlink to whatever now sits at the path.
-func stageInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Template) error {
-	origWd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to read working directory before staging input artifacts: %w", err)
-	}
-	if err := os.Chdir(varRunArgo); err != nil {
-		return fmt.Errorf("failed to leave working directory before staging input artifacts: %w", err)
-	}
-	if err := linkInputArtifactsAt(ctx, baseDir, tmpl); err != nil {
-		return err
-	}
-	if err := os.Chdir(origWd); err != nil {
-		return fmt.Errorf("failed to re-enter working directory %q after staging input artifacts (an input artifact staged at the workingDir path must be a directory): %w", origWd, err)
-	}
-	return nil
-}
-
-// linkInputArtifactsAt creates a symlink at each input artifact's path
-// pointing to the file that supervisor wrote under /argo/inputs/artifacts/
-// <name>. This replaces the legacy SubPath bind-mount-per-artifact scheme,
-// which can't be used in init-less mode because kubelet pre-creates SubPath
-// entries as empty directories before supervisor can write the real file.
-//
-// Behavior notes for workflow authors: in init-less mode art.Path is a
-// symlink rather than a regular file. `cat`, `open()`, `tar`, `cp`,
-// redirection, etc. all follow symlinks transparently and see identical
-// content. Code that calls `lstat`/`readlink` on art.Path will observe a
-// symlink rather than a regular file. `rm art.Path` removes the symlink
-// only; the underlying artifact stays in the shared emptyDir.
-//
-// Overlapping user volumes are handled by the executor on the write side
-// (supervisor writes to /mainctrfs/<art.Path> instead of /argo/inputs/
-// artifacts/<name>), so no entry appears in the input-artifacts directory
-// and we skip the symlink — main already sees the file at art.Path via
-// its user volume.
-func linkInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Template) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-	for _, art := range tmpl.Inputs.Artifacts {
-		src := filepath.Join(baseDir, art.Name)
-		if _, statErr := os.Lstat(src); statErr != nil {
-			if os.IsNotExist(statErr) {
-				logger.WithFields(logging.Fields{"name": art.Name, "path": art.Path}).Info(ctx, "no input-artifacts entry (optional or overlap) — skipping symlink")
-				continue
-			}
-			return fmt.Errorf("failed to stat input artifact %q at %s: %w", art.Name, src, statErr)
-		}
-		dst := art.Path
-		if dst == "" {
-			continue
-		}
-		if parent := filepath.Dir(dst); parent != "" && parent != "/" {
-			if err := os.MkdirAll(parent, 0o755); err != nil {
-				return fmt.Errorf("failed to create parent directory for artifact %q at %s: %w", art.Name, dst, err)
-			}
-		}
-		// If nothing exists at art.Path, just create the symlink. Creating is
-		// always safe — os.Symlink returns EEXIST rather than overwriting and the
-		// MkdirAll above only ever creates — so even when art.Path resolves into a
-		// user volume we deliberately let the artifact land there (the user asked
-		// for it). Only an *overwrite* can destroy data, and that is gated below.
-		if _, err := os.Lstat(dst); err != nil {
-			if !os.IsNotExist(err) {
-				return fmt.Errorf("failed to stat artifact path %q at %s: %w", art.Name, dst, err)
-			}
-		} else {
-			// Something is already at art.Path. Replacing it (os.RemoveAll then
-			// symlink) reproduces the legacy SubPath mount's shadowing — but only
-			// when it is safe. RemoveAll resolves symlinks in the parent chain, so
-			// resolve the parent to find where the delete would actually land
-			// (resolve the parent, not the final element, so an image symlink *at*
-			// art.Path is just unlinked rather than followed). If that resolved
-			// path overlaps a user-declared volume, clearing it would recurse into
-			// and destroy a live PVC/hostPath/emptyDir, so refuse. Benign system
-			// mounts (tmpfs /run, the overlay rootfs) are not declared user volumes
-			// and so remain safe to shadow.
-			realParent, evalErr := filepath.EvalSymlinks(filepath.Dir(dst))
-			if evalErr != nil {
-				return fmt.Errorf("failed to resolve parent of artifact path %q at %s: %w", art.Name, dst, evalErr)
-			}
-			resolved := filepath.Join(realParent, filepath.Base(dst))
-			if mnt := common.FindOverlappingVolume(tmpl, resolved); mnt != nil {
-				return fmt.Errorf("refusing to stage input artifact %q at %s: it resolves to %s inside volume mount %q (%s), and clearing it would destroy the mounted volume; change the artifact path or volume mount so they do not overlap", art.Name, dst, resolved, mnt.Name, mnt.MountPath)
-			}
-			if mnt := common.FindVolumeMountNestedUnderPath(tmpl, resolved); mnt != nil {
-				return fmt.Errorf("refusing to stage input artifact %q at %s: it resolves to %s which contains volume mount %q (%s), and clearing it would destroy the mounted volume; change the artifact path or volume mount so they do not overlap", art.Name, dst, resolved, mnt.Name, mnt.MountPath)
-			}
-			if rmErr := os.RemoveAll(dst); rmErr != nil {
-				return fmt.Errorf("failed to clear existing path for artifact %q at %s: %w", art.Name, dst, rmErr)
-			}
-		}
-		if err := os.Symlink(src, dst); err != nil {
-			return fmt.Errorf("failed to symlink input artifact %q (%s -> %s): %w", art.Name, dst, src, err)
-		}
-		logger.WithFields(logging.Fields{"name": art.Name, "src": src, "dst": dst}).Debug(ctx, "linked input artifact")
-	}
-	return nil
-}
-
 // waitForSupervisorReady blocks until the supervisor's status marker reports a
 // terminal outcome (READY/FAILED), or until the supervisor is presumed dead.
 // Used only in init-less pod mode where main and supervisor start concurrently.
@@ -446,7 +324,7 @@ func linkInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Templa
 // already created /var/run/argo/ctr/<name> earlier in main, which MkdirAll'd
 // the full parent chain.
 func waitForSupervisorReady(ctx context.Context) error {
-	return waitForSupervisorReadyAt(ctx, common.StatusMarkerPath, supervisorHeartbeatTimeout, supervisorStatusPollInterval)
+	return waitForSupervisorReadyAt(ctx, wfexecutor.StatusMarkerPath(argoexecexecutor.PodPaths(varRunArgo)), supervisorHeartbeatTimeout, supervisorStatusPollInterval)
 }
 
 // waitForSupervisorReadyAt is the parameterized form used by tests; production
@@ -531,11 +409,11 @@ func evaluateSupervisorStatus(statusPath string, timeout time.Duration, start ti
 		//nolint:nilerr // deliberate: swallow the transient read error and retry
 		return false, nil
 	}
-	token, message := parseSupervisorStatus(body)
+	token, message := wfexecutor.ParseStatusMarker(body)
 	switch token {
-	case statusReady:
+	case wfexecutor.StatusReady:
 		return true, nil
-	case statusFailed:
+	case wfexecutor.StatusFailed:
 		return true, fmt.Errorf("supervisor reported pre-main failure: %s", message)
 	default:
 		// RUNNING, or a transient/partial read: the supervisor is alive only if
@@ -545,13 +423,6 @@ func evaluateSupervisorStatus(statusPath string, timeout time.Duration, start ti
 		}
 		return false, nil
 	}
-}
-
-// parseSupervisorStatus splits the marker into its first-line token and the
-// remaining message (used by the FAILED token to carry the cause).
-func parseSupervisorStatus(body []byte) (token, message string) {
-	first, rest, _ := strings.Cut(string(body), "\n")
-	return strings.TrimSpace(first), strings.TrimSpace(rest)
 }
 
 // exitCodeFromErr maps the result of waiting on a sub-process to a numeric exit

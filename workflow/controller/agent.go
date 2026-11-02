@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -24,24 +25,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
-// keepAgentPodSecurityFloor fills in whatever the applied pod security context
-// left unset from MinimalPodSC.
-//
-// applySchedulingConstraints assigns the supplied securityContext outright:
-//
-//	spec.SecurityContext = tmpl.SecurityContext
-//
-// which is right for a workload pod, because it has no default to lose --
-// MinimalPodSC is used by the agent pod and the artifact-GC pod and nowhere
-// else. The agent pod does have one, and it matters: it runs executor plugin
-// sidecars, and a container that declares no seccomp profile of its own
-// inherits the pod's. A securityContext that sets only `fsGroup` would
-// therefore take `RuntimeDefault` away from every plugin sidecar in the pod.
-//
-// So supplied fields win and unset ones fall back to the floor. A field that is
-// set keeps its value, `runAsNonRoot: false` included: only nil is filled in.
-// podSpecPatch runs after this and still overrides everything, which is the
-// escape hatch for anyone who needs the agent pod unhardened.
+// agentPodRecreationDelay is how long after a Failed agent pod was created the
+// controller replaces it, so an agent pod that keeps failing is replaced at
+// most this often.
+const agentPodRecreationDelay = time.Minute
+
 // dropNodeScopedMetadata removes labels and annotations that still hold an
 // unresolved placeholder.
 //
@@ -68,6 +56,24 @@ func dropNodeScopedMetadata(ctx context.Context, log logging.Logger, meta *wfv1.
 	}
 }
 
+// keepAgentPodSecurityFloor fills in whatever the applied pod security context
+// left unset from MinimalPodSC.
+//
+// applySchedulingConstraints assigns the supplied securityContext outright:
+//
+//	spec.SecurityContext = tmpl.SecurityContext
+//
+// which is right for a workload pod, because it has no default to lose --
+// MinimalPodSC is used by the agent pod and the artifact-GC pod and nowhere
+// else. The agent pod does have one, and it matters: it runs executor plugin
+// sidecars, and a container that declares no seccomp profile of its own
+// inherits the pod's. A securityContext that sets only `fsGroup` would
+// therefore take `RuntimeDefault` away from every plugin sidecar in the pod.
+//
+// So supplied fields win and unset ones fall back to the floor. A field that is
+// set keeps its value, `runAsNonRoot: false` included: only nil is filled in.
+// podSpecPatch runs after this and still overrides everything, which is the
+// escape hatch for anyone who needs the agent pod unhardened.
 func keepAgentPodSecurityFloor(spec *apiv1.PodSpec) {
 	minimal := common.MinimalPodSC()
 	if spec.SecurityContext == nil {
@@ -112,9 +118,57 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Info(ctx, "updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(ctx, pod)
-	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+	if newPhase != wfv1.NodeFailed && newPhase != wfv1.NodeError {
+		return
 	}
+	err := fmt.Errorf(`agent pod failed with reason:"%s"`, message)
+	if newPhase == wfv1.NodeFailed && woc.canRecreateAgentPod() {
+		woc.recreateAgentPod(ctx, pod, err)
+		return
+	}
+	woc.markTaskSetNodesError(ctx, err)
+}
+
+// canRecreateAgentPod reports whether a Failed agent pod may be replaced: the
+// controller creates the agent pods, and the workflow is not ending, so the
+// replacement would still have work to do.
+func (woc *wfOperationCtx) canRecreateAgentPod() bool {
+	return !woc.controller.Config.DisableAgentPodCreation &&
+		!woc.wf.Status.Fulfilled() &&
+		!woc.GetShutdownStrategy().Enabled() &&
+		(woc.workflowDeadline == nil || time.Now().UTC().Before(*woc.workflowDeadline))
+}
+
+// recreateAgentPod deletes a Failed agent pod, once agentPodRecreationDelay
+// has passed since it was created, so that reconcileAgentPod creates a
+// replacement. Like an agent container the kubelet restarts, the replacement
+// runs every task that has no result yet. There is no limit: as with a
+// crash-looping container, a task that never gets a result fails by its own
+// deadline or timeout. Each replacement is recorded as a Warning event on the
+// workflow, with the reason the pod failed.
+func (woc *wfOperationCtx) recreateAgentPod(ctx context.Context, pod *apiv1.Pod, cause error) {
+	log := woc.log.WithField("podName", pod.Name)
+	if wait := time.Until(woc.agentPodRecheckTime(pod)); wait > 0 {
+		log.WithField("wait", wait).Info(ctx, "Agent pod failed, waiting before recreating it")
+		woc.requeueAfter(wait)
+		return
+	}
+	log.Info(ctx, "Agent pod failed, recreating it")
+	woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "AgentPodFailed", fmt.Sprintf("%v; recreating it", cause))
+	// By UID, so that a replacement that already exists is never deleted.
+	woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+	woc.requeue()
+}
+
+// agentPodRecheckTime is when to look at a Failed agent pod again:
+// agentPodRecreationDelay after it was created, or the workflow deadline if that
+// is sooner, so the deadline errors its tasks on time.
+func (woc *wfOperationCtx) agentPodRecheckTime(pod *apiv1.Pod) time.Time {
+	recheckAt := pod.CreationTimestamp.Add(agentPodRecreationDelay)
+	if woc.workflowDeadline != nil && woc.workflowDeadline.Before(recheckAt) {
+		return *woc.workflowDeadline
+	}
+	return recheckAt
 }
 
 func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {

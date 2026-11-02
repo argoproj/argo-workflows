@@ -209,6 +209,21 @@ Previously, a `timeout` longer than the template's `activeDeadlineSeconds`, the 
 Pods that relied on this now stop at the smaller deadline and fail with `DeadlineExceeded`.
 If you need the longer deadline, raise or remove the smaller `activeDeadlineSeconds`.
 
+### Resource template output parameters no longer log the resource body at info level
+
+A resource template with output parameters previously ran `kubectl get` once per parameter, and logged each response in the executor log at info level.
+For a `jqFilter` parameter that response was the whole resource as JSON; for a `jsonPath` parameter, `kubectl` evaluated the expression itself, so the response was only the selected value.
+It now reads the resource once for all of its output parameters, and logs only the arguments and the response size at info level ([#16602](https://github.com/argoproj/argo-workflows/pull/16602)).
+
+The whole resource is now logged at debug level, which matches how the resource JSON in `checkResourceState` has been logged since [#6100](https://github.com/argoproj/argo-workflows/pull/6100).
+For templates with `jqFilter` parameters this moves the body from info to debug: if you relied on reading it in executor logs, raise the executor's log level to debug.
+For templates with only `jsonPath` parameters, the whole resource did not appear in the executor log before, and now does at debug level.
+
+Note that on earlier versions, the info-level logs of templates with `jqFilter` output parameters contained the whole resource, including the `data` or `stringData` of any `Secret` or `ConfigMap` such a template read.
+If your log retention covers those versions, check the stored executor logs of those templates; templates with only `jsonPath` parameters logged just the selected values.
+
+Output parameter values are unchanged: `jsonPath` expressions still see `managedFields` and `jqFilter` still does not.
+
 ### `templateDefaults` now apply to the agent pod
 
 The agent pod, which runs a workflow's `http` and `plugin` nodes, ignored `spec.templateDefaults` entirely ([#15869](https://github.com/argoproj/argo-workflows/issues/15869)).
@@ -217,6 +232,11 @@ Scheduling and metadata defaults that every other pod in the workflow received w
 The agent pod now gets `templateDefaults`, including any set in `workflowDefaults` in the `workflow-controller-configmap`.
 Only `nodeSelector`, `affinity`, `tolerations`, `schedulerName`, `priorityClassName`, `hostAliases`, `securityContext` and `metadata` take effect, and the agent pod ignores every other default.
 The `container`, `script`, `http`, `plugin` and `resource` defaults are dropped, because one agent pod is shared by every `http` and `plugin` node in the workflow.
+
+Two of them are applied with a caveat, because the agent pod is not an ordinary workload pod:
+
+- `securityContext` is merged over the agent pod's own hardened default rather than replacing it. A default that sets only `fsGroup` therefore no longer takes `runAsNonRoot`, `runAsUser` or the `RuntimeDefault` seccomp profile away from the agent pod's executor plugin sidecars. Any field you set explicitly still wins, and `podSpecPatch` still overrides everything.
+- `metadata` labels and annotations whose values still contain an unresolved `{{...}}` are dropped. One agent pod serves every `http` and `plugin` node, so there is no node to resolve `{{pod.name}}` or `{{inputs.parameters.x}}` against. Workflow-scoped placeholders such as `{{workflow.name}}` are resolved before this point and are unaffected.
 
 If your `templateDefaults` carries scheduling constraints that only your workflow's other pods can satisfy, the agent pod is now subject to them too and may stay `Pending`.
 Move those constraints onto the templates that need them, or widen them so the agent pod can also be scheduled.
