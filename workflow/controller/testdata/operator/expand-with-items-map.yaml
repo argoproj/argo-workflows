@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expand-with-items
+spec:
+  entrypoint: expand-with-items
+  templates:
+  - name: expand-with-items
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item.os}} {{item.version}} JSON({{item}})"
+        withItems:
+        - {os: debian, version: 9.1}
+        - {os: debian, version: 9.1}
+        - {os: ubuntu, version: 16.10}
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay \"{{inputs.parameters.message}}\""]

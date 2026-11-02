@@ -77,8 +77,6 @@ Changing these settings will not delete workflows that have already run. To list
 argo list --completed --since 7d
 ```
 
-> v2.9 and after
-
 To list/delete workflows completed over 7 days ago:
 
 ```bash

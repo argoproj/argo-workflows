@@ -1,7 +1,5 @@
 # Webhooks
 
-> v2.11 and after
-
 Many clients can send events via the [events](events.md) API endpoint using a standard authorization header. However, for clients that are unable to do so (e.g. because they use signature verification as proof of origin), additional configuration is required.
 
 In the namespace that will receive the event, create [access token](access-token.md) resources for your client:

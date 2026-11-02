@@ -57,7 +57,8 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 			// Artifact sidecars ignore SIGTERM (ignoreTerm=true), and only honor
 			// that signal via file-based termination from the aux container. We hang
 			// around to assist the aux container even when kubernetes is SIGTERMing us.
-			forwardSignals(ctx, signals, command.Process.Pid, true)
+			stopForwarding := forwardSignals(ctx, signals, command.Process.Pid, true)
+			defer stopForwarding()
 			// Use background context for signal handler so it responds to wait
 			// even after the plugin server process exits
 			signalCtx := logger.NewBackgroundContext()

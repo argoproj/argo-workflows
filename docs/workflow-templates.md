@@ -1,12 +1,9 @@
 # Workflow Templates
 
-> v2.4 and after
-
 ## Introduction
 
-`WorkflowTemplates` are definitions of `Workflows` that live in your cluster. This allows you to create a library of
-frequently-used templates and reuse them either by submitting them directly (v2.7 and after) or by referencing them from
-your `Workflows`.
+`WorkflowTemplates` are definitions of `Workflows` that live in your cluster.
+This allows you to create a library of frequently-used templates and reuse them either by submitting them directly or by referencing them from your `Workflows`.
 
 ### `WorkflowTemplate` vs `template`
 
@@ -52,65 +49,10 @@ and `WorkflowTemplates` on your cluster. To see how, please see [Referencing Oth
 
 ## `WorkflowTemplate` Spec
 
-> v2.7 and after
-
-In v2.7 and after, all the fields in `WorkflowSpec` (except for `priority` that must be configured in a `WorkflowSpec` itself) are supported for `WorkflowTemplates`. You can take any existing `Workflow` you may have and convert it to a `WorkflowTemplate` by substituting `kind: Workflow` to `kind: WorkflowTemplate`.
-
-> v2.4 – 2.6
-
-`WorkflowTemplates` in v2.4 - v2.6 are only partial `Workflow` definitions and only support the `templates` and
-`arguments` field.
-
-This would **not** be a valid `WorkflowTemplate` in v2.4 - v2.6 (notice `entrypoint` field):
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-submittable
-spec:
-  entrypoint: print-message     # Fields other than "arguments" and "templates" not supported in v2.4 - v2.6
-  arguments:
-    parameters:
-      - name: message
-        value: hello world
-  templates:
-    - name: print-message
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: busybox
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-```
-
-However, this would be a valid `WorkflowTemplate`:
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-submittable
-spec:
-  arguments:
-    parameters:
-      - name: message
-        value: hello world
-  templates:
-    - name: print-message
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: busybox
-        command: [echo]
-        args: ["{{inputs.parameters.message}}"]
-```
+All the fields in `WorkflowSpec` (except for `priority` that must be configured in a `WorkflowSpec` itself) are supported for `WorkflowTemplates`.
+You can take any existing `Workflow` you may have and convert it to a `WorkflowTemplate` by substituting `kind: Workflow` to `kind: WorkflowTemplate`.
 
 ### Adding labels/annotations to Workflows with `workflowMetadata`
-
-> v2.10.2 and after
 
 To automatically add labels and/or annotations to Workflows created from `WorkflowTemplates`, use `workflowMetadata`.
 
@@ -251,8 +193,6 @@ spec:
 
 ### Create `Workflow` from `WorkflowTemplate` Spec
 
-> v2.9 and after
-
 You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with workflow template arguments.
 Here is an example for referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
 
@@ -298,8 +238,6 @@ Then submit a workflow using one of those templates:
 ```bash
 argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/workflow-template/hello-world.yaml
 ```
-
-> v2.7 and after
 
 Then submit a `WorkflowTemplate` as a `Workflow`:
 

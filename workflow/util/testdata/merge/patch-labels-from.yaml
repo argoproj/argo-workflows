@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  workflowMetadata:
+    labelsFrom:
+      foo:
+        expression: PATCH
+      bar:
+        expression: PATCH

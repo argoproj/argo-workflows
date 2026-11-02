@@ -335,7 +335,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	// 1st Pass Process enough of nonBoundaryParent nodes to know all their children
 	for id, status := range wf.Status.Nodes {
 		if status.Type == "" {
-			log.Fatal("Missing node type in status node. Cannot get workflows created with Argo <= 2.0 using the default or wide output option.")
+			log.Fatal("Missing node type in status node. Cannot get this workflow using the default or wide output option.")
 			return nil
 		}
 		if isNonBoundaryParentNode(status.Type) {

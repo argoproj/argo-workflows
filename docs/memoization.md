@@ -1,18 +1,12 @@
 # Step Level Memoization
 
-> v2.10 and after
-
 ## Introduction
 
 Workflows often have outputs that are expensive to compute.
 Memoization reduces cost and workflow execution time by recording the result of previously run steps:
 it stores the outputs of a template into a specified cache with a variable key.
 
-Prior to version 3.5 memoization only works for steps which have outputs, if you attempt to use it on steps which do not it should not work (there are some cases where it does, but they shouldn't). It was designed for 'pure' steps, where the purpose of running the step is to calculate some outputs based upon the step's inputs, and only the inputs. Pure steps should not interact with the outside world, but workflows won't enforce this on you.
-
-If you are using workflows prior to version 3.5 you should look at the [work avoidance](work-avoidance.md) technique instead of memoization if your steps don't have outputs.
-
-In version 3.5 or later all steps can be memoized, whether or not they have outputs.
+All steps can be memoized, whether or not they have outputs.
 
 ## Cache Method
 
@@ -56,5 +50,3 @@ spec:
     * Delete the existing `ConfigMap` cache or switch to use a different cache.
     * Reduce the size of the output parameters for the nodes that are being memoized.
     * Split your cache into different memoization keys and cache names so that each cache entry is small.
-1. My step isn't getting memoized, why not?
-   If you are running workflows <3.5 ensure that you have specified at least one output on the step.

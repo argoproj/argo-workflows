@@ -1,7 +1,5 @@
 # Artifact Visualization
 
-> v3.4 and after
-
 Artifacts can be viewed in the UI.
 
 Use cases:
@@ -86,8 +84,7 @@ from the same origin, so normal browser controls are not secure enough.
 
 ### Sub-Path Access
 
-Previously, users could access the artifacts of any workflows they could access. To allow HTML files to link to other files
-within their tree, you can now access any sub-paths of the artifact's key.
+To allow HTML files to link to other files within their tree, you can access any sub-paths of the artifact's key.
 
 Example:
 

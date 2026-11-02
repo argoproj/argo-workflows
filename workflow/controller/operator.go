@@ -2299,7 +2299,7 @@ func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string,
 	}
 	localParams := make(common.Parameters)
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		setPodNameParams(localParams, woc.getPodName(nodeName, resolvedTmpl.Name))
 	}
 	if nameKey != nil {
 		localParams[nameKey.Template()] = name
@@ -2593,42 +2593,6 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 	}
 	tmplDeadline := startedAt.Add(tmplTimeout)
 	return &tmplDeadline, nil
-}
-
-// checkTemplateTimeouts checks if the template has exceeded its Timeout or PendingTimeout.
-// It returns the deadline computed from Timeout (enforced via the pod's activeDeadlineSeconds)
-// and the deadline computed from PendingTimeout (only set while the node is pending).
-// ErrTimeout is returned if the node is pending past either deadline as of now.
-// now is supplied by the caller rather than read from time.Now here so the
-// caller controls which clock is used: the pure pod builder passes pb.in.now (the
-// captured snapshot time) to keep build() deterministic for a given snapshot,
-// while checkConstraints passes the current wall-clock.
-func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
-	if node == nil {
-		return nil, nil, nil
-	}
-
-	if tmpl.Timeout != "" {
-		deadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.Timeout)
-		if err != nil {
-			return nil, nil, err
-		}
-		if node.Phase == wfv1.NodePending && now.After(*deadline) {
-			return nil, nil, ErrTimeout
-		}
-	}
-
-	if tmpl.PendingTimeout != "" && node.Phase == wfv1.NodePending {
-		pendingDeadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
-		if err != nil {
-			return nil, nil, err
-		}
-		if now.After(*pendingDeadline) {
-			return nil, nil, ErrTimeout
-		}
-	}
-
-	return deadline, pendingDeadline, nil
 }
 
 // recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing
@@ -4304,7 +4268,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		ctx = woc.markWorkflowError(ctx, err)
 		return ctx, err
 	default:
-		err := woc.controller.setWorkflowDefaults(woc.wf)
+		err := woc.controller.setWorkflowDefaults(ctx, woc.wf)
 		if err != nil {
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
@@ -4318,10 +4282,19 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
+		// validate.Workflow treats the defaults' workflowMetadata labels and annotations as
+		// valid sources for {{workflow.labels.x}}, so it needs the namespace layer too or a
+		// workflow relying on one is rejected at submit.
+		wfDefaults, err := woc.controller.mergedWorkflowDefaults(ctx, woc.wf.Namespace)
+		if err != nil {
+			ctx = woc.markWorkflowError(ctx, err)
+			return ctx, err
+		}
+
 		// Validate the execution wfSpec
-		err := waitutil.Backoff(retry.DefaultRetry(ctx),
+		err = waitutil.Backoff(retry.DefaultRetry(ctx),
 			func() (bool, error) {
-				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
+				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, wfDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
 				}
@@ -4393,7 +4366,12 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
-	wfDefault := woc.controller.Config.WorkflowDefaults
+	// Namespace defaults reach workflowTemplateRef workflows here rather than through
+	// setWorkflowDefaults, which this path never calls.
+	wfDefault, err := woc.controller.mergedWorkflowDefaults(ctx, woc.wf.Namespace)
+	if err != nil {
+		return err
+	}
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}
@@ -4520,6 +4498,15 @@ func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
 	return wfutil.GeneratePodName(woc.wf.Name, nodeName, templateName, woc.wf.ResolveNodeID(nodeName), version)
+}
+
+// setPodNameParams sets pod.name and node.taskName in params from a pod name.
+// For a task that runs in its own pod they are the same, but they will diverge
+// for tasks run in a pool of hot workers (#16530), so set them together: here
+// for template parameters, and in prepareMetricScope for metric labels.
+func setPodNameParams(params map[string]string, podName string) {
+	params[varkeys.PodName.Template()] = podName
+	params[varkeys.NodeTaskName.Template()] = podName
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {
