@@ -24,7 +24,9 @@ func TestPodPaths_MatchLegacyConstants(t *testing.T) {
 func TestWorkerPaths_AllUnderNodeRoot(t *testing.T) {
 	p, err := WorkerPaths("w", "node-1")
 	require.NoError(t, err)
-	root := filepath.Join("w", "node-1")
+	abs, err := filepath.Abs("w")
+	require.NoError(t, err)
+	root := filepath.Join(abs, "node-1")
 	assert.Equal(t, TaskPaths{
 		Root:           root,
 		VarRunArgo:     filepath.Join(root, "run"),

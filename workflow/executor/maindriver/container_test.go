@@ -151,3 +151,25 @@ func TestContainerRun_ArchivedLogsCapture(t *testing.T) {
 		{Kind: OutputCombined, Path: filepath.Join(dir, "combined")},
 	}, stager)
 }
+
+func TestContainerRun_Dir(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	workDir := t.TempDir()
+	dir := t.TempDir()
+	_, err := Container{}.Run(ctx, Task{Template: &wfv1.Template{}, Command: []string{"pwd"}, IncludeScriptOutput: true, WorkDir: workDir, Dir: dir}, &recordingStager{})
+	require.NoError(t, err)
+	out, err := os.ReadFile(filepath.Join(workDir, "stdout"))
+	require.NoError(t, err)
+	assert.Equal(t, dir+"\n", string(out))
+}
+
+// A relative command is found from the command's working directory, as it
+// is in a container started with that workingDir.
+func TestContainerRun_RelativeCommandInDir(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.sh"), []byte("#!/bin/sh\nexit 4\n"), 0o755))
+	code, err := Container{}.Run(ctx, Task{Template: &wfv1.Template{}, Command: []string{"./run.sh"}, Dir: dir}, &recordingStager{})
+	require.Error(t, err)
+	assert.Equal(t, 4, code)
+}

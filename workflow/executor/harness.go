@@ -24,6 +24,9 @@ type TaskSource interface {
 // worker runs all of it. Every Role is declared in roles.go, the registry.
 type Role struct {
 	Name string
+	// Layout is how the flow is split across processes, which selects the
+	// plan: each role belongs to exactly one layout.
+	Layout Layout
 	// StartSpan starts the task's top-level span.
 	StartSpan func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span)
 	// Run is the role's part of the flow. ctx is cancellable; bgCtx is not,
@@ -89,7 +92,7 @@ func (h *Harness) Run(ctx context.Context) error {
 //nolint:contextcheck
 func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
 	sink := h.Sink(task)
-	we := h.Process.NewExecutor(task, sink)
+	we := h.Process.NewExecutor(task, h.Role.Layout, sink)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	ctx, span := h.Role.StartSpan(we, ctx)

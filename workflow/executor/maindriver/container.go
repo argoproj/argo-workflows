@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -46,12 +47,26 @@ func (Container) Run(ctx context.Context, task Task, stager OutputStager) (exitC
 			err = outputErr
 		}
 	}()
-	name, err := exec.LookPath(task.Command[0])
+	// A relative command is found from the command's working directory, as
+	// it is in a container started there.
+	command := task.Command[0]
+	if task.Dir != "" && !filepath.IsAbs(command) && strings.ContainsRune(command, filepath.Separator) {
+		command = filepath.Join(task.Dir, command)
+	}
+	name, err := exec.LookPath(command)
 	if err != nil {
 		return exitCodeUnknown, fmt.Errorf("failed to find name in PATH: %w", err)
 	}
-	cmd := exec.CommandContext(ctx, name, task.Command[1:]...)
+	// A cancelled ctx stops the command from starting, as CommandContext
+	// would. Once started, ctx cannot stop it (osspecific.Wait releases the
+	// process), and CommandContext's watcher goroutine would race the
+	// closer's WaitDelay write, so the command is not tied to ctx.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return exitCodeUnknown, fmt.Errorf("failed to start command: %w", ctxErr)
+	}
+	cmd := exec.Command(name, task.Command[1:]...) //nolint:noctx // see above
 	cmd.Env = task.Env
+	cmd.Dir = task.Dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -87,6 +102,9 @@ func (Container) Run(ctx context.Context, task Task, stager OutputStager) (exitC
 		task.OnStart(cmd.Process.Pid)
 	}
 	waitErr := osspecific.Wait(cmd.Process)
+	if task.OnExit != nil {
+		task.OnExit()
+	}
 	closer()
 	// Do not wrap the error: main() reads the exit code with a type assertion.
 	return exitCodeFromErr(waitErr), waitErr

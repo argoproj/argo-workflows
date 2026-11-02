@@ -257,9 +257,10 @@ func TestHarness_TaskContextEndsWithTask(t *testing.T) {
 	assert.Error(t, taskCtx.Err())
 }
 
-// The cleanup each pod role runs is part of its contract with the
-// controller: sidecars are killed before outputs are marked complete, and
-// init (which runs before main) never marks them complete.
+// The cleanup each role runs is part of its contract with the controller:
+// marking outputs complete comes last, after anything that can still fail
+// the task (killing sidecars, removing a worker task's files), and init
+// (which runs before main) never marks them complete.
 func TestRoles_Finally(t *testing.T) {
 	names := func(stages []Stage) []string {
 		out := []string{}
@@ -271,4 +272,5 @@ func TestRoles_Finally(t *testing.T) {
 	assert.Empty(t, names(InitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(WaitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(SupervisorRole.Finally))
+	assert.Equal(t, []string{"remove-task-root", "finalize-output"}, names(WorkerRole.Finally))
 }

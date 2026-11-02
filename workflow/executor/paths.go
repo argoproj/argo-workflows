@@ -16,9 +16,9 @@ import (
 // the template's own input and output paths, the resource manifest, and
 // the emissary's large-argument files.
 type TaskPaths struct {
-	// Root is the directory holding all of the task's own files, for the
-	// worker to remove once the task is done. Empty for a pod, which has
-	// nothing to remove.
+	// Root is the directory holding all of the task's own files. A worker
+	// empties it before the task and removes it after, so it must never
+	// hold anything else. Empty for a pod, which has nothing to remove.
 	Root string
 	// VarRunArgo is the directory shared between main and its auxiliary
 	// containers: template, staged outputs, per-container logs and exit
@@ -49,11 +49,16 @@ func PodPaths() TaskPaths {
 }
 
 // WorkerPaths returns the paths of one task run in-process by a worker,
-// all under root/nodeID. The task root is deleted once the task is done,
-// so nodeID must name exactly one directory directly under root.
+// all under root/nodeID, made absolute so symlinks into it resolve from
+// anywhere. The task root is deleted once the task is done, so nodeID must
+// name exactly one directory directly under root.
 func WorkerPaths(root, nodeID string) (TaskPaths, error) {
 	if nodeID == "" || nodeID == "." || nodeID == ".." || strings.ContainsAny(nodeID, `/\`) {
 		return TaskPaths{}, fmt.Errorf("node ID %q cannot name a task directory", nodeID)
+	}
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return TaskPaths{}, fmt.Errorf("failed to resolve worker root: %w", err)
 	}
 	taskRoot := filepath.Join(root, nodeID)
 	return TaskPaths{
@@ -63,6 +68,11 @@ func WorkerPaths(root, nodeID string) (TaskPaths, error) {
 		Staging:        filepath.Join(taskRoot, "staging"),
 		Scratch:        filepath.Join(taskRoot, "scratch"),
 	}, nil
+}
+
+// ContainerDir is where a container's exit code, logs and signal file live.
+func (p TaskPaths) ContainerDir(name string) string {
+	return filepath.Join(p.VarRunArgo, "ctr", name)
 }
 
 // ScriptSource is where Prepare writes a script template's source. It is

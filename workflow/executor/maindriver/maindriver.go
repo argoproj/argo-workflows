@@ -19,11 +19,18 @@ type Task struct {
 	Env []string
 	// IncludeScriptOutput captures stdout so it can become the script result.
 	IncludeScriptOutput bool
+	// Dir is the working directory of the command. If Dir is empty, the
+	// command inherits the working directory of the process.
+	Dir string
 	// WorkDir holds the captured stdout and combined logs. Run requires it
 	// when it captures logs.
 	WorkDir string
 	// OnStart, if set, receives the command's pid once started.
 	OnStart func(pid int)
+	// OnExit, if set, is called once the command has exited and been
+	// reaped, before its outputs are staged: after it the pid may belong
+	// to another process.
+	OnExit func()
 }
 
 // OutputKind says what an Output file is.

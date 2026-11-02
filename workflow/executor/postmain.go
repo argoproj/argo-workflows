@@ -4,12 +4,11 @@ import (
 	"context"
 )
 
-// PostMain drives the task from the point the user's main container has
-// started: the plan's Run phase (create the placeholder task result, wait
-// for main to exit) on ctx, then its Collect phase (capture outputs and
-// logs, report them) on bgCtx. It is shared between the `argoexec wait`
-// command (legacy pod layout) and the `argoexec supervisor` command
-// (init-less pod layout).
+// PostMain drives the task from the end of Prepare: the plan's Run phase
+// (create the placeholder task result, then wait for main's container in
+// a pod, or run main in a worker) on ctx, then its Collect phase (capture
+// outputs and logs, report them) on bgCtx. The wait, supervisor and worker
+// roles all use it.
 //
 // If preMainFailed is true, the supervisor's Prepare phase failed (or the
 // ready marker could not be written). The user's main never produced
