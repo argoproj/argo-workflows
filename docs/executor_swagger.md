@@ -2950,6 +2950,27 @@ container.securityContext take precedence over field values of PodSecurityContex
 
 
 
+### <span id="pool"></span> Pool
+
+
+> Pool runs a container or script template's tasks on a pool of long-lived
+worker pods, one task at a time per worker pod, instead of a pod per task.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| initialReplicas | int32 (formatted integer)| `int32` |  | | InitialReplicas is the number of worker pods a new pool starts with.</br>It applies only when the pool is created. Defaults to 1. </br>*Optional; Minimum value: 1.*|  |
+| name | string| `string` |  | | Name of the pool. Templates with the same pool name and the same pod</br>settings share a pool. Defaults to `<workflowtemplate>-<template>` for a</br>template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to</br>the template's name. It must be a DNS label of at most 35 characters. It</br>may hold a variable, such as `{{inputs.parameters.pool}}`, and is then</br>checked once substituted. </br>*Optional.*|  |
+| retentionSeconds | int64 (formatted integer)| `int64` |  | | RetentionSeconds is how long the pool is kept once no task uses it.</br>The most recently dispatched task's value applies. Defaults to the</br>controller's hot workers retention. </br>*Optional; Minimum value: 0.*|  |
+
+
+
 ### <span id="portworx-volume-source"></span> PortworxVolumeSource
 
 
@@ -4021,6 +4042,7 @@ of the first container processes are calculated.
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podResources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
+| pool | [Pool](#pool)| `Pool` |  | |  |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |
 | resourceClaims | [][PodResourceClaim](#pod-resource-claim)| `[]*PodResourceClaim` |  | | ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.</br>Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.</br>Replaces the workflow-level resourceClaims as a whole rather than merging with it.</br>Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.</br>A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.</br>Requires the DynamicResourceAllocation feature gate to be enabled on the cluster. </br>*Optional.*|  |

@@ -10518,6 +10518,10 @@
           "description": "PodIP captures the IP of the pod for daemoned steps",
           "type": "string"
         },
+        "pooledTask": {
+          "description": "PooledTask records the task of a node whose template has a pool, which runs on a pool's worker pod instead of its own pod. Nil for other nodes.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PooledTaskStatus"
+        },
         "progress": {
           "description": "Progress to completion",
           "type": "string"
@@ -10864,6 +10868,98 @@
         "strategy": {
           "description": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\". If unset, does not delete Pods",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Pool": {
+      "description": "Pool runs a container or script template's tasks on a pool of long-lived worker pods, one task at a time per worker pod, instead of a pod per task.",
+      "type": "object",
+      "properties": {
+        "initialReplicas": {
+          "description": "InitialReplicas is the number of worker pods a new pool starts with. It applies only when the pool is created. Defaults to 1.",
+          "type": "integer"
+        },
+        "name": {
+          "description": "Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `\u003cworkflowtemplate\u003e-\u003ctemplate\u003e` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a variable, such as `{{inputs.parameters.pool}}`, and is then checked once substituted.",
+          "type": "string"
+        },
+        "retentionSeconds": {
+          "description": "RetentionSeconds is how long the pool is kept once no task uses it. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention.",
+          "type": "integer"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.PooledTaskStatus": {
+      "description": "PooledTaskStatus is the controller's record of a pooled node's task.",
+      "type": "object",
+      "required": [
+        "poolName",
+        "poolHash",
+        "taskName",
+        "taskSetUID",
+        "enqueuedAt"
+      ],
+      "properties": {
+        "activeDeadlineSeconds": {
+          "description": "ActiveDeadlineSeconds limits how long the task may run once claimed, as dispatched.",
+          "type": "integer"
+        },
+        "claimUID": {
+          "description": "ClaimUID is the UID of the WorkflowTaskResult the claiming worker created.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Conditions record the task's hand-off to a worker: Claimed and Interrupted. Its state is derived from them (State). Change them only through Enqueue, Claim, Release and Interrupt.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Condition"
+          },
+          "x-kubernetes-list-map-keys": [
+            "type"
+          ],
+          "x-kubernetes-list-type": "map",
+          "x-kubernetes-patch-merge-key": "type",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "deadline": {
+          "description": "Deadline is the task's absolute deadline, as dispatched.",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "enqueuedAt": {
+          "description": "EnqueuedAt is when the task's WorkflowTaskSet was created or adopted.",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "poolHash": {
+          "description": "PoolHash is the hash of the pool the task was dispatched to.",
+          "type": "string"
+        },
+        "poolName": {
+          "description": "PoolName is the name of the pool the task was dispatched to.",
+          "type": "string"
+        },
+        "releases": {
+          "description": "Releases is how many times a worker has released the task.",
+          "type": "integer"
+        },
+        "taskName": {
+          "description": "TaskName is the task's `{{node.taskName}}`.",
+          "type": "string"
+        },
+        "taskSetUID": {
+          "description": "TaskSetUID is the UID of the task's WorkflowTaskSet. Only results that carry it are applied to the node.",
+          "type": "string"
+        },
+        "workerPodName": {
+          "description": "WorkerPodName is the name of the claiming worker pod.",
+          "type": "string"
+        },
+        "workerPodUID": {
+          "description": "WorkerPodUID is the UID of the claiming worker pod.",
+          "type": "string"
+        },
+        "workerRestartCount": {
+          "description": "WorkerRestartCount is the claiming pod's worker container restart count when the claim was first seen.",
+          "type": "integer"
         }
       }
     },
@@ -11759,6 +11855,10 @@
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
+        },
+        "pool": {
+          "description": "Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Pool"
         },
         "priorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
@@ -15994,6 +16094,43 @@
     "io.k8s.apimachinery.pkg.api.resource.Quantity": {
       "description": "Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n``` \u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n\n\t(Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9 \u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e \u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e \u003csign\u003e            ::= \"+\" | \"-\" \u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e \u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e \u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n\n\t(International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n\n\t(Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e ```\n\nNo matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:\n\n- No precision is lost - No fractional digits will be emitted - The exponent (or suffix) is as large as possible.\n\nThe sign will be omitted unless the number is negative.\n\nExamples:\n\n- 1.5 will be serialized as \"1500m\" - 1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.",
       "type": "string"
+    },
+    "io.k8s.apimachinery.pkg.apis.meta.v1.Condition": {
+      "description": "Condition contains details for one aspect of the current state of this API Resource.",
+      "type": "object",
+      "required": [
+        "type",
+        "status",
+        "lastTransitionTime",
+        "reason",
+        "message"
+      ],
+      "properties": {
+        "lastTransitionTime": {
+          "description": "lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "message": {
+          "description": "message is a human readable message indicating details about the transition. This may be an empty string.",
+          "type": "string"
+        },
+        "observedGeneration": {
+          "description": "observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.",
+          "type": "integer"
+        },
+        "reason": {
+          "description": "reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.",
+          "type": "string"
+        },
+        "status": {
+          "description": "status of the condition, one of True, False, Unknown.",
+          "type": "string"
+        },
+        "type": {
+          "description": "type of condition in CamelCase or in foo.example.com/CamelCase.",
+          "type": "string"
+        }
+      }
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions": {
       "description": "CreateOptions may be provided when creating an API object.",
