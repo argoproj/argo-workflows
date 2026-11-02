@@ -143,11 +143,11 @@ type Config struct {
 	// addition to its existing post-main work.
 	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
 
-	// HotWorkers runs container and script templates that set `pool` on pools of
-	// long-lived worker pods instead of a pod for each attempt of a step or DAG
-	// task. Off by default.
-	// EXPERIMENTAL: may change in incompatible ways.
-	// See [Hot Workers](https://argo-workflows.readthedocs.io/en/latest/hot-workers/) for more details.
+	// HotWorkers configures hot workers, which will run container and script
+	// templates that set `pool` on pools of long-lived worker pods instead of a
+	// pod for each attempt of a step or DAG task.
+	// EXPERIMENTAL and not yet functional: leave it off. See
+	// [#16530](https://github.com/argoproj/argo-workflows/issues/16530).
 	HotWorkers *HotWorkersConfig `json:"hotWorkers,omitempty"`
 }
 
@@ -173,18 +173,11 @@ func (c *InitlessPodConfig) IsEnabled() bool {
 // controller starts and when it reads the changed configmap, so the controller
 // doesn't run until you fix the setting.
 //
-// EXPERIMENTAL — off by default, and may change in incompatible ways. See
-// Config.HotWorkers.
+// EXPERIMENTAL and not yet functional — off by default, and may change in
+// incompatible ways. See Config.HotWorkers.
 type HotWorkersConfig struct {
-	// Enabled lets the controller dispatch pooled tasks and run the pools that
-	// serve them. Default is false, which fails any node whose template sets
-	// `pool`. Dispatch follows a change at once, but the pool controller, which
-	// creates and deletes the pools' Deployments, only starts or stops with the
-	// workflow controller, so restart the controller after changing it.
-	// Enabling it needs the optional hot workers RBAC component
-	// (manifests/components/hot-workers), which lets the controller manage
-	// Deployments. Turning it off while pooled tasks are running is not
-	// supported.
+	// Enabled turns hot workers on. Default is false; leave it off until hot
+	// workers are functional.
 	Enabled bool `json:"enabled,omitempty"`
 
 	// LeaseSlackSeconds is how long past a claimed task's deadline the controller

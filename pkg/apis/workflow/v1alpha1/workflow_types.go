@@ -878,10 +878,10 @@ type Template struct {
 	// +optional
 	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 
-	// Pool runs this template's tasks on a pool of long-lived worker pods
-	// instead of a pod per task. Only container and script templates can be pooled.
-	// Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail.
-	// See https://argo-workflows.readthedocs.io/en/latest/hot-workers/
+	// Pool is reserved for hot workers, which will run a template's tasks on a
+	// pool of long-lived worker pods instead of a pod per task.
+	// EXPERIMENTAL and not yet functional. See
+	// https://github.com/argoproj/argo-workflows/issues/16530
 	// +optional
 	Pool *Pool `json:"pool,omitempty" protobuf:"bytes,48,opt,name=pool"`
 }
