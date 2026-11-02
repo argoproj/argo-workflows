@@ -189,12 +189,14 @@ func sanitizeArtifactGC(agc *wfv1.WorkflowLevelArtifactGC) *wfv1.WorkflowLevelAr
 
 // MergeTo will merge one workflow (the "patch" workflow) into another (the "target" workflow.
 // If the target workflow defines a field, this take precedence over the patch.
+// The patch workflow is not modified.
 func MergeTo(patch, target *wfv1.Workflow) error {
 	if target == nil || patch == nil {
 		return nil
 	}
 
-	// Temporarily remove hooks and labelsFrom as they don't merge
+	// Remove hooks and labelsFrom from a copy, as they don't merge and the patch may be shared.
+	patch = patch.DeepCopy()
 	patchHooks := patch.Spec.Hooks
 	patch.Spec.Hooks = nil
 	var patchLabelsFrom map[string]wfv1.LabelValueFrom
@@ -204,10 +206,6 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	}
 
 	patchWfBytes, err := json.Marshal(patch)
-	patch.Spec.Hooks = patchHooks
-	if len(patchLabelsFrom) != 0 {
-		patch.Spec.WorkflowMetadata.LabelsFrom = patchLabelsFrom
-	}
 	if err != nil {
 		return err
 	}
