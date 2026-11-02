@@ -5201,28 +5201,28 @@ func schema_pkg_apis_workflow_v1alpha1_Pool(ref common.ReferenceCallback) common
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `<workflowtemplate>-<template>` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a variable, such as `{{inputs.parameters.pool}}`, and is then checked once substituted.",
+							Description: "Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `<workflowtemplate>-<template>` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a template variable, such as `inputs.parameters.pool`, and is then checked once substituted.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"initialReplicas": {
 						SchemaProps: spec.SchemaProps{
-							Description: "InitialReplicas is the number of worker pods a new pool starts with. It applies only when the pool is created. Defaults to 1.",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Description: "InitialReplicas is the number of worker pods a new pool starts with, at least 1. It applies only when the pool is created. Defaults to 1. It is a whole number, or a template variable that resolves to one.",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 					"retentionSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RetentionSeconds is how long the pool is kept once no task uses it. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention.",
-							Type:        []string{"integer"},
-							Format:      "int64",
+							Description: "RetentionSeconds is how long the pool is kept once no task uses it, at least 0. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention. It is a whole number, or a template variable that resolves to one.",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -5562,7 +5562,7 @@ func schema_pkg_apis_workflow_v1alpha1_PooledTaskStatus(ref common.ReferenceCall
 					},
 					"taskName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TaskName is the task's `{{node.taskName}}`.",
+							Description: "TaskName is the task's `node.taskName`.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -7115,7 +7115,7 @@ func schema_pkg_apis_workflow_v1alpha1_TaskDispatch(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"taskName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TaskName is the task's `{{node.taskName}}`: the name its pod would have.",
+							Description: "TaskName is the task's `node.taskName`: the name its pod would have.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -7604,7 +7604,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"pool": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/",
+							Description: "Pool is reserved for hot workers, which will run a template's tasks on a pool of long-lived worker pods instead of a pod per task. EXPERIMENTAL and not yet functional. See https://github.com/argoproj/argo-workflows/issues/16530",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Pool"),
 						},
 					},
