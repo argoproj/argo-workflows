@@ -13,8 +13,6 @@ on:
       - ".devcontainer/**"
       - "hack/k8s-versions.sh"
       - ".github/workflows/devcontainer.yaml"
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
