@@ -54,6 +54,8 @@ jobs:
               - Tiltfile
               - Dockerfile
               - hack/tilt/**
+              - hack/retry-download.sh
+              - hack/downloads/**
             tests: &tests
               - *common
               - cmd/**
@@ -577,7 +579,7 @@ jobs:
           node-version: "24" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
-      - run: yarn --cwd ui install
+      - run: sh hack/retry-download.sh yarn --cwd ui install
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
@@ -632,7 +634,7 @@ jobs:
         uses: ./.github/actions/e2e-cluster-up
       - name: Install UI dependencies and Playwright browser
         run: |
-          yarn --cwd ui install
+          sh hack/retry-download.sh yarn --cwd ui install
           yarn --cwd ui playwright install --with-deps chromium
       - name: Build images and start Argo in-cluster
         # tilt builds the production images (UI baked in), deploys them, and keeps
