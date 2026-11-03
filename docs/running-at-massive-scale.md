@@ -11,13 +11,13 @@ Performance fixes often come in patches.
 
 You'll need a big cluster, with a big Kubernetes master.
 
-Users often encounter problems with Kubernetes needing to be configured for the scale. E.g. Kubernetes API server being
-too small. We recommend you test your cluster to make sure it can run the number of pods they need, even before
-installing Argo. Create pods at the rate you expect that it'll be created in production. Make sure Kubernetes can keep
-up with requests to delete pods at the same rate.
+Users often encounter problems with Kubernetes needing to be configured for the scale. For example, the Kubernetes API
+server might be too small. Test your cluster to make sure it can run the number of pods you need, even before installing
+Argo. Create pods at the rate you expect them to be created in production. Make sure Kubernetes can keep up with
+requests to delete pods at the same rate.
 
-You'll need to GC data quickly. The less data that Kubernetes and Argo deal with, the less work they need to do. Use
-pod GC and workflow GC to achieve this.
+You'll need to garbage collect (GC) data quickly. The less data that Kubernetes and Argo deal with, the less work they
+need to do. Use pod GC and workflow GC to achieve this.
 
 ## Overwhelmed Kubernetes API
 
