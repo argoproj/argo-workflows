@@ -770,6 +770,11 @@ export interface WorkflowStatus {
      */
     persistentVolumeClaims: kubernetes.Volume[];
 
+    /**
+     * Outputs captures output values and artifact locations produced by the workflow via global outputs
+     */
+    outputs?: Outputs;
+
     compressedNodes: string;
 
     /**

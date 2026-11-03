@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
+import {Button} from '../../../shared/components/button';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Loading} from '../../../shared/components/loading';
 import {SuspenseReactMarkdownGfm} from '../../../shared/components/suspense-react-markdown-gfm';
@@ -11,6 +12,7 @@ import {services} from '../../../shared/services';
 import {WorkflowCreatorInfo} from '../workflow-creator-info/workflow-creator-info';
 import {WorkflowFrom} from '../workflow-from';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
+import {workflowHasOutputs, WorkflowOutputsModal} from './workflow-outputs-modal';
 
 import './workflow-drawer.scss';
 
@@ -25,6 +27,7 @@ interface WorkflowDrawerProps {
 
 export function WorkflowDrawer(props: WorkflowDrawerProps) {
     const [wf, setWorkflow] = useState<Workflow>();
+    const [showOutputs, setShowOutputs] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -60,6 +63,15 @@ export function WorkflowDrawer(props: WorkflowDrawerProps) {
                     </div>
                 )}
             </div>
+            {!workflowHasOutputs(wf) ? null : (
+                <div className='workflow-drawer__section'>
+                    <div className='workflow-drawer__title'>OUTPUTS</div>
+                    <Button icon='file-alt' outline={true} onClick={() => setShowOutputs(true)}>
+                        View Outputs
+                    </Button>
+                    {showOutputs && <WorkflowOutputsModal workflow={wf} dismiss={() => setShowOutputs(false)} />}
+                </div>
+            )}
             {!wf.status || !wf.status.conditions ? null : (
                 <div className='workflow-drawer__section'>
                     <div className='workflow-drawer__title'>CONDITIONS</div>
