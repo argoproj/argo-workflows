@@ -2,20 +2,20 @@
 
 ## Overview
 
-To support external webhooks, we have this endpoint `/api/v1/events/{namespace}/{discriminator}` on the Argo Server.
-Events sent to that can be any JSON data.
+To support external webhooks, the Argo Server has the endpoint `/api/v1/events/{namespace}/{discriminator}`.
+Events sent to that endpoint can be any JSON data.
 
 These Events can submit *WorkflowTemplates* or *ClusterWorkflowTemplates*.
 
 You may also wish to read about [webhooks](webhooks.md).
 
-It should be noted that despite the similarity in name, this feature has nothing to do with [Argo Events](https://argoproj.github.io/argo-events/).
+Despite the similar name, this feature is not related to [Argo Events](https://argoproj.github.io/argo-events/).
 
 ## Authentication and Security
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).
 
-It is only possible to submit WorkflowTemplates that your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
+You can only submit WorkflowTemplates that your access token has access to: [example role](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
@@ -33,17 +33,18 @@ curl https://localhost:2746/api/v1/events/argo/my-discriminator \
   -d '{"message": "hello"}'
 ```
 
-The Event endpoint will always return in under 10 seconds because the Event will be queued and processed asynchronously.
-This means you will not be notified synchronously of failure.
-It will return a failure (503) if the Event processing queue is full.
+The Event endpoint always returns in under 10 seconds because Argo queues and processes the Event asynchronously.
+This means that Argo does not notify you of failures synchronously.
+The endpoint returns a failure (503) if the Event processing queue is full.
 
 !!! Warning "Processing Order"
-    Events may not always be processed in the order they are received.
+    Argo does not always process Events in the order it receives them.
 
 ## WorkflowTemplate triggered by the event
 
-Before the binding between an event and a WorkflowTemplate, you must create the WorkflowTemplate that you want to trigger.
-The following one takes in input the "message" parameter specified into the API call body, passed through the `WorkflowEventBinding` parameters section, and finally resolved here as the message of the `main` template.
+Before you bind an event to a WorkflowTemplate, you must create the WorkflowTemplate that you want to trigger.
+The following WorkflowTemplate takes as input the "message" parameter from the API call body.
+The `WorkflowEventBinding` parameters section passes the parameter through, and the `main` template uses it as its message.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -67,11 +68,11 @@ spec:
 
 ## Submitting A Workflow From A WorkflowTemplate
 
-A WorkflowTemplate will be submitted (i.e. Workflow created from it) and that can be created using parameters from the event itself.
-The following example will be triggered by an event with "message" in the payload.
-That message will be used as an argument for the created Workflow.
-Note that the name of the meta-data header "x-argo-e2e" is lowercase in the selector to match.
-Incoming header names are converted to lowercase.
+An event submits a WorkflowTemplate (that is, creates a Workflow from it), and can pass parameters from the event to the Workflow.
+An event with "message" in the payload triggers the following example.
+The created Workflow uses that message as an argument.
+Note that the name of the metadata header "x-argo-e2e" is lowercase in the selector to match.
+Argo converts incoming header names to lowercase.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -92,14 +93,15 @@ spec:
           event: payload.message
 ```
 
-Please, notice that `workflowTemplateRef` refers to a WorkflowTemplate with the name `my-wf-tmple`, this WorkflowTemplate has to be created before the triggering of the event.
-After that you have to apply the above explained `WorkflowEventBinding` (in this example this is called `event-template.yml`) to realize the binding between WorkflowTemplate and event (you can use `kubectl` to do that):
+The `workflowTemplateRef` refers to a WorkflowTemplate named `my-wf-tmple`.
+You must create this WorkflowTemplate before you trigger the event.
+Then apply the above `WorkflowEventBinding` (called `event-template.yml` in this example) to bind the WorkflowTemplate to the event, for example with `kubectl`:
 
 ```bash
 kubectl apply -f event-template.yml
 ```
 
-Finally you can trigger the creation of your first parametrized WorkflowTemplate, by using the following call:
+Finally, you can trigger your parametrized WorkflowTemplate with the following call:
 
 Event:
 
@@ -117,19 +119,19 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
 ### Customizing the Workflow Meta-Data
 
 You can customize the name of the submitted Workflow as well as add Annotations and Labels.
-This is done by adding a `metadata` object to the Submit object.
+To do this, add a `metadata` object to the Submit object.
 
-Normally the name of the Workflow created from an Event is simply the name of the WorkflowTemplate with a time-stamp appended.
-This can be customized by setting the name in the `metadata` object.
+By default, the name of the Workflow created from an Event is the name of the WorkflowTemplate with a time-stamp appended.
+You can customize it by setting the name in the `metadata` object.
 
-Annotations and Labels are added in the same fashion.
+Argo adds Annotations and Labels to the Workflow in the same way.
 
-All the values for the Name, Annotations and Labels are treated as expressions (see below for details).
-The `metadata` object is the same `metadata` type as on all Kubernetes resources and as such is parsed in the same manner.
-It is best to enclose the expression in single quotes to avoid any problems when submitting the WorkflowEventBinding to Kubernetes.
+Argo treats all the values for the Name, Annotations and Labels as expressions (see below for details).
+The `metadata` object is the same `metadata` type as on all Kubernetes resources, and Argo parses it the same way.
+Enclose the expression in single quotes to avoid problems when you submit the WorkflowEventBinding to Kubernetes.
 
-This is an example snippet of how to set the name, annotations and labels.
-This is based on the Workflow binding from above, and the first Event.
+The following snippet shows how to set the name, annotations and labels.
+It builds on the preceding WorkflowEventBinding and the first Event.
 
 ```yaml
 submit:
@@ -141,23 +143,23 @@ submit:
       someLabel: '"literal string"'
 ```
 
-This will result in the Workflow being named "hello-world" instead of `my-wf-tmple-<timestamp>`.
-There will be an extra Label with the key `someLabel` and a value of "literal string".
-There will also be an extra Annotation with the key `anAnnotation` and a value of "hello"
+With this metadata, the first Event creates a Workflow named "hello-world" instead of `my-wf-tmple-<timestamp>`.
+The Workflow has an extra Label with the key `someLabel` and a value of "literal string".
+It also has an extra Annotation with the key `anAnnotation` and a value of "hello".
 
 Be careful when setting the name.
-If the name expression evaluates to that of a currently existing Workflow, the new Workflow will fail to submit.
+If the name expression evaluates to the name of an existing Workflow, the new Workflow fails to submit.
 
 The name, Annotation and Label expression must evaluate to a string and follow the normal [Kubernetes naming requirements](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/).
 
 ## Event Expression Syntax and the Event Expression Environment
 
-**Event expressions**, such as the `.spec.event.selector` or `...valueFrom.event` fields, are [expressions](variables.md#expression) that are evaluated over the **event expression environment**.
+**Event expressions**, such as the `.spec.event.selector` or `...valueFrom.event` fields, are [expressions](variables.md#expression) that Argo evaluates against the **event expression environment**.
 
 ### Expression Syntax
 
-Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in.
-Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check.
+Because the endpoint accepts any JSON data, you are responsible for writing an expression that correctly filters the events you are interested in.
+Do not assume that any field exists, and guard against missing fields with a nil check.
 
 ### Expression Environment
 
@@ -179,7 +181,7 @@ payload.repository.clone_url == "http://github.com/argoproj/argo"
 
 ### Metadata
 
-Metadata is data about the Event, this includes **headers**:
+Metadata is data about the Event, including **headers**:
 
 #### Headers
 
@@ -201,8 +203,8 @@ metadata["x-argo"] == ["yes"]
 
 ### Discriminator
 
-This is only for edge-cases where neither the payload, or metadata provide enough information to discriminate.
-Typically, it should be empty and ignored.
+This is only for edge-cases where neither the payload nor the metadata provides enough information to discriminate.
+Typically, you leave it empty and ignore it.
 
 Example:
 
@@ -216,7 +218,7 @@ discriminator == "my-discriminator"
     You MUST run a minimum of two Argo Server replicas if you do not want to lose Events.
 
 If you are processing large numbers of events, you may need to scale up the Argo Server to handle them.
-By default, a single Argo Server can be processing 64 events before the endpoint will start returning 503 errors.
+By default, a single Argo Server can process 64 events before the endpoint starts returning 503 errors.
 
 Vertically you can:
 
