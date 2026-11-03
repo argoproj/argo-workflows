@@ -642,7 +642,7 @@ manifests/quick-start-telemetry.yaml: /dev/null
 
 dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
-	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
+	sed 's#\(argoproj/[^:]*\):latest#\1:$(VERSION)#' manifests/$* > $@
 
 # lint/test/etc
 
