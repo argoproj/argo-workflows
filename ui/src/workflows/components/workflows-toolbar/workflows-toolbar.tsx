@@ -95,7 +95,7 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
                 promises.push(
                     action(wf).catch(reason => {
                         notifications.show({
-                            content: `Unable to ${title} workflow: ${reason.content.toString()}`,
+                            content: `Unable to ${title} workflow: ${reason.toString()}`,
                             type: NotificationType.Error
                         });
                     })
