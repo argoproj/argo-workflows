@@ -63,6 +63,10 @@ describe('CronWorkflowList', () => {
         jest.spyOn(requests, 'loadEventSource').mockReturnValue(NEVER);
     });
 
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
     it('shows only the selected namespace when same-named CronWorkflows exist in several namespaces', async () => {
         const consoleError = jest.spyOn(console, 'error');
         const history = createMemoryHistory();
