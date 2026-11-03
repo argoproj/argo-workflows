@@ -8,7 +8,7 @@
     The legacy pod layout (init + wait) remains the default and is unchanged.
 
 Init-less pod mode is an **opt-in** controller-wide pod layout that eliminates the `argoexec init` container.
-It relies on Kubernetes [image volumes](https://kep.k8s.io/4639), which are Beta (feature-gate opt-in) from Kubernetes 1.33 and enabled by default from 1.36 onwards.
+It relies on Kubernetes [image volumes](https://kep.k8s.io/4639), which are Beta (feature-gate opt-in) from Kubernetes 1.33 and enabled by default from 1.35 onwards.
 
 ## Why
 
@@ -58,9 +58,11 @@ In-flight pods keep their original layout.
 ## Requirements
 
 - **Kubernetes with image volumes available** on every node that runs workflow pods.
-  Image volumes (KEP-4639) are Beta in 1.33–1.35, meaning the `ImageVolume` feature gate must be enabled on both the API server and kubelet on those versions.
+  Image volumes (KEP-4639) are Alpha in 1.31–1.32 and Beta in 1.33–1.34, both disabled by default.
+  Enable the `ImageVolume` feature gate on both the API server and kubelet on those versions.
+  In 1.35, the feature is Beta and enabled by default.
   From 1.36 onwards the feature is GA and enabled by default.
-  On earlier versions, or on 1.33–1.35 without the feature gate enabled, pod creation fails with a standard Kubernetes API error ("unknown field" or "feature gate disabled").
+  On earlier versions, or on 1.31–1.34 without the feature gate enabled, pod creation fails with a standard Kubernetes API error ("unknown field" or "feature gate disabled").
   The controller does not probe the cluster — operators own their version and feature-gate configuration.
 - **Agent pods are unchanged** — init-less mode applies to workflow pods only.
   HTTP / resource templates continue to use agent pods with their existing init container.
