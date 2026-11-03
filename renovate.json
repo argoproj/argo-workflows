@@ -12,19 +12,6 @@
   "nix": {
     "enabled": true
   },
-  "customManagers": [
-    {
-      "description": "Update tool versions annotated with `# renovate:` in hack/k8s-versions.sh",
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/(^|/)hack/k8s-versions.sh$/"
-      ],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\s+\\w+\\s*\\??=\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
-      ],
-      "extractVersionTemplate": "^v(?<version>.+)$"
-    }
-  ],
   "packageRules": [
     {
       "description": "Group k8s.io code-generator, proto vendor, and OpenAPI spec versions",
@@ -105,6 +92,17 @@
     "gomodUpdateImportPaths"
   ],
   "customManagers": [
+    {
+      "description": "Update tool versions annotated with `# renovate:` in hack/k8s-versions.sh",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)hack/k8s-versions.sh$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\s+\\w+\\s*\\??=\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
+      ],
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
     {
       "description": "k8s.io/code-generator go install in Makefile",
       "customType": "regex",
