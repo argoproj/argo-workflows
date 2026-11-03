@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-undefined-
+spec:
+  entrypoint: undef
+  templates:
+  - name: undef
+    dag:
+      tasks:
+      - name: A
+        template: echo
