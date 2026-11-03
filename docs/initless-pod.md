@@ -118,7 +118,7 @@ pod:
    The marker's first line is a state token — `RUNNING`, `READY`, or `FAILED` (with the failure message on following lines).
 4. `supervisor` in order:
     1. Writes the status marker as `RUNNING` and starts a heartbeat goroutine that rewrites it every 5s.
-       Each rewrite advances the marker's mtime; `main` treats a marker that neither appears nor advances within 30s as a dead supervisor and fails fast (rather than hanging to the pod deadline).
+       Each rewrite advances the marker's `mtime`; `main` treats a marker that neither appears nor advances within 30s as a dead supervisor and fails fast (rather than hanging to the pod deadline).
        The initial write also overwrites any stale marker left by a prior attempt.
     2. Writes `/var/run/argo/template`.
     3. Calls `StageFiles` (for script templates).
