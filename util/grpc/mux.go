@@ -33,6 +33,55 @@ func IncomingHeaderMatcher(key string) (string, bool) {
 	}
 }
 
+// SanitizeCookieHeader strips cookie pairs containing non-printable ASCII
+// characters from the request's Cookie headers.
+//
+// Browsers send every cookie stored for the server's host, including cookies
+// set by unrelated applications. The grpc-gateway forwards the Cookie header
+// as gRPC metadata, and the gRPC transport rejects values containing
+// non-printable ASCII characters, failing every API request with an Internal
+// error (e.g. `header key "cookie" contains value with non-printable ASCII
+// characters`). Dropping only the offending pairs keeps valid cookies —
+// including the Argo authorization cookie, which is always printable ASCII —
+// intact.
+func SanitizeCookieHeader(r *http.Request) {
+	values := r.Header.Values("Cookie")
+	if len(values) == 0 {
+		return
+	}
+	sanitized := make([]string, 0, len(values))
+	for _, v := range values {
+		if isPrintableASCII(v) {
+			sanitized = append(sanitized, v)
+			continue
+		}
+		var kept []string
+		for _, pair := range strings.Split(v, ";") {
+			pair = strings.TrimLeft(pair, " ")
+			if pair == "" || !isPrintableASCII(pair) {
+				continue
+			}
+			kept = append(kept, pair)
+		}
+		if len(kept) > 0 {
+			sanitized = append(sanitized, strings.Join(kept, "; "))
+		}
+	}
+	r.Header.Del("Cookie")
+	for _, v := range sanitized {
+		r.Header.Add("Cookie", v)
+	}
+}
+
+func isPrintableASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < 0x20 || s[i] > 0x7e {
+			return false
+		}
+	}
+	return true
+}
+
 // NewMuxHandler returns an HTTP handler that allows serving both gRPC and
 // HTTP requests over the same port, both with and without TLS enabled.
 // It dispatches HTTP/2 requests with a gRPC content type to the gRPC handler
