@@ -33,7 +33,8 @@ curl https://localhost:2746/api/v1/events/argo/my-discriminator \
   -d '{"message": "hello"}'
 ```
 
-The Event endpoint always returns in under 10 seconds because Argo queues and processes the Event asynchronously.
+By default, the Event endpoint processes the Event before it returns, and can report failures to you.
+If you enable `--event-async-dispatch`, the endpoint queues the Event and returns without waiting for Argo to process it.
 This means that Argo does not notify you of failures synchronously.
 The endpoint returns a failure (503) if the Event processing queue is full.
 
@@ -101,7 +102,7 @@ Then apply the above `WorkflowEventBinding` (called `event-template.yml` in this
 kubectl apply -f event-template.yml
 ```
 
-Finally, you can trigger your parametrized WorkflowTemplate with the following call:
+Finally, you can trigger your parameterized WorkflowTemplate with the following call:
 
 Event:
 
@@ -121,7 +122,7 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
 You can customize the name of the submitted Workflow as well as add Annotations and Labels.
 To do this, add a `metadata` object to the Submit object.
 
-By default, the name of the Workflow created from an Event is the name of the WorkflowTemplate with a time-stamp appended.
+By default, the name of the Workflow created from an Event is the name of the WorkflowTemplate with a random suffix appended.
 You can customize it by setting the name in the `metadata` object.
 
 Argo adds Annotations and Labels to the Workflow in the same way.
@@ -143,7 +144,7 @@ submit:
       someLabel: '"literal string"'
 ```
 
-With this metadata, the first Event creates a Workflow named "hello-world" instead of `my-wf-tmple-<timestamp>`.
+With this metadata, the first Event creates a Workflow named "hello-world" instead of `my-wf-tmple-<random-suffix>`.
 The Workflow has an extra Label with the key `someLabel` and a value of "literal string".
 It also has an extra Annotation with the key `anAnnotation` and a value of "hello".
 
@@ -218,7 +219,7 @@ discriminator == "my-discriminator"
     You MUST run a minimum of two Argo Server replicas if you do not want to lose Events.
 
 If you are processing large numbers of events, you may need to scale up the Argo Server to handle them.
-By default, a single Argo Server can process 64 events before the endpoint starts returning 503 errors.
+If you enable `--event-async-dispatch`, a single Argo Server can queue 16 events by default before the endpoint starts returning 503 errors.
 
 Vertically you can:
 
