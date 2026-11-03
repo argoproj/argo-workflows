@@ -55,6 +55,9 @@ spec:
     - name: workflow-param-1
   templates:
   - name: main
+    inputs:
+      parameters:
+      - name: workflow-param-1
     dag:
       tasks:
       - name: step-A 
@@ -62,7 +65,7 @@ spec:
         arguments:
           parameters:
           - name: template-param-1
-            value: "{{workflow.parameters.workflow-param-1}}"
+            value: "{{inputs.parameters.workflow-param-1}}"
  
   - name: step-template-a
     inputs:
