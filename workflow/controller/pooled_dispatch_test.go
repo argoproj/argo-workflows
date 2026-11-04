@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,6 +81,11 @@ func reconcilePooled(ctx context.Context, t *testing.T, controller *WorkflowCont
 	return woc
 }
 
+// pooledTaskSetName is the name of the pooled TaskSet of the node nodeID.
+func pooledTaskSetName(nodeID string) string {
+	return dispatch.Key{NodeID: nodeID}.TaskSetName()
+}
+
 func mustNode(t *testing.T, woc *wfOperationCtx, name string) *wfv1.NodeStatus {
 	t.Helper()
 	node, err := woc.wf.GetNodeByName(name)
@@ -147,7 +153,7 @@ func TestPooledDispatchEnqueues(t *testing.T) {
 	taskSets := fake.TaskSets(wf.Namespace)
 	require.Len(t, taskSets, 1)
 	ts := taskSets[0]
-	assert.Equal(t, node.ID+"-task", ts.Name)
+	assert.Equal(t, node.ID+"-task", ts.Name, "a pooled TaskSet is named after its node")
 	assert.Equal(t, map[string]string{
 		common.LabelKeyWorkflow: wf.Name,
 		common.LabelKeyPoolName: "work",
@@ -202,10 +208,14 @@ func TestPooledDispatchAdoptsAfterLostWrite(t *testing.T) {
 	stored.Status.Nodes[id] = lost
 	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, stored, metav1.UpdateOptions{})
 	require.NoError(t, err)
+	// Adopting creates nothing, so, as for a pod that exists, it takes no
+	// rate limiter slot.
+	observeTaskSet(ctx, t, controller, fake, wf.Namespace, id)
+	controller.rateLimiter = rate.NewLimiter(0, 0)
 
 	woc = reconcilePooled(ctx, t, controller, wf)
 	node := mustNode(t, woc, pooledStep)
-	require.NotNil(t, node.PooledTask)
+	require.NotNil(t, node.PooledTask, node.Message)
 	assert.Equal(t, uid, node.PooledTask.TaskSetUID)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 	assert.Len(t, fake.TaskSets(wf.Namespace), 1)
@@ -222,7 +232,7 @@ func TestPooledDispatchAdoptsStoredSettings(t *testing.T) {
 	stored, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: wf.Namespace,
-			Name:      wf.NodeID(pooledStep) + "-task",
+			Name:      pooledTaskSetName(wf.NodeID(pooledStep)),
 			Labels:    map[string]string{common.LabelKeyWorkflow: wf.Name, common.LabelKeyPoolName: "stored-pool", common.LabelKeyPoolHash: "stored-hash"},
 			// Created by this workflow, whose status write was lost.
 			OwnerReferences: []metav1.OwnerReference{common.WorkflowOwnerReference(wf.Name, wf.UID)},
@@ -327,7 +337,7 @@ func TestPooledDispatchFieldsDropped(t *testing.T) {
 	ctx, controller, fake := newPooledDispatchController(t, true, wf)
 	stripped, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{
 		Namespace: wf.Namespace,
-		Name:      wf.NodeID(pooledStep) + "-task",
+		Name:      pooledTaskSetName(wf.NodeID(pooledStep)),
 		Labels:    map[string]string{common.LabelKeyWorkflow: wf.Name, common.LabelKeyPoolName: "work", common.LabelKeyPoolHash: "hash"},
 		// Created by this workflow, whose status write was lost.
 		OwnerReferences: []metav1.OwnerReference{common.WorkflowOwnerReference(wf.Name, wf.UID)},
@@ -349,7 +359,7 @@ func TestPooledDispatchFieldsDropped(t *testing.T) {
 func TestPooledDispatchNameTaken(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
 	ctx, controller, fake := newPooledDispatchController(t, true, wf)
-	name := wf.NodeID(pooledStep) + "-task"
+	name := pooledTaskSetName(wf.NodeID(pooledStep))
 	agent, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{Namespace: wf.Namespace, Name: name}})
 	require.NoError(t, err)
 
@@ -370,7 +380,7 @@ func TestPooledDispatchNameTaken(t *testing.T) {
 func TestPooledDispatchReplacesAnEarlierWorkflowsTaskSet(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
 	ctx, controller, fake := newPooledDispatchController(t, true, wf)
-	name := wf.NodeID(pooledStep) + "-task"
+	name := pooledTaskSetName(wf.NodeID(pooledStep))
 	stale, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{
 		Namespace: wf.Namespace,
 		Name:      name,
@@ -403,7 +413,8 @@ func TestPooledDispatchShutdown(t *testing.T) {
 	assert.Empty(t, fake.TaskSets(wf.Namespace))
 	node := mustNode(t, woc, pooledStep)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
-	assert.Contains(t, node.Message, "shutdown")
+	assert.Equal(t, "workflow shutdown with strategy: Stop", node.Message)
+	assert.Equal(t, mustNode(t, woc, plainStep).Message, node.Message, "as a pod not yet created")
 	assert.Nil(t, node.PooledTask)
 }
 
@@ -549,7 +560,7 @@ func TestPooledFanOutArchiveKeys(t *testing.T) {
 	for _, name := range []string{"pooled-fan-out[0].a(0:1)", "pooled-fan-out[0].a(1:2)"} {
 		node := mustNode(t, woc, name)
 		require.NotNil(t, node.PooledTask, name)
-		ts, ok := fake.TaskSet(wf.Namespace, node.ID+"-task")
+		ts, ok := fake.TaskSet(wf.Namespace, pooledTaskSetName(node.ID))
 		require.True(t, ok, name)
 		location := ts.Spec.Tasks[node.ID].ArchiveLocation
 		require.NotNil(t, location, name)
@@ -597,10 +608,11 @@ status:
   startedAt: "2026-10-15T00:00:00Z"
 `
 
-// TestPooledDispatchChecksTheMergedTemplate checks that a template that only
-// becomes unpoolable once merged, or substituted, fails at dispatch with a
-// message naming what is wrong.
-func TestPooledDispatchChecksTheMergedTemplate(t *testing.T) {
+// TestPooledDispatchChecksTheTemplate checks that a template that only
+// becomes unpoolable once merged with its templateDefaults and substituted,
+// under the execution workflow's spec, fails at dispatch with a message
+// naming what is wrong.
+func TestPooledDispatchChecksTheTemplate(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		modify  func(wf *wfv1.Workflow)
@@ -627,6 +639,15 @@ func TestPooledDispatchChecksTheMergedTemplate(t *testing.T) {
 				wf.Spec.Arguments.Parameters[0].Value = wfv1.AnyStringPtr("Not_A_Label")
 			},
 			wantErr: "'Not_A_Label' is not a valid pool name",
+		},
+		{
+			name: "SubstitutedVolumeClaimMount",
+			modify: func(wf *wfv1.Workflow) {
+				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: "volume", Value: wfv1.AnyStringPtr("claim")})
+				wf.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "claim"}}}
+				wf.Spec.Templates[1].Container.VolumeMounts = []apiv1.VolumeMount{{Name: "{{workflow.parameters.volume}}", MountPath: "/data"}}
+			},
+			wantErr: "volume 'claim' is one of spec.volumeClaimTemplates",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -690,6 +711,21 @@ func TestPooledTaskHasNoPodName(t *testing.T) {
 	}
 }
 
+// TestSubstituteTaskParamsLeavesInputValues checks that a pooled task's
+// template is substituted as the executor gets it, as a pod's ARGO_TEMPLATE
+// is: its inputs.parameters are cleared, so a value holding a {{pod...}} tag
+// is data, not a variable the task lacks.
+func TestSubstituteTaskParamsLeavesInputValues(t *testing.T) {
+	tmpl := &wfv1.Template{
+		Inputs:    wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "text", Value: wfv1.AnyStringPtr("{{pod.name}}")}}},
+		Container: &apiv1.Container{Image: "my-image", Args: []string{"{{node.taskName}}"}},
+	}
+	got, err := substituteTaskParams(logging.TestContext(t.Context()), tmpl, common.Parameters{}, "my-task")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"my-task"}, got.Container.Args)
+	assert.Empty(t, got.Inputs.Parameters)
+}
+
 const pooledDeadlinesWf = `
 metadata:
   name: pooled-deadlines
@@ -724,7 +760,7 @@ func TestPooledDispatchDeadlines(t *testing.T) {
 	woc := reconcilePooled(ctx, t, controller, wf)
 	node := mustNode(t, woc, "pooled-deadlines[0].a")
 	require.NotNil(t, node.PooledTask)
-	ts, ok := fake.TaskSet(wf.Namespace, node.ID+"-task")
+	ts, ok := fake.TaskSet(wf.Namespace, pooledTaskSetName(node.ID))
 	require.True(t, ok)
 	d := ts.Spec.Dispatch
 
@@ -891,7 +927,7 @@ func TestPooledDispatchSettings(t *testing.T) {
 	woc := reconcilePooled(ctx, t, controller, wf)
 	node := mustNode(t, woc, "pooled-settings[0].a")
 	require.NotNil(t, node.PooledTask, node.Message)
-	ts, ok := fake.TaskSet(wf.Namespace, node.ID+"-task")
+	ts, ok := fake.TaskSet(wf.Namespace, pooledTaskSetName(node.ID))
 	require.True(t, ok)
 	d := ts.Spec.Dispatch
 	assert.True(t, d.IncludeScriptOutput, "a later step reads the result")

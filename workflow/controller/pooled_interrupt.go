@@ -12,7 +12,12 @@ import (
 
 // pooledKey is the dispatch key of the pooled node's task.
 func (woc *wfOperationCtx) pooledKey(node *wfv1.NodeStatus) dispatch.Key {
-	return dispatch.Key{Namespace: woc.wf.Namespace, NodeID: node.ID}
+	return woc.pooledKeyFor(node.ID)
+}
+
+// pooledKeyFor is the dispatch key of the task of the pooled node nodeID.
+func (woc *wfOperationCtx) pooledKeyFor(nodeID string) dispatch.Key {
+	return dispatch.Key{Namespace: woc.wf.Namespace, NodeID: nodeID}
 }
 
 // finishPooledNode finishes the ended pooled node, whose task has stopped for

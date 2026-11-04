@@ -114,9 +114,22 @@ func (woc *wfOperationCtx) finishedNow(node *wfv1.NodeStatus) bool {
 // pooledTaskSetCached reports whether the pooled TaskSet informer holds the
 // TaskSet ref names.
 func (woc *wfOperationCtx) pooledTaskSetCached(ref dispatch.TaskSetRef) bool {
-	key := dispatch.Key{Namespace: woc.wf.Namespace, NodeID: ref.NodeID}
+	key := woc.pooledKeyFor(ref.NodeID)
 	_, ok := cachedWithUID[metav1.Object](woc.controller.pooledTaskSetInformer.GetStore(), key.Namespace+"/"+key.TaskSetName(), ref.UID)
 	return ok
+}
+
+// pooledTaskSetAdoptable reports whether the cache holds the pooled TaskSet
+// of the node nodeID, owned by this workflow and not being deleted, which
+// Enqueue adopts rather than creating one.
+func (woc *wfOperationCtx) pooledTaskSetAdoptable(nodeID string) bool {
+	key := woc.pooledKeyFor(nodeID)
+	obj, ok, err := woc.controller.pooledTaskSetInformer.GetStore().GetByKey(key.Namespace + "/" + key.TaskSetName())
+	if err != nil || !ok {
+		return false
+	}
+	m, err := meta.Accessor(obj)
+	return err == nil && m.GetDeletionTimestamp() == nil && dispatch.OwnedByWorkflow(m, woc.wf.UID)
 }
 
 // pooledTaskSetsRemain deletes the workflow's pooled TaskSets before it
@@ -127,6 +140,14 @@ func (woc *wfOperationCtx) pooledTaskSetCached(ref dispatch.TaskSetRef) bool {
 // reports whether any may remain, in which case completion is held and the
 // workflow requeued. A TaskSet whose node hasn't ended is deleted too: once
 // the workflow completes, nothing would take its result.
+//
+// markWorkflowPhase calls it, because every way a workflow completes goes
+// through there, the error and panic-recovery paths included, so none skips
+// the teardown. The deletes come before the completed status is written,
+// unlike an ack, which waits for its node to be persisted as finished: if
+// that write is lost, the next operation finds the workflow still running
+// with its TaskSets gone, and its results, which are deleted only after a
+// write succeeds, are still there to apply.
 func (woc *wfOperationCtx) pooledTaskSetsRemain(ctx context.Context) bool {
 	gone := &woc.controller.pooledTaskSetsGone
 	var cached, ledgers []dispatch.TaskSetRef

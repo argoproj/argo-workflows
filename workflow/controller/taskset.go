@@ -47,6 +47,9 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 }
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
+	if err := woc.checkAgentTaskSetName(ctx); err != nil {
+		return err
+	}
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
 		return argoerrors.InternalWrapError(err)
@@ -158,6 +161,30 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 // errPooledTaskSetName is a workflow's agent TaskSet name being a pooled
 // task's TaskSet.
 var errPooledTaskSetName = errors.New("is a pooled task's, not this workflow's: rename the workflow")
+
+// checkAgentTaskSetName fails with errPooledTaskSetName if the TaskSet named
+// after the workflow, which every write of its agent tasks patches, is a
+// pooled task's: a pooled task's TaskSet is named after its node, so a
+// workflow can be named like one, and patching it would hand this workflow's
+// agent tasks to it and mark it completed. The agent TaskSet informer
+// selects no pooled TaskSet, so the TaskSet is read live only when it isn't
+// cached, as one just created may not be yet.
+func (woc *wfOperationCtx) checkAgentTaskSetName(ctx context.Context) error {
+	taskSet, err := woc.getWorkflowTaskSet()
+	if err != nil || taskSet == nil {
+		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{})
+	}
+	switch {
+	case apierr.IsNotFound(err):
+		return nil
+	case err != nil:
+		return fmt.Errorf("reading WorkflowTaskSet %s/%s: %w", woc.wf.Namespace, woc.wf.Name, err)
+	}
+	if _, pooled := taskSet.Labels[common.LabelKeyPoolHash]; pooled {
+		return fmt.Errorf("WorkflowTaskSet %s/%s %w", woc.wf.Namespace, woc.wf.Name, errPooledTaskSetName)
+	}
+	return nil
+}
 
 func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	if err := woc.reconcileTaskSet(ctx); err != nil {
@@ -279,12 +306,6 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
-		// A pooled task's TaskSet is named after its node, so a workflow can
-		// be named like one; patching it would hand this workflow's agent
-		// tasks to that TaskSet, and mark it completed.
-		if _, pooled, _ := woc.controller.pooledTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name); pooled {
-			return fmt.Errorf("WorkflowTaskSet %s/%s %w", woc.wf.Namespace, woc.wf.Name, errPooledTaskSetName)
-		}
 		woc.log.Debug(ctx, "patching the exiting taskset")
 		spec := map[string]any{
 			"metadata": metav1.ObjectMeta{
