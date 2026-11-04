@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/argoproj/argo-workflows/v4"
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -942,4 +943,69 @@ func TestPooledDispatchSettings(t *testing.T) {
 	assert.Contains(t, plugins, wfv1.ArtifactPluginName("out-plugin"))
 	require.Contains(t, d.TraceContext, "traceparent")
 	assert.Equal(t, traceContext(controller.tracing.ContextWithNode(ctx, wf.Name, wf.Namespace, node.ID)), d.TraceContext, "the node's span's")
+}
+
+// TestPooledTaskOfAnotherControllerVersion checks a pooled node whose task
+// another controller version enqueued, as before an upgrade: while no worker
+// has claimed it, the next reconcile drops its TaskSet and enqueues it again
+// for this version, whose pool is the one this controller builds; once a
+// worker has claimed it, the task finishes on its TaskSet undisturbed.
+func TestPooledTaskOfAnotherControllerVersion(t *testing.T) {
+	for _, claimed := range []bool{false, true} {
+		t.Run(fmt.Sprintf("claimed=%v", claimed), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+			ctx, controller, fake := newPooledDispatchController(t, true, wf)
+			id := wf.NodeID(pooledStep)
+			// The TaskSet the older controller enqueued, which this one adopts.
+			old, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:       wf.Namespace,
+					Name:            id + "-task",
+					Labels:          map[string]string{common.LabelKeyWorkflow: wf.Name, common.LabelKeyPoolName: "work", common.LabelKeyPoolHash: "older-hash"},
+					Annotations:     map[string]string{common.AnnotationKeyPoolControllerVersion: "v3.9.0"},
+					OwnerReferences: []metav1.OwnerReference{common.WorkflowOwnerReference(wf.Name, wf.UID)},
+				},
+				Spec: wfv1.WorkflowTaskSetSpec{
+					Tasks:    map[string]wfv1.Template{id: {Name: "work"}},
+					Pool:     &wfv1.PoolSpec{Name: "work", ControllerVersion: "v3.9.0"},
+					Dispatch: &wfv1.TaskDispatch{TaskName: "older-task-name"},
+				},
+			})
+			require.NoError(t, err)
+			woc := reconcilePooled(ctx, t, controller, wf)
+			require.Equal(t, old.UID, mustNode(t, woc, pooledStep).PooledTask.TaskSetUID)
+			observeTaskSet(ctx, t, controller, fake, wf.Namespace, id)
+			var h dispatch.Claimed
+			if claimed {
+				h = claimPooled(ctx, t, controller, fake, wf.Namespace, id)
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+			}
+
+			woc = reconcilePooled(ctx, t, controller, wf)
+			node := mustNode(t, woc, pooledStep)
+			ts, ok := fake.TaskSet(wf.Namespace, id+"-task")
+			require.True(t, ok)
+			if claimed {
+				assert.Equal(t, old.UID, ts.UID, "a claimed task's TaskSet is left")
+				assert.Equal(t, old.UID, node.PooledTask.TaskSetUID)
+				assert.Equal(t, wfv1.PooledTaskClaimed, node.PooledTask.State())
+				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded}))
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+				woc = reconcilePooled(ctx, t, controller, wf)
+				assert.Equal(t, wfv1.NodeSucceeded, mustNode(t, woc, pooledStep).Phase)
+				return
+			}
+			assert.NotEqual(t, old.UID, ts.UID, "enqueued again")
+			assert.Equal(t, ts.UID, node.PooledTask.TaskSetUID)
+			assert.Equal(t, wfv1.PooledTaskEnqueued, node.PooledTask.State())
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+			version := argo.GetVersion().Version
+			assert.Equal(t, version, ts.Annotations[common.AnnotationKeyPoolControllerVersion])
+			assert.Equal(t, version, ts.Spec.Pool.ControllerVersion)
+			assert.NotEqual(t, "older-hash", node.PooledTask.PoolHash, "a pool of this version")
+			assert.Equal(t, ts.Labels[common.LabelKeyPoolHash], node.PooledTask.PoolHash)
+			assert.NotEqual(t, "older-task-name", node.PooledTask.TaskName)
+			claimPooled(ctx, t, controller, fake, wf.Namespace, id)
+		})
+	}
 }
