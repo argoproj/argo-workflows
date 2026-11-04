@@ -1649,13 +1649,6 @@ func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
 	node.Message = ""
 	node.StartedAt = metav1.Time{Time: time.Now().UTC()}
 	node.FinishedAt = metav1.Time{}
-	// A reset node starts its task again, so a pooled one must be enqueued
-	// afresh: the controller enqueues only a node without a ledger. This
-	// drops the ledger outright rather than through its setters because it
-	// is a reset, not a step in the task's hand-off. The task it recorded is
-	// already gone, and a claim left on it carries its TaskSet's UID, so the
-	// controller discards it.
-	node.PooledTask = nil
 	return node
 }
 

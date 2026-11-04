@@ -43,7 +43,7 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 
 // DeadlineExceededMessage is the message of a node whose task ran past its
 // deadline, as its executor stops it, or the workflow's, as the controller
-// stops it.
+// stops it. The executor and the controller share it.
 const DeadlineExceededMessage = "Step exceeded its deadline"
 
 // WorkerRestartedMessage is the message of a pooled node whose claimant pod

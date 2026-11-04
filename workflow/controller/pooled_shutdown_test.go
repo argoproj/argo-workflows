@@ -2,12 +2,14 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -49,10 +51,13 @@ const (
 )
 
 // newPooledStopController is newPooledDispatchController for pooledStopWf,
-// with a lock manager for its mutex.
-func newPooledStopController(t *testing.T) (context.Context, *WorkflowController, *dispatch.Fake, *wfv1.Workflow) {
+// changed by modify, with a lock manager for its mutex.
+func newPooledStopController(t *testing.T, modify ...func(*wfv1.Workflow)) (context.Context, *WorkflowController, *dispatch.Fake, *wfv1.Workflow) {
 	t.Helper()
 	wf := wfv1.MustUnmarshalWorkflow(pooledStopWf)
+	for _, m := range modify {
+		m(wf)
+	}
 	ctx, controller, fake := newPooledDispatchController(t, true, wf)
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
 	return ctx, controller, fake, wf
@@ -184,35 +189,51 @@ func TestPooledShutdownInterruptsClaimedTasks(t *testing.T) {
 }
 
 // TestPooledShutdownExitHandler checks that stop and the workflow deadline
-// spare a pooled exit handler, queued or claimed, so it runs on; terminate
-// drops or interrupts it, as it kills an exit handler's pod.
+// spare a pooled exit handler, queued or claimed, so it runs on, also the
+// attempt of a retried one, which the node tree doesn't place in the exit
+// handler; terminate drops or interrupts it, as it kills an exit handler's
+// pod.
 func TestPooledShutdownExitHandler(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		end      func(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow)
 		claimed  bool
+		retried  bool
 		stopped  bool
 		finished bool
 	}{
 		{name: "stop, queued", end: stop},
 		{name: "stop, claimed", end: stop, claimed: true},
+		{name: "stop, retried, queued", end: stop, retried: true},
+		{name: "stop, retried, claimed", end: stop, claimed: true, retried: true},
 		{name: "deadline, queued", end: pastDeadline},
 		{name: "deadline, claimed", end: pastDeadline, claimed: true},
+		{name: "deadline, retried, claimed", end: pastDeadline, claimed: true, retried: true},
 		{name: "terminate, queued", end: terminate, stopped: true, finished: true},
 		{name: "terminate, claimed", end: terminate, claimed: true, stopped: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, controller, fake, wf := newPooledStopController(t)
+			exit := pooledStopExit
+			var modify []func(*wfv1.Workflow)
+			if tt.retried {
+				exit += "(0)"
+				modify = append(modify, func(wf *wfv1.Workflow) {
+					wf.Spec.Templates[2].RetryStrategy = &wfv1.RetryStrategy{Limit: new(intstr.FromInt32(1))}
+				})
+			}
+			ctx, controller, fake, wf := newPooledStopController(t, modify...)
 			id := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep).ID
 			finishPooled(ctx, t, controller, fake, wf.Namespace, id)
 			reconcilePooled(ctx, t, controller, wf)
-			exitID := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopExit).ID
+			exitID := mustNode(t, reconcilePooled(ctx, t, controller, wf), exit).ID
 			if tt.claimed {
-				runPooledNode(ctx, t, controller, fake, wf, pooledStopExit)
+				runPooledNode(ctx, t, controller, fake, wf, exit)
+			} else {
+				observeTaskSet(ctx, t, controller, fake, wf.Namespace, exitID)
 			}
 
 			tt.end(ctx, t, controller, wf)
-			node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopExit)
+			node := mustNode(t, reconcilePooled(ctx, t, controller, wf), exit)
 			if !tt.stopped {
 				assert.False(t, node.Phase.Completed())
 				assert.True(t, hasTaskSet(fake, wf.Namespace, exitID))
@@ -308,6 +329,70 @@ func TestPooledShutdownDropFindsClaim(t *testing.T) {
 			assert.Equal(t, dispatch.StopInterrupted, h.StopReason())
 		})
 	}
+}
+
+// TestPooledDeadlineDropFails checks that a queued pooled node past the
+// workflow deadline whose drop fails is left for the next try, not failed by
+// the sweep that fails pods not yet created, which would leave its TaskSet to
+// be claimed; once the drop succeeds the node fails with the deadline's
+// message, finished.
+func TestPooledDeadlineDropFails(t *testing.T) {
+	ctx, controller, fake, wf := newPooledStopController(t)
+	id := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep).ID
+	pastDeadline(ctx, t, controller, wf)
+
+	fake.SetFault(func(op dispatch.Op) error {
+		if op.Verb == "delete" && op.Resource == dispatch.ResourceTaskSets {
+			return errors.New("transient")
+		}
+		return nil
+	})
+	node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep)
+	fake.SetFault(nil)
+	assert.False(t, node.Phase.Completed())
+	assert.True(t, hasTaskSet(fake, wf.Namespace, id))
+
+	node = mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, common.DeadlineExceededMessage, node.Message)
+	assert.True(t, node.Fulfilled())
+	assert.False(t, hasTaskSet(fake, wf.Namespace, id))
+}
+
+// TestPooledShutdownDropFindsCompletedClaimUnread checks that when the drop
+// of a queued task finds a completed claim whose result can't then be read,
+// the node is left as it is rather than ended without its result, and the
+// next reconcile applies the result.
+func TestPooledShutdownDropFindsCompletedClaimUnread(t *testing.T) {
+	ctx, controller, fake, wf := newPooledStopController(t)
+	id := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep).ID
+	worker := observeWorkerPod(ctx, t, controller, wf.Namespace, claimantName, claimantUID, 0)
+	h := claimPooledBy(ctx, t, fake, wf.Namespace, id, worker)
+	require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: &wfv1.Outputs{ExitCode: new("0")}}))
+
+	// The drop's read finds the completed claim; the read of its result
+	// that follows fails.
+	var gets int
+	fake.SetFault(func(op dispatch.Op) error {
+		if op.Verb == "get" && op.Resource == dispatch.ResourceResults {
+			if gets++; gets == 2 {
+				return errors.New("transient")
+			}
+		}
+		return nil
+	})
+	stop(ctx, t, controller, wf)
+	node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep)
+	fake.SetFault(nil)
+	require.Equal(t, 2, gets, "the drop's read and the result's")
+	assert.False(t, hasTaskSet(fake, wf.Namespace, id))
+	assert.False(t, node.Phase.Completed(), "the result is still there to apply")
+
+	node = mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep)
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase, "the task ended before the drop")
+	assert.True(t, node.Fulfilled())
+	require.NotNil(t, node.Outputs)
+	assert.Equal(t, new("0"), node.Outputs.ExitCode)
 }
 
 // TestPooledShutdownRacingClaim checks, against the fake, that a claim racing
