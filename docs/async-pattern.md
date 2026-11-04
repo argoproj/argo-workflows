@@ -67,7 +67,7 @@ spec:
 In this case, the `job-cmd` parameter can be a command that uses `curl` to make an HTTP call to an endpoint that returns a job UUID.
 For more sophisticated submission and parsing of submission output, you can use a Python script step.
 
-When the job completes, the external job must call either resume if successful:
+When the job completes, the external job must call either `resume` if successful:
 
 ```bash
 curl --request PUT \
@@ -81,7 +81,7 @@ curl --request PUT \
     }'
 ```
 
-or stop if unsuccessful:
+or `stop` if unsuccessful:
 
 ```bash
 curl --request PUT \
