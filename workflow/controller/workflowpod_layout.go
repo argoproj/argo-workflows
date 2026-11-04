@@ -61,7 +61,16 @@ type podLayout interface {
 	//
 	// MUST be called once per user container (including every member of a
 	// ContainerSet) so the mount / WAIT_FOR_READY land on all members.
+	//
+	// With hasAuxCtr false it only delivers argoexec, which is how a pool pod's
+	// main and plugin sidecars get it (see buildPoolDeployment).
 	decorateUserContainer(c *apiv1.Container, hasAuxCtr bool)
+
+	// poolInitContainers returns a hot worker pool pod's init containers: in
+	// the legacy layout, one running `argoexec install` to copy argoexec into
+	// /var/run/argo for main and the plugin sidecars; in the init-less layout
+	// none, as they get argoexec from the argoexec-bin image volume.
+	poolInitContainers(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) []apiv1.Container
 }
 
 // newPodLayout selects the pod layout once, from the controller's init-less
@@ -115,6 +124,10 @@ func (legacyLayout) wireArtifactPlugins(ctx context.Context, pb *podBuilder, pod
 }
 
 func (legacyLayout) decorateUserContainer(c *apiv1.Container, hasAuxCtr bool) {}
+
+func (legacyLayout) poolInitContainers(tmpl *wfv1.Template, execCfg execContainerConfig, logOpts []string) []apiv1.Container {
+	return []apiv1.Container{*poolInstallContainer(tmpl, execCfg, logOpts)}
+}
 
 // initlessLayout is the opt-in (beta) pod shape: no init container; a
 // `supervisor` container runs concurrently with main and takes on both the
@@ -176,4 +189,8 @@ func (initlessLayout) decorateUserContainer(c *apiv1.Container, hasAuxCtr bool) 
 	// /argo-bin/bin/argoexec. Legacy containers reach argoexec from
 	// /var/run/argo/argoexec (populated by the init container).
 	c.VolumeMounts = append(c.VolumeMounts, argoBinVolumeMount())
+}
+
+func (initlessLayout) poolInitContainers(*wfv1.Template, execContainerConfig, []string) []apiv1.Container {
+	return nil
 }
