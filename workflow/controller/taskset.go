@@ -42,7 +42,7 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(ctx context.Context, old,
 				// back to a rate-limited retry while the workflow informer catches up.
 				var uid types.UID
 				for _, owner := range current.OwnerReferences {
-					if owner.Kind == workflow.WorkflowKind && owner.APIVersion == workflow.APIVersion {
+					if owner.Kind == workflow.WorkflowKind {
 						uid = owner.UID
 						break
 					}

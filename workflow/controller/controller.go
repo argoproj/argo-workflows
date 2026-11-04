@@ -281,6 +281,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		},
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
+	if taskSetCompletionDelay != nil && *taskSetCompletionDelay > wfc.requeueTime {
+		logger.WithFields(logging.Fields{"completionFloor": *taskSetCompletionDelay, "requeueTime": wfc.requeueTime}).
+			Warn(ctx, "COMPLETED_REQUEUE_TIME_MS exceeds DEFAULT_REQUEUE_TIME; the completion delay is capped at DEFAULT_REQUEUE_TIME")
+	}
 	logger.WithField("indexWorkflowSemaphoreKeys", wfc.indexWorkflowSemaphoreKeys).Info(ctx, "index config")
 	if wfc.cacheGCPeriod != 0 {
 		logger.WithField("cacheGCPeriod", wfc.cacheGCPeriod).Info(ctx, "GC for memoization caches will be performed every")

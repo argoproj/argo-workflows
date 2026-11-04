@@ -75,15 +75,20 @@ func TestCompletionRequeueControllerConfiguration(t *testing.T) {
 		percent     string
 		wantFloor   *time.Duration
 		wantPercent int
+		wantWarning bool
 	}{
-		{"defaults", "", "", nil, 20},
-		{"configured", "250", "25", new(250 * time.Millisecond), 25},
-		{"no extra gap", "1", "100", new(time.Millisecond), 100},
+		{"defaults", "", "", nil, 20, false},
+		{"configured", "250", "25", new(250 * time.Millisecond), 25, false},
+		{"no extra gap", "1", "100", new(time.Millisecond), 100, false},
+		{"floor equals ceiling", "10000", "20", new(10 * time.Second), 20, false},
+		{"floor exceeds ceiling", "20000", "20", new(20 * time.Second), 20, true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("COMPLETED_REQUEUE_TIME_MS", tt.floor)
 			t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", tt.percent)
-			ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+			t.Setenv(common.EnvVarDefaultRequeueTime, "10s")
+			hook := logging.NewTestHook()
+			ctx, cancel := context.WithCancel(logging.WithLogger(t.Context(), logging.NewTestLogger(logging.Info, logging.Text, hook)))
 			defer cancel()
 			kube := fake.NewClientset(&apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
 				Name: "workflow-controller-configmap", Namespace: "default",
@@ -97,6 +102,18 @@ func TestCompletionRequeueControllerConfiguration(t *testing.T) {
 			defer func() { assert.NoError(t, controller.ShutdownTracing(ctx)) }()
 			assert.Equal(t, tt.wantFloor, controller.taskSetCompletionDelay)
 			assert.Equal(t, tt.wantPercent, controller.completionDutyCyclePercent)
+			warnings := 0
+			for _, entry := range hook.AllEntries() {
+				if entry.Msg == "COMPLETED_REQUEUE_TIME_MS exceeds DEFAULT_REQUEUE_TIME; the completion delay is capped at DEFAULT_REQUEUE_TIME" {
+					warnings++
+					assert.Equal(t, logging.Warn, entry.Level)
+				}
+			}
+			if tt.wantWarning {
+				assert.Equal(t, 1, warnings)
+			} else {
+				assert.Zero(t, warnings)
+			}
 		})
 	}
 }
@@ -230,16 +247,21 @@ func TestWorkflowReconcileTimingConcurrent(t *testing.T) {
 
 func TestTaskSetCompletionDutyCycle(t *testing.T) {
 	for _, tt := range []struct {
-		name  string
-		floor *time.Duration
-		owner types.UID
-		phase wfv1.NodePhase
-		want  time.Duration
+		name       string
+		floor      *time.Duration
+		owner      types.UID
+		kind       string
+		apiVersion string
+		phase      wfv1.NodePhase
+		want       time.Duration
 	}{
-		{"completion", new(time.Millisecond), "uid", wfv1.NodeSucceeded, 3 * time.Second},
-		{"routine", new(time.Millisecond), "uid", wfv1.NodeRunning, 10 * time.Second},
-		{"disabled", nil, "uid", wfv1.NodeSucceeded, 10 * time.Second},
-		{"unknown owner", new(time.Millisecond), "new-uid", wfv1.NodeSucceeded, time.Millisecond},
+		{"completion", new(time.Millisecond), "uid", workflow.WorkflowKind, workflow.APIVersion, wfv1.NodeSucceeded, 3 * time.Second},
+		{"routine", new(time.Millisecond), "uid", workflow.WorkflowKind, workflow.APIVersion, wfv1.NodeRunning, 10 * time.Second},
+		{"disabled", nil, "uid", workflow.WorkflowKind, workflow.APIVersion, wfv1.NodeSucceeded, 10 * time.Second},
+		{"unknown owner", new(time.Millisecond), "new-uid", workflow.WorkflowKind, workflow.APIVersion, wfv1.NodeSucceeded, time.Millisecond},
+		{"missing owner API version", new(time.Millisecond), "uid", workflow.WorkflowKind, "", wfv1.NodeSucceeded, 3 * time.Second},
+		{"different owner API version", new(time.Millisecond), "uid", workflow.WorkflowKind, "argoproj.io/v1", wfv1.NodeSucceeded, 3 * time.Second},
+		{"different owner kind", new(time.Millisecond), "uid", "WorkflowTemplate", workflow.APIVersion, wfv1.NodeSucceeded, time.Millisecond},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -252,7 +274,7 @@ func TestTaskSetCompletionDutyCycle(t *testing.T) {
 					"uid": {duration: time.Second, lastEnd: time.Now().Add(-time.Second)},
 				}
 				current := completionDelayTaskSet(tt.phase)
-				current.OwnerReferences = []metav1.OwnerReference{{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowKind, UID: tt.owner}}
+				current.OwnerReferences = []metav1.OwnerReference{{APIVersion: tt.apiVersion, Kind: tt.kind, UID: tt.owner}}
 				controller.onWorkflowTaskSetUpdate(ctx, completionDelayTaskSet(), current)
 				attrs := attribute.NewSet()
 				data, err := exporter.GetFloat64HistogramData(ctx, telemetry.InstrumentWorkflowCompletionRequeueDelay.Name(), &attrs)

@@ -66,7 +66,9 @@ func (wfc *WorkflowController) recordWorkflowReconcile(ctx context.Context, wf *
 // duty-cycle target, bounded by the completion floor and normal requeue ceiling.
 // Missing timing uses the floor; the ceiling wins if it is lower than the floor.
 // The caller must have enabled the floor. This is not a hard quota: an earlier
-// queued event can still reconcile sooner.
+// queued event can still reconcile sooner. Timing includes only finished reconciles;
+// a completion arriving during operate() counts the in-flight time since lastEnd
+// toward the idle gap and can therefore request too short a wait.
 func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Time) time.Duration {
 	wfc.lastWrittenVersions.mutex.RLock()
 	last := wfc.reconcileTimings[uid]
