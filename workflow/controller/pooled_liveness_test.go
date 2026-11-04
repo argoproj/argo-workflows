@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	kwait "k8s.io/apimachinery/pkg/util/wait"
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/config"
@@ -51,17 +50,6 @@ func runPooledNode(ctx context.Context, t *testing.T, controller *WorkflowContro
 	require.Equal(t, wfv1.NodeRunning, node.Phase)
 	require.Equal(t, wfv1.PooledTaskClaimed, node.PooledTask.State())
 	return id, h
-}
-
-// deleteClaimant deletes runPooled's claimant pod and waits for the pool pod
-// informer to drop it.
-func deleteClaimant(ctx context.Context, t *testing.T, controller *WorkflowController, namespace string) {
-	t.Helper()
-	require.NoError(t, controller.kubeclientset.CoreV1().Pods(namespace).Delete(ctx, claimantName, metav1.DeleteOptions{}))
-	require.NoError(t, kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
-		_, exists, err := controller.poolPodInformer.GetStore().GetByKey(namespace + "/" + claimantName)
-		return !exists, err
-	}))
 }
 
 // updateClaimant changes runPooled's claimant pod with change and waits for
@@ -104,7 +92,7 @@ func TestPooledClaimantGone(t *testing.T) {
 		{
 			name: "deleted",
 			kill: func(ctx context.Context, t *testing.T, controller *WorkflowController, namespace string) {
-				deleteClaimant(ctx, t, controller, namespace)
+				deletePoolPod(ctx, t, controller, namespace, claimantName)
 			},
 			message: "worker pod " + claimantName + " deleted",
 		},
@@ -122,7 +110,7 @@ func TestPooledClaimantGone(t *testing.T) {
 		{
 			name: "replaced",
 			kill: func(ctx context.Context, t *testing.T, controller *WorkflowController, namespace string) {
-				deleteClaimant(ctx, t, controller, namespace)
+				deletePoolPod(ctx, t, controller, namespace, claimantName)
 				observeWorkerPod(ctx, t, controller, namespace, claimantName, "replacement-pod-uid", 0)
 			},
 			message: "worker pod " + claimantName + " deleted",
@@ -245,7 +233,7 @@ func TestPooledClaimCompletedBeforeClaimantGone(t *testing.T) {
 	_, h := runPooled(ctx, t, controller, fake, wf)
 
 	require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: &wfv1.Outputs{ExitCode: new("0")}}))
-	deleteClaimant(ctx, t, controller, wf.Namespace)
+	deletePoolPod(ctx, t, controller, wf.Namespace, claimantName)
 	woc := reconcilePooled(ctx, t, controller, wf)
 	node := mustNode(t, woc, pooledStep)
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
@@ -262,7 +250,7 @@ func TestPooledDeadClaimantReadFails(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
 	ctx, controller, fake := newPooledDispatchController(t, true, wf)
 	runPooled(ctx, t, controller, fake, wf)
-	deleteClaimant(ctx, t, controller, wf.Namespace)
+	deletePoolPod(ctx, t, controller, wf.Namespace, claimantName)
 	fake.SetFault(func(op dispatch.Op) error {
 		if op.Verb == "get" && op.Resource == dispatch.ResourceResults {
 			return errors.New("injected")
@@ -295,7 +283,7 @@ func TestPooledDeadClaimantReleasedAndClaimedAgain(t *testing.T) {
 	require.NoError(t, h.Release(ctx))
 	other := observeWorkerPod(ctx, t, controller, wf.Namespace, "work-0123456789-other", "other-uid", 0)
 	reclaim := claimPooledBy(ctx, t, fake, wf.Namespace, id, other)
-	deleteClaimant(ctx, t, controller, wf.Namespace)
+	deletePoolPod(ctx, t, controller, wf.Namespace, claimantName)
 	requeued := recordRequeues(controller)
 
 	node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
@@ -322,7 +310,7 @@ func TestPooledClaimantReleasedIsNotDead(t *testing.T) {
 	id, h := runPooled(ctx, t, controller, fake, wf)
 
 	require.NoError(t, h.Release(ctx))
-	deleteClaimant(ctx, t, controller, wf.Namespace)
+	deletePoolPod(ctx, t, controller, wf.Namespace, claimantName)
 	woc := reconcilePooled(ctx, t, controller, wf)
 	node := mustNode(t, woc, pooledStep)
 	assert.Equal(t, wfv1.NodeRunning, node.Phase, "the result cache still has the claim")

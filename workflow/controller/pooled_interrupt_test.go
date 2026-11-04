@@ -142,7 +142,7 @@ func TestPooledEndedNodeClaimInterrupted(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
 		ctx, controller, fake := newPooledDispatchController(t, true, wf)
 		id, _ := runPooled(ctx, t, controller, fake, wf)
-		deleteClaimant(ctx, t, controller, wf.Namespace)
+		deletePoolPod(ctx, t, controller, wf.Namespace, claimantName)
 		require.Equal(t, wfv1.NodeError, mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep).Phase)
 
 		node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
@@ -223,7 +223,7 @@ func TestPooledInterruptConfirmed(t *testing.T) {
 		{
 			name: "claimant gone",
 			stop: func(ctx context.Context, t *testing.T, controller *WorkflowController, _ *dispatch.Fake, wf *wfv1.Workflow, _ string, _ dispatch.Claimed) {
-				deleteClaimant(ctx, t, controller, wf.Namespace)
+				deletePoolPod(ctx, t, controller, wf.Namespace, claimantName)
 			},
 			finished: true,
 		},

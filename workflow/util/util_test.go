@@ -1835,16 +1835,11 @@ func TestFormulateRetryWorkflowPooledNodes(t *testing.T) {
 	retried, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, []string{GeneratePodName(wf.Name, "pooled-retry.b", "plain", "b", GetWorkflowPodNameVersion(wf))}, podsToDelete)
+	// The failed pooled node is deleted, with its ledger, so the controller
+	// enqueues it afresh; the root is reset to run it again.
 	assert.Len(t, retried.Status.Nodes, 1)
-	assert.Contains(t, retried.Status.Nodes, "pooled-retry")
-}
-
-// TestResetNodeDropsTheLedger checks a reset pooled node is enqueued again:
-// the controller enqueues only a node without a ledger.
-func TestResetNodeDropsTheLedger(t *testing.T) {
-	node := resetNode(wfv1.NodeStatus{ID: "a", Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, PooledTask: &wfv1.PooledTaskStatus{TaskSetUID: "ts-a"}})
-	assert.Equal(t, wfv1.NodeRunning, node.Phase)
-	assert.Nil(t, node.PooledTask)
+	require.Contains(t, retried.Status.Nodes, "pooled-retry")
+	assert.Equal(t, wfv1.NodeRunning, retried.Status.Nodes["pooled-retry"].Phase)
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {
