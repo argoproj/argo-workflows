@@ -70,6 +70,10 @@ const legacyArgoexecBinaryPath = common.LegacyArgoExecBinPath
 // (inputArtifactExecutorMounts).
 const inputArtifactsVolumeName = "input-artifacts"
 
+// scriptStagingVolumeName is the name of the emptyDir volume that holds a
+// script template's source (see addScriptStagingVolume).
+const scriptStagingVolumeName = "argo-staging"
+
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
 func (pb *podBuilder) scheduleOnDifferentHost(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template, pod *apiv1.Pod) error {
@@ -449,7 +453,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		},
 	}
 
-	pod.Spec.Volumes = append(pod.Spec.Volumes, pb.layout.extraVolumes(pb)...)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, pb.layout.extraVolumes(pb.in.execCfg.image, pb.in.execCfg.imagePullPolicy)...)
 
 	if pb.in.podStatusCaptureFinalizer {
 		pod.Finalizers = append(pod.Finalizers, common.FinalizerPodStatus)
@@ -699,27 +703,8 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 			// member, so this stays inside the per-container loop.
 			pb.layout.decorateUserContainer(&c, hasAuxCtr)
 		}
-		if c.Image == pb.in.execCfg.image {
-			// mount tmp dir to the executor container (wait, or supervisor in init-less mode)
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      volumeTmpDir.Name,
-				MountPath: "/tmp",
-				SubPath:   strconv.Itoa(i),
-			})
-		}
-		// Shared tmp subpath for shared output directory
 		outputArtifactPlugins := len(tmpl.Outputs.Artifacts.GetPluginNames(ctx, pb.in.artifactRepository, wfv1.IncludeLogs, tmpl.ArchiveLocation)) > 0
-		if outputArtifactPlugins && common.IsArgoSidecar(c.Name) {
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      volumeTmpDir.Name,
-				MountPath: "/tmp/argo/outputs",
-				SubPath:   "argo/outputs",
-			})
-		}
-		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-		if x := pod.Spec.TerminationGracePeriodSeconds; x != nil {
-			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*x)})
-		}
+		finishContainer(&c, i, pb.in.execCfg.image, outputArtifactPlugins && common.IsArgoSidecar(c.Name), pod.Spec.TerminationGracePeriodSeconds)
 		pod.Spec.Containers[i] = c
 	}
 
@@ -960,26 +945,11 @@ func taskParams(globalParams common.Parameters, tmpl *wfv1.Template, taskName st
 // argoBinExecutorPath) since they run the plugin's own image and are skipped by
 // the main image-volume mount loop.
 func (woc *wfOperationCtx) artifactContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig, driver config.ArtifactDriver, prefix, binaryPath string, execCmd []string) (*apiv1.Container, error) {
-	name := prefix + string(driver.Name)
-	ctr := buildExecContainer(name, tmpl, execCfg)
-	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: name})
-	ctr.Image = driver.Image
-	x, err := woc.controller.entrypoint.Lookup(ctx, driver.Image, entrypoint.Options{
-		Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-	})
+	x, err := lookupEntrypoint(ctx, woc.lookupImage, driver.Image, woc.wf.Namespace, &woc.execWf.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", driver.Image, err)
+		return nil, err
 	}
-
-	cmd := []string{binaryPath}
-	cmd = append(cmd, execCmd...)
-	cmd = append(cmd, woc.getExecutorLogOpts(ctx)...)
-	cmd = append(cmd, "--")
-	cmd = append(cmd, x.Entrypoint...)
-	cmd = append(cmd, driver.Name.SocketPath())
-	ctr.Command = cmd
-
-	return ctr, nil
+	return buildArtifactContainer(tmpl, execCfg, driver.Name, driver.Image, x.Entrypoint, prefix, binaryPath, execCmd, woc.getExecutorLogOpts(ctx)), nil
 }
 
 // lookupEntrypoint looks image up with lookup, for a pod in namespace of the
@@ -993,6 +963,25 @@ func lookupEntrypoint(ctx context.Context, lookup func(context.Context, string, 
 		return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", image, err)
 	}
 	return x, nil
+}
+
+// buildArtifactContainer builds the argoexec container named prefix+plugin
+// that runs an artifact plugin's image: argoexec at binaryPath runs execCmd,
+// which starts the plugin's entrypoint with its socket path.
+func buildArtifactContainer(tmpl *wfv1.Template, execCfg execContainerConfig, plugin wfv1.ArtifactPluginName, image string, entrypoint []string, prefix, binaryPath string, execCmd, logOpts []string) *apiv1.Container {
+	name := prefix + string(plugin)
+	ctr := buildExecContainer(name, tmpl, execCfg)
+	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: name})
+	ctr.Image = image
+
+	cmd := []string{binaryPath}
+	cmd = append(cmd, execCmd...)
+	cmd = append(cmd, logOpts...)
+	cmd = append(cmd, "--")
+	cmd = append(cmd, entrypoint...)
+	cmd = append(cmd, plugin.SocketPath())
+	ctr.Command = cmd
+	return ctr
 }
 
 func (woc *wfOperationCtx) artifactSidecarGCContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver) (*apiv1.Container, error) {
@@ -1364,7 +1353,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 	// user's volumes (used when the executor must load artifacts into a
 	// user-specified volume instead of the emptydir). Shared verbatim with the
 	// init-less plugin sidecars via initlessPluginSidecarArtifactMounts.
-	executorMounts := woc.inputArtifactExecutorMounts(tmpl)
+	executorMounts := inputArtifactExecutorMounts(tmpl)
 	applyArtifactMounts := func(c *apiv1.Container) {
 		c.VolumeMounts = append(c.VolumeMounts, executorMounts...)
 	}
@@ -1474,35 +1463,37 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	}
 
 	// Mirror main container mounts to wait container and plugin sidecar containers
-	for i, c := range pod.Spec.Containers {
-		if !common.IsArgoSidecar(c.Name) {
+	for i := range pod.Spec.Containers {
+		if common.IsArgoSidecar(pod.Spec.Containers[i].Name) {
+			mirrorMainMounts(&pod.Spec.Containers[i], mainContainerMounts, tmpl)
+		}
+	}
+}
+
+// mirrorMainMounts mounts each of main's volume mounts in c under
+// ExecutorMainFilesystemDir, read-write, so an executor container can collect
+// outputs written to volumes. Mount paths c already has are skipped: in
+// init-less mode the supervisor and plugin sidecars already received the
+// mirrored user-volume mounts from addInputArtifactsVolumes /
+// addArtifactPluginsInitless, and Kubernetes rejects a duplicate mountPath at
+// admission. Legacy mode has no such pre-existing mounts.
+func mirrorMainMounts(c *apiv1.Container, mainMounts []apiv1.VolumeMount, tmpl *wfv1.Template) {
+	existingMountPaths := make(map[string]bool, len(c.VolumeMounts))
+	for _, vm := range c.VolumeMounts {
+		existingMountPaths[vm.MountPath] = true
+	}
+	for _, mnt := range mainMounts {
+		if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
 			continue
 		}
-		// Track mountPaths already on the sidecar so we don't add a duplicate.
-		// In init-less mode the supervisor and plugin sidecars already received
-		// the mirrored user-volume mounts (at ExecutorMainFilesystemDir) from
-		// addInputArtifactsVolumes / addArtifactPluginsInitless; mirroring main's
-		// mounts here would re-add the same mountPaths, which Kubernetes rejects
-		// at admission. Legacy mode has no such pre-existing mounts, so this is a
-		// no-op there.
-		existingMountPaths := make(map[string]bool, len(c.VolumeMounts))
-		for _, vm := range c.VolumeMounts {
-			existingMountPaths[vm.MountPath] = true
+		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
+		// ReadOnly is needed to be false for overlapping volume mounts
+		mnt.ReadOnly = false
+		if existingMountPaths[mnt.MountPath] {
+			continue
 		}
-		for _, mnt := range mainContainerMounts {
-			if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
-				continue
-			}
-			mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-			// ReadOnly is needed to be false for overlapping volume mounts
-			mnt.ReadOnly = false
-			if existingMountPaths[mnt.MountPath] {
-				continue
-			}
-			existingMountPaths[mnt.MountPath] = true
-			c.VolumeMounts = append(c.VolumeMounts, mnt)
-		}
-		pod.Spec.Containers[i] = c
+		existingMountPaths[mnt.MountPath] = true
+		c.VolumeMounts = append(c.VolumeMounts, mnt)
 	}
 }
 
@@ -1524,7 +1515,7 @@ func (pb *podBuilder) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, s
 // (or supervisor, in init-less mode) and main container for the purpose of
 // holding the script source code for script templates.
 func addScriptStagingVolume(pod *apiv1.Pod) {
-	volName := "argo-staging"
+	volName := scriptStagingVolumeName
 	stagingVol := apiv1.Volume{
 		Name: volName,
 		VolumeSource: apiv1.VolumeSource{
@@ -1685,7 +1676,7 @@ func (woc *wfOperationCtx) addArtifactPluginsInitless(ctx context.Context, pod *
 	// process writes to that path directly. Without these mounts the plugin
 	// would not be able to populate the file. Returns nil when there are no
 	// input artifacts (the "input-artifacts" volume isn't on the pod).
-	pluginSidecarMounts := woc.initlessPluginSidecarArtifactMounts(tmpl)
+	pluginSidecarMounts := initlessPluginSidecarArtifactMounts(tmpl)
 	sidecarNames := make([]string, 0, len(sidecars))
 	// Capture each sidecar's socket-only mounts (set by artifactSidecarContainer)
 	// BEFORE extending the sidecar with the binary/input-artifacts mounts.
@@ -1734,7 +1725,7 @@ func (woc *wfOperationCtx) addArtifactPluginsInitless(ctx context.Context, pod *
 // ExecutorMainFilesystemDir for the overlapping-volume case. Callers that may
 // run with no input artifacts must guard themselves — the "input-artifacts"
 // volume is only added to the pod when the template has input artifacts.
-func (woc *wfOperationCtx) inputArtifactExecutorMounts(tmpl *wfv1.Template) []apiv1.VolumeMount {
+func inputArtifactExecutorMounts(tmpl *wfv1.Template) []apiv1.VolumeMount {
 	mounts := []apiv1.VolumeMount{{
 		Name:      inputArtifactsVolumeName,
 		MountPath: common.ExecutorArtifactBaseDir,
@@ -1753,11 +1744,37 @@ func (woc *wfOperationCtx) inputArtifactExecutorMounts(tmpl *wfv1.Template) []ap
 // sidecar needs in init-less mode (see inputArtifactExecutorMounts), or nil
 // when the template has no input artifacts (the "input-artifacts" volume is
 // not on the pod).
-func (woc *wfOperationCtx) initlessPluginSidecarArtifactMounts(tmpl *wfv1.Template) []apiv1.VolumeMount {
+func initlessPluginSidecarArtifactMounts(tmpl *wfv1.Template) []apiv1.VolumeMount {
 	if len(tmpl.Inputs.Artifacts) == 0 {
 		return nil
 	}
-	return woc.inputArtifactExecutorMounts(tmpl)
+	return inputArtifactExecutorMounts(tmpl)
+}
+
+// finishContainer gives container i of a pod what every container gets last:
+// its own /tmp if it runs the executor image, the shared output directory if
+// sharesOutputs, /var/run/argo, and the termination grace period if one is set.
+func finishContainer(c *apiv1.Container, i int, executorImage string, sharesOutputs bool, terminationGracePeriodSeconds *int64) {
+	if c.Image == executorImage {
+		// mount tmp dir to the executor container (wait, or supervisor in init-less mode)
+		c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+			Name:      volumeTmpDir.Name,
+			MountPath: "/tmp",
+			SubPath:   strconv.Itoa(i),
+		})
+	}
+	// Shared tmp subpath for shared output directory
+	if sharesOutputs {
+		c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+			Name:      volumeTmpDir.Name,
+			MountPath: "/tmp/argo/outputs",
+			SubPath:   "argo/outputs",
+		})
+	}
+	c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+	if terminationGracePeriodSeconds != nil {
+		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*terminationGracePeriodSeconds)})
+	}
 }
 
 // secretVolumesAndMountsFromMap turns a name→Volume map into the parallel

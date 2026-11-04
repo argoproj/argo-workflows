@@ -45,8 +45,9 @@ type podLayout interface {
 	argoexecBinaryPath() string
 
 	// extraVolumes returns layout-specific pod volumes: the argoexec-bin image
-	// volume for the init-less layout, nothing for the legacy layout.
-	extraVolumes(pb *podBuilder) []apiv1.Volume
+	// volume of the executor image for the init-less layout, nothing for the
+	// legacy layout.
+	extraVolumes(executorImage string, pullPolicy apiv1.PullPolicy) []apiv1.Volume
 
 	// wireArtifactPlugins attaches artifact-plugin containers/mounts to the pod
 	// using the layout's scheme: plugin init containers + sidecars driven by
@@ -103,7 +104,7 @@ func (legacyLayout) argoexecBinaryPath() string {
 	return legacyArgoexecBinaryPath
 }
 
-func (legacyLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
+func (legacyLayout) extraVolumes(string, apiv1.PullPolicy) []apiv1.Volume {
 	return nil
 }
 
@@ -153,8 +154,8 @@ func (initlessLayout) argoexecBinaryPath() string {
 	return argoBinExecutorPath
 }
 
-func (initlessLayout) extraVolumes(pb *podBuilder) []apiv1.Volume {
-	return []apiv1.Volume{argoBinVolume(pb.in.execCfg.image, pb.in.execCfg.imagePullPolicy)}
+func (initlessLayout) extraVolumes(executorImage string, pullPolicy apiv1.PullPolicy) []apiv1.Volume {
+	return []apiv1.Volume{argoBinVolume(executorImage, pullPolicy)}
 }
 
 // wireArtifactPlugins adds the supervisor-driven plugin sidecars.
