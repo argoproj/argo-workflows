@@ -1,13 +1,13 @@
 # Sidecar Injection
 
-Automatic (i.e. mutating webhook based) sidecar injection systems, including service meshes such as Anthos and Istio
-Proxy, create a unique problem for Kubernetes workloads that run to completion.
+Automatic (that is, mutating webhook based) sidecar injection systems, including service meshes such as Anthos and Istio Proxy, create a unique problem for Kubernetes workloads that run to completion.
 
-Because sidecars are injected outside of the view of the workflow controller, the controller has no awareness of them.
-It has no opportunity to rewrite the containers command and as the sidecar's process will run as PID 1, which is protected.
-It can be impossible for the wait container to terminate the sidecar.
+Because the webhook injects sidecars outside of the view of the workflow controller, the controller has no awareness of them.
+The controller has no opportunity to rewrite the container's command.
+The sidecar's process runs as PID 1, which can prevent signals from terminating it.
+This can make it impossible for the workflow controller to terminate the sidecar.
 
-You will minimize problems by not using Istio with Argo Workflows.
+You can minimize problems by not using Istio with Argo Workflows.
 
 See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
@@ -15,34 +15,36 @@ See [#1282](https://github.com/argoproj/argo-workflows/issues/1282).
 
 Key:
 
-* Any - we can kill any image
-* KubectlExec - we kill images by running `kubectl exec`
+* Any - Argo can kill any image
+* KubectlExec - Argo kills images by running `kubectl exec`
 
 | Executor | Sidecar | Injected Sidecar |
 |---|---|---|
 | `emissary` | Any | KubectlExec |
 
-## How We Kill Sidecars Using `kubectl exec`
+## How Argo Kills Sidecars Using `kubectl exec`
 
-Kubernetes does not provide a way to kill a single container. You can delete a pod, but this kills all containers, and loses all information
-and logs of that pod.
+Kubernetes does not provide a way to kill a single container.
+You can delete a pod, but this kills all containers, and loses all information and logs of that pod.
 
-Instead, try to mimic the Kubernetes termination behavior, which is:
+Instead, Argo mimics the Kubernetes termination behavior, which is:
 
 1. SIGTERM PID 1
-1. Wait for the pod's `terminateGracePeriodSeconds` (30s by default).
+1. Wait for the pod's `terminationGracePeriodSeconds` (30s by default).
 1. SIGKILL PID 1
 
-The following are not supported:
+Argo doesn't support the following:
 
 * `preStop`
 * `STOPSIGNAL`
 
-To do this, it must be possible to run a `kubectl exec` command that kills the injected sidecar. By default it runs `/bin/sh -c 'kill 1'`. This can fail:
+To do this, Argo runs a `kubectl exec` command that kills the injected sidecar.
+By default it runs `/bin/sh -c 'kill -<signal> 1'`.
+This can fail:
 
 1. No `/bin/sh`.
-2. Process is not running as PID 1 (which is becoming the default these days due to `runAsNonRoot`).
-3. Process does not correctly respond to `kill 1` (e.g. some shell script weirdness).
+2. Process is not running as PID 1.
+3. Process does not correctly respond to the signal (for example, some shell script weirdness).
 
 You can override the kill command by using a pod annotation (where `%d` is the signal number), for example:
 
