@@ -16,6 +16,7 @@ import (
 	"github.com/expr-lang/expr/ast"
 	"github.com/expr-lang/expr/parser"
 
+	exprenv "github.com/argoproj/argo-workflows/v4/util/expr/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/maps"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
@@ -202,20 +203,62 @@ func getIdentifiers(expression string) ([]string, error) {
 	return visitor.identifiers, nil
 }
 
-func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
-	shouldAllowFailure := false
+// EvaluateExpression evaluates an unwrapped expression with the same environment and unresolved
+// semantics used by expression template replacement. The resolved return value is false when
+// evaluation is allowed to remain unresolved; syntax errors are always returned.
+func EvaluateExpression(ctx context.Context, expression string, replaceMap map[string]any, allowUnresolved bool) (result any, resolved bool, err error) {
+	env := exprenv.GetFuncMap(replaceMap)
+	if _, err := missingVarsInEnv(expression, env); err != nil {
+		return nil, false, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+	return evaluateExpression(ctx, expression, env, allowUnresolved)
+}
 
+func evaluateExpression(ctx context.Context, expression string, env map[string]any, allowUnresolved bool) (result any, resolved bool, err error) {
+	shouldAllowFailure := false
 	maps.VisitMap(env, func(key string, value any) bool {
 		rv := reflect.Indirect(reflect.ValueOf(value))
-		if rv.Kind() == reflect.String {
-			if IsPlaceholder(rv.String()) {
-				shouldAllowFailure = true
-				return false
-			}
+		if rv.Kind() == reflect.String && IsPlaceholder(rv.String()) {
+			shouldAllowFailure = true
+			return false
 		}
 		return true
 	})
 
+	log := logging.RequireLoggerFromContext(ctx)
+	if varNameNotInEnv := anyVarNotInEnv(expression, env); varNameNotInEnv != nil && allowUnresolved {
+		// This keeps late-binding expressions unresolved instead of resolving them to nil or an empty string.
+		// See https://github.com/argoproj/argo-workflows/issues/5388, https://github.com/argoproj/argo-workflows/issues/15008,
+		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
+		log.WithField("variable", *varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
+		return nil, false, nil
+	}
+
+	program, err := expr.Compile(expression, expr.Env(env))
+	if err != nil {
+		if allowUnresolved || shouldAllowFailure {
+			log.WithError(err).Debug(ctx, "Result and error are unresolved")
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+
+	result, err = expr.Run(program, env)
+	if err != nil || result == nil {
+		if allowUnresolved || shouldAllowFailure {
+			log.WithError(err).Debug(ctx, "Result and error are unresolved")
+			return nil, false, nil
+		}
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to evaluate expression: %w", err)
+		}
+		return nil, false, fmt.Errorf("failed to evaluate expression %q", expression)
+	}
+
+	return result, true, nil
+}
+
+func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
@@ -228,34 +271,12 @@ func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, 
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	varNameNotInEnv := anyVarNotInEnv(unmarshalledExpression, env)
-	if varNameNotInEnv != nil && allowUnresolved {
-		// this is to make sure expressions don't get resolved to nil or an empty string when certain variables
-		// don't exist in the env during the "global" replacement.
-		// See https://github.com/argoproj/argo-workflows/issues/5388, https://github.com/argoproj/argo-workflows/issues/15008,
-		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-		log.WithField("variable", *varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
-
-	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
-	// This allowUnresolved check is not great
-	// it allows for errors that are obviously
-	// not failed reference checks to also pass
-	if err != nil && !allowUnresolved && !shouldAllowFailure {
-		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
-	}
-	result, err := expr.Run(program, env)
-	if (err != nil || result == nil) && (allowUnresolved || shouldAllowFailure) {
-		//  <nil> result is also un-resolved, and any error can be unresolved
-		log.WithError(err).Debug(ctx, "Result and error are unresolved")
-		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
-	}
+	result, resolved, err := evaluateExpression(ctx, unmarshalledExpression, env, allowUnresolved)
 	if err != nil {
-		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
+		return 0, err
 	}
-	if result == nil {
-		return 0, fmt.Errorf("failed to evaluate expression %q", expression)
+	if !resolved {
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	resultMarshaled, err := json.Marshal(result)
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
