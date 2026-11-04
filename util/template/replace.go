@@ -60,7 +60,9 @@ func Replace(ctx context.Context, s string, replaceMap map[string]any, allowUnre
 }
 
 // ReplaceStrictAny behaves like Replace but enforces that tags starting with any of strictPrefixes
-// MUST be resolved, even if allowUnresolved behavior is otherwise active (implicit). It takes raw
+// MUST be resolved, even if allowUnresolved behavior is otherwise active (implicit). The exception is
+// {{tasks.name}} and {{steps.name}}: they name the current task or step, are only set when it is
+// executed, so they are left unresolved for the substitution done then (#17415). It takes raw
 // values, preserving nil entries so that expression tags can distinguish an absent (nil) value from
 // an empty string (e.g. via `??`). A simple tag resolving to a nil value is a terminal error (not a
 // missing-variable error): an absent optional must be handled by a producer default, a consumer
