@@ -101,8 +101,8 @@ schema = 3
     version = "v1.0.1"
     hash = "sha256-hY9/RFyllP8Sz/W5pZzkZc2vXZav0dD5gTZEWmE8yDE="
   [mod."github.com/alibabacloud-go/tea"]
-    version = "v1.5.3"
-    hash = "sha256-SioZ/VosFCrWdsPKTI5MbkRHxqrGYTbWlcLMPMaEzpk="
+    version = "v1.5.4"
+    hash = "sha256-NyVqIJ7suIAQIaXTzm2eV55Z+T08Flg7ID2OQtHBEgQ="
   [mod."github.com/aliyun/aliyun-oss-go-sdk"]
     version = "v3.0.2+incompatible"
     hash = "sha256-tGYo4iifYkG0EOOBix+O/utWhrzzT2Zk+jcnZZ06ZPk="
