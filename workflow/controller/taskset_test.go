@@ -80,6 +80,35 @@ func TestCreateTaskSet(t *testing.T) {
 	})
 }
 
+// TestCreateTaskSetLeavesAPooledTaskSet checks that a workflow named like a
+// pooled task's TaskSet doesn't patch its agent tasks into that TaskSet.
+func TestCreateTaskSetLeavesAPooledTaskSet(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/create-task-set-workflow.yaml")
+	ctx := logging.TestContext(t.Context())
+	pooled := &wfv1.WorkflowTaskSet{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: wf.Namespace,
+			Name:      wf.Name,
+			Labels:    map[string]string{common.LabelKeyWorkflow: "victim", common.LabelKeyPoolHash: "hash-1"},
+		},
+		Spec: wfv1.WorkflowTaskSetSpec{Tasks: map[string]wfv1.Template{"victim-1": {Name: "work"}}},
+	}
+	cancel, controller := newController(ctx, wf, pooled, defaultServiceAccount)
+	defer cancel()
+	require.NoError(t, controller.pooledTaskSetInformer.GetStore().Add(&v1.PartialObjectMetadata{ObjectMeta: pooled.ObjectMeta}))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	got, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, wf.Name, v1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, pooled.Spec.Tasks, got.Spec.Tasks)
+	assert.Equal(t, pooled.Labels, got.Labels)
+	// The write fails on every reconcile, so the tasks fail rather than wait.
+	node, err := woc.wf.GetNodeByName("http-template[0].good")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, node.Phase)
+	assert.Contains(t, node.Message, "is a pooled task's")
+}
+
 func TestRemoveCompletedTaskSetStatus(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/remove-completed-task-set-status-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
