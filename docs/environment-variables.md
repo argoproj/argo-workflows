@@ -128,6 +128,7 @@ Gains may vary under load: if the workflow informer is behind the controller's l
 ### COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT
 
 When you enable `COMPLETED_REQUEUE_TIME_MS`, this setting targets the fraction of one worker's time that each workflow spends reconciling.
+Lower it if a few large workflows are taking up too much controller time, or raise it towards `100` if you have spare workers and want completions to move faster.
 Set an integer from `1` to `100`; unset or empty uses `20`, and invalid values fail controller startup.
 At `100`, completion events use the configured floor without an additional duty-cycle gap.
 This setting alone does not enable completion-triggered scheduling.
