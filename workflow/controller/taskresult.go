@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
 )
 
 var (
@@ -40,7 +41,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 		wfc.GetManagedNamespace(),
 		20*time.Minute,
 		cache.Indexers{
-			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+			indexes.WorkflowIndex:     indexes.MetaWorkflowIndexFunc,
+			indexes.WorkerPodUIDIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkerPodUID),
 		},
 		func(options *metav1.ListOptions) {
 			options.LabelSelector = labelSelector
@@ -67,8 +69,22 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 				workflow := result.Labels[common.LabelKeyWorkflow]
 				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
 			},
+			DeleteFunc: wfc.enqueueWorkflowOfDeletedClaim,
 		})
 	return informer
+}
+
+// enqueueWorkflowOfDeletedClaim requeues the workflow of a deleted result if
+// it was a pooled task's claim: its worker released it, or it was discarded
+// or interrupted. A pod's result going is no news to its workflow.
+func (wfc *WorkflowController) enqueueWorkflowOfDeletedClaim(obj any) {
+	result, ok := informerutil.Untombstone(obj).(*wfv1.WorkflowTaskResult)
+	if !ok {
+		return
+	}
+	if _, isClaim := dispatch.ClaimFromResult(result); isClaim {
+		wfc.enqueueWorkflowFromLabel(result)
+	}
 }
 
 func recentlyDeleted(ctx context.Context, node *wfv1.NodeStatus) bool {
@@ -94,6 +110,12 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
 		_, span := woc.controller.tracing.StartReconcileTaskResult(ctx, resultName, label == "true")
+		// A pooled node's result is fenced by the node's ledger before its
+		// completed label is read.
+		if woc.reconcilePooledResult(ctx, result) {
+			span.End()
+			continue
+		}
 		// If the task result is completed, set the state to true.
 		switch label {
 		case "true":
@@ -146,4 +168,5 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		}
 		span.End()
 	}
+	woc.releasePooledTasks(ctx)
 }
