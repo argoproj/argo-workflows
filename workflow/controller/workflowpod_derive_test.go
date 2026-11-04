@@ -206,6 +206,15 @@ func TestArtifactLocationSecrets(t *testing.T) {
 	}
 }
 
+func TestEarliest(t *testing.T) {
+	early, late := deriveTestNow, deriveTestNow.Add(time.Minute)
+	assert.Nil(t, earliest())
+	assert.Nil(t, earliest(nil, nil))
+	assert.Equal(t, &late, earliest(nil, &late))
+	assert.Equal(t, &early, earliest(&late, nil, &early))
+	assert.Equal(t, &early, earliest(&early, &late))
+}
+
 func TestApplyTemplateDeadline(t *testing.T) {
 	inAMinute := deriveTestNow.Add(time.Minute)
 	inTwoSeconds := deriveTestNow.Add(2 * time.Second)

@@ -18,4 +18,8 @@ const (
 	ConditionsIndex              = "status.conditions"
 	SemaphoreConfigIndexName     = "bySemaphoreConfigMap"
 	UIDIndex                     = "uid"
+	// PoolIndex indexes pooled WorkflowTaskSets, pool pods and pool Deployments by namespace and pool hash.
+	PoolIndex = "pool"
+	// WorkerPodUIDIndex indexes pooled WorkflowTaskResults by namespace and the UID of the worker pod that claimed them.
+	WorkerPodUIDIndex = "workerPodUID"
 )

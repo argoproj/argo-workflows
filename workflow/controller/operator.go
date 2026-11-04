@@ -62,6 +62,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/pool"
 	"github.com/argoproj/argo-workflows/v4/workflow/progress"
 	wfsync "github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
@@ -160,6 +161,7 @@ type failedNodeStatus struct {
 	TemplateName string      `json:"templateName"`
 	Phase        string      `json:"phase"`
 	PodName      string      `json:"podName"`
+	TaskName     string      `json:"taskName"`
 	FinishedAt   metav1.Time `json:"finishedAt"`
 }
 
@@ -472,13 +474,25 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	var failures []failedNodeStatus
 	for _, node := range woc.wf.Status.Nodes {
 		if node.FailedOrError() && node.Type != wfv1.NodeTypeTaskGroup {
+			taskName := wfutil.GeneratePodName(woc.wf.Name, node.Name, wfutil.GetTemplateFromNode(node), node.ID, wfutil.GetPodNameVersion())
+			podName := taskName
+			if isPooled(&node) {
+				// A pooled node ran in the worker pod holding it, or in no pod
+				// if no worker holds it (never claimed, or released).
+				taskName = node.PooledTask.TaskName
+				podName = ""
+				if node.PooledTask.State() != wfv1.PooledTaskEnqueued {
+					podName = node.PooledTask.WorkerPodName
+				}
+			}
 			failures = append(failures,
 				failedNodeStatus{
 					DisplayName:  node.DisplayName,
 					Message:      node.Message,
 					TemplateName: wfutil.GetTemplateFromNode(node),
 					Phase:        string(node.Phase),
-					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, wfutil.GetTemplateFromNode(node), node.ID, wfutil.GetPodNameVersion()),
+					PodName:      podName,
+					TaskName:     taskName,
 					FinishedAt:   node.FinishedAt,
 				})
 		}
@@ -807,6 +821,7 @@ func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
+		woc.ackPooledTasks(ctx)
 		return
 	}
 
@@ -902,6 +917,8 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Failing to do so means we can have inconsistent state.
 	// Pods may be labeled multiple times.
 	woc.queuePodsForCleanup(ctx)
+	// Likewise a pooled node's TaskSet is deleted only once the node is persisted finished.
+	woc.ackPooledTasks(ctx)
 }
 
 func (woc *wfOperationCtx) checkTaskResultsInProgress(ctx context.Context) bool {
@@ -1274,7 +1291,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
-		if err == nil {
+		// A pooled node never has a pod of its own: a pod carrying its ID isn't running its task.
+		if err == nil && !isPooled(node) {
 			if newState := woc.assessNodeStatus(ctx, pod, node); newState != nil {
 				// update if a pod deletion timestamp exists on a completed workflow, ensures this pod is always looked at
 				// in the pod cleanup process
@@ -1287,16 +1305,9 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 					taskResultIncomplete = true
 					return
 				}
-				if newState.MemoizationStatus != nil {
-					if newState.Succeeded() {
-						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, newState.MemoizationStatus.CacheName)
-						err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs)
-						if err != nil {
-							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
-							newState.Phase = wfv1.NodeError
-							newState.Message = err.Error()
-						}
-					}
+				if err := woc.saveMemoizedOutputs(ctx, newState); err != nil {
+					newState.Phase = wfv1.NodeError
+					newState.Message = err.Error()
 				}
 				if newState.Phase == wfv1.NodeRunning {
 					podRunningCondition.Status = metav1.ConditionTrue
@@ -1340,8 +1351,8 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
 	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Phase.Fulfilled(node.TaskResultSynced) || node.StartedAt.IsZero() {
-			// node is not a pod, it is already complete, or it can be re-run.
+		if node.Type != wfv1.NodeTypePod || isPooled(&node) || node.Phase.Fulfilled(node.TaskResultSynced) || node.StartedAt.IsZero() {
+			// node is not a pod, it is pooled (it never has a pod), it is already complete, or it can be re-run.
 			continue
 		}
 		recentlyStarted := recentlyStarted(ctx, node)
@@ -1376,6 +1387,21 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 		}
 	}
 	return !taskResultIncomplete, nil
+}
+
+// saveMemoizedOutputs saves the outputs of the node, if it succeeded and is
+// memoized, to its memoization cache, and returns the error of a failed save,
+// which it logs.
+func (woc *wfOperationCtx) saveMemoizedOutputs(ctx context.Context, node *wfv1.NodeStatus) error {
+	if node.MemoizationStatus == nil || !node.Succeeded() {
+		return nil
+	}
+	c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+	if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs); err != nil {
+		woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+		return err
+	}
+	return nil
 }
 
 func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
@@ -2302,7 +2328,7 @@ func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string,
 	}
 	localParams := make(common.Parameters)
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		setPodNameParams(localParams, woc.getPodName(nodeName, resolvedTmpl.Name))
+		setTaskNameParams(localParams, resolvedTmpl, woc.getPodName(nodeName, resolvedTmpl.Name))
 	}
 	if nameKey != nil {
 		localParams[nameKey.Template()] = name
@@ -2631,6 +2657,9 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		woc.log.WithFields(logging.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
 			Debug(ctx, "taskresults of workflow are incomplete or still have daemon nodes, so can't mark workflow completed")
 		woc.killDaemonedChildren(ctx, "")
+		return ctx
+	}
+	if phase.Completed() && woc.pooledTaskSetsRemain(ctx) {
 		return ctx
 	}
 
@@ -3078,6 +3107,10 @@ func (woc *wfOperationCtx) getPodByNode(node *wfv1.NodeStatus) (*apiv1.Pod, erro
 	if node.Type != wfv1.NodeTypePod {
 		return nil, fmt.Errorf("expected node type %s, got %s", wfv1.NodeTypePod, node.Type)
 	}
+	// A pooled node runs on a pool's worker pod, not a pod of its own.
+	if isPooled(node) {
+		return nil, nil
+	}
 
 	podName := woc.getPodName(node.Name, wfutil.GetTemplateFromNode(*node))
 	return woc.controller.PodController.GetPod(woc.wf.GetNamespace(), podName)
@@ -3270,6 +3303,9 @@ func (woc *wfOperationCtx) executeContainer(ctx context.Context, nodeName string
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
+	}
+	if pool.Pooled(tmpl) {
+		return woc.executePooled(ctx, node, templateScope, *tmpl.Container, tmpl, orgTmpl, opts)
 	}
 
 	// Check if the output of this container is referenced elsewhere in the Workflow. If so, make sure to include it during
@@ -3498,6 +3534,13 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	} else if !node.Pending() {
 		return node, nil
 	}
+	if len(tmpl.Script.Source) == 0 {
+		woc.log.Warn(ctx, "'script.source' is empty, suggest change template into 'container'")
+	}
+	if pool.Pooled(tmpl) {
+		// The worker passes the script's path in its per-task directory.
+		return woc.executePooled(ctx, node, templateScope, tmpl.Script.Container, tmpl, orgTmpl, opts)
+	}
 
 	// Check if the output of this script is referenced elsewhere in the Workflow. If so, make sure to include it during
 	// execution.
@@ -3507,9 +3550,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	}
 
 	mainCtr := tmpl.Script.Container.DeepCopy()
-	if len(tmpl.Script.Source) == 0 {
-		woc.log.Warn(ctx, "'script.source' is empty, suggest change template into 'container'")
-	} else {
+	if len(tmpl.Script.Source) > 0 {
 		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	}
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{
@@ -4461,6 +4502,18 @@ func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
 	return wfutil.GeneratePodName(woc.wf.Name, nodeName, templateName, woc.wf.ResolveNodeID(nodeName), version)
+}
+
+// setTaskNameParams sets the parameters that name a task of tmpl in params:
+// pod.name and node.taskName for a pod, and node.taskName alone for a pooled
+// task, which has no pod of its own. Its artifact keys still resolve pod.name
+// as the task name (taskParams), as a pod's do.
+func setTaskNameParams(params map[string]string, tmpl *wfv1.Template, taskName string) {
+	if pool.Pooled(tmpl) {
+		params[varkeys.NodeTaskName.Template()] = taskName
+		return
+	}
+	setPodNameParams(params, taskName)
 }
 
 // setPodNameParams sets pod.name and node.taskName in params from a pod name.

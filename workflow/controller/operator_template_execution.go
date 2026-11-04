@@ -58,9 +58,25 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 		return err
 	}
 
-	// Check the timeout and pendingTimeout deadlines for Pending nodes.
-	// This also covers the resource-forbidden and synchronization scenarios,
-	// where only the node exists, in a pending state, with no pod created.
+	// A pooled node's timeouts must end its task, not a pod, so they aren't
+	// checked here.
+	if node == nil || !isPooled(node) {
+		if err := woc.checkTemplateTimeouts(ctx, nodeName, node, processedTmpl); err != nil {
+			return err
+		}
+	}
+
+	if err := woc.checkParallelism(ctx, processedTmpl, node, boundaryID); err != nil {
+		return err
+	}
+	return nil
+}
+
+// checkTemplateTimeouts checks the timeout and pendingTimeout deadlines for
+// Pending nodes. This also covers the resource-forbidden and synchronization
+// scenarios, where only the node exists, in a pending state, with no pod
+// created.
+func (woc *wfOperationCtx) checkTemplateTimeouts(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) error {
 	tmplToCheck := processedTmpl
 	if woc.retryStrategy(processedTmpl) != nil {
 		// retry variables are bound per attempt in handleRetries; check
@@ -75,15 +91,8 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 		return woc.markTimeoutError(ctx, processedTmpl, node, nodeName, err)
 	}
 	// Ensure that we will check again soon after the earliest deadline
-	if deadline == nil || (pendingDeadline != nil && pendingDeadline.Before(*deadline)) {
-		deadline = pendingDeadline
-	}
-	if deadline != nil && time.Now().Before(*deadline) {
-		woc.requeueAfter(time.Until(*deadline))
-	}
-
-	if err := woc.checkParallelism(ctx, processedTmpl, node, boundaryID); err != nil {
-		return err
+	if first := earliest(deadline, pendingDeadline); first != nil && time.Now().Before(*first) {
+		woc.requeueAfter(time.Until(*first))
 	}
 	return nil
 }
@@ -313,7 +322,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 
 	localParams := make(map[string]string)
 	if processedTmpl.IsPodType() {
-		setPodNameParams(localParams, woc.getPodName(nodeName, processedTmpl.Name))
+		setTaskNameParams(localParams, processedTmpl, woc.getPodName(nodeName, processedTmpl.Name))
 	}
 	localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
 
