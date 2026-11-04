@@ -2,10 +2,10 @@
 
 Automatic (that is, mutating webhook based) sidecar injection systems, including service meshes such as Anthos and Istio Proxy, create a unique problem for Kubernetes workloads that run to completion.
 
-Because sidecars are injected outside of the view of the workflow controller, the controller has no awareness of them.
+Because the webhook injects sidecars outside of the view of the workflow controller, the controller has no awareness of them.
 The controller has no opportunity to rewrite the container's command.
 The sidecar's process runs as PID 1, which can prevent signals from terminating it.
-This can make it impossible for the wait container to terminate the sidecar.
+This can make it impossible for the workflow controller to terminate the sidecar.
 
 You can minimize problems by not using Istio with Argo Workflows.
 
@@ -30,7 +30,7 @@ You can delete a pod, but this kills all containers, and loses all information a
 Instead, Argo mimics the Kubernetes termination behavior, which is:
 
 1. SIGTERM PID 1
-1. Wait for the pod's `terminateGracePeriodSeconds` (30s by default).
+1. Wait for the pod's `terminationGracePeriodSeconds` (30s by default).
 1. SIGKILL PID 1
 
 Argo doesn't support the following:
