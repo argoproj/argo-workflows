@@ -3451,6 +3451,7 @@ cause implementors to also use a fixed point implementation.
 | roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | sessionTokenSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| tokenExpirationInMinutes | int32 (formatted integer)| `int32` |  | | TokenExpirationInMinutes specifies the expiration time, in minutes, for the token</br>obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is</br>set) and STS web-identity credentials (when UseSDKCreds is set and web-identity</br>environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS</br>DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed</br>range, otherwise the request is rejected. It has no effect on static credentials or</br>other SDK-resolved credential providers. </br>*Minimum value: 15; Maximum value: 720.*|  |
 | useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
 
 

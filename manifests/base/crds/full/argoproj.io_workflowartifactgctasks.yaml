@@ -570,6 +570,11 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            tokenExpirationInMinutes:
+                              format: int32
+                              maximum: 720
+                              minimum: 15
+                              type: integer
                             useSDKCreds:
                               type: boolean
                           type: object
@@ -1158,6 +1163,11 @@ spec:
                                 - key
                                 type: object
                                 x-kubernetes-map-type: atomic
+                              tokenExpirationInMinutes:
+                                format: int32
+                                maximum: 720
+                                minimum: 15
+                                type: integer
                               useSDKCreds:
                                 type: boolean
                             type: object
