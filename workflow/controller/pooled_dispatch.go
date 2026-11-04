@@ -31,10 +31,11 @@ import (
 // rate limiter. A node that can't be pooled fails; it never falls back to a
 // pod, which would surprise its user. Once the ledger is recorded,
 // reconciling the node makes no API calls, as reconciling a node whose pod
-// exists makes none.
+// exists makes none, until its queued task is past a timeout
+// (checkPooledTimeouts).
 func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeStatus, templateScope string, mainCtr apiv1.Container, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	if node.PooledTask != nil {
-		return node, nil
+		return woc.checkPooledTimeouts(ctx, node, tmpl), nil
 	}
 	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID)
 
