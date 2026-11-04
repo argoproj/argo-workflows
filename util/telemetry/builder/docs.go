@@ -176,10 +176,17 @@ func generateMermaidSpanTree(rootName string, spans *spansList) []string {
 		lines = append(lines, fmt.Sprintf("    %s[<a href='#%s'>%s</a>]", s.Name, s.displayName(), s.displayName()))
 	}
 
-	// Generate edges
+	// Generate edges, only from parents in this trace: a span shared with
+	// other traces also lists their spans as parents.
+	inTrace := make(map[string]bool, len(spansInTrace))
+	for _, s := range spansInTrace {
+		inTrace[s.Name] = true
+	}
 	for _, s := range spansInTrace {
 		for _, parent := range s.Parents {
-			lines = append(lines, fmt.Sprintf("    %s --> %s", parent, s.Name))
+			if inTrace[parent] {
+				lines = append(lines, fmt.Sprintf("    %s --> %s", parent, s.Name))
+			}
 		}
 	}
 
