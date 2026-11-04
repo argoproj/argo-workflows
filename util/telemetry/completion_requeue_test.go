@@ -11,6 +11,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
+// TestCompletionRequeueMetricHelpers verifies recorded values and default buckets
+// for both histograms, with no attributes that could create per-workflow series.
 func TestCompletionRequeueMetricHelpers(t *testing.T) {
 	for _, tt := range []struct {
 		instrument BuiltinInstrument

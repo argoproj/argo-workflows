@@ -30,6 +30,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 )
 
+// TestCompletionDutyCyclePercent verifies defaults and rejects invalid targets at
+// startup even when completion-triggered scheduling is disabled.
 func TestCompletionDutyCyclePercent(t *testing.T) {
 	t.Setenv("COMPLETED_REQUEUE_TIME_MS", "")
 	const key = "COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT"
@@ -60,6 +62,8 @@ func TestCompletionDutyCyclePercent(t *testing.T) {
 	}
 }
 
+// TestCompletionRequeueInvalidFloor ensures startup rejects a nonpositive floor
+// before initializing clients.
 func TestCompletionRequeueInvalidFloor(t *testing.T) {
 	t.Setenv("COMPLETED_REQUEUE_TIME_MS", "0")
 	t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", "20")
@@ -68,6 +72,8 @@ func TestCompletionRequeueInvalidFloor(t *testing.T) {
 	assert.Nil(t, controller)
 }
 
+// TestCompletionRequeueControllerConfiguration checks startup settings and warns
+// only when the completion floor exceeds the normal requeue ceiling.
 func TestCompletionRequeueControllerConfiguration(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
@@ -118,6 +124,8 @@ func TestCompletionRequeueControllerConfiguration(t *testing.T) {
 	}
 }
 
+// TestCompletionRequeueDelay covers duty-cycle bounds, elapsed idle time, overflow
+// safety, and timing isolation between workflow UIDs.
 func TestCompletionRequeueDelay(t *testing.T) {
 	now := time.Now()
 	for _, tt := range []struct {
@@ -155,6 +163,8 @@ func TestCompletionRequeueDelay(t *testing.T) {
 	}
 }
 
+// TestWorkflowReconcileTiming checks duration smoothing, utilization sampling,
+// and immediate timing cleanup when a workflow completes.
 func TestWorkflowReconcileTiming(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
@@ -182,6 +192,8 @@ func TestWorkflowReconcileTiming(t *testing.T) {
 	assert.Empty(t, controller.reconcileTimings, "completion clears timing immediately")
 }
 
+// TestWorkflowReconcileTimingDisabled ensures the opt-out path neither allocates
+// timing state nor emits utilization metrics or triggers lifecycle cleanup.
 func TestWorkflowReconcileTimingDisabled(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
@@ -199,6 +211,8 @@ func TestWorkflowReconcileTimingDisabled(t *testing.T) {
 	require.Error(t, err, "disabled fast path must not emit utilization samples")
 }
 
+// TestWorkflowReconcileTimingCleanup verifies writes preserve timing, completion
+// prevents its resurrection, and periodic cleanup removes idle records.
 func TestWorkflowReconcileTimingCleanup(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		controller := newCompletionDelayController(t, 10*time.Second, new(time.Millisecond))
@@ -225,6 +239,8 @@ func TestWorkflowReconcileTimingCleanup(t *testing.T) {
 	})
 }
 
+// TestWorkflowReconcileTimingConcurrent exercises timing reads, updates, and
+// completion cleanup concurrently to expose races and resurrected records.
 func TestWorkflowReconcileTimingConcurrent(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	controller := newCompletionDelayController(t, 10*time.Second, new(time.Millisecond))
@@ -245,6 +261,8 @@ func TestWorkflowReconcileTimingConcurrent(t *testing.T) {
 	assert.Empty(t, controller.reconcileTimings)
 }
 
+// TestTaskSetCompletionDutyCycle checks queue deadlines and metric sampling for
+// completion and routine events, including disabled timing and owner lookup.
 func TestTaskSetCompletionDutyCycle(t *testing.T) {
 	for _, tt := range []struct {
 		name       string
@@ -304,11 +322,14 @@ type delayedWorkflowKeyLock struct {
 	syncpkg.KeyLock
 }
 
+// Lock simulates contention with a synctest-compatible delay before acquisition.
 func (l delayedWorkflowKeyLock) Lock(key string) {
 	time.Sleep(5 * time.Second)
 	l.KeyLock.Lock(key)
 }
 
+// TestWorkflowReconcileTimingExcludesKeyLockWait verifies the worker measures
+// operate() without charging workflow-lock contention to the duty-cycle target.
 func TestWorkflowReconcileTimingExcludesKeyLockWait(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())

@@ -29,6 +29,8 @@ func TestMetrics(t *testing.T) {
 	assert.Equal(t, []uint64{1, 0, 0, 0, 0, 0, 0}, val.BucketCounts)
 }
 
+// TestCompletionRequeueHistogramRegistrationError checks that duplicate delay
+// registration returns an error without replacing the utilization instrument.
 func TestCompletionRequeueHistogramRegistrationError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	m, _, err := CreateDefaultTestMetrics(ctx)

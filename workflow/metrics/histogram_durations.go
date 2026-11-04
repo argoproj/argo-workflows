@@ -32,6 +32,8 @@ func addOperationDurationHistogram(ctx context.Context, m *Metrics) error {
 		telemetry.WithDefaultBuckets(prometheus.LinearBuckets(bucketWidth, bucketWidth, operationDurationMetricBucketCount)))
 }
 
+// addCompletionRequeueHistograms registers delay and utilization histograms,
+// stopping at the first registration error.
 func addCompletionRequeueHistograms(_ context.Context, m *Metrics) error {
 	if err := m.CreateBuiltinInstrument(telemetry.InstrumentWorkflowCompletionRequeueDelay); err != nil {
 		return err

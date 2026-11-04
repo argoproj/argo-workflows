@@ -20,6 +20,8 @@ type Metrics struct {
 	fallbackLogger     logging.Logger // use a logger from context if available
 }
 
+// New initializes telemetry and the controller's built-in instruments, returning
+// any setup error before starting context-bound custom-metric garbage collection.
 func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.MetricsConfig, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
 	m, err := telemetry.NewMetrics(ctx, serviceName, prometheusName, config, extraOpts...)
 	if err != nil {
