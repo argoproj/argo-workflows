@@ -636,11 +636,7 @@ func buildExecContainer(name string, tmpl *wfv1.Template, cfg execContainerConfi
 	}
 
 	if cfg.executorServiceAccountName != "" {
-		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
-			Name:      common.ServiceAccountTokenVolumeName,
-			MountPath: common.ServiceAccountTokenMountPath,
-			ReadOnly:  true,
-		})
+		exec.VolumeMounts = append(exec.VolumeMounts, executorTokenVolumeMount())
 	}
 	return &exec
 }
@@ -677,6 +673,16 @@ func newSupervisorContainer(tmpl *wfv1.Template, execCfg execContainerConfig, lo
 	// activate. Without this, those paths would not run.
 	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarInitlessPod, Value: "true"})
 	return ctr
+}
+
+// executorTokenVolumeMount mounts executorTokenVolume where argoexec reads its
+// service account token.
+func executorTokenVolumeMount() apiv1.VolumeMount {
+	return apiv1.VolumeMount{
+		Name:      common.ServiceAccountTokenVolumeName,
+		MountPath: common.ServiceAccountTokenMountPath,
+		ReadOnly:  true,
+	}
 }
 
 // argoBinVolume builds the ImageVolume that mounts the argoexec binary into
