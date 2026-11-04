@@ -172,7 +172,7 @@ func pooledTaskSetMeta(nodeID, workflowName string, extraLabels map[string]strin
 		TypeMeta: metav1.TypeMeta{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowTaskSetKind},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
-			Name:      nodeID + "-task",
+			Name:      pooledTaskSetName(nodeID),
 			UID:       types.UID("uid-" + nodeID),
 			Labels:    l,
 		},

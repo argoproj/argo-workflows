@@ -19,12 +19,6 @@ type DesiredTask struct {
 	// TmplCtx is the resolved template context for this task (captures the template scope chain)
 	TmplCtx *templateresolution.TemplateContext
 
-	// MergedTemplate is the resolved template with the templateDefaults merged
-	// in, before arguments and variables are substituted into it (Template).
-	// Hot worker dispatch checks it for what substitution hides, such as
-	// {{pod.name}}.
-	MergedTemplate *wfv1.Template
-
 	// Template is the resolved template definition for this task
 	Template *wfv1.Template
 

@@ -358,7 +358,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// (b) shutdown-strategy guard. Do not create pods if we are shutting down.
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
-		woc.markNodeFailedOnShutdown(ctx, nodeName, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
+		woc.markNodeFailedOnShutdown(ctx, nodeName, notStartedOnShutdownMessage(woc.GetShutdownStrategy()))
 		return nil, nil
 	}
 

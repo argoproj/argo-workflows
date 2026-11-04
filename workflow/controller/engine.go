@@ -1022,20 +1022,19 @@ func (e *Engine) desiredTask(ctx context.Context, task dag.Task) (DesiredTask, e
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
 		nameKey = varkeys.StepsName
 	}
-	newTmplCtx, mergedTmpl, processedTmpl, err := e.woc.prepareTemplate(ctx, taskNodeName, task.GetTemplateReferenceHolder(), e.tmplCtx, task.GetArguments(), nameKey, task.GetDisplayName())
+	newTmplCtx, processedTmpl, err := e.woc.prepareTemplate(ctx, taskNodeName, task.GetTemplateReferenceHolder(), e.tmplCtx, task.GetArguments(), nameKey, task.GetDisplayName())
 	if err != nil {
 		return DesiredTask{}, err
 	}
 
 	return DesiredTask{
-		TaskName:       taskNodeName,
-		TemplateScope:  e.tmplCtx.GetTemplateScope(),
-		TmplCtx:        newTmplCtx,
-		MergedTemplate: mergedTmpl,
-		Template:       processedTmpl,
-		TemplateRef:    task.GetTemplateReferenceHolder(),
-		BoundaryID:     e.boundaryID,
-		IsOnExit:       e.onExitTemplate,
+		TaskName:      taskNodeName,
+		TemplateScope: e.tmplCtx.GetTemplateScope(),
+		TmplCtx:       newTmplCtx,
+		Template:      processedTmpl,
+		TemplateRef:   task.GetTemplateReferenceHolder(),
+		BoundaryID:    e.boundaryID,
+		IsOnExit:      e.onExitTemplate,
 	}, nil
 }
 

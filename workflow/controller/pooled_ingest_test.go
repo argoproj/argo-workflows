@@ -44,7 +44,7 @@ func claimPooled(ctx context.Context, t *testing.T, controller *WorkflowControll
 // claimPooledBy has worker claim the pooled node's TaskSet in fake.
 func claimPooledBy(ctx context.Context, t *testing.T, fake *dispatch.Fake, namespace, nodeID string, worker dispatch.Worker) dispatch.Claimed {
 	t.Helper()
-	ts, ok := fake.TaskSet(namespace, nodeID+"-task")
+	ts, ok := fake.TaskSet(namespace, pooledTaskSetName(nodeID))
 	require.True(t, ok)
 	candidate, ok := dispatch.CandidateFromTaskSet(ts)
 	require.True(t, ok)

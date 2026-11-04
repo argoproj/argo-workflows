@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -93,20 +94,32 @@ func TestCreateTaskSetLeavesAPooledTaskSet(t *testing.T) {
 		},
 		Spec: wfv1.WorkflowTaskSetSpec{Tasks: map[string]wfv1.Template{"victim-1": {Name: "work"}}},
 	}
-	cancel, controller := newController(ctx, wf, pooled, defaultServiceAccount)
-	defer cancel()
-	require.NoError(t, controller.pooledTaskSetInformer.GetStore().Add(&v1.PartialObjectMetadata{ObjectMeta: pooled.ObjectMeta}))
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	woc.operate(ctx)
-	got, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, wf.Name, v1.GetOptions{})
-	require.NoError(t, err)
-	assert.Equal(t, pooled.Spec.Tasks, got.Spec.Tasks)
-	assert.Equal(t, pooled.Labels, got.Labels)
-	// The write fails on every reconcile, so the tasks fail rather than wait.
-	node, err := woc.wf.GetNodeByName("http-template[0].good")
-	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, node.Phase)
-	assert.Contains(t, node.Message, "is a pooled task's")
+	for _, cached := range []bool{true, false} {
+		t.Run(fmt.Sprintf("cached=%v", cached), func(t *testing.T) {
+			cancel, controller := newController(ctx, wf.DeepCopy(), pooled, defaultServiceAccount)
+			defer cancel()
+			if !cached {
+				// As just after the pooled TaskSet was created.
+				require.NoError(t, controller.wfTaskSetInformer.Informer().GetStore().Delete(pooled))
+			}
+			woc := newWorkflowOperationCtx(ctx, wf.DeepCopy(), controller)
+			woc.operate(ctx)
+			// The write fails on every reconcile, so the tasks fail rather than wait.
+			node, err := woc.wf.GetNodeByName("http-template[0].good")
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeError, node.Phase)
+			assert.Contains(t, node.Message, "is a pooled task's")
+			// Nor does removing the finished tasks' status, which would also
+			// label the TaskSet completed.
+			woc.wf.Status.Phase = wfv1.WorkflowError
+			require.ErrorIs(t, woc.removeCompletedTaskSetStatus(ctx, woc.wf.Status.Nodes), errPooledTaskSetName)
+			got, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, wf.Name, v1.GetOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, pooled.Spec.Tasks, got.Spec.Tasks)
+			assert.Equal(t, pooled.Labels, got.Labels)
+			assert.Empty(t, got.Status.Nodes)
+		})
+	}
 }
 
 func TestRemoveCompletedTaskSetStatus(t *testing.T) {

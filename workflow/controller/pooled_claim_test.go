@@ -161,7 +161,7 @@ func TestPooledRelease(t *testing.T) {
 	assert.Empty(t, ledger.WorkerPodUID)
 	assert.Zero(t, ledger.WorkerRestartCount)
 	assert.Nil(t, ledger.ClaimedAt())
-	_, exists := fake.TaskSet(wf.Namespace, id+"-task")
+	_, exists := fake.TaskSet(wf.Namespace, pooledTaskSetName(id))
 	assert.True(t, exists, "the task can be claimed again")
 
 	woc = reconcilePooled(ctx, t, controller, wf)
@@ -296,7 +296,7 @@ func TestPooledClaimGoneIsNotARelease(t *testing.T) {
 					TypeMeta: metav1.TypeMeta{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowTaskSetKind},
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: woc.wf.Namespace,
-						Name:      id + "-task",
+						Name:      pooledTaskSetName(id),
 						UID:       tt.taskSetUID,
 						Labels:    map[string]string{common.LabelKeyWorkflow: woc.wf.Name, common.LabelKeyPoolHash: "hash"},
 					},

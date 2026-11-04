@@ -39,7 +39,7 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID)
 
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitTemplate) {
-		woc.markNodeFailedOnShutdown(ctx, node.Name, shutdownMessage(woc.GetShutdownStrategy()))
+		woc.markNodeFailedOnShutdown(ctx, node.Name, notStartedOnShutdownMessage(woc.GetShutdownStrategy()))
 		return node, nil
 	}
 	// Read on every dispatch, so turning the flag on in the configmap starts
@@ -47,7 +47,10 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 	if !woc.controller.Config.HotWorkers.IsEnabled() {
 		return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "template '%s' has a pool, but hot workers are disabled: set hotWorkers.enabled in the workflow controller configmap", tmpl.Name)
 	}
-	if err := woc.checkPoolable(tmpl, opts); err != nil {
+	// Validation at submission sees the template as written; only now are its
+	// pool name, volume mounts and artifact paths substituted, and is the
+	// execution workflow's spec known.
+	if err := validate.Poolable(tmpl, &woc.execWf.Spec); err != nil {
 		return nil, err
 	}
 
@@ -69,8 +72,12 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 		// started, and failNodesWithoutCreatedPodsAfterDeadlineOrShutdown ends it.
 		return node, nil
 	}
-	if err = woc.reserveRateLimiter(ctx); err != nil {
-		return woc.requeueIfTransientErr(ctx, err, node.Name)
+	// As for a pod that exists, a TaskSet Enqueue would adopt, as after a lost
+	// status write, takes no slot: it creates nothing.
+	if !woc.pooledTaskSetAdoptable(node.ID) {
+		if err = woc.reserveRateLimiter(ctx); err != nil {
+			return woc.requeueIfTransientErr(ctx, err, node.Name)
+		}
 	}
 
 	enqueued, err := woc.controller.dispatcher.Enqueue(ctx, *task)
@@ -106,22 +113,6 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 	// wasn't counted either.
 	woc.incrementActivePods()
 	return node, nil
-}
-
-// checkPoolable checks, at dispatch, that a pooled template can run on a pool
-// (validate.Poolable), which submission can't always tell: as merged,
-// before substitution has replaced a {{pod.name}}, under the execution
-// workflow's spec, and as substituted, once parameters have given values to
-// its pool name and artifact paths.
-func (woc *wfOperationCtx) checkPoolable(tmpl *wfv1.Template, opts *executeTemplateOpts) error {
-	merged := opts.mergedTemplate
-	if merged == nil {
-		merged = tmpl
-	}
-	if err := validate.Poolable(merged, &woc.execWf.Spec); err != nil {
-		return err
-	}
-	return validate.Poolable(tmpl, nil)
 }
 
 // poolWorkflowTemplateName is the WorkflowTemplate or ClusterWorkflowTemplate
@@ -331,6 +322,9 @@ func (pb *podBuilder) lookupPoolPluginCommands(ctx context.Context, spec *wfv1.P
 // pod.name, and an expression that needs it fails rather than reaching the
 // worker unresolved. Its archive location, whose key format comes from the
 // artifact repository, resolves pod.name as the task name, as a pod's does.
+// The template is the executor's (common.ExecutorTemplate), as a pod's
+// ARGO_TEMPLATE is: its inputs.parameters, already substituted into it, are
+// data, and a value that holds a {{pod...}} tag must not fail the task.
 func substituteTaskParams(ctx context.Context, tmpl *wfv1.Template, globalParams common.Parameters, taskName string) (*wfv1.Template, error) {
 	params := taskParams(globalParams, tmpl, taskName)
 	var archiveLocation *wfv1.ArtifactLocation
@@ -342,7 +336,7 @@ func substituteTaskParams(ctx context.Context, tmpl *wfv1.Template, globalParams
 	}
 	withoutPod := params.DeepCopy()
 	delete(withoutPod, varkeys.PodName.Template())
-	rest := tmpl.DeepCopy()
+	rest := common.ExecutorTemplate(tmpl)
 	rest.ArchiveLocation = nil
 	substituted, err := substituteTaskObject(ctx, rest, withoutPod, []string{"pod"})
 	if err != nil {
@@ -357,14 +351,14 @@ func substituteTaskParams(ctx context.Context, tmpl *wfv1.Template, globalParams
 // and the template timeout's, which a pod gets through its
 // activeDeadlineSeconds. Nil means none.
 func pooledTaskDeadline(executorDeadline time.Time, timeoutDeadline *time.Time) *metav1.Time {
-	deadline := executorDeadline
-	if timeoutDeadline != nil && (deadline.IsZero() || timeoutDeadline.Before(deadline)) {
-		deadline = *timeoutDeadline
+	var executor *time.Time
+	if !executorDeadline.IsZero() {
+		executor = &executorDeadline
 	}
-	if deadline.IsZero() {
-		return nil
+	if deadline := earliest(executor, timeoutDeadline); deadline != nil {
+		return &metav1.Time{Time: *deadline}
 	}
-	return &metav1.Time{Time: deadline}
+	return nil
 }
 
 // traceContext is the W3C trace context of ctx, which a pod gets as

@@ -19,6 +19,12 @@ func shutdownMessage(strategy wfv1.ShutdownStrategy) string {
 	return fmt.Sprintf("workflow shutdown with strategy:  %s", strategy)
 }
 
+// notStartedOnShutdownMessage is the message of a node whose task the
+// workflow's shutdown strategy kept from starting.
+func notStartedOnShutdownMessage(strategy wfv1.ShutdownStrategy) string {
+	return fmt.Sprintf("workflow shutdown with strategy: %s", strategy)
+}
+
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending and running pods (except agent pod) when workflow has reached its deadline
 func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {

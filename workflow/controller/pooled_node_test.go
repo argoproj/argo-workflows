@@ -125,13 +125,6 @@ func addChildPod(t *testing.T, woc *wfOperationCtx, phase apiv1.PodPhase) *apiv1
 	return pod
 }
 
-func nodePhase(t *testing.T, woc *wfOperationCtx, nodeName string) wfv1.NodePhase {
-	t.Helper()
-	node, err := woc.wf.GetNodeByName(nodeName)
-	require.NoError(t, err)
-	return node.Phase
-}
-
 // TestPooledNodeCountsAsBackingExecution checks that, once enqueued, a pooled
 // node with no pod counts against workflow, template and boundary parallelism
 // and holds back failFast, as a created pending pod does.
@@ -212,14 +205,14 @@ func TestPooledNodeCountsAsBackingExecution(t *testing.T) {
 				err := woc.checkParallelism(ctx, woc.execWf.GetTemplateByName("main-fail-fast"), boundary, "")
 				require.ErrorIs(t, err, ErrParallelismReached)
 				// the boundary fails only once nothing in it is still running
-				assert.Equal(t, tc.active, nodePhase(t, woc, "pooled") == wfv1.NodeRunning)
+				assert.Equal(t, tc.active, mustNode(t, woc, "pooled").Phase == wfv1.NodeRunning)
 			})
 
 			t.Run("boundary failFast", func(t *testing.T) {
 				ctx, woc, boundary := newWoc(t, "main-fail-fast", true)
 				err := woc.checkParallelism(ctx, work(woc), nil, boundary.ID)
 				require.ErrorIs(t, err, ErrParallelismReached)
-				assert.Equal(t, tc.active, nodePhase(t, woc, "pooled") == wfv1.NodeRunning)
+				assert.Equal(t, tc.active, mustNode(t, woc, "pooled").Phase == wfv1.NodeRunning)
 			})
 		})
 	}
@@ -280,7 +273,7 @@ func TestPooledNodeNotMissing(t *testing.T) {
 				if tc.pooled == nil {
 					want = wfv1.NodeFailed
 				}
-				assert.Equal(t, want, nodePhase(t, woc, pooledChild))
+				assert.Equal(t, want, mustNode(t, woc, pooledChild).Phase)
 			})
 		})
 	}
@@ -322,7 +315,7 @@ func TestPooledNodeNotKilled(t *testing.T) {
 					if podNode {
 						want = wfv1.NodeFailed
 					}
-					assert.Equal(t, want, nodePhase(t, woc, pooledChild))
+					assert.Equal(t, want, mustNode(t, woc, pooledChild).Phase)
 				})
 			}
 
