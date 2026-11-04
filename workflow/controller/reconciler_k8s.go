@@ -65,6 +65,7 @@ func (r *K8sTaskReconciler) Reconcile(ctx context.Context, desired []DesiredTask
 			onExitTemplate: dt.IsOnExit,
 			nodeFlag:       dt.NodeFlag,
 			templateScope:  dt.TemplateScope,
+			mergedTemplate: dt.MergedTemplate,
 		})
 		// Link a node this call created, once it exists, and only then:
 		// creation can be deferred (parallelism) and an edge to a node never

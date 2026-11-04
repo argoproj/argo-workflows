@@ -2275,6 +2275,9 @@ type executeTemplateOpts struct {
 	// When set, this represents the parent scope (where the template reference was made from),
 	// while tmplCtx may be the resolved context (for child template resolution).
 	templateScope string
+	// mergedTemplate is the template with the templateDefaults merged in,
+	// before substitution (DesiredTask.MergedTemplate). Nil when not known.
+	mergedTemplate *wfv1.Template
 }
 
 // prepareTemplate prepares the template of node nodeName to be reconciled, for
@@ -2283,18 +2286,19 @@ type executeTemplateOpts struct {
 // templateDefaults into it, and processes args into it. The local variables
 // are {{node.name}}, {{pod.name}} for a pod template without a retryStrategy,
 // and nameKey ({{tasks.name}} or {{steps.name}}; nil for neither) set to
-// name. It returns the template context the template resolved in, and the
-// processed template.
-func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, nameKey *variables.Key, name string) (*templateresolution.TemplateContext, *wfv1.Template, error) {
+// name. It returns the template context the template resolved in, the
+// template with the templateDefaults merged in but nothing substituted yet,
+// and the processed template.
+func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, nameKey *variables.Key, name string) (*templateresolution.TemplateContext, *wfv1.Template, *wfv1.Template, error) {
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(ctx, orgTmpl)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if templateStored {
 		woc.updated = true
 	}
 	if err = woc.mergedTemplateDefaultsInto(resolvedTmpl); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	localParams := make(common.Parameters)
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
@@ -2306,9 +2310,9 @@ func (woc *wfOperationCtx) prepareTemplate(ctx context.Context, nodeName string,
 	localParams[varkeys.NodeName.Template()] = nodeName
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return newTmplCtx, processedTmpl, nil
+	return newTmplCtx, resolvedTmpl, processedTmpl, nil
 }
 
 // reconcileTemplate resolves and processes a template for the given node and
@@ -2335,20 +2339,21 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 	case orgTmpl.IsWorkflowStep():
 		nameKey = varkeys.StepsName
 	}
-	newTmplCtx, processedTmpl, err := woc.prepareTemplate(ctx, nodeName, orgTmpl, tmplCtx, args, nameKey, orgTmpl.GetName())
+	newTmplCtx, mergedTmpl, processedTmpl, err := woc.prepareTemplate(ctx, nodeName, orgTmpl, tmplCtx, args, nameKey, orgTmpl.GetName())
 	if err != nil {
 		return woc.initializeNodeOrMarkError(ctx, nil, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
 
 	reconciler := NewK8sTaskReconciler(woc, newTmplCtx, nodeName)
 	err = reconciler.Reconcile(ctx, []DesiredTask{{
-		TaskName:      nodeName,
-		TemplateScope: tmplCtx.GetTemplateScope(),
-		Template:      processedTmpl,
-		TemplateRef:   orgTmpl,
-		NodeFlag:      opts.nodeFlag,
-		BoundaryID:    opts.boundaryID,
-		IsOnExit:      opts.onExitTemplate,
+		TaskName:       nodeName,
+		TemplateScope:  tmplCtx.GetTemplateScope(),
+		MergedTemplate: mergedTmpl,
+		Template:       processedTmpl,
+		TemplateRef:    orgTmpl,
+		NodeFlag:       opts.nodeFlag,
+		BoundaryID:     opts.boundaryID,
+		IsOnExit:       opts.onExitTemplate,
 	}})
 	if err != nil {
 		return nil, err
