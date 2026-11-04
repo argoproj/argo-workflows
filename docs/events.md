@@ -36,7 +36,7 @@ curl https://localhost:2746/api/v1/events/argo/my-discriminator \
 By default, the Event endpoint processes the Event before it returns, and can report failures to you.
 If you enable `--event-async-dispatch`, the endpoint queues the Event and returns without waiting for Argo to process it.
 This means that Argo does not notify you of failures synchronously.
-The endpoint returns a failure (503) if the Event processing queue is full.
+With async dispatch, the endpoint returns a failure (503) if the Event processing queue is full.
 
 !!! Warning "Processing Order"
     Argo does not always process Events in the order it receives them.
@@ -114,8 +114,8 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
 ```
 
 !!! Warning "Malformed Expressions"
-    If the expression is malformed, this is logged.
-    It is not visible in logs or the UI.
+    If an expression is malformed, the Argo Server logs the error and records a `WorkflowEventBindingError` Kubernetes Event on the WorkflowEventBinding.
+    By default, the endpoint also returns the error to you.
 
 ### Customizing the Workflow Meta-Data
 
@@ -125,7 +125,7 @@ To do this, add a `metadata` object to the Submit object.
 By default, the name of the Workflow created from an Event is the name of the WorkflowTemplate with a random suffix appended.
 You can customize it by setting the name in the `metadata` object.
 
-Argo adds Annotations and Labels to the Workflow in the same way.
+You add Annotations and Labels the same way.
 
 Argo treats all the values for the Name, Annotations and Labels as expressions (see below for details).
 The `metadata` object is the same `metadata` type as on all Kubernetes resources, and Argo parses it the same way.
@@ -221,7 +221,7 @@ discriminator == "my-discriminator"
 If you are processing large numbers of events, you may need to scale up the Argo Server to handle them.
 If you enable `--event-async-dispatch`, a single Argo Server can queue 16 events by default before the endpoint starts returning 503 errors.
 
-Vertically you can:
+If you enable `--event-async-dispatch`, you can scale vertically:
 
 * Increase the size of the event operation queue `--event-operation-queue-size` (good for temporary event bursts).
 * Increase the number of workers `--event-worker-count` (good for sustained numbers of events).
