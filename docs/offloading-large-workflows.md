@@ -2,7 +2,7 @@
 
 Argo stores workflows as Kubernetes resources (that is, in etcd).
 This creates a limit to their size as resources must be under 1MB.
-Each resource includes the status of each node, which is stored in the `/status/nodes` field for the resource.
+Each resource includes the status of each node in its `/status/nodes` field.
 This can be over 1MB.
 If this happens, Argo tries to compress the node status and store it in `/status/compressedNodes`.
 If the status is still too large, Argo then tries to store it in an SQL database.
@@ -13,13 +13,13 @@ To enable this feature, configure a Postgres, MySQL, or MariaDB database under `
 
 > v4.1 and after
 
-By default node statuses are compressed with gzip.
+By default, Argo compresses node statuses with gzip.
 The `WORKFLOW_COMPRESSION_ALGORITHM` environment variable on the controller selects `gzip`, `zstd`, or `brotli` instead, and `WORKFLOW_COMPRESSION_LEVEL` tunes the chosen algorithm.
 Decompression always auto-detects the algorithm, so the variables only affect newly written statuses.
 
 !!! Warning
-    Workflows written with a non-`gzip` algorithm cannot be read by Argo versions without support for it (including `kubectl`-level tooling that gunzips `/status/compressedNodes` directly).
-    Only change the algorithm after all components are upgraded, and be aware that downgrading past that support leaves in-flight large workflows unreadable.
+    Argo versions without support for a non-`gzip` algorithm cannot read workflows written with it, and neither can `kubectl`-level tooling that gunzips `/status/compressedNodes` directly.
+    Only change the algorithm after you upgrade all components, and be aware that downgrading past that support leaves in-flight large workflows unreadable.
 
 Levels are algorithm-specific and default to each library's own default: `gzip` 1–9 (default 6), `zstd` 1–4 (default 2), `brotli` 0–11 (default 6).
 
@@ -82,7 +82,7 @@ This happens automatically and transparently - no workflow changes needed.
 
 #### 2. Individual Argument Offloading (over 128KB per arg) with `@filename` Syntax
 
-Even after loading args from the ConfigMap, individual arguments exceeding 128KB (131,072 bytes) still trigger the exec syscall's "argument list too long" error (E2BIG).
+Even after loading args from the ConfigMap, individual arguments exceeding 128KB (131,072 bytes) would still trigger the exec syscall's "argument list too long" error (E2BIG).
 To handle this:
 
 - Each argument larger than 128KB (131,072 bytes) is written to `/tmp/argo_arg_N.txt`
