@@ -54,7 +54,7 @@ const pooledAckStep = "pooled-ack[0].a"
 // node's TaskSet as fake has it, as the API server's watch would deliver it.
 func observeTaskSet(ctx context.Context, t *testing.T, controller *WorkflowController, fake *dispatch.Fake, namespace, nodeID string) {
 	t.Helper()
-	ts, ok := fake.TaskSet(namespace, nodeID+"-task")
+	ts, ok := fake.TaskSet(namespace, pooledTaskSetName(nodeID))
 	require.True(t, ok)
 	_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(namespace).Create(ctx, ts, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -68,7 +68,7 @@ func observeTaskSet(ctx context.Context, t *testing.T, controller *WorkflowContr
 // node's TaskSet, as the API server's watch would on its deletion.
 func unobserveTaskSet(ctx context.Context, t *testing.T, controller *WorkflowController, namespace, nodeID string) {
 	t.Helper()
-	name := nodeID + "-task"
+	name := pooledTaskSetName(nodeID)
 	require.NoError(t, controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(namespace).Delete(ctx, name, metav1.DeleteOptions{}))
 	require.NoError(t, kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
 		_, exists, err := controller.pooledTaskSetInformer.GetStore().GetByKey(namespace + "/" + name)
@@ -80,7 +80,7 @@ func unobserveTaskSet(ctx context.Context, t *testing.T, controller *WorkflowCon
 // as succeeded, and makes the controller's result informer hold the result.
 func finishPooled(ctx context.Context, t *testing.T, controller *WorkflowController, fake *dispatch.Fake, namespace, nodeID string) {
 	t.Helper()
-	ts, ok := fake.TaskSet(namespace, nodeID+"-task")
+	ts, ok := fake.TaskSet(namespace, pooledTaskSetName(nodeID))
 	require.True(t, ok)
 	candidate, ok := dispatch.CandidateFromTaskSet(ts)
 	require.True(t, ok)
@@ -109,7 +109,7 @@ func countTaskSetDeletes(fake *dispatch.Fake, fail func(name string) bool) *atom
 }
 
 func hasTaskSet(fake *dispatch.Fake, namespace, nodeID string) bool {
-	_, ok := fake.TaskSet(namespace, nodeID+"-task")
+	_, ok := fake.TaskSet(namespace, pooledTaskSetName(nodeID))
 	return ok
 }
 
@@ -209,7 +209,7 @@ func TestPooledTaskSetAckFindsItReplaced(t *testing.T) {
 	woc := reconcilePooled(ctx, t, controller, wf)
 	id := mustNode(t, woc, pooledAckStep).ID
 	finishPooled(ctx, t, controller, fake, wf.Namespace, id)
-	ts, ok := fake.TaskSet(wf.Namespace, id+"-task")
+	ts, ok := fake.TaskSet(wf.Namespace, pooledTaskSetName(id))
 	require.True(t, ok)
 	require.True(t, fake.DeleteTaskSet(wf.Namespace, ts.Name))
 	replacement := &wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{Namespace: ts.Namespace, Name: ts.Name, Labels: ts.Labels}}
@@ -245,7 +245,7 @@ func TestPooledTaskSetWithDroppedFieldsAcked(t *testing.T) {
 	id := wf.NodeID(pooledStep)
 	_, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{
 		Namespace: wf.Namespace,
-		Name:      id + "-task",
+		Name:      pooledTaskSetName(id),
 		Labels:    map[string]string{common.LabelKeyWorkflow: wf.Name, common.LabelKeyPoolName: "work", common.LabelKeyPoolHash: "hash"},
 		// Created by this workflow, whose status write was lost.
 		OwnerReferences: []metav1.OwnerReference{common.WorkflowOwnerReference(wf.Name, wf.UID)},
@@ -311,12 +311,12 @@ spec:
 	}
 	id := wf.NodeID(wf.Name)
 	_, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{
-		Namespace: wf.Namespace, Name: id + "-task", Labels: labels, OwnerReferences: owner(wf.UID),
+		Namespace: wf.Namespace, Name: pooledTaskSetName(id), Labels: labels, OwnerReferences: owner(wf.UID),
 	}})
 	require.NoError(t, err)
 	for nodeID, uid := range map[string]types.UID{"cached-only": wf.UID, "earlier-workflow": "earlier-wf-uid"} {
 		_, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{ObjectMeta: metav1.ObjectMeta{
-			Namespace: wf.Namespace, Name: nodeID + "-task", Labels: labels, OwnerReferences: owner(uid),
+			Namespace: wf.Namespace, Name: pooledTaskSetName(nodeID), Labels: labels, OwnerReferences: owner(uid),
 		}})
 		require.NoError(t, err)
 		observeTaskSet(ctx, t, controller, fake, wf.Namespace, nodeID)
@@ -345,7 +345,7 @@ func TestPooledCompletionHeld(t *testing.T) {
 	}
 
 	requeued := recordRequeues(controller)
-	countTaskSetDeletes(fake, func(name string) bool { return name == x+"-task" })
+	countTaskSetDeletes(fake, func(name string) bool { return name == pooledTaskSetName(x) })
 	woc = reconcilePooled(ctx, t, controller, wf)
 	assert.True(t, mustNode(t, woc, "pooled-pair[0].one").Fulfilled())
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -358,7 +358,7 @@ func TestPooledCompletionHeld(t *testing.T) {
 	assert.Equal(t, 1, countEvents(controller, "WorkflowPooledTaskSetsRemain"))
 
 	// Held again for the same reason: no second event.
-	countTaskSetDeletes(fake, func(name string) bool { return name == x+"-task" })
+	countTaskSetDeletes(fake, func(name string) bool { return name == pooledTaskSetName(x) })
 	woc = reconcilePooled(ctx, t, controller, wf)
 	assert.False(t, workflowCompleted(woc))
 	assert.Equal(t, 0, countEvents(controller, "WorkflowPooledTaskSetsRemain"))
