@@ -69,11 +69,17 @@ func workerRestartCount(pod *apiv1.Pod) int32 {
 	return 0
 }
 
+// workerRunning says whether the pod's worker container is running.
+func workerRunning(pod *apiv1.Pod) bool {
+	s := workerStatus(pod)
+	return s != nil && s.State.Running != nil
+}
+
 // recordClaim records claim, which the ledger doesn't hold yet, on it at
 // at: the claimant and the claim's creation time, on the API server's
 // clock, with the restart count of the claimant's worker container as pod,
 // its cached pod, has it, or 0 for a nil pod. The count may be lower than
-// the claimant's own. A claim replacing one
+// the claimant's own, which claimantGone allows for. A claim replacing one
 // the ledger holds means that one was deleted first, so it is a release and
 // a re-claim. It reports whether the ledger recorded a release, and whether
 // it recorded the claim, which it doesn't once the task is interrupted.

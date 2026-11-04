@@ -58,8 +58,8 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 		return err
 	}
 
-	// A pooled node's timeouts must end its task, not a pod, so they aren't
-	// checked here.
+	// A pooled node's timeouts are checked where its task is reconciled
+	// (checkPooledTimeouts), which drops its task as it ends the node.
 	if node == nil || !isPooled(node) {
 		if err := woc.checkTemplateTimeouts(ctx, nodeName, node, processedTmpl); err != nil {
 			return err
@@ -124,8 +124,8 @@ func (woc *wfOperationCtx) markTimeoutError(ctx context.Context, processedTmpl *
 		}
 	}
 	phase := wfv1.NodeFailed
-	if node != nil && node.NodeFlag != nil && node.NodeFlag.Hooked {
-		phase = wfv1.NodeError
+	if node != nil {
+		phase = timedOutPhase(node)
 	}
 	_ = woc.markNodePhase(ctx, nodeName, phase, err.Error())
 	return err
