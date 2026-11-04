@@ -1075,6 +1075,12 @@ func (woc *wfOperationCtx) deadlineExceeded() bool {
 	return !woc.deadline.IsZero() && time.Now().UTC().After(woc.deadline)
 }
 
+// workflowDeadlineExceeded reports whether the workflow has run past its
+// deadline (activeDeadlineSeconds).
+func (woc *wfOperationCtx) workflowDeadlineExceeded() bool {
+	return woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
+}
+
 // stackDepthExceeded reports whether this operation's template nesting
 // (currentStackDepth) has reached the controller's maxStackDepth, unless
 // DISABLE_MAX_RECURSION turns the limit off.
@@ -1086,6 +1092,16 @@ func (woc *wfOperationCtx) stackDepthExceeded() bool {
 func (woc *wfOperationCtx) requeueAfter(afterDuration time.Duration) {
 	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
 	woc.controller.wfQueue.AddAfter(key, afterDuration)
+}
+
+// requeueUntil requeues the workflow for t and reports whether t is still to
+// come.
+func (woc *wfOperationCtx) requeueUntil(t time.Time) bool {
+	if remaining := time.Until(t); remaining > 0 {
+		woc.requeueAfter(remaining)
+		return true
+	}
+	return false
 }
 
 func (woc *wfOperationCtx) requeue() {
@@ -1132,7 +1148,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
-	if woc.GetShutdownStrategy().Enabled() || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+	if woc.GetShutdownStrategy().Enabled() || woc.workflowDeadlineExceeded() {
 		var message string
 		if woc.GetShutdownStrategy().Enabled() {
 			message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
@@ -1423,10 +1439,11 @@ func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 	return nodeID
 }
 
-// recentlyStartedPodDuration is how long an object the controller created may
-// be missing from its informer's cache before the controller reads it as
-// gone: a pod after it starts, and a pooled task's TaskSet, or the claimant
-// pod of a claim on it, after its creation.
+// recentlyStartedPodDuration is how long an object may be missing from its
+// informer's cache before the controller acts on its absence: a pod after it
+// starts; a pooled task's TaskSet after its enqueue, after which the node
+// ends; and the claimant pod of a claim on it after the claim, after which
+// the pod is read live.
 func recentlyStartedPodDuration(ctx context.Context) time.Duration {
 	return envutil.LookupEnvDurationOr(ctx, "RECENTLY_STARTED_POD_DURATION", 10*time.Second)
 }
@@ -1502,7 +1519,7 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 		}
 
 		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
-		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
+		deadlineExceeded := woc.workflowDeadlineExceeded()
 		if deadlineExceeded && !node.IsPartOfExitHandler(ctx, nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, common.DeadlineExceededMessage)
 			continue

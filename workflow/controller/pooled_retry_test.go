@@ -1,14 +1,12 @@
 package controller
 
 import (
-	"context"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kwait "k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
@@ -33,17 +31,6 @@ spec:
       image: my-image
 `
 
-// unobserveResult makes the controller's result informer drop the result,
-// as the API server's watch would on its deletion.
-func unobserveResult(ctx context.Context, t *testing.T, controller *WorkflowController, namespace, name string) {
-	t.Helper()
-	require.NoError(t, controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(namespace).Delete(ctx, name, metav1.DeleteOptions{}))
-	require.NoError(t, kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
-		_, exists, err := controller.taskResultInformer.GetStore().GetByKey(namespace + "/" + name)
-		return !exists, err
-	}))
-}
-
 // TestPooledRetryRunsTheNodeAgain checks that `argo retry` of a failed pooled
 // node, which touches no TaskSet or result, runs it again: the next reconcile
 // enqueues a fresh TaskSet, also when the failed attempt's claim was left
@@ -51,18 +38,28 @@ func unobserveResult(ctx context.Context, t *testing.T, controller *WorkflowCont
 // TaskSet was left too, as by an archived workflow whose retry re-created it
 // with a new UID before garbage collection got to them. The TaskSet is
 // replaced, the claim discarded, and a worker claims the fresh TaskSet and
-// runs the node.
+// runs the node. A left claim is never taken for a claim on the fresh
+// TaskSet, also when its claimant is gone and the grace for an unrecorded
+// claim has passed.
 func TestPooledRetryRunsTheNodeAgain(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 		// archived re-creates the workflow with a new UID, leaving its old
 		// TaskSet as well as its claim.
 		archived bool
+		// claimantGone deletes the left claim's claimant, with no grace for
+		// an unrecorded claim, and fails the claim's first discard, so it is
+		// still there when liveness checks the fresh task.
+		claimantGone bool
 	}{
 		{name: "ClaimLeft"},
+		{name: "ClaimLeftByAGoneClaimant", claimantGone: true},
 		{name: "TaskSetAndClaimLeftByTheArchivedWorkflow", archived: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.claimantGone {
+				t.Setenv("RECENTLY_STARTED_POD_DURATION", "0s")
+			}
 			wf := wfv1.MustUnmarshalWorkflow(pooledRetryWf)
 			ctx, controller, fake := newPooledDispatchController(t, true, wf)
 			const step = "pooled-retry[0].a"
@@ -104,6 +101,9 @@ func TestPooledRetryRunsTheNodeAgain(t *testing.T) {
 				_, err = workflows.Update(ctx, retried, metav1.UpdateOptions{})
 			}
 			require.NoError(t, err)
+			if tt.claimantGone {
+				deletePoolPod(ctx, t, controller, wf.Namespace, worker.PodName)
+			}
 
 			woc = reconcilePooled(ctx, t, controller, wf)
 			node := mustNode(t, woc, step)
@@ -115,14 +115,34 @@ func TestPooledRetryRunsTheNodeAgain(t *testing.T) {
 			assert.Equal(t, ts.UID, node.PooledTask.TaskSetUID)
 			assert.NotEqual(t, staleUID, ts.UID, "a fresh TaskSet")
 			assert.True(t, dispatch.OwnedByWorkflow(ts, woc.wf.UID))
+			if tt.claimantGone {
+				// Without a grace, an uncached TaskSet is taken as deleted.
+				observeTaskSet(ctx, t, controller, fake, wf.Namespace, id)
+			}
 
 			// The left claim holds the result's name until the controller
-			// discards it, as it isn't on the fresh TaskSet.
-			reconcilePooled(ctx, t, controller, wf)
+			// discards it, as it isn't on the fresh TaskSet; until then it
+			// isn't taken for the fresh task's.
+			if tt.claimantGone {
+				fake.SetFault(func(op dispatch.Op) error {
+					if op.Verb == "delete" && op.Resource == dispatch.ResourceResults {
+						return errors.New("transient")
+					}
+					return nil
+				})
+				woc = reconcilePooled(ctx, t, controller, wf)
+				fake.SetFault(nil)
+				assert.Equal(t, wfv1.NodePending, mustNode(t, woc, step).Phase, "the left claim isn't the fresh task's")
+			}
+			woc = reconcilePooled(ctx, t, controller, wf)
 			_, ok = fake.Result(wf.Namespace, id)
 			require.False(t, ok, "the left claim is discarded")
-			unobserveResult(ctx, t, controller, wf.Namespace, id)
+			assert.Equal(t, wfv1.NodePending, mustNode(t, woc, step).Phase)
+			forgetResult(ctx, t, controller, wf.Namespace, id)
 
+			if tt.claimantGone {
+				worker = observeWorkerPod(ctx, t, controller, wf.Namespace, worker.PodName, worker.PodUID, 0)
+			}
 			h = claimPooledBy(ctx, t, fake, wf.Namespace, id, worker)
 			assert.Equal(t, ts.UID, h.Claim().TaskSetUID)
 			require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded}))

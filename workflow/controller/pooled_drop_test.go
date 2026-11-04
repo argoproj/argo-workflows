@@ -100,8 +100,11 @@ func TestPooledTimeoutDropsQueuedTask(t *testing.T) {
 			ctx, controller, fake := newPooledDispatchController(t, true, wf)
 			id := mustNode(t, reconcilePooled(ctx, t, controller, wf), tt.node).ID
 			require.True(t, hasTaskSet(fake, wf.Namespace, id))
+			r := recordRequeues(controller)
 			woc := reconcilePooled(ctx, t, controller, wf)
 			require.Equal(t, wfv1.NodePending, mustNode(t, woc, tt.node).Phase, "within its timeouts")
+			_, after := r.take()
+			assert.True(t, requeuedAfter(after, time.Hour), "requeued for its pendingTimeout: %v", after)
 
 			age(ctx, t, controller, wf, id, tt.elapsed)
 			woc = reconcilePooled(ctx, t, controller, wf)
@@ -134,8 +137,11 @@ func TestPooledTimeoutReleasedTask(t *testing.T) {
 			releasePooled(ctx, t, controller, wf, id, name, h)
 
 			age(ctx, t, controller, wf, id, pastPendingTimeout)
+			r := recordRequeues(controller)
 			node := mustNode(t, reconcilePooled(ctx, t, controller, wf), name)
-			assert.Equal(t, wfv1.NodeRunning, node.Phase, "pendingTimeout doesn't bound a released task")
+			assert.Equal(t, wfv1.NodeRunning, node.Phase, "a released node is Running, which pendingTimeout, a Pending node's, doesn't bound")
+			_, after := r.take()
+			assert.True(t, requeuedAfter(after, 2*time.Hour-pastPendingTimeout), "requeued for its deadline: %v", after)
 			assert.True(t, hasTaskSet(fake, wf.Namespace, id))
 
 			age(ctx, t, controller, wf, id, pastTimeout-pastPendingTimeout)

@@ -96,7 +96,7 @@ func (woc *wfOperationCtx) endInterruptedNode(ctx context.Context, node *wfv1.No
 // down is left as it is, and tried again at the next reconcile.
 func (woc *wfOperationCtx) endPooledTasksOnShutdownOrDeadline(ctx context.Context) {
 	shutdown := woc.GetShutdownStrategy()
-	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
+	deadlineExceeded := woc.workflowDeadlineExceeded()
 	if !shutdown.Enabled() && !deadlineExceeded {
 		return
 	}
@@ -106,7 +106,7 @@ func (woc *wfOperationCtx) endPooledTasksOnShutdownOrDeadline(ctx context.Contex
 		if !isPooled(&node) || node.Phase.Completed() {
 			continue
 		}
-		onExit := node.IsPartOfExitHandler(ctx, woc.wf.Status.Nodes)
+		onExit := woc.pooledOnExit(ctx, &node)
 		switch {
 		case shutdown.Enabled() && !shutdown.ShouldExecute(onExit):
 			messages[id] = shutdownMessage(shutdown)
@@ -127,6 +127,20 @@ func (woc *wfOperationCtx) endPooledTasksOnShutdownOrDeadline(ctx context.Contex
 		}
 		woc.applyPooledEnding(ctx, node, outcome, wfv1.NodeFailed, messages[outcome.NodeID])
 	}
+}
+
+// pooledOnExit reports whether the pooled node runs an exit handler, which
+// stop and the workflow deadline spare. As a pod's onExit label says it for
+// the pod, the node's TaskSet carries the label dispatch set from the same
+// flag. The node tree, which misses the attempts of a retried workflow exit
+// handler (their boundary is the workflow's), is the fallback for a TaskSet
+// not cached.
+func (woc *wfOperationCtx) pooledOnExit(ctx context.Context, node *wfv1.NodeStatus) bool {
+	key := woc.pooledKey(node)
+	if taskSet, ok := cachedWithUID[metav1.Object](woc.controller.pooledTaskSetInformer.GetStore(), key.Namespace+"/"+key.TaskSetName(), node.PooledTask.TaskSetUID); ok {
+		return taskSet.GetLabels()[common.LabelKeyOnExit] == "true"
+	}
+	return node.IsPartOfExitHandler(ctx, woc.wf.Status.Nodes)
 }
 
 // applyPooledEnding ends the unended pooled node with phase and message, as
@@ -174,18 +188,24 @@ func (woc *wfOperationCtx) recordFoundClaim(ctx context.Context, node *wfv1.Node
 // applyFoundCompletedClaim applies claim, a completed claim the drop of the
 // unended node's queued task found, as the node's ending, since it ended
 // before the drop: the result is read live, as the cache may not have it, and
-// ingested. If it can't be read, the node ends with phase and message,
-// finished, since nothing runs its task.
+// ingested. A read that fails leaves the node as it is and requeues the
+// workflow, as the result is still there to apply; nothing can claim the task
+// again, as its TaskSet is gone. If the claim was deleted or replaced since,
+// the node ends with phase and message, finished, since nothing runs its task.
 func (woc *wfOperationCtx) applyFoundCompletedClaim(ctx context.Context, node *wfv1.NodeStatus, claim dispatch.Claim, phase wfv1.NodePhase, message string) {
 	woc.controller.pooledTaskSetsGone.record(woc.wf.UID, pooledTaskSetRef(node))
+	log := woc.log.WithFields(logging.Fields{"nodeID": node.ID, "claimUID": claim.UID})
 	result, err := woc.liveClaim(ctx, node, claim.UID)
-	if result != nil {
+	switch {
+	case err != nil:
+		log.WithError(err).Warn(ctx, "Failed to read the completed claim a pooled task's drop found")
+		woc.requeue()
+	case result != nil:
 		woc.applyPooledResult(ctx, node, result, claim)
-		return
+	default:
+		log.Info(ctx, "The completed claim a pooled task's drop found is gone")
+		woc.endPooledNode(ctx, node, phase, message)
 	}
-	woc.log.WithFields(logging.Fields{"nodeID": node.ID, "claimUID": claim.UID}).WithError(err).
-		Info(ctx, "Couldn't read the completed claim a pooled task's drop found")
-	woc.endPooledNode(ctx, node, phase, message)
 }
 
 // checkEndedPooledTasks checks every pooled node that has ended. An
@@ -274,8 +294,7 @@ func (woc *wfOperationCtx) finishStoppedPooledTask(ctx context.Context, node *wf
 	if interruptedAt == nil {
 		return
 	}
-	if remaining := woc.leaseSlack() - time.Since(interruptedAt.Time); remaining > 0 {
-		woc.requeueAfter(remaining)
+	if woc.requeueUntil(interruptedAt.Add(woc.leaseSlack())) {
 		return
 	}
 	woc.finishPooledNode(ctx, node.ID, "the lease slack passed since its task was interrupted")
@@ -298,7 +317,8 @@ func (woc *wfOperationCtx) pooledTaskStopped(ctx context.Context, node *wfv1.Nod
 			return ""
 		case result == nil:
 			return "its claim was deleted"
-		case result.Labels[common.LabelKeyReportOutputsCompleted] == "true":
+		}
+		if claim, ok := dispatch.ClaimFromResult(result); ok && claim.Completed {
 			return "its claim was completed"
 		}
 		// Still to be cached, which requeues the workflow.

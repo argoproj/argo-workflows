@@ -109,8 +109,7 @@ func (woc *wfOperationCtx) checkLease(ctx context.Context, node *wfv1.NodeStatus
 	if !ok {
 		return
 	}
-	if remaining := time.Until(lease); remaining > 0 {
-		woc.requeueAfter(remaining)
+	if woc.requeueUntil(lease) {
 		return
 	}
 	woc.log.WithFields(logging.Fields{"nodeID": node.ID, "lease": lease, "workerPod": node.PooledTask.WorkerPodName}).
@@ -181,8 +180,7 @@ func (woc *wfOperationCtx) checkEnqueuedTask(ctx context.Context, node *wfv1.Nod
 // can't be created ends its node. The message is written only when it
 // changes. Dispatch and every claim clear an enqueued node's message, so the
 // pool's health is the only message it has, and it is cleared once the pool
-// is OK or no longer known. Without pool health, as when hot workers were
-// disabled at the controller's start, nothing is shown. The pool controller
+// is OK or no longer known. Without pool health, nothing is shown. The pool controller
 // requeues the workflows waiting on a pool when its health changes.
 func (woc *wfOperationCtx) applyPoolHealth(ctx context.Context, node *wfv1.NodeStatus) {
 	if woc.controller.poolHealth == nil {
@@ -217,8 +215,7 @@ func (woc *wfOperationCtx) applyPoolHealth(ctx context.Context, node *wfv1.NodeS
 // died before the cache saw it. The claim's time is the API server's, so a
 // skewed clock only moves the read; what the read finds decides.
 func (woc *wfOperationCtx) checkUnrecordedClaim(ctx context.Context, node *wfv1.NodeStatus, claim dispatch.Claim) {
-	if remaining := recentlyStartedPodDuration(ctx) - time.Since(claim.CreatedAt.Time); remaining > 0 {
-		woc.requeueAfter(remaining)
+	if woc.requeueUntil(claim.CreatedAt.Add(recentlyStartedPodDuration(ctx))) {
 		return
 	}
 	why, err := woc.claimantDeleted(ctx, claim.WorkerPodName, claim.WorkerPodUID)
@@ -237,7 +234,7 @@ func (woc *wfOperationCtx) checkUnrecordedClaim(ctx context.Context, node *wfv1.
 // deleted or replaced, as claimantGone does. It is empty if the pod exists:
 // it is still to be cached, which requeues the workflow.
 func (woc *wfOperationCtx) claimantDeleted(ctx context.Context, name string, uid types.UID) (string, error) {
-	pod, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	pod, err := woc.getPod(ctx, name)
 	switch {
 	case apierr.IsNotFound(err) || err == nil && pod.UID != uid:
 		return claimantGone(nil, name, 0), nil
@@ -301,15 +298,14 @@ func (woc *wfOperationCtx) endDeadClaim(ctx context.Context, node *wfv1.NodeStat
 	}
 }
 
-// checkTaskSetLost ends the node, whose TaskSet isn't cached and which no
-// cached claim runs, once the grace since its enqueue has passed: until then
-// its TaskSet may just not be cached yet, but after it the TaskSet was
-// deleted and no worker can claim it. An ended node's TaskSet is deleted by
+// checkTaskSetLost ends the node, whose TaskSet or claim isn't cached, once
+// the grace since its enqueue has passed: until then its TaskSet may just not
+// be cached yet, but after it the TaskSet was deleted, and with no claim
+// recorded or cached no worker runs its task, nor can one claim it. An ended node's TaskSet is deleted by
 // its ack, and an ended node never gets here, so an ack is never taken for a
 // lost TaskSet.
 func (woc *wfOperationCtx) checkTaskSetLost(ctx context.Context, node *wfv1.NodeStatus) {
-	if remaining := recentlyStartedPodDuration(ctx) - time.Since(node.PooledTask.EnqueuedAt.Time); remaining > 0 {
-		woc.requeueAfter(remaining)
+	if woc.requeueUntil(node.PooledTask.EnqueuedAt.Add(recentlyStartedPodDuration(ctx))) {
 		return
 	}
 	woc.log.WithFields(logging.Fields{"nodeID": node.ID, "taskSetUID": node.PooledTask.TaskSetUID}).Info(ctx, "Pooled task's WorkflowTaskSet is gone")

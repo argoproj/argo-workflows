@@ -16,7 +16,8 @@ import (
 // timeout and pendingTimeout, from its node's start, end it when its template
 // is reconciled (checkPooledTimeouts), as checkConstraints ends a pending
 // pod's node, which for a retried template sees only the Retry node; and so
-// does its absolute deadline. A task a worker has released has run, so it is
+// does its absolute deadline. The workflow's parallelism holds both back
+// alike, at the root of the node tree. A task a worker has released has run, so it is
 // bounded as a running pod is, by its absolute deadline alone, whether or not
 // its template is reconciled (checkReleasedDeadline); its pendingTimeout no
 // longer applies. A claimed task is its worker's to stop at its deadline,
@@ -54,6 +55,8 @@ func timedOutPhase(node *wfv1.NodeStatus) wfv1.NodePhase {
 // as it now is.
 func (woc *wfOperationCtx) checkPooledTimeouts(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
 	ledger := node.PooledTask
+	// A released task's deadline is checkReleasedDeadline's, and its
+	// timeouts, which bound a Pending node, no longer apply.
 	if node.Phase.Completed() || ledger.State() != wfv1.PooledTaskEnqueued || ledger.Released() {
 		return node
 	}
@@ -92,8 +95,7 @@ func (woc *wfOperationCtx) checkReleasedDeadline(ctx context.Context, node *wfv1
 	if deadline == nil {
 		return false
 	}
-	if remaining := time.Until(deadline.Time); remaining > 0 {
-		woc.requeueAfter(remaining)
+	if woc.requeueUntil(deadline.Time) {
 		return false
 	}
 	woc.log.WithFields(logging.Fields{"nodeID": node.ID, "deadline": deadline, "releases": node.PooledTask.Releases}).

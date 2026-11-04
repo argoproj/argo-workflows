@@ -49,10 +49,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
-// deadlineExceededMessage is a task's failure when it runs past its
-// deadline.
-const deadlineExceededMessage = "Step exceeded its deadline"
-
 // defaultTaskResultBackoff spaces out task result retries: the delay grows
 // until it reaches Cap and then stays there. Only the retry timeout ends
 // the retries.
@@ -1582,7 +1578,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 		logger.Info(ctx, "Deadline monitor stopped")
 		return
 	case <-deadlineExceeded:
-		message = deadlineExceededMessage
+		message = common.DeadlineExceededMessage
 	}
 	logger.Info(ctx, message)
 	// Fail before the kill, as before the sink existed. Only pods monitor
