@@ -287,12 +287,12 @@ func TestSaveRetry(t *testing.T) {
 		statuses         []int // response status per attempt, the last one repeats
 		transientPattern string
 		wantAttempts     int32
-		wantErr          string
+		wantErr          []string
 	}{
 		{name: "succeeds after 5xx responses", statuses: []int{http.StatusServiceUnavailable, http.StatusBadGateway, http.StatusCreated}, wantAttempts: 3},
 		{name: "retries 408 and 429", statuses: []int{http.StatusRequestTimeout, http.StatusTooManyRequests, http.StatusCreated}, wantAttempts: 3},
-		{name: "gives up after EXECUTOR_RETRY_BACKOFF_STEPS attempts", statuses: []int{http.StatusInternalServerError}, wantAttempts: 3, wantErr: "500 Internal Server Error"},
-		{name: "does not retry a 4xx", statuses: []int{http.StatusForbidden}, wantAttempts: 1, wantErr: "403 Forbidden"},
+		{name: "gives up after EXECUTOR_RETRY_BACKOFF_STEPS attempts", statuses: []int{http.StatusInternalServerError}, wantAttempts: 3, wantErr: []string{"failed after 3 attempt(s): timed out waiting for the condition: ", "500 Internal Server Error"}},
+		{name: "does not retry a 4xx", statuses: []int{http.StatusForbidden}, wantAttempts: 1, wantErr: []string{"failed after 1 attempt(s): ", "403 Forbidden"}},
 		{name: "retries a 4xx matching TRANSIENT_ERROR_PATTERN", statuses: []int{http.StatusUnauthorized, http.StatusCreated}, transientPattern: "401 Unauthorized", wantAttempts: 2},
 	}
 	for _, tt := range tests {
@@ -310,10 +310,12 @@ func TestSaveRetry(t *testing.T) {
 			defer svr.Close()
 
 			err := save(t, svr.URL)
-			if tt.wantErr == "" {
+			if len(tt.wantErr) == 0 {
 				require.NoError(t, err)
 			} else {
-				require.ErrorContains(t, err, tt.wantErr)
+				for _, want := range tt.wantErr {
+					require.ErrorContains(t, err, want)
+				}
 			}
 			assert.Equal(t, tt.wantAttempts, attempts.Load())
 		})

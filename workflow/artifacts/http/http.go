@@ -163,7 +163,9 @@ func isTransientSaveErr(ctx context.Context, statusCode int, err error) bool {
 // EXECUTOR_RETRY_BACKOFF_* backoff.
 func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	cleanPath := filepath.Clean(path)
-	return waitutil.Backoff(retry.ExecutorRetry(ctx), func() (bool, error) {
+	attempts := 0
+	err := waitutil.Backoff(retry.ExecutorRetry(ctx), func() (bool, error) {
+		attempts++
 		f, err := os.Open(cleanPath)
 		if err != nil {
 			return true, err
@@ -184,6 +186,10 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 		statusCode, err := h.doPutRequest(req, url, fmt.Sprintf("saving file %s", path))
 		return err == nil || !isTransientSaveErr(ctx, statusCode, err), err
 	})
+	if err != nil {
+		return fmt.Errorf("failed after %d attempt(s): %w", attempts, err)
+	}
+	return nil
 }
 
 // SaveStream saves an artifact from an io.Reader to HTTP URL
