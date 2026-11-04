@@ -3210,9 +3210,13 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(ctx context.Context, nodeName 
 	}
 
 	if lockName == "" {
-		// If we are no longer waiting for a lock, nil out the sync status
+		// If we are no longer waiting for a lock, nil out the sync status.
+		// An ended node, re-entered while it holds its lock until its task
+		// result arrives, keeps its message: it says how the node ended.
 		node.SynchronizationStatus = nil
-		node.Message = ""
+		if !node.Phase.Completed() {
+			node.Message = ""
+		}
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
 	}
