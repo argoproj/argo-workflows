@@ -158,7 +158,9 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (S3Client, erro
 		if s3Driver.Secure && s3Driver.TrustedCA != "" {
 			// Trust only the provided root CA
 			pool := x509.NewCertPool()
-			pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA))
+			if !pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA)) {
+				return nil, errors.New("no valid PEM certificate found in the S3 caSecret")
+			}
 			tr.TLSClientConfig.RootCAs = pool
 		}
 		opts.Transport = tr
