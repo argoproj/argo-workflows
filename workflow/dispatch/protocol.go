@@ -384,7 +384,10 @@ func (c *consumer) Claim(ctx context.Context, candidate Candidate) (Claimed, err
 		return nil, fmt.Errorf("claiming %s/%s from pool %s: %w", ns, name, candidate.PoolHash, ErrWrongPool)
 	}
 	result, err := c.store.createResult(ctx, c.newResult(candidate))
-	if err != nil {
+	if err != nil && !errors.Is(err, errAlreadyExists) {
+		// A name already taken is definite: this create made nothing. Reading
+		// back would take a claim this worker already holds from an earlier
+		// Claim on a stale candidate, and run its task twice.
 		result, err = c.readBack(ctx, candidate, err)
 	}
 	if errors.Is(err, errAlreadyExists) {
@@ -429,7 +432,8 @@ func (c *consumer) Claim(ctx context.Context, candidate Candidate) (Claimed, err
 }
 
 // readBack returns the claim on candidate that a create failing with err
-// may still have made, as when the create's response was lost. Such a
+// (other than errAlreadyExists) may still have made, as when the create's
+// response was lost. Such a
 // claim, left alone, would never run: the TaskSet has a result, so no worker
 // sees it as a candidate again, and this worker's pod looks alive to the
 // controller. A claim is this create's only if it carries this worker pod's

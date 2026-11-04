@@ -371,6 +371,22 @@ var protocolTests = []struct {
 		_, ok := b.result(t, task.Key)
 		assert.False(t, ok)
 	}},
+	// A stale candidate can offer a worker a task it already holds; claiming
+	// it again must not hand out a second handle that would run it twice.
+	{"ClaimTwiceBySameWorkerIsLost", func(t *testing.T, b *backend) {
+		ctx := logging.TestContext(t.Context())
+		task := testTask("node-1")
+		b.enqueue(t, task)
+		candidate := b.candidate(t, task.Key)
+		c := b.consumer(testWorker("worker-a"))
+		h, err := c.Claim(ctx, candidate)
+		require.NoError(t, err)
+		_, err = c.Claim(ctx, candidate)
+		require.ErrorIs(t, err, ErrClaimLost)
+		r, ok := b.result(t, task.Key)
+		require.True(t, ok, "the first claim remains")
+		assert.Equal(t, h.Claim().UID, r.UID)
+	}},
 	{"ClaimRefusesAnotherPool", func(t *testing.T, b *backend) {
 		task := testTask("node-1")
 		b.enqueue(t, task)
