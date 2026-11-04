@@ -76,7 +76,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 					WithField("workflowDeadline", woc.workflowDeadline).
 					Info(ctx, "Terminating pod which has exceeded workflow deadline")
 				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
-				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, "Step exceeded its deadline")
+				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, common.DeadlineExceededMessage)
 				return
 			}
 		}

@@ -73,7 +73,9 @@ func (woc *wfOperationCtx) discardPooledResult(ctx context.Context, node *wfv1.N
 // would be, and a succeeded node's outputs are memoized. The node's spans
 // follow its phase, as a pod's node's do. A node that has
 // already ended, by its own result or by the controller, takes nothing from
-// it but the arrival of a completed result, which finishes it.
+// it but the arrival of a completed result, which finishes a node waiting for
+// its interrupted task to stop; an incomplete claim on it is interrupted
+// (checkEndedPooledTasks).
 //
 // An incomplete claim is left alone until its claimant pod is cached, so the
 // ledger never records a claim without the worker container restart count it

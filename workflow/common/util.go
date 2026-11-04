@@ -41,6 +41,18 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 	return nil
 }
 
+// DeadlineExceededMessage is the message of a node whose task ran past its
+// deadline, as its executor stops it, or the workflow's, as the controller
+// stops it.
+const DeadlineExceededMessage = "Step exceeded its deadline"
+
+// WorkerRestartedMessage is the message of a pooled node whose claimant pod
+// podName's worker container restarted while it held the task, as the
+// controller or the restarted worker reports it, whichever sees it first.
+func WorkerRestartedMessage(podName string) string {
+	return fmt.Sprintf("worker container of pod %s restarted", podName)
+}
+
 // relWithin reports the path of target relative to base, and whether target is
 // base itself (rel == ".") or a descendant of it. It uses filepath.Rel rather
 // than hand-rolled string prefixing so path separators, trailing slashes and

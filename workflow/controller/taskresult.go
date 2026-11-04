@@ -169,4 +169,9 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		span.End()
 	}
 	woc.releasePooledTasks(ctx)
+	// A completed workflow is never written again.
+	if woc.wf.Labels[common.LabelKeyCompleted] != "true" {
+		woc.checkPooledTasks(ctx)
+		woc.checkEndedPooledTasks(ctx)
+	}
 }

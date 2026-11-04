@@ -61,6 +61,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/pool"
 	"github.com/argoproj/argo-workflows/v4/workflow/progress"
@@ -129,6 +130,11 @@ type wfOperationCtx struct {
 	execWf *wfv1.Workflow
 
 	taskSet map[string]wfv1.Template
+
+	// unpersistedPooledTaskSets are the pooled TaskSets the ledgers of a
+	// status this operation couldn't persist recorded
+	// (persistWorkflowSizeLimitErr), which its completion deletes too.
+	unpersistedPooledTaskSets []dispatch.TaskSetRef
 
 	// currentStackDepth tracks the depth of the "stack", increased with every nested call to executeProcessedTemplate and decreased
 	// when such calls return. This is used to prevent infinite recursion
@@ -375,6 +381,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 			// Execution control has been applied to the nodes with created pods after pod reconciliation.
 			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
 			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
+			// Pooled nodes have no pods of their own either; their tasks are shut down through their pools.
+			woc.endPooledTasksOnShutdownOrDeadline(reconcileCtx)
 			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(reconcileCtx)
 		}
 		woc.exportCompletedNodes(ctx)
@@ -945,6 +953,9 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
 // See https://github.com/argoproj/argo-workflows/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
+	// The ledgers this operation recorded are lost with its status, but the
+	// TaskSets it enqueued exist, and must be deleted before it completes.
+	woc.unpersistedPooledTaskSets = woc.pooledTaskSetRefs()
 	woc.wf = woc.orig.DeepCopy()
 	ctx = woc.markWorkflowError(ctx, err)
 
@@ -1412,8 +1423,16 @@ func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 	return nodeID
 }
 
+// recentlyStartedPodDuration is how long an object the controller created may
+// be missing from its informer's cache before the controller reads it as
+// gone: a pod after it starts, and a pooled task's TaskSet, or the claimant
+// pod of a claim on it, after its creation.
+func recentlyStartedPodDuration(ctx context.Context) time.Duration {
+	return envutil.LookupEnvDurationOr(ctx, "RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+}
+
 func recentlyStarted(ctx context.Context, node wfv1.NodeStatus) bool {
-	return time.Since(node.StartedAt.Time) <= envutil.LookupEnvDurationOr(ctx, "RECENTLY_STARTED_POD_DURATION", 10*time.Second)
+	return time.Since(node.StartedAt.Time) <= recentlyStartedPodDuration(ctx)
 }
 
 // markAllContainersDeleted mark all its children(container) as deleted
@@ -1448,7 +1467,9 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx context.Context) {
 	nodes := woc.wf.Status.Nodes
 	for _, node := range nodes {
-		if node.Fulfilled() {
+		// A pooled node's task is ended through its pool
+		// (endPooledTasksOnShutdownOrDeadline).
+		if node.Fulfilled() || isPooled(&node) {
 			continue
 		}
 		// Only fail nodes that are not part of exit handler if we are "Stopping" or all pods if we are "Terminating"
@@ -1483,8 +1504,7 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
 		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
 		if deadlineExceeded && !node.IsPartOfExitHandler(ctx, nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
-			message := "Step exceeded its deadline"
-			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
+			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, common.DeadlineExceededMessage)
 			continue
 		}
 	}
