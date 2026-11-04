@@ -22,29 +22,29 @@ Key:
 |---|---|---|
 | `emissary` | Any | KubectlExec |
 
-## How We Kill Sidecars Using `kubectl exec`
+## How Argo Kills Sidecars Using `kubectl exec`
 
 Kubernetes does not provide a way to kill a single container.
 You can delete a pod, but this kills all containers, and loses all information and logs of that pod.
 
-Instead, try to mimic the Kubernetes termination behavior, which is:
+Instead, Argo mimics the Kubernetes termination behavior, which is:
 
 1. SIGTERM PID 1
 1. Wait for the pod's `terminateGracePeriodSeconds` (30s by default).
 1. SIGKILL PID 1
 
-The following are not supported:
+Argo doesn't support the following:
 
 * `preStop`
 * `STOPSIGNAL`
 
-To do this, it must be possible to run a `kubectl exec` command that kills the injected sidecar.
-By default it runs `/bin/sh -c 'kill 1'`.
+To do this, Argo runs a `kubectl exec` command that kills the injected sidecar.
+By default it runs `/bin/sh -c 'kill -<signal> 1'`.
 This can fail:
 
 1. No `/bin/sh`.
-2. Process is not running as PID 1 (which is becoming the default these days due to `runAsNonRoot`).
-3. Process does not correctly respond to `kill 1` (for example, some shell script weirdness).
+2. Process is not running as PID 1.
+3. Process does not correctly respond to the signal (for example, some shell script weirdness).
 
 You can override the kill command by using a pod annotation (where `%d` is the signal number), for example:
 
