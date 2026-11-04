@@ -33,6 +33,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		return err
 	}
 	logger.Info(ctx, "Configuration updated")
+	wfc.warnPoolControllerFlagChange(ctx)
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.namespaceDefaults = namespacedefaults.New(func() cache.Indexer {
 		if wfc.typedConfigMapInformer == nil {

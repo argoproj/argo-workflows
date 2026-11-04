@@ -32,10 +32,19 @@ import (
 // pod, which would surprise its user. Once the ledger is recorded,
 // reconciling the node makes no API calls, as reconciling a node whose pod
 // exists makes none, until its queued task is past a timeout
-// (checkPooledTimeouts).
+// (checkPooledTimeouts), or another controller version enqueued it
+// (replaceOtherVersionTask).
 func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeStatus, templateScope string, mainCtr apiv1.Container, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	replaced := false
 	if node.PooledTask != nil {
-		return woc.checkPooledTimeouts(ctx, node, tmpl), nil
+		if !woc.replaceOtherVersionTask(ctx, node) {
+			return woc.checkPooledTimeouts(ctx, node, tmpl), nil
+		}
+		replaced = true
+		var err error
+		if node, err = woc.wf.Status.Nodes.Get(node.ID); err != nil {
+			return nil, err
+		}
 	}
 	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID)
 
@@ -111,9 +120,66 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 	// Counted whether created or adopted: this operation counted the active
 	// pods from its nodes as they were when it started, when this node had
 	// no ledger, so an adopted TaskSet, whose ledger a lost write dropped,
-	// wasn't counted either.
-	woc.incrementActivePods()
+	// wasn't counted either. A replaced task's node had its ledger then, and
+	// was counted.
+	if !replaced {
+		woc.incrementActivePods()
+	}
 	return node, nil
+}
+
+// replaceOtherVersionTask drops the queued task of the unended pooled node,
+// and with it the node's ledger, if another controller version enqueued it,
+// so that the node is enqueued again with this version's spec.pool: a
+// controller never builds another version's pool, whose pod template might
+// not suit its executor image. It reports whether it did. Only a task that
+// no worker has claimed, as the caches show it, is dropped, with hot workers
+// enabled and the workflow not shutting down, which would end the task
+// instead; a task a worker has released stays on its own version's pool,
+// which it has already run on. Its TaskSet is deleted, then its claim read
+// live (Dispatcher.Drop). A claim that raced the drop is on the old
+// TaskSet, so once the new TaskSet is recorded it is discarded, as a claim
+// on a TaskSet an earlier workflow of the same name left is, and its task
+// runs again. Dropping the ledger outright, rather than through its
+// setters, starts the task's hand-off afresh, as a retry's reset does.
+func (woc *wfOperationCtx) replaceOtherVersionTask(ctx context.Context, node *wfv1.NodeStatus) bool {
+	ledger := node.PooledTask
+	if node.Phase.Completed() || ledger.State() != wfv1.PooledTaskEnqueued || ledger.Released() ||
+		!woc.controller.Config.HotWorkers.IsEnabled() || woc.GetShutdownStrategy().Enabled() {
+		return false
+	}
+	ref := pooledTaskSetRef(node)
+	key := woc.pooledKey(node)
+	taskSet, ok := cachedWithUID[metav1.Object](woc.controller.pooledTaskSetInformer.GetStore(), key.Namespace+"/"+key.TaskSetName(), ref.UID)
+	version := argo.GetVersion().Version
+	if !ok || taskSet.GetAnnotations()[common.AnnotationKeyPoolControllerVersion] == version {
+		return false
+	}
+	if _, claimed := taskSetClaim(woc.controller.taskResultInformer.GetStore(), woc.wf.Namespace, ref); claimed {
+		return false
+	}
+	log := woc.log.WithFields(logging.Fields{
+		"nodeID":                   node.ID,
+		"taskSetUID":               ref.UID,
+		"taskSetControllerVersion": taskSet.GetAnnotations()[common.AnnotationKeyPoolControllerVersion],
+		"controllerVersion":        version,
+	})
+	claim, err := woc.controller.dispatcher.Drop(ctx, key, ref.UID)
+	if err != nil {
+		log.WithError(err).Warn(ctx, "Failed to drop a pooled task another controller version enqueued")
+		woc.requeue()
+		return false
+	}
+	if claim != nil {
+		log.WithField("claimUID", claim.UID).Info(ctx, "A worker claimed a pooled task as it was dropped for another controller version; the claim will be discarded")
+	}
+	woc.controller.pooledTaskSetsGone.record(woc.wf.UID, ref)
+	updated := node.DeepCopy()
+	updated.PooledTask = nil
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *updated)
+	woc.updated = true
+	log.Info(ctx, "Enqueueing again a pooled task another controller version enqueued")
+	return true
 }
 
 // poolWorkflowTemplateName is the WorkflowTemplate or ClusterWorkflowTemplate
