@@ -278,9 +278,10 @@ type Consumer interface {
 	// has no result, then returns those, oldest first. They may be stale by
 	// the time the caller sees them; Claim decides.
 	Candidates(ctx context.Context) ([]Candidate, error)
-	// Claim claims a candidate. It fails with ErrClaimLost if another worker
-	// holds the claim. A claim its create made though the create failed, as
-	// when the response was lost, is read back and kept. Once the claim is created it reads the TaskSet, and if
+	// Claim claims a candidate. It fails with ErrClaimLost if the claim is
+	// already held, by another worker or by this one. A claim its create made
+	// though the create failed, as when the response was lost, is read back
+	// and kept. Once the claim is created it reads the TaskSet, and if
 	// that fails it withdraws the claim and returns why: ErrTaskGone if the
 	// TaskSet was deleted or replaced, otherwise the read's error. If the
 	// withdrawal fails too, the claim may remain and the error says so.
