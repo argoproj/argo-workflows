@@ -27,7 +27,7 @@ nodeSelector:
 > Suitable if you have a workflow that passes a lot of artifacts within itself.
 
 Copying artifacts to and from storage outside of a cluster can be expensive.
-The correct choice depends on what your artifact storage provider is versus what volume you are using.
+The correct choice depends on the cost of your artifact storage compared with the cost of the volumes you use.
 For example, it may be more expensive to allocate and delete a new block storage volume (AWS EBS, GCP persistent disk) every workflow using the PVC feature, than it is to upload and download some small files to object storage (AWS S3, GCP cloud storage).
 
 On the other hand, if you are using an NFS volume shared between all your workflows with large artifacts, that might be cheaper than the data transfer and storage costs of object storage.
@@ -39,7 +39,7 @@ Consider:
 * Requirement for parallel access to data (NFS compared to block storage or artifact)
 
 When using volume claims, consider configuring [Volume Claim GC](fields.md#volumeclaimgc).
-By default, claims are only deleted when a workflow is successful.
+By default, Argo only deletes claims when a workflow succeeds.
 
 ### Limit The Total Number Of Workflows And Pods
 
@@ -47,10 +47,10 @@ By default, claims are only deleted when a workflow is successful.
 
 A workflow (and for that matter, any Kubernetes resource) incurs a cost as long as it exists in your cluster, even after it's no longer running.
 
-The workflow controller's memory and CPU needs increase linearly with the number of pods and workflows you are running.
+The workflow controller's memory and CPU needs increase linearly with the number of workflows in your cluster, including completed ones, and the number of pods that haven't completed.
 
-You should delete workflows once they are no longer needed.
-You can enable the [Workflow Archive](workflow-archive.md) to continue viewing them after they are removed from Kubernetes.
+You should delete workflows once you no longer need them.
+You can enable the [Workflow Archive](workflow-archive.md) to continue viewing them after they're gone from Kubernetes.
 
 Limit the total number of workflows using:
 
@@ -58,7 +58,7 @@ Limit the total number of workflows using:
   This makes sure workflows do not run forever.
 * [Workflow TTL Strategy](fields.md#ttlstrategy) - delete completed workflows after a set time.
 * [Pod GC](fields.md#podgc) - delete completed pods.
-  By default, Pods are not deleted.
+  By default, Argo doesn't delete pods.
 * [`CronWorkflow` history limits](cron-workflows.md#cronworkflow-options) - delete successful or failed workflows which exceed the limit.
 
 Example
@@ -78,7 +78,7 @@ spec:
 You can set these configurations globally using [Default Workflow Spec](default-workflow-specs.md).
 
 Changing these settings does not delete workflows that have already run.
-To list old workflows:
+To list completed workflows created in the last 7 days:
 
 ```bash
 argo list --completed --since 7d
@@ -110,7 +110,7 @@ limits:
   memory: 128Mi
 ```
 
-The above limit is suitable for the Argo Server, as it is stateless.
+These values are suitable for the Argo Server, as it is stateless.
 The Workflow Controller is stateful and scales to the number of live workflows, so you are likely to need higher values.
 
 ### Configure Executor Resource Requests
