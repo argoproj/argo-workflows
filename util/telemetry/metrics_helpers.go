@@ -229,6 +229,51 @@ func (m *Metrics) AddPodsTotalCount(ctx context.Context, val int64, podPhase str
 	m.AddInt(ctx, InstrumentPodsTotalCount.Name(), val, attribs)
 }
 
+// ObservePoolBacklog observes a value for the pool_backlog gauge
+// This is a helper method for use inside RegisterCallback functions
+func (m *Metrics) ObservePoolBacklog(ctx context.Context, o metric.Observer, val int64, poolNamespace string, poolName string, poolHash string) {
+	inst := m.GetInstrument(InstrumentPoolBacklog.Name())
+	if inst == nil {
+		return
+	}
+	attribs := Attributes{
+		{Name: AttribPoolNamespace, Value: poolNamespace},
+		{Name: AttribPoolName, Value: poolName},
+		{Name: AttribPoolHash, Value: poolHash},
+	}
+	inst.ObserveInt(ctx, o, val, attribs)
+}
+
+// ObservePoolClaimedTasks observes a value for the pool_claimed_tasks gauge
+// This is a helper method for use inside RegisterCallback functions
+func (m *Metrics) ObservePoolClaimedTasks(ctx context.Context, o metric.Observer, val int64, poolNamespace string, poolName string, poolHash string) {
+	inst := m.GetInstrument(InstrumentPoolClaimedTasks.Name())
+	if inst == nil {
+		return
+	}
+	attribs := Attributes{
+		{Name: AttribPoolNamespace, Value: poolNamespace},
+		{Name: AttribPoolName, Value: poolName},
+		{Name: AttribPoolHash, Value: poolHash},
+	}
+	inst.ObserveInt(ctx, o, val, attribs)
+}
+
+// ObservePoolReadyPods observes a value for the pool_ready_pods gauge
+// This is a helper method for use inside RegisterCallback functions
+func (m *Metrics) ObservePoolReadyPods(ctx context.Context, o metric.Observer, val int64, poolNamespace string, poolName string, poolHash string) {
+	inst := m.GetInstrument(InstrumentPoolReadyPods.Name())
+	if inst == nil {
+		return
+	}
+	attribs := Attributes{
+		{Name: AttribPoolNamespace, Value: poolNamespace},
+		{Name: AttribPoolName, Value: poolName},
+		{Name: AttribPoolHash, Value: poolHash},
+	}
+	inst.ObserveInt(ctx, o, val, attribs)
+}
+
 // AddQueueAddsCount adds a value to the queue_adds_count counter
 func (m *Metrics) AddQueueAddsCount(ctx context.Context, val int64, queueName string) {
 	attribs := Attributes{

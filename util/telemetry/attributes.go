@@ -41,6 +41,9 @@ const (
 	AttribPodPhase            string = `phase`
 	AttribPodRestartCondition string = `condition`
 	AttribPodRestartReason    string = `reason`
+	AttribPoolHash            string = `pool_hash`
+	AttribPoolName            string = `pool_name`
+	AttribPoolNamespace       string = `namespace`
 	AttribQueueName           string = `queue_name`
 	AttribRecentlyStarted     string = `recently_started`
 	AttribRequestCode         string = `status_code`
