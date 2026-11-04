@@ -348,11 +348,10 @@ func TestPoolableEverywhere(t *testing.T) {
 		require.ErrorContains(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{Submit: true}), want)
 
 		// The workflow's own spec reaches the referenced template.
-		wftmpl.Name = "pooled-library-clean"
-		wftmpl.Spec = pooledWorkflow(nil).Spec
-		require.NoError(t, createWorkflowTemplate(ctx, wftmpl))
-		defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
-		wf.Spec.Templates[0].Steps[0].Steps[0].TemplateRef.Name = wftmpl.Name
+		clean := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: "pooled-library-clean"}, Spec: pooledWorkflow(nil).Spec}
+		require.NoError(t, createWorkflowTemplate(ctx, clean))
+		defer func() { _ = deleteWorkflowTemplate(ctx, clean.Name) }()
+		wf.Spec.Templates[0].Steps[0].Steps[0].TemplateRef.Name = clean.Name
 		require.NoError(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{Submit: true}))
 		wf.Spec.PodSpecPatch = `{"hostname": "x"}`
 		assert.ErrorContains(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{Submit: true}), "spec.podSpecPatch can't be set")
