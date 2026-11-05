@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
 // generousTimeout keeps the heartbeat-staleness watchdog well out of the way in
@@ -27,7 +28,7 @@ func TestWaitForSupervisorReady_ReadyAppears(t *testing.T) {
 
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		_ = os.WriteFile(statusPath, []byte(statusReady+"\n"), 0o644)
+		_ = os.WriteFile(statusPath, []byte(wfexecutor.StatusReady+"\n"), 0o644)
 	}()
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -42,7 +43,7 @@ func TestWaitForSupervisorReady_FailedAppears(t *testing.T) {
 
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		_ = os.WriteFile(statusPath, []byte(statusFailed+"\nartifact download timeout"), 0o644)
+		_ = os.WriteFile(statusPath, []byte(wfexecutor.StatusFailed+"\nartifact download timeout"), 0o644)
 	}()
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -57,7 +58,7 @@ func TestWaitForSupervisorReady_AlreadyReady(t *testing.T) {
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
-	require.NoError(t, os.WriteFile(statusPath, []byte(statusReady+"\n"), 0o644))
+	require.NoError(t, os.WriteFile(statusPath, []byte(wfexecutor.StatusReady+"\n"), 0o644))
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -69,7 +70,7 @@ func TestWaitForSupervisorReady_AlreadyFailed(t *testing.T) {
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
-	require.NoError(t, os.WriteFile(statusPath, []byte(statusFailed+"\nplugin sidecar timeout"), 0o644))
+	require.NoError(t, os.WriteFile(statusPath, []byte(wfexecutor.StatusFailed+"\nplugin sidecar timeout"), 0o644))
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -86,10 +87,10 @@ func TestWaitForSupervisorReady_RunningThenReady(t *testing.T) {
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
-	require.NoError(t, os.WriteFile(statusPath, []byte(statusRunning+"\n"), 0o644))
+	require.NoError(t, os.WriteFile(statusPath, []byte(wfexecutor.StatusRunning+"\n"), 0o644))
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		_ = os.WriteFile(statusPath, []byte(statusReady+"\n"), 0o644)
+		_ = os.WriteFile(statusPath, []byte(wfexecutor.StatusReady+"\n"), 0o644)
 	}()
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -105,7 +106,7 @@ func TestWaitForSupervisorReady_StaleRunningPresumedDead(t *testing.T) {
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
-	require.NoError(t, os.WriteFile(statusPath, []byte(statusRunning+"\n"), 0o644))
+	require.NoError(t, os.WriteFile(statusPath, []byte(wfexecutor.StatusRunning+"\n"), 0o644))
 	// Backdate the marker so it is already stale relative to the timeout below.
 	old := time.Now().Add(-time.Hour)
 	require.NoError(t, os.Chtimes(statusPath, old, old))

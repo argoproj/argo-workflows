@@ -20,7 +20,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
@@ -46,16 +45,26 @@ If the container is named `main` it also copies base-layer artifacts to the shar
 The auxiliary container (`wait` in the legacy layout, `supervisor` in the init-less layout) can create one file itself, used for terminating the sub-process:
 
 * `/var/run/argo/ctr/${containerName}/signal` The emissary binary listens to changes in this file, and signals the sub-process with the value found in this file.
-*/
-type emissary struct{}
 
-func New() (executor.ContainerRuntimeExecutor, error) {
-	return &emissary{}, nil
+
+The paths above are for a pod, where the shared directory is /var/run/argo;
+the runtime itself works under whichever directory it is given.
+*/
+
+// emissary reads and signals containers through the files the emissary
+// writes under varRunArgo, the task's shared directory.
+type emissary struct {
+	varRunArgo string
+}
+
+// New returns the runtime for a task whose shared directory is varRunArgo.
+func New(varRunArgo string) executor.ContainerRuntimeExecutor {
+	return &emissary{varRunArgo: varRunArgo}
 }
 
 func (e *emissary) Init(t wfv1.Template) error {
 	osspecific.AllowGrantingAccessToEveryone()
-	if err := copyBinary(); err != nil {
+	if err := copyBinary(e.varRunArgo); err != nil {
 		return err
 	}
 	return e.WriteTemplate(t)
@@ -69,11 +78,11 @@ func (e emissary) WriteTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(common.VarRunArgoPath+"/template", data, 0o444) // chmod -r--r--r--
+	return os.WriteFile(e.varRunArgo+"/template", data, 0o444) // chmod -r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
-	data, err := os.ReadFile(filepath.Clean(filepath.Join(common.VarRunArgoPath, "outputs", "parameters", sourcePath)))
+	data, err := os.ReadFile(filepath.Clean(filepath.Join(e.varRunArgo, "outputs", "parameters", sourcePath)))
 	return string(data), err
 }
 
@@ -81,7 +90,7 @@ func (e emissary) CopyFile(ctx context.Context, containerName string, sourcePath
 	// this implementation is very different, because we expect the emissary binary has already compressed the file
 	// so no compression can or needs to be implemented here
 	// TODO - warn the user we ignored compression?
-	sourceFile := filepath.Join(common.VarRunArgoPath, "outputs", "artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
+	sourceFile := filepath.Join(e.varRunArgo, "outputs", "artifacts", strings.TrimSuffix(sourcePath, "/")+".tgz")
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"source": sourceFile, "dest": destPath}).Info(ctx, "Copying file")
 	src, err := os.Open(filepath.Clean(sourceFile))
 	if err != nil {
@@ -110,7 +119,7 @@ func (e emissary) GetOutputStream(_ context.Context, containerName string, combi
 	if combinedOutput {
 		name = "combined"
 	}
-	return os.Open(filepath.Clean(filepath.Join(common.VarRunArgoPath, "ctr", containerName, name)))
+	return os.Open(filepath.Clean(filepath.Join(e.varRunArgo, "ctr", containerName, name)))
 }
 
 func (e emissary) Wait(ctx context.Context, containerNames []string) error {
@@ -120,7 +129,7 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 	osspecific.AllowGrantingAccessToEveryone()
 	exitCodePaths := make([]string, 0, len(containerNames))
 	for _, containerName := range containerNames {
-		dir := filepath.Join(common.VarRunArgoPath, "ctr", containerName)
+		dir := filepath.Join(e.varRunArgo, "ctr", containerName)
 		// The peer container will MkdirAll this directory too, but it may
 		// not have started yet; pre-creating it lets us install the inotify
 		// watch on the parent immediately.
@@ -142,7 +151,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		signalPath := filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal")
+		signalPath := filepath.Join(e.varRunArgo, "ctr", containerName, "signal")
 		signalDir := filepath.Dir(signalPath)
 		logger.WithFields(logging.Fields{
 			"containerName": containerName,
@@ -168,7 +177,7 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	for _, containerName := range containerNames {
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
-		signalPath := filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal")
+		signalPath := filepath.Join(e.varRunArgo, "ctr", containerName, "signal")
 		logger.WithFields(logging.Fields{
 			"containerName": containerName,
 			"signalPath":    signalPath,

@@ -32,6 +32,7 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -47,7 +48,7 @@ type cronWfOperationCtx struct {
 	cronWf          *v1alpha1.CronWorkflow
 	wfClientset     versioned.Interface
 	wfClient        typed.WorkflowInterface
-	wfDefaults      *v1alpha1.Workflow
+	wfDefaults      namespacedefaults.Func
 	cronWfIf        typed.CronWorkflowInterface
 	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
@@ -61,7 +62,7 @@ type cronWfOperationCtx struct {
 
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
-	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults namespacedefaults.Func,
 ) *cronWfOperationCtx {
 	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
@@ -128,7 +129,13 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	wf := common.ConvertCronWorkflowToWorkflowWithProperties(ctx, woc.cronWf, getChildWorkflowName(woc.cronWf.Name, scheduledRuntime), scheduledRuntime)
 
-	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
+	wfDefaults, err := woc.workflowDefaults(ctx)
+	if err != nil {
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to resolve workflow defaults: %s", err))
+		return
+	}
+
+	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
 		if apierrors.IsAlreadyExists(err) {
@@ -144,10 +151,21 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 }
 
+// workflowDefaults resolves the defaults for this CronWorkflow's namespace. It tolerates a
+// nil resolver so a cronWfOperationCtx built without one still works.
+func (woc *cronWfOperationCtx) workflowDefaults(ctx context.Context) (*v1alpha1.Workflow, error) {
+	return namespacedefaults.Resolve(ctx, woc.wfDefaults, woc.cronWf.Namespace)
+}
+
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
+	wfDefaults, err := woc.workflowDefaults(ctx)
+	if err != nil {
+		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
+		return err
+	}
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
+	err = validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, wfDefaults)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
