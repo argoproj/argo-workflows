@@ -1,3 +1,5 @@
+//go:build !windows
+
 package poolpod
 
 import (
@@ -24,13 +26,6 @@ func newPool(t *testing.T) Pool {
 
 // newTask creates a task directory with the given name, as the worker
 // would before writing the task's files into it.
-func newTask(t *testing.T, name string) Task {
-	t.Helper()
-	task := NewTask(filepath.Join(t.TempDir(), name))
-	require.NoError(t, task.Create())
-	return task
-}
-
 func offered(t *testing.T, p Pool, name string) Task {
 	t.Helper()
 	task := newTask(t, name)
@@ -67,7 +62,7 @@ func TestPool_OfferPublishesAReadyTask(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 	assert.Equal(t, task, got)
-	assert.FileExists(t, filepath.Join(task.Dir(), ReadyFile))
+	assert.FileExists(t, filepath.Join(task.Dir(), readyFile))
 	assert.Equal(t, Status{State: Offered}, status(t, task))
 }
 
@@ -296,6 +291,17 @@ func TestWaitNext_Cancellation(t *testing.T) {
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
+// A current main can't read is an error, not a wait for an offer.
+func TestWaitNext_ReadError(t *testing.T) {
+	p := newPool(t)
+	require.NoError(t, os.WriteFile(filepath.Join(p.Dir(), CurrentFile), nil, 0o644))
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err := p.WaitNext(ctx, Task{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is empty")
+}
+
 func TestStop(t *testing.T) {
 	p := newPool(t)
 	task := offered(t, p, "a")
@@ -344,7 +350,7 @@ func TestStop_WritesEachReason(t *testing.T) {
 		got, err := task.Stop(reason)
 		require.NoError(t, err)
 		assert.Equal(t, reason, got)
-		data, err := os.ReadFile(filepath.Join(task.Dir(), StopFile))
+		data, err := os.ReadFile(filepath.Join(task.Dir(), stopFile))
 		require.NoError(t, err)
 		assert.Equal(t, string(reason), string(data))
 	}
@@ -365,7 +371,7 @@ func TestWaitStop_Cancellation(t *testing.T) {
 
 func TestStatus_RejectsUnknownTakenContent(t *testing.T) {
 	task := offered(t, newPool(t), "a")
-	require.NoError(t, os.WriteFile(filepath.Join(task.Dir(), TakenFile), []byte("someone"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(task.Dir(), takenFile), []byte("someone"), 0o644))
 	_, err := task.Status()
 	require.Error(t, err)
 }
@@ -376,7 +382,7 @@ func TestStatus_RejectsAMalformedExitCode(t *testing.T) {
 	run, err := task.Take(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, run.lock.Close())
-	require.NoError(t, os.WriteFile(filepath.Join(task.Dir(), ExitCodeFile), []byte("x"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(task.Dir(), exitCodeFile), []byte("x"), 0o644))
 	_, err = task.Status()
 	require.Error(t, err)
 }

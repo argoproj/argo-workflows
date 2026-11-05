@@ -55,7 +55,8 @@ func Reap() (int, error) {
 // Sweep kills every descendant of this process, which in a pool pod's main
 // is every process a task started, however it detached: SIGTERM to each, then
 // SIGKILL to any still alive once grace has passed. It returns once none is
-// left alive, or with ctx's error. A zombie counts as gone: Sweep doesn't
+// left alive, or with ctx's error once ctx ends, which bounds how long a
+// process SIGKILL can't end (one in uninterruptible sleep) is waited for. A zombie counts as gone: Sweep doesn't
 // reap, so it never takes an exit status the caller is waiting for.
 //
 // main runs it when a task is stopped, with grace half the release reserve,
@@ -98,7 +99,7 @@ func sweep(ctx context.Context, fs procfs.FS, root int, grace time.Duration) err
 		}
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return fmt.Errorf("%d processes still alive: %w", len(alive), ctx.Err())
 		case <-time.After(sweepInterval):
 		}
 	}

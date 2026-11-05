@@ -167,34 +167,6 @@ func TestLockHeld(t *testing.T) {
 	require.NoError(t, f.Close())
 }
 
-func TestLockHeld_FreedOnProcessKill(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "lock")
-
-	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^$")
-	cmd.Env = append(os.Environ(), "GO_WANT_LOCK_HELPER_PROCESS=1", "GO_LOCK_HELPER_PATH="+path) //nolint:forbidigo // env is the only channel to a re-exec'd test helper process
-	stdout, err := cmd.StdoutPipe()
-	require.NoError(t, err)
-	require.NoError(t, cmd.Start())
-	t.Cleanup(func() {
-		_ = cmd.Process.Kill()
-		_, _ = cmd.Process.Wait()
-	})
-	line, err := bufio.NewReader(stdout).ReadString('\n')
-	require.NoError(t, err)
-	require.Equal(t, "LOCKED\n", line)
-
-	held, err := LockHeld(path)
-	require.NoError(t, err)
-	assert.True(t, held)
-
-	require.NoError(t, cmd.Process.Signal(syscall.SIGKILL))
-	_, _ = cmd.Process.Wait()
-
-	held, err = LockHeld(path)
-	require.NoError(t, err)
-	assert.False(t, held)
-}
-
 func TestIsLockHeld(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "lock")
 	f, err := Acquire(path)

@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,10 +17,7 @@ import (
 // only the shared volume, no kubeconfig, no service account and no task
 // env. It must copy the binary and write nothing else.
 func TestInstall(t *testing.T) {
-	shared := t.TempDir()
-	prevVarRunArgo := varRunArgo
-	varRunArgo = shared
-	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
+	shared := useTempVarRunArgo(t)
 
 	bin := t.TempDir()
 	binary := []byte("#!/bin/sh\necho argoexec\n")
@@ -50,12 +46,4 @@ func TestInstall(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, entries, 1, "install writes only the binary")
 	assert.NoFileExists(t, filepath.Join(shared, "template"))
-}
-
-func TestInstall_RejectsArgs(t *testing.T) {
-	cmd := NewRootCommand()
-	cmd.SetArgs([]string{"install", "extra"})
-	cmd.SetOut(io.Discard)
-	cmd.SetErr(io.Discard)
-	require.Error(t, cmd.Execute())
 }

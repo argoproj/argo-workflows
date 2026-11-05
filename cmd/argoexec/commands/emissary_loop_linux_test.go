@@ -2,7 +2,10 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -15,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -255,7 +259,7 @@ func readPid(t *testing.T, path string) int {
 // gone reports whether pid has exited and been reaped.
 func gone(pid int) bool {
 	_, err := os.Stat("/proc/" + strconv.Itoa(pid))
-	return os.IsNotExist(err)
+	return errors.Is(err, fs.ErrNotExist)
 }
 
 func exited(code int) poolpod.Status {
@@ -484,21 +488,9 @@ while [ ! -s "$OUT/daemon" ]; do sleep 0.05; done`), nil)
 	assert.True(t, gone(daemon))
 }
 
-// With no task taken, SIGTERM makes main exit at once.
-func TestLoop_SIGTERMWithNoTaskExitsAtOnce(t *testing.T) {
-	t.Parallel()
-	h := newLoopHarness(t)
-	h.start()
-	// The loop has created the pool directory once SIGTERM is handled.
-	h.waitFile(h.pool.Dir())
-
-	h.signal(syscall.SIGTERM)
-
-	require.NoError(t, h.waitExit(5*time.Second))
-}
-
 // main holds its liveness lock from when it starts taking tasks until it
-// exits, so the worker claims tasks only while main can run them.
+// exits, so the worker claims tasks only while main can run them, and with
+// no task taken SIGTERM makes it exit at once.
 func TestLoop_HoldsMainsLockWhileUp(t *testing.T) {
 	t.Parallel()
 	h := newLoopHarness(t)
@@ -569,4 +561,239 @@ func TestLoop_TaskMainCannotRun(t *testing.T) {
 	assert.Equal(t, poolpod.Exited, s.State)
 	assert.Equal(t, loopExitCodeMainFailed, s.ExitCode)
 	assert.Contains(t, s.Message, "/no/such/command")
+}
+
+// executable writes an executable file at dir/name.
+func executable(t *testing.T, dir, name string) string {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755))
+	return path
+}
+
+func TestOnTaskPath(t *testing.T) {
+	root := t.TempDir()
+	first := filepath.Join(root, "first")
+	last := filepath.Join(root, "last")
+	executable(t, first, "tool")
+	want := executable(t, last, "tool")
+	notExecutable := filepath.Join(root, "not-executable")
+	require.NoError(t, os.MkdirAll(notExecutable, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(notExecutable, "tool"), []byte("#!/bin/sh\n"), 0o644))
+	directory := filepath.Join(root, "directory")
+	require.NoError(t, os.MkdirAll(filepath.Join(directory, "tool"), 0o755))
+	// A relative PATH entry would be found from main's working directory.
+	t.Chdir(root)
+	executable(t, filepath.Join(root, "relative"), "tool")
+
+	for _, tc := range []struct {
+		name    string
+		command []string
+		env     []string
+		want    []string
+	}{
+		{"LastPATHWins", []string{"tool", "arg"}, []string{"PATH=" + first, "FOO=bar", "PATH=" + last}, []string{want, "arg"}},
+		{"SkipsRelativeEntries", []string{"tool"}, []string{"PATH=relative:" + last}, []string{want}},
+		{"SkipsWhatIsNotAnExecutableFile", []string{"tool"}, []string{"PATH=" + notExecutable + ":" + directory + ":" + last}, []string{want}},
+		{"LeavesAPath", []string{"./tool", "arg"}, []string{"PATH=" + last}, []string{"./tool", "arg"}},
+		{"LeavesAnAbsolutePath", []string{"/bin/sh"}, []string{"PATH=" + last}, []string{"/bin/sh"}},
+		{"NoCommand", nil, []string{"PATH=" + last}, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := onTaskPath(tc.command, tc.env)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+
+	t.Run("NotFound", func(t *testing.T) {
+		path := "relative:" + notExecutable + ":" + directory
+		_, err := onTaskPath([]string{"tool"}, []string{"PATH=" + last, "PATH=" + path})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `"tool"`)
+		assert.Contains(t, err.Error(), strconv.Quote(path))
+	})
+}
+
+// A bare command is found on the PATH in the task's env, as the container
+// runtime finds a container's, not on main's.
+func TestLoop_FindsTheCommandOnTheTasksPATH(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	bin := filepath.Join(h.root, "bin")
+	require.NoError(t, os.MkdirAll(bin, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(bin, "greet"), []byte("#!/bin/sh\necho hello > \"$OUT/greeted\"\n"), 0o755))
+	h.start()
+	spec := h.spec("path", nil, "")
+	spec.Command, spec.Args = []string{"greet"}, nil
+	spec.Env = append(spec.Env, poolpod.EnvVar{Name: "PATH", Value: bin + ":/usr/bin:/bin"})
+	task := h.offer("path", spec, nil)
+	require.Equal(t, exited(0), h.wait(task))
+	got, err := os.ReadFile(filepath.Join(h.out, "greeted"))
+	require.NoError(t, err)
+	assert.Equal(t, "hello\n", string(got))
+}
+
+// recordingStager records what it is given to stage.
+type recordingStager struct {
+	staged []maindriver.Output
+	err    error
+}
+
+func (s *recordingStager) Stage(_ context.Context, _ string, out maindriver.Output) error {
+	s.staged = append(s.staged, out)
+	return s.err
+}
+
+func TestSweptStager(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	out := maindriver.Output{Kind: maindriver.OutputParameter, Name: "out", Path: "/out"}
+
+	t.Run("Swept", func(t *testing.T) {
+		stageErr := errors.New("stage failed")
+		inner := &recordingStager{err: stageErr}
+		var sweepErr error
+		require.ErrorIs(t, sweptStager{OutputStager: inner, sweepErr: &sweepErr}.Stage(ctx, "node", out), stageErr)
+		assert.Equal(t, []maindriver.Output{out}, inner.staged)
+	})
+	t.Run("StillRunning", func(t *testing.T) {
+		inner := &recordingStager{}
+		sweepErr := errors.New("1 processes still alive")
+		err := sweptStager{OutputStager: inner, sweepErr: &sweepErr}.Stage(ctx, "node", out)
+		require.ErrorIs(t, err, sweepErr)
+		assert.Contains(t, err.Error(), "not staged")
+		assert.Empty(t, inner.staged, "a process may still be writing the output")
+	})
+}
+
+// An input artifact at a declared output's path is the output's starting
+// point: the task modifies it in place, and the modified file is staged.
+func TestLoop_InputAtAnOutputsPath(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	data := filepath.Join(h.image, "data")
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "in", Path: data}}},
+		Outputs: wfv1.Outputs{
+			Parameters: []wfv1.Parameter{{Name: "out", ValueFrom: &wfv1.ValueFrom{Path: data}}},
+			Artifacts:  wfv1.Artifacts{{Name: "out", Path: data}},
+		},
+	}
+	h.start()
+	task := h.offer("t", h.spec("t", tmpl, `set -e
+v="$(cat "$IMAGE/data")"
+rm "$IMAGE/data"
+printf '%s modified' "$v" > "$IMAGE/data"`), map[string]string{"in": "input"})
+	require.Equal(t, exited(0), h.wait(task))
+	staged, err := os.ReadFile(filepath.Join(h.paths("t").VarRunArgo, "outputs", "parameters", data))
+	require.NoError(t, err)
+	assert.Equal(t, "input modified", string(staged))
+	assert.FileExists(t, filepath.Join(h.paths("t").VarRunArgo, "outputs", "artifacts", data+".tgz"))
+	assert.NoFileExists(t, data)
+}
+
+// A template's volume mount is a volume to the task's isolation: an output
+// path on it may already exist, and what the task writes there stays.
+func TestLoop_OutputsOnAVolumeAreLeft(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	volume := filepath.Join(h.root, "volume")
+	existing := filepath.Join(volume, "existing")
+	require.NoError(t, os.MkdirAll(volume, 0o755))
+	require.NoError(t, os.WriteFile(existing, []byte("from an earlier task"), 0o644))
+	result := filepath.Join(volume, "result")
+	tmpl := &wfv1.Template{
+		Container: &corev1.Container{VolumeMounts: []corev1.VolumeMount{{Name: "volume", MountPath: volume}}},
+		Outputs: wfv1.Outputs{
+			Parameters: []wfv1.Parameter{{Name: "result", ValueFrom: &wfv1.ValueFrom{Path: result}}},
+			Artifacts:  wfv1.Artifacts{{Name: "existing", Path: existing}},
+		},
+	}
+	h.start()
+	task := h.offer("t", h.spec("t", tmpl, `echo done > "`+result+`"`), nil)
+	require.Equal(t, exited(0), h.wait(task))
+	got, err := os.ReadFile(result)
+	require.NoError(t, err)
+	assert.Equal(t, "done\n", string(got))
+	got, err = os.ReadFile(existing)
+	require.NoError(t, err)
+	assert.Equal(t, "from an earlier task", string(got))
+}
+
+// A command that exits 0 but whose outputs main can't stage fails the task,
+// with main's reason.
+func TestLoop_UnstagedOutputFailsTheTask(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	out := filepath.Join(h.image, "out")
+	tmpl := &wfv1.Template{Outputs: wfv1.Outputs{Parameters: []wfv1.Parameter{{Name: "out", ValueFrom: &wfv1.ValueFrom{Path: out}}}}}
+	h.start()
+	// A parameter can't be read from a directory.
+	task := h.offer("t", h.spec("t", tmpl, `mkdir "$IMAGE/out"`), nil)
+	s := h.wait(task)
+	assert.Equal(t, poolpod.Exited, s.State)
+	assert.Equal(t, loopExitCodeMainFailed, s.ExitCode)
+	assert.Contains(t, s.Message, out)
+}
+
+// A task whose directory isn't in the pool directory fails before it starts.
+func TestLoop_TaskOutsideThePoolDirectoryFails(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	require.NoError(t, h.pool.Init())
+	h.start()
+	task := poolpodtest.Offer(t, h.pool, filepath.Join(h.root, "elsewhere", "t"), h.spec("t", nil, `touch "$OUT/ran"`))
+	s := h.wait(task)
+	assert.Equal(t, poolpod.Exited, s.State)
+	assert.Equal(t, loopExitCodeMainFailed, s.ExitCode)
+	assert.Contains(t, s.Message, "is not in the pool directory")
+	assert.NoFileExists(t, filepath.Join(h.out, "ran"))
+}
+
+// An optional input artifact the worker didn't stage is not linked, and the
+// task runs without it.
+func TestLoop_SkipsAnOptionalInputNotStaged(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	tmpl := &wfv1.Template{Inputs: wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "optional", Path: filepath.Join(h.image, "optional"), Optional: true}}}}
+	h.start()
+	task := h.offer("t", h.spec("t", tmpl, `test ! -e "$IMAGE/optional"`), nil)
+	assert.Equal(t, exited(0), h.wait(task))
+}
+
+// An argument too long for exec is offloaded into the task's own directory,
+// which the worker removes after the task, not /tmp, where it would outlive
+// it.
+func TestLoop_OffloadsLargeArgsIntoTheTaskDirectory(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	h.start()
+	large := strings.Repeat("x", common.MaxEnvVarLen+1)
+	spec := h.spec("t", nil, `printf %s "$1" > "$OUT/arg"`)
+	spec.Args = append(spec.Args, "sh", large)
+	task := h.offer("t", spec, nil)
+	require.Equal(t, exited(0), h.wait(task))
+	arg, err := os.ReadFile(filepath.Join(h.out, "arg"))
+	require.NoError(t, err)
+	file, ok := strings.CutPrefix(string(arg), "@")
+	require.True(t, ok, "the argument is offloaded: %.40q", arg)
+	assert.Equal(t, h.paths("t").VarRunArgo, filepath.Dir(file))
+	offloaded, err := os.ReadFile(file)
+	require.NoError(t, err)
+	assert.Equal(t, large, string(offloaded))
+}
+
+// The loop's tasks come from its worker: a command on its command line is
+// refused.
+func TestEmissaryLoop_RefusesACommand(t *testing.T) {
+	// Were the command not refused, the loop would fail at once here.
+	t.Setenv(common.EnvVarReleaseReserveSeconds, "")
+	cmd := NewEmissaryCommand()
+	cmd.SetArgs([]string{"--loop", "--", "sh", "-c", "true"})
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	err := cmd.ExecuteContext(logging.TestContext(t.Context()))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "takes no command")
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/propagation"
@@ -43,6 +44,11 @@ const (
 	loopExitCodeStopped = 128 + 15
 	// loopReapInterval is how often main reaps between tasks.
 	loopReapInterval = time.Second
+	// loopExitSweepTimeout is how long main keeps killing what a finished
+	// task left before it gives up: a process SIGKILL can't end, such as
+	// one in uninterruptible sleep on a hung volume, makes main exit and
+	// its container restart rather than hang on the task.
+	loopExitSweepTimeout = 30 * time.Second
 )
 
 // loopConfig is everything `emissary --loop` reads from its environment,
@@ -104,6 +110,10 @@ func runLoopCommand(ctx context.Context) error {
 // that main couldn't.
 func runLoop(ctx context.Context, cfg loopConfig) error {
 	logger := logging.RequireLoggerFromContext(ctx)
+	terminated := func() error {
+		logger.Info(ctx, "terminated with no task taken, exiting")
+		return nil
+	}
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("emissary --loop runs only on Linux: %w", errors.ErrUnsupported)
 	}
@@ -122,8 +132,7 @@ func runLoop(ctx context.Context, cfg loopConfig) error {
 	// Held until main exits: the worker claims tasks only while it is.
 	mainLock, err := pool.HoldMain(ctx)
 	if ctx.Err() != nil {
-		logger.Info(ctx, "terminated with no task taken, exiting")
-		return nil
+		return terminated()
 	}
 	if err != nil {
 		return fmt.Errorf("take main's liveness lock: %w", err)
@@ -136,8 +145,7 @@ func runLoop(ctx context.Context, cfg loopConfig) error {
 	for {
 		task, err := pool.WaitNext(ctx, prev)
 		if ctx.Err() != nil {
-			logger.Info(ctx, "terminated with no task taken, exiting")
-			return nil
+			return terminated()
 		}
 		if err != nil {
 			return fmt.Errorf("wait for the next task: %w", err)
@@ -146,8 +154,7 @@ func runLoop(ctx context.Context, cfg loopConfig) error {
 		taskLogger := logger.WithField("task", task.Dir())
 		run, err := take(logging.WithLogger(ctx, taskLogger), task)
 		if err != nil && ctx.Err() != nil {
-			logger.Info(ctx, "terminated with no task taken, exiting")
-			return nil
+			return terminated()
 		}
 		if err != nil {
 			return err
@@ -200,8 +207,10 @@ func take(ctx context.Context, task poolpod.Task) (*poolpod.Run, error) {
 
 // runTask runs one task that main has taken, and returns its exit code and
 // main's message, which is empty unless main failed the task itself. A
-// non-nil error means a process the task started couldn't be killed, so
-// main must not run another task.
+// non-nil error means a process the task started couldn't be killed, or
+// was still alive loopExitSweepTimeout after the command exited, so main
+// must not run another task; the task's files are then left, and its
+// outputs not staged, as that process may still be writing them.
 func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, message string, sweepErr error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	failed := func(err error) (int, string, error) {
@@ -231,6 +240,9 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 	ctx, span := cfg.Tracer.StartRunMainContainer(withTaskTraceContext(ctx, spec.Env), taskEnv(spec.Env, common.EnvVarWorkflowName), cfg.Namespace)
 	defer span.End()
 	command, env := spec.Resolve(cfg.Environ)
+	if command, err = onTaskPath(command, env); err != nil {
+		return failed(err)
+	}
 	env = injectTraceParent(ctx, env)
 	// In the task's directory, which the worker removes after the task,
 	// rather than /tmp, where they would outlive it.
@@ -238,7 +250,7 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 		return failed(err)
 	}
 	workDir := paths.ContainerDir(common.MainContainerName)
-	if err = os.MkdirAll(workDir, 0o777); err != nil {
+	if err = poolpod.MakeSharedDir(workDir); err != nil {
 		return failed(fmt.Errorf("create %s: %w", workDir, err))
 	}
 
@@ -246,6 +258,12 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 	// After the command's processes are gone and its outputs are staged:
 	// Driver.Run stages them before it returns.
 	defer func() {
+		if sweepErr != nil {
+			// What a live process may still be writing; main exits, and its
+			// container's restart takes them.
+			logger.Info(ctx, "leaving the task's files, as a process it started is still running")
+			return
+		}
 		if cleanupErr := iso.Cleanup(); cleanupErr != nil {
 			// A path left in place fails the next task that uses it, so
 			// no task sees another's.
@@ -271,10 +289,15 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 		// still be writing them, as when a pod's main container exits.
 		OnExit: func() {
 			stopWatch()
-			sweepErr = poolpod.Sweep(ctx, 0)
+			sweepCtx, cancel := context.WithTimeout(ctx, loopExitSweepTimeout)
+			defer cancel()
+			sweepErr = poolpod.Sweep(sweepCtx, 0)
 		},
 	}
-	stager := maindriver.PodStager{VarRunArgo: paths.VarRunArgo, ContainerName: common.MainContainerName, Template: spec.Template, SharedDirs: true}
+	stager := sweptStager{
+		OutputStager: maindriver.PodStager{VarRunArgo: paths.VarRunArgo, ContainerName: common.MainContainerName, Template: spec.Template, SharedDirs: true},
+		sweepErr:     &sweepErr,
+	}
 	code, err = cfg.Driver.Run(ctx, mainTask, stager)
 	var exited argoerrors.Exited
 	if err != nil && !errors.As(err, &exited) {
@@ -288,11 +311,52 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 	return code, "", sweepErr
 }
 
+// sweptStager stages a task's outputs only once the sweep after its command
+// has killed every process it started, so none can still be writing them.
+type sweptStager struct {
+	maindriver.OutputStager
+	sweepErr *error
+}
+
+func (s sweptStager) Stage(ctx context.Context, nodeID string, out maindriver.Output) error {
+	if *s.sweepErr != nil {
+		return fmt.Errorf("not staged, as a process the task started is still running: %w", *s.sweepErr)
+	}
+	return s.OutputStager.Stage(ctx, nodeID, out)
+}
+
+// onTaskPath returns command with a bare command name found on the PATH in
+// env, the task's, as the container runtime finds a container's command on
+// its env's PATH; Container.Run would search main's own PATH, the pool
+// pod's. A command naming a directory is left for Container.Run.
+func onTaskPath(command, env []string) ([]string, error) {
+	if len(command) == 0 || strings.ContainsRune(command[0], filepath.Separator) {
+		return command, nil
+	}
+	var path string
+	for _, e := range slices.Backward(env) {
+		if v, ok := strings.CutPrefix(e, "PATH="); ok {
+			path = v
+			break
+		}
+	}
+	for _, dir := range filepath.SplitList(path) {
+		if !filepath.IsAbs(dir) {
+			continue
+		}
+		name := filepath.Join(dir, command[0])
+		if fi, err := os.Stat(name); err == nil && fi.Mode().IsRegular() && fi.Mode().Perm()&0o111 != 0 {
+			return append([]string{name}, command[1:]...), nil
+		}
+	}
+	return nil, fmt.Errorf("command %q not found on the task's PATH %q", command[0], path)
+}
+
 // withTaskTraceContext returns ctx continuing the trace context in a task's
 // env, its TRACEPARENT and TRACESTATE, or ctx unchanged when it has none, as
 // a pod's executor reads its own.
 func withTaskTraceContext(ctx context.Context, env []poolpod.EnvVar) context.Context {
-	carrier := argoexecexecutor.TraceContextFromEnv(taskEnvLookup(env))
+	carrier := tracing.TraceContextFromEnv(taskEnvLookup(env))
 	if carrier == nil {
 		return ctx
 	}
@@ -367,10 +431,7 @@ func isolate(iso *poolpod.Isolation, tmpl *wfv1.Template, inputsDir string) erro
 // in progress, and waits for it.
 func (cfg loopConfig) watchStop(ctx context.Context, run *poolpod.Run) func() {
 	logger := logging.RequireLoggerFromContext(ctx)
-	ctx, cancel := context.WithCancel(ctx)
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
+	return goUntilStopped(ctx, func(ctx context.Context) {
 		reason, err := run.WaitStop(ctx)
 		if err != nil {
 			if ctx.Err() == nil {
@@ -382,35 +443,25 @@ func (cfg loopConfig) watchStop(ctx context.Context, run *poolpod.Run) func() {
 		if err := poolpod.Sweep(ctx, cfg.ReleaseReserve/2); err != nil && ctx.Err() == nil {
 			logger.WithError(err).Error(ctx, "failed to stop the task")
 		}
-	}()
-	return func() {
-		cancel()
-		<-done
-	}
+	})
 }
 
 // reaper reaps the zombies a task's orphans leave, between tasks. While a
 // task's command runs, waiting for it reaps them.
 type reaper struct {
-	cancel context.CancelFunc
-	done   chan struct{}
+	stopReaping func()
 }
 
 func startReaper(ctx context.Context) *reaper {
-	ctx, cancel := context.WithCancel(ctx)
-	r := &reaper{cancel: cancel, done: make(chan struct{})}
-	go func() {
-		defer close(r.done)
+	return &reaper{stopReaping: goUntilStopped(ctx, func(ctx context.Context) {
 		wait.UntilWithContext(ctx, reap, loopReapInterval)
-	}()
-	return r
+	})}
 }
 
 // stop stops reaping, once anything already exited has been reaped. It is
 // safe to call more than once.
 func (r *reaper) stop(ctx context.Context) {
-	r.cancel()
-	<-r.done
+	r.stopReaping()
 	reap(ctx)
 }
 

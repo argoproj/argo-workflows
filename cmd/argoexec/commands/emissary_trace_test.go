@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/poolpod"
 )
 
@@ -62,7 +63,7 @@ func TestWithTaskTraceContext(t *testing.T) {
 	const traceParent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
 
 	t.Run("ContinuesTheTasksTrace", func(t *testing.T) {
-		ctx := withTaskTraceContext(context.Background(), []poolpod.EnvVar{
+		ctx := withTaskTraceContext(logging.TestContext(t.Context()), []poolpod.EnvVar{
 			{Name: "TRACEPARENT", Value: "00-00000000000000000000000000000001-0000000000000002-01"},
 			{Name: "TRACEPARENT", Value: traceParent},
 			{Name: "TRACESTATE", Value: "k=v"},
@@ -75,14 +76,14 @@ func TestWithTaskTraceContext(t *testing.T) {
 	})
 
 	t.Run("NoTraceParentNoParent", func(t *testing.T) {
-		ctx := withTaskTraceContext(context.Background(), []poolpod.EnvVar{{Name: "TRACESTATE", Value: "k=v"}})
+		ctx := withTaskTraceContext(logging.TestContext(t.Context()), []poolpod.EnvVar{{Name: "TRACESTATE", Value: "k=v"}})
 		assert.False(t, trace.SpanContextFromContext(ctx).IsValid())
 		assert.Empty(t, trace.SpanContextFromContext(ctx).TraceState().String())
 	})
 
 	t.Run("OnlyTheExactName", func(t *testing.T) {
 		// As os.LookupEnv reads a pod's env: names are case-sensitive.
-		ctx := withTaskTraceContext(context.Background(), []poolpod.EnvVar{{Name: "traceparent", Value: traceParent}})
+		ctx := withTaskTraceContext(logging.TestContext(t.Context()), []poolpod.EnvVar{{Name: "traceparent", Value: traceParent}})
 		assert.False(t, trace.SpanContextFromContext(ctx).IsValid())
 	})
 }
