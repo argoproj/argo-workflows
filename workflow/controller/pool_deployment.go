@@ -135,8 +135,9 @@ func buildPoolDeployment(namespace, hash string, spec *wfv1.PoolSpec) (*appsv1.D
 	}
 	maps.Copy(podMeta.Labels, dispatch.PoolLabels(spec, hash))
 
-	// The volumes and mounts addVolumeReferences adds, then those of the input
-	// artifacts and script, then the plugins', each as for an init-less pod.
+	// The volumes and mounts addVolumeReferences adds, the plugins' sockets,
+	// then the input artifacts' and script's volumes, then the plugin
+	// sidecars, each as for an init-less pod.
 	podSpec.Volumes = append(podSpec.Volumes, wfSpec.Volumes...)
 	secretVolumes, secretMounts := poolArtifactSecretVolumes(spec.ArtifactSecrets)
 	podSpec.Volumes = append(podSpec.Volumes, secretVolumes...)
@@ -145,29 +146,20 @@ func buildPoolDeployment(namespace, hash string, spec *wfv1.PoolSpec) (*appsv1.D
 		podSpec.Volumes = append(podSpec.Volumes, p.Name.Volume())
 	}
 
-	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
-		Name:         inputArtifactsVolumeName,
-		VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}},
-	})
+	podSpec.Volumes = append(podSpec.Volumes, volumeInputArtifacts)
 	worker.VolumeMounts = append(worker.VolumeMounts, inputArtifactExecutorMounts(tmpl)...)
-	main.VolumeMounts = append(main.VolumeMounts, apiv1.VolumeMount{Name: inputArtifactsVolumeName, MountPath: common.ExecutorArtifactBaseDir})
+	main.VolumeMounts = append(main.VolumeMounts, volumeMountInputArtifacts)
 
 	// A pod has the staging volume only for a script, but worker creates a
 	// staging directory for every task, so a pool always has it.
-	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
-		Name:         scriptStagingVolumeName,
-		VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}},
-	})
-	staging := apiv1.VolumeMount{Name: scriptStagingVolumeName, MountPath: common.ExecutorStagingEmptyDir}
-	worker.VolumeMounts = append(worker.VolumeMounts, staging)
-	main.VolumeMounts = append(main.VolumeMounts, staging)
+	podSpec.Volumes = append(podSpec.Volumes, volumeScriptStaging)
+	worker.VolumeMounts = append(worker.VolumeMounts, volumeMountScriptStaging)
+	main.VolumeMounts = append(main.VolumeMounts, volumeMountScriptStaging)
 
 	var sidecars []apiv1.Container
 	for _, p := range spec.ArtifactPlugins {
-		sidecar := buildArtifactContainer(tmpl, execCfg(), p.Name, p.Image, p.Command,
-			common.ArtifactPluginSidecarPrefix, layout.argoexecBinaryPath(), []string{"artifact-plugin-sidecar"}, logOpts)
+		sidecar := buildArtifactSidecarContainer(tmpl, execCfg(), p.Name, p.Image, p.Command, layout.argoexecBinaryPath(), logOpts)
 		withoutWorkflowUID(sidecar)
-		sidecar.VolumeMounts = []apiv1.VolumeMount{p.Name.VolumeMount()}
 		layout.decorateUserContainer(sidecar, false)
 		sidecar.VolumeMounts = append(sidecar.VolumeMounts, inputArtifactExecutorMounts(tmpl)...)
 		worker.VolumeMounts = append(worker.VolumeMounts, p.Name.VolumeMount())
@@ -182,11 +174,16 @@ func buildPoolDeployment(namespace, hash string, spec *wfv1.PoolSpec) (*appsv1.D
 	}
 	podSpec.Containers = slices.Concat([]apiv1.Container{*worker, main}, sidecars)
 
-	// The per-container finishing touches of the pod builder's last loop.
+	// The per-container finishing touches of the pod builder's last loops,
+	// including each container's name in its env, which buildArtifactContainer
+	// has given the plugin sidecars already.
 	for i := range podSpec.Containers {
 		c := &podSpec.Containers[i]
 		if c.Name == common.MainContainerName {
 			layout.decorateUserContainer(c, false)
+		}
+		if !common.IsArtifactPluginSidecar(c.Name) {
+			c.Env = append(c.Env, containerNameEnv(c.Name))
 		}
 		// Worker and every plugin sidecar share the output directory: any
 		// plugin may store a task's outputs.
@@ -195,6 +192,7 @@ func buildPoolDeployment(namespace, hash string, spec *wfv1.PoolSpec) (*appsv1.D
 	for i := range podSpec.InitContainers {
 		c := &podSpec.InitContainers[i]
 		c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
+		c.Env = append(c.Env, containerNameEnv(c.Name))
 	}
 
 	return &appsv1.Deployment{
@@ -242,7 +240,6 @@ func poolWorkerContainer(tmpl *wfv1.Template, cfg execContainerConfig, spec *wfv
 		worker.VolumeMounts = append(worker.VolumeMounts, executorTokenVolumeMount())
 	}
 	worker.Env = append(worker.Env,
-		apiv1.EnvVar{Name: common.EnvVarContainerName, Value: common.WorkerContainerName},
 		apiv1.EnvVar{Name: common.EnvVarPoolHash, ValueFrom: &apiv1.EnvVarSource{
 			FieldRef: &apiv1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "metadata.labels['" + common.LabelKeyPoolHash + "']"},
 		}},
@@ -271,23 +268,8 @@ func poolMainContainer(tmpl *wfv1.Template, spec *wfv1.PoolSpec, argoexecPath st
 	main := ctrs[0]
 	main.Command = append([]string{argoexecPath, "emissary", "--loop"}, logOpts...)
 	main.Args = nil
-	main.Env = append(main.Env,
-		apiv1.EnvVar{Name: common.EnvVarContainerName, Value: common.MainContainerName},
-		apiv1.EnvVar{Name: common.EnvVarReleaseReserveSeconds, Value: fmt.Sprint(spec.ReleaseReserveSeconds)},
-	)
+	main.Env = append(main.Env, apiv1.EnvVar{Name: common.EnvVarReleaseReserveSeconds, Value: fmt.Sprint(spec.ReleaseReserveSeconds)})
 	return main, nil
-}
-
-// poolInstallContainer is a legacy-layout pool pod's init container: `argoexec
-// install` copies argoexec into /var/run/argo, its only mount. It reads
-// no template or task env and never calls the API, so cfg must carry no
-// kubeconfig or executor token.
-func poolInstallContainer(tmpl *wfv1.Template, cfg execContainerConfig, logOpts []string) *apiv1.Container {
-	ctr := buildExecContainer(common.InitContainerName, tmpl, cfg)
-	ctr.Command = append([]string{"argoexec", "install"}, logOpts...)
-	withoutWorkflowUID(ctr)
-	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: common.InitContainerName})
-	return ctr
 }
 
 // withoutWorkflowUID drops the ARGO_WORKFLOW_UID executorEnvVars gives every

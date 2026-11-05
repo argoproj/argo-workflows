@@ -194,6 +194,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 		wfc.pooledTaskSetInformer = newTestPooledTaskSetInformer(wfc)
 		wfc.poolPodInformer = wfc.newPoolPodInformer(ctx)
+		wfc.recordHotWorkers()
 		_ = wfc.registerPoolGauges()
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
@@ -64,8 +65,14 @@ func TestPoolGaugesNoPools(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	m, te, err := createTestMetrics(ctx, &telemetry.MetricsConfig{}, Callbacks{})
 	require.NoError(t, err)
-	require.NoError(t, m.RegisterPoolGauges(func(_ context.Context) []PoolGaugeSample { return nil }))
+	calls := 0
+	require.NoError(t, m.RegisterPoolGauges(func(_ context.Context) []PoolGaugeSample {
+		calls++
+		return nil
+	}))
 
+	require.NoError(t, te.Collect(ctx, &metricdata.ResourceMetrics{}))
+	assert.Equal(t, 1, calls, "one scrape reads the pools once for all three gauges")
 	attribs := poolAttribs("default", "build", "abc")
 	_, err = te.GetInt64GaugeValue(ctx, telemetry.InstrumentPoolBacklog.Name(), &attribs)
 	require.Error(t, err)

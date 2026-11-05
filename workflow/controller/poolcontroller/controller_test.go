@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
+	"strconv"
 	"testing"
 	"time"
 
@@ -236,12 +238,13 @@ func TestCreatesDeploymentAtInitialReplicas(t *testing.T) {
 	h.addTaskSet(testNamespace, "node-1", first)
 
 	h.mustReconcile(testNamespace)
+	assert.Equal(t, []*wfv1.PoolSpec{first}, h.builtFor, "built from the TaskSet's spec.pool exactly")
 	created := h.createdDeployments()
 	require.Len(t, created, 1)
-	assert.Equal(t, "my-pool-0123456789", created[0].Name)
-	assert.Equal(t, int32(3), *created[0].Spec.Replicas)
-	assert.Equal(t, "120", created[0].Annotations[common.AnnotationKeyPoolRetentionSeconds])
-	assert.Equal(t, []*wfv1.PoolSpec{first}, h.builtFor, "built from the TaskSet's spec.pool exactly")
+	want, err := h.build(testNamespace, testHash, first)
+	require.NoError(t, err)
+	want.Annotations = map[string]string{common.AnnotationKeyPoolRetentionSeconds: "120"}
+	assert.Equal(t, want, created[0], "what was built, with the spec's retention")
 	assert.Equal(t, dispatch.Health{State: dispatch.HealthOK}, h.health(testNamespace))
 
 	// A later TaskSet asking for other replicas changes nothing once the
@@ -327,15 +330,19 @@ func TestIdlePoolUsesDefaultRetention(t *testing.T) {
 
 func TestIdlePoolNotDeletedWhileTaskSetUncached(t *testing.T) {
 	h := newHarness(t, "")
-	taskSet := h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 0))
+	taskSet := h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
 	h.mustReconcile(testNamespace)
 	h.cacheCreated()
 	h.deleteTaskSet(taskSet)
 	// Created, but not yet in the cache.
-	h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 1, 0), true)
+	h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 1, 60), true)
 	h.kube.ClearActions()
 
-	h.mustReconcile(testNamespace)
+	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace))
+	h.now = h.now.Add(time.Minute)
+	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace), "its retention starts over")
+	h.now = h.now.Add(59 * time.Second)
+	assert.Equal(t, time.Second, h.mustReconcile(testNamespace))
 	assert.Empty(t, h.deploymentActions())
 }
 
@@ -350,10 +357,16 @@ func TestRecreatesDeploymentDeletedWhileInUse(t *testing.T) {
 	require.NoError(t, h.c.Deployments.GetIndexer().Update(deleting))
 	require.NoError(t, h.kube.AppsV1().Deployments(testNamespace).Delete(h.ctx(), deleting.Name, metav1.DeleteOptions{}))
 	h.kube.ClearActions()
+	h.wf.ClearActions()
 
-	// Its name is still taken while it is being deleted.
+	// Its name is still taken while it is being deleted, and it isn't
+	// changed, even for a newer TaskSet's retention.
+	h.now = h.now.Add(time.Second)
+	h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 1, 30))
+	h.wf.ClearActions()
 	h.mustReconcile(testNamespace)
 	assert.Empty(t, h.deploymentActions())
+	assert.Empty(t, h.wf.Actions())
 
 	require.NoError(t, h.c.Deployments.GetIndexer().Delete(deleting))
 	h.mustReconcile(testNamespace)
@@ -526,6 +539,38 @@ func TestCreateFailures(t *testing.T) {
 		assert.Equal(t, []string{"create my-pool-0123456789", "create my-pool-0123456789", "get my-pool-0123456789"}, h.deploymentActions())
 		assert.Equal(t, dispatch.Health{State: dispatch.HealthOK}, h.health(testNamespace))
 	})
+	t.Run("exceeded quota degrades the pool", func(t *testing.T) {
+		h := newHarness(t, "")
+		quota := apierr.NewForbidden(schema.GroupResource{Group: "apps", Resource: "deployments"}, "my-pool-0123456789", errors.New("exceeded quota: compute"))
+		h.kube.PrependReactor("create", "deployments", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, quota
+		})
+		h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
+		_, err := h.reconcile(testNamespace)
+		require.Error(t, err, "retried with back-off")
+		assert.Equal(t, dispatch.Health{State: dispatch.HealthDegraded, Reason: `can't create the Deployment of pool "my-pool": ` + quota.Error()}, h.health(testNamespace))
+	})
+	t.Run("a Deployment deleted between its create and get is retried", func(t *testing.T) {
+		h := newHarness(t, "")
+		h.kube.PrependReactor("create", "deployments", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewAlreadyExists(schema.GroupResource{Group: "apps", Resource: "deployments"}, "my-pool-0123456789")
+		})
+		h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
+		_, err := h.reconcile(testNamespace)
+		require.ErrorContains(t, err, "the Deployment my-pool-0123456789 was deleted while it was created")
+		assert.Equal(t, []string{"create my-pool-0123456789", "get my-pool-0123456789"}, h.deploymentActions())
+		assert.Equal(t, dispatch.Health{State: dispatch.HealthOK}, h.health(testNamespace))
+	})
+	t.Run("a TaskSet replaced by another pool's isn't read", func(t *testing.T) {
+		h := newHarness(t, "")
+		taskSet := h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
+		taskSet.Labels[common.LabelKeyPoolHash] = otherHash
+		_, err := h.wf.ArgoprojV1alpha1().WorkflowTaskSets(testNamespace).Update(h.ctx(), taskSet, metav1.UpdateOptions{})
+		require.NoError(t, err)
+		h.mustReconcile(testNamespace)
+		assert.Empty(t, h.deploymentActions())
+		assert.Empty(t, h.builtFor)
+	})
 	t.Run("a TaskSet gone before it is read waits for its deletion", func(t *testing.T) {
 		h := newHarness(t, "")
 		taskSet := h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
@@ -537,14 +582,6 @@ func TestCreateFailures(t *testing.T) {
 
 func TestInstanceIDs(t *testing.T) {
 	h := newHarness(t, "mine")
-	spec := poolSpec("my-pool", 1, 60)
-	spec.InstanceID = "mine"
-	h.addTaskSet(testNamespace, "node-1", spec)
-	h.mustReconcile(testNamespace)
-	created := h.createdDeployments()
-	require.Len(t, created, 1)
-	assert.Equal(t, "mine", created[0].Labels[common.LabelKeyControllerInstanceID])
-
 	ours := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyPoolHash: testHash, common.LabelKeyControllerInstanceID: "mine"}}}
 	assert.True(t, h.c.owns(ours, testHash))
 	assert.False(t, h.c.owns(ours, otherHash))
@@ -596,6 +633,20 @@ func TestPodHealth(t *testing.T) {
 	}}}}
 	deleting := waitingPod("deleting", "main", "ImagePullBackOff", "")
 	deleting.DeletionTimestamp = new(metav1.Now())
+	// The legacy layout's init container, which installs argoexec.
+	initPullFailing := readyPod("a", false)
+	initPullFailing.Status.InitContainerStatuses = []apiv1.ContainerStatus{{
+		Name:  "init",
+		Image: "argoexec:v4",
+		State: apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{Reason: "ImagePullBackOff"}},
+	}}
+	initPullFailing.Status.ContainerStatuses = []apiv1.ContainerStatus{{
+		Name:  "main",
+		State: apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{Reason: "PodInitializing"}},
+	}}
+	replicaFailureResolved := &appsv1.Deployment{Status: appsv1.DeploymentStatus{Conditions: []appsv1.DeploymentCondition{{
+		Type: appsv1.DeploymentReplicaFailure, Status: apiv1.ConditionFalse, Reason: "FailedCreate", Message: "was forbidden",
+	}}}}
 	ok := dispatch.Health{State: dispatch.HealthOK}
 	degraded := func(reason string) dispatch.Health {
 		return dispatch.Health{State: dispatch.HealthDegraded, Reason: reason}
@@ -617,6 +668,11 @@ func TestPodHealth(t *testing.T) {
 		{name: "crash loop", pods: []*apiv1.Pod{waitingPod("a", "worker", "CrashLoopBackOff", "back-off 10s")}, want: degraded(`CrashLoopBackOff: container "worker" keeps exiting`)},
 		{name: "still creating", pods: []*apiv1.Pod{waitingPod("a", "main", "ContainerCreating", "")}, want: ok},
 		{name: "pods can't be created", deploy: replicaFailure, want: degraded(`FailedCreate: pods "p-" is forbidden: exceeded quota`)},
+		{name: "pods can be created again", deploy: replicaFailureResolved, want: ok},
+		{name: "init container pull failing", pods: []*apiv1.Pod{initPullFailing}, want: degraded(`ImagePullBackOff: container "init" can't pull image "argoexec:v4"`)},
+		{name: "invalid image", pods: []*apiv1.Pod{waitingPod("a", "main", "InvalidImageName", "bad name")}, want: degraded(`InvalidImageName: container "main": bad name`)},
+		{name: "image never pulled", pods: []*apiv1.Pod{waitingPod("a", "main", "ErrImageNeverPull", "not present")}, want: degraded(`ErrImageNeverPull: container "main": not present`)},
+		{name: "container can't be created", pods: []*apiv1.Pod{waitingPod("a", "main", "CreateContainerError", "no such device")}, want: degraded(`CreateContainerError: container "main": no such device`)},
 		{
 			name: "the same problem whichever pod reports it first",
 			pods: []*apiv1.Pod{waitingPod("z", "worker", "CrashLoopBackOff", ""), waitingPod("a", "main", "ErrImagePull", "")},
@@ -681,8 +737,11 @@ func TestEnqueueAfterTaskSet(t *testing.T) {
 	require.NoError(t, h.c.Deployments.GetIndexer().Add(&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
 		Namespace: testNamespace, Name: "my-pool-0123456789", Labels: map[string]string{common.LabelKeyPoolHash: testHash},
 	}}))
+	queue := &recordingQueue{TypedRateLimitingInterface: h.c.Queue}
+	h.c.Queue = queue
 	h.c.enqueueAfterTaskSet(cache.DeletedFinalStateUnknown{Obj: taskSet})
 	assert.Zero(t, h.c.Queue.Len(), "a pool with a Deployment is batched")
+	assert.Equal(t, []string{"after " + key + " 1s"}, queue.calls)
 
 	h.c.enqueueAfterTaskSet(&metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Name: "agent"}})
 	assert.Zero(t, h.c.Queue.Len(), "not a pool's")
@@ -751,21 +810,174 @@ func TestProcessNextItem(t *testing.T) {
 	})
 }
 
-func TestDegraded(t *testing.T) {
-	health, ok := Degraded("no RBAC").Health("any", "pool")
-	assert.True(t, ok)
-	assert.Equal(t, dispatch.Health{State: dispatch.HealthDegraded, Reason: "no RBAC"}, health)
-}
-
 func TestRetentionAnnotation(t *testing.T) {
 	h := newHarness(t, "")
 	for value, want := range map[string]time.Duration{
-		"0":    0,
-		"90":   90 * time.Second,
-		"-1":   10 * time.Minute,
-		"soon": 10 * time.Minute,
+		"0":                   0,
+		"90":                  90 * time.Second,
+		"-1":                  10 * time.Minute,
+		"soon":                10 * time.Minute,
+		"9223372036854775807": time.Duration(maxRetentionSeconds) * time.Second,
 	} {
 		deploy := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{common.AnnotationKeyPoolRetentionSeconds: value}}}
 		assert.Equal(t, want, h.c.retention(deploy), value)
+	}
+}
+
+func TestNewestTaskSet(t *testing.T) {
+	at := func(name string, created time.Time) *metav1.PartialObjectMetadata {
+		return &metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Name: name, CreationTimestamp: metav1.NewTime(created)}}
+	}
+	now := time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC)
+	older, a, b := at("z", now.Add(-time.Second)), at("a", now), at("b", now)
+	for _, taskSets := range [][]any{{older, a, b}, {b, a, older}, {a, older, b}} {
+		assert.Equal(t, "b", newestTaskSet(taskSets).GetName(), "created at the same time: the greatest name")
+	}
+	assert.Nil(t, newestTaskSet(nil))
+}
+
+func TestCachedDeploymentPicksLowestName(t *testing.T) {
+	h := newHarness(t, "")
+	for _, name := range []string{"b-pool-0123456789", "a-pool-0123456789", "c-pool-0123456789"} {
+		require.NoError(t, h.c.Deployments.GetIndexer().Add(&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace, Name: name, Labels: map[string]string{common.LabelKeyPoolHash: testHash},
+		}}))
+	}
+	deploy, err := h.c.cachedDeployment(indexes.MetaNamespaceLabelIndex(testNamespace, testHash))
+	require.NoError(t, err)
+	assert.Equal(t, "a-pool-0123456789", deploy.Name)
+}
+
+func TestIdlePoolIgnoresOtherInstancesTaskSets(t *testing.T) {
+	h := newHarness(t, "mine")
+	spec := poolSpec("my-pool", 1, 60)
+	spec.InstanceID = "mine"
+	taskSet := h.addTaskSet(testNamespace, "node-1", spec)
+	h.mustReconcile(testNamespace)
+	h.cacheCreated()
+	h.deleteTaskSet(taskSet)
+	theirs := poolSpec("my-pool", 1, 60)
+	theirs.InstanceID = "theirs"
+	h.addTaskSet(testNamespace, "node-2", theirs, true)
+	h.kube.ClearActions()
+
+	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace))
+	h.now = h.now.Add(time.Minute)
+	h.mustReconcile(testNamespace)
+	assert.Equal(t, []string{"delete my-pool-0123456789"}, h.deploymentActions())
+}
+
+func TestIdlePoolWithHugeRetentionIsKept(t *testing.T) {
+	assert.Equal(t, time.Duration(maxRetentionSeconds)*time.Second, Retention(math.MaxInt64))
+	assert.Positive(t, Retention(maxRetentionSeconds+1))
+	h := newHarness(t, "")
+	require.NoError(t, h.c.Deployments.GetIndexer().Add(&appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+		Namespace: testNamespace, Name: "my-pool-0123456789", UID: "uid",
+		Labels:      map[string]string{common.LabelKeyPoolHash: testHash},
+		Annotations: map[string]string{common.AnnotationKeyPoolRetentionSeconds: strconv.FormatInt(math.MaxInt64, 10)},
+	}}))
+	assert.Positive(t, h.mustReconcile(testNamespace))
+	h.now = h.now.Add(24 * time.Hour)
+	assert.Positive(t, h.mustReconcile(testNamespace))
+	assert.Empty(t, h.deploymentActions())
+}
+
+// idlePool is a harness with a pool whose last TaskSet has gone, and whose
+// Deployment is cached.
+func idlePool(t *testing.T) (*harness, *appsv1.Deployment) {
+	h := newHarness(t, "")
+	taskSet := h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
+	h.mustReconcile(testNamespace)
+	h.cacheCreated()
+	h.deleteTaskSet(taskSet)
+	h.kube.ClearActions()
+	deploy, _, _ := h.c.Deployments.GetIndexer().GetByKey(testNamespace + "/my-pool-0123456789")
+	return h, deploy.(*appsv1.Deployment)
+}
+
+func TestIdlePoolDeleteFailures(t *testing.T) {
+	gr := schema.GroupResource{Group: "apps", Resource: "deployments"}
+	for _, tt := range []struct {
+		name    string
+		err     error
+		wantErr bool
+	}{
+		{name: "already gone", err: apierr.NewNotFound(gr, "my-pool-0123456789")},
+		{name: "replaced", err: apierr.NewConflict(gr, "my-pool-0123456789", errors.New("precondition failed: UID"))},
+		{name: "other errors are retried", err: apierr.NewServiceUnavailable("try later"), wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			h, _ := idlePool(t)
+			h.kube.PrependReactor("delete", "deployments", func(k8stesting.Action) (bool, runtime.Object, error) {
+				return true, nil, tt.err
+			})
+			h.now = h.now.Add(time.Minute)
+			h.mustReconcile(testNamespace)
+			h.now = h.now.Add(time.Minute)
+			after, err := h.reconcile(testNamespace)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Zero(t, after)
+			assert.Equal(t, []string{"delete my-pool-0123456789"}, h.deploymentActions())
+		})
+	}
+}
+
+func TestIdlePoolBeingDeleted(t *testing.T) {
+	h, deploy := idlePool(t)
+	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace))
+	deleting := deploy.DeepCopy()
+	deleting.DeletionTimestamp = new(metav1.NewTime(h.now))
+	require.NoError(t, h.c.Deployments.GetIndexer().Update(deleting))
+	require.NoError(t, h.c.Pods.GetIndexer().Add(waitingPod("a", "main", "ErrImagePull", "")))
+
+	h.now = h.now.Add(time.Hour)
+	assert.Zero(t, h.mustReconcile(testNamespace), "its deletion requeues the pool")
+	assert.Empty(t, h.deploymentActions())
+	assert.Equal(t, dispatch.HealthDegraded, h.health(testNamespace).State, "its health is still reported")
+}
+
+func TestIdlePoolHealth(t *testing.T) {
+	h, _ := idlePool(t)
+	require.NoError(t, h.c.Pods.GetIndexer().Add(waitingPod("a", "main", "ErrImagePull", "")))
+	h.mustReconcile(testNamespace)
+	assert.Equal(t, dispatch.Health{State: dispatch.HealthDegraded, Reason: `ImagePullBackOff: container "main" can't pull image "my-image:v1"`}, h.health(testNamespace))
+}
+
+func TestRecordRetentionFailures(t *testing.T) {
+	gr := schema.GroupResource{Group: "apps", Resource: "deployments"}
+	for _, tt := range []struct {
+		name    string
+		err     error
+		wantErr bool
+	}{
+		{name: "gone", err: apierr.NewNotFound(gr, "my-pool-0123456789")},
+		{name: "replaced, so its UID can't change", err: apierr.NewInvalid(schema.GroupKind{Group: "apps", Kind: "Deployment"}, "my-pool-0123456789", nil)},
+		{name: "other errors are retried", err: apierr.NewServiceUnavailable("try later"), wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			h := newHarness(t, "")
+			h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
+			h.mustReconcile(testNamespace)
+			h.cacheCreated()
+			h.kube.ClearActions()
+			h.kube.PrependReactor("patch", "deployments", func(k8stesting.Action) (bool, runtime.Object, error) {
+				return true, nil, tt.err
+			})
+			h.now = h.now.Add(time.Second)
+			h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 1, 30))
+			_, err := h.reconcile(testNamespace)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, []string{"patch my-pool-0123456789"}, h.deploymentActions())
+			assert.Equal(t, dispatch.Health{State: dispatch.HealthOK}, h.health(testNamespace))
+			assert.Empty(t, h.drainEvents())
+		})
 	}
 }
