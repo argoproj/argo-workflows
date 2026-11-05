@@ -12,13 +12,12 @@
 // name another pool, even if it has the pool's Deployment name. It builds and
 // changes only the pools whose spec.pool its own version wrote, since its pod
 // template may not suit another version's executor image: another version's
-// pool is left to its retention, and the operator enqueues that pool's
-// unclaimed tasks again for this version.
+// pool is only deleted, once it has been idle for its retention, and the
+// operator enqueues that pool's unclaimed tasks again for this version.
 package poolcontroller
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
@@ -126,24 +125,10 @@ func New(opts Options) *Controller {
 		DeleteFunc: c.enqueueAfterTaskSet,
 	})
 	//nolint:errcheck // as above
-	opts.Pods.AddEventHandler(changeHandlers(c.enqueue))
+	opts.Pods.AddEventHandler(informerutil.ChangeHandlers(c.enqueue))
 	//nolint:errcheck // as above
-	opts.Deployments.AddEventHandler(changeHandlers(c.enqueue))
+	opts.Deployments.AddEventHandler(informerutil.ChangeHandlers(c.enqueue))
 	return c
-}
-
-// changeHandlers call f with every added, changed or deleted object.
-func changeHandlers(f func(any)) cache.ResourceEventHandlerFuncs {
-	return cache.ResourceEventHandlerFuncs{
-		AddFunc: f,
-		UpdateFunc: func(old, newObj any) {
-			if informerutil.ResourceVersionUnchanged(old, newObj) {
-				return
-			}
-			f(newObj)
-		},
-		DeleteFunc: f,
-	}
 }
 
 // keyOf is the key of the pool an object belongs to: its namespace and pool
@@ -248,9 +233,4 @@ func (c *Controller) forget(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.pools, key)
-}
-
-func splitKey(key string) (namespace, hash string) {
-	namespace, hash, _ = strings.Cut(key, "/")
-	return namespace, hash
 }

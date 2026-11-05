@@ -49,8 +49,6 @@ spec:
               fieldPath: metadata.uid
         - name: EXECUTOR_SETTING
           value: "1"
-        - name: ARGO_CONTAINER_NAME
-          value: worker
         - name: ARGO_POOL_HASH
           valueFrom:
             fieldRef:
@@ -58,6 +56,8 @@ spec:
               fieldPath: metadata.labels['workflows.argoproj.io/pool-hash']
         - name: ARGO_RELEASE_RESERVE_SECONDS
           value: "10"
+        - name: ARGO_CONTAINER_NAME
+          value: worker
         - name: ARGO_TERMINATION_GRACE_PERIOD_SECONDS
           value: "30"
         image: quay.io/argoproj/argoexec:v4.0.0
@@ -115,10 +115,10 @@ spec:
               name: api
         - name: MAIN_DEFAULT
           value: all pods
-        - name: ARGO_CONTAINER_NAME
-          value: main
         - name: ARGO_RELEASE_RESERVE_SECONDS
           value: "10"
+        - name: ARGO_CONTAINER_NAME
+          value: main
         - name: ARGO_TERMINATION_GRACE_PERIOD_SECONDS
           value: "30"
         envFrom:

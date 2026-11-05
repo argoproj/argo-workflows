@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -73,6 +72,31 @@ const inputArtifactsVolumeName = "input-artifacts"
 // scriptStagingVolumeName is the name of the emptyDir volume that holds a
 // script template's source (see addScriptStagingVolume).
 const scriptStagingVolumeName = "argo-staging"
+
+var (
+	volumeInputArtifacts = apiv1.Volume{
+		Name: inputArtifactsVolumeName,
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	// volumeMountInputArtifacts mounts the whole input-artifacts volume, as an
+	// init-less main has it.
+	volumeMountInputArtifacts = apiv1.VolumeMount{
+		Name:      inputArtifactsVolumeName,
+		MountPath: common.ExecutorArtifactBaseDir,
+	}
+	volumeScriptStaging = apiv1.Volume{
+		Name: scriptStagingVolumeName,
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	}
+	volumeMountScriptStaging = apiv1.VolumeMount{
+		Name:      scriptStagingVolumeName,
+		MountPath: common.ExecutorStagingEmptyDir,
+	}
+)
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
@@ -606,13 +630,13 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	}
 
 	for i, c := range pod.Spec.InitContainers {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, containerNameEnv(c.Name))
 		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTemplate, Value: envVarTemplateValue})
 		c.Env = append(c.Env, envVars...)
 		pod.Spec.InitContainers[i] = c
 	}
 	for i, c := range pod.Spec.Containers {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: c.Name})
+		c.Env = append(c.Env, containerNameEnv(c.Name))
 		c.Env = append(c.Env, envVars...)
 		// Init-less supervisor runs as a regular container but still needs
 		// ARGO_TEMPLATE set, since it starts concurrently with main and
@@ -965,25 +989,6 @@ func lookupEntrypoint(ctx context.Context, lookup func(context.Context, string, 
 	return x, nil
 }
 
-// buildArtifactContainer builds the argoexec container named prefix+plugin
-// that runs an artifact plugin's image: argoexec at binaryPath runs execCmd,
-// which starts the plugin's entrypoint with its socket path.
-func buildArtifactContainer(tmpl *wfv1.Template, execCfg execContainerConfig, plugin wfv1.ArtifactPluginName, image string, entrypoint []string, prefix, binaryPath string, execCmd, logOpts []string) *apiv1.Container {
-	name := prefix + string(plugin)
-	ctr := buildExecContainer(name, tmpl, execCfg)
-	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: name})
-	ctr.Image = image
-
-	cmd := []string{binaryPath}
-	cmd = append(cmd, execCmd...)
-	cmd = append(cmd, logOpts...)
-	cmd = append(cmd, "--")
-	cmd = append(cmd, entrypoint...)
-	cmd = append(cmd, plugin.SocketPath())
-	ctr.Command = cmd
-	return ctr
-}
-
 func (woc *wfOperationCtx) artifactSidecarGCContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver) (*apiv1.Container, error) {
 	execCmd := []string{"emissary"}
 	ctr, err := woc.artifactContainer(ctx, tmpl, woc.execContainerConfig(tmpl), driver, common.ArtifactPluginSidecarPrefix, legacyArgoexecBinaryPath, execCmd)
@@ -1002,13 +1007,11 @@ func (woc *wfOperationCtx) artifactSidecarGCContainer(ctx context.Context, tmpl 
 // image-volume mount loop, so buildPluginSidecars passes argoBinExecutorPath
 // (the argoexec-bin image volume, mounted in addArtifactPluginsInitless).
 func (woc *wfOperationCtx) artifactSidecarContainer(ctx context.Context, tmpl *wfv1.Template, execCfg execContainerConfig, driver config.ArtifactDriver, binaryPath string) (*apiv1.Container, error) {
-	execCmd := []string{"artifact-plugin-sidecar"}
-	ctr, err := woc.artifactContainer(ctx, tmpl, execCfg, driver, common.ArtifactPluginSidecarPrefix, binaryPath, execCmd)
+	x, err := lookupEntrypoint(ctx, woc.lookupImage, driver.Image, woc.wf.Namespace, &woc.execWf.Spec)
 	if err != nil {
 		return nil, err
 	}
-	ctr.VolumeMounts = []apiv1.VolumeMount{driver.Name.VolumeMount()}
-	return ctr, nil
+	return buildArtifactSidecarContainer(tmpl, execCfg, driver.Name, driver.Image, x.Entrypoint, binaryPath, woc.getExecutorLogOpts(ctx)), nil
 }
 
 // artifactInitContainer builds the legacy layout's init container that runs
@@ -1340,13 +1343,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 			}
 		}
 	}
-	artVol := apiv1.Volume{
-		Name: inputArtifactsVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			EmptyDir: &apiv1.EmptyDirVolumeSource{},
-		},
-	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, artVol)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volumeInputArtifacts)
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Debug(ctx, "addInputArtifactsVolumes")
 	// The shared input-artifacts mount plus the extra mounts mirroring the
@@ -1396,10 +1393,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 			// Keep the mount read-write to preserve the legacy bind-mount
 			// behavior where a user writing through art.Path mutates the file
 			// in the shared emptyDir.
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      artVol.Name,
-				MountPath: common.ExecutorArtifactBaseDir,
-			})
+			c.VolumeMounts = append(c.VolumeMounts, volumeMountInputArtifacts)
 			pod.Spec.Containers[i] = c
 			continue
 		}
@@ -1421,7 +1415,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 				continue
 			}
 			volMount := apiv1.VolumeMount{
-				Name:      artVol.Name,
+				Name:      inputArtifactsVolumeName,
 				MountPath: art.Path,
 				SubPath:   art.Name,
 			}
@@ -1470,33 +1464,6 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	}
 }
 
-// mirrorMainMounts mounts each of main's volume mounts in c under
-// ExecutorMainFilesystemDir, read-write, so an executor container can collect
-// outputs written to volumes. Mount paths c already has are skipped: in
-// init-less mode the supervisor and plugin sidecars already received the
-// mirrored user-volume mounts from addInputArtifactsVolumes /
-// addArtifactPluginsInitless, and Kubernetes rejects a duplicate mountPath at
-// admission. Legacy mode has no such pre-existing mounts.
-func mirrorMainMounts(c *apiv1.Container, mainMounts []apiv1.VolumeMount, tmpl *wfv1.Template) {
-	existingMountPaths := make(map[string]bool, len(c.VolumeMounts))
-	for _, vm := range c.VolumeMounts {
-		existingMountPaths[vm.MountPath] = true
-	}
-	for _, mnt := range mainMounts {
-		if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
-			continue
-		}
-		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-		// ReadOnly is needed to be false for overlapping volume mounts
-		mnt.ReadOnly = false
-		if existingMountPaths[mnt.MountPath] {
-			continue
-		}
-		existingMountPaths[mnt.MountPath] = true
-		c.VolumeMounts = append(c.VolumeMounts, mnt)
-	}
-}
-
 // setupServiceAccount applies the resolved service accounts to the pod and
 // adds the executor token volume, looking up the token's Secret.
 func (pb *podBuilder) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, sa podServiceAccount) error {
@@ -1515,19 +1482,8 @@ func (pb *podBuilder) setupServiceAccount(ctx context.Context, pod *apiv1.Pod, s
 // (or supervisor, in init-less mode) and main container for the purpose of
 // holding the script source code for script templates.
 func addScriptStagingVolume(pod *apiv1.Pod) {
-	volName := scriptStagingVolumeName
-	stagingVol := apiv1.Volume{
-		Name: volName,
-		VolumeSource: apiv1.VolumeSource{
-			EmptyDir: &apiv1.EmptyDirVolumeSource{},
-		},
-	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, stagingVol)
-
-	volMount := apiv1.VolumeMount{
-		Name:      volName,
-		MountPath: common.ExecutorStagingEmptyDir,
-	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volumeScriptStaging)
+	volMount := volumeMountScriptStaging
 	for i, initCtr := range pod.Spec.InitContainers {
 		if initCtr.Name == common.InitContainerName {
 			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
@@ -1545,10 +1501,6 @@ func addScriptStagingVolume(pod *apiv1.Pod) {
 	found := false
 	for i, ctr := range pod.Spec.Containers {
 		if ctr.Name == common.MainContainerName {
-			volMount := apiv1.VolumeMount{
-				Name:      volName,
-				MountPath: common.ExecutorStagingEmptyDir,
-			}
 			ctr.VolumeMounts = append(ctr.VolumeMounts, volMount)
 			pod.Spec.Containers[i] = ctr
 			found = true
@@ -1716,65 +1668,6 @@ func (woc *wfOperationCtx) addArtifactPluginsInitless(ctx context.Context, pod *
 	}
 	pod.Spec.Containers[supervisorIdx] = *supervisor
 	return nil
-}
-
-// inputArtifactExecutorMounts returns the volume mounts an argoexec container
-// (legacy init container, init-less supervisor, or init-less plugin sidecar)
-// needs to load this template's input artifacts: the shared "input-artifacts"
-// emptyDir at ExecutorArtifactBaseDir, plus mirrored user volume mounts at
-// ExecutorMainFilesystemDir for the overlapping-volume case. Callers that may
-// run with no input artifacts must guard themselves — the "input-artifacts"
-// volume is only added to the pod when the template has input artifacts.
-func inputArtifactExecutorMounts(tmpl *wfv1.Template) []apiv1.VolumeMount {
-	mounts := []apiv1.VolumeMount{{
-		Name:      inputArtifactsVolumeName,
-		MountPath: common.ExecutorArtifactBaseDir,
-	}}
-	for _, mnt := range tmpl.GetVolumeMounts() {
-		if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
-			continue
-		}
-		mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-		mounts = append(mounts, mnt)
-	}
-	return mounts
-}
-
-// initlessPluginSidecarArtifactMounts returns the volume mounts each plugin
-// sidecar needs in init-less mode (see inputArtifactExecutorMounts), or nil
-// when the template has no input artifacts (the "input-artifacts" volume is
-// not on the pod).
-func initlessPluginSidecarArtifactMounts(tmpl *wfv1.Template) []apiv1.VolumeMount {
-	if len(tmpl.Inputs.Artifacts) == 0 {
-		return nil
-	}
-	return inputArtifactExecutorMounts(tmpl)
-}
-
-// finishContainer gives container i of a pod what every container gets last:
-// its own /tmp if it runs the executor image, the shared output directory if
-// sharesOutputs, /var/run/argo, and the termination grace period if one is set.
-func finishContainer(c *apiv1.Container, i int, executorImage string, sharesOutputs bool, terminationGracePeriodSeconds *int64) {
-	if c.Image == executorImage {
-		// mount tmp dir to the executor container (wait, or supervisor in init-less mode)
-		c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-			Name:      volumeTmpDir.Name,
-			MountPath: "/tmp",
-			SubPath:   strconv.Itoa(i),
-		})
-	}
-	// Shared tmp subpath for shared output directory
-	if sharesOutputs {
-		c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-			Name:      volumeTmpDir.Name,
-			MountPath: "/tmp/argo/outputs",
-			SubPath:   "argo/outputs",
-		})
-	}
-	c.VolumeMounts = append(c.VolumeMounts, volumeMountVarArgo)
-	if terminationGracePeriodSeconds != nil {
-		c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTerminationGracePeriodSeconds, Value: fmt.Sprint(*terminationGracePeriodSeconds)})
-	}
 }
 
 // secretVolumesAndMountsFromMap turns a name→Volume map into the parallel

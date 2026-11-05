@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -78,6 +79,20 @@ func TestPoolControllerWithoutDeploymentRBAC(t *testing.T) {
 	}
 }
 
+func TestPoolControllerRunsWhenRBACCheckFails(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, wfc := newController(ctx, withHotWorkers)
+	defer cancel()
+	wfc.kubeclientset.(*fake.Clientset).PrependReactor("create", "selfsubjectaccessreviews", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("the API server is unavailable")
+	})
+
+	wfc.setUpPoolController(ctx)
+	require.NotNil(t, wfc.poolController)
+	assert.NotNil(t, wfc.poolDeploymentInformer)
+	assert.Same(t, wfc.poolController, wfc.poolHealth)
+}
+
 func TestPoolControllerCreatesPoolForTaskSet(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, wfc := newController(ctx, withHotWorkers)
@@ -129,6 +144,7 @@ func TestTransformPoolDeployment(t *testing.T) {
 	deploy.ResourceVersion = "3"
 	deploy.Annotations = map[string]string{common.AnnotationKeyPoolRetentionSeconds: "60"}
 	deploy.ManagedFields = []metav1.ManagedFieldsEntry{{Manager: "kube-controller-manager"}}
+	deploy.DeletionTimestamp = new(metav1.Now())
 	deploy.Status = appsv1.DeploymentStatus{ReadyReplicas: 1, Conditions: []appsv1.DeploymentCondition{{Type: appsv1.DeploymentReplicaFailure}}}
 
 	out, err := transformPoolDeployment(deploy)
@@ -137,6 +153,7 @@ func TestTransformPoolDeployment(t *testing.T) {
 	assert.Equal(t, deploy.Name, got.Name)
 	assert.Equal(t, types.UID("uid"), got.UID)
 	assert.Equal(t, "3", got.ResourceVersion)
+	assert.Equal(t, deploy.DeletionTimestamp, got.DeletionTimestamp)
 	assert.Equal(t, deploy.Labels, got.Labels)
 	assert.Equal(t, deploy.Annotations, got.Annotations)
 	assert.Equal(t, deploy.Status, got.Status)
@@ -176,30 +193,30 @@ func TestPoolHealthChangeRequeuesWaitingWorkflows(t *testing.T) {
 	assertNothingQueued(t, wfc.wfQueue)
 }
 
-func TestWarnPoolControllerFlagChange(t *testing.T) {
+func TestWarnHotWorkersFlagChange(t *testing.T) {
 	hook := logging.NewTestHook()
 	ctx := logging.WithLogger(t.Context(), logging.NewTestLogger(logging.Info, logging.Text, hook))
 	wfc := newInformerTestController("")
-	// Not decided yet: nothing to compare with.
+	// Not recorded yet: nothing to compare with.
 	withHotWorkers(wfc)
-	wfc.warnPoolControllerFlagChange(ctx)
+	wfc.warnHotWorkersFlagChange(ctx)
 	assert.Empty(t, hook.AllEntries())
 	wfc.Config.HotWorkers = nil
+	wfc.recordHotWorkers()
 	wfc.setUpPoolController(ctx)
-	assert.Equal(t, poolControllerOff, wfc.poolControllerState.Load())
 	hook.Reset()
 	// Unchanged: nothing to warn about.
-	wfc.warnPoolControllerFlagChange(ctx)
+	wfc.warnHotWorkersFlagChange(ctx)
 	assert.Empty(t, hook.AllEntries())
 	withHotWorkers(wfc)
-	// Only a log line; the state the pool controller started with stays.
-	wfc.warnPoolControllerFlagChange(ctx)
+	// Only a log line; the controller keeps running with hot workers off.
+	wfc.warnHotWorkersFlagChange(ctx)
 	assert.Equal(t, []logging.TestEntry{{
 		Level:  logging.Warn,
-		Msg:    "hotWorkers.enabled changed: dispatch follows it now, but the pool controller starts or stops only when the workflow controller restarts",
+		Msg:    "hotWorkers.enabled changed: the workflow controller runs with the value it started with until it restarts",
 		Fields: logging.Fields{"enabled": true},
 	}}, hook.AllEntries())
-	assert.Equal(t, poolControllerOff, wfc.poolControllerState.Load())
+	assert.False(t, wfc.hotWorkersEnabled())
 	assert.Nil(t, wfc.poolController)
 }
 

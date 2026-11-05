@@ -203,12 +203,12 @@ type WorkflowController struct {
 	poolPodInformer cache.SharedIndexInformer
 	// poolDeploymentInformer caches hot worker pools' Deployments; nil unless the pool controller runs
 	poolDeploymentInformer cache.SharedIndexInformer
-	// poolController creates and deletes hot worker pools; nil unless hot workers were enabled at start
+	// poolController creates and deletes hot worker pools; nil unless hot workers were enabled at start and the controller may manage Deployments
 	poolController *poolcontroller.Controller
 	// poolHealth reports hot worker pools' health for the nodes waiting on them; nil while hot workers are disabled
 	poolHealth dispatch.PoolHealth
-	// poolControllerState records whether setUpPoolController set the pool controller up
-	poolControllerState atomic.Int32
+	// hotWorkersAtStart is whether hot workers were enabled when the controller started (recordHotWorkers)
+	hotWorkersAtStart atomic.Int32
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -448,6 +448,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	wfc.pooledTaskSetInformer = wfc.newPooledTaskSetInformer(ctx)
 	wfc.poolPodInformer = wfc.newPoolPodInformer(ctx)
+	wfc.recordHotWorkers()
 	wfc.setUpPoolController(ctx)
 	err = wfc.registerPoolGauges()
 	if err != nil {
