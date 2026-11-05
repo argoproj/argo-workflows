@@ -4,7 +4,7 @@
 // other: the process sweep and the isolation of each task's files.
 //
 // The protocol works over the shared /var/run/argo volume. The pool-level
-// directory Dir holds `current`, the path of the task directory `main`
+// directory holds `current`, the path of the task directory `main`
 // should run next, and `main`, main's liveness lock, held exclusively for
 // as long as main is taking tasks, which the kernel releases however main
 // dies: the worker claims a task only while main holds it, so a main that
@@ -47,24 +47,21 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo-workflows/v4/util/file"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
-// Dir is the pool-level directory on the shared volume.
-const Dir = common.VarRunArgoPath + "/" + DirName
-
-// The protocol's file names: CurrentFile in the pool directory, the rest in
-// each task directory.
+// The protocol's file names: CurrentFile and MainFile in the pool
+// directory, the rest in each task directory. Those exported are the ones
+// a pool's other parts look for.
 const (
 	CurrentFile  = "current"
 	MainFile     = "main"
-	ReadyFile    = "ready"
-	TakenFile    = "taken"
+	readyFile    = "ready"
+	takenFile    = "taken"
 	LockFile     = "lock"
-	ExitCodeFile = "exitcode"
-	MessageFile  = "message"
-	StopFile     = "stop"
+	exitCodeFile = "exitcode"
+	messageFile  = "message"
+	stopFile     = "stop"
 )
 
 // The content of `taken`: who created it.
@@ -117,7 +114,8 @@ type Pool struct {
 	dir string
 }
 
-// NewPool returns the pool whose directory is dir; production uses Dir.
+// NewPool returns the pool whose directory is dir: TaskPaths.PoolDir in a
+// pool pod.
 func NewPool(dir string) Pool {
 	return Pool{dir: dir}
 }
@@ -160,7 +158,7 @@ func (p Pool) WaitMainUp(ctx context.Context) error {
 // the task directory is complete: it writes `ready`, then points `current`
 // at the task directory, replacing it atomically.
 func (p Pool) Offer(t Task) error {
-	if err := writeAtomic(t.dir, ReadyFile, nil); err != nil {
+	if err := writeAtomic(t.dir, readyFile, nil); err != nil {
 		return fmt.Errorf("mark task %s ready: %w", t.dir, err)
 	}
 	if err := writeAtomic(p.dir, CurrentFile, []byte(t.dir)); err != nil {
@@ -240,7 +238,7 @@ func (t Task) Create() error {
 // false means main has already taken it. Called by the worker; withdrawing
 // a task again reports true.
 func (t Task) Withdraw() (bool, error) {
-	created, err := createExclusive(t.dir, TakenFile, []byte(withdrawn))
+	created, err := createExclusive(t.dir, takenFile, []byte(withdrawn))
 	if err != nil || created {
 		return created, err
 	}
@@ -258,7 +256,7 @@ func (t Task) Stop(reason StopReason) (StopReason, error) {
 	if !reason.valid() {
 		return "", fmt.Errorf("invalid stop reason %q", reason)
 	}
-	if _, err := createExclusive(t.dir, StopFile, []byte(reason)); err != nil {
+	if _, err := createExclusive(t.dir, stopFile, []byte(reason)); err != nil {
 		return "", err
 	}
 	got, _, err := t.stopReason()
@@ -321,7 +319,7 @@ func (t Task) Status() (Status, error) {
 	case by == withdrawn:
 		return Status{State: Withdrawn}, nil
 	case by != takenByMain:
-		return Status{}, fmt.Errorf("%s holds %q", filepath.Join(t.dir, TakenFile), by)
+		return Status{}, fmt.Errorf("%s holds %q", filepath.Join(t.dir, takenFile), by)
 	}
 	// main writes exitcode before it releases the lock, so look at the lock
 	// first: once it is free, exitcode is either there or never will be.
@@ -332,7 +330,7 @@ func (t Task) Status() (Status, error) {
 	if held {
 		return Status{State: Running}, nil
 	}
-	data, err := os.ReadFile(filepath.Join(t.dir, ExitCodeFile))
+	data, err := os.ReadFile(filepath.Join(t.dir, exitCodeFile))
 	if errors.Is(err, fs.ErrNotExist) {
 		return Status{State: Died}, nil
 	}
@@ -341,10 +339,10 @@ func (t Task) Status() (Status, error) {
 	}
 	code, err := strconv.Atoi(strings.TrimSpace(string(data)))
 	if err != nil {
-		return Status{}, fmt.Errorf("parse %s: %w", filepath.Join(t.dir, ExitCodeFile), err)
+		return Status{}, fmt.Errorf("parse %s: %w", filepath.Join(t.dir, exitCodeFile), err)
 	}
 	// main writes message, if any, before exitcode.
-	message, err := os.ReadFile(filepath.Join(t.dir, MessageFile))
+	message, err := os.ReadFile(filepath.Join(t.dir, messageFile))
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return Status{}, err
 	}
@@ -361,7 +359,7 @@ func (t Task) WaitMain(ctx context.Context) (Status, error) {
 		}
 		switch s.State {
 		case Offered:
-			err = file.WaitForCreate(ctx, filepath.Join(t.dir, TakenFile))
+			err = file.WaitForCreate(ctx, filepath.Join(t.dir, takenFile))
 		case Running:
 			// A restarted main briefly takes the lock of a task its
 			// predecessor died in before it skips it, so this can wake
@@ -390,14 +388,14 @@ func (t Task) Take(ctx context.Context) (*Run, error) {
 		}
 		return err
 	}
-	if _, err := os.Stat(filepath.Join(t.dir, ReadyFile)); err != nil {
+	if _, err := os.Stat(filepath.Join(t.dir, readyFile)); err != nil {
 		return nil, notOffered(err)
 	}
 	lock, err := acquire(ctx, filepath.Join(t.dir, LockFile))
 	if err != nil {
 		return nil, notOffered(err)
 	}
-	created, err := createExclusive(t.dir, TakenFile, []byte(takenByMain))
+	created, err := createExclusive(t.dir, takenFile, []byte(takenByMain))
 	err = notOffered(err)
 	if err == nil && !created {
 		var by string
@@ -419,12 +417,12 @@ func (t Task) Take(ctx context.Context) (*Run, error) {
 }
 
 func (t Task) takenBy() (string, error) {
-	data, err := os.ReadFile(filepath.Join(t.dir, TakenFile))
+	data, err := os.ReadFile(filepath.Join(t.dir, takenFile))
 	return string(data), err
 }
 
 func (t Task) stopReason() (StopReason, bool, error) {
-	data, err := os.ReadFile(filepath.Join(t.dir, StopFile))
+	data, err := os.ReadFile(filepath.Join(t.dir, stopFile))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", false, nil
 	}
@@ -433,7 +431,7 @@ func (t Task) stopReason() (StopReason, bool, error) {
 	}
 	reason := StopReason(data)
 	if !reason.valid() {
-		return "", false, fmt.Errorf("%s holds %q", filepath.Join(t.dir, StopFile), reason)
+		return "", false, fmt.Errorf("%s holds %q", filepath.Join(t.dir, stopFile), reason)
 	}
 	return reason, true, nil
 }
@@ -458,7 +456,7 @@ func (r *Run) StopRequested() (StopReason, bool, error) {
 // WaitStop blocks until the worker asks main to stop the task, and returns
 // why.
 func (r *Run) WaitStop(ctx context.Context) (StopReason, error) {
-	if err := file.WaitForCreate(ctx, filepath.Join(r.task.dir, StopFile)); err != nil {
+	if err := file.WaitForCreate(ctx, filepath.Join(r.task.dir, stopFile)); err != nil {
 		return "", err
 	}
 	reason, _, err := r.task.stopReason()
@@ -472,10 +470,10 @@ func (r *Run) WaitStop(ctx context.Context) (StopReason, error) {
 func (r *Run) Finish(exitCode int, message string) error {
 	var err error
 	if message != "" {
-		err = writeAtomic(r.task.dir, MessageFile, []byte(message))
+		err = writeAtomic(r.task.dir, messageFile, []byte(message))
 	}
 	if err == nil {
-		err = writeAtomic(r.task.dir, ExitCodeFile, []byte(strconv.Itoa(exitCode)))
+		err = writeAtomic(r.task.dir, exitCodeFile, []byte(strconv.Itoa(exitCode)))
 	}
 	if closeErr := r.lock.Close(); err == nil {
 		err = closeErr
@@ -486,20 +484,16 @@ func (r *Run) Finish(exitCode int, message string) error {
 // acquire takes the exclusive lock at path, waiting while someone else
 // holds it.
 func acquire(ctx context.Context, path string) (*os.File, error) {
-	for {
-		f, err := osspecific.Acquire(path)
-		if err == nil {
-			return f, nil
+	var f *os.File
+	err := wait.PollUntilContextCancel(ctx, lockRetryInterval, true, func(context.Context) (bool, error) {
+		var err error
+		f, err = osspecific.Acquire(path)
+		if osspecific.IsLockHeld(err) {
+			return false, nil
 		}
-		if !osspecific.IsLockHeld(err) {
-			return nil, err
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(lockRetryInterval):
-		}
-	}
+		return err == nil, err
+	})
+	return f, err
 }
 
 // MakeSharedDir creates dir with mode 0o777 whatever the umask, as the

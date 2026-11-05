@@ -68,7 +68,7 @@ func TestTake_RunsAnOfferedTask(t *testing.T) {
 	run, err := task.Take(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, Status{State: Running}, status(t, task))
-	taken, err := os.ReadFile(filepath.Join(task.Dir(), TakenFile))
+	taken, err := os.ReadFile(filepath.Join(task.Dir(), takenFile))
 	require.NoError(t, err)
 	assert.Equal(t, "main", string(taken))
 
@@ -97,7 +97,7 @@ func TestFinish_WithAMessage(t *testing.T) {
 func TestTake_RefusesATaskRemovedAsTakenIsRead(t *testing.T) {
 	p := newPool(t)
 	task := offered(t, p, "t")
-	if err := os.Symlink(filepath.Join(t.TempDir(), "gone", TakenFile), filepath.Join(task.Dir(), TakenFile)); err != nil {
+	if err := os.Symlink(filepath.Join(t.TempDir(), "gone", takenFile), filepath.Join(task.Dir(), takenFile)); err != nil {
 		t.Skipf("needs symlinks: %v", err)
 	}
 

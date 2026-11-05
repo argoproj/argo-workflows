@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -157,14 +158,13 @@ func fakeProc(t *testing.T, stats map[int]string) procfs.FS {
 // fakeStat is a /proc/<pid>/stat line with the given name, state, parent
 // and start time.
 func fakeStat(pid int, name, state string, ppid int, start uint64) string {
-	fields := []string{strconv.Itoa(pid), "(" + name + ")", state, strconv.Itoa(ppid)}
-	for i := 5; i < 22; i++ {
-		fields = append(fields, "0")
-	}
-	fields = append(fields, strconv.FormatUint(start, 10))
-	for i := 23; i <= 52; i++ {
-		fields = append(fields, "0")
-	}
+	// Fields 5-21 and 23-52 are zero; 22 is the start time.
+	fields := slices.Concat(
+		[]string{strconv.Itoa(pid), "(" + name + ")", state, strconv.Itoa(ppid)},
+		slices.Repeat([]string{"0"}, 17),
+		[]string{strconv.FormatUint(start, 10)},
+		slices.Repeat([]string{"0"}, 30),
+	)
 	return strings.Join(fields, " ") + "\n"
 }
 
@@ -215,5 +215,29 @@ func TestSweep_Cancellation(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
 	defer cancel()
-	require.ErrorIs(t, sweep(ctx, dir, 100, 0), context.DeadlineExceeded)
+	err := sweep(ctx, dir, 100, 0)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Contains(t, err.Error(), "1 processes still alive")
+}
+
+// A process whose pid now has another start time has exited and its pid
+// been reused: the process now holding the pid isn't signalled.
+func TestProcessSignal_SkipsAReusedPid(t *testing.T) {
+	cmd := exec.CommandContext(t.Context(), "sleep", "300")
+	require.NoError(t, cmd.Start())
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	})
+	pid := cmd.Process.Pid
+	dir := fakeProc(t, map[int]string{pid: fakeStat(pid, "sleep", "S", os.Getpid(), 2)})
+
+	require.NoError(t, process{pid: pid, start: 1}.signal(dir, unix.SIGKILL))
+	assert.Never(t, func() bool { return !alive(t, pid) }, 200*time.Millisecond, 10*time.Millisecond, "the pid's new process was signalled")
+
+	require.NoError(t, process{pid: pid, start: 2}.signal(dir, unix.SIGTERM))
+	err := cmd.Wait()
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, syscall.SIGTERM, exitErr.Sys().(syscall.WaitStatus).Signal())
 }

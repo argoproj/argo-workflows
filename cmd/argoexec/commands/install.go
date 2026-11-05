@@ -26,7 +26,7 @@ func NewInstallCommand() *cobra.Command {
 }
 
 func install(ctx context.Context) error {
-	if err := executor.Install(ctx, emissary.New(varRunArgo), varRunArgo); err != nil {
+	if err := executor.Install(ctx, emissary.InstallBinary, varRunArgo); err != nil {
 		return err
 	}
 	logging.RequireLoggerFromContext(ctx).WithField("dir", varRunArgo).Info(ctx, "Installed argoexec")

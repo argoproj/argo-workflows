@@ -47,12 +47,12 @@ var (
 	}}
 )
 
-// copyArgoexec copies the argoexec binary into dir and nothing else: the
-// whole job of `argoexec install`, a pool pod's init container. It needs
-// neither the template nor API access.
-func copyArgoexec(dir string) Stage {
-	return Stage{Name: "copy-argoexec", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.InstallBinary(dir)
+// copyArgoexec copies the argoexec binary into dir with install and
+// nothing else: the whole job of `argoexec install`, a pool pod's init
+// container. It needs neither the template nor API access.
+func copyArgoexec(install func(dir string) error, dir string) Stage {
+	return Stage{Name: "copy-argoexec", Run: func(context.Context, *WorkflowExecutor) error {
+		return install(dir)
 	}}
 }
 

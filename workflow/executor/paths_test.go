@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -50,16 +51,18 @@ func TestWorkerPaths_RejectsNodeIDOutsideItsOwnDir(t *testing.T) {
 func TestPoolTask_ATaskDirectoryBeneathEachMount(t *testing.T) {
 	p, err := PodPaths().PoolTask("wf-1")
 	require.NoError(t, err)
+	pool := filepath.Join(common.VarRunArgoPath, poolpod.DirName)
 	assert.Equal(t, TaskPaths{
-		VarRunArgo:     poolpod.Dir + "/wf-1",
-		InputArtifacts: common.ExecutorArtifactBaseDir + "/wf-1",
-		Staging:        common.ExecutorStagingEmptyDir + "/wf-1",
+		VarRunArgo:     filepath.Join(pool, "wf-1"),
+		InputArtifacts: filepath.Join(common.ExecutorArtifactBaseDir, "wf-1"),
+		Staging:        filepath.Join(common.ExecutorStagingEmptyDir, "wf-1"),
 		MainFS:         common.ExecutorMainFilesystemDir,
-		Scratch:        "/tmp/argo/outputs/wf-1",
+		Scratch:        filepath.Join("/tmp/argo/outputs", "wf-1"),
 	}, p)
-	assert.Equal(t, common.ExecutorStagingEmptyDir+"/wf-1/script", p.ScriptSource())
-	assert.Equal(t, poolpod.Dir+"/wf-1/ctr/main", p.ContainerDir(common.MainContainerName))
-	assert.Equal(t, poolpod.Dir, PodPaths().PoolDir(), "the pool directory main and the worker share")
+	// Joined with a forward slash, as ScriptSource always is.
+	assert.Equal(t, path.Join(filepath.Join(common.ExecutorStagingEmptyDir, "wf-1"), "script"), p.ScriptSource())
+	assert.Equal(t, filepath.Join(pool, "wf-1", "ctr", common.MainContainerName), p.ContainerDir(common.MainContainerName))
+	assert.Equal(t, pool, PodPaths().PoolDir(), "the pool directory main and the worker share")
 }
 
 // The worker removes each task directory when the task is done, and the
