@@ -47,7 +47,7 @@ func StageInput(t testing.TB, dir, name, content string) {
 // its status: Withdrawn, Exited or Died.
 func WaitMain(t testing.TB, task poolpod.Task, timeout time.Duration) poolpod.Status {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(t.Context(), timeout)
 	defer cancel()
 	s, err := task.WaitMain(ctx)
 	require.NoError(t, err, "waiting for main to be done with %s", task.Dir())

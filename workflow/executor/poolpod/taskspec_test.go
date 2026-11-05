@@ -11,6 +11,14 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
+// newTask creates a task directory named name.
+func newTask(t *testing.T, name string) Task {
+	t.Helper()
+	task := NewTask(filepath.Join(t.TempDir(), name))
+	require.NoError(t, task.Create())
+	return task
+}
+
 func TestTask_SpecRoundTrips(t *testing.T) {
 	task := newTask(t, "a")
 	spec := TaskSpec{

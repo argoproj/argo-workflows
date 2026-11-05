@@ -14,7 +14,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 )
 
 // countingStage returns a stage that counts its calls and runs fn if set.
@@ -199,64 +198,27 @@ func TestPlansAreWellFormed(t *testing.T) {
 	}
 }
 
-// recordingInstaller is a runtime executor that records the Prepare-side
-// calls a plan makes on it.
-type recordingInstaller struct {
-	ContainerRuntimeExecutor
-	installedTo []string
-	inits       int
-	templates   int
-}
-
-func (r *recordingInstaller) InstallBinary(dir string) error {
-	r.installedTo = append(r.installedTo, dir)
-	return nil
-}
-
-func (r *recordingInstaller) Init(wfv1.Template) error {
-	r.inits++
-	return nil
-}
-
-func (r *recordingInstaller) WriteTemplate(wfv1.Template) error {
-	r.templates++
-	return nil
-}
-
-func TestInstallPlan_OnlyCopiesTheBinary(t *testing.T) {
-	plan := installPlan("/var/run/argo")
-	assert.Equal(t, []string{"copy-argoexec"}, stageNames(plan.Prepare))
+// TestInstall checks the install plan: one well-formed stage, which only
+// copies the binary, run on an executor with no task, template, runtime
+// executor or API clients.
+func TestInstall(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	plan := installPlan(nil, "/shared")
+	require.Len(t, plan.Prepare, 1)
+	assert.Equal(t, "copy-argoexec", plan.Prepare[0].Name)
+	assert.NotNil(t, plan.Prepare[0].Run)
+	assert.False(t, plan.Prepare[0].NeedsMainOutputs)
 	assert.Empty(t, plan.Run)
 	assert.Empty(t, plan.Collect)
-}
 
-// Install runs on an executor with no Process clients or template, and
-// must not write the template in any form.
-func TestInstall_WritesNoTemplate(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	r := &recordingInstaller{}
+	var installedTo []string
+	require.NoError(t, Install(ctx, func(dir string) error {
+		installedTo = append(installedTo, dir)
+		return nil
+	}, "/shared"))
+	assert.Equal(t, []string{"/shared"}, installedTo)
 
-	require.NoError(t, Install(ctx, r, "/shared"))
-	assert.Equal(t, []string{"/shared"}, r.installedTo)
-	assert.Zero(t, r.inits, "install must not run the legacy Init")
-	assert.Zero(t, r.templates, "install must not write the template")
-}
-
-func TestInstall_FailsWhenTheRuntimeCannotInstall(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	err := Install(ctx, &mocks.ContainerRuntimeExecutor{}, "/shared")
-	require.ErrorContains(t, err, "copy-argoexec: runtime executor")
-}
-
-// The legacy init plan keeps installing through Init, which copies the
-// binary and writes the template.
-func TestPlanFor_LegacyLayoutStillRunsInit(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	r := &recordingInstaller{}
-	we := &WorkflowExecutor{Process: &Process{}, RuntimeExecutor: r}
-
-	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, LayoutLegacy, nil)
-	require.NoError(t, plan.Prepare[0].Run(ctx, we))
-	assert.Equal(t, 1, r.inits)
-	assert.Empty(t, r.installedTo)
+	err := Install(ctx, func(string) error { return assert.AnError }, "/shared")
+	require.ErrorIs(t, err, assert.AnError)
+	assert.ErrorContains(t, err, "copy-argoexec")
 }

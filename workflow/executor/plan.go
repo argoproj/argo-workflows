@@ -74,19 +74,19 @@ func planFor(tmpl *wfv1.Template, layout Layout, inputPlugins []wfv1.ArtifactPlu
 	return plan
 }
 
-// installPlan is the flow of `argoexec install`: copy the binary into dir.
-// It has no Run or Collect phase because there is no task.
-func installPlan(dir string) Plan {
-	return Plan{Prepare: []Stage{copyArgoexec(dir)}}
+// installPlan is the flow of `argoexec install`: copy the binary into dir
+// with install. It has no Run or Collect phase because there is no task.
+func installPlan(install func(dir string) error, dir string) Plan {
+	return Plan{Prepare: []Stage{copyArgoexec(install, dir)}}
 }
 
-// Install runs the install plan with cre, copying the argoexec binary into
-// dir. The executor it runs on has no task, template, API clients or
-// tracing, so the plan can't reach the API; a stage that tried would
-// dereference a nil client.
-func Install(ctx context.Context, cre ContainerRuntimeExecutor, dir string) error {
-	plan := installPlan(dir)
-	we := &WorkflowExecutor{Process: &Process{}, RuntimeExecutor: cre, plan: &plan}
+// Install runs the install plan, copying the argoexec binary into dir with
+// install (emissary.InstallBinary). The executor it runs on has no task,
+// template, runtime executor, API clients or tracing, so the plan can't
+// reach the API; a stage that tried would dereference a nil client.
+func Install(ctx context.Context, install func(dir string) error, dir string) error {
+	plan := installPlan(install, dir)
+	we := &WorkflowExecutor{Process: &Process{}, plan: &plan}
 	return we.Prepare(ctx)
 }
 

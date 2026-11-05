@@ -20,14 +20,15 @@ var ErrPathExists = errors.New("already exists in the container image or was lef
 
 // Isolation is main's record of what one task created outside volumes, so
 // that Cleanup can remove exactly that once the task is over: input links
-// and the parent directories made for them, declared output paths and the
-// parent directories they needed, and main's own per-task files. Volume
-// contents are never touched: they are PVC, hostPath or emptyDir contents,
-// or the worker's.
+// and the parent directories made for them, and declared output paths and
+// the parent directories they needed. Anything else the task writes outside
+// a volume stays (see removeIfEmpty). Volume contents are never touched:
+// they are PVC, hostPath or emptyDir contents, or the worker's, main's own
+// per-task files among them.
 //
-// Use one Isolation per task. Reserve each declared output path and each
-// per-task file before the task starts, link inputs with Symlink, and call
-// Cleanup after the task's processes are gone (Sweep).
+// Use one Isolation per task. Reserve each declared output path before the
+// task starts, link inputs with Symlink, and call Cleanup after the task's
+// processes are gone (Sweep).
 type Isolation struct {
 	volumes []string
 	// paths are removed whole by Cleanup.

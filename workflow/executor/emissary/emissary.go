@@ -63,7 +63,7 @@ func New(varRunArgo string) executor.ContainerRuntimeExecutor {
 }
 
 func (e *emissary) Init(t wfv1.Template) error {
-	if err := e.InstallBinary(e.varRunArgo); err != nil {
+	if err := InstallBinary(e.varRunArgo); err != nil {
 		return err
 	}
 	return e.WriteTemplate(t)
@@ -72,7 +72,7 @@ func (e *emissary) Init(t wfv1.Template) error {
 // InstallBinary copies the argoexec binary into dir, the shared volume. It
 // is the subset of Init that a pool pod's init container needs: no
 // template is written.
-func (e emissary) InstallBinary(dir string) error {
+func InstallBinary(dir string) error {
 	osspecific.AllowGrantingAccessToEveryone()
 	return copyBinary(dir)
 }

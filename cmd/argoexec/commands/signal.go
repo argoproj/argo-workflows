@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/argoproj/argo-workflows/v4/util/file"
@@ -25,8 +26,6 @@ import (
 // file signals stop them. The caller owns the lifecycle of the channel
 // (signal.Notify / signal.Reset / close).
 func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) func() {
-	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	done := make(chan struct{})
 	logger := logging.RequireLoggerFromContext(ctx)
 	forward := func(s os.Signal) {
 		if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
@@ -36,8 +35,7 @@ func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, igno
 		logger.WithField("signal", s).Debug(ctx, "forwarding signal")
 		_ = osspecific.Kill(pid, s.(syscall.Signal))
 	}
-	go func() {
-		defer close(done)
+	return goUntilStopped(context.WithoutCancel(ctx), func(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
@@ -49,10 +47,19 @@ func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, igno
 				forward(s)
 			}
 		}
-	}()
+	})
+}
+
+// goUntilStopped runs f in a goroutine, and returns a function that cancels
+// the context f is given and waits for f to return. The function is safe to
+// call more than once.
+func goUntilStopped(ctx context.Context, f func(context.Context)) func() {
+	ctx, cancel := context.WithCancel(ctx)
+	var wg sync.WaitGroup
+	wg.Go(func() { f(ctx) })
 	return func() {
 		cancel()
-		<-done
+		wg.Wait()
 	}
 }
 

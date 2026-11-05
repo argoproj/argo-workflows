@@ -16,7 +16,8 @@ import (
 // (WorkerPaths); a pool pod gives each task its own directory beneath each
 // of the fixed locations (PoolTask). Paths outside TaskPaths are still
 // shared between tasks: the template's own input and output paths, the
-// resource manifest, and the emissary's large-argument files.
+// resource manifest, and, outside a pool pod, the emissary's large-argument
+// files.
 type TaskPaths struct {
 	// Root is the directory holding all of the task's own files. A worker
 	// empties it before the task and removes it after, so it must never

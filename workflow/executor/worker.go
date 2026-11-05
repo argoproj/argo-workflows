@@ -156,9 +156,11 @@ func (we *WorkflowExecutor) checkWorker() error {
 // pathsOverlap reports whether a and b are the same path or one is inside
 // the other.
 func pathsOverlap(a, b string) bool {
-	_, aHoldsB := common.RelWithin(a, b)
-	_, bHoldsA := common.RelWithin(b, a)
-	return aHoldsB || bHoldsA
+	within := func(dir, path string) bool {
+		rel, err := filepath.Rel(dir, path)
+		return err == nil && filepath.IsLocal(rel)
+	}
+	return within(a, b) || within(b, a)
 }
 
 // isOwnInputLink reports whether art's path is the link runMain makes for
