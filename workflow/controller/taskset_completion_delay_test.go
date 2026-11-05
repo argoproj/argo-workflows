@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"testing/synctest"
@@ -18,18 +19,21 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 )
 
 // newCompletionDelayController keeps the controller and queue requeue delays in
-// sync and shuts down the queue when the test finishes.
-func newCompletionDelayController(t *testing.T, requeueTime time.Duration, delay *time.Duration) *WorkflowController {
+// sync, exposes its metrics exporter, and shuts down the queue and metrics after use.
+func newCompletionDelayController(t *testing.T, requeueTime time.Duration, delay *time.Duration) (*WorkflowController, *telemetry.TestMetricsExporter) {
 	t.Helper()
 	queue := workqueue.NewTypedRateLimitingQueue(&fixedItemIntervalRateLimiter{requeueTime: requeueTime})
 	t.Cleanup(queue.ShutDown)
-	m, _, err := metrics.CreateDefaultTestMetrics(logging.TestContext(t.Context()))
+	ctx := logging.TestContext(t.Context())
+	m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
 	require.NoError(t, err)
-	return &WorkflowController{wfQueue: queue, requeueTime: requeueTime, taskSetCompletionDelay: delay, completionDutyCyclePercent: 20, metrics: m}
+	t.Cleanup(func() { assert.NoError(t, m.Shutdown(context.WithoutCancel(ctx))) })
+	return &WorkflowController{wfQueue: queue, requeueTime: requeueTime, taskSetCompletionDelay: delay, completionDutyCyclePercent: 20, metrics: m}, exporter
 }
 
 // completionDelayTaskSet builds a taskset fixture with stable node IDs so tests
@@ -77,7 +81,7 @@ func TestTaskSetCompletionDelay(t *testing.T) {
 				t.Run(tt.name, func(t *testing.T) {
 					synctest.Test(t, func(t *testing.T) {
 						const normalDelay = 7 * time.Second
-						controller := newCompletionDelayController(t, normalDelay, delay)
+						controller, _ := newCompletionDelayController(t, normalDelay, delay)
 						queue := controller.wfQueue
 						before, after := completionDelayTaskSet(tt.before...), completionDelayTaskSet(tt.after...)
 						after.ResourceVersion = "2"
@@ -122,7 +126,7 @@ func TestTaskSetCompletionDelayInvalidObject(t *testing.T) {
 	for i, delay := range []*time.Duration{nil, new(time.Millisecond), new(time.Second)} {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
-				controller := newCompletionDelayController(t, time.Second, delay)
+				controller, _ := newCompletionDelayController(t, time.Second, delay)
 				queue := controller.wfQueue
 				require.NotPanics(t, func() {
 					controller.onWorkflowTaskSetUpdate(logging.TestContext(t.Context()), completionDelayTaskSet(), struct{}{})
@@ -143,7 +147,7 @@ func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
 	for _, delay := range []time.Duration{time.Millisecond, time.Second} {
 		t.Run(delay.String(), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
-				controller := newCompletionDelayController(t, time.Hour, &delay)
+				controller, _ := newCompletionDelayController(t, time.Hour, &delay)
 				queue := controller.wfQueue
 				for range 100 {
 					controller.onWorkflowTaskSetUpdate(logging.TestContext(t.Context()), completionDelayTaskSet(), completionDelayTaskSet(wfv1.NodeSucceeded))
@@ -176,7 +180,7 @@ func TestTaskSetCompletionDelayCoalesces(t *testing.T) {
 // is a scheduling delay, not a minimum interval that blocks an earlier enqueue.
 func TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		controller := newCompletionDelayController(t, time.Second, new(10*time.Second))
+		controller, _ := newCompletionDelayController(t, time.Second, new(10*time.Second))
 		queue := controller.wfQueue
 		running := completionDelayTaskSet(wfv1.NodeRunning)
 		controller.onWorkflowTaskSetUpdate(logging.TestContext(t.Context()), completionDelayTaskSet(), running)
@@ -195,7 +199,7 @@ func TestTaskSetCompletionDelayDoesNotPostponeEarlierEvent(t *testing.T) {
 // moves an existing delayed entry earlier without leaving a redundant wakeup.
 func TestTaskSetCompletionDelayPromotesDelayedWorkflow(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		controller := newCompletionDelayController(t, 10*time.Second, new(250*time.Millisecond))
+		controller, _ := newCompletionDelayController(t, 10*time.Second, new(250*time.Millisecond))
 		queue := controller.wfQueue
 		running := completionDelayTaskSet(wfv1.NodeRunning)
 		controller.onWorkflowTaskSetUpdate(logging.TestContext(t.Context()), completionDelayTaskSet(), running)
@@ -225,7 +229,7 @@ func TestTaskSetCompletionDelayPromotesDelayedWorkflow(t *testing.T) {
 // events still pass through stale-version rejection and the normal delayed retry.
 func TestTaskSetCompletionDelayRejectsStaleWorkflow(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		controller := newCompletionDelayController(t, 10*time.Second, new(250*time.Millisecond))
+		controller, _ := newCompletionDelayController(t, 10*time.Second, new(250*time.Millisecond))
 		queue := controller.wfQueue
 		informer := cache.NewSharedIndexInformer(&cache.ListWatch{}, &unstructured.Unstructured{}, 0, cache.Indexers{})
 		workflow := &unstructured.Unstructured{}
@@ -262,7 +266,7 @@ func TestTaskSetCompletionDelayInformer(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	initial := completionDelayTaskSet(wfv1.NodeRunning)
 	client := fakewfclientset.NewClientset(initial)
-	controller := newCompletionDelayController(t, time.Hour, new(time.Millisecond))
+	controller, _ := newCompletionDelayController(t, time.Hour, new(time.Millisecond))
 	controller.wfclientset = client
 	queue := controller.wfQueue
 	informer := controller.newWorkflowTaskSetInformer(ctx).Informer()

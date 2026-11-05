@@ -130,11 +130,13 @@ Gains may vary under load: if the workflow informer is behind the controller's l
 When you enable `COMPLETED_REQUEUE_TIME_MS`, this setting targets the fraction of one worker's time that each workflow spends reconciling.
 Lower it if a few large workflows are taking up too much controller time, or raise it towards `100` if you have spare workers and want completions to move faster.
 Set an integer from `1` to `100`; unset or empty uses `20`, and invalid values fail controller startup.
-At `100`, completion events use the configured floor without an additional duty-cycle gap.
+At `100`, completion events use `COMPLETED_REQUEUE_TIME_MS`, capped at `DEFAULT_REQUEUE_TIME`, without an additional duty-cycle gap.
 This setting alone does not enable completion-triggered scheduling.
 The controller collects duty-cycle timing and utilization samples only when `COMPLETED_REQUEUE_TIME_MS` is enabled.
 
-The controller measures each workflow's `operate()` duration, excluding time waiting for its workflow lock.
+The controller measures reconciliation from just after acquiring the workflow lock and reading the cached workflow through the end of `operate()`.
+This includes conversion from the cached object, the workflow deep copy, and hydration (including decompression and fetching offloaded nodes), but excludes time waiting for the workflow lock.
+The existing `operation_duration_seconds` metric still measures only `operate()`.
 It smooths the duration with an exponentially weighted moving average, using 20% of the latest measurement and 80% of the previous average.
 For a duty cycle expressed as a fraction, it computes:
 
@@ -144,13 +146,13 @@ delay = clamp(lastReconcileEnd + gap − now, COMPLETED_REQUEUE_TIME_MS, DEFAULT
 ```
 
 For example, a one-second reconciliation at `20` percent needs a four-second gap after it ends.
-If the completion event arrives one second into that gap, the requested delay is three seconds, subject to the floor and ceiling.
-A workflow without a timing measurement uses the floor.
-If the configured floor exceeds `DEFAULT_REQUEUE_TIME`, the ceiling takes precedence and the controller logs a warning at startup.
+If the completion event arrives one second into that gap, the requested delay is three seconds, bounded by `COMPLETED_REQUEUE_TIME_MS` and `DEFAULT_REQUEUE_TIME`.
+A workflow without a timing measurement uses `COMPLETED_REQUEUE_TIME_MS`, capped at `DEFAULT_REQUEUE_TIME`.
+If `COMPLETED_REQUEUE_TIME_MS` exceeds `DEFAULT_REQUEUE_TIME`, `DEFAULT_REQUEUE_TIME` takes precedence and the controller logs a warning at startup.
 The controller tracks timing by workflow UID, clears it on completion or deletion, and sweeps timing records idle for more than 40 minutes at most once per minute during reconciliation or workflow-version bookkeeping.
 
 This is a per-workflow scheduling target, not a strict worker quota or a cluster-wide rate limit.
-An earlier queued event can reconcile sooner, and the ceiling limits how far an expensive workflow can back off.
+An earlier queued event can reconcile sooner, and `DEFAULT_REQUEUE_TIME` limits how far an expensive workflow can back off.
 Timing includes only finished reconciliations.
 If a completion arrives during a reconciliation, the controller counts the running time since the previous reconciliation ended toward the idle gap, so the requested wait can be shorter than the target requires.
 The number of workflow workers and the client `--qps` and `--burst` settings still bound overall throughput.

@@ -2,37 +2,24 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/env"
 )
 
 // workflowReconcileTiming tracks a workflow's reconciliation cost and last finish
 // time so completion events can leave enough idle time between reconciliations.
 type workflowReconcileTiming struct {
-	duration time.Duration // Smoothed operate() duration, excluding workflow lock wait.
+	duration time.Duration // Smoothed reconciliation duration, excluding workflow lock wait.
 	lastEnd  time.Time     // End of the most recent reconciliation.
-}
-
-// lookupCompletionDutyCyclePercent reads the target percentage of one worker's
-// time per workflow. It defaults to 20 and rejects values outside 1–100.
-func lookupCompletionDutyCyclePercent() (int, error) {
-	value := env.LookupEnvStringOr("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", "20")
-	percent, err := strconv.Atoi(value)
-	if err != nil || percent < 1 || percent > 100 {
-		return 0, fmt.Errorf("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT must be an integer between 1 and 100; got %q", value)
-	}
-	return percent, nil
 }
 
 // recordWorkflowReconcile records utilization and updates the workflow's smoothed
 // reconciliation duration when completion-triggered scheduling is enabled. The
-// caller must measure start after acquiring the workflow lock. Sharing the
+// caller must measure start after acquiring the workflow lock and reading the
+// cached workflow, before conversion, copying, hydration and operate(). Sharing the
 // lifecycle lock prevents finished or deleted workflows from regaining timing state.
 func (wfc *WorkflowController) recordWorkflowReconcile(ctx context.Context, wf *wfv1.Workflow, start, end time.Time) {
 	if wfc.taskSetCompletionDelay == nil {
@@ -67,7 +54,7 @@ func (wfc *WorkflowController) recordWorkflowReconcile(ctx context.Context, wf *
 // Missing timing uses the floor; the ceiling wins if it is lower than the floor.
 // The caller must have enabled the floor. This is not a hard quota: an earlier
 // queued event can still reconcile sooner. Timing includes only finished reconciles;
-// a completion arriving during operate() counts the in-flight time since lastEnd
+// a completion arriving during reconciliation counts the in-flight time since lastEnd
 // toward the idle gap and can therefore request too short a wait.
 func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Time) time.Duration {
 	wfc.lastWrittenVersions.mutex.RLock()

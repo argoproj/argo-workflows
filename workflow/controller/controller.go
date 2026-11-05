@@ -229,7 +229,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		return nil, err
 	}
 
-	completionDutyCyclePercent, err := lookupCompletionDutyCyclePercent()
+	completionDutyCyclePercent, err := env.LookupEnvIntInRange("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", 20, 1, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -989,6 +989,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	if !ok {
 		return true
 	}
+	reconcileStart := time.Now()
 
 	logger := logging.RequireLoggerFromContext(ctx)
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
@@ -1074,7 +1075,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	woc.operate(ctx)
 	endTime := time.Now()
 	wfc.metrics.OperationCompleted(ctx, endTime.Sub(startTime).Seconds())
-	wfc.recordWorkflowReconcile(ctx, woc.wf, startTime, endTime)
+	wfc.recordWorkflowReconcile(ctx, woc.wf, reconcileStart, endTime)
 
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time

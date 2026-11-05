@@ -29,6 +29,20 @@ func LookupEnvPositiveMilliseconds(key string) (*time.Duration, error) {
 	return &delay, nil
 }
 
+// LookupEnvIntInRange returns an integer in the inclusive range [lo, hi], or def
+// for an unset or empty variable. Invalid or overflowing values return an error.
+func LookupEnvIntInRange(key string, def, lo, hi int) (int, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return def, nil
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil || n < lo || n > hi {
+		return 0, fmt.Errorf("%s must be an integer between %d and %d; got %q", key, lo, hi, value)
+	}
+	return n, nil
+}
+
 func LookupEnvDurationOr(ctx context.Context, key string, o time.Duration) time.Duration {
 	logger := logging.RequireLoggerFromContext(ctx)
 	v, found := os.LookupEnv(key)
