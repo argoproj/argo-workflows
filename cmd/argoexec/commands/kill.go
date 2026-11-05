@@ -2,9 +2,10 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"syscall"
+
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
 
 	"github.com/spf13/cobra"
 )
@@ -23,12 +24,8 @@ func NewKillCommand() *cobra.Command {
 				return err
 			}
 			sig := syscall.Signal(signum)
-			p, err := os.FindProcess(pid)
-			if err != nil {
-				return err
-			}
 			fmt.Printf("killing %d with %v\n", pid, sig)
-			if err := p.Signal(sig); err != nil {
+			if err := osspecific.Kill(pid, sig); err != nil {
 				return err
 			}
 			return nil
