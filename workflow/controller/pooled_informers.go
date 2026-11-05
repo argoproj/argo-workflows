@@ -127,16 +127,7 @@ func (wfc *WorkflowController) newPoolPodInformer(ctx context.Context) cache.Sha
 
 // poolPodHandlers requeue the workflows a pool pod's change can matter to.
 func (wfc *WorkflowController) poolPodHandlers() cache.ResourceEventHandlerFuncs {
-	return cache.ResourceEventHandlerFuncs{
-		AddFunc: wfc.enqueueWorkflowsClaimedBy,
-		UpdateFunc: func(old, newObj any) {
-			if informerutil.ResourceVersionUnchanged(old, newObj) {
-				return
-			}
-			wfc.enqueueWorkflowsClaimedBy(newObj)
-		},
-		DeleteFunc: wfc.enqueueWorkflowsClaimedBy,
-	}
+	return informerutil.ChangeHandlers(wfc.enqueueWorkflowsClaimedBy)
 }
 
 // transformPoolPod keeps what the controller reads from a pool pod: its

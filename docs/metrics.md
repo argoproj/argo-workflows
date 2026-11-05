@@ -329,7 +329,7 @@ A pooled task is one attempt of a step or DAG task whose template runs on a hot 
 Reports, per hot worker pool, the tasks enqueued for the pool that no worker holds a claim on.
 A task a worker released, as when its pod is deleted during scale-down, counts again until another worker claims it.
 A task the controller has ended does not count, even while its worker is still stopping it.
-Read from the controller's caches at scrape time.
+The controller reads it from its caches at scrape time.
 A pool is reported while it has a pooled task or a Deployment, or, when the pool controller isn't running, a pod that isn't being deleted; its series disappear once it has none of these.
 
 |  attribute  |                explanation                 |
@@ -345,7 +345,7 @@ A pooled task is one attempt of a step or DAG task whose template runs on a hot 
 Reports, per hot worker pool, the tasks a worker has claimed and not yet reported.
 Each worker pod runs one task at a time, so `pool_claimed_tasks / pool_ready_pods` is the pool's saturation.
 It can briefly exceed 1 while worker pods are being replaced.
-Read from the controller's caches at scrape time, as `pool_backlog` is.
+The controller reads it from its caches at scrape time, and reports it for the same pools as `pool_backlog`.
 
 |  attribute  |                explanation                 |
 |-------------|--------------------------------------------|
@@ -357,7 +357,7 @@ Read from the controller's caches at scrape time, as `pool_backlog` is.
 
 A gauge of the number of ready hot worker pods in a pool.
 Reports, per hot worker pool, the worker pods that are ready and not being deleted.
-Read from the controller's caches at scrape time, as `pool_backlog` is.
+The controller reads it from its caches at scrape time, and reports it for the same pools as `pool_backlog`.
 
 |  attribute  |                explanation                 |
 |-------------|--------------------------------------------|

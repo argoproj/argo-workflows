@@ -22,33 +22,48 @@ import (
 // poolWorkers is how many pools the pool controller reconciles at once.
 const poolWorkers = 2
 
-// Whether the pool controller was set up, for updateConfig's warning.
+// Whether hot workers were enabled when the controller started, which is
+// what it runs with until it restarts.
 const (
-	poolControllerUndecided int32 = iota
-	poolControllerOff
-	poolControllerOn
+	hotWorkersUndecided int32 = iota
+	hotWorkersOff
+	hotWorkersOn
 )
 
 // noDeploymentRBAC is every pool's health when the controller can't manage
 // Deployments.
 const noDeploymentRBAC = "the workflow controller isn't allowed to manage Deployments, which hot workers need: install the hot workers RBAC component and restart the controller"
 
+// recordHotWorkers reads hotWorkers.enabled once, as the controller starts.
+// Dispatch and the pool controller both follow what it read, not the live
+// config, so turning the flag on or off takes a controller restart.
+func (wfc *WorkflowController) recordHotWorkers() {
+	state := hotWorkersOff
+	if wfc.Config.HotWorkers.IsEnabled() {
+		state = hotWorkersOn
+	}
+	wfc.hotWorkersAtStart.Store(state)
+}
+
+// hotWorkersEnabled is whether hot workers were enabled when the controller
+// started.
+func (wfc *WorkflowController) hotWorkersEnabled() bool {
+	return wfc.hotWorkersAtStart.Load() == hotWorkersOn
+}
+
 // setUpPoolController sets up the pool controller and its Deployment
-// informer, only if hot workers are enabled when the controller starts:
-// unlike dispatch, which follows the live config, turning the flag on or off
-// takes a controller restart here. With the flag off there is no informer, no
+// informer, only if hot workers were enabled when the controller started
+// (recordHotWorkers). With the flag off there is no informer, no
 // reconciler and no Deployment call, so the controller needs no Deployment
 // RBAC. With the flag on but without that RBAC, the pool controller doesn't
 // run, and every pool reports degraded with the reason, which pooled nodes
 // show while they wait.
 func (wfc *WorkflowController) setUpPoolController(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if !wfc.Config.HotWorkers.IsEnabled() {
-		wfc.poolControllerState.Store(poolControllerOff)
+	if !wfc.hotWorkersEnabled() {
 		logger.Info(ctx, "Hot workers are disabled: not running the pool controller")
 		return
 	}
-	wfc.poolControllerState.Store(poolControllerOn)
 	can, err := authutil.CanI(ctx, wfc.kubeclientset, poolcontroller.DeploymentVerbs, appsv1.GroupName, wfc.GetManagedNamespace(), "deployments")
 	if err == nil && !can {
 		logger.WithField("verbs", poolcontroller.DeploymentVerbs).Error(ctx, "Hot workers are enabled, but the controller isn't allowed to manage Deployments: not running the pool controller")
@@ -72,7 +87,7 @@ func (wfc *WorkflowController) setUpPoolController(ctx context.Context) {
 		ControllerVersion: argo.GetVersion().Version,
 		Build:             buildPoolDeployment,
 		DefaultRetention: func() time.Duration {
-			return time.Duration(wfc.Config.HotWorkers.GetDefaultRetentionSeconds()) * time.Second
+			return poolcontroller.Retention(wfc.Config.HotWorkers.GetDefaultRetentionSeconds())
 		},
 		Events:         wfc.eventRecorderManager,
 		OnHealthChange: wfc.enqueueWorkflowsWaitingOnPool,
@@ -91,15 +106,15 @@ func (wfc *WorkflowController) runPoolController(ctx context.Context) {
 	go wfc.poolController.Run(ctx, poolWorkers)
 }
 
-// warnPoolControllerFlagChange warns, on a config update, that the pool
-// controller doesn't follow a change to hotWorkers.enabled.
-func (wfc *WorkflowController) warnPoolControllerFlagChange(ctx context.Context) {
-	state := wfc.poolControllerState.Load()
-	if state == poolControllerUndecided || wfc.Config.HotWorkers.IsEnabled() == (state == poolControllerOn) {
+// warnHotWorkersFlagChange warns, on a config update, that a change to
+// hotWorkers.enabled takes a controller restart.
+func (wfc *WorkflowController) warnHotWorkersFlagChange(ctx context.Context) {
+	state := wfc.hotWorkersAtStart.Load()
+	if state == hotWorkersUndecided || wfc.Config.HotWorkers.IsEnabled() == (state == hotWorkersOn) {
 		return
 	}
 	logging.RequireLoggerFromContext(ctx).WithField("enabled", wfc.Config.HotWorkers.IsEnabled()).
-		Warn(ctx, "hotWorkers.enabled changed: dispatch follows it now, but the pool controller starts or stops only when the workflow controller restarts")
+		Warn(ctx, "hotWorkers.enabled changed: the workflow controller runs with the value it started with until it restarts")
 }
 
 // newPoolDeploymentInformer caches this instance's pool Deployments, trimmed

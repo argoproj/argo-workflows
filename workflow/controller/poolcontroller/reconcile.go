@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -33,7 +35,7 @@ import (
 // returns how long to wait before reconciling the pool again, if nothing
 // else requeues it first.
 func (c *Controller) reconcile(ctx context.Context, key string) (time.Duration, error) {
-	namespace, hash := splitKey(key)
+	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
 	ctx, _ = logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": namespace, "poolHash": hash}).InContext(ctx)
 	taskSets, err := c.TaskSets.GetIndexer().ByIndex(indexes.PoolIndex, key)
 	if err != nil {
@@ -56,10 +58,10 @@ func (c *Controller) cachedDeployment(key string) (*appsv1.Deployment, error) {
 		return nil, err
 	}
 	// Only a Deployment someone else labelled with the pool's hash makes two.
-	slices.SortFunc(objs, func(a, b any) int {
+	first := slices.MinFunc(objs, func(a, b any) int {
 		return cmp.Compare(a.(*appsv1.Deployment).Name, b.(*appsv1.Deployment).Name)
 	})
-	return objs[0].(*appsv1.Deployment), nil
+	return first.(*appsv1.Deployment), nil
 }
 
 // reconcileIdle handles a pool with no TaskSets: it deletes its Deployment
@@ -85,7 +87,7 @@ func (c *Controller) reconcileIdle(ctx context.Context, key string, deploy *apps
 	}
 	// The cache may not have seen a TaskSet created just now; deleting the
 	// pool then would cost its next task a cold start.
-	namespace, hash := splitKey(key)
+	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
 	busy, err := c.hasTaskSets(ctx, namespace, hash)
 	if err != nil {
 		return 0, err
@@ -94,10 +96,9 @@ func (c *Controller) reconcileIdle(ctx context.Context, key string, deploy *apps
 		p.idleSince = now
 		return c.retention(deploy), nil
 	}
-	background := metav1.DeletePropagationBackground
 	err = c.KubeClient.AppsV1().Deployments(namespace).Delete(ctx, deploy.Name, metav1.DeleteOptions{
 		Preconditions:     &metav1.Preconditions{UID: &deploy.UID},
-		PropagationPolicy: &background,
+		PropagationPolicy: new(metav1.DeletePropagationBackground),
 	})
 	switch {
 	case apierr.IsNotFound(err), apierr.IsConflict(err):
@@ -128,9 +129,19 @@ func (c *Controller) hasTaskSets(ctx context.Context, namespace, hash string) (b
 // deleted: the annotation on the Deployment, or the controller's default.
 func (c *Controller) retention(deploy *appsv1.Deployment) time.Duration {
 	if s, err := strconv.ParseInt(deploy.Annotations[common.AnnotationKeyPoolRetentionSeconds], 10, 64); err == nil && s >= 0 {
-		return time.Duration(s) * time.Second
+		return Retention(s)
 	}
 	return c.DefaultRetention()
+}
+
+// maxRetentionSeconds is the longest retention a time.Duration holds.
+const maxRetentionSeconds = math.MaxInt64 / int64(time.Second)
+
+// Retention is a retention of seconds, which is never negative: one longer
+// than a time.Duration holds is held as the longest, rather than overflowing
+// to a negative one, which would delete an idle pool at once.
+func Retention(seconds int64) time.Duration {
+	return time.Duration(min(seconds, maxRetentionSeconds)) * time.Second
 }
 
 // reconcileBusy handles a pool with TaskSets: it creates the pool's
@@ -192,7 +203,7 @@ func newestTaskSet(taskSets []any) metav1.Object {
 // readSpec reads the spec.pool of the TaskSet live. It reports false, with no
 // error, if the TaskSet has gone, which requeues the pool.
 func (c *Controller) readSpec(ctx context.Context, key string, p *pool, taskSet metav1.Object) (bool, error) {
-	_, hash := splitKey(key)
+	_, hash, _ := cache.SplitMetaNamespaceKey(key)
 	live, err := c.WfClient.ArgoprojV1alpha1().WorkflowTaskSets(taskSet.GetNamespace()).Get(ctx, taskSet.GetName(), metav1.GetOptions{})
 	switch {
 	case apierr.IsNotFound(err):
@@ -223,10 +234,11 @@ func (c *Controller) readSpec(ctx context.Context, key string, p *pool, taskSet 
 // tasks again for this version, and a task a worker released waits for its
 // own version's pool. A transient error is returned with the pool's health
 // unchanged; any other create failure, such as Forbidden (RBAC, admission or
-// quota), makes the pool degraded. None ever leaves another Deployment
+// quota, though the API treats exceeded quota as transient), makes the pool
+// degraded and is returned to be retried. None ever leaves another Deployment
 // serving the pool.
 func (c *Controller) create(ctx context.Context, key string, p *pool) error {
-	namespace, hash := splitKey(key)
+	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
 	spec := p.spec
 	switch {
 	case spec == nil:
@@ -261,7 +273,9 @@ func (c *Controller) create(ctx context.Context, key string, p *pool) error {
 	case apierr.IsInvalid(err):
 		c.setHealth(ctx, key, unbuildable("the Deployment of pool %q is invalid: %v", spec.Name, err), p.taskSet)
 		return nil
-	case errorsutil.IsTransientErr(ctx, err):
+	case !apierr.IsForbidden(err) && errorsutil.IsTransientErr(ctx, err):
+		// Exceeded quota is Forbidden, and transient, but waits for an
+		// administrator, so the pool's nodes show it.
 		return err
 	}
 	// Including Forbidden: missing RBAC, admission or quota, which an
@@ -274,7 +288,7 @@ func (c *Controller) create(ctx context.Context, key string, p *pool) error {
 // but isn't cached. It is the pool's if it has the pool's hash and this
 // instance's ID; the cache will bring it. Otherwise the name is taken.
 func (c *Controller) adopt(ctx context.Context, key string, p *pool, name string) error {
-	namespace, hash := splitKey(key)
+	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
 	existing, err := c.KubeClient.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	switch {
 	case apierr.IsNotFound(err):
@@ -304,7 +318,8 @@ func (c *Controller) recordRetention(ctx context.Context, deploy *appsv1.Deploym
 	if deploy.Annotations[common.AnnotationKeyPoolRetentionSeconds] == want {
 		return nil
 	}
-	// The UID makes the patch fail on a Deployment that replaced this one.
+	// The UID makes the patch fail, as Invalid (the UID can't change), on a
+	// Deployment that replaced this one.
 	patch, err := json.Marshal(map[string]any{"metadata": map[string]any{
 		"uid":         deploy.UID,
 		"annotations": map[string]string{common.AnnotationKeyPoolRetentionSeconds: want},
@@ -313,7 +328,9 @@ func (c *Controller) recordRetention(ctx context.Context, deploy *appsv1.Deploym
 		return err
 	}
 	_, err = c.KubeClient.AppsV1().Deployments(deploy.Namespace).Patch(ctx, deploy.Name, types.MergePatchType, patch, metav1.PatchOptions{})
-	if apierr.IsNotFound(err) {
+	if apierr.IsNotFound(err) || apierr.IsInvalid(err) {
+		// Gone or replaced: the cache will bring the change, which requeues
+		// the pool.
 		return nil
 	}
 	return err
@@ -360,7 +377,7 @@ func (c *Controller) setHealth(ctx context.Context, key string, health dispatch.
 	if old == health {
 		return
 	}
-	namespace, hash := splitKey(key)
+	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"health": health.State, "reason": health.Reason, "was": old.State}).Info(ctx, "Pool health changed")
 	if health.State != dispatch.HealthOK && involved != nil {
 		c.Events.Get(ctx, namespace).Event(involved, apiv1.EventTypeWarning, "Pool"+string(health.State), health.Reason)

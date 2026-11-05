@@ -208,7 +208,7 @@ func TestPoolDeploymentGolden(t *testing.T) {
 }
 
 // TestPoolDeploymentIsPure checks two builds of one spec.pool are equal and
-// leave it unchanged.
+// leave it unchanged, and that a built Deployment shares nothing with it.
 func TestPoolDeploymentIsPure(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	in, x := poolDeploymentTestInputs()
@@ -222,6 +222,34 @@ func TestPoolDeploymentIsPure(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, first, second)
 	assert.Equal(t, before, spec)
+
+	*first.Spec.Replicas++
+	pod := &first.Spec.Template.Spec
+	*pod.TerminationGracePeriodSeconds++
+	for i := range pod.ImagePullSecrets {
+		pod.ImagePullSecrets[i].Name += "-changed"
+	}
+	for i := range pod.Volumes {
+		pod.Volumes[i].Name += "-changed"
+	}
+	for _, ctrs := range [][]apiv1.Container{pod.InitContainers, pod.Containers} {
+		for i := range ctrs {
+			c := &ctrs[i]
+			for j := range c.Env {
+				c.Env[j].Value += "-changed"
+			}
+			for j := range c.VolumeMounts {
+				c.VolumeMounts[j].MountPath += "-changed"
+			}
+			for j := range c.Args {
+				c.Args[j] += "-changed"
+			}
+		}
+	}
+	assert.Equal(t, before, spec, "changing a built Deployment leaves spec.pool unchanged")
+	third, err := buildPoolDeployment("ns", hash, spec)
+	require.NoError(t, err)
+	assert.Equal(t, second, third)
 }
 
 // TestPoolDeploymentCredentialsOnlyInWorker checks that artifact secrets, the
@@ -511,7 +539,9 @@ func TestBuildPoolDeploymentRejects(t *testing.T) {
 	}{
 		{name: "no spec", hash: hash, set: nil, wantErr: "no pool spec"},
 		{name: "short hash", hash: "abc", set: func(*wfv1.PoolSpec) {}, wantErr: "invalid pool hash"},
+		{name: "hash not a label value", hash: "0123456789!!", set: func(*wfv1.PoolSpec) {}, wantErr: "invalid pool hash"},
 		{name: "no template", hash: hash, set: func(s *wfv1.PoolSpec) { s.Template = nil }, wantErr: "no container or script template"},
+		{name: "template without a container or script", hash: hash, set: func(s *wfv1.PoolSpec) { s.Template = &wfv1.Template{Name: "suspend", Suspend: &wfv1.SuspendTemplate{}} }, wantErr: "no container or script template"},
 		{name: "no executor image", hash: hash, set: func(s *wfv1.PoolSpec) { s.ExecutorImage = "" }, wantErr: "no executor image"},
 		{name: "bad name", hash: hash, set: func(s *wfv1.PoolSpec) { s.Name = "Bad_Name" }, wantErr: "invalid pool name"},
 	} {
