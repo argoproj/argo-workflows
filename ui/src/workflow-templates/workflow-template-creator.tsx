@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 
 import {Button} from '../shared/components/button';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -13,8 +13,29 @@ import {useEditableObject} from '../shared/use-editable-object';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
 export function WorkflowTemplateCreator({namespace, onCreate}: {namespace: string; onCreate: (workflow: WorkflowTemplate) => void}) {
-    const {object: template, setObject: setTemplate, serialization, lang, setLang} = useEditableObject(exampleWorkflowTemplate(nsUtils.getNamespaceWithDefault(namespace)));
+    const {
+        object: template,
+        setObject: setTemplate,
+        serialization,
+        lang,
+        setLang,
+        resetObject
+    } = useEditableObject(exampleWorkflowTemplate(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
+
+    // Sync template metadata.namespace when namespace prop changes (e.g., managed namespace becomes available)
+    useEffect(() => {
+        if (template.metadata.namespace !== namespace) {
+            resetObject({
+                ...template,
+                metadata: {
+                    ...template.metadata,
+                    namespace
+                }
+            });
+        }
+    }, [namespace, template, resetObject]);
+
     return (
         <>
             <div>

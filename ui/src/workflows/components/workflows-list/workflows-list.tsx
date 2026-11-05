@@ -63,7 +63,19 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespaceReady, setNamespaceReady] = useState(!!nsUtils.getNamespace(match.params.namespace));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') || '');
+
+    // Listen for managed namespace changes (e.g., on first load when /api/v1/info returns)
+    // In managed namespace mode, managed namespace always takes precedence over explicit path
+    useEffect(() => {
+        return nsUtils.onManagedNamespaceChange(managedNs => {
+            if (managedNs) {
+                setNamespace(managedNs);
+                setNamespaceReady(true);
+            }
+        });
+    }, []);
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
         return {
@@ -188,6 +200,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs
 
     useEffect(() => {
+        if (!namespaceReady) {
+            return;
+        }
         const listWatch = new ListWatch(
             () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter, createdAfter, finishedBefore),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
@@ -207,7 +222,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
+    }, [namespaceReady, namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
