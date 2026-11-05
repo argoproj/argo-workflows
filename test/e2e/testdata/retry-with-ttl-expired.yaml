@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-with-ttl-expired-
+spec:
+  entrypoint: main
+  ttlStrategy:
+    secondsAfterFailure: 3
+  arguments:
+    parameters:
+      - name: fail
+        value: 'true'
+  templates:
+      - name: main
+        dag:
+          tasks:
+            - name: A
+              template: first-fail
+              arguments:
+                parameters:
+                  - name: fail
+                    value: "{{workflow.parameters.fail}}"
+            - name: B
+              depends: "A"
+              template: echo
+      - name: first-fail
+        inputs:
+          parameters:
+            - name: fail
+        container:
+          image: alpine:3.19
+          imagePullPolicy: IfNotPresent
+          command: [sh, -c]
+          args:
+            - |
+              set -e
+              if [ "{{inputs.parameters.fail}}" == "true" ]; then
+                echo "Failing"
+                exit 36
+              fi
+              echo "Succeeded"
+      - name: echo
+        container:
+          image: alpine:3.19
+          imagePullPolicy: IfNotPresent
+          command: [sh, -c]
+          args:
+            - |
+              set -e
+              echo "sleep 5s"
+              sleep 5
+              echo "finished"
