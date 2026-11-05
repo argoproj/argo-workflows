@@ -127,7 +127,7 @@ Gains may vary under load: if the workflow informer is behind the controller's l
 ### RECENTLY_STARTED_POD_DURATION
 
 The controller also uses this duration for an attempt of a step or DAG task that runs on hot workers, as its caches can lag behind the API server.
-Once this long has passed since the attempt was enqueued, a WorkflowTaskSet still missing from the controller's cache is taken as deleted, and the node ends as `Error`.
+Once this long has passed since the controller enqueued the attempt, it takes a WorkflowTaskSet still missing from its cache as deleted, and ends the node as `Error`.
 Once this long has passed since a worker claimed the attempt, the controller reads a claimant pod still missing from its cache from the API server, and ends the node as `Error` only if that pod was deleted or replaced.
 
 ## Executor
