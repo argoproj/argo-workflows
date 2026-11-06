@@ -120,8 +120,10 @@ func New(opts Options) *Controller {
 	c := &Controller{Options: opts, now: time.Now, pools: map[string]*pool{}}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	opts.TaskSets.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		// A pooled TaskSet is written once and never updated.
+		// A pooled TaskSet is written once and never updated, so an update
+		// is only ever a replacement; see enqueueAfterReplacedTaskSet.
 		AddFunc:    c.enqueueAfterTaskSet,
+		UpdateFunc: c.enqueueAfterReplacedTaskSet,
 		DeleteFunc: c.enqueueAfterTaskSet,
 	})
 	//nolint:errcheck // as above
@@ -164,6 +166,37 @@ func (c *Controller) enqueueAfterTaskSet(obj any) {
 		return
 	}
 	c.Queue.Add(key)
+}
+
+// enqueueAfterReplacedTaskSet enqueues the pools of a TaskSet that was
+// replaced: deleted and created again under the same name, as dispatch does
+// when it enqueues another version's task again, perhaps for another pool.
+// A relist after a missed watch reports the pair as one update, and nothing
+// else would enqueue either pool: the new one would wait for its Deployment,
+// the old one for its idle timer. An update of the same TaskSet, which is
+// only a replay, is ignored.
+func (c *Controller) enqueueAfterReplacedTaskSet(oldObj, newObj any) {
+	if sameTaskSet(oldObj, newObj) {
+		return
+	}
+	c.enqueueAfterTaskSet(oldObj)
+	c.enqueueAfterTaskSet(newObj)
+}
+
+// sameTaskSet reports whether two states of a TaskSet are of one object in
+// one pool.
+func sameTaskSet(oldObj, newObj any) bool {
+	oldMeta, err := meta.Accessor(oldObj)
+	if err != nil {
+		return false
+	}
+	newMeta, err := meta.Accessor(newObj)
+	if err != nil {
+		return false
+	}
+	oldKey, _ := keyOf(oldObj)
+	newKey, _ := keyOf(newObj)
+	return oldMeta.GetUID() == newMeta.GetUID() && oldKey == newKey
 }
 
 // Health implements dispatch.PoolHealth.

@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
+	fcache "k8s.io/client-go/tools/cache/testing"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
@@ -745,6 +746,67 @@ func TestEnqueueAfterTaskSet(t *testing.T) {
 
 	h.c.enqueueAfterTaskSet(&metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Name: "agent"}})
 	assert.Zero(t, h.c.Queue.Len(), "not a pool's")
+}
+
+func pooledTaskSetMeta(uid types.UID, hash string) *metav1.PartialObjectMetadata {
+	return &metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{
+		Namespace: testNamespace, Name: "node-1-task", UID: uid, Labels: map[string]string{common.LabelKeyPoolHash: hash},
+	}}
+}
+
+// drainQueue takes every key queued so far.
+func drainQueue(c *Controller) []string {
+	var keys []string
+	for c.Queue.Len() > 0 {
+		key, _ := c.Queue.Get()
+		c.Queue.Done(key)
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+// TestReplacedTaskSetEnqueuesBothPools checks that a TaskSet replaced under
+// its name during a watch gap, which the relist reports as one update,
+// enqueues the pool it left and the pool it joined.
+func TestReplacedTaskSetEnqueuesBothPools(t *testing.T) {
+	h := newHarness(t, "")
+	source := fcache.NewFakeControllerSource()
+	t.Cleanup(source.Shutdown)
+	opts := h.c.Options
+	opts.TaskSets = cache.NewSharedIndexInformer(source, &metav1.PartialObjectMetadata{}, 0, cache.Indexers{
+		indexes.PoolIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyPoolHash),
+	})
+	c := New(opts)
+	ctx, cancel := context.WithCancel(h.ctx())
+	t.Cleanup(cancel)
+	go c.TaskSets.RunWithContext(ctx)
+
+	old := pooledTaskSetMeta("uid-old", testHash)
+	source.Add(old)
+	oldKey := indexes.MetaNamespaceLabelIndex(testNamespace, testHash)
+	require.Eventually(t, func() bool { return c.Queue.Len() == 1 }, 5*time.Second, 10*time.Millisecond)
+	assert.Equal(t, []string{oldKey}, drainQueue(c))
+
+	source.DeleteDropWatch(old)
+	source.AddDropWatch(pooledTaskSetMeta("uid-new", otherHash))
+	source.ResetWatch()
+	newKey := indexes.MetaNamespaceLabelIndex(testNamespace, otherHash)
+	require.Eventually(t, func() bool { return c.Queue.Len() == 2 }, 10*time.Second, 10*time.Millisecond)
+	assert.ElementsMatch(t, []string{oldKey, newKey}, drainQueue(c))
+}
+
+func TestEnqueueAfterReplacedTaskSet(t *testing.T) {
+	h := newHarness(t, "")
+	key := indexes.MetaNamespaceLabelIndex(testNamespace, testHash)
+
+	h.c.enqueueAfterReplacedTaskSet(pooledTaskSetMeta("uid-1", testHash), pooledTaskSetMeta("uid-1", testHash))
+	assert.Zero(t, h.c.Queue.Len(), "a replay of the same TaskSet")
+
+	h.c.enqueueAfterReplacedTaskSet(pooledTaskSetMeta("uid-1", testHash), pooledTaskSetMeta("uid-2", testHash))
+	assert.Equal(t, []string{key}, drainQueue(h.c), "replaced in the same pool")
+
+	h.c.enqueueAfterReplacedTaskSet(pooledTaskSetMeta("uid-1", testHash), pooledTaskSetMeta("uid-1", otherHash))
+	assert.ElementsMatch(t, []string{key, indexes.MetaNamespaceLabelIndex(testNamespace, otherHash)}, drainQueue(h.c), "moved to another pool")
 }
 
 // recordingQueue records how processNextItem requeues or forgets a key,
