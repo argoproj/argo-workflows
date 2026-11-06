@@ -50,15 +50,9 @@ type taskResultSink struct {
 
 	resultRetry
 
-	// recordFailure selects how Fail attributes a failure. In a pod the
-	// termination log carries it (process death is task death); a worker
-	// running many tasks records it in the task result instead, keeping
-	// the first failure.
-	recordFailure bool
-	// writeTerminate writes the pod's termination message.
+	// writeTerminate writes the pod's termination message, which carries
+	// the task's failure: the pod's process death is the task's death.
 	writeTerminate func(msg string)
-
-	failure firstFailure
 
 	// mu guards created: the deadline and progress goroutines report
 	// alongside the task's own flow.
@@ -68,11 +62,9 @@ type taskResultSink struct {
 
 var _ ResultSink = &taskResultSink{}
 
-// NewTaskResultSink returns the sink for the task cfg describes. With
-// recordFailure false (a pod), Fail writes the termination message; with
-// recordFailure true (a worker), Fail records the failure in the task's
-// result.
-func (p *Process) NewTaskResultSink(cfg TaskConfig, recordFailure bool) ResultSink {
+// NewTaskResultSink returns the sink for the pod's task cfg describes:
+// Fail writes the termination message.
+func (p *Process) NewTaskResultSink(cfg TaskConfig) ResultSink {
 	return &taskResultSink{
 		client:         p.taskResultClient,
 		tracing:        p.Tracing,
@@ -80,7 +72,6 @@ func (p *Process) NewTaskResultSink(cfg TaskConfig, recordFailure bool) ResultSi
 		workflowUID:    cfg.WorkflowUID,
 		nodeID:         cfg.NodeID,
 		instanceID:     p.instanceID,
-		recordFailure:  recordFailure,
 		writeTerminate: util.WriteTerminateMessage,
 
 		resultRetry: p.resultRetry(),
@@ -116,16 +107,12 @@ func (s *taskResultSink) Progress(ctx context.Context, progress wfv1.Progress) e
 	return s.write(ctx, s.interimRetryTimeout, wfv1.NodeResult{Progress: progress})
 }
 
-func (s *taskResultSink) Fail(ctx context.Context, err error) {
-	if !s.recordFailure {
-		s.writeTerminate(err.Error())
-		return
-	}
-	s.failure.record(ctx, s.Report, wfv1.NodeFailed, err)
+func (s *taskResultSink) Fail(_ context.Context, err error) {
+	s.writeTerminate(err.Error())
 }
 
 // firstFailure records a task's first failure in its result, and ignores
-// the rest, as a worker's sinks do.
+// the rest, as a pool pod's worker's sinks do.
 type firstFailure struct {
 	// mu guards failed: the deadline and progress goroutines report
 	// alongside the task's own flow.
@@ -182,12 +169,18 @@ func (s *taskResultSink) write(ctx context.Context, limit time.Duration, result 
 	})
 }
 
-// retry calls op until it succeeds, and returns nil, or fails with an
-// error that isn't transient, and returns that error. op's ctx ends once
-// limit has passed or ctx is done, cutting off an attempt in flight; retry
-// then returns the last transient error, or the ctx error if there was
-// none, wrapped to say it gave up if it was limit that ran out.
+// retry retries op, a write to a task's result (retryDoing).
 func (s resultRetry) retry(ctx context.Context, limit time.Duration, op func(ctx context.Context) error) error {
+	return s.retryDoing(ctx, limit, "writing task result", op)
+}
+
+// retryDoing calls op until it succeeds, and returns nil, or fails with an
+// error that isn't transient, and returns that error. op's ctx ends once
+// limit has passed or ctx is done, cutting off an attempt in flight; it
+// then returns the last transient error, or the ctx error if there was
+// none, wrapped to say it gave up doing what op does if it was limit that
+// ran out.
+func (s resultRetry) retryDoing(ctx context.Context, limit time.Duration, doing string, op func(ctx context.Context) error) error {
 	retryCtx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
 	var lastErr error
@@ -212,7 +205,7 @@ func (s resultRetry) retry(ctx context.Context, limit time.Duration, op func(ctx
 		err = lastErr
 	}
 	if ctx.Err() == nil {
-		return fmt.Errorf("gave up writing task result after %s: %w", limit, err)
+		return fmt.Errorf("gave up %s after %s: %w", doing, limit, err)
 	}
 	return err
 }

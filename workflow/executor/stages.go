@@ -18,17 +18,6 @@ import (
 
 // Prepare-phase stages.
 var (
-	// checkWorker fails a worker task the worker cannot run, before any
-	// work is done.
-	checkWorker = Stage{Name: "check-worker", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.checkWorker()
-	}}
-	// createTaskDirs gives a worker's task an empty tree under its root. A
-	// retried node reuses its node ID, so anything left from the last
-	// attempt is removed first.
-	createTaskDirs = Stage{Name: "create-task-dirs", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.createTaskDirs()
-	}}
 	// installArgoexec copies the argoexec binary into the shared volume and
 	// writes the template: the legacy init container's job. The init-less
 	// layout delivers the binary via an image volume and needs only
@@ -47,7 +36,7 @@ var (
 	}}
 	// clearPool empties main's emptyDir volumes and removes what other
 	// tasks left in a pool pod's shared directories, so a pool pod's task
-	// starts as on a pod of its own.
+	// sees no other task's files there.
 	clearPool = Stage{Name: "clear-pool", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.clearPoolForTask(ctx)
 	}}
@@ -87,11 +76,6 @@ var (
 		we.InitializeOutput(context.WithoutCancel(ctx))
 		return nil
 	}}
-	// runMain runs main in this process (worker layout), where waitMain
-	// waits for main's container (pod layouts).
-	runMain = Stage{Name: "run-main", Run: func(ctx context.Context, we *WorkflowExecutor) error {
-		return we.runMain(ctx)
-	}}
 	waitMain = Stage{Name: "wait", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.Wait(ctx)
 	}}
@@ -123,6 +107,11 @@ var (
 	reportOutputs = Stage{Name: "report-outputs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.ReportOutputs(ctx, we.savedArtifacts)
 	}}
+	// reportPoolLogs archives and reports main's log alone, if there is
+	// one, for a pool pod's task whose node was ended by the controller.
+	reportPoolLogs = Stage{Name: "report-pool-logs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.reportPoolLogs(ctx)
+	}}
 	// reportLogs is the resource template's whole Collect phase: its output
 	// parameters were already reported by `argoexec resource`, and a full
 	// report-outputs would overwrite them with the template's empty values.
@@ -140,10 +129,6 @@ var (
 	finalizeOutput = Stage{Name: "finalize-output", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		we.FinalizeOutput(ctx)
 		return nil
-	}}
-	// removeTaskRoot removes a worker task's own files once it is done.
-	removeTaskRoot = Stage{Name: "remove-task-root", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.removeTaskRoot()
 	}}
 	// completePoolTask completes a pool pod's task's claim, or stops the
 	// worker if it can't.

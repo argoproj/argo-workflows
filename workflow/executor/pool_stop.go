@@ -36,7 +36,8 @@ const (
 	// the claim is deleted and nothing is reported.
 	poolReleased
 	// poolInterrupted: the controller ended the node. The claim is
-	// completed, with no outputs, to confirm the task stopped.
+	// completed to confirm the task stopped, with main's log, archived as a
+	// stopped pod's is, and nothing else the task produced.
 	poolInterrupted
 	// poolLost: the claim was lost, so nothing is reported.
 	poolLost
@@ -61,6 +62,12 @@ func (s poolStop) overrides(prev poolStop) bool {
 // reported.
 func (s poolStop) reportsOutputs() bool {
 	return s == poolNotStopped || s == poolDeadline
+}
+
+// reportsLogs reports whether main's log is archived and reported, which
+// it is whenever the task's node takes anything from its result.
+func (s poolStop) reportsLogs() bool {
+	return s.reportsOutputs() || s == poolInterrupted
 }
 
 // stopReason is what main is told when the task is stopped for s.

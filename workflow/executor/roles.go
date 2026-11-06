@@ -111,31 +111,6 @@ var (
 		Finally: []Stage{killArtifactSidecars, finalizeOutput},
 	}
 
-	// WorkerRole runs a task's whole flow in this process: check the
-	// template, prepare the task's own tree, run main through the process's
-	// MainDriver, collect, then remove the task's files. Exercised only by
-	// tests: `argoexec worker`, a pool pod's, runs PoolRole, with main in a
-	// container of its own.
-	WorkerRole = Role{
-		Name:   "worker",
-		Layout: LayoutWorker,
-		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
-			return we.Tracing.StartRunWorkerTask(ctx, we.WorkflowName(), we.Namespace)
-		},
-		Run: func(ctx, bgCtx context.Context, we *WorkflowExecutor) error {
-			// Main runs in the Run phase, so if Prepare failed nothing ran
-			// and there is nothing to collect.
-			if err := we.Prepare(ctx); err != nil {
-				we.AddError(ctx, err)
-				return err
-			}
-			return we.PostMain(ctx, bgCtx, false)
-		},
-		// Cleanup can fail the task, so it runs before the outputs are
-		// marked complete: nothing is reported after that.
-		Finally: []Stage{removeTaskRoot, finalizeOutput},
-	}
-
 	// PoolRole is a hot worker pool pod's worker container, for each task
 	// it claims: it prepares the task in directories of its own, hands it
 	// to the pool pod's looping main container and waits for main to run
@@ -170,6 +145,11 @@ var (
 			}
 			return we.runPoolTask(ctx, bgCtx)
 		},
+		// The claim is completed first, unlike a pod's result: removing
+		// the task's files and wiping main's emptyDir volumes are the next
+		// task's concern, not this one's outcome. If either fails, the
+		// task's result stands and the worker stops (afterPoolTask), so
+		// its restart clears the pool before it claims another.
 		Finally: []Stage{completePoolTask, removePoolTask, wipeEmptyDirs},
 	}
 )

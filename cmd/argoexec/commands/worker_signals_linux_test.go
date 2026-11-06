@@ -110,9 +110,12 @@ func TestWorker_Deadline(t *testing.T) {
 			set:     func(d *wfv1.TaskDispatch) { d.ActiveDeadlineSeconds = ptr.To[int64](2) },
 			message: "Pod was active on the node longer than the specified deadline",
 		},
+		// Set as the task is enqueued, once the worker has run a task, so
+		// the deadline leaves time for the task to be claimed, prepared and
+		// taken by main before it passes.
 		"Absolute": {
 			set: func(d *wfv1.TaskDispatch) {
-				d.Deadline = &metav1.Time{Time: time.Now().Add(1500 * time.Millisecond)}
+				d.Deadline = &metav1.Time{Time: time.Now().Add(3 * time.Second)}
 				d.ActiveDeadlineSeconds = ptr.To[int64](3600)
 			},
 			message: "Step exceeded its deadline",
@@ -123,6 +126,9 @@ func TestWorker_Deadline(t *testing.T) {
 			h := newWorkerHarness(t)
 			h.start()
 			run := h.startWorker(time.Minute)
+			// The worker and main are up before the deadline starts.
+			h.enqueue(h.task("first", wfv1.Template{}, `true`))
+			require.Equal(t, wfv1.NodeSucceeded, h.completed("first").Phase)
 			task := h.task("late", wfv1.Template{}, `exec sleep 300`)
 			tt.set(&task.Dispatch)
 			h.enqueue(task)

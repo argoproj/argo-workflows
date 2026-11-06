@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	apiv1 "k8s.io/api/core/v1"
+
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -23,8 +25,10 @@ import (
 // its own beneath the pool pod's shared ones (PoolTask), hands it to the
 // looping main container through the poolpod file protocol, waits for main
 // to run it, and collects its outputs through the task's own directory, as
-// a pod's wait container does. Before and after each task it leaves nothing
-// of other tasks where the task can see it.
+// a pod's wait container does. Before and after each task it removes other
+// tasks' files from the pool pod's shared directories and main's emptyDir
+// volumes. Main's container, and so its writable layer (/tmp, $HOME and
+// the like), outlives tasks: what a task writes there, the next task sees.
 
 // poolTask is the state of a pool pod's task, which only the pool role's
 // stages read and write.
@@ -53,17 +57,30 @@ func newPoolTask(cfg TaskConfig) *poolTask {
 
 // runPoolTask runs the plan's Run phase, which hands the task to main and
 // waits for main to run it, then, as PostMain does in a pod, its Collect
-// phase on bgCtx. A task stopped for a reason that reports nothing it
-// produced has nothing to collect, and the stages that read main's outputs
-// are skipped if main ended without staging them.
+// phase on bgCtx. The stages that read main's outputs are skipped if main
+// ended without staging them. An interrupted task, whose node has already
+// ended, has only main's log archived, as a stopped pod's is; one released
+// or whose claim was lost has nothing collected.
 func (we *WorkflowExecutor) runPoolTask(ctx, bgCtx context.Context) error {
 	plan := we.selectedPlan()
 	we.runRecording(ctx, plan.Run, true)
-	if !we.poolTask.stop.reportsOutputs() {
-		return we.HasError()
+	switch stop := we.poolTask.stop; {
+	case stop.reportsOutputs():
+		we.runRecording(bgCtx, plan.Collect, !we.poolTask.noMainOutputs)
+	case stop.reportsLogs():
+		we.runRecording(bgCtx, []Stage{reportPoolLogs}, false)
 	}
-	we.runRecording(bgCtx, plan.Collect, !we.poolTask.noMainOutputs)
 	return we.HasError()
+}
+
+// reportPoolLogs archives main's log and reports it, unless there is none
+// to archive.
+func (we *WorkflowExecutor) reportPoolLogs(ctx context.Context) error {
+	logs := we.SaveLogs(ctx)
+	if len(logs) == 0 {
+		return nil
+	}
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &wfv1.Outputs{Artifacts: logs}})
 }
 
 // taskFailure is a failure of the task's own, such as main exiting non-zero:
@@ -77,8 +94,9 @@ func (f taskFailure) Unwrap() error { return f.error }
 // clearPool empties main's emptyDir volumes and removes whatever other
 // tasks left in the pool pod's shared directories, as a worker that
 // restarted, or failed to remove a task's directories, leaves them, so the
-// task starts as on a pod of its own. Main is between tasks whenever one is
-// prepared, so nothing removed is in use.
+// task sees no other task's files there. Main's writable layer isn't
+// cleared. Main is between tasks whenever one is prepared, so nothing
+// removed is in use.
 func (we *WorkflowExecutor) clearPool() error {
 	return errors.Join(we.wipeEmptyDirs(), clearPoolDirs(we.paths.taskPool().poolDirs(), filepath.Base(we.paths.VarRunArgo)))
 }
@@ -303,7 +321,7 @@ func mainExitedError(status poolpod.Status) error {
 // one write, or gives a released task back. A claim found lost isn't the
 // worker's to report: the task's node has moved on, and nothing is written.
 // An interrupted task's claim is completed to confirm the task stopped,
-// with nothing it produced. If main may still be running the task, or the
+// with only main's log. If main may still be running the task, or the
 // claim couldn't be completed, the worker stops: the claim is left
 // incomplete, and the worker's restart stops main's task before it fails
 // the claim (RecoverPool).
@@ -320,7 +338,9 @@ func (we *WorkflowExecutor) completePoolTask(ctx context.Context) error {
 		return nil
 	case poolReleased:
 		if err := we.releasePoolTask(ctx); err != nil {
-			return fmt.Errorf("failed to release the task: %w", err)
+			err = fmt.Errorf("failed to release the task: %w", err)
+			we.stopWorker(ctx, err)
+			return err
 		}
 		logger.Info(ctx, "Released the task")
 		return nil
@@ -431,7 +451,7 @@ func (p *Process) RecoverPool(ctx context.Context, pool poolpod.Pool, consumer d
 		return err
 	}
 	var failed []dispatch.Key
-	err := p.resultRetry().retry(ctx, p.taskResultRetryTimeout, func(ctx context.Context) error {
+	err := p.resultRetry().retryDoing(ctx, p.taskResultRetryTimeout, "failing the claims", func(ctx context.Context) error {
 		keys, err := consumer.FailOwn(ctx, message)
 		failed = append(failed, keys...)
 		return err
@@ -476,6 +496,14 @@ func settleCurrent(ctx context.Context, pool poolpod.Pool) error {
 	}
 	logger.WithField("state", status.State).Info(ctx, "Main is done with the task an earlier run of the worker had")
 	return nil
+}
+
+// mainContainer is the container a container or script template runs.
+func mainContainer(tmpl *wfv1.Template) *apiv1.Container {
+	if tmpl.Script != nil {
+		return &tmpl.Script.Container
+	}
+	return tmpl.Container
 }
 
 // poolTaskFailurePhase is the phase of a pooled task that failed with err.

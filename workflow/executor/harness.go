@@ -85,10 +85,14 @@ func (h *Harness) Run(ctx context.Context) error {
 }
 
 // runTask runs one task through the role on its own context, which ends
-// with the task and continues the task's trace context. Its failure (a panic, else the first recorded error, else
-// the error Run returned) is reported to the sink before the Finally stages
-// run, so a result is never marked complete without it. Each Finally stage
-// runs even if an earlier one panicked. A panic anywhere returns exit code
+// with the task and continues the task's trace context. Its failure (a
+// panic, else the first recorded error, else the error Run returned) is
+// reported to the sink before the Finally stages run, so a result is never
+// marked complete without it. Each Finally stage runs even if an earlier
+// one panicked. A failure in Finally is reported only if nothing failed
+// before it, and only reaches the result if the stage completing the
+// result comes after it: a pod's roles complete it last, while PoolRole
+// completes its claim first (PoolRole). A panic anywhere returns exit code
 // 1 with the panic as its message, which is what a pod reported before
 // tasks had a harness.
 //
@@ -143,7 +147,8 @@ func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
 		}()
 	}
 	// An error from Finally is the task's failure only if nothing failed
-	// before it.
+	// before it, and is reported too late to be in a result already
+	// completed.
 	if first := we.HasError(); first != nil {
 		fail(first)
 	}

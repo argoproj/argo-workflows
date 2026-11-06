@@ -176,8 +176,8 @@ func interruptPooled(ctx context.Context, t *testing.T, controller *WorkflowCont
 
 // TestPooledInterruptConfirmed checks that an interrupted node is finished,
 // keeping the phase and message it was ended with, once its task is known to
-// have stopped: its worker completes its claim, whose phase and outputs are
-// ignored, or deletes it; its claimant pod is gone; or the lease slack has
+// have stopped: its worker completes its claim, whose phase, message and
+// outputs but for its artifacts (main's log) are ignored, or deletes it; its claimant pod is gone; or the lease slack has
 // passed since the interrupt, for a worker that never confirms. Until then it
 // stays unfinished.
 func TestPooledInterruptConfirmed(t *testing.T) {
@@ -186,6 +186,8 @@ func TestPooledInterruptConfirmed(t *testing.T) {
 		stop func(ctx context.Context, t *testing.T, controller *WorkflowController, fake *dispatch.Fake, wf *wfv1.Workflow, id string, h dispatch.Claimed)
 		// finished is whether the node finishes.
 		finished bool
+		// artifacts are the node's outputs once reconciled.
+		artifacts wfv1.Artifacts
 	}{
 		{
 			name: "not confirmed",
@@ -201,10 +203,15 @@ func TestPooledInterruptConfirmed(t *testing.T) {
 		{
 			name: "worker completed",
 			stop: func(ctx context.Context, t *testing.T, controller *WorkflowController, fake *dispatch.Fake, wf *wfv1.Workflow, id string, h dispatch.Claimed) {
-				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Message: "done", Outputs: &wfv1.Outputs{ExitCode: new("0")}}))
+				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Message: "done", Outputs: &wfv1.Outputs{
+					ExitCode:   new("143"),
+					Parameters: []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr("v")}},
+					Artifacts:  wfv1.Artifacts{{Name: "main-logs"}},
+				}}))
 				observeResult(ctx, t, controller, fake, wf.Namespace, id)
 			},
-			finished: true,
+			finished:  true,
+			artifacts: wfv1.Artifacts{{Name: "main-logs"}},
 		},
 		{
 			name: "claim deleted",
@@ -250,7 +257,11 @@ func TestPooledInterruptConfirmed(t *testing.T) {
 			}
 			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 			assert.Equal(t, "hook failed", node.Message)
-			assert.Nil(t, node.Outputs)
+			if tt.artifacts == nil {
+				assert.Nil(t, node.Outputs)
+			} else {
+				assert.Equal(t, &wfv1.Outputs{Artifacts: tt.artifacts}, node.Outputs, "only main's log is kept")
+			}
 			assert.Equal(t, wfv1.PooledTaskInterrupted, node.PooledTask.State())
 			assert.Equal(t, tt.finished, node.Fulfilled())
 			assert.Equal(t, tt.finished, !node.FinishedAt.IsZero())
