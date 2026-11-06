@@ -27,7 +27,7 @@ From v4.2, the Argo Server client (`github.com/argoproj/argo-workflows/v4/pkg/ap
   Pass the same tag to `go test` and `go run`, and add it to the build flags of your editor or `gopls`.
 
 The API messages embed Kubernetes types, and the protobuf runtime needs those types' `ProtoMessage()` methods to marshal them.
-Kubernetes v0.35 only generates these methods when the build tag is set, and Kubernetes v0.36 removes them, so the tag only works with v0.35.
+The `k8s.io/*` v0.35 modules only include these methods when the build tag is set, and v0.36 removes them, so the tag only works with v0.35.
 Without the tag, your program panics at startup with `pkg/apiclient cannot marshal Kubernetes types`.
 
 ## Quick Start
