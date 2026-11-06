@@ -8,6 +8,7 @@ import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {TextInput} from '../../shared/components/text-input';
+import {Tooltip} from '../../shared/components/tooltip';
 import {Context} from '../../shared/context';
 import {getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
 import {Artifact, Parameter, Template} from '../../shared/models';
@@ -159,6 +160,11 @@ export function SubmitWorkflowPanel(props: Props) {
                         {props.workflowArtifacts.map(artifact => (
                             <div key={artifact.name} style={{marginTop: 10}}>
                                 <label style={{fontWeight: 'normal', fontSize: '0.9em'}}>{artifact.name}</label>
+                                {artifact.description && (
+                                    <Tooltip content={artifact.description}>
+                                        <i className='fa fa-question-circle' style={{marginLeft: 4}} />
+                                    </Tooltip>
+                                )}
                                 <ArtifactsInput
                                     namespace={props.namespace}
                                     workflowTemplateName={props.name}

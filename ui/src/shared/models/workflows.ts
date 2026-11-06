@@ -128,6 +128,10 @@ export interface Artifact {
      */
     name: string;
     /**
+     * Description is the artifact description
+     */
+    description?: string;
+    /**
      * Path is the container path to the artifact
      */
     path?: string;
