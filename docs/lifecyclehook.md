@@ -1,7 +1,5 @@
 # Lifecycle-Hook
 
-> v3.3 and after
-
 ## Introduction
 
 A [`LifecycleHook`](fields.md#lifecyclehook) triggers an action based on a conditional expression or on completion of a step or template.

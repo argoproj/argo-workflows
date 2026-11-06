@@ -67,6 +67,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/gccontroller"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -103,6 +104,8 @@ type WorkflowController struct {
 	Config config.Config
 	// get the artifact repository
 	artifactRepositories artifactrepositories.Interface
+	// get namespace-level workflow defaults
+	namespaceDefaults namespacedefaults.Interface
 	// get images
 	entrypoint entrypoint.Interface
 
@@ -152,6 +155,9 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
+	// taskSetCompletionDelay sets a positive minimum delay for taskset completions,
+	// capped at requeueTime. Nil preserves the normal rate-limited path.
+	taskSetCompletionDelay *time.Duration
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -209,8 +215,16 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
-// NewWorkflowController instantiates a new WorkflowController
+// NewWorkflowController initializes a controller from its clients and startup configuration.
+// COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
+// WorkflowTaskSet results; unset or empty keeps normal rate limiting.
+// A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
+	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
+	if err != nil {
+		return nil, err
+	}
+
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -250,6 +264,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
+		taskSetCompletionDelay:     taskSetCompletionDelay,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
@@ -323,7 +338,7 @@ func (wfc *WorkflowController) runPodController(ctx context.Context, podGCWorker
 func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkflowWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer, wfc.Config.WorkflowDefaults)
+	cronController := cron.NewCronController(ctx, wfc.wfclientset, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager, cronWorkflowWorkers, wfc.wftmplInformer, wfc.cwftmplInformer, wfc.mergedWorkflowDefaults)
 	cronController.Run(ctx)
 }
 
@@ -1555,17 +1570,34 @@ func (wfc *WorkflowController) updateEstimatorFactory(ctx context.Context) {
 	wfc.estimatorFactory = estimation.NewEstimatorFactory(ctx, wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
-// setWorkflowDefaults sets values in the workflow.Spec with defaults from the
-// workflowController. Values in the workflow will be given the upper hand over the defaults.
-// The defaults for the workflow controller are set in the workflow-controller config map
-func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
-	if wfc.Config.WorkflowDefaults != nil {
-		err := util.MergeTo(wfc.Config.WorkflowDefaults, wf)
-		if err != nil {
-			return err
-		}
+// mergedWorkflowDefaults returns the defaults that apply to a workflow in namespace, with
+// namespace defaults taking precedence over controller defaults. It returns nil when neither
+// layer configures anything.
+//
+// The controller defaults come from the workflow-controller config map; the namespace defaults
+// from a ConfigMap in the workflow's own namespace labelled
+// workflows.argoproj.io/configmap-type: WorkflowDefaults.
+//
+// This is shared rather than layered at each call site because the defaults reach a workflow
+// by more than one route: setWorkflowDefaults for ordinary workflows, setStoredWfSpec for
+// workflowTemplateRef ones, and validate.Workflow for both.
+func (wfc *WorkflowController) mergedWorkflowDefaults(ctx context.Context, namespace string) (*wfv1.Workflow, error) {
+	return namespacedefaults.Merged(ctx, wfc.namespaceDefaults, wfc.Config.WorkflowDefaults, namespace)
+}
+
+// setWorkflowDefaults sets values in the workflow.Spec with defaults from the namespace the
+// workflow runs in and from the workflowController. Values in the workflow are given the
+// upper hand over both, and namespace defaults over controller defaults.
+func (wfc *WorkflowController) setWorkflowDefaults(ctx context.Context, wf *wfv1.Workflow) error {
+	defaults, err := wfc.mergedWorkflowDefaults(ctx, wf.Namespace)
+	if err != nil {
+		return err
 	}
-	return nil
+	if defaults == nil {
+		return nil
+	}
+	// MergeTo lets the target win, so the workflow's own values survive.
+	return util.MergeTo(defaults, wf)
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {
@@ -1666,6 +1698,8 @@ func (wfc *WorkflowController) getPodPhaseMetrics(ctx context.Context) map[strin
 	return make(map[string]int64)
 }
 
+// newWorkflowTaskSetInformer watches tasksets in the managed namespace and controller
+// instance, routing updates through the normal or configured completion-delay queue path.
 func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.WorkflowTaskSetInformer {
 	informer := externalversions.NewSharedInformerFactoryWithOptions(
 		wfc.wfclientset,
@@ -1679,12 +1713,7 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, newObj any) {
-				key, err := cache.MetaNamespaceKeyFunc(newObj)
-				if err == nil {
-					wfc.wfQueue.AddRateLimited(key)
-				}
-			},
+			UpdateFunc: wfc.onWorkflowTaskSetUpdate,
 		})
 	return informer
 }

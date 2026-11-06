@@ -14,7 +14,7 @@
 
   "features": {
     "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.27.1"
+      "version": "1.27.3"
     },
     "ghcr.io/devcontainers/features/node:2": {
       "version": "20"

@@ -996,7 +996,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.Re
 					},
 					"artifactRepository": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The repository the workflow will use. This maybe empty before v3.1.",
+							Description: "The repository the workflow will use.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
 						},
 					},
@@ -2341,13 +2341,13 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"stopStrategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+							Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopStrategy"),
 						},
 					},
 					"schedules": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
+							Description: "Schedules is a list of schedules to run the Workflow in Cron format",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2362,7 +2362,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"when": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: When is an expression that determines if a run should be scheduled.",
+							Description: "When is an expression that determines if a run should be scheduled.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2419,7 +2419,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"succeeded": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Succeeded counts how many times child workflows succeeded",
+							Description: "Succeeded counts how many times child workflows succeeded",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2427,7 +2427,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"failed": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Failed counts how many times child workflows failed",
+							Description: "Failed counts how many times child workflows failed",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2435,7 +2435,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
+							Description: "Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -6275,12 +6275,12 @@ func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after",
+				Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
+							Description: "Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -6509,7 +6509,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"semaphores": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",
+							Description: "Semaphores holds the list of Semaphores configuration",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6522,7 +6522,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 					},
 					"mutexes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Mutexes holds the list of Mutex lock details",
+							Description: "Mutexes holds the list of Mutex lock details",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

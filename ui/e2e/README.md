@@ -58,13 +58,14 @@ and point the tests at it with `ARGO_UI_BASE_URL`.
   which may include a base href (`http://localhost:8080/argo/` for a stack
   started with `make start BASE_HREF=/argo/`): every path in the suite is
   relative to it.
-- **Backend state** (`e2e/fixtures/api.ts`): tests seed workflows over the REST
-  API and wait for a terminal phase *before* asserting on the rendered page, so
-  rendering never races the controller. The one exception is
-  `workflow-live-update.spec.ts`, which watches a workflow run to completion in
-  the browser on purpose, to cover the server-sent-events watch. Created
-  workflows are cleaned up on teardown; workflows the *browser* creates (submit,
-  resubmit) are handed to `api.track()` so they are cleaned up too.
+- **Backend state** (`e2e/fixtures/api.ts`): tests seed workflows, workflow
+  templates and cron workflows over the REST API, and wait for a workflow's
+  terminal phase *before* asserting on the rendered page, so rendering never
+  races the controller. The one exception is `workflow-live-update.spec.ts`,
+  which watches a workflow run to completion in the browser on purpose, to
+  cover the server-sent-events watch. Everything seeded is cleaned up on
+  teardown; resources the *browser* creates (submit, resubmit, the create
+  panels) are handed to `api.track()` so they are cleaned up too.
 - **Page objects** (`e2e/pages/`) centralise selectors. Prefer role/text/href
   locators; add a `data-testid` only when nothing stable exists.
 

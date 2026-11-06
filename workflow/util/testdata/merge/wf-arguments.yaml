@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-workflow
+spec:
+  workflowTemplateRef:
+    name: test-workflow-template
+  arguments:
+    parameters:
+      - name: PARAM1
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM1
+      - name: PARAM2
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM2
+      - name: PARAM4
+        valueFrom:
+          configMapKeyRef:
+            name: test-config-map
+            key: PARAM4
+      - name: PARAM5
+        value: "Workflow value 5"

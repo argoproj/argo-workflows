@@ -232,7 +232,7 @@ message ArtifactRepositoryRefStatus {
   // If this ref represents the default artifact repository, rather than a config map.
   optional bool default = 3;
 
-  // The repository the workflow will use. This maybe empty before v3.1.
+  // The repository the workflow will use.
   optional ArtifactRepository artifactRepository = 4;
 }
 
@@ -519,15 +519,15 @@ message CronWorkflowSpec {
   // WorkflowMetadata contains some metadata of the workflow to be run
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 
-  // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
+  // StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
 
-  // v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
+  // Schedules is a list of schedules to run the Workflow in Cron format
   // +kubebuilder:validation:MinItems=1
   // +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?-]+\s+){4}[A-Za-z0-9*,/?-]+)$`
   repeated string schedules = 11;
 
-  // v3.6 and after: When is an expression that determines if a run should be scheduled.
+  // When is an expression that determines if a run should be scheduled.
   optional string when = 12;
 }
 
@@ -545,15 +545,15 @@ message CronWorkflowStatus {
   // +optional
   repeated Condition conditions = 3;
 
-  // v3.6 and after: Succeeded counts how many times child workflows succeeded
+  // Succeeded counts how many times child workflows succeeded
   // +optional
   optional int64 succeeded = 4;
 
-  // v3.6 and after: Failed counts how many times child workflows failed
+  // Failed counts how many times child workflows failed
   // +optional
   optional int64 failed = 5;
 
-  // v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
+  // Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
   // +optional
   optional string phase = 6;
 }
@@ -1643,9 +1643,9 @@ message Sequence {
   optional string format = 4;
 }
 
-// StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
+// StopStrategy defines if the CronWorkflow should stop scheduling based on an expression.
 message StopStrategy {
-  // v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables
+  // Expression is an expression that stops scheduling workflows when true. Use the variables
   // `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.
   optional string expression = 1;
 }
@@ -1721,10 +1721,10 @@ message SyncDatabaseRef {
 
 // Synchronization holds synchronization lock configuration
 message Synchronization {
-  // v3.6 and after: Semaphores holds the list of Semaphores configuration
+  // Semaphores holds the list of Semaphores configuration
   repeated SemaphoreRef semaphores = 3;
 
-  // v3.6 and after: Mutexes holds the list of Mutex lock details
+  // Mutexes holds the list of Mutex lock details
   repeated Mutex mutexes = 4;
 }
 
