@@ -885,6 +885,9 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			// continueOn or a later attempt that succeeded, so it keeps its
 			// failure and its message.
 			node.Type = wfv1.NodeTypeSkipped
+			// A pooled task's ledger, like a pod, belongs to the original
+			// workflow: the placeholder isn't pooled.
+			node.PooledTask = nil
 			if node.FailedOrError() {
 				node.Message = fmt.Sprintf("original pod: %s: %s", node.ID, node.Message)
 			} else {
@@ -992,6 +995,11 @@ func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1
 }
 
 func deletePodNodeDuringRetryWorkflow(wf *wfv1.Workflow, node wfv1.NodeStatus, deletedPods map[string]bool, podsToDelete []string) (map[string]bool, []string) {
+	if node.PooledTask != nil {
+		// A pooled node has no pod of its own, and its task is already gone:
+		// the workflow completed only once its pooled TaskSets were deleted.
+		return deletedPods, podsToDelete
+	}
 	templateName := GetTemplateFromNode(node)
 	version := GetWorkflowPodNameVersion(wf)
 	podName := GeneratePodName(wf.Name, node.Name, templateName, node.ID, version)

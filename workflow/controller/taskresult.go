@@ -169,4 +169,10 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		span.End()
 	}
 	woc.releasePooledTasks(ctx)
+	// operate does no more processing on a completed workflow, as it could
+	// corrupt it, but this runs first; its pooled nodes are left alone too.
+	if woc.wf.Labels[common.LabelKeyCompleted] != "true" {
+		woc.checkPooledTasks(ctx)
+		woc.checkEndedPooledTasks(ctx)
+	}
 }

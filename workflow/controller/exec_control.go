@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 
@@ -68,7 +67,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		}
 		// Check if we are past the workflow deadline. If we are, and the pod is still pending
 		// then we should simply delete it and mark the pod as Failed
-		if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
+		if woc.workflowDeadlineExceeded() {
 			// pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
@@ -76,7 +75,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 					WithField("workflowDeadline", woc.workflowDeadline).
 					Info(ctx, "Terminating pod which has exceeded workflow deadline")
 				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
-				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, "Step exceeded its deadline")
+				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, common.DeadlineExceededMessage)
 				return
 			}
 		}
