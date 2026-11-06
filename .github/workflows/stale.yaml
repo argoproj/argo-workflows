@@ -17,7 +17,7 @@ jobs:
     permissions:
       issues: write # for commenting on an issue and editing labels
       pull-requests: write # for commenting on a PR and editing labels
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}

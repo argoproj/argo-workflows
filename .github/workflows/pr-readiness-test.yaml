@@ -22,7 +22,7 @@ env:
 jobs:
   test:
     name: Type-check and unit test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     defaults:
       run:
         working-directory: .github/pr-readiness
