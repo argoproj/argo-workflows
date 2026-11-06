@@ -2,6 +2,7 @@ package pod
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/client-go/tools/cache"
 )
@@ -18,4 +19,8 @@ func (c *Controller) TestingProcessNextItem(ctx context.Context) bool {
 
 func (c *Controller) TestingQueueNumRequeues(key string) int {
 	return c.workqueue.NumRequeues(key)
+}
+
+func (c *Controller) TestingSetRecheckPeriod(period time.Duration) {
+	c.recheckPeriod = period
 }

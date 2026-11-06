@@ -22,6 +22,7 @@ const (
 	terminateContainers podCleanupAction = "terminateContainers"
 	killContainers      podCleanupAction = "killContainers"
 	removeFinalizer     podCleanupAction = "removeFinalizer"
+	recheckHeldPod      podCleanupAction = "recheckHeldPod"
 )
 
 func newPodCleanupKey(namespace string, podName string, action podCleanupAction) podCleanupKey {

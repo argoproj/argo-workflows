@@ -2,12 +2,15 @@ package pod
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
@@ -120,4 +123,29 @@ func TestPodCleanupPatch(t *testing.T) {
 	patch, err = c.getPodCleanupPatch(pod, false)
 	require.NoError(t, err)
 	assert.Nil(t, patch)
+}
+
+// A cleanup queued for a pod's UID leaves alone a pod that replaced it under the same name.
+func TestCleanupByUIDOfReplacedPod(t *testing.T) {
+	tests := []struct {
+		action podCleanupAction
+		flag   string
+	}{
+		{action: removeFinalizer, flag: "true"},
+		{action: deletePodByUID, flag: "true"},
+		{action: deletePodByUID, flag: "false"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.action+" flag "+tt.flag, func(t *testing.T) {
+			t.Setenv(common.EnvVarPodStatusCaptureFinalizer, tt.flag)
+			replacement := deletingPod(apiv1.PodPending, time.Now())
+			replacement.DeletionTimestamp = nil
+			replacement.UID = "new-uid"
+			c, queue := newTestController(t, nil, replacement)
+			queue.Add(newPodCleanupKeyWithUID("test", "my-pod", tt.action, "pod-uid"))
+			require.True(t, c.processNextPodCleanupItem(logging.TestContext(t.Context())))
+			// the fake clientset ignores the UID precondition of a delete, so check that nothing was sent
+			assert.Empty(t, c.kubeclientset.(*fake.Clientset).Actions())
+		})
+	}
 }
