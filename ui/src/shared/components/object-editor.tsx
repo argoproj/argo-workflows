@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import MonacoEditor from 'react-monaco-editor';
+import type {MonacoEditorHandle} from 'react-monaco-editor';
 
 import {uiUrl} from '../base';
 import {useEditableObject} from '../use-editable-object';
@@ -20,7 +20,7 @@ interface Props<T> {
 
 export function ObjectEditor<T>({type, value, text, lang, onChange, onLangChange}: Props<T>) {
     const [error, setError] = useState<Error>();
-    const editor = useRef<MonacoEditor>(null);
+    const editor = useRef<MonacoEditorHandle>(null);
 
     useEffect(() => {
         if (!editor.current || text === editor.current.editor.getValue()) {
