@@ -125,8 +125,8 @@ func poolSpec(name string, replicas int32, retention int64) *wfv1.PoolSpec {
 }
 
 // addTaskSet stores a pooled TaskSet of the pool with testHash in namespace, in
-// the API and, unless uncached, in the cache, created at the harness's now.
-func (h *harness) addTaskSet(namespace, nodeID string, spec *wfv1.PoolSpec, uncached ...bool) *wfv1.WorkflowTaskSet {
+// the API and in the cache, created at the harness's now.
+func (h *harness) addTaskSet(namespace, nodeID string, spec *wfv1.PoolSpec) *wfv1.WorkflowTaskSet {
 	h.t.Helper()
 	taskSet := &wfv1.WorkflowTaskSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -143,10 +143,28 @@ func (h *harness) addTaskSet(namespace, nodeID string, spec *wfv1.PoolSpec, unca
 	}
 	_, err := h.wf.ArgoprojV1alpha1().WorkflowTaskSets(namespace).Create(h.ctx(), taskSet, metav1.CreateOptions{})
 	require.NoError(h.t, err)
-	if len(uncached) == 0 || !uncached[0] {
-		require.NoError(h.t, h.c.TaskSets.GetIndexer().Add(&metav1.PartialObjectMetadata{ObjectMeta: taskSet.ObjectMeta}))
-	}
+	require.NoError(h.t, h.c.TaskSets.GetIndexer().Add(&metav1.PartialObjectMetadata{ObjectMeta: taskSet.ObjectMeta}))
 	return taskSet
+}
+
+// dispatch is the operator dispatching a task of the pool with testHash in
+// testNamespace: it hands the pool controller spec, then enqueues the
+// TaskSet.
+func (h *harness) dispatch(nodeID string, spec *wfv1.PoolSpec) {
+	h.t.Helper()
+	h.c.Dispatched(testNamespace, testHash, spec)
+	h.addTaskSet(testNamespace, nodeID, spec)
+}
+
+// taskSetReads are the API reads of TaskSets made so far.
+func (h *harness) taskSetReads() []string {
+	var out []string
+	for _, action := range h.wf.Actions() {
+		if action.GetResource().Resource == "workflowtasksets" && (action.GetVerb() == "get" || action.GetVerb() == "list") {
+			out = append(out, action.GetVerb())
+		}
+	}
+	return out
 }
 
 func (h *harness) deleteTaskSet(taskSet *wfv1.WorkflowTaskSet) {
@@ -236,10 +254,11 @@ func (h *harness) drainEvents() []string {
 func TestCreatesDeploymentAtInitialReplicas(t *testing.T) {
 	h := newHarness(t, "")
 	first := poolSpec("my-pool", 3, 120)
-	h.addTaskSet(testNamespace, "node-1", first)
+	h.dispatch("node-1", first)
 
 	h.mustReconcile(testNamespace)
-	assert.Equal(t, []*wfv1.PoolSpec{first}, h.builtFor, "built from the TaskSet's spec.pool exactly")
+	assert.Equal(t, []*wfv1.PoolSpec{first}, h.builtFor, "built from the dispatched spec.pool exactly")
+	assert.Empty(t, h.taskSetReads(), "the spec was handed over, not read")
 	created := h.createdDeployments()
 	require.Len(t, created, 1)
 	want, err := h.build(testNamespace, testHash, first)
@@ -248,14 +267,15 @@ func TestCreatesDeploymentAtInitialReplicas(t *testing.T) {
 	assert.Equal(t, want, created[0], "what was built, with the spec's retention")
 	assert.Equal(t, dispatch.Health{State: dispatch.HealthOK}, h.health(testNamespace))
 
-	// A later TaskSet asking for other replicas changes nothing once the
-	// Deployment exists; its retention, the last writer's, is recorded.
+	// A later task asking for other replicas changes nothing once the
+	// Deployment exists; its retention, the last dispatched, is recorded.
 	h.cacheCreated()
 	h.kube.ClearActions()
 	h.now = h.now.Add(time.Second)
-	h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 7, 30))
+	h.dispatch("node-2", poolSpec("my-pool", 7, 30))
 	h.mustReconcile(testNamespace)
-	assert.Equal(t, []string{"patch my-pool-0123456789"}, h.deploymentActions())
+	require.Equal(t, []string{"patch my-pool-0123456789"}, h.deploymentActions())
+	assert.Empty(t, h.taskSetReads())
 	patch := h.kube.Actions()[0].(k8stesting.PatchAction)
 	assert.Equal(t, types.MergePatchType, patch.GetPatchType())
 	var body map[string]map[string]any
@@ -275,6 +295,47 @@ func TestCreatesDeploymentAtInitialReplicas(t *testing.T) {
 	h.mustReconcile(testNamespace)
 	assert.Empty(t, h.deploymentActions())
 	assert.Empty(t, h.wf.Actions())
+}
+
+// TestSpecOfAPoolFoundAtStart checks a pool whose tasks were dispatched
+// before the controller started: its newest TaskSet's spec is read once,
+// later TaskSets aren't read, and a dispatch since the start sets the spec.
+func TestSpecOfAPoolFoundAtStart(t *testing.T) {
+	h := newHarness(t, "")
+	h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 120))
+	h.now = h.now.Add(time.Second)
+	newest := poolSpec("my-pool", 2, 60)
+	h.addTaskSet(testNamespace, "node-2", newest)
+
+	h.mustReconcile(testNamespace)
+	assert.Equal(t, []*wfv1.PoolSpec{newest}, h.builtFor, "built from the newest TaskSet's spec.pool")
+	assert.Equal(t, []string{"get"}, h.taskSetReads())
+
+	h.cacheCreated()
+	h.kube.ClearActions()
+	h.wf.ClearActions()
+	h.now = h.now.Add(time.Second)
+	h.addTaskSet(testNamespace, "node-3", poolSpec("my-pool", 1, 30))
+	h.mustReconcile(testNamespace)
+	assert.Empty(t, h.taskSetReads(), "read once")
+	assert.Empty(t, h.deploymentActions(), "the spec read stands until a dispatch")
+
+	h.dispatch("node-4", poolSpec("my-pool", 1, 45))
+	h.mustReconcile(testNamespace)
+	assert.Empty(t, h.taskSetReads())
+	assert.Equal(t, []string{"patch my-pool-0123456789"}, h.deploymentActions())
+}
+
+// A spec read from a TaskSet never replaces one a dispatch recorded while it
+// was being read.
+func TestKeepReadSpec(t *testing.T) {
+	h := newHarness(t, "")
+	p := h.c.state(indexes.MetaNamespaceLabelIndex(testNamespace, testHash))
+	read := poolSpec("my-pool", 1, 60)
+	assert.Same(t, read, h.c.keepReadSpec(p, read))
+	dispatched := poolSpec("my-pool", 1, 30)
+	h.c.Dispatched(testNamespace, testHash, dispatched)
+	assert.Same(t, dispatched, h.c.keepReadSpec(p, poolSpec("my-pool", 1, 90)))
 }
 
 func TestDeletesIdlePoolAfterRetention(t *testing.T) {
@@ -327,24 +388,6 @@ func TestIdlePoolUsesDefaultRetention(t *testing.T) {
 	}}
 	require.NoError(t, h.c.Deployments.GetIndexer().Add(deploy))
 	assert.Equal(t, 10*time.Minute, h.mustReconcile(testNamespace))
-}
-
-func TestIdlePoolNotDeletedWhileTaskSetUncached(t *testing.T) {
-	h := newHarness(t, "")
-	taskSet := h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
-	h.mustReconcile(testNamespace)
-	h.cacheCreated()
-	h.deleteTaskSet(taskSet)
-	// Created, but not yet in the cache.
-	h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 1, 60), true)
-	h.kube.ClearActions()
-
-	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace))
-	h.now = h.now.Add(time.Minute)
-	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace), "its retention starts over")
-	h.now = h.now.Add(59 * time.Second)
-	assert.Equal(t, time.Second, h.mustReconcile(testNamespace))
-	assert.Empty(t, h.deploymentActions())
 }
 
 func TestRecreatesDeploymentDeletedWhileInUse(t *testing.T) {
@@ -910,25 +953,6 @@ func TestCachedDeploymentPicksLowestName(t *testing.T) {
 	assert.Equal(t, "a-pool-0123456789", deploy.Name)
 }
 
-func TestIdlePoolIgnoresOtherInstancesTaskSets(t *testing.T) {
-	h := newHarness(t, "mine")
-	spec := poolSpec("my-pool", 1, 60)
-	spec.InstanceID = "mine"
-	taskSet := h.addTaskSet(testNamespace, "node-1", spec)
-	h.mustReconcile(testNamespace)
-	h.cacheCreated()
-	h.deleteTaskSet(taskSet)
-	theirs := poolSpec("my-pool", 1, 60)
-	theirs.InstanceID = "theirs"
-	h.addTaskSet(testNamespace, "node-2", theirs, true)
-	h.kube.ClearActions()
-
-	assert.Equal(t, time.Minute, h.mustReconcile(testNamespace))
-	h.now = h.now.Add(time.Minute)
-	h.mustReconcile(testNamespace)
-	assert.Equal(t, []string{"delete my-pool-0123456789"}, h.deploymentActions())
-}
-
 func TestIdlePoolWithHugeRetentionIsKept(t *testing.T) {
 	assert.Equal(t, time.Duration(maxRetentionSeconds)*time.Second, Retention(math.MaxInt64))
 	assert.Positive(t, Retention(maxRetentionSeconds+1))
@@ -1022,7 +1046,7 @@ func TestRecordRetentionFailures(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			h := newHarness(t, "")
-			h.addTaskSet(testNamespace, "node-1", poolSpec("my-pool", 1, 60))
+			h.dispatch("node-1", poolSpec("my-pool", 1, 60))
 			h.mustReconcile(testNamespace)
 			h.cacheCreated()
 			h.kube.ClearActions()
@@ -1030,7 +1054,7 @@ func TestRecordRetentionFailures(t *testing.T) {
 				return true, nil, tt.err
 			})
 			h.now = h.now.Add(time.Second)
-			h.addTaskSet(testNamespace, "node-2", poolSpec("my-pool", 1, 30))
+			h.dispatch("node-2", poolSpec("my-pool", 1, 30))
 			_, err := h.reconcile(testNamespace)
 			if tt.wantErr {
 				require.Error(t, err)

@@ -106,6 +106,14 @@ func (wfc *WorkflowController) runPoolController(ctx context.Context) {
 	go wfc.poolController.Run(ctx, poolWorkers)
 }
 
+// poolDispatched hands the pool controller, if it runs, the spec.pool of a
+// task about to be enqueued, so it needn't read the spec from the TaskSet.
+func (wfc *WorkflowController) poolDispatched(task *dispatch.Task) {
+	if wfc.poolController != nil {
+		wfc.poolController.Dispatched(task.Namespace, task.PoolHash, task.Pool.DeepCopy())
+	}
+}
+
 // warnHotWorkersFlagChange warns, on a config update, that a change to
 // hotWorkers.enabled takes a controller restart.
 func (wfc *WorkflowController) warnHotWorkersFlagChange(ctx context.Context) {

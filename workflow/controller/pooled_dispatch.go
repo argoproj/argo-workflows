@@ -90,6 +90,9 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 		}
 	}
 
+	// Before the TaskSet exists, so its event finds the spec in the pool
+	// controller.
+	woc.controller.poolDispatched(task)
 	enqueued, err := woc.controller.dispatcher.Enqueue(ctx, *task)
 	switch {
 	case errors.Is(err, dispatch.ErrFieldsDropped):

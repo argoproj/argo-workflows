@@ -79,6 +79,22 @@ func TestPoolControllerWithoutDeploymentRBAC(t *testing.T) {
 	}
 }
 
+// TestDispatchHandsThePoolControllerTheSpec checks the operator hands the
+// pool controller a task's spec.pool as it dispatches the task, so the pool
+// controller knows the pool before it has seen, or read, its TaskSet.
+func TestDispatchHandsThePoolControllerTheSpec(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+	ctx, controller, _ := newPooledDispatchController(t, true, wf)
+	allowSelfSubjectAccessReviews(controller.kubeclientset.(*fake.Clientset))
+	controller.setUpPoolController(ctx)
+	require.NotNil(t, controller.poolController)
+
+	node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+	require.NotNil(t, node.PooledTask)
+	_, known := controller.poolController.Health(wf.Namespace, node.PooledTask.PoolHash)
+	assert.True(t, known)
+}
+
 func TestPoolControllerRunsWhenRBACCheckFails(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, wfc := newController(ctx, withHotWorkers)
