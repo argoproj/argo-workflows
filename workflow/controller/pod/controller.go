@@ -162,12 +162,7 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 		log.Warn(ctx, "workflow is not an unstructured")
 		return true
 	}
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		log.Warn(ctx, "workflow unstructured can't be converted to a workflow")
-		return true
-	}
-	return wf.DeletionTimestamp != nil
+	return un.GetDeletionTimestamp() != nil
 }
 
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
