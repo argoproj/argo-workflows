@@ -877,6 +877,13 @@ type Template struct {
 	// +listType=atomic
 	// +optional
 	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
+
+	// Pool is reserved for hot workers, which will run a template's tasks on a
+	// pool of long-lived worker pods instead of a pod per task.
+	// EXPERIMENTAL and not yet functional. See
+	// https://github.com/argoproj/argo-workflows/issues/16530
+	// +optional
+	Pool *Pool `json:"pool,omitempty" protobuf:"bytes,48,opt,name=pool"`
 }
 
 // SetType will set the template object based on template type.
@@ -2656,6 +2663,11 @@ type NodeStatus struct {
 	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
 	// Cleared when the replacement pod starts running.
 	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
+
+	// PooledTask records the task of a node whose template has a pool, which
+	// runs on a pool's worker pod instead of its own pod. Nil for other nodes.
+	// +optional
+	PooledTask *PooledTaskStatus `json:"pooledTask,omitempty" protobuf:"bytes,31,opt,name=pooledTask"`
 }
 
 // Completed is used to determine if this node can proceed

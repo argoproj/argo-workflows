@@ -1211,6 +1211,11 @@ message NodeStatus {
   // This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
   // Cleared when the replacement pod starts running.
   optional string restartingPodUID = 30;
+
+  // PooledTask records the task of a node whose template has a pool, which
+  // runs on a pool's worker pod instead of its own pod. Nil for other nodes.
+  // +optional
+  optional PooledTaskStatus pooledTask = 31;
 }
 
 // NodeSynchronizationStatus stores the status of a node
@@ -1401,6 +1406,234 @@ message PodGC {
 
   // DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
   optional string deleteDelayDuration = 3;
+}
+
+// Pool runs a container or script template's tasks on a pool of long-lived
+// worker pods, one task at a time per worker pod, instead of a pod per task.
+message Pool {
+  // Name of the pool. Templates with the same pool name and the same pod
+  // settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+  // template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+  // the template's name. It must be a DNS label of at most 35 characters. It
+  // may hold a template variable, such as `inputs.parameters.pool`, and is
+  // then checked once substituted.
+  // +optional
+  optional string name = 1;
+
+  // InitialReplicas is the number of worker pods a new pool starts with, at
+  // least 1. It applies only when the pool is created. Defaults to 1. It is a
+  // whole number, or a template variable that resolves to one.
+  // +optional
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString initialReplicas = 2;
+
+  // RetentionSeconds is how long the pool is kept once no task uses it, at
+  // least 0. The most recently dispatched task's value applies. Defaults to
+  // the controller's hot workers retention. It is a whole number, or a
+  // template variable that resolves to one.
+  // +optional
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString retentionSeconds = 3;
+}
+
+// PoolArtifactPlugin is an artifact driver plugin run as a sidecar of a
+// pool's pods.
+message PoolArtifactPlugin {
+  // Name of the artifact driver plugin.
+  optional string name = 1;
+
+  // Image of the artifact driver plugin.
+  optional string image = 2;
+
+  // ConnectionTimeoutSeconds is the timeout for connecting to the plugin.
+  // +optional
+  optional int32 connectionTimeoutSeconds = 3;
+
+  // Command is the image's entrypoint, which the plugin's sidecar runs,
+  // looked up at dispatch as a pod's plugin containers look it up.
+  // +listType=atomic
+  // +optional
+  repeated string command = 4;
+}
+
+// PoolKubeConfig is the kubeconfig Secret the argoexec containers of a pool's
+// pods mount.
+message PoolKubeConfig {
+  // SecretName of the kubeconfig Secret.
+  optional string secretName = 1;
+
+  // SecretKey of the kubeconfig in the Secret.
+  optional string secretKey = 2;
+
+  // VolumeName of the kubeconfig volume.
+  optional string volumeName = 3;
+
+  // MountPath of the kubeconfig.
+  optional string mountPath = 4;
+}
+
+// PoolSpec is everything a pool's worker pods are built from, resolved by the
+// controller when it dispatches a pooled task. The pool's hash is computed
+// from it, excluding InitialReplicas and RetentionSeconds.
+message PoolSpec {
+  // Name is the resolved pool name.
+  optional string name = 1;
+
+  // InitialReplicas is the number of worker pods a new pool starts with.
+  optional int32 initialReplicas = 2;
+
+  // RetentionSeconds is how long the pool is kept once no task uses it.
+  optional int64 retentionSeconds = 3;
+
+  // Template holds the merged template's fields that are the same for every
+  // task in the pool. Per-task fields are cleared.
+  // +kubebuilder:pruning:PreserveUnknownFields
+  // +kubebuilder:validation:Schemaless
+  // +optional
+  optional Template template = 4;
+
+  // WorkflowSpec holds the workflow-level fields that feed the pool's pods.
+  // +kubebuilder:pruning:PreserveUnknownFields
+  // +kubebuilder:validation:Schemaless
+  // +optional
+  optional WorkflowSpec workflowSpec = 5;
+
+  // ServiceAccountName is the resolved service account the pool's pods run as.
+  // +optional
+  optional string serviceAccountName = 6;
+
+  // AutomountServiceAccountToken is the resolved automountServiceAccountToken.
+  // +optional
+  optional bool automountServiceAccountToken = 7;
+
+  // ExecutorServiceAccountTokenSecretName is the Secret holding the executor
+  // service account's token, set when the executor runs as its own service
+  // account. It is mounted only in the worker container.
+  // +optional
+  optional string executorServiceAccountTokenSecretName = 8;
+
+  // ArtifactRepository is the selected artifact repository, with its key
+  // format as written.
+  // +kubebuilder:pruning:PreserveUnknownFields
+  // +kubebuilder:validation:Schemaless
+  // +optional
+  optional ArtifactRepository artifactRepository = 9;
+
+  // ArtifactSecrets are the secrets the artifact repository and the
+  // template's input, output and data-source artifacts read. They are
+  // mounted only in the worker container.
+  // +listType=atomic
+  // +optional
+  repeated .k8s.io.api.core.v1.SecretKeySelector artifactSecrets = 10;
+
+  // ArtifactPlugins are the artifact driver plugins the template's artifacts
+  // use, run as sidecars of the pool's pods.
+  // +listType=atomic
+  // +optional
+  repeated PoolArtifactPlugin artifactPlugins = 11;
+
+  // InstanceID is the controller instance ID.
+  // +optional
+  optional string instanceID = 12;
+
+  // ControllerVersion is the version of the controller that dispatched the task.
+  optional string controllerVersion = 13;
+
+  // Executor is the effective executor container configuration.
+  // +kubebuilder:pruning:PreserveUnknownFields
+  // +kubebuilder:validation:Schemaless
+  // +optional
+  optional .k8s.io.api.core.v1.Container executor = 14;
+
+  // MainContainer is the controller's main container defaults.
+  // +kubebuilder:pruning:PreserveUnknownFields
+  // +kubebuilder:validation:Schemaless
+  // +optional
+  optional .k8s.io.api.core.v1.Container mainContainer = 15;
+
+  // ExecutorImage is the effective argoexec image.
+  optional string executorImage = 16;
+
+  // ExecutorImagePullPolicy is the effective argoexec image pull policy.
+  // +optional
+  optional string executorImagePullPolicy = 17;
+
+  // ExecutorLogArgs are the log flags passed to every argoexec container.
+  // +listType=atomic
+  // +optional
+  repeated string executorLogArgs = 18;
+
+  // KubeConfig is the kubeconfig the argoexec containers use, when the
+  // controller is configured with one.
+  // +optional
+  optional PoolKubeConfig kubeConfig = 19;
+
+  // InitlessPod selects the init-less pod layout.
+  // +optional
+  optional bool initlessPod = 20;
+
+  // TerminationGracePeriodSeconds is the worker pods' termination grace period.
+  optional int64 terminationGracePeriodSeconds = 21;
+
+  // ReleaseReserveSeconds is how long before the end of the grace period a
+  // worker stops a running task so it can release it.
+  optional int64 releaseReserveSeconds = 22;
+}
+
+// PooledTaskStatus is the controller's record of a pooled node's task.
+message PooledTaskStatus {
+  // PoolName is the name of the pool the task was dispatched to.
+  optional string poolName = 1;
+
+  // PoolHash is the hash of the pool the task was dispatched to.
+  optional string poolHash = 2;
+
+  // TaskName is the task's `node.taskName`.
+  optional string taskName = 3;
+
+  // TaskSetUID is the UID of the task's WorkflowTaskSet. Only results that
+  // carry it are applied to the node.
+  optional string taskSetUID = 5;
+
+  // EnqueuedAt is when the task's WorkflowTaskSet was created or adopted.
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time enqueuedAt = 6;
+
+  // Deadline is the task's absolute deadline, as dispatched.
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time deadline = 7;
+
+  // ActiveDeadlineSeconds limits how long the task may run once claimed, as dispatched.
+  // +optional
+  optional int64 activeDeadlineSeconds = 8;
+
+  // ClaimUID is the UID of the WorkflowTaskResult the claiming worker created.
+  // +optional
+  optional string claimUID = 9;
+
+  // WorkerPodName is the name of the claiming worker pod.
+  // +optional
+  optional string workerPodName = 11;
+
+  // WorkerPodUID is the UID of the claiming worker pod.
+  // +optional
+  optional string workerPodUID = 12;
+
+  // WorkerRestartCount is the claiming pod's worker container restart count
+  // when the claim was first seen.
+  // +optional
+  optional int32 workerRestartCount = 13;
+
+  // Conditions record the task's hand-off to a worker: Claimed and
+  // Interrupted. Its state is derived from them (State). Change them only
+  // through Enqueue, Claim, Release and Interrupt.
+  // +optional
+  // +patchMergeKey=type
+  // +patchStrategy=merge
+  // +listType=map
+  // +listMapKey=type
+  repeated .k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 15;
+
+  // Releases is how many times a worker has released the task.
+  // +optional
+  optional int32 releases = 16;
 }
 
 // Prometheus is a prometheus metric to be emitted
@@ -1756,6 +1989,53 @@ message TarStrategy {
   optional int32 compressionLevel = 1;
 }
 
+// TaskDispatch is the per-task part of a pooled task that a pod would get
+// from its spec and environment.
+message TaskDispatch {
+  // TaskName is the task's `node.taskName`: the name its pod would have.
+  optional string taskName = 1;
+
+  // IncludeScriptOutput captures the task's stdout as its result.
+  // +optional
+  optional bool includeScriptOutput = 3;
+
+  // InputArtifactPlugins are the artifact driver plugins the task's input
+  // artifacts use.
+  // +listType=atomic
+  // +optional
+  repeated string inputArtifactPlugins = 5;
+
+  // Command is the command to run when the template's container has no
+  // command: the image's entrypoint, followed by the image's cmd when the
+  // task has no arguments of its own.
+  // +listType=atomic
+  // +optional
+  repeated string command = 7;
+
+  // Deadline is the task's absolute deadline: the earliest of the workflow
+  // deadline (except for exit handler tasks), the retry strategy's
+  // maxDuration, and the node's start plus the template's timeout.
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time deadline = 8;
+
+  // ActiveDeadlineSeconds limits how long the task may run once claimed.
+  // +optional
+  optional int64 activeDeadlineSeconds = 10;
+
+  // TraceContext is the W3C trace context the task's spans continue.
+  // +optional
+  map<string, string> traceContext = 11;
+
+  // ProgressPatchTickDuration is how often the task's progress is reported.
+  // Progress is not reported when this or ProgressFileTickDuration is unset.
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Duration progressPatchTickDuration = 12;
+
+  // ProgressFileTickDuration is how often the task's progress file is read.
+  // +optional
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Duration progressFileTickDuration = 13;
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 message Template {
   // Name is the name of the template
@@ -1931,6 +2211,13 @@ message Template {
   // +listType=atomic
   // +optional
   repeated .k8s.io.api.core.v1.PodResourceClaim resourceClaims = 47;
+
+  // Pool is reserved for hot workers, which will run a template's tasks on a
+  // pool of long-lived worker pods instead of a pod per task.
+  // EXPERIMENTAL and not yet functional. See
+  // https://github.com/argoproj/argo-workflows/issues/16530
+  // +optional
+  optional Pool pool = 48;
 }
 
 // TemplateRef is a reference of template resource.
@@ -2476,6 +2763,16 @@ message WorkflowTaskSetList {
 
 message WorkflowTaskSetSpec {
   map<string, Template> tasks = 1;
+
+  // Pool is set on a pooled task's WorkflowTaskSet: the pool that runs it,
+  // resolved when the task was dispatched.
+  // +optional
+  optional PoolSpec pool = 2;
+
+  // Dispatch is set on a pooled task's WorkflowTaskSet: the per-task
+  // settings a pod would get from its spec and environment.
+  // +optional
+  optional TaskDispatch dispatch = 3;
 }
 
 message WorkflowTaskSetStatus {
