@@ -14,12 +14,12 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	argoexec "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/pooled"
 )
 
@@ -109,7 +109,7 @@ func TestPooledTaskConfigMatchesPod(t *testing.T) {
 			main := containerByName(pod.Spec.Containers, common.MainContainerName)
 			require.NotNil(t, supervisor)
 			require.NotNil(t, main)
-			podCfg, err := argoexec.TaskConfigFromLookup(envLookup(supervisor.Env), t.TempDir())
+			podCfg, err := executor.TaskConfigFromLookup(envLookup(supervisor.Env), t.TempDir())
 			require.NoError(t, err)
 
 			pooledTmpl := tmpl.DeepCopy()

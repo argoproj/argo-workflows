@@ -55,8 +55,10 @@ type Source struct {
 	minDelay time.Duration
 	maxDelay time.Duration
 
-	stopOnce sync.Once
-	stopped  chan struct{}
+	// stopped ends on Stop; it is a context so Next's waits end with it.
+	//nolint:containedctx
+	stopped context.Context
+	stop    context.CancelFunc
 
 	mu sync.Mutex
 	// misses counts the misses in a row.
@@ -78,6 +80,7 @@ func NewSource(consumer dispatch.Consumer, opts Options) *Source {
 	if opts.MaxMissDelay <= 0 {
 		maxDelay = max(defaultMaxMissDelay, minDelay)
 	}
+	stopped, stop := context.WithCancel(context.Background())
 	return &Source{
 		consumer: consumer,
 		process:  opts.Process,
@@ -85,7 +88,8 @@ func NewSource(consumer dispatch.Consumer, opts Options) *Source {
 		ready:    opts.Ready,
 		minDelay: minDelay,
 		maxDelay: maxDelay,
-		stopped:  make(chan struct{}),
+		stopped:  stopped,
+		stop:     stop,
 		claims:   map[string]dispatch.Claimed{},
 	}
 }
@@ -96,16 +100,11 @@ func NewSource(consumer dispatch.Consumer, opts Options) *Source {
 // on SIGTERM while running its harness on a context SIGTERM doesn't cancel,
 // so the task in hand isn't cancelled with it.
 func (s *Source) Stop() {
-	s.stopOnce.Do(func() { close(s.stopped) })
+	s.stop()
 }
 
 func (s *Source) isStopped() bool {
-	select {
-	case <-s.stopped:
-		return true
-	default:
-		return false
-	}
+	return s.stopped.Err() != nil
 }
 
 // Next claims the oldest task it can and returns it, waiting until there is
@@ -121,13 +120,8 @@ func (s *Source) Next(ctx context.Context) (executor.Task, bool, error) {
 	// Waits end on Stop; claims don't, so a claim is never cut off half made.
 	waitCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	go func() {
-		select {
-		case <-s.stopped:
-			cancel()
-		case <-waitCtx.Done():
-		}
-	}()
+	stopAfter := context.AfterFunc(s.stopped, cancel) //nolint:contextcheck // the source's own lifetime, which ends the waits on Stop
+	defer stopAfter()
 	logger := logging.RequireLoggerFromContext(ctx)
 	for {
 		if s.isStopped() {
@@ -275,10 +269,17 @@ func (s *Source) pause(ctx context.Context) bool {
 	if misses == 0 {
 		return ctx.Err() == nil
 	}
-	limit := s.maxDelay
-	if misses < 32 {
-		limit = min(s.maxDelay, s.minDelay<<(misses-1))
+	// Doubled once per miss after the first, stopping at maxDelay so it
+	// can't overflow however many misses there have been.
+	limit := s.minDelay
+	for i := 1; i < misses && limit < s.maxDelay; i++ {
+		if limit > s.maxDelay/2 {
+			limit = s.maxDelay
+		} else {
+			limit *= 2
+		}
 	}
+	limit = min(limit, s.maxDelay)
 	t := time.NewTimer(rand.N(limit) + 1)
 	defer t.Stop()
 	select {

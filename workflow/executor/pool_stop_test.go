@@ -2,16 +2,21 @@ package executor
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/poolpod"
 )
 
@@ -128,11 +133,13 @@ type stoppingSink struct {
 	reason    dispatch.StopReason
 	released  int
 	finalized int
+	// releaseErr is what Release returns.
+	releaseErr error
 }
 
 func (s *stoppingSink) Stopped() <-chan struct{}        { return s.stopped }
 func (s *stoppingSink) StopReason() dispatch.StopReason { return s.reason }
-func (s *stoppingSink) Release(context.Context) error   { s.released++; return nil }
+func (s *stoppingSink) Release(context.Context) error   { s.released++; return s.releaseErr }
 func (s *stoppingSink) Finalize(context.Context) error  { s.finalized++; return nil }
 
 // What is reported for a stopped task: a released one is given back, a
@@ -156,6 +163,85 @@ func TestCompletePoolTask_Stopped(t *testing.T) {
 			require.NoError(t, completePoolTask.Run(ctx, we))
 			assert.Equal(t, tt.wantReleased, sink.released)
 			assert.Equal(t, tt.wantFinalized, sink.finalized)
+		})
+	}
+}
+
+// What is collected for a task stopped from outside main: everything for
+// one at its deadline, only main's log for an interrupted one, as a stopped
+// pod's log is archived, and nothing for one released or whose claim was
+// lost.
+func TestRunPoolTask_CollectsForTheStop(t *testing.T) {
+	for _, tt := range []struct {
+		stop          poolStop
+		wantCollected bool
+		wantLogs      bool
+	}{
+		{stop: poolNotStopped, wantCollected: true},
+		{stop: poolDeadline, wantCollected: true},
+		{stop: poolInterrupted, wantLogs: true},
+		{stop: poolReleased},
+		{stop: poolLost},
+	} {
+		t.Run(tt.stop.String(), func(t *testing.T) {
+			ctx, we := newPoolExecutor(t, t.TempDir(), "task-1", TaskConfig{
+				NodeID:   "node-1",
+				Template: wfv1.Template{Container: &apiv1.Container{}, ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
+			}, &recordingSink{})
+			runtime := &mocks.ContainerRuntimeExecutor{}
+			// main's log is gone, so nothing is archived or reported.
+			runtime.On("GetOutputStream", mock.Anything, common.MainContainerName, true).Return(nil, fs.ErrNotExist).Maybe()
+			we.RuntimeExecutor = runtime
+			we.poolTask.stop = tt.stop
+			collected := false
+			we.plan = &Plan{Collect: []Stage{{Name: "collect", Run: func(context.Context, *WorkflowExecutor) error {
+				collected = true
+				return nil
+			}}}}
+
+			require.NoError(t, we.runPoolTask(ctx, ctx))
+
+			assert.Equal(t, tt.wantCollected, collected)
+			if tt.wantLogs {
+				runtime.AssertCalled(t, "GetOutputStream", mock.Anything, common.MainContainerName, true)
+			} else {
+				runtime.AssertNotCalled(t, "GetOutputStream", mock.Anything, common.MainContainerName, true)
+			}
+		})
+	}
+}
+
+// A released task's claim found lost isn't the worker's to give back, so
+// the worker goes on; any other failure to release it leaves the claim
+// incomplete, so the worker stops, and its restart fails the claim.
+func TestCompletePoolTask_ReleaseFails(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		err      error
+		wantStop bool
+	}{
+		{name: "Released"},
+		{name: "ClaimLost", err: dispatch.ErrClaimLost},
+		{name: "Failed", err: errors.New("forbidden"), wantStop: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := &stoppingSink{releaseErr: tt.err}
+			ctx, we := newPoolExecutor(t, t.TempDir(), "task-1", TaskConfig{NodeID: "node-1"}, sink)
+			we.poolTask.stop = poolReleased
+			var stopped []error
+			we.pool.stopWorker = func(err error) { stopped = append(stopped, err) }
+
+			err := completePoolTask.Run(ctx, we)
+
+			assert.Equal(t, 1, sink.released)
+			if tt.wantStop {
+				require.ErrorIs(t, err, tt.err)
+				require.Len(t, stopped, 1)
+				require.ErrorIs(t, stopped[0], tt.err)
+			} else {
+				require.NoError(t, err)
+				assert.Empty(t, stopped)
+			}
 		})
 	}
 }

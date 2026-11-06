@@ -3,7 +3,6 @@ package executor
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -27,7 +26,7 @@ import (
 
 // newTestSink returns a sink over a fake task-result client and records
 // what it writes to the termination log.
-func newTestSink(t *testing.T, recordFailure bool) (context.Context, *taskResultSink, *[]string) {
+func newTestSink(t *testing.T) (context.Context, *taskResultSink, *[]string) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	tr, err := tracing.New(ctx, `argoexec`)
@@ -43,7 +42,7 @@ func newTestSink(t *testing.T, recordFailure bool) (context.Context, *taskResult
 		WorkflowName: fakeWorkflow,
 		WorkflowUID:  types.UID(fakeWorkflowUID),
 		NodeID:       fakeNodeID,
-	}, recordFailure).(*taskResultSink)
+	}).(*taskResultSink)
 	var terminated []string
 	s.writeTerminate = func(msg string) { terminated = append(terminated, msg) }
 	return ctx, s, &terminated
@@ -57,7 +56,7 @@ func getTaskResult(ctx context.Context, t *testing.T, s *taskResultSink) *wfv1.W
 }
 
 func TestTaskResultSink_StartCreatesPlaceholder(t *testing.T) {
-	ctx, s, _ := newTestSink(t, false)
+	ctx, s, _ := newTestSink(t)
 	require.NoError(t, s.Start(ctx))
 	r := getTaskResult(ctx, t, s)
 	assert.Equal(t, fakeWorkflow, r.Labels[common.LabelKeyWorkflow])
@@ -83,7 +82,7 @@ func TestTaskResultSink_Create(t *testing.T) {
 		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, s, _ := newTestSink(t, false)
+			ctx, s, _ := newTestSink(t)
 			s.instanceID = tt.instanceID
 			require.NoError(t, s.create(ctx, wfv1.NodeResult{Progress: "1/2"}, nil))
 			assert.True(t, s.created)
@@ -106,7 +105,7 @@ func TestTaskResultSink_Create(t *testing.T) {
 }
 
 func TestTaskResultSink_ReportThenFinalize(t *testing.T) {
-	ctx, s, _ := newTestSink(t, false)
+	ctx, s, _ := newTestSink(t)
 	require.NoError(t, s.Start(ctx))
 	require.NoError(t, s.Report(ctx, wfv1.NodeResult{Outputs: &wfv1.Outputs{Result: new("r")}}))
 	assert.Nil(t, getTaskResult(ctx, t, s).Outputs, "Report leaves the write to Finalize")
@@ -118,7 +117,7 @@ func TestTaskResultSink_ReportThenFinalize(t *testing.T) {
 }
 
 func TestTaskResultSink_PodFailDoesNotTouchResult(t *testing.T) {
-	ctx, s, terminated := newTestSink(t, false)
+	ctx, s, terminated := newTestSink(t)
 	require.NoError(t, s.Start(ctx))
 	s.Fail(ctx, errors.New("boom"))
 	assert.Equal(t, []string{"boom"}, *terminated)
@@ -127,39 +126,26 @@ func TestTaskResultSink_PodFailDoesNotTouchResult(t *testing.T) {
 	assert.Empty(t, r.Message)
 }
 
-func TestTaskResultSink_WorkerFirstFailureWins(t *testing.T) {
-	ctx, s, terminated := newTestSink(t, true)
-	s.Fail(ctx, errors.New("Step exceeded its deadline"))
-	s.Fail(ctx, errors.New("signal: terminated"))
-	require.NoError(t, s.Finalize(ctx))
-	r := getTaskResult(ctx, t, s)
-	assert.Equal(t, wfv1.NodeFailed, r.Phase)
-	assert.Equal(t, "Step exceeded its deadline", r.Message)
-	assert.Empty(t, *terminated)
-}
-
 // The deadline and progress goroutines report alongside the main flow, so
-// the sink must be safe for concurrent use, and still keep the first
-// failure in worker mode.
+// the sink must be safe for concurrent use.
 func TestTaskResultSink_ConcurrentUse(t *testing.T) {
-	ctx, s, _ := newTestSink(t, true)
+	ctx, s, _ := newTestSink(t)
 	var wg sync.WaitGroup
-	for i := range 8 {
+	for range 8 {
 		wg.Go(func() {
-			s.Fail(ctx, fmt.Errorf("failure %d", i))
 			assert.NoError(t, s.Report(ctx, wfv1.NodeResult{Progress: "1/2"}))
 		})
 	}
 	wg.Wait()
 	require.NoError(t, s.Finalize(ctx))
 	r := getTaskResult(ctx, t, s)
-	assert.Equal(t, wfv1.NodeFailed, r.Phase)
+	assert.Equal(t, wfv1.Progress("1/2"), r.Progress)
 }
 
 // Reports merge as successive merge patches of the task result would:
 // objects merge, and a later value or list replaces an earlier one.
 func TestTaskResultSink_ReportsMerge(t *testing.T) {
-	ctx, s, _ := newTestSink(t, false)
+	ctx, s, _ := newTestSink(t)
 	require.NoError(t, s.Report(ctx, wfv1.NodeResult{Outputs: &wfv1.Outputs{
 		Result:     new("first"),
 		Parameters: []wfv1.Parameter{{Name: "p", Value: wfv1.AnyStringPtr("v")}},
@@ -178,43 +164,11 @@ func TestTaskResultSink_ReportsMerge(t *testing.T) {
 	assert.Equal(t, "a", r.Outputs.Artifacts[0].Name)
 }
 
-// A worker's failure and outputs reach the API server in the write that
-// completes the result, so the controller never sees it complete without
-// the failure.
-func TestTaskResultSink_WorkerFailureInCompletingWrite(t *testing.T) {
-	ctx, s, _ := newTestSink(t, true)
-	require.NoError(t, s.Start(ctx))
-	require.NoError(t, s.Report(ctx, wfv1.NodeResult{Outputs: &wfv1.Outputs{Result: new("r")}}))
-	s.Fail(ctx, errors.New("cleanup failed"))
-	r := getTaskResult(ctx, t, s)
-	assert.Empty(t, r.Phase, "Fail leaves the write to Finalize")
-	assert.Equal(t, "false", r.Labels[common.LabelKeyReportOutputsCompleted])
-
-	require.NoError(t, s.Finalize(ctx))
-	r = getTaskResult(ctx, t, s)
-	assert.Equal(t, wfv1.NodeFailed, r.Phase)
-	assert.Equal(t, "cleanup failed", r.Message)
-	require.NotNil(t, r.Outputs)
-	assert.Equal(t, "r", *r.Outputs.Result)
-	assert.Equal(t, "true", r.Labels[common.LabelKeyReportOutputsCompleted])
-}
-
-// A failure reported after Finalize, which only an error from Finalize
-// itself can cause, is written straight away.
-func TestTaskResultSink_WorkerFailureAfterFinalize(t *testing.T) {
-	ctx, s, _ := newTestSink(t, true)
-	require.NoError(t, s.Start(ctx))
-	require.NoError(t, s.Finalize(ctx))
-	s.Fail(ctx, errors.New("late"))
-	r := getTaskResult(ctx, t, s)
-	assert.Equal(t, wfv1.NodeFailed, r.Phase)
-	assert.Equal(t, "late", r.Message)
-}
-
-// When the API server rejects a worker's result, Finalize still completes
-// it and records the rejection as the task's failure.
-func TestTaskResultSink_WorkerRejectedResult(t *testing.T) {
-	ctx, s, _ := newTestSink(t, true)
+// When the API server rejects a pod's result, Finalize still completes
+// it, without the outputs, and returns the rejection for the process to
+// fail with.
+func TestTaskResultSink_RejectedResult(t *testing.T) {
+	ctx, s, _ := newTestSink(t)
 	require.NoError(t, s.Start(ctx))
 	clientset := argofake.NewClientset()
 	_, err := clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace).Create(ctx, getTaskResult(ctx, t, s), metav1.CreateOptions{})
@@ -232,7 +186,6 @@ func TestTaskResultSink_WorkerRejectedResult(t *testing.T) {
 	require.Error(t, err)
 	r := getTaskResult(ctx, t, s)
 	assert.Equal(t, "true", r.Labels[common.LabelKeyReportOutputsCompleted])
-	assert.Equal(t, wfv1.NodeFailed, r.Phase)
-	assert.Contains(t, r.Message, "failed to report outputs: ")
+	assert.Empty(t, r.Phase)
 	assert.Nil(t, r.Outputs)
 }

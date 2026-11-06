@@ -39,7 +39,7 @@ func (s *PodSource) Next(ctx context.Context) (executor.Task, bool, error) {
 // with failures reported through the termination log.
 func podSink(process *executor.Process) func(executor.Task) executor.ResultSink {
 	return func(task executor.Task) executor.ResultSink {
-		return process.NewTaskResultSink(task.Config, false)
+		return process.NewTaskResultSink(task.Config)
 	}
 }
 

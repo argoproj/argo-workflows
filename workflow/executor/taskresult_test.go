@@ -83,7 +83,7 @@ func newTaskResultTestExecutor(t *testing.T, tmpl wfv1.Template, rt *mocks.Conta
 	t.Helper()
 	we := newTestPostMainExecutor(t, tmpl, rt)
 	we.taskResultClient = clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
-	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID})
 	return we
 }
 

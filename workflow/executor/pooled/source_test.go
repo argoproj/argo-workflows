@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -53,6 +54,17 @@ func enqueue(t *testing.T, f *dispatch.Fake, task dispatch.Task) *wfv1.WorkflowT
 	return enqueued.TaskSet
 }
 
+// taskPaths are a task's paths, all under root/nodeID.
+func taskPaths(root, nodeID string) executor.TaskPaths {
+	dir := filepath.Join(root, nodeID)
+	return executor.TaskPaths{
+		VarRunArgo:     filepath.Join(dir, "run"),
+		InputArtifacts: filepath.Join(dir, "inputs"),
+		Staging:        filepath.Join(dir, "staging"),
+		Scratch:        filepath.Join(dir, "scratch"),
+	}
+}
+
 // newSource returns a source of the worker over the fake, with short delays
 // and per-task paths under a temporary directory.
 func newSource(t *testing.T, f *dispatch.Fake, worker dispatch.Worker) *Source {
@@ -61,7 +73,7 @@ func newSource(t *testing.T, f *dispatch.Fake, worker dispatch.Worker) *Source {
 	return NewSource(f.Consumer(worker), Options{
 		Process: newProcess(t, time.Second),
 		Paths: func(cfg executor.TaskConfig) (executor.TaskPaths, error) {
-			return executor.WorkerPaths(root, cfg.NodeID)
+			return taskPaths(root, cfg.NodeID), nil
 		},
 		MinMissDelay: time.Millisecond,
 		MaxMissDelay: 10 * time.Millisecond,
@@ -246,7 +258,8 @@ func TestPooledSinkSucceedsWithoutAFailure(t *testing.T) {
 	enqueue(t, f, testTask("node-1"))
 	s := newSource(t, f, testWorker("worker-a"))
 	require.NoError(t, s.Sink()(next(t, s)).Finalize(ctx))
-	r, _ := result(t, f, "node-1")
+	r, ok := result(t, f, "node-1")
+	require.True(t, ok)
 	assert.Equal(t, wfv1.NodeSucceeded, r.Phase)
 }
 
@@ -262,7 +275,8 @@ func TestPooledSinkStoppedOnInterrupt(t *testing.T) {
 		t.Fatal("stopped before the interrupt")
 	default:
 	}
-	r, _ := result(t, f, "node-1")
+	r, ok := result(t, f, "node-1")
+	require.True(t, ok)
 	require.NoError(t, f.Dispatcher().Interrupt(ctx, dispatch.Key{Namespace: testNamespace, NodeID: "node-1"}, ts.UID, r.UID))
 	select {
 	case <-sink.Stopped():
@@ -342,7 +356,7 @@ func TestSourceWaitsUntilReady(t *testing.T) {
 		return NewSource(f.Consumer(testWorker("worker-a")), Options{
 			Process: newProcess(t, time.Second),
 			Paths: func(cfg executor.TaskConfig) (executor.TaskPaths, error) {
-				return executor.WorkerPaths(t.TempDir(), cfg.NodeID)
+				return taskPaths(t.TempDir(), cfg.NodeID), nil
 			},
 			MinMissDelay: time.Millisecond,
 			MaxMissDelay: 10 * time.Millisecond,
@@ -518,10 +532,10 @@ func TestSourceYieldsTheTaskPaths(t *testing.T) {
 	s := NewSource(f.Consumer(testWorker("worker-a")), Options{
 		Process: newProcess(t, time.Second),
 		Paths: func(cfg executor.TaskConfig) (executor.TaskPaths, error) {
-			return executor.TaskPaths{Root: "/tasks/" + cfg.NodeID}, nil
+			return executor.TaskPaths{VarRunArgo: "/tasks/" + cfg.NodeID}, nil
 		},
 	})
-	assert.Equal(t, "/tasks/node-1", next(t, s).Paths.Root)
+	assert.Equal(t, "/tasks/node-1", next(t, s).Paths.VarRunArgo)
 }
 
 // A task's progress file is in its own shared directory, so tasks run one

@@ -1,7 +1,7 @@
 //go:build !windows
 
-// These tests play main, whose lock probes are Linux-only, as loop mode is
-// (osspecific.LockHeld).
+// These tests play main, whose lock probes (osspecific.LockHeld) use flock
+// and so don't build on Windows.
 
 package executor
 
