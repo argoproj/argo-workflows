@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -85,18 +84,10 @@ func (c *Controller) reconcileIdle(ctx context.Context, key string, deploy *apps
 	if left := p.idleSince.Add(c.retention(deploy)).Sub(now); left > 0 {
 		return left, nil
 	}
-	// The cache may not have seen a TaskSet created just now; deleting the
-	// pool then would cost its next task a cold start.
-	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
-	busy, err := c.hasTaskSets(ctx, namespace, hash)
-	if err != nil {
-		return 0, err
-	}
-	if busy {
-		p.idleSince = now
-		return c.retention(deploy), nil
-	}
-	err = c.KubeClient.AppsV1().Deployments(namespace).Delete(ctx, deploy.Name, metav1.DeleteOptions{
+	// A TaskSet the cache hasn't seen yet loses the pool to this deletion:
+	// its event requeues the pool, which gets a new Deployment, at the cost
+	// of a cold start.
+	err := c.KubeClient.AppsV1().Deployments(deploy.Namespace).Delete(ctx, deploy.Name, metav1.DeleteOptions{
 		Preconditions:     &metav1.Preconditions{UID: &deploy.UID},
 		PropagationPolicy: new(metav1.DeletePropagationBackground),
 	})
@@ -109,20 +100,6 @@ func (c *Controller) reconcileIdle(ctx context.Context, key string, deploy *apps
 	}
 	logging.RequireLoggerFromContext(ctx).WithField("deployment", deploy.Name).Info(ctx, "Deleted idle pool")
 	return 0, nil
-}
-
-// hasTaskSets lists the pool's TaskSets live, so as not to rely on the cache.
-func (c *Controller) hasTaskSets(ctx context.Context, namespace, hash string) (bool, error) {
-	hashReq, err := labels.NewRequirement(common.LabelKeyPoolHash, selection.Equals, []string{hash})
-	if err != nil {
-		return false, err
-	}
-	selector := labels.NewSelector().Add(*hashReq, util.InstanceIDRequirement(c.InstanceID))
-	list, err := c.WfClient.ArgoprojV1alpha1().WorkflowTaskSets(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector.String(), Limit: 1})
-	if err != nil {
-		return false, err
-	}
-	return len(list.Items) > 0, nil
 }
 
 // retention is how long the pool may be idle before its Deployment is
@@ -146,8 +123,10 @@ func Retention(seconds int64) time.Duration {
 
 // reconcileBusy handles a pool with TaskSets: it creates the pool's
 // Deployment if there is none, and otherwise keeps its retention annotation
-// that of the newest TaskSet (retentionSeconds is last writer wins). The
-// Deployment of a pool another controller version wrote is left as it is.
+// that of the pool's spec, the most recently dispatched task's. A pool the
+// controller has no spec for, found with no dispatch since it started, has
+// its newest TaskSet's spec read. The Deployment of a pool another
+// controller version wrote is left as it is.
 func (c *Controller) reconcileBusy(ctx context.Context, key string, taskSets []any, deploy *appsv1.Deployment) (time.Duration, error) {
 	p := c.state(key)
 	p.idleSince = time.Time{}
@@ -160,20 +139,23 @@ func (c *Controller) reconcileBusy(ctx context.Context, key string, taskSets []a
 	if newest == nil {
 		return 0, nil
 	}
-	if newest.GetUID() != p.specFrom {
-		read, err := c.readSpec(ctx, key, p, newest)
-		if err != nil || !read {
+	taskSet := taskSetRef(newest)
+	spec := c.spec(p)
+	if spec == nil {
+		read, found, err := c.readSpec(ctx, key, newest)
+		if err != nil || !found {
 			return 0, err
 		}
+		spec = c.keepReadSpec(p, read)
 	}
 	if deploy == nil {
-		return 0, c.create(ctx, key, p)
+		return 0, c.create(ctx, key, spec, taskSet)
 	}
 	c.setHealth(ctx, key, podHealth(deploy, c.cachedPods(key)), deploymentRef(deploy))
-	if !c.ownVersion(p.spec) {
+	if !c.ownVersion(spec) {
 		return 0, nil
 	}
-	return 0, c.recordRetention(ctx, deploy, p.spec)
+	return 0, c.recordRetention(ctx, deploy, spec)
 }
 
 // ownVersion reports whether this controller's version wrote spec.
@@ -200,61 +182,64 @@ func newestTaskSet(taskSets []any) metav1.Object {
 	return newest
 }
 
-// readSpec reads the spec.pool of the TaskSet live. It reports false, with no
-// error, if the TaskSet has gone, which requeues the pool.
-func (c *Controller) readSpec(ctx context.Context, key string, p *pool, taskSet metav1.Object) (bool, error) {
+// readSpec reads the spec.pool of the TaskSet live, which may be nil. It
+// reports not found, with no error, if the TaskSet has gone, which requeues
+// the pool.
+func (c *Controller) readSpec(ctx context.Context, key string, taskSet metav1.Object) (*wfv1.PoolSpec, bool, error) {
 	_, hash, _ := cache.SplitMetaNamespaceKey(key)
 	live, err := c.WfClient.ArgoprojV1alpha1().WorkflowTaskSets(taskSet.GetNamespace()).Get(ctx, taskSet.GetName(), metav1.GetOptions{})
 	switch {
 	case apierr.IsNotFound(err):
-		return false, nil
+		return nil, false, nil
 	case err != nil:
-		return false, err
+		return nil, false, err
 	case live.Labels[common.LabelKeyPoolHash] != hash:
 		// Replaced by a TaskSet of another pool since it was cached.
-		return false, nil
+		return nil, false, nil
 	}
-	p.specFrom = live.UID
-	p.spec = live.Spec.Pool
-	p.taskSet = &apiv1.ObjectReference{
-		Kind:       workflow.WorkflowTaskSetKind,
-		APIVersion: workflow.APIVersion,
-		Namespace:  live.Namespace,
-		Name:       live.Name,
-		UID:        live.UID,
-	}
-	return true, nil
+	return live.Spec.Pool, true, nil
 }
 
-// create creates the pool's Deployment from the spec.pool last read. The pool
-// is unbuildable if the spec is missing, another instance's or can't be built,
-// if the API server rejects the Deployment as invalid, or if a Deployment of
-// the same name isn't the pool's. A spec another controller version wrote is
-// never built, and the pool is degraded: the operator enqueues its unclaimed
-// tasks again for this version, and a task a worker released waits for its
-// own version's pool. A transient error is returned with the pool's health
-// unchanged; any other create failure, such as Forbidden (RBAC, admission or
-// quota, though the API treats exceeded quota as transient), makes the pool
-// degraded and is returned to be retried. None ever leaves another Deployment
-// serving the pool.
-func (c *Controller) create(ctx context.Context, key string, p *pool) error {
+// taskSetRef refers to the TaskSet, for events.
+func taskSetRef(taskSet metav1.Object) *apiv1.ObjectReference {
+	return &apiv1.ObjectReference{
+		Kind:       workflow.WorkflowTaskSetKind,
+		APIVersion: workflow.APIVersion,
+		Namespace:  taskSet.GetNamespace(),
+		Name:       taskSet.GetName(),
+		UID:        taskSet.GetUID(),
+	}
+}
+
+// create creates the pool's Deployment from spec, the pool's, with any event
+// on taskSet, its newest TaskSet. The pool is unbuildable if the spec is
+// missing, another instance's or can't be built, if the API server rejects
+// the Deployment as invalid, or if a Deployment of the same name isn't the
+// pool's. A spec another controller version wrote is never built, and the
+// pool is degraded: the operator enqueues its unclaimed tasks again for this
+// version, and a task a worker released waits for its own version's pool. A
+// transient error is returned with the pool's health unchanged; any other
+// create failure, such as Forbidden (RBAC, admission or quota, though the
+// API treats exceeded quota as transient), makes the pool degraded and is
+// returned to be retried. None ever leaves another Deployment serving the
+// pool.
+func (c *Controller) create(ctx context.Context, key string, spec *wfv1.PoolSpec, taskSet *apiv1.ObjectReference) error {
 	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
-	spec := p.spec
 	switch {
 	case spec == nil:
-		c.setHealth(ctx, key, unbuildable("the WorkflowTaskSet %s has no spec.pool; install the current CRDs", p.taskSet.Name), p.taskSet)
+		c.setHealth(ctx, key, unbuildable("the WorkflowTaskSet %s has no spec.pool; install the current CRDs", taskSet.Name), taskSet)
 		return nil
 	case spec.InstanceID != c.InstanceID:
-		c.setHealth(ctx, key, unbuildable("the pool spec is for controller instance %q, not %q", spec.InstanceID, c.InstanceID), p.taskSet)
+		c.setHealth(ctx, key, unbuildable("the pool spec is for controller instance %q, not %q", spec.InstanceID, c.InstanceID), taskSet)
 		return nil
 	case !c.ownVersion(spec):
 		c.setHealth(ctx, key, dispatch.Health{State: dispatch.HealthDegraded, Reason: fmt.Sprintf(
-			"the pool spec is for controller version %q, and this controller, %q, builds pools only for its own version", spec.ControllerVersion, c.ControllerVersion)}, p.taskSet)
+			"the pool spec is for controller version %q, and this controller, %q, builds pools only for its own version", spec.ControllerVersion, c.ControllerVersion)}, taskSet)
 		return nil
 	}
 	built, err := c.Build(namespace, hash, spec)
 	if err != nil {
-		c.setHealth(ctx, key, unbuildable("can't build pool %q: %v", spec.Name, err), p.taskSet)
+		c.setHealth(ctx, key, unbuildable("can't build pool %q: %v", spec.Name, err), taskSet)
 		return nil
 	}
 	if built.Annotations == nil {
@@ -266,12 +251,12 @@ func (c *Controller) create(ctx context.Context, key string, p *pool) error {
 	switch {
 	case err == nil:
 		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"deployment": built.Name, "replicas": spec.InitialReplicas}).Info(ctx, "Created pool")
-		c.setHealth(ctx, key, dispatch.Health{State: dispatch.HealthOK}, p.taskSet)
+		c.setHealth(ctx, key, dispatch.Health{State: dispatch.HealthOK}, taskSet)
 		return nil
 	case apierr.IsAlreadyExists(err):
-		return c.adopt(ctx, key, p, built.Name)
+		return c.adopt(ctx, key, spec, taskSet, built.Name)
 	case apierr.IsInvalid(err):
-		c.setHealth(ctx, key, unbuildable("the Deployment of pool %q is invalid: %v", spec.Name, err), p.taskSet)
+		c.setHealth(ctx, key, unbuildable("the Deployment of pool %q is invalid: %v", spec.Name, err), taskSet)
 		return nil
 	case !apierr.IsForbidden(err) && errorsutil.IsTransientErr(ctx, err):
 		// Exceeded quota is Forbidden, and transient, but waits for an
@@ -280,14 +265,14 @@ func (c *Controller) create(ctx context.Context, key string, p *pool) error {
 	}
 	// Including Forbidden: missing RBAC, admission or quota, which an
 	// administrator can fix.
-	c.setHealth(ctx, key, dispatch.Health{State: dispatch.HealthDegraded, Reason: fmt.Sprintf("can't create the Deployment of pool %q: %v", spec.Name, err)}, p.taskSet)
+	c.setHealth(ctx, key, dispatch.Health{State: dispatch.HealthDegraded, Reason: fmt.Sprintf("can't create the Deployment of pool %q: %v", spec.Name, err)}, taskSet)
 	return err
 }
 
 // adopt checks a Deployment of the pool's Deployment name that already exists
 // but isn't cached. It is the pool's if it has the pool's hash and this
 // instance's ID; the cache will bring it. Otherwise the name is taken.
-func (c *Controller) adopt(ctx context.Context, key string, p *pool, name string) error {
+func (c *Controller) adopt(ctx context.Context, key string, spec *wfv1.PoolSpec, taskSet *apiv1.ObjectReference, name string) error {
 	namespace, hash, _ := cache.SplitMetaNamespaceKey(key)
 	existing, err := c.KubeClient.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	switch {
@@ -298,7 +283,7 @@ func (c *Controller) adopt(ctx context.Context, key string, p *pool, name string
 	case c.owns(existing, hash):
 		return nil
 	}
-	c.setHealth(ctx, key, unbuildable("the Deployment %s exists and isn't this pool's: pool names %q differ only after their first 10 hash characters, or another controller made it", name, p.spec.Name), p.taskSet)
+	c.setHealth(ctx, key, unbuildable("the Deployment %s exists and isn't this pool's: pool names %q differ only after their first 10 hash characters, or another controller made it", name, spec.Name), taskSet)
 	// Try again later, in case the other Deployment goes.
 	return fmt.Errorf("the Deployment %s isn't pool %s's", name, hash)
 }
