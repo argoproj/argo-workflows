@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pool-fan-out-
+spec:
+  entrypoint: main
+  # Applies to the container and script templates only.
+  templateDefaults:
+    pool:
+      name: e2e-fan-out
+      initialReplicas: 2
+      retentionSeconds: 300
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: produce
+            template: produce
+            arguments:
+              parameters:
+                - name: index
+                  value: "{{item}}"
+            withItems: [1, 2, 3, 4]
+    - name: produce
+      inputs:
+        parameters:
+          - name: index
+      script:
+        image: argoproj/argosay:v2
+        command: [sh]
+        source: |
+          echo "log of task {{inputs.parameters.index}}"
+          echo -n "output of task {{inputs.parameters.index}}" > /tmp/out.txt
+      outputs:
+        artifacts:
+          - name: out
+            path: /tmp/out.txt

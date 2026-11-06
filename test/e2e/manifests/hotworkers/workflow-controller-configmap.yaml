@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  # The e2e base's workflowDefaults without its podSpecPatch: pooled
+  # templates reject a workflow-level podSpecPatch, so a default one would
+  # fail every pooled workflow.
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      workflowMetadata:
+        labels:
+          default-label: thisLabelIsFromWorkflowDefaults
+  # A shorter grace period than the default 30 seconds, so a released
+  # task is handed back 10 seconds after its worker is told to stop.
+  hotWorkers: |
+    enabled: true
+    terminationGracePeriodSeconds: 15
+    releaseReserveSeconds: 5

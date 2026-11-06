@@ -1,0 +1,12 @@
+# hotworkers profile + init-less pod mode. Used by CI for the test-hotworkers
+# initless matrix entry: the pod layout is part of a pool's hash, so both
+# layouts build their own pools. Requires K8s image volumes (Beta in 1.33
+# behind a feature gate, GA in 1.36).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../hotworkers
+
+components:
+  - ../components/initless-pod

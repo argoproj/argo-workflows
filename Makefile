@@ -90,7 +90,7 @@ $(JSON_TEST_OUTPUT):
 define gotest
 	$(TOOL_GOTESTSUM) --rerun-fails-run-root-test --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
 endef
-ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
+ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins,hotworkers
 BENCHMARK_COUNT       ?= 6
 
 # should we build the static files?
@@ -850,6 +850,9 @@ mysql-dump:
 
 
 test-cli: ./dist/argo
+
+# The hot workers suite retries a workflow with the CLI.
+test-hotworkers: ./dist/argo
 
 test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)

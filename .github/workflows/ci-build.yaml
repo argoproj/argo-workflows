@@ -330,6 +330,13 @@ jobs:
             profile: plugins
             use-api: false
             initless: true
+          - test: test-hotworkers
+            profile: hotworkers
+            use-api: false
+          - test: test-hotworkers
+            profile: hotworkers
+            use-api: false
+            initless: true
           - test: test-go-sdk
             profile: minimal
             use-api: true
