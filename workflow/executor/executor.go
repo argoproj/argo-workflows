@@ -127,11 +127,12 @@ type Process struct {
 type WorkflowExecutor struct {
 	*Process
 
-	workflow    string
-	workflowUID types.UID
-	nodeID      string
-	paths       TaskPaths
-	layout      Layout
+	workflow                   string
+	workflowUID                types.UID
+	nodeID                     string
+	resourceTemplateRecovering bool
+	paths                      TaskPaths
+	layout                     Layout
 	// RuntimeExecutor reads and signals this task's containers.
 	RuntimeExecutor     ContainerRuntimeExecutor
 	Template            wfv1.Template
@@ -225,6 +226,9 @@ type TaskConfig struct {
 	// InputArtifactPluginNames lists the artifact plugins that serve this
 	// task's input artifacts (see common.EnvVarInputArtifactPluginNames).
 	InputArtifactPluginNames []wfv1.ArtifactPluginName
+	// ResourceTemplateRecovering allows a replacement resource executor to
+	// resume a resource created by the same workflow node.
+	ResourceTemplateRecovering bool
 }
 
 // Task is one task as a Process runs it: what to run, and where its files
@@ -324,20 +328,21 @@ func NewProcess(
 func (p *Process) NewExecutor(task Task, layout Layout, sink ResultSink) *WorkflowExecutor {
 	cfg := task.Config
 	return &WorkflowExecutor{
-		Process:                  p,
-		paths:                    task.Paths,
-		layout:                   layout,
-		sink:                     sink,
-		RuntimeExecutor:          p.newRuntime(task.Paths),
-		workflow:                 cfg.WorkflowName,
-		workflowUID:              cfg.WorkflowUID,
-		nodeID:                   cfg.NodeID,
-		Template:                 cfg.Template,
-		IncludeScriptOutput:      cfg.IncludeScriptOutput,
-		Deadline:                 cfg.Deadline,
-		progressFile:             cfg.ProgressFile,
-		inputArtifactPluginNames: cfg.InputArtifactPluginNames,
-		errors:                   []error{},
+		Process:                    p,
+		paths:                      task.Paths,
+		layout:                     layout,
+		sink:                       sink,
+		RuntimeExecutor:            p.newRuntime(task.Paths),
+		workflow:                   cfg.WorkflowName,
+		workflowUID:                cfg.WorkflowUID,
+		nodeID:                     cfg.NodeID,
+		resourceTemplateRecovering: cfg.ResourceTemplateRecovering,
+		Template:                   cfg.Template,
+		IncludeScriptOutput:        cfg.IncludeScriptOutput,
+		Deadline:                   cfg.Deadline,
+		progressFile:               cfg.ProgressFile,
+		inputArtifactPluginNames:   cfg.InputArtifactPluginNames,
+		errors:                     []error{},
 	}
 }
 

@@ -6225,6 +6225,14 @@
           "description": "Progress to completion",
           "type": "string"
         },
+        "recoveringResourcePodUID": {
+          "description": "RecoveringResourcePodUID identifies the failed resource executor being replaced. Duplicate observations of this pod must not consume another recovery attempt. Cleared when a different executor pod is observed.",
+          "type": "string"
+        },
+        "resourcePodRecoveries": {
+          "description": "ResourcePodRecoveries counts recorded recoveries after infrastructure failure or loss of a running resource executor. It is independent of FailedPodRestart.",
+          "type": "integer"
+        },
         "resourcesDuration": {
           "additionalProperties": {
             "format": "int64",

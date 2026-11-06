@@ -1211,6 +1211,15 @@ message NodeStatus {
   // This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
   // Cleared when the replacement pod starts running.
   optional string restartingPodUID = 30;
+
+  // ResourcePodRecoveries counts recorded recoveries after infrastructure failure
+  // or loss of a running resource executor. It is independent of FailedPodRestart.
+  optional int32 resourcePodRecoveries = 31;
+
+  // RecoveringResourcePodUID identifies the failed resource executor being replaced.
+  // Duplicate observations of this pod must not consume another recovery attempt.
+  // Cleared when a different executor pod is observed.
+  optional string recoveringResourcePodUID = 32;
 }
 
 // NodeSynchronizationStatus stores the status of a node
