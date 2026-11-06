@@ -30,17 +30,18 @@ import (
 // environment: API clients, tracing, namespace and pod-scoped settings.
 // It runs once per process; the per-task half is TaskConfigFromEnv.
 func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *executor.Process {
-	process, _, _ := initProcess(ctx, clientConfig, nil)
+	process, _, _, _ := initProcess(ctx, clientConfig, nil)
 	return process
 }
 
-// initProcess is InitProcess, which also returns the API client's config
-// and the namespace, for a process that needs more clients. adjust, if
+// initProcess is InitProcess, which also returns the API client's config,
+// the Argo clientset the process's own client is from, and the namespace,
+// for a process that needs more clients. adjust, if
 // set, changes the process's config, as read from the environment, before
 // the process is built.
 //
 //nolint:contextcheck
-func initProcess(ctx context.Context, clientConfig clientcmd.ClientConfig, adjust func(*executor.ProcessConfig)) (*executor.Process, *restclient.Config, string) {
+func initProcess(ctx context.Context, clientConfig clientcmd.ClientConfig, adjust func(*executor.ProcessConfig)) (*executor.Process, *restclient.Config, versioned.Interface, string) {
 	version := argo.GetVersion()
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(version.Fields()).Info(ctx, "Starting Workflow Executor")
@@ -82,10 +83,12 @@ func initProcess(ctx context.Context, clientConfig clientcmd.ClientConfig, adjus
 	if adjust != nil {
 		adjust(&cfg)
 	}
+	argoClient, err := versioned.NewForConfig(config)
+	CheckErr(err)
 	process, err := executor.NewProcess(
 		ctx,
 		clientset,
-		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
+		argoClient.ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
 		func(paths executor.TaskPaths) executor.ContainerRuntimeExecutor {
 			return emissary.New(paths.VarRunArgo)
@@ -93,7 +96,7 @@ func initProcess(ctx context.Context, clientConfig clientcmd.ClientConfig, adjus
 		cfg,
 	)
 	CheckErr(err)
-	return process, config, namespace
+	return process, config, argoClient, namespace
 }
 
 // TaskConfigFromEnv reads the per-task values (template, node identity,

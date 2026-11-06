@@ -11,6 +11,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -55,10 +56,10 @@ func TaskConfig(taskSet *wfv1.WorkflowTaskSet, claim dispatch.Claim) (executor.T
 		EmptyDirs:                emptyDirs(&tmpl, taskSet.Spec.Pool),
 	}
 	// As for a pod, progress is monitored only when both ticks are set.
-	if d.ProgressPatchTickDuration != nil && d.ProgressFileTickDuration != nil {
+	if patchTick, fileTick := duration(d.ProgressPatchTickDuration), duration(d.ProgressFileTickDuration); common.ProgressMonitored(patchTick, fileTick) {
 		cfg.ProgressFile = common.ArgoProgressPath
-		cfg.ProgressPatchTickDuration = d.ProgressPatchTickDuration.Duration
-		cfg.ProgressFileTickDuration = d.ProgressFileTickDuration.Duration
+		cfg.ProgressPatchTickDuration = patchTick
+		cfg.ProgressFileTickDuration = fileTick
 	}
 	return cfg, nil
 }
@@ -93,4 +94,12 @@ func deadline(d *wfv1.TaskDispatch, claim dispatch.Claim) (deadline, active time
 		return at.UTC(), at.UTC()
 	}
 	return at.UTC(), time.Time{}
+}
+
+// duration is d's duration, or zero when it isn't set.
+func duration(d *metav1.Duration) time.Duration {
+	if d == nil {
+		return 0
+	}
+	return d.Duration
 }

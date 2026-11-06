@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -461,4 +462,21 @@ func ExecutorTemplate(tmpl *wfv1.Template) *wfv1.Template {
 		Artifacts: simplified.Inputs.Artifacts,
 	}
 	return simplified
+}
+
+// MainArgs is the args main runs a container or script template with: its
+// container's, then, for a script with source, sourcePath, where the
+// source is staged.
+func MainArgs(tmpl *wfv1.Template, sourcePath string) []string {
+	switch {
+	case tmpl.Script != nil:
+		args := slices.Clone(tmpl.Script.Args)
+		if tmpl.Script.Source != "" {
+			args = append(args, sourcePath)
+		}
+		return args
+	case tmpl.Container != nil:
+		return slices.Clone(tmpl.Container.Args)
+	}
+	return nil
 }

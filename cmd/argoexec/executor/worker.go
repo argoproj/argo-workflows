@@ -12,7 +12,6 @@ import (
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
@@ -67,16 +66,12 @@ func RunWorker(ctx context.Context, clientConfig clientcmd.ClientConfig) error {
 		return err
 	}
 	w := &Worker{Base: executor.PodPaths()}
-	process, config, namespace := initProcess(ctx, clientConfig, func(cfg *executor.ProcessConfig) {
+	process, config, client, namespace := initProcess(ctx, clientConfig, func(cfg *executor.ProcessConfig) {
 		cfg.StopWorker = w.Stop
 		cfg.ReleaseReserve = reserve
 	})
 	stopProcess := startProcess(ctx, process)
 	defer stopProcess()
-	client, err := versioned.NewForConfig(config)
-	if err != nil {
-		return err
-	}
 	metadataClient, err := metadata.NewForConfig(config)
 	if err != nil {
 		return err
