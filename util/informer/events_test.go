@@ -19,6 +19,20 @@ func TestResourceVersionUnchanged(t *testing.T) {
 	assert.False(t, ResourceVersionUnchanged(pod("1"), "not an object"))
 }
 
+func TestChangeHandlers(t *testing.T) {
+	pod := func(rv string) *apiv1.Pod {
+		return &apiv1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "my-pod", ResourceVersion: rv}}
+	}
+	var seen []any
+	handlers := ChangeHandlers(func(obj any) { seen = append(seen, obj) })
+	added, changed, tombstone := pod("1"), pod("2"), cache.DeletedFinalStateUnknown{Key: "ns/my-pod", Obj: pod("2")}
+	handlers.OnAdd(added, false)
+	handlers.OnUpdate(added, pod("1"))
+	handlers.OnUpdate(added, changed)
+	handlers.OnDelete(tombstone)
+	assert.Equal(t, []any{added, changed, tombstone}, seen, "a replay of an unchanged object is skipped")
+}
+
 func TestUntombstone(t *testing.T) {
 	pod := &apiv1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "my-pod"}}
 	assert.Same(t, pod, Untombstone(pod))

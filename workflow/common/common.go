@@ -79,6 +79,8 @@ const (
 	AnnotationKeyTraceID = workflow.WorkflowFullName + "/trace-id"
 	// AnnotationKeySpanID is added as an annotation to workflows and pods for their span-id
 	AnnotationKeySpanID = workflow.WorkflowFullName + "/span-id"
+	// AnnotationKeyPoolRetentionSeconds is on a hot worker pool's Deployment: how long the pool is kept once no task uses it.
+	AnnotationKeyPoolRetentionSeconds = workflow.WorkflowFullName + "/pool-retention-seconds"
 	// AnnotationKeyPoolControllerVersion is on a pooled WorkflowTaskSet: the version of the controller that wrote its spec.pool, which its metadata alone can then tell.
 	AnnotationKeyPoolControllerVersion = workflow.WorkflowFullName + "/pool-controller-version"
 
@@ -208,6 +210,13 @@ const (
 	EnvVarDeadline = "ARGO_DEADLINE"
 	// EnvVarTerminationGracePeriodSeconds is pod.spec.terminationGracePeriodSeconds
 	EnvVarTerminationGracePeriodSeconds = "ARGO_TERMINATION_GRACE_PERIOD_SECONDS"
+	// EnvVarPoolHash is the hash of the hot worker pool a worker pod belongs to,
+	// set on a pool pod's worker container from its pool-hash label.
+	EnvVarPoolHash = "ARGO_POOL_HASH"
+	// EnvVarReleaseReserveSeconds is how long before the end of a pool pod's
+	// termination grace period its worker stops a running task to release it,
+	// set on the pool pod's worker and main containers.
+	EnvVarReleaseReserveSeconds = "ARGO_RELEASE_RESERVE_SECONDS"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template

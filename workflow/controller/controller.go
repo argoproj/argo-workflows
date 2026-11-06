@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	gosync "sync"
+	"sync/atomic"
 	"time"
 
 	syncpkg "github.com/argoproj/pkg/sync"
@@ -62,6 +63,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/poolcontroller"
 	"github.com/argoproj/argo-workflows/v4/workflow/cron"
 	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
@@ -199,8 +201,14 @@ type WorkflowController struct {
 	pooledTaskSetInformer cache.SharedIndexInformer
 	// poolPodInformer caches hot worker pool pods, which the pod controller doesn't see
 	poolPodInformer cache.SharedIndexInformer
-	// poolHealth reports hot worker pools' health for the nodes waiting on them; nil when nothing reports it
+	// poolDeploymentInformer caches hot worker pools' Deployments; nil unless the pool controller runs
+	poolDeploymentInformer cache.SharedIndexInformer
+	// poolController creates and deletes hot worker pools; nil unless hot workers were enabled at start and the controller may manage Deployments
+	poolController *poolcontroller.Controller
+	// poolHealth reports hot worker pools' health for the nodes waiting on them; nil while hot workers are disabled
 	poolHealth dispatch.PoolHealth
+	// hotWorkersAtStart is whether hot workers were enabled when the controller started (recordHotWorkers)
+	hotWorkersAtStart atomic.Int32
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -440,6 +448,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
 	wfc.pooledTaskSetInformer = wfc.newPooledTaskSetInformer(ctx)
 	wfc.poolPodInformer = wfc.newPoolPodInformer(ctx)
+	wfc.recordHotWorkers()
+	wfc.setUpPoolController(ctx)
+	err = wfc.registerPoolGauges()
+	if err != nil {
+		logger.WithError(err).Error(ctx, "Failed to register pool gauges")
+		os.Exit(1)
+	}
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to add workflow informer handlers")
@@ -488,6 +503,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	span.End()
 	ctx = wfc.tracing.BreakTrace(ctx)
 
+	wfc.runPoolController(ctx)
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
 

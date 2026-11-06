@@ -509,6 +509,7 @@ func TestPooledPoolHealthInMessage(t *testing.T) {
 	// As the pool controller changes a pool's health.
 	setHealth := func(state dispatch.HealthState, reason string) {
 		fake.SetHealth(wf.Namespace, node.PooledTask.PoolHash, dispatch.Health{State: state, Reason: reason})
+		controller.enqueueWorkflowsWaitingOnPool(wf.Namespace, node.PooledTask.PoolHash)
 	}
 
 	setHealth(dispatch.HealthDegraded, `ImagePullBackOff: container "main" can't pull image "my-image"`)

@@ -89,6 +89,15 @@ attributes:
   - name: PodRestartReason
     displayName: reason
     description: "The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError`"
+  - name: PoolHash
+    displayName: pool_hash
+    description: "⚠️ The hash identifying the hot worker pool"
+  - name: PoolName
+    displayName: pool_name
+    description: "⚠️ The name of the hot worker pool"
+  - name: PoolNamespace
+    displayName: namespace
+    description: The namespace of the hot worker pool
   - name: QueueName
     description: The name of the queue
   - name: RecentlyStarted
@@ -342,6 +351,46 @@ metrics:
       This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
     unit: "{pod}"
     type: Int64Counter
+  - name: PoolBacklog
+    description: A gauge of the number of pooled tasks waiting for a hot worker
+    extendedDescription: |
+      A pooled task is one attempt of a step or DAG task whose template runs on a hot worker pool.
+      Reports, per hot worker pool, the tasks enqueued for the pool that no worker holds a claim on.
+      A task a worker released, as when its pod is deleted during scale-down, counts again until another worker claims it.
+      A task the controller has ended does not count, even while its worker is still stopping it.
+      The controller reads it from its caches at scrape time.
+      A pool is reported while it has a pooled task or a Deployment, or, when the pool controller isn't running, a pod that isn't being deleted; its series disappear once it has none of these.
+    attributes:
+      - name: PoolNamespace
+      - name: PoolName
+      - name: PoolHash
+    unit: "{task}"
+    type: Int64ObservableGauge
+  - name: PoolClaimedTasks
+    description: A gauge of the number of pooled tasks claimed by a hot worker and not yet completed
+    extendedDescription: |
+      A pooled task is one attempt of a step or DAG task whose template runs on a hot worker pool.
+      Reports, per hot worker pool, the tasks a worker has claimed and not yet reported.
+      Each worker pod runs one task at a time, so `pool_claimed_tasks / pool_ready_pods` is the pool's saturation.
+      It can briefly exceed 1 while worker pods are being replaced.
+      The controller reads it from its caches at scrape time, and reports it for the same pools as `pool_backlog`.
+    attributes:
+      - name: PoolNamespace
+      - name: PoolName
+      - name: PoolHash
+    unit: "{task}"
+    type: Int64ObservableGauge
+  - name: PoolReadyPods
+    description: A gauge of the number of ready hot worker pods in a pool
+    extendedDescription: |
+      Reports, per hot worker pool, the worker pods that are ready and not being deleted.
+      The controller reads it from its caches at scrape time, and reports it for the same pools as `pool_backlog`.
+    attributes:
+      - name: PoolNamespace
+      - name: PoolName
+      - name: PoolHash
+    unit: "{pod}"
+    type: Int64ObservableGauge
   - name: QueueAddsCount
     description: A counter of additions to the work queues inside the controller
     extendedDescription: The rate of this shows how busy that area of the controller is
@@ -350,6 +399,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -367,6 +417,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -383,6 +434,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -400,6 +452,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -417,6 +470,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -433,6 +487,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -449,6 +504,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving
@@ -496,6 +552,7 @@ metrics:
 
       - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
       - `pod_cleanup_queue`: pods which are queued for deletion
+      - `pool_queue`: hot worker pools to reconcile, created or deleted
       - `workflow_queue`: the queue of Workflow updates from the cluster
       - `workflow_ttl_queue`: workflows which are queued for deletion due to age
       - `workflow_archive_queue`: workflows which are queued for archiving

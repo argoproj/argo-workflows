@@ -1,0 +1,302 @@
+// Package poolcontroller runs hot worker pools. It creates a pool's
+// Deployment once a pooled WorkflowTaskSet of the pool exists, deletes it
+// once the pool has had none for its retention, and reports each pool's
+// health for the nodes waiting on it (dispatch.PoolHealth).
+//
+// A pool is identified by its namespace and hash, the pool-hash label of its
+// TaskSets, and served by one Deployment built from its tasks' spec.pool
+// alone. The operator hands the controller each task's spec.pool as it
+// dispatches the task (Dispatched); only a pool found with no dispatch since
+// the controller started has its newest TaskSet's read, once, as the TaskSet
+// cache holds metadata only. Once created, a Deployment's spec is never changed: its replicas
+// belong to whatever scales the pool, and its hash fixes the rest. Only the
+// retention annotation is kept up to date. The controller touches only the
+// Deployments of this controller instance's pools, and never one whose labels
+// name another pool, even if it has the pool's Deployment name. It builds and
+// changes only the pools whose spec.pool its own version wrote, since its pod
+// template may not suit another version's executor image: another version's
+// pool is only deleted, once it has been idle for its retention, and the
+// operator enqueues that pool's unclaimed tasks again for this version.
+package poolcontroller
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
+
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+)
+
+// DeploymentVerbs are the verbs on apps Deployments the controller uses, which
+// the optional hot workers RBAC component grants.
+var DeploymentVerbs = []string{"get", "list", "watch", "create", "patch", "delete"}
+
+// taskSetBatch is how long a pool whose Deployment exists waits after a
+// TaskSet of it comes or goes before it is reconciled, so a busy pool is
+// reconciled about once per batch rather than once per task.
+const taskSetBatch = time.Second
+
+// Builder builds the Deployment of the pool with hash in namespace from its
+// spec.pool, or fails if this controller can't build that spec.
+type Builder func(namespace, hash string, spec *wfv1.PoolSpec) (*appsv1.Deployment, error)
+
+// Options are what a Controller works from. The informers must be indexed by
+// indexes.PoolIndex and select this controller instance's objects only.
+type Options struct {
+	KubeClient kubernetes.Interface
+	WfClient   wfclientset.Interface
+	// TaskSets caches the metadata of pooled WorkflowTaskSets.
+	TaskSets cache.SharedIndexInformer
+	// Pods caches pool pods.
+	Pods cache.SharedIndexInformer
+	// Deployments caches pools' Deployments.
+	Deployments cache.SharedIndexInformer
+	// Queue holds the keys of the pools to reconcile; NewRateLimiter suits it.
+	Queue      workqueue.TypedRateLimitingInterface[string]
+	InstanceID string
+	// ControllerVersion is this controller's version, which a pool's
+	// spec.pool must carry for the controller to build or change the pool.
+	ControllerVersion string
+	Build             Builder
+	// DefaultRetention is the retention of a pool whose Deployment doesn't
+	// record one.
+	DefaultRetention func() time.Duration
+	Events           events.EventRecorderManager
+	// OnHealthChange is called, with no lock held, after a pool's health
+	// changes. A pool the controller knows nothing about counts as OK.
+	OnHealthChange func(namespace, hash string)
+}
+
+// Controller reconciles pools. It implements dispatch.PoolHealth.
+type Controller struct {
+	Options
+	now func() time.Time
+
+	mu    sync.Mutex
+	pools map[string]*pool
+}
+
+var _ dispatch.PoolHealth = &Controller{}
+
+// pool is what the controller remembers of a pool, by key. Only the worker
+// reconciling the pool touches it, apart from spec, which the operator sets
+// too, and health, which mu guards.
+type pool struct {
+	// idleSince is when the pool was first seen without TaskSets, zero while
+	// it has some. It is kept in memory only, so a controller restart restarts
+	// the retention timer rather than shortening it.
+	idleSince time.Time
+	// spec is the spec.pool of the pool's most recently dispatched task
+	// (Dispatched), or, for a pool found with no dispatch since the
+	// controller started, its newest TaskSet's, read live. It may be nil.
+	spec   *wfv1.PoolSpec
+	health dispatch.Health
+}
+
+// NewRateLimiter is the rate limiter for a Controller's queue: it backs off
+// a pool that keeps failing, such as one whose Deployment can't be created,
+// up to five minutes between attempts.
+func NewRateLimiter() workqueue.TypedRateLimiter[string] {
+	return workqueue.NewTypedItemExponentialFailureRateLimiter[string](time.Second, 5*time.Minute)
+}
+
+// New returns a Controller, with its handlers added to the informers.
+func New(opts Options) *Controller {
+	c := &Controller{Options: opts, now: time.Now, pools: map[string]*pool{}}
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	opts.TaskSets.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		// A pooled TaskSet is written once and never updated, so an update
+		// is only ever a replacement; see enqueueAfterReplacedTaskSet.
+		AddFunc:    c.enqueueAfterTaskSet,
+		UpdateFunc: c.enqueueAfterReplacedTaskSet,
+		DeleteFunc: c.enqueueAfterTaskSet,
+	})
+	//nolint:errcheck // as above
+	opts.Pods.AddEventHandler(informerutil.ChangeHandlers(c.enqueue))
+	//nolint:errcheck // as above
+	opts.Deployments.AddEventHandler(informerutil.ChangeHandlers(c.enqueue))
+	return c
+}
+
+// keyOf is the key of the pool an object belongs to: its namespace and pool
+// hash, as indexes.PoolIndex has it.
+func keyOf(obj any) (string, bool) {
+	m, err := meta.Accessor(informerutil.Untombstone(obj))
+	if err != nil {
+		return "", false
+	}
+	hash := m.GetLabels()[common.LabelKeyPoolHash]
+	if hash == "" {
+		return "", false
+	}
+	return indexes.MetaNamespaceLabelIndex(m.GetNamespace(), hash), true
+}
+
+func (c *Controller) enqueue(obj any) {
+	if key, ok := keyOf(obj); ok {
+		c.Queue.Add(key)
+	}
+}
+
+// enqueueAfterTaskSet queues a pool after a TaskSet of it comes or goes: at
+// once if the pool has no Deployment yet, which a cold start waits for, and
+// otherwise after taskSetBatch.
+func (c *Controller) enqueueAfterTaskSet(obj any) {
+	key, ok := keyOf(obj)
+	if !ok {
+		return
+	}
+	if deployments, err := c.Deployments.GetIndexer().ByIndex(indexes.PoolIndex, key); err == nil && len(deployments) > 0 {
+		c.Queue.AddAfter(key, taskSetBatch)
+		return
+	}
+	c.Queue.Add(key)
+}
+
+// enqueueAfterReplacedTaskSet enqueues the pools of a TaskSet that was
+// replaced: deleted and created again under the same name, as dispatch does
+// when it enqueues another version's task again, perhaps for another pool.
+// A relist after a missed watch reports the pair as one update, and nothing
+// else would enqueue either pool: the new one would wait for its Deployment,
+// the old one for its idle timer. An update of the same TaskSet, which is
+// only a replay, is ignored.
+func (c *Controller) enqueueAfterReplacedTaskSet(oldObj, newObj any) {
+	if sameTaskSet(oldObj, newObj) {
+		return
+	}
+	c.enqueueAfterTaskSet(oldObj)
+	c.enqueueAfterTaskSet(newObj)
+}
+
+// sameTaskSet reports whether two states of a TaskSet are of one object in
+// one pool.
+func sameTaskSet(oldObj, newObj any) bool {
+	oldMeta, err := meta.Accessor(oldObj)
+	if err != nil {
+		return false
+	}
+	newMeta, err := meta.Accessor(newObj)
+	if err != nil {
+		return false
+	}
+	oldKey, _ := keyOf(oldObj)
+	newKey, _ := keyOf(newObj)
+	return oldMeta.GetUID() == newMeta.GetUID() && oldKey == newKey
+}
+
+// Health implements dispatch.PoolHealth.
+func (c *Controller) Health(namespace, hash string) (dispatch.Health, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	p, ok := c.pools[indexes.MetaNamespaceLabelIndex(namespace, hash)]
+	if !ok {
+		return dispatch.Health{}, false
+	}
+	return p.health, true
+}
+
+// Run reconciles pools with the workers, once the informers have synced,
+// until ctx is done.
+func (c *Controller) Run(ctx context.Context, workers int) {
+	defer c.Queue.ShutDown()
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "pool_controller").InContext(ctx)
+	if !cache.WaitForCacheSync(ctx.Done(), c.TaskSets.HasSynced, c.Pods.HasSynced, c.Deployments.HasSynced) {
+		return
+	}
+	logger.Info(ctx, "Pool controller started")
+	for range workers {
+		go wait.UntilWithContext(ctx, c.runWorker, time.Second)
+	}
+	<-ctx.Done()
+}
+
+func (c *Controller) runWorker(ctx context.Context) {
+	for c.processNextItem(ctx) {
+	}
+}
+
+func (c *Controller) processNextItem(ctx context.Context) bool {
+	key, quit := c.Queue.Get()
+	if quit {
+		return false
+	}
+	defer c.Queue.Done(key)
+	after, err := c.reconcile(ctx, key)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithField("pool", key).WithError(err).Warn(ctx, "Failed to reconcile pool")
+		c.Queue.AddRateLimited(key)
+		return true
+	}
+	c.Queue.Forget(key)
+	if after > 0 {
+		c.Queue.AddAfter(key, after)
+	}
+	return true
+}
+
+// state returns the pool's state, remembering a new pool as OK.
+func (c *Controller) state(key string) *pool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.stateLocked(key)
+}
+
+func (c *Controller) stateLocked(key string) *pool {
+	p, ok := c.pools[key]
+	if !ok {
+		p = &pool{health: dispatch.Health{State: dispatch.HealthOK}}
+		c.pools[key] = p
+	}
+	return p
+}
+
+// Dispatched records spec, the spec.pool of a task the operator is about to
+// enqueue for the pool with hash in namespace, as the pool's spec: a pool
+// with no Deployment is built from it, and its retention, the most recently
+// dispatched task's, applies. The operator calls it before it creates the
+// task's TaskSet, so the TaskSet's event finds the spec here rather than
+// having to read it.
+func (c *Controller) Dispatched(namespace, hash string, spec *wfv1.PoolSpec) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.stateLocked(indexes.MetaNamespaceLabelIndex(namespace, hash)).spec = spec
+}
+
+// spec is the pool's spec, or nil.
+func (c *Controller) spec(p *pool) *wfv1.PoolSpec {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return p.spec
+}
+
+// keepReadSpec records spec, read from the pool's newest TaskSet, as the
+// pool's unless a dispatch recorded one meanwhile, and returns the pool's.
+func (c *Controller) keepReadSpec(p *pool, spec *wfv1.PoolSpec) *wfv1.PoolSpec {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if p.spec == nil {
+		p.spec = spec
+	}
+	return p.spec
+}
+
+// forget forgets a pool that has neither TaskSets nor a Deployment.
+func (c *Controller) forget(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.pools, key)
+}
