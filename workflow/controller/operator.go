@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -4425,48 +4424,7 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 
 // mergedTemplateDefaultsInto modifies originalTmpl, setting any applicable default values.
 func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Template) error {
-	if woc.execWf.Spec.TemplateDefaults == nil {
-		return nil
-	}
-
-	originalTmplType := originalTmpl.GetType()
-	applicableDefaults := woc.execWf.Spec.TemplateDefaults.DeepCopy()
-
-	v := reflect.ValueOf(applicableDefaults).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Type().Field(i)
-		// Check if the field is a pointer to a struct.
-		if field.Type.Kind() != reflect.Pointer || field.Type.Elem().Kind() != reflect.Struct {
-			continue
-		}
-
-		// Unset any Template-type defaults not applicable to the target type.
-		if t := wfv1.TemplateType(field.Name); t.IsValid() && t != originalTmplType {
-			v.Field(i).Set(reflect.Zero(v.Field(i).Type()))
-		}
-	}
-
-	tmplDefaultsJSON, err := json.Marshal(applicableDefaults)
-	if err != nil {
-		return err
-	}
-
-	targetTmplJSON, err := json.Marshal(originalTmpl)
-	if err != nil {
-		return err
-	}
-
-	resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJSON, targetTmplJSON, wfv1.Template{})
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(resultTmpl, originalTmpl); err != nil {
-		return err
-	}
-
-	originalTmpl.SetType(originalTmplType)
-	return nil
+	return common.MergeTemplateDefaults(originalTmpl, woc.execWf.Spec.TemplateDefaults)
 }
 
 func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params common.Parameters) error {

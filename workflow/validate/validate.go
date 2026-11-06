@@ -64,6 +64,12 @@ type templateValidationCtx struct {
 	// wf is the Workflow resource which is used to validate templates.
 	// It will be omitted in WorkflowTemplate validation.
 	wf *wfv1.Workflow
+	// poolSpecs are the specs whose workflow-level fields reach every template
+	// the workflow runs, highest priority first: its own, its
+	// workflowTemplateRef's, and the workflow defaults. Pooled templates are
+	// checked against poolSpec, their merge, made when first needed.
+	poolSpecs []*wfv1.WorkflowSpec
+	poolSpec  *wfv1.WorkflowSpec
 }
 
 func newTemplateValidationCtx(wf *wfv1.Workflow, opts Opts) *templateValidationCtx {
@@ -183,6 +189,13 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
 		}
 		wfTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
+	}
+	tctx.poolSpecs = []*wfv1.WorkflowSpec{&wf.Spec}
+	if hasWorkflowTemplateRef {
+		tctx.poolSpecs = append(tctx.poolSpecs, wfSpecHolder.GetWorkflowSpec())
+	}
+	if wfDefaults != nil {
+		tctx.poolSpecs = append(tctx.poolSpecs, &wfDefaults.Spec)
 	}
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 
@@ -584,6 +597,11 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		return nil
 	}
 	tctx.results[templateScope+tmplID] = true
+
+	// The template as written: substitution resolves {{pod.name}}.
+	if err = tctx.validatePooled(tmpl); err != nil {
+		return err
+	}
 
 	for globalVar, val := range tctx.globalParams {
 		scope[globalVar] = val
