@@ -47,7 +47,7 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 }
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
-	if err := woc.checkAgentTaskSetName(ctx); err != nil {
+	if err := woc.checkAgentTaskSetName(); err != nil {
 		return err
 	}
 	patchByte, err := json.Marshal(patch)
@@ -166,21 +166,16 @@ var errPooledTaskSetName = errors.New("is a pooled task's, not this workflow's: 
 // after the workflow, which every write of its agent tasks patches, is a
 // pooled task's: a pooled task's TaskSet is named after its node, so a
 // workflow can be named like one, and patching it would hand this workflow's
-// agent tasks to it and mark it completed. The agent TaskSet informer
-// selects no pooled TaskSet, so the TaskSet is read live only when it isn't
-// cached, as one just created may not be yet.
-func (woc *wfOperationCtx) checkAgentTaskSetName(ctx context.Context) error {
-	taskSet, err := woc.getWorkflowTaskSet()
-	if err != nil || taskSet == nil {
-		taskSet, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Get(ctx, woc.wf.Name, metav1.GetOptions{})
-	}
+// agent tasks to it and mark it completed. The pooled TaskSet informer holds
+// every pooled TaskSet of this controller instance, so the check reads
+// nothing: only a pooled TaskSet created so recently that it isn't cached
+// yet, under exactly this workflow's name, would be missed.
+func (woc *wfOperationCtx) checkAgentTaskSetName() error {
+	_, pooled, err := woc.controller.pooledTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
 	switch {
-	case apierr.IsNotFound(err):
-		return nil
 	case err != nil:
-		return fmt.Errorf("reading WorkflowTaskSet %s/%s: %w", woc.wf.Namespace, woc.wf.Name, err)
-	}
-	if _, pooled := taskSet.Labels[common.LabelKeyPoolHash]; pooled {
+		return fmt.Errorf("looking up WorkflowTaskSet %s/%s: %w", woc.wf.Namespace, woc.wf.Name, err)
+	case pooled:
 		return fmt.Errorf("WorkflowTaskSet %s/%s %w", woc.wf.Namespace, woc.wf.Name, errPooledTaskSetName)
 	}
 	return nil
