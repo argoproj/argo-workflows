@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"path"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -52,8 +55,9 @@ type Source struct {
 	process  *executor.Process
 	paths    func(executor.TaskConfig) (executor.TaskPaths, error)
 	ready    func(context.Context) error
-	minDelay time.Duration
-	maxDelay time.Duration
+	// backoff is the delays from the first miss in a row: minMissDelay,
+	// doubled with each miss after it, up to maxMissDelay.
+	backoff wait.Backoff
 
 	// stopped ends on Stop; it is a context so Next's waits end with it.
 	//nolint:containedctx
@@ -61,8 +65,11 @@ type Source struct {
 	stop    context.CancelFunc
 
 	mu sync.Mutex
-	// misses counts the misses in a row.
-	misses int
+	// missing is backoff as it stands after the misses in a row.
+	missing wait.Backoff
+	// limit bounds the random delay before the next claim: zero until the
+	// worker misses.
+	limit time.Duration
 	// claims are the claims of the tasks yielded whose sink isn't built yet.
 	claims map[string]dispatch.Claimed
 }
@@ -81,13 +88,14 @@ func NewSource(consumer dispatch.Consumer, opts Options) *Source {
 		maxDelay = max(defaultMaxMissDelay, minDelay)
 	}
 	stopped, stop := context.WithCancel(context.Background())
+	backoff := wait.Backoff{Duration: minDelay, Factor: 2, Cap: maxDelay, Steps: math.MaxInt}
 	return &Source{
 		consumer: consumer,
 		process:  opts.Process,
 		paths:    opts.Paths,
 		ready:    opts.Ready,
-		minDelay: minDelay,
-		maxDelay: maxDelay,
+		backoff:  backoff,
+		missing:  backoff,
 		stopped:  stopped,
 		stop:     stop,
 		claims:   map[string]dispatch.Claimed{},
@@ -231,7 +239,7 @@ func (s *Source) fail(ctx context.Context, claimed dispatch.Claimed, cause error
 		WithError(cause).Error(ctx, "Cannot run a pooled task")
 	sink := s.process.NewPooledSink(claimed)
 	sink.Fail(ctx, cause)
-	if err := sink.Finalize(ctx); err != nil && !errors.Is(err, dispatch.ErrClaimLost) {
+	if err := executor.UnlessClaimLost(ctx, sink.Finalize(ctx), "The claim of a task that can't be run was lost"); err != nil {
 		return fmt.Errorf("failed to fail pooled task %s, which cannot be run: %w", claimed.Claim().NodeID, err)
 	}
 	return nil
@@ -241,7 +249,7 @@ func (s *Source) fail(ctx context.Context, claimed dispatch.Claimed, cause error
 // an error if the claim is left incomplete.
 func (s *Source) release(ctx context.Context, claimed dispatch.Claimed) error {
 	ctx = context.WithoutCancel(ctx)
-	if err := s.process.NewPooledSink(claimed).Release(ctx); err != nil && !errors.Is(err, dispatch.ErrClaimLost) {
+	if err := executor.UnlessClaimLost(ctx, s.process.NewPooledSink(claimed).Release(ctx), "The claim of a task claimed while stopping was lost"); err != nil {
 		return fmt.Errorf("failed to release pooled task %s, claimed while stopping: %w", claimed.Claim().NodeID, err)
 	}
 	return nil
@@ -250,13 +258,13 @@ func (s *Source) release(ctx context.Context, claimed dispatch.Claimed) error {
 func (s *Source) miss() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.misses++
+	s.limit = s.missing.Step()
 }
 
 func (s *Source) hit() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.misses = 0
+	s.missing, s.limit = s.backoff, 0
 }
 
 // pause waits a random delay if the worker has been missing, so workers
@@ -264,22 +272,12 @@ func (s *Source) hit() {
 // first.
 func (s *Source) pause(ctx context.Context) bool {
 	s.mu.Lock()
-	misses := s.misses
+	limit := s.limit
 	s.mu.Unlock()
-	if misses == 0 {
+	if limit == 0 {
 		return ctx.Err() == nil
 	}
-	// Doubled once per miss after the first, stopping at maxDelay so it
-	// can't overflow however many misses there have been.
-	limit := s.minDelay
-	for i := 1; i < misses && limit < s.maxDelay; i++ {
-		if limit > s.maxDelay/2 {
-			limit = s.maxDelay
-		} else {
-			limit *= 2
-		}
-	}
-	limit = min(limit, s.maxDelay)
+	// Full jitter, over the whole of the limit.
 	t := time.NewTimer(rand.N(limit) + 1)
 	defer t.Stop()
 	select {

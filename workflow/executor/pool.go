@@ -202,14 +202,11 @@ func (we *WorkflowExecutor) poolTaskSpec() (poolpod.TaskSpec, error) {
 		NodeID:              we.nodeID,
 		Template:            &we.Template,
 		Command:             slices.Clone(c.Command),
-		Args:                slices.Clone(c.Args),
+		Args:                common.MainArgs(&we.Template, we.paths.ScriptSource()),
 		IncludeScriptOutput: we.IncludeScriptOutput,
 	}
 	if len(c.Command) == 0 {
 		spec.ImageCommand = slices.Clone(we.poolTask.imageCommand)
-	}
-	if we.Template.Script != nil && we.Template.Script.Source != "" {
-		spec.Args = append(spec.Args, we.paths.ScriptSource())
 	}
 	// valueFrom entries are the pool pod's: the kubelet resolved them into
 	// main's own env when the pod started.
@@ -347,17 +344,12 @@ func (we *WorkflowExecutor) completePoolTask(ctx context.Context) error {
 	case poolInterrupted:
 		we.sink.Fail(ctx, taskFailure{errors.New("the task was interrupted")})
 	}
-	err := we.sink.Finalize(ctx)
-	switch {
-	case err == nil:
-		return nil
-	case errors.Is(err, dispatch.ErrClaimLost):
-		logger.WithError(err).Info(ctx, "The task's claim was lost, so its result is not reported")
-		return nil
+	if err := UnlessClaimLost(ctx, we.sink.Finalize(ctx), "The task's claim was lost, so its result is not reported"); err != nil {
+		err = fmt.Errorf("failed to report the task's result: %w", err)
+		we.stopWorker(ctx, err)
+		return err
 	}
-	err = fmt.Errorf("failed to report the task's result: %w", err)
-	we.stopWorker(ctx, err)
-	return err
+	return nil
 }
 
 // removePoolTask removes the task's own directories, unless main may still
@@ -478,17 +470,14 @@ func settleCurrent(ctx context.Context, pool poolpod.Pool) error {
 		// Removed once it was done with.
 		return nil
 	}
-	withdrew, err := task.Withdraw()
+	// Stopping is harmless if main is done with it already.
+	withdrew, _, err := task.WithdrawOrStop(poolpod.StopLost)
 	if err != nil {
-		return fmt.Errorf("failed to withdraw task %s: %w", task.Dir(), err)
+		return fmt.Errorf("task %s: %w", task.Dir(), err)
 	}
 	if withdrew {
 		logger.Info(ctx, "Withdrew the task an earlier run of the worker offered")
 		return nil
-	}
-	// Harmless if main is done with it already.
-	if _, err = task.Stop(poolpod.StopLost); err != nil {
-		return fmt.Errorf("failed to stop task %s: %w", task.Dir(), err)
 	}
 	status, err := task.WaitMain(ctx)
 	if err != nil {

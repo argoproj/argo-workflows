@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -25,32 +23,21 @@ import (
 // which leaves the template's timeout and activeDeadlineSeconds to the
 // pod's own activeDeadlineSeconds (pooled.TaskConfig).
 func (c TaskConfig) MainEnv() []string {
-	env := []string{
-		common.EnvVarNodeID + "=" + c.NodeID,
-		common.EnvVarIncludeScriptOutput + "=" + strconv.FormatBool(c.IncludeScriptOutput),
-		common.EnvVarDeadline + "=" + c.Deadline.UTC().Format(time.RFC3339),
-		common.EnvVarWorkflowName + "=" + c.WorkflowName,
-	}
-	// Named as the OpenTelemetry environment carrier names them, as the
-	// controller's are for a pod.
-	carrier := envcar.Carrier{SetEnvFunc: func(name, value string) { env = append(env, name+"="+value) }}
-	for _, key := range (propagation.TraceContext{}).Fields() {
-		if v := c.TraceContext[key]; v != "" {
-			carrier.Set(key, v)
-		}
-	}
-	if c.progressMonitored() {
-		env = append(env,
-			common.EnvVarProgressFile+"="+c.ProgressFile,
-			common.EnvVarProgressPatchTickDuration+"="+c.ProgressPatchTickDuration.String(),
-			common.EnvVarProgressFileTickDuration+"="+c.ProgressFileTickDuration.String(),
-		)
+	vars := common.TaskEnv{
+		NodeID:                    c.NodeID,
+		IncludeScriptOutput:       c.IncludeScriptOutput,
+		Deadline:                  c.Deadline.UTC(),
+		WorkflowName:              c.WorkflowName,
+		TraceContext:              c.TraceContext,
+		ProgressFile:              c.ProgressFile,
+		ProgressPatchTickDuration: c.ProgressPatchTickDuration,
+		ProgressFileTickDuration:  c.ProgressFileTickDuration,
+	}.EnvVars()
+	env := make([]string, 0, len(vars))
+	for _, v := range vars {
+		env = append(env, v.Name+"="+v.Value)
 	}
 	return env
-}
-
-func (c TaskConfig) progressMonitored() bool {
-	return c.ProgressPatchTickDuration != 0 && c.ProgressFileTickDuration != 0
 }
 
 // withTraceContext returns ctx continuing the task's trace context, or ctx

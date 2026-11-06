@@ -232,21 +232,16 @@ func (we *WorkflowExecutor) poolPrepareContext(ctx context.Context) (context.Con
 func (we *WorkflowExecutor) stopPoolTask(ctx context.Context, task poolpod.Task, stop poolStop) {
 	logger := logging.RequireLoggerFromContext(ctx).WithField("stop", stop.String())
 	we.recordPoolStop(ctx, stop)
-	withdrew, err := task.Withdraw()
-	if err != nil {
-		logger.WithError(err).Error(ctx, "Failed to withdraw the task")
-	}
-	if withdrew {
-		logger.Info(ctx, "Withdrew the task before main took it")
-		return
-	}
-	reason, err := task.Stop(stop.stopReason())
-	if err != nil {
+	withdrew, reason, err := task.WithdrawOrStop(stop.stopReason())
+	switch {
+	case err != nil:
 		// Main runs the task to its end.
 		logger.WithError(err).Error(ctx, "Failed to stop the task")
-		return
+	case withdrew:
+		logger.Info(ctx, "Withdrew the task before main took it")
+	default:
+		logger.WithField("reason", reason).Info(ctx, "Stopped the task")
 	}
-	logger.WithField("reason", reason).Info(ctx, "Stopped the task")
 }
 
 // recordPoolStop records that the task must stop for stop, unless it
@@ -315,7 +310,8 @@ func (we *WorkflowExecutor) waitPoolMain(ctx context.Context, task poolpod.Task)
 		case <-terminated:
 			terminated = nil
 			if withdrew, err := task.Withdraw(); err == nil && withdrew {
-				we.stopPoolTask(ctx, task, poolReleased)
+				logging.RequireLoggerFromContext(ctx).Info(ctx, "Withdrew the task before main took it")
+				we.recordPoolStop(ctx, poolReleased)
 				continue
 			}
 			releaseTimer = time.NewTimer(time.Until(we.releaseAt()))
@@ -333,10 +329,5 @@ func (we *WorkflowExecutor) releasePoolTask(ctx context.Context) error {
 	if !ok {
 		return errors.New("the task's result can't be released")
 	}
-	err := s.Release(ctx)
-	if errors.Is(err, dispatch.ErrClaimLost) {
-		logging.RequireLoggerFromContext(ctx).WithError(err).Info(ctx, "The released task's claim was lost already")
-		return nil
-	}
-	return err
+	return UnlessClaimLost(ctx, s.Release(ctx), "The released task's claim was lost already")
 }

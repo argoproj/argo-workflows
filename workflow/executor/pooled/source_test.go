@@ -614,3 +614,38 @@ func TestPooledSinkRelease(t *testing.T) {
 	_, ok = f.TaskSet(testNamespace, dispatch.Key{NodeID: "node-1"}.TaskSetName())
 	assert.True(t, ok)
 }
+
+// The delay after a miss is random up to a limit: the minimum, doubled with
+// each miss in a row after the first, but never more than the maximum,
+// however long the run; a claim resets it. Unset bounds are the defaults,
+// and a maximum below the minimum is the minimum.
+func TestSourceMissBackoff(t *testing.T) {
+	consumer := dispatch.NewFake().Consumer(testWorker("worker-a"))
+	s := NewSource(consumer, Options{MinMissDelay: 9 * time.Second, MaxMissDelay: time.Minute})
+	assert.Zero(t, s.limit, "no delay before the first miss")
+	for _, want := range []time.Duration{9 * time.Second, 18 * time.Second, 36 * time.Second, time.Minute, time.Minute} {
+		s.miss()
+		assert.Equal(t, want, s.limit)
+	}
+	for range 100 {
+		s.miss()
+	}
+	assert.Equal(t, time.Minute, s.limit, "a long run of misses stays at the maximum")
+	s.hit()
+	assert.Zero(t, s.limit)
+	s.miss()
+	assert.Equal(t, 9*time.Second, s.limit)
+
+	s = NewSource(consumer, Options{})
+	s.miss()
+	assert.Equal(t, defaultMinMissDelay, s.limit)
+	for range 100 {
+		s.miss()
+	}
+	assert.Equal(t, defaultMaxMissDelay, s.limit)
+
+	s = NewSource(consumer, Options{MinMissDelay: time.Second, MaxMissDelay: time.Millisecond})
+	s.miss()
+	s.miss()
+	assert.Equal(t, time.Second, s.limit)
+}

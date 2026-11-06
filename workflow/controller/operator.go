@@ -3584,9 +3584,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	}
 
 	mainCtr := tmpl.Script.Container.DeepCopy()
-	if len(tmpl.Script.Source) > 0 {
-		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	}
+	mainCtr.Args = common.MainArgs(tmpl, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,

@@ -1506,7 +1506,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 // out any progress report in flight: the final reports that follow write
 // the same task result and must not overlap it.
 func (we *WorkflowExecutor) startProgressMonitor(ctx context.Context) (stop func()) {
-	if we.annotationPatchTickDuration == 0 || we.readProgressFileTickDuration == 0 {
+	if !common.ProgressMonitored(we.annotationPatchTickDuration, we.readProgressFileTickDuration) {
 		logging.RequireLoggerFromContext(ctx).WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
 		return func() {}
 	}
