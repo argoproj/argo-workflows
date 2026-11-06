@@ -24,13 +24,13 @@ func TestController(t *testing.T) {
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, clientset)
 	instanceIDService := instanceid.NewService("my-instanceid")
 	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewClientset())
-	newController := func(asyncDispatch bool) *Controller {
-		return NewController(ctx, instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
+	newController := func(asyncDispatch bool, excludedHeaders map[string]struct{}) *Controller {
+		return NewController(ctx, instanceIDService, eventRecorderManager, 1, 1, asyncDispatch, excludedHeaders)
 	}
 	e1 := &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}}
 	e2 := &eventpkg.EventRequest{}
 	t.Run("Async", func(t *testing.T) {
-		s := newController(true)
+		s := newController(true, nil)
 
 		_, err := s.ReceiveEvent(ctx, e1)
 		require.NoError(t, err)
@@ -47,7 +47,7 @@ func TestController(t *testing.T) {
 		assert.Empty(t, s.operationQueue, "all events were processed")
 	})
 	t.Run("Sync", func(t *testing.T) {
-		s := newController(false)
+		s := newController(false, nil)
 
 		_, err := s.ReceiveEvent(ctx, e1)
 		require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestController(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("SyncError", func(t *testing.T) {
-		s := newController(false)
+		s := newController(false, nil)
 
 		_, err := s.ReceiveEvent(ctx, &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{Value: json.RawMessage("!")}})
 		require.EqualError(t, err, "rpc error: code = Internal desc = failed to create workflow template expression environment: json: error calling MarshalJSON for type *v1alpha1.Item: invalid character '!' looking for beginning of value")
