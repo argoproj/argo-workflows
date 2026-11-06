@@ -17,7 +17,8 @@ in
     diffutils
     kubeauto
     mockery
-    protoc-gen-gogo-all
+    protoc-gen-go
+    protoc-gen-go-grpc
     grpc-ecosystem
     go-swagger
     controller-tools
@@ -87,9 +88,8 @@ in
 
       MODULES=(
         "sigs.k8s.io/controller-tools@v0.18.0"
-        "k8s.io/code-generator@v0.33.1"
-        "github.com/gogo/protobuf@v1.3.2"
-        "github.com/grpc-ecosystem/grpc-gateway@v1.16.0"
+        # renovate: datasource=go depName=k8s.io/code-generator
+        "k8s.io/code-generator@v0.35.4"
         "k8s.io/kube-openapi@424119656bbf"
       )
 

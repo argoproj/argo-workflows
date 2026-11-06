@@ -85,10 +85,10 @@ export const WorkflowsService = {
         return requests.loadEventSource(url).pipe(map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>)));
     },
 
-    watchEvents(namespace: string, fieldSelector: string): Observable<Event> {
+    watchEvents(namespace: string, fieldSelector: string): Observable<models.kubernetes.WatchEvent<Event>> {
         return requests
             .loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`)
-            .pipe(map(data => data && (JSON.parse(data).result as Event)));
+            .pipe(map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Event>)));
     },
 
     watchFields(query: {

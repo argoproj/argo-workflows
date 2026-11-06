@@ -39,7 +39,7 @@ public class Example {
 
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
-    SyncCreateSyncLimitRequest body = new SyncCreateSyncLimitRequest(); // SyncCreateSyncLimitRequest | 
+    SyncCreateSyncLimitBody body = new SyncCreateSyncLimitBody(); // SyncCreateSyncLimitBody | 
     try {
       SyncSyncLimitResponse result = apiInstance.syncServiceCreateSyncLimit(namespace, body);
       System.out.println(result);
@@ -59,7 +59,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
- **body** | [**SyncCreateSyncLimitRequest**](SyncCreateSyncLimitRequest.md)|  |
+ **body** | [**SyncCreateSyncLimitBody**](SyncCreateSyncLimitBody.md)|  |
 
 ### Return type
 
@@ -258,7 +258,7 @@ public class Example {
     SyncServiceApi apiInstance = new SyncServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
     String key = "key_example"; // String | 
-    SyncUpdateSyncLimitRequest body = new SyncUpdateSyncLimitRequest(); // SyncUpdateSyncLimitRequest | 
+    SyncUpdateSyncLimitBody body = new SyncUpdateSyncLimitBody(); // SyncUpdateSyncLimitBody | 
     try {
       SyncSyncLimitResponse result = apiInstance.syncServiceUpdateSyncLimit(namespace, key, body);
       System.out.println(result);
@@ -279,7 +279,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **namespace** | **String**|  |
  **key** | **String**|  |
- **body** | [**SyncUpdateSyncLimitRequest**](SyncUpdateSyncLimitRequest.md)|  |
+ **body** | [**SyncUpdateSyncLimitBody**](SyncUpdateSyncLimitBody.md)|  |
 
 ### Return type
 
