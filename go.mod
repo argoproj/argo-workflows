@@ -106,7 +106,7 @@ require (
 	k8s.io/client-go v0.35.4
 	k8s.io/gengo v0.0.0-20260408192533-25e2208e0dc3
 	k8s.io/klog/v2 v2.140.0
-	k8s.io/kube-openapi v0.0.0-20260821135717-be32def86098
+	k8s.io/kube-openapi v0.0.0-20261104182252-5bee61fc5225
 	k8s.io/kubectl v0.35.4
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5
@@ -185,7 +185,6 @@ require (
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
-	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.39.1-0.20260819172001-e6e3fd93e4be // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
@@ -202,18 +201,10 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.2 // indirect
-	github.com/go-openapi/swag v0.28.0 // indirect
-	github.com/go-openapi/swag/cmdutils v0.28.0 // indirect
 	github.com/go-openapi/swag/conv v0.28.0 // indirect
-	github.com/go-openapi/swag/fileutils v0.28.0 // indirect
 	github.com/go-openapi/swag/jsonutils v0.28.0 // indirect
-	github.com/go-openapi/swag/loading v0.28.0 // indirect
-	github.com/go-openapi/swag/mangling v0.28.0 // indirect
-	github.com/go-openapi/swag/netutils v0.28.0 // indirect
 	github.com/go-openapi/swag/pools v0.28.0 // indirect
-	github.com/go-openapi/swag/stringutils v0.28.0 // indirect
 	github.com/go-openapi/swag/typeutils v0.28.0 // indirect
-	github.com/go-openapi/swag/yamlutils v0.28.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.4-0.20181002190808-e7a84e9525fe // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
@@ -365,4 +356,5 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.20.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.1 // indirect
+	sigs.k8s.io/structured-merge-diff/v7 v7.0.0 // indirect
 )
