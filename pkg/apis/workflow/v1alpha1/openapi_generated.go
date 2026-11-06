@@ -7604,7 +7604,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"pool": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/",
+							Description: "Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap when the controller starts, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Pool"),
 						},
 					},
