@@ -8,8 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	argoerrors "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
@@ -98,7 +103,7 @@ func TestHarness_RunsEachTaskWithFreshExecutor(t *testing.T) {
 		}
 		return nil
 	}))
-	require.NoError(t, h.Run(ctx), "the role returned nil; the recorded error still reaches the sink")
+	require.EqualError(t, h.Run(ctx), "only in a", "the role returned nil; the recorded error is still the task's failure")
 	require.Len(t, seen, 2)
 	assert.NotSame(t, seen[0], seen[1])
 	require.NoError(t, seen[1].HasError())
@@ -257,6 +262,60 @@ func TestHarness_FinallyFailureReportedBeforeNextStage(t *testing.T) {
 	_ = h.Run(ctx)
 	assert.Equal(t, []string{"cleanup failed"}, failuresAtFinalize)
 	assert.Equal(t, []string{"cleanup failed"}, sinks["a"].failures, "reported once")
+}
+
+// A Finally stage's failure is the task's failure, so it is returned too:
+// in a pod the sink only writes the termination message, and the exit code
+// is what fails the pod.
+func TestHarness_FinallyFailureReturned(t *testing.T) {
+	ctx, h, sinks := newTestHarness(t, &sliceSource{tasks: tasks("a")}, testRole(
+		func(context.Context, context.Context, *WorkflowExecutor) error { return nil },
+		Stage{Name: "cleanup", Run: func(context.Context, *WorkflowExecutor) error {
+			return errors.New("cleanup failed")
+		}},
+	))
+	require.EqualError(t, h.Run(ctx), "cleanup failed")
+	assert.Equal(t, []string{"cleanup failed"}, sinks["a"].failures)
+}
+
+// The error Run returned still wins over a later Finally failure.
+func TestHarness_RunErrorWinsOverFinallyFailure(t *testing.T) {
+	ctx, h, _ := newTestHarness(t, &sliceSource{tasks: tasks("a")}, testRole(
+		func(context.Context, context.Context, *WorkflowExecutor) error { return errors.New("run failed") },
+		Stage{Name: "cleanup", Run: func(context.Context, *WorkflowExecutor) error {
+			return errors.New("cleanup failed")
+		}},
+	))
+	require.EqualError(t, h.Run(ctx), "run failed")
+}
+
+// In a pod the outputs and the completed label are written in one final
+// write by finalize-output. If that write fails the container must fail:
+// a pod that succeeds with its result never marked complete leaves the
+// node Running.
+func TestHarness_PodFinalizeFailureFailsTask(t *testing.T) {
+	ctx, h, _ := newTestHarness(t, &sliceSource{tasks: tasks(fakeNodeID)}, testRole(
+		func(ctx, _ context.Context, we *WorkflowExecutor) error {
+			return we.sink.Report(ctx, wfv1.NodeResult{Outputs: &wfv1.Outputs{Result: new("r")}})
+		},
+		finalizeOutput,
+	))
+	sinkCtx, s, terminated := newTestSink(t, false)
+	require.NoError(t, s.Start(sinkCtx))
+	// The service account may create the task result but not patch it.
+	clientset := argofake.NewClientset()
+	_, err := clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace).Create(sinkCtx, getTaskResult(sinkCtx, t, s), metav1.CreateOptions{})
+	require.NoError(t, err)
+	clientset.PrependReactor("patch", "workflowtaskresults", func(k8stesting.Action) (bool, k8sruntime.Object, error) {
+		return true, nil, apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, errors.New("no patch"))
+	})
+	s.client = clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	h.Sink = func(Task) ResultSink { return s }
+
+	err = h.Run(ctx)
+	require.Error(t, err)
+	assert.True(t, apierr.IsForbidden(err), "%v", err)
+	assert.Equal(t, []string{err.Error()}, *terminated)
 }
 
 // An error a role returns without recording it still reaches the sink.

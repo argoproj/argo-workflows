@@ -88,7 +88,9 @@ func (h *Harness) Run(ctx context.Context) error {
 // never marked complete without it. Each Finally stage runs even if an
 // earlier one panicked. A panic anywhere returns exit code
 // 1 with the panic as its message, which is what a pod reported before
-// tasks had a harness.
+// tasks had a harness. Otherwise it returns the error Run returned or, if
+// Run returned nil, the failure reported to the sink, so a task never
+// fails without its process failing too.
 //
 //nolint:contextcheck
 func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
@@ -101,10 +103,10 @@ func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
 
-	failed := false
+	var failure error
 	fail := func(cause error) {
-		if !failed {
-			failed = true
+		if failure == nil {
+			failure = cause
 			sink.Fail(bgCtx, cause)
 		}
 	}
@@ -151,6 +153,13 @@ func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
 		// In a pod, main() writes this cause to the termination log again;
 		// it is the same text the sink wrote.
 		return argoerrors.NewExitErrWithCause(1, panicCause)
+	}
+	if err == nil {
+		// A pod's sink only writes the termination message, so a failure
+		// Run didn't return, such as finalize-output's failed write, must
+		// still fail the container: otherwise the pod succeeds and the
+		// controller waits on a result that never completes.
+		return failure
 	}
 	return err
 }

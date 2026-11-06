@@ -1110,6 +1110,19 @@ func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 	}
 }
 
+// FinalizeOutputFor is FinalizeOutput for a command that runs outside the
+// harness and whose own error is err. It returns err or, if err is nil, the
+// first recorded error, so a failed final write fails the command: otherwise
+// the pod succeeds without its outputs, or with its result never marked
+// complete.
+func (we *WorkflowExecutor) FinalizeOutputFor(ctx context.Context, err error) error {
+	we.FinalizeOutput(ctx)
+	if err != nil {
+		return err
+	}
+	return we.HasError()
+}
+
 // InitializeOutput records the task's placeholder result.
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	if err := we.sink.Start(ctx); err != nil {

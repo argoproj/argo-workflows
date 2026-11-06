@@ -201,6 +201,50 @@ func TestTaskResultWrites_RejectedResultStillCompletes(t *testing.T) {
 	assert.True(t, apierr.IsBadRequest(we.HasError()), "the rejection is the error, got %v", we.HasError())
 }
 
+// TestTaskResultWrites_FinalizeOutputFor checks that a command outside the
+// harness (`argoexec resource`, `argoexec data`) fails when its final write
+// does, keeping its own earlier error if it had one.
+func TestTaskResultWrites_FinalizeOutputFor(t *testing.T) {
+	rejecting := func() *argofake.Clientset {
+		clientset := argofake.NewClientset()
+		clientset.PrependReactor("patch", "workflowtaskresults", func(action k8stesting.Action) (bool, k8sruntime.Object, error) {
+			if strings.Contains(string(action.(k8stesting.PatchAction).GetPatch()), `"outputs"`) {
+				return true, nil, apierr.NewBadRequest("outputs rejected")
+			}
+			return false, nil, nil
+		})
+		return clientset
+	}
+	tests := []struct {
+		name      string
+		clientset *argofake.Clientset
+		err       error
+		check     func(t *testing.T, err error)
+	}{
+		{"write succeeds", argofake.NewClientset(), nil, func(t *testing.T, err error) {
+			require.NoError(t, err)
+		}},
+		{"write rejected", rejecting(), nil, func(t *testing.T, err error) {
+			require.Error(t, err)
+			assert.True(t, apierr.IsBadRequest(err), "the rejection is the command's error, got %v", err)
+		}},
+		{"earlier error kept", rejecting(), errors.New("earlier"), func(t *testing.T, err error) {
+			require.EqualError(t, err, "earlier")
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			we := newTaskResultTestExecutor(t, wfv1.Template{Container: &corev1.Container{}}, &mocks.ContainerRuntimeExecutor{}, tt.clientset)
+			we.InitializeOutput(ctx)
+			require.NoError(t, we.ReportOutputs(ctx, nil, true))
+
+			tt.check(t, we.FinalizeOutputFor(ctx, tt.err))
+			assert.Equal(t, "true", getStoredTaskResult(t, tt.clientset).Labels[common.LabelKeyReportOutputsCompleted], "the result is complete either way")
+		})
+	}
+}
+
 // TestTaskResultWrites_OutageFailsOnce checks that when the API server is
 // unavailable for the whole retry timeout, FinalizeOutput gives up without
 // a second round of retries for the label alone.

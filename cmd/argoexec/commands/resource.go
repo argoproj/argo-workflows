@@ -30,12 +30,12 @@ func NewResourceCommand() *cobra.Command {
 }
 
 //nolint:contextcheck
-func execResource(ctx context.Context, action string) error {
+func execResource(ctx context.Context, action string) (err error) {
 	ctx = tracing.InjectTraceContext(ctx)
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
 	defer func() {
-		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
-			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		if shutdownErr := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); shutdownErr != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(shutdownErr).Error(ctx, "Failed to shutdown tracing")
 		}
 	}()
 
@@ -52,9 +52,10 @@ func execResource(ctx context.Context, action string) error {
 	// FinalizeOutput writes it.
 	finalReport := !wfExecutor.Template.SaveLogsAsArtifact()
 	if finalReport {
-		defer wfExecutor.FinalizeOutput(bgCtx) // Writes the outputs with LabelKeyReportOutputsCompleted set to true.
+		// Writes the outputs with LabelKeyReportOutputsCompleted set to true.
+		defer func() { err = wfExecutor.FinalizeOutputFor(bgCtx, err) }()
 	}
-	err := wfExecutor.StageFiles(ctx)
+	err = wfExecutor.StageFiles(ctx)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
 		return err
