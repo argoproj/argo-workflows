@@ -160,9 +160,9 @@ func (woc *wfOperationCtx) applyPooledEnding(ctx context.Context, node *wfv1.Nod
 		log.WithError(outcome.Err).Warn(ctx, "Failed to end a pooled task")
 		woc.requeue()
 	case outcome.Found != nil && outcome.Found.Completed:
-		woc.applyFoundCompletedClaim(ctx, node, *outcome.Found, phase, message)
+		woc.applyFoundCompletedClaim(ctx, node, *outcome.Found)
 	case outcome.Found != nil:
-		node = woc.recordFoundClaim(ctx, node, *outcome.Found)
+		node = woc.recordFoundClaim(ctx, node, outcome.Found.Claim)
 		woc.endInterruptedNode(ctx, node, outcome.Finished, phase, message)
 	case node.PooledTask.State() == wfv1.PooledTaskEnqueued:
 		// Dropped before any worker claimed it, so nothing runs it.
@@ -185,27 +185,13 @@ func (woc *wfOperationCtx) recordFoundClaim(ctx context.Context, node *wfv1.Node
 	return updated
 }
 
-// applyFoundCompletedClaim applies claim, a completed claim the drop of the
+// applyFoundCompletedClaim applies found, a completed claim the drop of the
 // unended node's queued task found, as the node's ending, since it ended
-// before the drop: the result is read live, as the cache may not have it, and
-// ingested. A read that fails leaves the node as it is and requeues the
-// workflow, as the result is still there to apply; nothing can claim the task
-// again, as its TaskSet is gone. If the claim was deleted or replaced since,
-// the node ends with phase and message, finished, since nothing runs its task.
-func (woc *wfOperationCtx) applyFoundCompletedClaim(ctx context.Context, node *wfv1.NodeStatus, claim dispatch.Claim, phase wfv1.NodePhase, message string) {
+// before the drop: the drop's live read of its result is ingested, as the
+// cache may not have it.
+func (woc *wfOperationCtx) applyFoundCompletedClaim(ctx context.Context, node *wfv1.NodeStatus, found dispatch.FoundClaim) {
 	woc.controller.pooledTaskSetsGone.record(woc.wf.UID, pooledTaskSetRef(node))
-	log := woc.log.WithFields(logging.Fields{"nodeID": node.ID, "claimUID": claim.UID})
-	result, err := woc.liveClaim(ctx, node, claim.UID)
-	switch {
-	case err != nil:
-		log.WithError(err).Warn(ctx, "Failed to read the completed claim a pooled task's drop found")
-		woc.requeue()
-	case result != nil:
-		woc.applyPooledResult(ctx, node, result, claim)
-	default:
-		log.Info(ctx, "The completed claim a pooled task's drop found is gone")
-		woc.endPooledNode(ctx, node, phase, message)
-	}
+	woc.applyPooledResult(ctx, node, found.Result, found.Claim)
 }
 
 // checkEndedPooledTasks checks every pooled node that has ended. An

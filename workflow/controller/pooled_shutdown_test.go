@@ -360,9 +360,9 @@ func TestPooledDeadlineDropFails(t *testing.T) {
 }
 
 // TestPooledShutdownDropFindsCompletedClaimUnread checks that when the drop
-// of a queued task finds a completed claim whose result can't then be read,
-// the node is left as it is rather than ended without its result, and the
-// next reconcile applies the result.
+// of a queued task deletes its TaskSet but can't read its result, the node is
+// left as it is rather than ended without its result, and the next drop
+// applies the completed claim it reads, with no other read of the result.
 func TestPooledShutdownDropFindsCompletedClaimUnread(t *testing.T) {
 	ctx, controller, fake, wf := newPooledStopController(t)
 	id := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep).ID
@@ -370,25 +370,25 @@ func TestPooledShutdownDropFindsCompletedClaimUnread(t *testing.T) {
 	h := claimPooledBy(ctx, t, fake, wf.Namespace, id, worker)
 	require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: &wfv1.Outputs{ExitCode: new("0")}}))
 
-	// The drop's read finds the completed claim; the read of its result
-	// that follows fails.
 	var gets int
+	fault := errors.New("transient")
 	fake.SetFault(func(op dispatch.Op) error {
 		if op.Verb == "get" && op.Resource == dispatch.ResourceResults {
-			if gets++; gets == 2 {
-				return errors.New("transient")
-			}
+			gets++
+			return fault
 		}
 		return nil
 	})
 	stop(ctx, t, controller, wf)
 	node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep)
-	fake.SetFault(nil)
-	require.Equal(t, 2, gets, "the drop's read and the result's")
+	require.Equal(t, 1, gets, "the drop's read")
 	assert.False(t, hasTaskSet(fake, wf.Namespace, id))
 	assert.False(t, node.Phase.Completed(), "the result is still there to apply")
 
+	gets, fault = 0, nil
 	node = mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStopStep)
+	fake.SetFault(nil)
+	assert.Equal(t, 1, gets, "the drop's read is the result applied")
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase, "the task ended before the drop")
 	assert.True(t, node.Fulfilled())
 	require.NotNil(t, node.Outputs)

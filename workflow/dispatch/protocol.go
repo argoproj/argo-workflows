@@ -193,7 +193,7 @@ func (d *dispatcher) removeTaskSet(ctx context.Context, key Key, uid types.UID) 
 	return fmt.Errorf("deleting WorkflowTaskSet %s/%s: %w", key.Namespace, key.TaskSetName(), err)
 }
 
-func (d *dispatcher) Drop(ctx context.Context, key Key, taskSetUID types.UID) (*Claim, error) {
+func (d *dispatcher) Drop(ctx context.Context, key Key, taskSetUID types.UID) (*FoundClaim, error) {
 	if err := d.removeTaskSet(ctx, key, taskSetUID); err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (d *dispatcher) Drop(ctx context.Context, key Key, taskSetUID types.UID) (*
 		// Not a claim on this TaskSet.
 		return nil, nil
 	}
-	return &claim, nil
+	return &FoundClaim{Claim: claim, Result: result}, nil
 }
 
 func (d *dispatcher) Interrupt(ctx context.Context, key Key, taskSetUID, claimUID types.UID) error {
