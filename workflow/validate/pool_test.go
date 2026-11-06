@@ -103,6 +103,21 @@ func TestPoolableRejectsUnpoolableFields(t *testing.T) {
 			mountAt("/data/shared")(wf, tmpl)
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
 		}, "templates.pooled.inputs.artifacts.in.path '/data' is an ancestor of volume mount 'data' (/data/shared), which a pooled template can't have"},
+		{"input path is the workingDir", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.WorkingDir = "/src"
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/src", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}, "templates.pooled.inputs.artifacts.in.path '/src' is or holds the workingDir '/src', which a pooled template can't have"},
+		{"input path holds a script's workingDir", func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
+			asScript(wf, tmpl)
+			tmpl.Script.WorkingDir = "/src/app"
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/src", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}, "is or holds the workingDir '/src/app'"},
+		{"debug pause before", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.Env = []apiv1.EnvVar{{Name: "ARGO_DEBUG_PAUSE_BEFORE", Value: "true"}}
+		}, "templates.pooled: ARGO_DEBUG_PAUSE_BEFORE can't be set on a pooled template"},
+		{"debug pause after", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.Env = []apiv1.EnvVar{{Name: "ARGO_DEBUG_PAUSE_AFTER", Value: "true"}}
+		}, "ARGO_DEBUG_PAUSE_AFTER can't be set on a pooled template"},
 		{"restartPolicy", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
 			tmpl.Container.RestartPolicy = new(apiv1.ContainerRestartPolicyAlways)
 		}, "templates.pooled.container.restartPolicy can't be set"},
@@ -155,6 +170,10 @@ func TestPoolableAllows(t *testing.T) {
 		{"input path inside a volume mount", func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
 			mountAt("/data")(wf, tmpl)
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}},
+		{"input path beneath the workingDir", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.WorkingDir = "/src"
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/src/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
 		}},
 		{"workflow volume named like a claim", func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
 			wf.Spec.Volumes = []apiv1.Volume{{Name: "claim", VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}}}}

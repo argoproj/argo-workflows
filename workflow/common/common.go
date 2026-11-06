@@ -217,6 +217,11 @@ const (
 	// termination grace period its worker stops a running task to release it,
 	// set on the pool pod's worker and main containers.
 	EnvVarReleaseReserveSeconds = "ARGO_RELEASE_RESERVE_SECONDS"
+	// EnvVarDebugPauseBefore and EnvVarDebugPauseAfter, set to "true" in a
+	// template's env, pause its main container before and after its
+	// command (Debug Pause).
+	EnvVarDebugPauseBefore = "ARGO_DEBUG_PAUSE_BEFORE"
+	EnvVarDebugPauseAfter  = "ARGO_DEBUG_PAUSE_AFTER"
 	// EnvVarIncludeScriptOutput capture the stdout and stderr
 	EnvVarIncludeScriptOutput = "ARGO_INCLUDE_SCRIPT_OUTPUT"
 	// EnvVarTemplate is the template
