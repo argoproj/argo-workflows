@@ -176,9 +176,12 @@ func (c *InitlessPodConfig) IsEnabled() bool {
 // EXPERIMENTAL: off by default, and may change in incompatible ways. See
 // Config.HotWorkers.
 type HotWorkersConfig struct {
-	// Enabled turns hot workers on. Default is false. The workflow controller
-	// reads it only when it starts, so restart the controller after changing
-	// it.
+	// Enabled turns hot workers on. Default is false, which fails any node
+	// whose template sets `pool`. Enabling it needs the optional hot workers
+	// RBAC component (manifests/components/hot-workers), which lets the
+	// controller manage Deployments. The workflow controller reads it only
+	// when it starts, so restart the controller after changing it. Turning it
+	// off while pooled tasks are queued or running isn't supported.
 	Enabled bool `json:"enabled,omitempty"`
 
 	// LeaseSlackSeconds is how long past a claimed task's deadline the controller
