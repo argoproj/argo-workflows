@@ -42,7 +42,7 @@
             # renovate: datasource=go depName=google.golang.org/grpc/cmd/protoc-gen-go-grpc
             protocGenGoGrpc = "1.5.1";
             # renovate: datasource=go depName=github.com/grpc-ecosystem/grpc-gateway/v2
-            grpcGateway = "2.29.0";
+            grpcGateway = "2.30.0";
             kubeOpenapi = "0.0.0-20220124234850-424119656bbf";
             goSwagger = "0.33.1";
             goimports = "0.35.0";
@@ -263,11 +263,11 @@
                 owner = "grpc-ecosystem";
                 repo = "grpc-gateway";
                 rev = "v${version}";
-                sha256 = "sha256-d9OIIGttyMBSNgpS6mbR5JEIm13qGu2gFHJazJAexdw=";
+                sha256 = "sha256-LoSfWF+bJ6p+XVdqauIcgESfse+F57aoADi3mYUf3lo=";
               };
               subPackages = [ "protoc-gen-grpc-gateway" "protoc-gen-openapiv2" ];
               doCheck = false;
-              vendorHash = "sha256-p51yD+v8+rPs+ztlX7r0VQ4XlwUkxu+PxgknKEvH00k=";
+              vendorHash = "sha256-e0CajogxQoHPanjek6nWebV2yHFja0QHHD57SNlLQDI=";
             };
 
             go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {
