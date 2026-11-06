@@ -8,8 +8,8 @@ The HTTP gateway moved from grpc-gateway v1 to v2, and `protoc-gen-openapiv2` re
 
 This is largely internal, but has some API-visible effects:
 
-    - The `/api/v1/stream/events/{namespace}` stream now wraps each event as `{"result": {"type": ..., "object": ...}}` instead of `{"result": <Event>}`, matching the other watch streams.
-    - Some OpenAPI definition names changed (for example `WorkflowCreateRequest` is now `CreateWorkflowBody`), which renames the corresponding generated SDK classes.
-    - HTTP error bodies now use the standard `google.rpc.Status` shape instead of grpc-gateway v1's error types.
+  - The `/api/v1/stream/events/{namespace}` stream now wraps each event as `{"result": {"type": ..., "object": ...}}` instead of `{"result": <Event>}`, matching the other watch streams.
+  - Some OpenAPI definition names changed (for example `WorkflowCreateRequest` is now `CreateWorkflowBody`), which renames the corresponding generated SDK classes.
+  - HTTP error bodies now use the standard `google.rpc.Status` shape instead of grpc-gateway v1's error types.
 
 See the upgrading guide for details.
