@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -55,6 +56,45 @@ func TestTaskResultSink_StartCreatesPlaceholder(t *testing.T) {
 	assert.Equal(t, "false", r.Labels[common.LabelKeyReportOutputsCompleted])
 	require.Len(t, r.OwnerReferences, 1)
 	assert.Equal(t, fakeWorkflow, r.OwnerReferences[0].Name)
+}
+
+func TestTaskResultSink_Create(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		instanceID string
+		labels     map[string]string
+	}{
+		{"WithoutInstanceID", "", map[string]string{
+			common.LabelKeyWorkflow:               fakeWorkflow,
+			common.LabelKeyReportOutputsCompleted: "false",
+		}},
+		{"WithInstanceID", "my-instance", map[string]string{
+			common.LabelKeyWorkflow:               fakeWorkflow,
+			common.LabelKeyReportOutputsCompleted: "false",
+			common.LabelKeyControllerInstanceID:   "my-instance",
+		}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, s, _ := newTestSink(t, false)
+			s.instanceID = tt.instanceID
+			require.NoError(t, s.create(ctx, wfv1.NodeResult{Progress: "1/2"}))
+			assert.True(t, s.created)
+
+			result := getTaskResult(ctx, t, s)
+			assert.Equal(t, &wfv1.WorkflowTaskResult{
+				TypeMeta: metav1.TypeMeta{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowTaskResultKind},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fakeNodeID,
+					Namespace: fakeNamespace,
+					Labels:    tt.labels,
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion: workflow.APIVersion, Kind: workflow.WorkflowKind, Name: fakeWorkflow, UID: fakeWorkflowUID,
+					}},
+				},
+				NodeResult: wfv1.NodeResult{Progress: "1/2"},
+			}, result)
+		})
+	}
 }
 
 func TestTaskResultSink_ReportThenFinalize(t *testing.T) {
