@@ -507,9 +507,9 @@ func Test_saveResourceParameters(t *testing.T) {
 }
 
 // SaveResourceParameters owns the wiring that saveResourceParameters does not: the short-circuit on
-// a template with no output parameters, and the ReportOutputs call. Neither is reachable from
-// saveResourceParameters, so both are pinned here - without this, deleting the ReportOutputs call
-// passes the whole unit suite.
+// a template with no output parameters, and the ReportOutputs call, which holds a final report for
+// Finalize and sends any other straight away. Neither is reachable from saveResourceParameters, so
+// both are pinned here - without this, deleting the ReportOutputs call passes the whole unit suite.
 func TestSaveResourceParameters(t *testing.T) {
 	tracingObj, err := tracing.New(logging.TestContext(t.Context()), `argoexec`)
 	require.NoError(t, err)
@@ -541,12 +541,33 @@ func TestSaveResourceParameters(t *testing.T) {
 		t.Cleanup(func() { kubectlRunnerFn = original })
 
 		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
+		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod", true))
 
 		require.Len(t, calls, 1)
 		assert.Equal(t, "my-pod", we.capturedOutputs().Parameters[0].Value.String())
 		require.Len(t, sink.reports, 1, "the resolved parameters must be reported")
 		assert.Equal(t, "my-pod", sink.reports[0].Outputs.Parameters[0].Value.String())
+		assert.Empty(t, sink.sends, "a final report must wait for Finalize")
+	})
+
+	// With archived logs, `argoexec resource` is not the task's last reporter: its report must be
+	// written straight away and leave completion to the wait container.
+	t.Run("a report that is not final is sent", func(t *testing.T) {
+		we, sink := newExecutor(wfv1.Parameter{
+			Name:      "name",
+			ValueFrom: &wfv1.ValueFrom{JSONPath: "{.metadata.name}"},
+		})
+		var calls [][]string
+		original := kubectlRunnerFn
+		kubectlRunnerFn = fakeKubectl(&calls)
+		t.Cleanup(func() { kubectlRunnerFn = original })
+
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod", false))
+
+		assert.Empty(t, sink.reports, "a report that is not final must not wait for Finalize")
+		require.Len(t, sink.sends, 1, "the resolved parameters must be sent")
+		assert.Equal(t, "my-pod", sink.sends[0].Outputs.Parameters[0].Value.String())
 	})
 
 	// A failure to resolve the parameters must propagate and must not report a partial result.
@@ -560,10 +581,11 @@ func TestSaveResourceParameters(t *testing.T) {
 		t.Cleanup(func() { kubectlRunnerFn = original })
 
 		ctx := logging.TestContext(t.Context())
-		err := we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod")
+		err := we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod", true)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boom")
 		assert.Empty(t, sink.reports, "nothing should be reported when resolution failed")
+		assert.Empty(t, sink.sends, "nothing should be sent when resolution failed")
 	})
 
 	// Must keep short-circuiting before ReportOutputs when the template has no output parameters,
@@ -571,19 +593,26 @@ func TestSaveResourceParameters(t *testing.T) {
 	t.Run("no output parameters reports nothing", func(t *testing.T) {
 		we, sink := newExecutor()
 		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
+		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod", true))
 		assert.Empty(t, sink.reports, "no task result should be written when there are no output parameters")
+		assert.Empty(t, sink.sends, "no task result should be written when there are no output parameters")
 	})
 }
 
-// reportingSink records what is reported and ignores everything else.
+// reportingSink records what is reported or sent and ignores everything else.
 type reportingSink struct {
 	recordingSink
 	reports []wfv1.NodeResult
+	sends   []wfv1.NodeResult
 }
 
 func (s *reportingSink) Report(_ context.Context, r wfv1.NodeResult) error {
 	s.reports = append(s.reports, r)
+	return nil
+}
+
+func (s *reportingSink) Send(_ context.Context, r wfv1.NodeResult) error {
+	s.sends = append(s.sends, r)
 	return nil
 }
 
