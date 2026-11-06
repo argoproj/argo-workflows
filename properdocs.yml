@@ -134,6 +134,7 @@ nav:
           - memoization.md
           - template-defaults.md
           - enhanced-depends-logic.md
+          - dag-and-steps-execution.md
           - node-field-selector.md
           - pod-restarts.md
       - Status:

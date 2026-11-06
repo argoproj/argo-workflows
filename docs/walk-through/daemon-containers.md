@@ -76,3 +76,26 @@ spec:
 ```
 
 Step templates use the `steps` prefix to refer to another step: for example `{{steps.influx.ip}}`. In DAG templates, the `tasks` prefix is used instead: for example `{{tasks.influx.ip}}`.
+
+## When a daemon dies
+
+A daemon step can die after its step group has finished.
+The step group stays `Succeeded`.
+The daemon's node fails.
+The Steps template and the workflow fail with the message `child '<node ID>' failed`, and no further step group starts.
+
+In a DAG template, a daemon task that dies once it is running fails the DAG in the same way.
+An expanded daemon task has `withItems`, `withParam` or `withSequence`.
+When its items die after its `TaskGroup` node has finished, they also fail the DAG.
+
+A daemon step or task without items that dies in this way runs its exit hook.
+It also runs each lifecycle hook whose expression matches the phase that the daemon ends in.
+The template waits for these hooks to finish, and then ends `Failed`.
+The items of an expanded daemon step or task that die in this way do not start new hooks.
+
+When a daemon with a `retryStrategy` dies, the controller retries it while the steps or tasks that use it are running.
+A daemon can also die in the same reconciliation in which the controller sees the last of those steps or tasks finish.
+The controller then also retries the daemon: the template starts a new attempt and waits for it to be ready before the template ends.
+So the workflow runs one more pod and finishes later.
+If the new attempt never becomes ready, for example because its pod cannot be scheduled, the workflow stays `Running`.
+It stays `Running` until the attempt's `pendingTimeout` or `timeout`, or the workflow's `activeDeadlineSeconds`, passes.
