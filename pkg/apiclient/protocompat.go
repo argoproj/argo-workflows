@@ -23,8 +23,9 @@ func init() {
 		if r := recover(); r != nil {
 			panic(fmt.Sprintf(
 				"pkg/apiclient cannot marshal Kubernetes types (%v); "+
-					"build with -tags=kubernetes_protomessage_one_more_release (Kubernetes v1.35 only) "+
-					"or use the argo-workflows patched vendor tree (`make vendor`) — see docs/upgrading.md",
+					"build with -tags=kubernetes_protomessage_one_more_release and keep k8s.io/* at v0.35 "+
+					"(inside the argo-workflows repository, run `make vendor`) — see "+
+					"https://argo-workflows.readthedocs.io/en/latest/go-sdk-guide/#building-programs-that-use-the-argo-server-client",
 				r))
 		}
 	}()
