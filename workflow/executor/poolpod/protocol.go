@@ -249,6 +249,26 @@ func (t Task) Withdraw() (bool, error) {
 	return by == withdrawn, nil
 }
 
+// WithdrawOrStop makes sure main never starts the task, if it hasn't, by
+// withdrawing it, or else asks main to stop it for reason. It reports
+// whether it withdrew the task and, if not, the stop reason that stands
+// (Stop). A failure to withdraw still asks main to stop, so the error is
+// only for neither working.
+func (t Task) WithdrawOrStop(reason StopReason) (withdrew bool, stood StopReason, err error) {
+	withdrew, withdrawErr := t.Withdraw()
+	if withdrawErr == nil && withdrew {
+		return true, "", nil
+	}
+	stood, err = t.Stop(reason)
+	if err != nil {
+		if withdrawErr != nil {
+			err = errors.Join(fmt.Errorf("failed to withdraw the task: %w", withdrawErr), err)
+		}
+		return false, "", fmt.Errorf("failed to stop the task: %w", err)
+	}
+	return false, stood, nil
+}
+
 // Stop asks main to stop the task, and returns the reason that stands: the
 // first reason written wins, so a later Stop returns the earlier reason.
 // Called by the worker; it may be called before main has taken the task.

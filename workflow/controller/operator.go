@@ -2023,11 +2023,7 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			continue
 		}
 
-		msg := fmt.Sprintf("%s (exit code %d)", t.Reason, t.ExitCode)
-		if t.Message != "" {
-			msg = fmt.Sprintf("%s: %s", msg, t.Message)
-		}
-		msg = fmt.Sprintf("%s: %s", ctr.Name, msg)
+		msg := common.ContainerFailureMessage(ctr.Name, t.Reason, int(t.ExitCode), t.Message)
 
 		switch {
 		case ctr.Name == common.InitContainerName:
@@ -3588,9 +3584,7 @@ func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, t
 	}
 
 	mainCtr := tmpl.Script.Container.DeepCopy()
-	if len(tmpl.Script.Source) > 0 {
-		mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	}
+	mainCtr.Args = common.MainArgs(tmpl, common.ExecutorScriptSourcePath)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,

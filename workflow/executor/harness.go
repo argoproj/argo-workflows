@@ -12,6 +12,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
+// ErrNoTask is Harness.Run's error when the source yielded no task.
+var ErrNoTask = errors.New("no task to run")
+
 // TaskSource yields the tasks a process runs, one at a time.
 type TaskSource interface {
 	// Next returns the next task. Check err first; ok=false means the
@@ -51,7 +54,7 @@ type Harness struct {
 }
 
 // Run runs tasks until the source is exhausted or ctx is cancelled. It
-// returns the source's error if Next fails, an error if the source yielded
+// returns the source's error if Next fails, ErrNoTask if the source yielded
 // nothing, and otherwise the first task's error (nil if every task
 // succeeded). The first task always runs, so a pod's task still collects
 // and finalizes after SIGTERM; once ctx is cancelled no further task is
@@ -76,16 +79,20 @@ func (h *Harness) Run(ctx context.Context) error {
 		}
 	}
 	if !ran {
-		return errors.New("no task to run")
+		return ErrNoTask
 	}
 	return firstErr
 }
 
 // runTask runs one task through the role on its own context, which ends
-// with the task. Its failure (a panic, else the first recorded error, else
-// the error Run returned) is reported to the sink before the Finally stages
-// run, so a result is never marked complete without it. Each Finally stage
-// runs even if an earlier one panicked. A panic anywhere returns exit code
+// with the task and continues the task's trace context. Its failure (a
+// panic, else the first recorded error, else the error Run returned) is
+// reported to the sink before the Finally stages run, so a result is never
+// marked complete without it. Each Finally stage runs even if an earlier
+// one panicked. A failure in Finally is reported only if nothing failed
+// before it, and only reaches the result if the stage completing the
+// result comes after it: a pod's roles complete it last, while PoolRole
+// completes its claim first (PoolRole). A panic anywhere returns exit code
 // 1 with the panic as its message, which is what a pod reported before
 // tasks had a harness.
 //
@@ -95,7 +102,7 @@ func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
 	we := h.Process.NewExecutor(task, h.Role.Layout, sink)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	ctx, span := h.Role.StartSpan(we, ctx)
+	ctx, span := h.Role.StartSpan(we, task.Config.withTraceContext(ctx))
 	defer span.End()
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
@@ -140,7 +147,8 @@ func (h *Harness) runTask(ctx context.Context, task Task) (err error) {
 		}()
 	}
 	// An error from Finally is the task's failure only if nothing failed
-	// before it.
+	// before it, and is reported too late to be in a result already
+	// completed.
 	if first := we.HasError(); first != nil {
 		fail(first)
 	}

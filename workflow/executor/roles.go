@@ -111,27 +111,45 @@ var (
 		Finally: []Stage{killArtifactSidecars, finalizeOutput},
 	}
 
-	// WorkerRole runs a task's whole flow in this process: check the
-	// template, prepare the task's own tree, run main through the process's
-	// MainDriver, collect, then remove the task's files. Exercised only by
-	// tests until a worker command exists.
-	WorkerRole = Role{
-		Name:   "worker",
-		Layout: LayoutWorker,
+	// PoolRole is a hot worker pool pod's worker container, for each task
+	// it claims: it prepares the task in directories of its own, hands it
+	// to the pool pod's looping main container and waits for main to run
+	// it, collects its outputs, completes its claim, then leaves the pool
+	// pod as it found it for the next task. Unlike a pod's roles it never
+	// kills the artifact plugin sidecars: the pool's tasks share them.
+	PoolRole = Role{
+		Name:   "pool",
+		Layout: LayoutPool,
 		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
 			return we.Tracing.StartRunWorkerTask(ctx, we.WorkflowName(), we.Namespace)
 		},
 		Run: func(ctx, bgCtx context.Context, we *WorkflowExecutor) error {
-			// Main runs in the Run phase, so if Prepare failed nothing ran
-			// and there is nothing to collect.
-			if err := we.Prepare(ctx); err != nil {
+			// Main is offered the task only once it is prepared, so if
+			// Prepare failed main never saw it and there is nothing to
+			// collect. Preparing is cut short if the task must stop, such
+			// as when the worker is terminated, which releases it.
+			prepareCtx, cancel := we.poolPrepareContext(ctx)
+			err := we.Prepare(prepareCtx)
+			cancel()
+			if err != nil {
+				if stop := we.pendingStop(); stop != poolNotStopped {
+					we.recordPoolStop(ctx, stop)
+					return nil
+				}
+				// A pool that couldn't be cleared releases the task.
+				if we.poolTask.stop != poolNotStopped {
+					return nil
+				}
 				we.AddError(ctx, err)
 				return err
 			}
-			return we.PostMain(ctx, bgCtx, false)
+			return we.runPoolTask(ctx, bgCtx)
 		},
-		// Cleanup can fail the task, so it runs before the outputs are
-		// marked complete: nothing is reported after that.
-		Finally: []Stage{removeTaskRoot, finalizeOutput},
+		// The claim is completed first, unlike a pod's result: removing
+		// the task's files and wiping main's emptyDir volumes are the next
+		// task's concern, not this one's outcome. If either fails, the
+		// task's result stands and the worker stops (afterPoolTask), so
+		// its restart clears the pool before it claims another.
+		Finally: []Stage{completePoolTask, removePoolTask, wipeEmptyDirs},
 	}
 )

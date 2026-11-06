@@ -139,6 +139,24 @@ func TestWithdraw_FailsOnceMainHasTheTask(t *testing.T) {
 	assert.Equal(t, Status{State: Running}, status(t, task))
 }
 
+// A task main hasn't taken is withdrawn; one it has is asked to stop.
+func TestWithdrawOrStop(t *testing.T) {
+	p := newPool(t)
+	task := offered(t, p, "a")
+	withdrew, _, err := task.WithdrawOrStop(StopLost)
+	require.NoError(t, err)
+	assert.True(t, withdrew)
+
+	task = offered(t, p, "b")
+	run, err := task.Take(t.Context())
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = run.Finish(0, "") })
+	withdrew, stood, err := task.WithdrawOrStop(StopLost)
+	require.NoError(t, err)
+	assert.False(t, withdrew)
+	assert.Equal(t, StopLost, stood)
+}
+
 // A restarted main doesn't re-run a taken task.
 func TestTake_SkipsATaskAlreadyTaken(t *testing.T) {
 	p := newPool(t)

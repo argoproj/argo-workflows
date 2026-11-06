@@ -18,17 +18,6 @@ import (
 
 // Prepare-phase stages.
 var (
-	// checkWorker fails a worker task the worker cannot run, before any
-	// work is done.
-	checkWorker = Stage{Name: "check-worker", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.checkWorker()
-	}}
-	// createTaskDirs gives a worker's task an empty tree under its root. A
-	// retried node reuses its node ID, so anything left from the last
-	// attempt is removed first.
-	createTaskDirs = Stage{Name: "create-task-dirs", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.createTaskDirs()
-	}}
 	// installArgoexec copies the argoexec binary into the shared volume and
 	// writes the template: the legacy init container's job. The init-less
 	// layout delivers the binary via an image volume and needs only
@@ -44,6 +33,21 @@ var (
 	}}
 	loadArtifacts = Stage{Name: "load-artifacts", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.LoadArtifactsWithoutPlugins(ctx)
+	}}
+	// clearPool empties main's emptyDir volumes and removes what other
+	// tasks left in a pool pod's shared directories, so a pool pod's task
+	// sees no other task's files there.
+	clearPool = Stage{Name: "clear-pool", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.clearPoolForTask(ctx)
+	}}
+	// createPoolTask creates a pool pod's task's own directories.
+	createPoolTask = Stage{Name: "create-pool-task", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.createPoolTask()
+	}}
+	// writePoolTask writes the task file a pool pod's main runs the task
+	// from, once everything else main needs is in place.
+	writePoolTask = Stage{Name: "write-pool-task", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.writePoolTask()
 	}}
 )
 
@@ -72,13 +76,13 @@ var (
 		we.InitializeOutput(context.WithoutCancel(ctx))
 		return nil
 	}}
-	// runMain runs main in this process (worker layout), where waitMain
-	// waits for main's container (pod layouts).
-	runMain = Stage{Name: "run-main", Run: func(ctx context.Context, we *WorkflowExecutor) error {
-		return we.runMain(ctx)
-	}}
 	waitMain = Stage{Name: "wait", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.Wait(ctx)
+	}}
+	// runInPool hands a pool pod's task to main and waits for main to run
+	// it.
+	runInPool = Stage{Name: "run-in-pool", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.runPoolMain(ctx)
 	}}
 )
 
@@ -103,6 +107,11 @@ var (
 	reportOutputs = Stage{Name: "report-outputs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
 		return we.ReportOutputs(ctx, we.savedArtifacts)
 	}}
+	// reportPoolLogs archives and reports main's log alone, if there is
+	// one, for a pool pod's task whose node was ended by the controller.
+	reportPoolLogs = Stage{Name: "report-pool-logs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.reportPoolLogs(ctx)
+	}}
 	// reportLogs is the resource template's whole Collect phase: its output
 	// parameters were already reported by `argoexec resource`, and a full
 	// report-outputs would overwrite them with the template's empty values.
@@ -121,9 +130,18 @@ var (
 		we.FinalizeOutput(ctx)
 		return nil
 	}}
-	// removeTaskRoot removes a worker task's own files once it is done.
-	removeTaskRoot = Stage{Name: "remove-task-root", Run: func(_ context.Context, we *WorkflowExecutor) error {
-		return we.removeTaskRoot()
+	// completePoolTask completes a pool pod's task's claim, or stops the
+	// worker if it can't.
+	completePoolTask = Stage{Name: "complete-pool-task", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.completePoolTask(ctx)
+	}}
+	// removePoolTask removes a pool pod's task's own directories.
+	removePoolTask = Stage{Name: "remove-pool-task", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.afterPoolTask(ctx, we.removePoolTask())
+	}}
+	// wipeEmptyDirs empties main's emptyDir volumes after a pool pod's task.
+	wipeEmptyDirs = Stage{Name: "wipe-empty-dirs", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		return we.afterPoolTask(ctx, we.wipeEmptyDirs())
 	}}
 )
 

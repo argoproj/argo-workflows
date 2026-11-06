@@ -16,6 +16,8 @@ resources:
   - workflow-manager-default-rolebinding.yaml
   - agent-role.yaml
   - agent-default-rolebinding.yaml
+  - hot-worker-role.yaml
+  - hot-worker-default-rolebinding.yaml
   - artifactgc-role.yaml
   - artifactgc-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml

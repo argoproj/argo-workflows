@@ -833,26 +833,26 @@ func TestMonitorProgress(t *testing.T) {
 		nil,
 		func(TaskPaths) ContainerRuntimeExecutor { return &mocks.ContainerRuntimeExecutor{} },
 		ProcessConfig{
-			PodName:                      fakePodName,
-			PodUID:                       fakePodUID,
-			Namespace:                    fakeNamespace,
-			AnnotationPatchTickDuration:  annotationPackTickDuration,
-			ReadProgressFileTickDuration: readProgressFileTickDuration,
-			TaskResultRetryTimeout:       90 * time.Second,
+			PodName:                fakePodName,
+			PodUID:                 fakePodUID,
+			Namespace:              fakeNamespace,
+			TaskResultRetryTimeout: 90 * time.Second,
 		},
 	)
 	require.NoError(t, err)
 	assert.Equal(t, 90*time.Second, process.taskResultRetryTimeout)
 	assert.Equal(t, defaultTaskResultBackoff, process.taskResultBackoff)
 	cfg := TaskConfig{
-		WorkflowName:        fakeWorkflow,
-		WorkflowUID:         fakeWorkflowUID,
-		NodeID:              fakeNodeID,
-		Template:            wfv1.Template{},
-		IncludeScriptOutput: false,
-		Deadline:            time.Now(),
+		WorkflowName:              fakeWorkflow,
+		WorkflowUID:               fakeWorkflowUID,
+		NodeID:                    fakeNodeID,
+		Template:                  wfv1.Template{},
+		IncludeScriptOutput:       false,
+		Deadline:                  time.Now(),
+		ProgressPatchTickDuration: annotationPackTickDuration,
+		ProgressFileTickDuration:  readProgressFileTickDuration,
 	}
-	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, LayoutLegacy, process.NewTaskResultSink(cfg, false))
+	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, LayoutLegacy, process.NewTaskResultSink(cfg))
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -952,7 +952,7 @@ func TestReportOutputs(t *testing.T) {
 			},
 			Template: templateWithArtifacts,
 		}
-		we.sink = we.NewTaskResultSink(TaskConfig{}, false)
+		we.sink = we.NewTaskResultSink(TaskConfig{})
 
 		err = we.ReportOutputs(ctx, artifacts)
 
@@ -989,7 +989,7 @@ func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration
 		workflow: fakeWorkflow,
 		nodeID:   fakeNodeID,
 	}
-	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: fakeWorkflow, NodeID: fakeNodeID}, false)
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: fakeWorkflow, NodeID: fakeNodeID})
 	return we, clientset
 }
 
@@ -1286,26 +1286,26 @@ func TestWaitMainContainers(t *testing.T) {
 	})
 }
 
-// A worker's tasks each need their own runtime; one built from anything but
-// the task's paths would read every task's outputs from the same place.
+// A pool pod's tasks each need their own runtime; one built from anything
+// but the task's paths would read every task's outputs from the same place.
 func TestNewExecutor_BuildsRuntimeFromTaskPaths(t *testing.T) {
 	var got TaskPaths
 	p := &Process{newRuntime: func(paths TaskPaths) ContainerRuntimeExecutor {
 		got = paths
 		return &mocks.ContainerRuntimeExecutor{}
 	}}
-	want, err := WorkerPaths("/w", "node-1")
+	want, err := PodPaths().PoolTask("node-1")
 	require.NoError(t, err)
 	p.NewExecutor(Task{Paths: want}, LayoutLegacy, nil)
 	assert.Equal(t, want, got)
 }
 
-// A worker links input artifacts like an init-less pod, so an output at an
-// input's path is read from what main left there (staged by runMain), not
-// from the input it was given.
-func TestIsBaseImagePathWorker(t *testing.T) {
+// A pool pod links input artifacts like an init-less pod, so an output at
+// an input's path is read from what main left there (staged by the looping
+// emissary), not from the input it was given.
+func TestIsBaseImagePathPool(t *testing.T) {
 	we := &WorkflowExecutor{
-		layout:  LayoutWorker,
+		layout:  LayoutPool,
 		Process: &Process{},
 		Template: wfv1.Template{
 			Container: &corev1.Container{},
@@ -1314,7 +1314,7 @@ func TestIsBaseImagePathWorker(t *testing.T) {
 	}
 	assert.True(t, we.isBaseImagePath("/samedir"))
 	assert.True(t, we.isBaseImagePath("/samedir/nested"))
-	assert.True(t, LayoutWorker.linksInputArtifacts())
+	assert.True(t, LayoutPool.linksInputArtifacts())
 	assert.True(t, LayoutInitless.linksInputArtifacts())
 	assert.False(t, LayoutLegacy.linksInputArtifacts())
 }

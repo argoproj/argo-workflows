@@ -151,7 +151,7 @@ func TestHarness_NextErrorReturned(t *testing.T) {
 
 func TestHarness_ZeroTasksIsError(t *testing.T) {
 	ctx, h, _ := newTestHarness(t, &sliceSource{}, testRole(func(context.Context, context.Context, *WorkflowExecutor) error { return nil }))
-	assert.EqualError(t, h.Run(ctx), "no task to run")
+	assert.ErrorIs(t, h.Run(ctx), ErrNoTask)
 }
 
 func TestHarness_StopsBetweenTasksOnCancel(t *testing.T) {
@@ -272,5 +272,55 @@ func TestRoles_Finally(t *testing.T) {
 	assert.Empty(t, names(InitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(WaitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(SupervisorRole.Finally))
-	assert.Equal(t, []string{"remove-task-root", "finalize-output"}, names(WorkerRole.Finally))
+	assert.Equal(t, []string{"complete-pool-task", "remove-pool-task", "wipe-empty-dirs"}, names(PoolRole.Finally))
+}
+
+// Each task's spans continue the trace context it came with.
+func TestHarness_TaskContinuesItsTraceContext(t *testing.T) {
+	const parent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+	traced := tasks("traced", "untraced")
+	traced[0].Config.TraceContext = map[string]string{"traceparent": parent}
+	var got []trace.SpanContext
+	ctx, h, _ := newTestHarness(t, &sliceSource{tasks: traced}, testRole(func(ctx, _ context.Context, _ *WorkflowExecutor) error {
+		got = append(got, trace.SpanContextFromContext(ctx))
+		return nil
+	}))
+	require.NoError(t, h.Run(ctx))
+	require.Len(t, got, 2)
+	assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", got[0].TraceID().String())
+	assert.True(t, got[0].IsRemote())
+	assert.False(t, got[1].IsValid(), "a task without a trace context doesn't continue another's")
+}
+
+// A task's top-level span continues the trace context it carries, as a
+// pod's continue the controller's.
+func TestHarness_TaskSpanContinuesItsTraceContext(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tr, exporter, err := tracing.CreateDefaultTestTracing(ctx)
+	require.NoError(t, err)
+	task := Task{Paths: PodPaths(), Config: TaskConfig{
+		NodeID:       "a",
+		TraceContext: map[string]string{"traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"},
+	}}
+	role := testRole(func(context.Context, context.Context, *WorkflowExecutor) error { return nil })
+	role.StartSpan = func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+		return we.Tracing.StartRunWaitContainer(ctx, we.WorkflowName(), we.Namespace)
+	}
+	h := &Harness{
+		Process: &Process{
+			Tracing:    tr,
+			newRuntime: func(TaskPaths) ContainerRuntimeExecutor { return &mocks.ContainerRuntimeExecutor{} },
+		},
+		Source: &sliceSource{tasks: []Task{task}},
+		Sink:   func(Task) ResultSink { return &recordingSink{} },
+		Role:   role,
+	}
+
+	require.NoError(t, h.Run(ctx))
+
+	span, err := exporter.GetSpanByName("runWaitContainer")
+	require.NoError(t, err)
+	assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", span.SpanContext().TraceID().String())
+	assert.Equal(t, "b7ad6b7169203331", span.Parent().SpanID().String())
+	assert.True(t, span.Parent().IsRemote())
 }

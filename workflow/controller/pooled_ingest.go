@@ -72,10 +72,11 @@ func (woc *wfOperationCtx) discardPooledResult(ctx context.Context, node *wfv1.N
 // write, so they are applied together, as a pod's status and task result
 // would be, and a succeeded node's outputs are memoized. The node's spans
 // follow its phase, as a pod's node's do. A node that has
-// already ended, by its own result or by the controller, takes nothing from
-// it but the arrival of a completed result, which finishes a node waiting for
-// its interrupted task to stop; an incomplete claim on it is interrupted
-// (checkEndedPooledTasks).
+// already ended, by its own result or by the controller, keeps its phase and
+// message. A completed result finishes a node waiting for its interrupted
+// task to stop, and the node takes the artifacts the worker archived, main's
+// log, as a stopped pod's node takes its task result's; an incomplete claim
+// on it is interrupted (checkEndedPooledTasks).
 //
 // An incomplete claim is left alone until its claimant pod is cached, so the
 // ledger never records a claim without the worker container restart count it
@@ -84,6 +85,7 @@ func (woc *wfOperationCtx) discardPooledResult(ctx context.Context, node *wfv1.N
 func (woc *wfOperationCtx) applyPooledResult(ctx context.Context, node *wfv1.NodeStatus, result *wfv1.WorkflowTaskResult, claim dispatch.Claim) {
 	if node.Phase.Completed() {
 		if claim.Completed && woc.wf.Status.IsTaskResultIncomplete(node.ID) {
+			woc.keepInterruptedArtifacts(ctx, node, result)
 			woc.finishPooledNode(ctx, node.ID, "its claim was completed")
 		}
 		return
@@ -124,6 +126,23 @@ func (woc *wfOperationCtx) applyPooledResult(ctx context.Context, node *wfv1.Nod
 		woc.controller.tracing.ChangeNodePhase(ctx, woc.wf.Namespace+"/"+woc.wf.Name, updated.ID, updated.Phase, updated.Message)
 		woc.updated = true
 	}
+}
+
+// keepInterruptedArtifacts records on the ended node the artifacts in its
+// interrupted task's completed result: the worker archives only main's log
+// for an interrupted task. Nothing else the result says is taken, since the
+// node's outcome is the controller's.
+func (woc *wfOperationCtx) keepInterruptedArtifacts(ctx context.Context, node *wfv1.NodeStatus, result *wfv1.WorkflowTaskResult) {
+	if result.Outputs == nil || len(result.Outputs.Artifacts) == 0 {
+		return
+	}
+	updated := node.DeepCopy()
+	if updated.Outputs == nil {
+		updated.Outputs = &wfv1.Outputs{}
+	}
+	updated.Outputs.Artifacts = append(updated.Outputs.Artifacts, result.Outputs.Artifacts...)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *updated)
+	woc.updated = true
 }
 
 // completePooledNode records the completed result of a pooled node's task on

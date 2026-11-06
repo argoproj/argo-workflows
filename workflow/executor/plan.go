@@ -17,16 +17,18 @@ const (
 	// LayoutInitless is the init-less pod: a supervisor container prepares
 	// and collects while main waits for its ready marker.
 	LayoutInitless
-	// LayoutWorker runs the whole flow in one process, main included.
-	LayoutWorker
+	// LayoutPool is a hot worker pool pod: its worker container prepares
+	// and collects each task while its main container, looping, runs the
+	// pool's tasks one after another.
+	LayoutPool
 )
 
 // linksInputArtifacts reports whether main sees its input artifacts as
 // symlinks into the input-artifacts directory (staged by the emissary in
-// an init-less pod, by runMain in a worker), rather than through
-// per-artifact bind mounts that main's writes land in.
+// an init-less pod, by the looping emissary in a pool pod), rather than
+// through per-artifact bind mounts that main's writes land in.
 func (l Layout) linksInputArtifacts() bool {
-	return l == LayoutInitless || l == LayoutWorker
+	return l == LayoutInitless || l == LayoutPool
 }
 
 func (l Layout) String() string {
@@ -35,8 +37,8 @@ func (l Layout) String() string {
 		return "legacy"
 	case LayoutInitless:
 		return "initless"
-	case LayoutWorker:
-		return "worker"
+	case LayoutPool:
+		return "pool"
 	}
 	return fmt.Sprintf("Layout(%d)", int(l))
 }
@@ -46,27 +48,26 @@ func (l Layout) String() string {
 // installs the binary and loads only non-plugin artifacts (each plugin has
 // its own init container), the init-less supervisor writes the template
 // and loads everything in parallel, and in both pods the Run phase waits
-// for main's container. A worker checks the template, prepares the task's
-// own tree and runs main itself. The template decides how outputs are
-// collected.
+// for main's container. A pool pod's worker prepares like the
+// init-less supervisor, but into the task's own directories after clearing
+// what other tasks left, then hands the task to main and waits for it. The
+// template decides how outputs are collected.
 func planFor(tmpl *wfv1.Template, layout Layout, inputPlugins []wfv1.ArtifactPluginName) Plan {
 	plan := Plan{
 		Prepare: []Stage{installArgoexec, stageFiles, loadArtifacts},
 		Run:     []Stage{initializeOutput, waitMain},
 		Collect: []Stage{captureScriptResult, saveParameters, saveArtifacts, saveLogs, reportOutputs},
 	}
+	load := []Stage{loadArtifacts}
+	for _, p := range inputPlugins {
+		load = append(load, loadArtifactsFromPlugin(p))
+	}
 	switch layout {
 	case LayoutInitless:
-		load := []Stage{loadArtifacts}
-		for _, p := range inputPlugins {
-			load = append(load, loadArtifactsFromPlugin(p))
-		}
 		plan.Prepare = []Stage{writeTemplate, stageFiles, Parallel(load...)}
-	case LayoutWorker:
-		// One process runs everything: the template is in memory, so there
-		// is nothing to install or write for another container.
-		plan.Prepare = []Stage{checkWorker, createTaskDirs, stageFiles, loadArtifacts}
-		plan.Run = []Stage{initializeOutput, runMain}
+	case LayoutPool:
+		plan.Prepare = []Stage{clearPool, createPoolTask, stageFiles, Parallel(load...), writePoolTask}
+		plan.Run = []Stage{initializeOutput, runInPool}
 	}
 	if tmpl.Resource != nil {
 		plan.Collect = []Stage{reportLogs}
