@@ -32,7 +32,7 @@ func (in *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
 		return wait.Backoff{Steps: 1}, nil
 	}
 
-	backoff := wait.Backoff{Steps: in.RetryStrategy.Retries.IntValue()}
+	backoff := wait.Backoff{Steps: max(1, in.RetryStrategy.Retries.IntValue()+1)}
 
 	if in.RetryStrategy.Duration == "" {
 		return backoff, nil

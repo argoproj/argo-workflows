@@ -31,7 +31,19 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		}
 		strategy, err := set.GetRetryStrategy()
 		require.NoError(t, err)
-		assert.Equal(t, wait.Backoff{Steps: 100}, strategy)
+		assert.Equal(t, wait.Backoff{Steps: 101}, strategy)
+	})
+
+	t.Run("ZeroRetries", func(t *testing.T) {
+		retries := intstr.FromInt(0)
+		set := ContainerSetTemplate{
+			RetryStrategy: &ContainerSetRetryStrategy{
+				Retries: &retries,
+			},
+		}
+		strategy, err := set.GetRetryStrategy()
+		require.NoError(t, err)
+		assert.Equal(t, wait.Backoff{Steps: 1}, strategy)
 	})
 
 	t.Run("DurationSet", func(t *testing.T) {
@@ -46,7 +58,7 @@ func TestContainerSetGetRetryStrategy(t *testing.T) {
 		strategy, err := set.GetRetryStrategy()
 		require.NoError(t, err)
 		assert.Equal(t, wait.Backoff{
-			Steps:    100,
+			Steps:    101,
 			Duration: 20 * time.Second,
 		}, strategy)
 	})
