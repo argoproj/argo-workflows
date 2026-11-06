@@ -243,7 +243,7 @@ The protobuf wire encoding of existing messages is unchanged, but there are API-
   Programs that import `pkg/apiclient` must also keep the Kubernetes client libraries (`k8s.io/*`) at v0.35 and build with `-tags=kubernetes_protomessage_one_more_release`.
   The tag keeps the `ProtoMessage()` methods on the Kubernetes types embedded in API messages, which the protobuf runtime needs to marshal them.
   Without the tag, `pkg/apiclient` panics at startup with `pkg/apiclient cannot marshal Kubernetes types`.
-  Kubernetes v0.36 removes these methods, so the tag has no effect there, and `pkg/apiclient` does not compile against `k8s.io/client-go` v0.36.
+  The `k8s.io/*` v0.36 modules remove these methods, so the tag has no effect there, and `pkg/apiclient` does not compile against `k8s.io/client-go` v0.36.
   The Go SDK guide describes these build requirements.
 
 ## Upgrading to v4.1.2
