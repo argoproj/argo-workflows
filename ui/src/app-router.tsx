@@ -22,9 +22,11 @@ import sensors from './sensors';
 import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
+import {ThemeToggle} from './shared/components/theme-toggle';
 import {Version} from './shared/models';
 import * as nsUtils from './shared/namespaces';
 import {services} from './shared/services';
+import {useTheme} from './shared/theme';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -53,6 +55,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
     const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
+    const {theme} = useTheme();
     const setError = (error: Error) => {
         notificationsManager.show({
             content: 'Failed to load version/info ' + error,
@@ -64,6 +67,9 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
         const sub = popupManager.popupProps.subscribe(setPopupProps);
         return () => sub.unsubscribe();
     }, [popupManager]);
+    useEffect(() => {
+        document.body.classList.toggle('theme-dark', theme === 'dark');
+    }, [theme]);
     useEffect(() => {
         services.info
             .getUserInfo()
@@ -95,6 +101,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                     <Route exact={true} strict={true} path={loginUrl} component={login.component} />
                     <Route path={uiUrl('widgets')} component={Widgets} />
                     <Layout
+                        theme={theme}
                         navBarStyle={{backgroundColor: navBarBackgroundColor}}
                         navItems={[
                             {
@@ -163,7 +170,12 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-question-circle'
                             }
                         ]}
-                        version={() => <>{version ? version.version : 'unknown'}</>}>
+                        version={() => (
+                            <>
+                                {version ? version.version : 'unknown'}
+                                <ThemeToggle />
+                            </>
+                        )}>
                         <Notifications notifications={notificationsManager.notifications} />
                         <ErrorBoundary>
                             <Switch>

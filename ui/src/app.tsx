@@ -5,6 +5,7 @@ import type {History} from 'history';
 import * as React from 'react';
 
 import 'argo-ui/src/styles/main.scss';
+import './dark-theme.scss';
 
 import {AppRouter} from './app-router';
 import {ContextApis, Provider} from './shared/context';
