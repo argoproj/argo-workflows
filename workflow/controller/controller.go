@@ -1296,16 +1296,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					return false
 				}
 				// A delete delivered after a watch gap arrives as a
-				// cache.DeletedFinalStateUnknown tombstone. Rejecting it here
-				// would drop the event entirely, because client-go's
-				// FilteringResourceEventHandler.OnDelete returns early when the
-				// filter says no, so DeleteFunc would never release the
-				// throttler slot and the workflow would count against total
-				// parallelism forever (#14750). The object is gone either way,
-				// so let the delete through.
-				if _, tombstone := obj.(cache.DeletedFinalStateUnknown); tombstone {
-					return true
-				}
+				// cache.DeletedFinalStateUnknown tombstone holding the last
+				// known state, which workflowFromInformerObj unwraps. That is
+				// the whole fix for #14750: a tombstone for a running workflow
+				// now passes this filter on its own merits, so DeleteFunc runs
+				// and releases the throttler slot.
+				//
+				// A completed workflow is deliberately still rejected here. It
+				// already went through DeleteFunc when it completed, because
+				// FilteringResourceEventHandler.OnUpdate calls OnDelete(old)
+				// as the filter flips true->false, so its slot is long gone.
 				needed := reconciliationNeeded(un)
 				if !needed {
 					wfc.recordWorkflowCompleted(un)
@@ -1369,7 +1369,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.releaseAllWorkflowLocks(ctx, obj)
+						wfc.releaseAllWorkflowLocks(ctx, un)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
@@ -1416,14 +1416,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj any) {
-			var wf *unstructured.Unstructured
-			switch x := obj.(type) {
-			case *unstructured.Unstructured:
-				wf = x
-			case cache.DeletedFinalStateUnknown:
-				wf, _ = x.Obj.(*unstructured.Unstructured)
-			}
-			if wf != nil {
+			if wf, ok := workflowFromInformerObj(obj); ok {
 				wfc.metrics.DeleteRealtimeMetricsForWfUID(string(wf.GetUID()))
 			}
 		},
@@ -1610,16 +1603,23 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig
 	return &metricsConfig
 }
 
-func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj any) {
-	un, ok := obj.(*unstructured.Unstructured)
+// releaseAllWorkflowLocks takes the unwrapped workflow rather than the raw
+// informer object. It used to assert the type itself and warn-and-return on
+// anything else (#3504, for the tombstone case in #3503), which meant that on
+// a tombstone it logged and never called ReleaseAll -- semaphore and mutex
+// holders then waited for CheckWorkflowExistence to clean up instead.
+func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, un *unstructured.Unstructured) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if !ok {
-		logger.WithField("key", obj).Warn(ctx, "Key in index is not an unstructured")
+	if un == nil {
+		// workflowFromInformerObj reports ok for a typed nil, and the type
+		// assertion this used to do rejected it. Keep that guard rather than
+		// trading a warn-and-return for a panic in the controller.
+		logger.Warn(ctx, "Workflow to release locks for is nil")
 		return
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		logger.WithField("key", obj).Warn(ctx, "Invalid workflow object")
+		logger.WithField("key", un).Warn(ctx, "Invalid workflow object")
 		return
 	}
 	if wf.Status.Synchronization != nil {

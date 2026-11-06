@@ -1102,6 +1102,9 @@ func TestReleaseAllWorkflowLocks(t *testing.T) {
 
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
+	// The "otherObject" case this used to carry is gone: the parameter is
+	// typed now, so a non-workflow cannot reach here for the function to
+	// warn about. What is left is what it can still be handed.
 	t.Run("nilObject", func(t *testing.T) {
 		controller.releaseAllWorkflowLocks(ctx, nil)
 	})
@@ -1109,9 +1112,17 @@ func TestReleaseAllWorkflowLocks(t *testing.T) {
 		un := &unstructured.Unstructured{}
 		controller.releaseAllWorkflowLocks(ctx, un)
 	})
-	t.Run("otherObject", func(t *testing.T) {
-		un := &wfv1.Workflow{}
-		controller.releaseAllWorkflowLocks(ctx, un)
+	t.Run("releasesAHeldSemaphore", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(wfWithSema)
+		wf.Status.Synchronization = &wfv1.SynchronizationStatus{
+			Semaphore: &wfv1.SemaphoreStatus{
+				Holding: []wfv1.SemaphoreHolding{{
+					Semaphore: "default/configmap/my-config/workflow",
+					Holders:   []string{wf.Name},
+				}},
+			},
+		}
+		controller.releaseAllWorkflowLocks(ctx, unstructuredWorkflow(t, wf))
 	})
 }
 
@@ -1829,18 +1840,118 @@ func TestWorkflowFromInformerObj(t *testing.T) {
 	})
 }
 
-// cache.DeletionHandlingMetaNamespaceKeyFunc already understands tombstones, so the
-// key DeleteFunc passes to throttler.Remove matches the one AddFunc used. Pinning it
-// because the fix depends on the two agreeing.
-func TestDeletionHandlingKeyMatchesForTombstone(t *testing.T) {
-	wf := &unstructured.Unstructured{Object: map[string]any{
-		"apiVersion": "argoproj.io/v1alpha1",
-		"kind":       "Workflow",
-		"metadata":   map[string]any{"name": "my-wf", "namespace": "argo"},
-	}}
-	live, err := cache.MetaNamespaceKeyFunc(wf)
+// recordingInformer captures the handlers addWorkflowInformerHandlers registers
+// so a test can deliver an event to the real ones.
+type recordingInformer struct {
+	cache.SharedIndexInformer
+	handlers []cache.ResourceEventHandler
+}
+
+func (r *recordingInformer) AddEventHandler(h cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	r.handlers = append(r.handlers, h)
+	return nil, nil
+}
+
+func unstructuredWorkflow(t *testing.T, wf *wfv1.Workflow) *unstructured.Unstructured {
+	t.Helper()
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(wf)
 	require.NoError(t, err)
-	tomb, err := cache.DeletionHandlingMetaNamespaceKeyFunc(cache.DeletedFinalStateUnknown{Key: live, Obj: wf})
-	require.NoError(t, err)
-	assert.Equal(t, live, tomb)
+	return &unstructured.Unstructured{Object: obj}
+}
+
+// TestTombstoneDeleteReleasesThrottlerSlot drives the handler the controller
+// actually registers, with a tombstone of the kind a watch gap produces.
+//
+// The earlier version of this test only exercised client-go: it checked that
+// DeletionHandlingMetaNamespaceKeyFunc returns the tombstone's Key, which it
+// does by construction, so the test could not fail even with the bare type
+// assertion back in FilterFunc.
+func TestTombstoneDeleteReleasesThrottlerSlot(t *testing.T) {
+	deliverTombstone := func(t *testing.T, running *wfv1.Workflow) *WorkflowController {
+		t.Helper()
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, func(c *WorkflowController) {
+			c.Config.Parallelism = 1
+		})
+		defer cancel()
+
+		recorder := &recordingInformer{SharedIndexInformer: controller.wfInformer}
+		controller.wfInformer = recorder
+		require.NoError(t, controller.addWorkflowInformerHandlers(ctx))
+		require.NotEmpty(t, recorder.handlers)
+
+		un := unstructuredWorkflow(t, running)
+		key, err := cache.MetaNamespaceKeyFunc(un)
+		require.NoError(t, err)
+		controller.throttler.Add(key, 0, time.Now())
+		controller.throttler.Add("argo/wf-2", 0, time.Now())
+		require.True(t, controller.throttler.Admit(key), "wf-1 should hold the only slot")
+		require.False(t, controller.throttler.Admit("argo/wf-2"), "wf-2 should be throttled behind it")
+
+		// The shape a delete takes when the watch missed it: the object is
+		// gone from the API server and client-go hands over its last known
+		// state wrapped in a tombstone.
+		recorder.handlers[0].OnDelete(cache.DeletedFinalStateUnknown{Key: key, Obj: un})
+		return controller
+	}
+
+	t.Run("running workflow", func(t *testing.T) {
+		controller := deliverTombstone(t, wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-1
+  namespace: argo
+status:
+  phase: Running
+`))
+		assert.True(t, controller.throttler.Admit("argo/wf-2"),
+			"the tombstone should have released wf-1's slot")
+	})
+
+	// A mutex rather than a semaphore, so the lock is really held in the
+	// sync manager and the release is observable: no ConfigMap is needed to
+	// give a mutex its capacity of one.
+	t.Run("releases synchronization locks", func(t *testing.T) {
+		mutex := func(name string) *wfv1.Workflow {
+			return wfv1.MustUnmarshalWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: %s
+  namespace: argo
+spec:
+  synchronization:
+    mutexes:
+    - name: my-mutex
+status:
+  phase: Running
+`, name))
+		}
+		wf1, wf2 := mutex("wf-1"), mutex("wf-2")
+
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, func(c *WorkflowController) {
+			c.Config.Parallelism = 1
+		})
+		defer cancel()
+		recorder := &recordingInformer{SharedIndexInformer: controller.wfInformer}
+		controller.wfInformer = recorder
+		require.NoError(t, controller.addWorkflowInformerHandlers(ctx))
+
+		acquired, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+		require.NoError(t, err)
+		require.True(t, acquired, "wf-1 should take the mutex")
+		acquired, _, _, _, err = controller.syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+		require.NoError(t, err)
+		require.False(t, acquired, "wf-2 should be blocked while wf-1 holds it")
+
+		recorder.handlers[0].OnDelete(cache.DeletedFinalStateUnknown{
+			Key: "argo/wf-1", Obj: unstructuredWorkflow(t, wf1),
+		})
+
+		acquired, _, _, _, err = controller.syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.True(t, acquired, "the tombstone should have released wf-1's mutex")
+	})
 }
