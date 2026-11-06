@@ -27,12 +27,12 @@ import (
 // templateDefaults, it instead checks the template as written for everything
 // but its volume claim mounts, then calls it with templateDefaults merged in
 // when pool.Pooled says the merged template is pooled (see validatePooled).
-// Once dispatch is wired, the controller also calls it on
-// the merged, substituted template it dispatches, with the execution
-// workflow's spec, to catch what only merging and substitution show. It finds
-// a {{pod.name}} tag only in a template whose variables aren't substituted
-// yet, and skips a pool name or number holding a variable, which is checked
-// once substituted.
+// The controller calls it again on the merged template it dispatches, with
+// the execution workflow's spec, to catch what only merging and substitution
+// show: its variables are substituted by then, except pod.name, which only the
+// task's own substitution resolves, so a {{pod.name}} tag is still found. It
+// skips a pool name or number holding a variable, which is checked once
+// substituted.
 func Poolable(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error {
 	if err := poolableExceptClaims(tmpl, wfSpec); err != nil || tmpl.Pool == nil || wfSpec == nil {
 		return err
