@@ -606,6 +606,12 @@ spans:
   - name: ReconcileWorkflow
     description: Reconciliation between actual and desired state for a single workflow
     parents: [Workflow]
+  - name: RunAgentTask
+    description: Run one HTTP or plugin task in the agent
+    root: true
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
   - name: RunInitContainer
     description: Run the init container of a workload
     parents: [CreateWorkflowPod]
