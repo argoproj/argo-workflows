@@ -2756,7 +2756,13 @@ func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool 
 	currentNode := n
 	for !currentNode.IsExitNode() {
 		if currentNode.BoundaryID == "" {
-			return false
+			// the attempts of a retry node have no boundary of their own, so continue from the retry node
+			retryNode := nodes.FindRetryNodeByChild(currentNode.ID)
+			if retryNode == nil {
+				return false
+			}
+			currentNode = retryNode
+			continue
 		}
 		boundaryNode, err := nodes.Get(currentNode.BoundaryID)
 		if err != nil {
