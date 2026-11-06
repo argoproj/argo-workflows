@@ -488,6 +488,25 @@ var InstrumentWorkersBusyCount = BuiltinInstrument{
 	},
 }
 
+var InstrumentWorkflowCompletionRequeueDelay = BuiltinInstrument{
+	name:        "workflow_completion_requeue_delay",
+	description: "A histogram of computed completion-triggered workflow requeue delays",
+	unit:        "s",
+	instType:    Float64Histogram,
+	defaultBuckets: []float64{
+		0.001000,
+		0.010000,
+		0.100000,
+		0.250000,
+		0.500000,
+		1.000000,
+		2.000000,
+		5.000000,
+		10.000000,
+		30.000000,
+	},
+}
+
 var InstrumentWorkflowCondition = BuiltinInstrument{
 	name:        "workflow_condition",
 	description: "A gauge of the number of workflows with different conditions",
@@ -500,6 +519,24 @@ var InstrumentWorkflowCondition = BuiltinInstrument{
 		{
 			name: AttribWorkflowStatus,
 		},
+	},
+}
+
+var InstrumentWorkflowReconcileUtilization = BuiltinInstrument{
+	name:        "workflow_reconcile_utilization",
+	description: "A histogram of per-workflow worker utilization between reconciliations",
+	unit:        "1",
+	instType:    Float64Histogram,
+	defaultBuckets: []float64{
+		0.010000,
+		0.050000,
+		0.100000,
+		0.200000,
+		0.300000,
+		0.500000,
+		0.750000,
+		0.900000,
+		1.000000,
 	},
 }
 

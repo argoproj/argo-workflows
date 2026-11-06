@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -53,6 +54,56 @@ func TestLookupEnvPositiveMilliseconds(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.delay, delay)
+		})
+	}
+}
+
+func TestLookupEnvIntInRange(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		value   string
+		unset   bool
+		def     int
+		lo      int
+		hi      int
+		want    int
+		invalid bool
+	}{
+		{name: "unset", unset: true, def: 20, lo: 1, hi: 100, want: 20},
+		{name: "empty", def: 20, lo: 1, hi: 100, want: 20},
+		{name: "lower bound", value: "1", lo: 1, hi: 100, want: 1},
+		{name: "within range", value: "20", lo: 1, hi: 100, want: 20},
+		{name: "upper bound", value: "100", lo: 1, hi: 100, want: 100},
+		{name: "zero", value: "0", lo: 1, hi: 100, invalid: true},
+		{name: "negative", value: "-1", lo: 1, hi: 100, invalid: true},
+		{name: "above range", value: "101", lo: 1, hi: 100, invalid: true},
+		{name: "suffix", value: "20%", lo: 1, hi: 100, invalid: true},
+		{name: "fractional", value: "0.2", lo: 1, hi: 100, invalid: true},
+		{name: "leading whitespace", value: " 20", lo: 1, hi: 100, invalid: true},
+		{name: "trailing whitespace", value: "20 ", lo: 1, hi: 100, invalid: true},
+		{name: "malformed", value: "invalid", lo: 1, hi: 100, invalid: true},
+		{name: "overflow", value: "9223372036854775808", lo: 1, hi: 100, invalid: true},
+		{name: "negative range", value: "-5", lo: -10, hi: -1, want: -5},
+		{name: "zero in range", value: "0", lo: -1, hi: 1, want: 0},
+		{name: "single value range", value: "5", lo: 5, hi: 5, want: 5},
+		{name: "below custom range", value: "4", lo: 5, hi: 10, invalid: true},
+		{name: "above custom range", value: "11", lo: 5, hi: 10, invalid: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			const key = "TEST_INT_IN_RANGE"
+			t.Setenv(key, tt.value)
+			if tt.unset {
+				require.NoError(t, os.Unsetenv(key))
+			}
+			got, err := LookupEnvIntInRange(key, tt.def, tt.lo, tt.hi)
+			if tt.invalid {
+				require.ErrorContains(t, err, fmt.Sprintf("%s must be an integer between %d and %d", key, tt.lo, tt.hi))
+				assert.Contains(t, err.Error(), fmt.Sprintf("%q", tt.value))
+				assert.Zero(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
