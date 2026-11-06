@@ -14,9 +14,10 @@ import {Timestamp, TimestampSwitch} from '../../../shared/components/timestamp';
 import {Tooltip} from '../../../shared/components/tooltip';
 import * as models from '../../../shared/models';
 import {Artifact, NodeStatus, Workflow} from '../../../shared/models';
-import {getPodName} from '../../../shared/pod-name';
+import {getPodName, getPooledTaskPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
+import {hasArtifactLogs} from '../../../shared/services/workflows-service';
 import {getMainContainerNames, getResolvedTemplates} from '../../../shared/template-resolution';
 import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
@@ -99,7 +100,11 @@ function DisplayWorkflowTime(props: {date: Date | string | number; timestampKey:
 
 function WorkflowNodeSummary(props: Props) {
     const {workflow, node} = props;
-    const podName = getPodName(workflow, node);
+    // a pooled node has no pod of its own: it shows its task name and claimant worker pod apart, and offers only its archived logs
+    const pooled = node.pooledTask && getPooledTaskPodName(node.pooledTask, models.isEndedPhase(node.phase));
+    const podName = pooled ? pooled.name : getPodName(workflow, node);
+    // a pooled template is a container or script, whose only container is main
+    const hasLogs = !pooled || hasArtifactLogs(workflow, node.id, 'main');
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
@@ -154,11 +159,25 @@ function WorkflowNodeSummary(props: Props) {
         attributes.splice(
             2,
             0,
-            {title: 'POD NAME', value: <ClipboardText text={podName} />},
+            ...(pooled
+                ? [
+                      {title: 'TASK NAME', value: <ClipboardText text={node.pooledTask.taskName} />},
+                      {
+                          title: 'WORKER POD',
+                          value:
+                              !pooled.marker && node.pooledTask.workerPodName ? (
+                                  <ClipboardText text={node.pooledTask.workerPodName} />
+                              ) : (
+                                  <span>none{pooled.marker && ` (${pooled.marker})`}</span>
+                              )
+                      }
+                  ]
+                : [{title: 'POD NAME', value: <ClipboardText text={podName} />}]),
             {
                 title: 'HOST NODE NAME',
                 value: <ClipboardText text={props.node.hostNodeName} />
-            }
+            },
+            ...(pooled ? [{title: 'POOL', value: <ClipboardText text={node.pooledTask.poolName} />}] : [])
         );
     }
     if (props.node.type === 'Retry') {
@@ -196,12 +215,12 @@ function WorkflowNodeSummary(props: Props) {
                         RETRY NODE
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && props.onShowContainerLogs && (
+                {props.node.type === 'Pod' && props.onShowContainerLogs && hasLogs && (
                     <Button onClick={() => showLogs()} icon='bars'>
-                        LOGS
+                        {pooled ? 'ARCHIVED LOGS' : 'LOGS'}
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && props.onShowEvents && (
+                {props.node.type === 'Pod' && !pooled && props.onShowEvents && (
                     <Button icon='bell' onClick={() => props.onShowEvents()}>
                         EVENTS
                     </Button>
@@ -220,7 +239,7 @@ function WorkflowNodeSummary(props: Props) {
                         logs
                     </Button>
                 )}{' '}
-                {props.node.type === 'Pod' && (
+                {props.node.type === 'Pod' && !pooled && (
                     <Links
                         button={true}
                         object={{
@@ -367,11 +386,13 @@ function WorkflowNodeContainer(props: {
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
-            <div>
-                <Button outline={true} icon='bars' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
-                    LOGS
-                </Button>
-            </div>
+            {props.onShowContainerLogs && (
+                <div>
+                    <Button outline={true} icon='bars' onClick={() => props.onShowContainerLogs(props.nodeId, container.name)}>
+                        LOGS
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
@@ -392,11 +413,18 @@ function WorkflowNodeContainers(props: Props) {
 
     const containers = (template.containerSet ? template.containerSet.containers : []).concat(template.sidecars || []);
     const container = (selectedSidecar && containers.find(item => item.name === selectedSidecar)) || template.container || template.script;
+    // a pooled node has only archived logs, of its only container, main
+    const hasLogs = !props.node.pooledTask || hasArtifactLogs(props.workflow, props.node.id, 'main');
 
     return (
         <div className='workflow-node-info__containers'>
             {selectedSidecar && <i className='fa fa-angle-left workflow-node-info__sidecar-back' onClick={() => setSelectedSidecar(null)} />}
-            <WorkflowNodeContainer nodeId={props.node.id} container={container} onShowContainerLogs={props.onShowContainerLogs} onShowEvents={props.onShowEvents} />
+            <WorkflowNodeContainer
+                nodeId={props.node.id}
+                container={container}
+                onShowContainerLogs={hasLogs ? props.onShowContainerLogs : undefined}
+                onShowEvents={props.onShowEvents}
+            />
             {!selectedSidecar && (
                 <div>
                     <p>SIDECARS:</p>

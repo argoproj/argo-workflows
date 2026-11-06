@@ -24,6 +24,12 @@ func NewLogsCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "logs WORKFLOW [POD]",
 		Short: "view logs of a pod or workflow",
+		Long: `View logs of a pod or workflow.
+
+A pooled task, an attempt of a step or DAG task that runs on hot workers, has no live logs, so its logs are neither printed nor followed.
+The command prints a note to stderr for each pooled task of the workflow, or only for those POD names, saying where its archived logs are, with the argo cp command that fetches them once they exist.
+With --follow, it prints the notes once the stream ends.
+If POD names only pooled tasks, by task name or by worker pod, the command prints their notes and exits non-zero.`,
 		Example: `# Print the logs of a workflow:
 
   argo logs my-wf

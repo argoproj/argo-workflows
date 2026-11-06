@@ -136,6 +136,7 @@ nav:
           - enhanced-depends-logic.md
           - node-field-selector.md
           - pod-restarts.md
+          - hot-workers.md
       - Status:
           - resource-duration.md
           - estimated-duration.md

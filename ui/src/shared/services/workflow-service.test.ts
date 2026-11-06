@@ -186,4 +186,35 @@ describe('workflow service', () => {
         expect(getArtifactLogs).toHaveBeenCalledWith(completedWorkflow, 'test-node', 'step-1', '', false);
         expect(getClusterLogs).not.toHaveBeenCalled();
     });
+
+    test('getContainerLogs for a pooled node', async () => {
+        const runningWorkflow = {
+            ...workflow('test-workflow-1', 'argo', 'test-uid'),
+            spec: {templates: [{name: 'pooled-container', pool: {}}]},
+            status: {
+                nodes: {
+                    'test-node': {
+                        id: 'test-node',
+                        phase: 'Running',
+                        type: 'Pod',
+                        templateName: 'pooled-container',
+                        pooledTask: {
+                            conditions: [{type: 'Claimed', status: 'True', reason: 'Claimed', lastTransitionTime: ''}],
+                            taskName: 'test-workflow-1-pooled-container-1',
+                            workerPodName: 'pool-0123456789-abcde'
+                        }
+                    }
+                }
+            }
+        } as unknown as Workflow;
+        jest.spyOn(service, 'get').mockResolvedValue(runningWorkflow);
+        const getArtifactLogs = jest.spyOn(service, 'getContainerLogsFromArtifact').mockReturnValue(of({content: 'from artifact', podName: 'test-pod'}));
+        const getClusterLogs = jest.spyOn(service, 'getContainerLogsFromCluster').mockReturnValue(of({content: 'from cluster', podName: 'test-pod'}));
+
+        const log = await firstValueFrom(service.getContainerLogs(runningWorkflow, 'test-workflow-1-pooled-container-1', 'test-node', 'main', '', false));
+
+        expect(log.content).toBe('from artifact');
+        expect(getArtifactLogs).toHaveBeenCalledWith(runningWorkflow, 'test-node', 'main', '', false);
+        expect(getClusterLogs).not.toHaveBeenCalled();
+    });
 });

@@ -7,6 +7,12 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v4.2
 
+### Controller RBAC for hot workers
+
+The default installs now give the workflow controller `get`, `patch` and `delete` on `workflowtaskresults`, beside `list`, `watch` and `deletecollection`, which [hot workers](hot-workers.md) need.
+If you maintain your own controller roles and want to use hot workers, add these three verbs, and the Deployment rule of the [hot workers RBAC component](hot-workers.md#controller-rbac).
+Without hot workers, nothing changes.
+
 ### ContainerSet siblings are no longer terminated when one container fails
 
 Previously, as soon as any container in a `containerSet` exited with a non-zero exit code, the controller terminated the whole pod, killing any sibling containers that were still running.

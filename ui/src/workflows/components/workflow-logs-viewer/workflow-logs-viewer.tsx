@@ -12,7 +12,7 @@ import {Context} from '../../../shared/context';
 import debounce from '../../../shared/debounce';
 import * as models from '../../../shared/models';
 import {execSpec} from '../../../shared/models';
-import {getPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
+import {getPodName, getPooledTaskPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
 import {useLocalStorage} from '../../../shared/use-local-storage';
@@ -102,6 +102,27 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         setUITimezone(timezone);
     }, [timezone]);
 
+    // map pod names to corresponding node IDs
+    const podNamesToNodeIDs = new Map<string, string>();
+    const podNames = [{value: '', label: 'All'}].concat(
+        Object.values(workflow.status.nodes || {})
+            .filter(x => x.type === 'Pod')
+            .map(targetNode => {
+                const {name, id, displayName} = targetNode;
+                const targetPodName = getPodName(workflow, targetNode);
+                podNamesToNodeIDs.set(targetPodName, id);
+                // a pooled node is labelled with its task or claimant worker pod, but keeps its own pod name as a unique value
+                const shownPodName = targetNode.pooledTask ? getPooledTaskPodName(targetNode.pooledTask, false).name : targetPodName;
+                return {value: targetPodName, label: (displayName || name) + ' (' + shownPodName + ')'};
+            })
+    );
+
+    // the node of the selected pod, which decides between archived and live logs; the initial node for All, or if its pod isn't listed
+    const nodeId = podName ? (podNamesToNodeIDs.get(podName) ?? (podName === initialPodName ? initialNodeId : undefined)) : initialNodeId;
+    const node = workflow.status.nodes[nodeId];
+    // a pooled node has no pod of its own to link to
+    const selectedPooled = !!podName && !!node?.pooledTask;
+
     useEffect(() => {
         setError(null);
         setLoaded(false);
@@ -152,24 +173,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived, selectedJsonFields, timezone]);
-
-    // map pod names to corresponding node IDs
-    const podNamesToNodeIDs = new Map<string, string>();
-    const podNames = [{value: '', label: 'All'}].concat(
-        Object.values(workflow.status.nodes || {})
-            .filter(x => x.type === 'Pod')
-            .map(targetNode => {
-                const {name, id, displayName} = targetNode;
-                const targetPodName = getPodName(workflow, targetNode);
-                podNamesToNodeIDs.set(targetPodName, id);
-                return {value: targetPodName, label: (displayName || name) + ' (' + targetPodName + ')'};
-            })
-    );
-
-    // default to the node id of the pod
-    const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
-    const node = workflow.status.nodes[nodeId];
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, nodeId, selectedContainer, grep, archived, selectedJsonFields, timezone]);
 
     useEffect(() => {
         if (!node || !node.templateRef) {
@@ -313,10 +317,10 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                         <InfoIcon /> Wait containers logs are useful when debugging output artifact problems.
                     </>
                 )}
-                {podName && podNamesToNodeIDs.get(podName) && (
+                {podName && nodeId && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)} target='_blank' rel='noreferrer'>
+                        <a href={services.workflows.getArtifactLogsPath(workflow, nodeId, selectedContainer, archived)} target='_blank' rel='noreferrer'>
                             logs from the artifacts
                         </a>
                         .
@@ -333,7 +337,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                     archive logs
                 </a>{' '}
                 enabled.{' '}
-                {podName ? (
+                {selectedPooled ? null : podName ? (
                     <Links
                         object={{
                             metadata: {
