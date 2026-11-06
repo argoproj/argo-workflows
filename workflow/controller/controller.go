@@ -63,6 +63,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v4/workflow/cron"
+	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/gccontroller"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -126,6 +127,10 @@ type WorkflowController struct {
 	dynamicInterface  dynamic.Interface
 	metadataInterface metadata.Interface
 	wfclientset       wfclientset.Interface
+	// dispatcher hands pooled tasks to hot worker pools
+	dispatcher dispatch.Dispatcher
+	// pooledTaskSetsGone remembers the pooled TaskSets found gone, so they aren't deleted again
+	pooledTaskSetsGone goneTaskSets
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
 	// woc.executeProcessedTemplate and decreased when such calls return. This is used to prevent infinite recursion
@@ -190,6 +195,10 @@ type WorkflowController struct {
 	wfTaskSetInformer          wfextvv1alpha1.WorkflowTaskSetInformer
 	artGCTaskInformer          wfextvv1alpha1.WorkflowArtifactGCTaskInformer
 	taskResultInformer         cache.SharedIndexInformer
+	// pooledTaskSetInformer caches the metadata of pooled WorkflowTaskSets, which wfTaskSetInformer excludes
+	pooledTaskSetInformer cache.SharedIndexInformer
+	// poolPodInformer caches hot worker pool pods, which the pod controller doesn't see
+	poolPodInformer cache.SharedIndexInformer
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -245,6 +254,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		dynamicInterface:           dynamicInterface,
 		metadataInterface:          metadataInterface,
 		wfclientset:                wfclientset,
+		dispatcher:                 dispatch.NewDispatcher(wfclientset),
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
@@ -426,6 +436,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
+	wfc.pooledTaskSetInformer = wfc.newPooledTaskSetInformer(ctx)
+	wfc.poolPodInformer = wfc.newPoolPodInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to add workflow informer handlers")
@@ -459,23 +471,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
+	go wfc.pooledTaskSetInformer.Run(ctx.Done())
+	go wfc.poolPodInformer.Run(ctx.Done())
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 	go wfc.runPodController(ctx, podCleanupWorkers)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	_, syncSpan := wfc.tracing.StartStartupCacheSync(ctx)
-	if !cache.WaitForCacheSync(
-		ctx.Done(),
-		wfc.wfInformer.HasSynced,
-		nsInformerHasSynced,
-		wfc.wftmplInformer.Informer().HasSynced,
-		wfc.PodController.HasSynced(),
-		wfc.typedConfigMapInformer.HasSynced,
-		semaphoreConfigMapInformerHasSynced,
-		wfc.wfTaskSetInformer.Informer().HasSynced,
-		wfc.artGCTaskInformer.Informer().HasSynced,
-		wfc.taskResultInformer.HasSynced,
-	) {
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.cachesToSync(nsInformerHasSynced, semaphoreConfigMapInformerHasSynced)...) {
 		logger.Error(ctx, "Timed out waiting for caches to sync")
 		os.Exit(1)
 	}
@@ -504,6 +507,22 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, wfc.cacheGCPeriod, 0.0, true)
 	}
 	<-ctx.Done()
+}
+
+// cachesToSync are the caches Run waits for before it processes any workflow,
+// with the optional ones Run created.
+func (wfc *WorkflowController) cachesToSync(optional ...cache.InformerSynced) []cache.InformerSynced {
+	return append([]cache.InformerSynced{
+		wfc.wfInformer.HasSynced,
+		wfc.wftmplInformer.Informer().HasSynced,
+		wfc.PodController.HasSynced(),
+		wfc.typedConfigMapInformer.HasSynced,
+		wfc.wfTaskSetInformer.Informer().HasSynced,
+		wfc.artGCTaskInformer.Informer().HasSynced,
+		wfc.taskResultInformer.HasSynced,
+		wfc.pooledTaskSetInformer.HasSynced,
+		wfc.poolPodInformer.HasSynced,
+	}, optional...)
 }
 
 func (wfc *WorkflowController) RunPrometheusServer(ctx context.Context, isDummy bool) {
@@ -1341,6 +1360,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.throttler.Remove(key)
 					}
 					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
+					// Called too when the workflow completes, which the filter then rejects.
+					wfc.pooledTaskSetsGone.forget(obj.(*unstructured.Unstructured).GetUID())
 				},
 			},
 		},
@@ -1658,8 +1679,10 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 		workflowTaskSetResyncPeriod,
 		externalversions.WithNamespace(wfc.GetManagedNamespace()),
 		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
-			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
-			x.LabelSelector = r.String()
+			// Pooled TaskSets are in pooledTaskSetInformer. This one holds full
+			// objects and enqueues each TaskSet's name as its workflow's, which
+			// is right only for agent TaskSets.
+			x.LabelSelector = labels.NewSelector().Add(wfc.instanceIDReq(), *noPoolHashReq).String()
 		}),
 		externalversions.WithTransform(informerutil.StripManagedFields)).Argoproj().V1alpha1().WorkflowTaskSets()
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)

@@ -13,6 +13,18 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
+// shutdownMessage is the message of a node whose running task the workflow's
+// shutdown strategy stopped.
+func shutdownMessage(strategy wfv1.ShutdownStrategy) string {
+	return fmt.Sprintf("workflow shutdown with strategy:  %s", strategy)
+}
+
+// notStartedOnShutdownMessage is the message of a node whose task the
+// workflow's shutdown strategy kept from starting.
+func notStartedOnShutdownMessage(strategy wfv1.ShutdownStrategy) string {
+	return fmt.Sprintf("workflow shutdown with strategy: %s", strategy)
+}
+
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending and running pods (except agent pod) when workflow has reached its deadline
 func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1.Pod, wfNodesLock *sync.RWMutex) {
@@ -30,8 +42,9 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
 		return
 	}
-	// node is already completed
-	if node.Fulfilled() {
+	// node is already completed, or pooled: a pooled node never has a pod of
+	// its own, so this pod isn't running its task
+	if node.Fulfilled() || isPooled(node) {
 		return
 	}
 	switch pod.Status.Phase {
@@ -49,8 +62,7 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 					WithField("shutdownStrategy", woc.GetShutdownStrategy()).
 					Info(ctx, "Terminating pod as part of workflow shutdown")
 				woc.controller.PodController.TerminateContainers(ctx, pod.Namespace, pod.Name)
-				msg := fmt.Sprintf("workflow shutdown with strategy:  %s", woc.GetShutdownStrategy())
-				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, msg)
+				woc.handleExecutionControlError(ctx, nodeID, wfNodesLock, shutdownMessage(woc.GetShutdownStrategy()))
 				return
 			}
 		}

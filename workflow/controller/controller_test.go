@@ -50,6 +50,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
+	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -136,6 +137,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		dynamicInterface:           dynamicClient,
 		metadataInterface:          metadataClient,
 		wfclientset:                wfclientset,
+		dispatcher:                 dispatch.NewDispatcher(wfclientset),
 		workflowKeyLock:            sync.NewKeyLock(),
 		wfArchive:                  sqldb.NullWorkflowArchive,
 		hydrator:                   hydratorfake.Noop,
@@ -190,6 +192,8 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
+		wfc.pooledTaskSetInformer = newTestPooledTaskSetInformer(wfc)
+		wfc.poolPodInformer = wfc.newPoolPodInformer(ctx)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
@@ -204,6 +208,8 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
+		go wfc.pooledTaskSetInformer.Run(ctx.Done())
+		go wfc.poolPodInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		go wfc.typedConfigMapInformer.Run(ctx.Done())
@@ -216,6 +222,8 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
+			wfc.pooledTaskSetInformer,
+			wfc.poolPodInformer,
 			wfc.typedConfigMapInformer,
 		} {
 			for !c.HasSynced() {

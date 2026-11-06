@@ -358,7 +358,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// (b) shutdown-strategy guard. Do not create pods if we are shutting down.
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
-		woc.markNodeFailedOnShutdown(ctx, nodeName, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
+		woc.markNodeFailedOnShutdown(ctx, nodeName, notStartedOnShutdownMessage(woc.GetShutdownStrategy()))
 		return nil, nil
 	}
 
@@ -683,11 +683,9 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
 				var x *entrypoint.Image
-				x, err = pb.deps.lookupImage(ctx, c.Image, entrypoint.Options{
-					Namespace: pb.in.namespace, ServiceAccountName: pb.in.execWfSpec.ServiceAccountName, ImagePullSecrets: pb.in.execWfSpec.ImagePullSecrets,
-				})
+				x, err = lookupEntrypoint(ctx, pb.deps.lookupImage, c.Image, pb.in.namespace, pb.in.execWfSpec)
 				if err != nil {
-					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", c.Image, err)
+					return nil, err
 				}
 				c.Command = x.Entrypoint
 				if c.Args == nil { // check nil rather than length, as zero-length is valid args
@@ -921,25 +919,38 @@ func (woc *wfOperationCtx) podExists(nodeID string) (existing *apiv1.Pod, exists
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
 // and node.taskName, which for a pod is its name
 func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
-	podParams := globalParams.DeepCopy()
-	for _, inParam := range tmpl.Inputs.Parameters {
-		podParams[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
-	}
-	setPodNameParams(podParams, pod.Name)
-	specBytes, err := json.Marshal(pod)
+	return substituteTaskObject(ctx, pod, taskParams(globalParams, tmpl, pod.Name), nil)
+}
+
+// substituteTaskObject returns a copy of obj, a pod or a pooled task's
+// template, with params substituted, leaving any variable they lack except
+// one under strictPrefixes, which fails.
+func substituteTaskObject[T any](ctx context.Context, obj *T, params common.Parameters, strictPrefixes []string) (*T, error) {
+	data, err := json.Marshal(obj)
 	if err != nil {
 		return nil, err
 	}
-	newSpecBytes, err := template.Replace(ctx, string(specBytes), template.ToAnyMap(podParams), true)
+	replaced, err := template.ReplaceStrictAny(ctx, string(data), template.ToAnyMap(params), strictPrefixes)
 	if err != nil {
 		return nil, err
 	}
-	var newSpec apiv1.Pod
-	err = json.Unmarshal([]byte(newSpecBytes), &newSpec)
-	if err != nil {
+	var substituted T
+	if err := json.Unmarshal([]byte(replaced), &substituted); err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	return &newSpec, nil
+	return &substituted, nil
+}
+
+// taskParams are the parameters the last substitution of a task resolves
+// (substitutePodParams, substituteTaskParams): the globals, the template's
+// input parameters, and pod.name and node.taskName as taskName.
+func taskParams(globalParams common.Parameters, tmpl *wfv1.Template, taskName string) common.Parameters {
+	params := globalParams.DeepCopy()
+	for _, inParam := range tmpl.Inputs.Parameters {
+		params[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
+	}
+	setPodNameParams(params, taskName)
+	return params
 }
 
 // artifactContainer builds an argoexec-based artifact container. binaryPath is
@@ -969,6 +980,19 @@ func (woc *wfOperationCtx) artifactContainer(ctx context.Context, tmpl *wfv1.Tem
 	ctr.Command = cmd
 
 	return ctr, nil
+}
+
+// lookupEntrypoint looks image up with lookup, for a pod in namespace of the
+// workflow whose spec is wfSpec, for the entrypoint and cmd emissary runs
+// when a container has no command of its own.
+func lookupEntrypoint(ctx context.Context, lookup func(context.Context, string, entrypoint.Options) (*entrypoint.Image, error), image, namespace string, wfSpec *wfv1.WorkflowSpec) (*entrypoint.Image, error) {
+	x, err := lookup(ctx, image, entrypoint.Options{
+		Namespace: namespace, ServiceAccountName: wfSpec.ServiceAccountName, ImagePullSecrets: wfSpec.ImagePullSecrets,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", image, err)
+	}
+	return x, nil
 }
 
 func (woc *wfOperationCtx) artifactSidecarGCContainer(ctx context.Context, tmpl *wfv1.Template, driver config.ArtifactDriver) (*apiv1.Container, error) {
