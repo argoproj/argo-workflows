@@ -10864,7 +10864,7 @@ spec:
 // TestPendingTimeoutOnRetriedTemplateResolvesRetryVariables pins the ordering
 // between parameter substitution and the timeout check.
 //
-// The timeout fields may reference retry variables, and checkTemplateTimeouts
+// The timeout fields may reference retry variables, and templateTimeoutDeadlines
 // reports an unparseable duration through the same error path as an expired
 // one -- enforceTemplateTimeouts then fails the node with "invalid timeout
 // format". Checking before common.SubstituteParams therefore failed a template
