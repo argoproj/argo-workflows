@@ -41,7 +41,7 @@ func (woc *wfOperationCtx) getNodeByName(nodeName string) (*wfv1.NodeStatus, err
 
 // findRetryNode locates the closest retry-node ancestor of nodeID in live status.
 func (woc *wfOperationCtx) findRetryNode(nodeID string) *wfv1.NodeStatus {
-	return FindRetryNode(woc.wf.Status.Nodes, nodeID)
+	return FindRetryNodeByName(woc.wf, nodeID)
 }
 
 // retryStrategyForTemplate resolves the retry strategy applicable to tmpl.
