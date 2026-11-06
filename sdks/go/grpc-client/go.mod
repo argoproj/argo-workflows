@@ -21,7 +21,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/XSAM/otelsql v0.43.0 // indirect
-	github.com/andybalholm/brotli v1.2.2 // indirect
+	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/argoproj/argo-events v1.9.11 // indirect
 	github.com/argoproj/pkg v0.13.7-0.20250123033407-65f2d4777bfd // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
