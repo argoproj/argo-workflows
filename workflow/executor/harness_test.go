@@ -300,7 +300,7 @@ func TestHarness_PodFinalizeFailureFailsTask(t *testing.T) {
 		},
 		finalizeOutput,
 	))
-	sinkCtx, s, terminated := newTestSink(t, false)
+	sinkCtx, s, terminated := newTestSink(t)
 	require.NoError(t, s.Start(sinkCtx))
 	// The service account may create the task result but not patch it.
 	clientset := argofake.NewClientset()
@@ -353,7 +353,7 @@ func TestRoles_Finally(t *testing.T) {
 	assert.Empty(t, names(InitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(WaitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(SupervisorRole.Finally))
-	assert.Equal(t, []string{"remove-task-root", "finalize-output"}, names(WorkerRole.Finally))
+	assert.Equal(t, []string{"complete-pool-task", "remove-pool-task", "wipe-empty-dirs"}, names(PoolRole.Finally))
 }
 
 // Each task's spans continue the trace context it came with.

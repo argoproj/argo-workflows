@@ -2,7 +2,6 @@ package executor
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -15,7 +14,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v4"
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/util"
 	"github.com/argoproj/argo-workflows/v4/util/env"
@@ -25,7 +23,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
-	executortracing "github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
@@ -103,65 +100,9 @@ func initProcess(ctx context.Context, clientConfig clientcmd.ClientConfig, adjus
 // deadline) that the controller baked into the pod for the single task a
 // classic argoexec pod runs.
 func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
-	cfg, err := TaskConfigFromLookup(os.LookupEnv, varRunArgo)
+	cfg, err := executor.TaskConfigFromLookup(os.LookupEnv, varRunArgo)
 	CheckErr(err)
 	return cfg
-}
-
-// TaskConfigFromLookup is TaskConfigFromEnv with the environment read
-// through lookupEnv.
-func TaskConfigFromLookup(lookupEnv func(string) (string, bool), varRunArgo string) (executor.TaskConfig, error) {
-	getenv := func(key string) string {
-		v, _ := lookupEnv(key)
-		return v
-	}
-	tmpl := &wfv1.Template{}
-	envVarTemplateValue, ok := lookupEnv(common.EnvVarTemplate)
-	var templateBytes []byte
-	var err error
-	if !ok {
-		// Wait container reads template from the file written by init container,
-		// not from the env var.
-		templateBytes, err = os.ReadFile(varRunArgo + "/template")
-	} else {
-		// Offload-sentinel resolution is shared with the emissary via
-		// common.ResolveTemplateEnvValue so the offload protocol stays in one place.
-		templateBytes, err = common.ResolveTemplateEnvValue(envVarTemplateValue, common.EnvConfigMountPath)
-	}
-	if err != nil {
-		return executor.TaskConfig{}, err
-	}
-	if err = json.Unmarshal(templateBytes, tmpl); err != nil {
-		return executor.TaskConfig{}, err
-	}
-
-	deadline, err := time.Parse(time.RFC3339, getenv(common.EnvVarDeadline))
-	if err != nil {
-		return executor.TaskConfig{}, err
-	}
-
-	var inputPlugins []wfv1.ArtifactPluginName
-	for _, p := range common.SplitPluginNames(getenv(common.EnvVarInputArtifactPluginNames)) {
-		inputPlugins = append(inputPlugins, wfv1.ArtifactPluginName(p))
-	}
-
-	// errors ignored because values are set by the controller and checked there.
-	progressPatchTickDuration, _ := time.ParseDuration(getenv(common.EnvVarProgressPatchTickDuration))
-	progressFileTickDuration, _ := time.ParseDuration(getenv(common.EnvVarProgressFileTickDuration))
-
-	return executor.TaskConfig{
-		WorkflowName:              getenv(common.EnvVarWorkflowName),
-		WorkflowUID:               types.UID(getenv(common.EnvVarWorkflowUID)),
-		NodeID:                    getenv(common.EnvVarNodeID),
-		Template:                  *tmpl,
-		IncludeScriptOutput:       getenv(common.EnvVarIncludeScriptOutput) == "true",
-		Deadline:                  deadline,
-		ProgressFile:              getenv(common.EnvVarProgressFile),
-		ProgressPatchTickDuration: progressPatchTickDuration,
-		ProgressFileTickDuration:  progressFileTickDuration,
-		TraceContext:              executortracing.TraceContextFromEnv(lookupEnv),
-		InputArtifactPluginNames:  inputPlugins,
-	}, nil
 }
 
 // Init builds the executor for the one task a classic argoexec pod runs:

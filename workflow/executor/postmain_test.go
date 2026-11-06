@@ -53,7 +53,7 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 		nodeID:      fakeNodeID,
 		Template:    tmpl,
 	}
-	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID})
 	return we
 }
 
@@ -219,7 +219,7 @@ func TestPostMain_ProgressReportsStopBeforeFinalReports(t *testing.T) {
 			we := newTestPostMainExecutor(t, tmpl, mockRuntime)
 			taskResults := &serialTaskResults{WorkflowTaskResultInterface: we.taskResultClient, progressStarted: make(chan struct{})}
 			we.taskResultClient = taskResults
-			we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+			we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID})
 			we.annotationPatchTickDuration = time.Millisecond
 			we.readProgressFileTickDuration = time.Millisecond
 			we.progressFile = filepath.Join(t.TempDir(), "progress")
@@ -269,7 +269,7 @@ func TestPostMain_PlaceholderResultSurvivesCancellation(t *testing.T) {
 	we := newTestPostMainExecutor(t, wfv1.Template{Name: "container-tmpl"}, mockRuntime)
 	client := ctxCheckingTaskResults{we.taskResultClient}
 	we.taskResultClient = client
-	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID})
 
 	we.runRecording(ctx, we.selectedPlan().Run, true)
 
