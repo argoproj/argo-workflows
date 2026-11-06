@@ -4,8 +4,11 @@
 // health for the nodes waiting on it (dispatch.PoolHealth).
 //
 // A pool is identified by its namespace and hash, the pool-hash label of its
-// TaskSets, and served by one Deployment built from a TaskSet's spec.pool
-// alone. Once created, a Deployment's spec is never changed: its replicas
+// TaskSets, and served by one Deployment built from its tasks' spec.pool
+// alone. The operator hands the controller each task's spec.pool as it
+// dispatches the task (Dispatched); only a pool found with no dispatch since
+// the controller started has its newest TaskSet's read, once, as the TaskSet
+// cache holds metadata only. Once created, a Deployment's spec is never changed: its replicas
 // belong to whatever scales the pool, and its hash fixes the rest. Only the
 // retention annotation is kept up to date. The controller touches only the
 // Deployments of this controller instance's pools, and never one whose labels
@@ -22,9 +25,7 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -46,8 +47,7 @@ var DeploymentVerbs = []string{"get", "list", "watch", "create", "patch", "delet
 
 // taskSetBatch is how long a pool whose Deployment exists waits after a
 // TaskSet of it comes or goes before it is reconciled, so a busy pool is
-// reconciled, and its newest TaskSet read, about once per batch rather than
-// once per task.
+// reconciled about once per batch rather than once per task.
 const taskSetBatch = time.Second
 
 // Builder builds the Deployment of the pool with hash in namespace from its
@@ -93,19 +93,18 @@ type Controller struct {
 var _ dispatch.PoolHealth = &Controller{}
 
 // pool is what the controller remembers of a pool, by key. Only the worker
-// reconciling the pool touches it, apart from health, which mu guards.
+// reconciling the pool touches it, apart from spec, which the operator sets
+// too, and health, which mu guards.
 type pool struct {
 	// idleSince is when the pool was first seen without TaskSets, zero while
 	// it has some. It is kept in memory only, so a controller restart restarts
 	// the retention timer rather than shortening it.
 	idleSince time.Time
-	// spec is the spec.pool of the TaskSet with UID specFrom, read live, as
-	// the TaskSet cache holds metadata only. It may be nil.
-	specFrom types.UID
-	spec     *wfv1.PoolSpec
-	// taskSet refers to that TaskSet, for events.
-	taskSet *apiv1.ObjectReference
-	health  dispatch.Health
+	// spec is the spec.pool of the pool's most recently dispatched task
+	// (Dispatched), or, for a pool found with no dispatch since the
+	// controller started, its newest TaskSet's, read live. It may be nil.
+	spec   *wfv1.PoolSpec
+	health dispatch.Health
 }
 
 // NewRateLimiter is the rate limiter for a Controller's queue: it backs off
@@ -253,12 +252,46 @@ func (c *Controller) processNextItem(ctx context.Context) bool {
 func (c *Controller) state(key string) *pool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.stateLocked(key)
+}
+
+func (c *Controller) stateLocked(key string) *pool {
 	p, ok := c.pools[key]
 	if !ok {
 		p = &pool{health: dispatch.Health{State: dispatch.HealthOK}}
 		c.pools[key] = p
 	}
 	return p
+}
+
+// Dispatched records spec, the spec.pool of a task the operator is about to
+// enqueue for the pool with hash in namespace, as the pool's spec: a pool
+// with no Deployment is built from it, and its retention, the most recently
+// dispatched task's, applies. The operator calls it before it creates the
+// task's TaskSet, so the TaskSet's event finds the spec here rather than
+// having to read it.
+func (c *Controller) Dispatched(namespace, hash string, spec *wfv1.PoolSpec) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.stateLocked(indexes.MetaNamespaceLabelIndex(namespace, hash)).spec = spec
+}
+
+// spec is the pool's spec, or nil.
+func (c *Controller) spec(p *pool) *wfv1.PoolSpec {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return p.spec
+}
+
+// keepReadSpec records spec, read from the pool's newest TaskSet, as the
+// pool's unless a dispatch recorded one meanwhile, and returns the pool's.
+func (c *Controller) keepReadSpec(p *pool, spec *wfv1.PoolSpec) *wfv1.PoolSpec {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if p.spec == nil {
+		p.spec = spec
+	}
+	return p.spec
 }
 
 // forget forgets a pool that has neither TaskSets nor a Deployment.
