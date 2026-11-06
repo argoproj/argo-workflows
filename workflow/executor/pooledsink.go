@@ -138,3 +138,15 @@ func (s *PooledSink) Stopped() <-chan struct{} { return s.claim.Stopped() }
 
 // StopReason is the first reason the task had to stop, or empty.
 func (s *PooledSink) StopReason() dispatch.StopReason { return s.claim.StopReason() }
+
+// UnlessClaimLost returns err, unless it says the task's claim was lost
+// (dispatch.ErrClaimLost), when it logs that with why and returns nil: the
+// task's node has moved on, so completing or releasing the claim is no
+// longer its worker's to do.
+func UnlessClaimLost(ctx context.Context, err error, why string) error {
+	if !errors.Is(err, dispatch.ErrClaimLost) {
+		return err
+	}
+	logging.RequireLoggerFromContext(ctx).WithError(err).Info(ctx, why)
+	return nil
+}
