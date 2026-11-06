@@ -650,17 +650,29 @@ dist/manifests/%: manifests/%
 manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
+# Keep this version in step with `version:` in .custom-gcl.yml.
 $(TOOL_GOLANGCI_LINT): Makefile
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.15.0/install.sh | sh -s -- -b `go env GOPATH`/bin v2.15.0
+
+# golangci-lint with the module plugins in .custom-gcl.yml (gohawk) compiled in.
+# It must be built with the go.mod toolchain, as golangci-lint refuses to lint
+# code targeting a newer Go than it was built with; the toolchain is in the name
+# so a go.mod bump triggers a rebuild.
+TOOL_CUSTOM_GCL := dist/custom-gcl-$(GOMOD_TOOLCHAIN)
+ifneq ($(USE_NIX), true)
+$(TOOL_CUSTOM_GCL): $(TOOL_GOLANGCI_LINT)
+endif
+$(TOOL_CUSTOM_GCL): .custom-gcl.yml
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_GOLANGCI_LINT) custom --destination dist --name $(notdir $@)
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
 ifneq ($(USE_NIX), true)
 # golangci-lint loads packages in implicit vendor mode, so the vendor tree must
 # be fresh. Skipped under Nix, which deletes vendor/ in the recipe below.
-lint-go: $(TOOL_GOLANGCI_LINT) vendor/modules.txt
+lint-go: vendor/modules.txt
 endif
-lint-go: ui/dist/app/index.html
+lint-go: $(TOOL_CUSTOM_GCL) ui/dist/app/index.html
 ifeq ($(USE_NIX), true)
 	rm -Rf v3 vendor
 endif
@@ -671,7 +683,7 @@ ifneq ($(USE_NIX), true)
 	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || go mod vendor
 endif
 	# Lint Go files (with auto-discovered build tags)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_CUSTOM_GCL) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
 
 lint-ui: ui/dist/app/index.html
 	# Lint the UI
