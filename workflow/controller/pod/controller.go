@@ -163,8 +163,6 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 		log.Warn(ctx, "workflow is not an unstructured")
 		return true
 	}
-	// Only the deletion timestamp is needed: converting the whole workflow
-	// decodes every template on every pod event.
 	return un.GetDeletionTimestamp() != nil
 }
 
