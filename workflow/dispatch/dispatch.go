@@ -153,12 +153,20 @@ type LedgerEntry struct {
 	Ledger wfv1.PooledTaskStatus
 }
 
+// FoundClaim is a claim Drop found, with the result that records it as Drop
+// read it live: a completed claim's result is the task's ending, which the
+// result cache may not hold yet.
+type FoundClaim struct {
+	Claim
+	Result *wfv1.WorkflowTaskResult
+}
+
 // ShutdownOutcome is what Shutdown did to one task.
 type ShutdownOutcome struct {
 	Key
 	// Found is the claim Drop found on a task the ledger had as enqueued,
 	// which Shutdown then interrupts; Err is set if that failed.
-	Found *Claim
+	Found *FoundClaim
 	// Finished is set when no claim holds the task any more, so the node can
 	// finish now. Otherwise the task was interrupted and its worker has yet to
 	// confirm it stopped.
@@ -185,7 +193,7 @@ type Dispatcher interface {
 	// finish; otherwise it was claimed and must be interrupted. A worker
 	// creates its claim before it reads the TaskSet, so no claim can start
 	// after Drop without Drop finding it.
-	Drop(ctx context.Context, key Key, taskSetUID types.UID) (*Claim, error)
+	Drop(ctx context.Context, key Key, taskSetUID types.UID) (*FoundClaim, error)
 	// Interrupt ends a claimed task: it deletes the TaskSet, then labels the
 	// claim's result for its worker to stop the task. It fails with
 	// ErrClaimLost if the result has been deleted or replaced.
