@@ -20,6 +20,7 @@ import {useEditableObject} from '../shared/use-editable-object';
 import {useQueryParams} from '../shared/use-query-params';
 import {WidgetGallery} from '../widgets/widget-gallery';
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
+import {CronWorkflowDeleteConfirmation} from './cron-workflow-delete-confirmation';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 import '../workflows/components/workflow-details/workflow-details.scss';
@@ -152,15 +153,18 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                 iconClassName: 'fa fa-trash',
                 disabled: edited,
                 action: () => {
-                    popup.confirm('confirm', 'Are you sure you want to delete this cron workflow? (This also deletes all Workflows it spawned)').then(yes => {
-                        if (yes) {
-                            services.cronWorkflows
-                                .delete(name, namespace)
-                                .then(() => navigation.goto(uiUrl('cron-workflows/' + namespace)))
-                                .then(() => setError(null))
-                                .catch(setError);
-                        }
-                    });
+                    let keepWorkflows = false;
+                    popup
+                        .confirm('Confirm', () => <CronWorkflowDeleteConfirmation onKeepWorkflowsChange={value => (keepWorkflows = value)} />)
+                        .then(yes => {
+                            if (yes) {
+                                services.cronWorkflows
+                                    .delete(name, namespace, keepWorkflows)
+                                    .then(() => navigation.goto(uiUrl('cron-workflows/' + namespace)))
+                                    .then(() => setError(null))
+                                    .catch(setError);
+                            }
+                        });
                 }
             },
             {
