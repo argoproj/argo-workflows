@@ -471,7 +471,7 @@ GOMOD_TOOLCHAIN := go$(shell sed -n 's/^go //p' go.mod)
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -651,7 +651,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.13.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.13.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.15.0/install.sh | sh -s -- -b `go env GOPATH`/bin v2.15.0
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project

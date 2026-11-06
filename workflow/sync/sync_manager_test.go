@@ -981,6 +981,65 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	})
 }
 
+// TestReleaseAllReleasesEverySemaphoreHolder is a regression test for
+// semaphore slots leaking on workflow termination: ReleaseAll ranged over
+// holding.Holders while LockReleased rewrote that same slice via
+// slices.DeleteFunc, so holders after the first were skipped and never
+// released.
+func TestReleaseAllReleasesEverySemaphoreHolder(t *testing.T) {
+	kube := fake.NewClientset()
+	cm := v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-config",
+			Namespace: "default",
+		},
+		Data: map[string]string{
+			"template": "3",
+		},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	}, WorkflowExistenceFunc, false)
+	require.NoError(t, err)
+
+	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplSemaphore)
+	tmpl := wf.Spec.Templates[2]
+
+	// Three nodes of the same workflow acquire the same semaphore, so the
+	// workflow's Holding entry for it ends up with three holders.
+	nodeNames := []string{
+		"semaphore-tmpl-level-xjvln-3448864205",
+		"semaphore-tmpl-level-xjvln-1607747183",
+		"semaphore-tmpl-level-xjvln-2790796867",
+	}
+	for _, nodeName := range nodeNames {
+		status, _, msg, failedLockName, acquireErr := syncManager.TryAcquire(ctx, wf, nodeName, tmpl.Synchronization)
+		require.NoError(t, acquireErr)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+	}
+	require.NotNil(t, wf.Status.Synchronization)
+	require.NotNil(t, wf.Status.Synchronization.Semaphore)
+	require.Len(t, wf.Status.Synchronization.Semaphore.Holding, 1)
+	assert.Len(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders, 3)
+
+	syncManager.ReleaseAll(ctx, wf)
+	assert.Nil(t, wf.Status.Synchronization)
+
+	// Every holder's slot must have been released, not just the first one.
+	sema := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+	require.NotNil(t, sema)
+	holders, err := sema.getCurrentHolders(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, holders)
+}
+
 type mockGetSyncLimit struct {
 	callCount  int
 	outputSize int

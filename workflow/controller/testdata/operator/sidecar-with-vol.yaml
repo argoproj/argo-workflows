@@ -1,0 +1,36 @@
+# Verifies sidecars can reference volumeClaimTemplates
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sidecar-with-volumes
+spec:
+  entrypoint: sidecar-with-volumes
+  volumeClaimTemplates:
+  - metadata:
+      name: claim-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  volumes:
+  - name: existing-vol
+    persistentVolumeClaim:
+      claimName: my-existing-volume
+  templates:
+  - name: sidecar-with-volumes
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        print("hello world")
+    sidecars:
+    - name: sidevol
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt; sleep 9999"]
+      volumeMounts:
+      - name: claim-vol
+        mountPath: /mnt/vol
+      - name: existing-vol
+        mountPath: /mnt/existing-vol

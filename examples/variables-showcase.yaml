@@ -2,7 +2,7 @@
 # documented in the catalog. Every reference is annotated inline with the
 # catalog row it covers. CronWorkflow-only variables are intentionally omitted.
 #
-# Coverage map (74 variables):
+# Coverage map (75 variables):
 #
 #   Global (20)              workflow.* identity / metadata / parameters
 #   Runtime (3)              workflow.duration / .status / .failures
@@ -12,7 +12,8 @@
 #                            aggregates and workflow.outputs.{parameters,artifacts}.<n>
 #   Item (2)                 item / item.<key>
 #   Retry (5)                lastRetry.* / retries
-#   Node-Ctx (4)             node.name / pod.name / steps.name / tasks.name
+#   Node-Ctx (5)             node.name / node.taskName / pod.name / steps.name /
+#                            tasks.name
 #   Metric (6)               duration / exitCode / status / outputs.result /
 #                            outputs.parameters.<n> / resourcesDuration.<r>
 
@@ -131,7 +132,7 @@ spec:
     #                            labels.<n>, parameters, parameters.json,
     #                            parameters.<n>}
     #      runtime:    workflow.{duration, status}
-    #      node-ctx:   node.name, pod.name, steps.name
+    #      node-ctx:   node.name, node.taskName, pod.name, steps.name
     #      output ptr: outputs.{parameters,artifacts}.<n>.path
     #      metric:     duration, exitCode, status, outputs.result,
     #                  outputs.parameters.<n>, resourcesDuration.<r>
@@ -171,6 +172,7 @@ spec:
           # ---- node-ctx ----
           echo "node.name           = {{node.name}}"
           echo "pod.name            = {{pod.name}}"
+          echo "node.taskName       = {{node.taskName}}"
           echo "steps.name          = {{steps.name}}"
           # ---- identity ----
           echo "workflow.name       = {{workflow.name}}"
@@ -262,6 +264,7 @@ spec:
             # ---- node-ctx (also valid here) ----
             echo "node.name           = {{node.name}}"
             echo "pod.name            = {{pod.name}}"
+            echo "node.taskName       = {{node.taskName}}"
             # ---- output param path ----
             echo "out.param.path      = {{outputs.parameters.echoed.path}}"
           } >&2

@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: step-output-ref-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: docker/whalesay:latest
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          path: /etc/hosts
+  - name: stepref
+    steps:
+    - - name: one
+        template: whalesay
+    - - name: two
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.outputs.parameters.outparam}}"

@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sequence
+spec:
+  entrypoint: steps
+  templates:
+  - name: steps
+    steps:
+      - - name: step1
+          template: echo
+          arguments:
+            parameters:
+            - name: msg
+              value: "{{item}}"
+          withSequence:
+            start: "100"
+            end: "101"
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
