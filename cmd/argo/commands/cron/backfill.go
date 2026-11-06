@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -104,7 +105,7 @@ func backfillCronWorkflow(ctx context.Context, cronWFName string, cliOps backfil
 	if err != nil {
 		return err
 	}
-	cronTab, err := cron.ParseStandard(cronWF.Spec.GetScheduleString())
+	cronTab, err := cron.ParseStandard(strings.Join(cronWF.GetSchedules(), ","))
 	if err != nil {
 		return err
 	}
