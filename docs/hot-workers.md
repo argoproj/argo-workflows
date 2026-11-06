@@ -76,11 +76,17 @@ A setting outside its limits makes the workflow controller exit with an error na
 
 Before you turn hot workers off, let every workflow that uses pooled templates finish.
 Turning the flag off while pooled tasks are queued or running isn't supported.
-Once no pooled work remains, set `enabled: false`, restart the controller, which runs hot workers until it restarts, and delete any pools that are left:
+Once no pooled work remains, set `enabled: false`, restart the controller, which runs hot workers until it restarts, and delete any of its pools that are left.
+Select its pools by its instance ID, so that other controllers' pools stay:
 
 ```bash
-kubectl delete deployments --all-namespaces -l workflows.argoproj.io/pool-hash
+# A controller with an instance ID
+kubectl delete deployments --all-namespaces -l 'workflows.argoproj.io/pool-hash,workflows.argoproj.io/controller-instanceid=<instance ID>'
+# A controller without one
+kubectl delete deployments --all-namespaces -l 'workflows.argoproj.io/pool-hash,!workflows.argoproj.io/controller-instanceid'
 ```
+
+For a namespaced controller, use `-n <namespace>` instead of `--all-namespaces`.
 
 ## Pooling a template
 

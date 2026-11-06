@@ -102,6 +102,27 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         setUITimezone(timezone);
     }, [timezone]);
 
+    // map pod names to corresponding node IDs
+    const podNamesToNodeIDs = new Map<string, string>();
+    const podNames = [{value: '', label: 'All'}].concat(
+        Object.values(workflow.status.nodes || {})
+            .filter(x => x.type === 'Pod')
+            .map(targetNode => {
+                const {name, id, displayName} = targetNode;
+                const targetPodName = getPodName(workflow, targetNode);
+                podNamesToNodeIDs.set(targetPodName, id);
+                // a pooled node is labelled with its task or claimant worker pod, but keeps its own pod name as a unique value
+                const shownPodName = targetNode.pooledTask ? getPooledTaskPodName(targetNode.pooledTask, false).name : targetPodName;
+                return {value: targetPodName, label: (displayName || name) + ' (' + shownPodName + ')'};
+            })
+    );
+
+    // the node of the selected pod, which decides between archived and live logs; the initial node for All, or if its pod isn't listed
+    const nodeId = podName ? (podNamesToNodeIDs.get(podName) ?? (podName === initialPodName ? initialNodeId : undefined)) : initialNodeId;
+    const node = workflow.status.nodes[nodeId];
+    // a pooled node has no pod of its own to link to
+    const selectedPooled = !!podName && !!node?.pooledTask;
+
     useEffect(() => {
         setError(null);
         setLoaded(false);
@@ -152,28 +173,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, selectedContainer, grep, archived, selectedJsonFields, timezone]);
-
-    // map pod names to corresponding node IDs
-    const podNamesToNodeIDs = new Map<string, string>();
-    const podNames = [{value: '', label: 'All'}].concat(
-        Object.values(workflow.status.nodes || {})
-            .filter(x => x.type === 'Pod')
-            .map(targetNode => {
-                const {name, id, displayName} = targetNode;
-                const targetPodName = getPodName(workflow, targetNode);
-                podNamesToNodeIDs.set(targetPodName, id);
-                // a pooled node is labelled with its task or claimant worker pod, but keeps its own pod name as a unique value
-                const shownPodName = targetNode.pooledTask ? getPooledTaskPodName(targetNode.pooledTask, false).name : targetPodName;
-                return {value: targetPodName, label: (displayName || name) + ' (' + shownPodName + ')'};
-            })
-    );
-
-    // the node of the selected pod, which decides between archived and live logs; the initial node for All, or if its pod isn't listed
-    const nodeId = podName ? (podNamesToNodeIDs.get(podName) ?? (podName === initialPodName ? initialNodeId : undefined)) : initialNodeId;
-    const node = workflow.status.nodes[nodeId];
-    // a pooled node has no pod of its own to link to
-    const selectedPooled = !!podName && !!node?.pooledTask;
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, nodeId, selectedContainer, grep, archived, selectedJsonFields, timezone]);
 
     useEffect(() => {
         if (!node || !node.templateRef) {
