@@ -2697,7 +2697,7 @@ func schema_pkg_apis_workflow_v1alpha1_EnumFrom(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "EnumFrom lists Kubernetes resources to offer as a parameter's values when it is submitted from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only affects how the parameter is asked for: the submitted value is not checked against the list.",
+				Description: "EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"resource": {
@@ -2709,7 +2709,7 @@ func schema_pkg_apis_workflow_v1alpha1_EnumFrom(ref common.ReferenceCallback) co
 					},
 					"jsonPath": {
 						SchemaProps: spec.SchemaProps{
-							Description: "JSONPath extracts the values from each listed resource, e.g. `{.metadata.name}`",
+							Description: "JSONPath extracts the values from each listed resource, for example `{.metadata.name}`",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2717,7 +2717,7 @@ func schema_pkg_apis_workflow_v1alpha1_EnumFrom(ref common.ReferenceCallback) co
 					},
 					"labelSelector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "LabelSelector filters the listed resources, e.g. `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+							Description: "LabelSelector filters the listed resources, for example `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5083,7 +5083,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"enumFrom": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. Cannot be used together with Enum.",
+							Description: "EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. You can't use it together with Enum.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.EnumFrom"),
 						},
 					},
@@ -5327,7 +5327,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceSelector(ref common.ReferenceCall
 				Properties: map[string]spec.Schema{
 					"apiVersion": {
 						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion of the resource, e.g. `v1` or `apps/v1`",
+							Description: "APIVersion of the resource, for example `v1` or `apps/v1`",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -5335,7 +5335,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceSelector(ref common.ReferenceCall
 					},
 					"kind": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Kind of the resource, e.g. `Namespace` or `Deployment`. Secrets are not allowed.",
+							Description: "Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -5343,7 +5343,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceSelector(ref common.ReferenceCall
 					},
 					"namespace": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+							Description: "Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

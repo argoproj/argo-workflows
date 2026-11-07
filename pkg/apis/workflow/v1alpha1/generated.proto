@@ -660,17 +660,17 @@ message DataSource {
   optional ArtifactPaths artifactPaths = 1;
 }
 
-// EnumFrom lists Kubernetes resources to offer as a parameter's values when it is submitted from the UI
+// EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI
 // or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials.
-// It only affects how the parameter is asked for: the submitted value is not checked against the list.
+// It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.
 message EnumFrom {
   // Resource is the kind of resource to list
   optional ResourceSelector resource = 1;
 
-  // JSONPath extracts the values from each listed resource, e.g. `{.metadata.name}`
+  // JSONPath extracts the values from each listed resource, for example `{.metadata.name}`
   optional string jsonPath = 2;
 
-  // LabelSelector filters the listed resources, e.g. `tier=web`.
+  // LabelSelector filters the listed resources, for example `tier=web`.
   // It may reference other workflow parameters, so the list can depend on another parameter's value.
   optional string labelSelector = 3;
 }
@@ -1373,7 +1373,7 @@ message Parameter {
   repeated string enum = 6;
 
   // EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
-  // Cannot be used together with Enum.
+  // You can't use it together with Enum.
   optional EnumFrom enumFrom = 8;
 
   // Description is the parameter description
@@ -1456,13 +1456,13 @@ message RawArtifact {
 
 // ResourceSelector identifies the resources an EnumFrom lists
 message ResourceSelector {
-  // APIVersion of the resource, e.g. `v1` or `apps/v1`
+  // APIVersion of the resource, for example `v1` or `apps/v1`
   optional string apiVersion = 1;
 
-  // Kind of the resource, e.g. `Namespace` or `Deployment`. Secrets are not allowed.
+  // Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.
   optional string kind = 2;
 
-  // Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds.
+  // Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds.
   // It may reference other workflow parameters, so the list can depend on another parameter's value.
   optional string namespace = 3;
 }

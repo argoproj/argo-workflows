@@ -3011,7 +3011,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 |`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
 |`description`|`string`|Description is the parameter description|
 |`enum`|`Array< string >`|Enum holds a list of string values to choose from, for the actual value of the parameter|
-|`enumFrom`|[`EnumFrom`](#enumfrom)|EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. Cannot be used together with Enum.|
+|`enumFrom`|[`EnumFrom`](#enumfrom)|EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. You can't use it together with Enum.|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value|
@@ -4407,13 +4407,13 @@ S3Artifact is the location of an S3 artifact
 
 ## EnumFrom
 
-EnumFrom lists Kubernetes resources to offer as a parameter's values when it is submitted from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only affects how the parameter is asked for: the submitted value is not checked against the list.
+EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`jsonPath`|`string`|JSONPath extracts the values from each listed resource, e.g. `{.metadata.name}`|
-|`labelSelector`|`string`|LabelSelector filters the listed resources, e.g. `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.|
+|`jsonPath`|`string`|JSONPath extracts the values from each listed resource, for example `{.metadata.name}`|
+|`labelSelector`|`string`|LabelSelector filters the listed resources, for example `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.|
 |`resource`|[`ResourceSelector`](#resourceselector)|Resource is the kind of resource to list|
 
 ## ValueFrom
@@ -5334,9 +5334,9 @@ ResourceSelector identifies the resources an EnumFrom lists
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`apiVersion`|`string`|APIVersion of the resource, e.g. `v1` or `apps/v1`|
-|`kind`|`string`|Kind of the resource, e.g. `Namespace` or `Deployment`. Secrets are not allowed.|
-|`namespace`|`string`|Namespace to list in. Defaults to the namespace the workflow is submitted to, and is ignored for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.|
+|`apiVersion`|`string`|APIVersion of the resource, for example `v1` or `apps/v1`|
+|`kind`|`string`|Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.|
+|`namespace`|`string`|Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.|
 
 ## SuppliedValueFrom
 
