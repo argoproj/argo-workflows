@@ -34,7 +34,8 @@ func TestToConfigMap(t *testing.T) {
 			},
 			Spec: spec.PluginSpec{
 				Sidecar: spec.Sidecar{
-					AutomountServiceAccountToken: true,
+					AutomountServiceAccountToken:         true,
+					AutomountWorkflowServiceAccountToken: true, // Never exported to ConfigMaps.
 					Container: apiv1.Container{
 						Ports: []apiv1.ContainerPort{{ContainerPort: 1234}},
 						Resources: apiv1.ResourceRequirements{

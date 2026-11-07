@@ -49,6 +49,7 @@
     "argoexec",
     "artgc",
     "artifactgc",
+    "automount",
     "clientset",
     "clusterworkflowtemplate",
     "Creds",
