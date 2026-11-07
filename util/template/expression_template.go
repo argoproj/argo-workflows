@@ -155,9 +155,10 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 }
 
 // guardVisitor collects the member nodes whose access is guarded by the
-// nil-coalescing (??) or optional-chaining (?.) operators, so they are not
-// reported as strictly-required identifiers. Base identifiers are left
-// untouched so a genuinely-unavailable variable still triggers a requeue.
+// nil-coalescing (??) or optional-chaining (?.) operators, or by an `in` test
+// in the condition of a ternary, so they are not reported as
+// strictly-required identifiers. Base identifiers are left untouched so a
+// genuinely-unavailable variable still triggers a requeue.
 type guardVisitor struct {
 	guarded map[ast.Node]bool
 }
@@ -173,6 +174,45 @@ func (v *guardVisitor) Visit(node *ast.Node) {
 			if _, ok := n.Node.(*ast.MemberNode); ok {
 				v.guarded[n.Node] = true
 			}
+		}
+	case *ast.ConditionalNode:
+		// `'key' in item ? item.key : fallback` has already tested for the key
+		// on the branch that reads it, so that read is not strictly required.
+		// Only the tested path is guarded: the test says nothing about any
+		// other key of item, and the false branch never reads it at all.
+		if cond, ok := n.Cond.(*ast.BinaryNode); ok && cond.Operator == "in" {
+			key, keyOK := cond.Left.(*ast.StringNode)
+			base, baseOK := nodePath(cond.Right)
+			if keyOK && baseOK {
+				ast.Walk(&n.Exp1, &pathMarker{guarded: v.guarded, path: base + "." + key.Value})
+			}
+		}
+	}
+}
+
+// nodePath returns the dotted path an expression denotes, for the identifier
+// and member-chain forms getMemberPath already understands.
+func nodePath(node ast.Node) (string, bool) {
+	switch n := node.(type) {
+	case *ast.IdentifierNode:
+		return n.Value, true
+	case *ast.MemberNode:
+		return getMemberPath(n)
+	}
+	return "", false
+}
+
+// pathMarker guards only the member nodes resolving to one exact path, unlike
+// memberMarker, which guards every member node it walks.
+type pathMarker struct {
+	guarded map[ast.Node]bool
+	path    string
+}
+
+func (m *pathMarker) Visit(node *ast.Node) {
+	if n, ok := (*node).(*ast.MemberNode); ok {
+		if path, ok := getMemberPath(n); ok && path == m.path {
+			m.guarded[*node] = true
 		}
 	}
 }
