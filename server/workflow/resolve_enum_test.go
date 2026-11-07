@@ -2,7 +2,9 @@ package workflow
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,6 +60,8 @@ func enumSpec() v1alpha1.WorkflowSpec {
 			enumParam("endpoints", "v1", "Endpoints", "", ""),
 			enumParam("web-deployments", "apps/v1", "Deployment", "", "tier=web"),
 			enumParam("cascading", "apps/v1", "Deployment", "{{workflow.parameters.ns}}", "tier={{workflow.parameters.tier}}"),
+			enumParam("cascading-spaces", "apps/v1", "Deployment", "{{ workflow.parameters.ns }}", ""),
+			enumParam("unsupported-reference", "apps/v1", "Deployment", "{{workflow.namespace}}", ""),
 			enumParam("unknown-kind", "apps/v1", "Nope", "", ""),
 			enumParam("unknown-group", "example.com/v1", "Thing", "", ""),
 			enumParam("secrets", "v1", "Secret", "", ""),
@@ -163,9 +167,31 @@ func TestResolveParameterEnum(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, []string{"api"}, values)
 	})
-	t.Run("CascadingParentNotChosen", func(t *testing.T) {
-		_, err := resolve(&workflowpkg.ResolveParameterEnumRequest{ParameterName: "cascading"})
-		assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+	// The UI sends every referenced parameter, as "" while it is empty, so empty must mean "no value yet",
+	// the same as missing; otherwise an empty labelSelector reference would match unlabelled resources.
+	for name, params := range map[string]map[string]string{
+		"CascadingParentMissing":      nil,
+		"CascadingParentEmpty":        {"ns": "", "tier": ""},
+		"CascadingNamespaceEmpty":     {"ns": "", "tier": "web"},
+		"CascadingLabelSelectorEmpty": {"ns": "team-a", "tier": ""},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := resolve(&workflowpkg.ResolveParameterEnumRequest{ParameterName: "cascading", Parameters: params})
+			assert.Equal(t, codes.FailedPrecondition, status.Code(err), "%v", err)
+		})
+	}
+	t.Run("WaitingNamesTheParameters", func(t *testing.T) {
+		_, err := resolve(&workflowpkg.ResolveParameterEnumRequest{ParameterName: "cascading", Parameters: map[string]string{"ns": "team-a", "tier": ""}})
+		assert.Equal(t, "waiting for a value for tier", status.Convert(err).Message())
+	})
+	t.Run("CascadingWithSpacesInReference", func(t *testing.T) {
+		values, err := resolve(&workflowpkg.ResolveParameterEnumRequest{ParameterName: "cascading-spaces", Parameters: map[string]string{"ns": "team-a"}})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"api"}, values)
+	})
+	t.Run("UnsupportedReference", func(t *testing.T) {
+		_, err := resolve(&workflowpkg.ResolveParameterEnumRequest{ParameterName: "unsupported-reference"})
+		assert.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
 	})
 	t.Run("TemplateInput", func(t *testing.T) {
 		values, err := resolve(&workflowpkg.ResolveParameterEnumRequest{ParameterName: "input-ns", TemplateName: "main"})
@@ -410,6 +436,92 @@ func TestRequestCacheKey(t *testing.T) {
 			r := *base
 			change(&r)
 			assert.NotEqual(t, key, requestCacheKey("caller", &r))
+		})
+	}
+}
+
+func TestNewEnumResolverSettings(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	t.Run("Defaults", func(t *testing.T) {
+		r := newEnumResolver(ctx)
+		assert.Equal(t, defaultEnumMaxItems, r.maxItems)
+		assert.Equal(t, defaultEnumCacheTTL, r.cacheTTL)
+	})
+	t.Run("FromEnvironment", func(t *testing.T) {
+		t.Setenv("ARGO_SERVER_RESOLVE_ENUM_MAX_ITEMS", "7")
+		t.Setenv("ARGO_SERVER_RESOLVE_ENUM_CACHE_TTL", "0s")
+		r := newEnumResolver(ctx)
+		assert.Equal(t, 7, r.maxItems)
+		assert.Equal(t, time.Duration(0), r.cacheTTL)
+	})
+	for _, v := range []string{"0", "-1"} {
+		t.Run("MaxItems="+v+"MeansDefault", func(t *testing.T) {
+			t.Setenv("ARGO_SERVER_RESOLVE_ENUM_MAX_ITEMS", v)
+			assert.Equal(t, defaultEnumMaxItems, newEnumResolver(ctx).maxItems)
+		})
+	}
+}
+
+func TestResolveParameterEnumErrors(t *testing.T) {
+	req := func(kind, name string) *workflowpkg.ResolveParameterEnumRequest {
+		return &workflowpkg.ResolveParameterEnumRequest{Namespace: "argo", ResourceKind: kind, ResourceName: name, ParameterName: "deployments"}
+	}
+
+	for _, kind := range []string{"ClusterWorkflowTemplate", "CronWorkflow", "Workflow"} {
+		t.Run(kind+"NotFound", func(t *testing.T) {
+			s, ctx, _ := resolveEnumServer(t)
+			_, err := s.ResolveParameterEnum(ctx, req(kind, "missing"))
+			assert.Equal(t, codes.NotFound, status.Code(err), "%v", err)
+		})
+	}
+
+	for name, tc := range map[string]struct {
+		err  error
+		code codes.Code
+	}{
+		// The cluster couldn't answer: not the caller's fault, so not InvalidArgument.
+		"DiscoveryUnavailable": {errors.New("connection refused"), codes.Internal},
+		"DiscoveryForbidden":   {apierr.NewForbidden(schema.GroupResource{}, "", nil), codes.PermissionDenied},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s, ctx, _ := resolveEnumServer(t)
+			auth.GetKubeClient(ctx).(*fake.Clientset).PrependReactor("get", "resource", func(ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, tc.err
+			})
+			_, err := s.ResolveParameterEnum(ctx, req("WorkflowTemplate", "wftmpl"))
+			assert.Equal(t, tc.code, status.Code(err), "%v", err)
+		})
+	}
+}
+
+func TestSubstituteEnumParameters(t *testing.T) {
+	for name, tc := range map[string]struct {
+		in, out string
+		params  map[string]string
+		code    codes.Code
+		message string
+	}{
+		"NoReferences":          {in: "tier=web", out: "tier=web"},
+		"Substituted":           {in: "app={{workflow.parameters.a}},tier={{workflow.parameters.b}}", params: map[string]string{"a": "x", "b": "y"}, out: "app=x,tier=y"},
+		"SpacesInsideBraces":    {in: "{{  workflow.parameters.a  }}", params: map[string]string{"a": "x"}, out: "x"},
+		"Missing":               {in: "{{workflow.parameters.a}}", code: codes.FailedPrecondition, message: "waiting for a value for a"},
+		"Empty":                 {in: "{{workflow.parameters.a}}", params: map[string]string{"a": ""}, code: codes.FailedPrecondition, message: "waiting for a value for a"},
+		"NamesEachOnce":         {in: "{{workflow.parameters.a}}-{{workflow.parameters.b}}-{{workflow.parameters.a}}", code: codes.FailedPrecondition, message: "waiting for a value for a, b"},
+		"ValueWithBraces":       {in: "{{workflow.parameters.a}}", params: map[string]string{"a": "{{x}}"}, out: "{{x}}"},
+		"OtherVariable":         {in: "{{workflow.namespace}}", code: codes.InvalidArgument},
+		"OtherVariableAndEmpty": {in: "{{workflow.namespace}}/{{workflow.parameters.a}}", code: codes.InvalidArgument},
+	} {
+		t.Run(name, func(t *testing.T) {
+			out, err := substituteEnumParameters(tc.in, tc.params)
+			if tc.code == codes.OK {
+				require.NoError(t, err)
+				assert.Equal(t, tc.out, out)
+				return
+			}
+			assert.Equal(t, tc.code, status.Code(err), "%v", err)
+			if tc.message != "" {
+				assert.Equal(t, tc.message, status.Convert(err).Message())
+			}
 		})
 	}
 }

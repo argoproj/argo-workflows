@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -235,7 +237,8 @@ func (s *workflowServer) resolveParameterEnum(ctx context.Context, callerKey str
 
 	res, err := s.enumResolver.discoverCached(auth.GetKubeClient(ctx).Discovery(), enumFrom.Resource.APIVersion, enumFrom.Resource.Kind)
 	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		// An unknown kind is a bad-request error and stays InvalidArgument; a failing discovery call is not the caller's fault.
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	gvr, namespaced := res.gvr, res.namespaced
 	if gvr.GroupResource() == secretsResource {
@@ -356,14 +359,30 @@ func resolveEnumResource(disc discovery.DiscoveryInterface, apiVersion, kind str
 	return schema.GroupVersionResource{}, false, errors.Errorf(errors.CodeBadRequest, "enumFrom.resource kind %q not found in %s", kind, apiVersion)
 }
 
-// substituteEnumParameters replaces {{workflow.parameters.<name>}} with the given values. It fails with
-// FailedPrecondition if a reference is left unresolved, e.g. because the parameter it depends on has no value yet.
+// parameterReference matches {{workflow.parameters.<name>}}, allowing spaces inside the braces like the UI does.
+var parameterReference = regexp.MustCompile(`{{\s*workflow\.parameters\.([^}\s]+)\s*}}`)
+
+// substituteEnumParameters replaces {{workflow.parameters.<name>}} with the given values. A parameter that is
+// missing or empty has no value yet, so it fails with FailedPrecondition naming the parameters it waits for;
+// the UI shows that as a note rather than an error. Any other {{...}} reference can never resolve here, so it
+// fails with InvalidArgument.
 func substituteEnumParameters(s string, params map[string]string) (string, error) {
-	for k, v := range params {
-		s = strings.ReplaceAll(s, "{{workflow.parameters."+k+"}}", v)
+	if strings.Contains(parameterReference.ReplaceAllString(s, ""), "{{") {
+		return "", status.Errorf(codes.InvalidArgument, "only {{workflow.parameters.<name>}} references are supported, got %q", s)
 	}
-	if strings.Contains(s, "{{") {
-		return "", status.Errorf(codes.FailedPrecondition, "unresolved parameter reference in %q", s)
+	var waiting []string
+	out := parameterReference.ReplaceAllStringFunc(s, func(ref string) string {
+		name := parameterReference.FindStringSubmatch(ref)[1]
+		if v := params[name]; v != "" {
+			return v
+		}
+		if !slices.Contains(waiting, name) {
+			waiting = append(waiting, name)
+		}
+		return ref
+	})
+	if len(waiting) > 0 {
+		return "", status.Errorf(codes.FailedPrecondition, "waiting for a value for %s", strings.Join(waiting, ", "))
 	}
-	return s, nil
+	return out, nil
 }
