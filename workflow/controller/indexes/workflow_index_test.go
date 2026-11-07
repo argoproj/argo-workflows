@@ -136,4 +136,23 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, result)
 	})
+	t.Run("Unconvertible", func(t *testing.T) {
+		// an index func error panics the informer and crash-loops the controller
+		un := &unstructured.Unstructured{}
+		wfv1.MustUnmarshal(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  parallelism: abc
+`, un)
+		_, err := util.FromUnstructured(un)
+		require.Error(t, err)
+
+		result, err := WorkflowSemaphoreKeysIndexFunc(true)(un)
+		require.NoError(t, err)
+		assert.Nil(t, result)
+	})
 }
