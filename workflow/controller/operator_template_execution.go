@@ -59,8 +59,6 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 	}
 
 	// Check the timeout and pendingTimeout deadlines for Pending nodes.
-	// This also covers the resource-forbidden and synchronization scenarios,
-	// where only the node exists, in a pending state, with no pod created.
 	tmplToCheck := processedTmpl
 	if woc.retryStrategy(processedTmpl) != nil {
 		// retry variables are bound per attempt in handleRetries; check
@@ -70,7 +68,36 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 			return err
 		}
 	}
-	deadline, pendingDeadline, err := templateTimeoutDeadlines(tmplToCheck, node, time.Now().UTC())
+	if err := woc.enforceTemplateTimeouts(ctx, nodeName, node, tmplToCheck); err != nil {
+		return err
+	}
+
+	if err := woc.checkParallelism(ctx, processedTmpl, node, boundaryID); err != nil {
+		return err
+	}
+	return nil
+}
+
+// enforceTemplateTimeouts fails node if the template's timeout or
+// pendingTimeout has passed, and otherwise requeues for the earlier of the two
+// so the check runs again on time.
+//
+// It covers the resource-forbidden and synchronization scenarios as well, where
+// only the node exists, in a pending state, with no pod created.
+//
+// This is called from two places because a retried template is reached twice.
+// checkConstraints only ever sees a retried template's Retry node, which is
+// always Running, while both timeout checks act on a Pending node; the attempt
+// node that is actually Pending is chosen later, in handleRetries. Calling it
+// there too is what makes timeout and pendingTimeout behave the same with a
+// retryStrategy as without one (#17258).
+//
+// processedTmpl must already have its retry variables bound. checkConstraints
+// resolves them against attempt 0 (#17356), because the Retry node it sees has
+// no attempt of its own; handleRetries calls SubstituteParams for the real
+// attempt before reaching here.
+func (woc *wfOperationCtx) enforceTemplateTimeouts(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template) error {
+	deadline, pendingDeadline, err := templateTimeoutDeadlines(processedTmpl, node, time.Now().UTC())
 	if err != nil {
 		return woc.markTimeoutError(ctx, processedTmpl, node, nodeName, err)
 	}
@@ -80,10 +107,6 @@ func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string
 	}
 	if deadline != nil && time.Now().Before(*deadline) {
 		woc.requeueAfter(time.Until(*deadline))
-	}
-
-	if err := woc.checkParallelism(ctx, processedTmpl, node, boundaryID); err != nil {
-		return err
 	}
 	return nil
 }
@@ -300,10 +323,16 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		return retryParentNode, nil
 	}
 	var retryNum int
+	// Whether this call re-enters an attempt that already exists rather than
+	// starting a new one. The template's timeout and pendingTimeout are about
+	// that attempt, and it is checked below once the retry parameters have been
+	// substituted into the template.
+	reenteringAttempt := false
 	if lastChildNode != nil && !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
 		nodeName = lastChildNode.Name
 		node = lastChildNode
 		retryNum = len(childNodeIDs) - 1
+		reenteringAttempt = true
 	} else {
 		retryNum = len(childNodeIDs)
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
@@ -360,6 +389,24 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 			woc.addChildNode(ctx, retryNodeName, nodeName)
 		}
 		return errNode, err
+	}
+
+	// The attempt about to be re-entered is the node the template's timeout and
+	// pendingTimeout are about: checkConstraints saw only the Retry node, which
+	// is always Running, so neither check could fire. Without this a Pending
+	// attempt that never starts -- an Unschedulable pod, unmet quota -- is
+	// re-entered forever (#17258).
+	//
+	// This has to come after SubstituteParams, not before it. The timeout
+	// fields may reference retry variables (`pendingTimeout: "1{{retries}}s"`),
+	// and templateTimeoutDeadlines reports an unparseable duration the same way
+	// it reports an expired one, so checking first failed such a template on
+	// its own placeholder instead of on its deadline.
+	if reenteringAttempt {
+		if timeoutErr := woc.enforceTemplateTimeouts(ctx, nodeName, node, processedTmpl); timeoutErr != nil {
+			timedOut, _ := woc.wf.GetNodeByName(nodeName)
+			return timedOut, timeoutErr
+		}
 	}
 
 	// Link a new retry attempt only now that nothing can return before the
