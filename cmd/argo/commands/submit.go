@@ -95,19 +95,9 @@ func NewSubmitCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
 			namespace := client.Namespace(ctx)
 			if interactive {
-				kind, name, err := parseResourceIdentifier(from)
-				if err != nil {
+				if err := addInteractiveParameters(ctx, apiClient, serviceClient, namespace, from, &submitOpts, os.Stdin, os.Stderr); err != nil {
 					return err
 				}
-				params, err := getParametersForInteractiveSubmit(ctx, apiClient, namespace, kind, name)
-				if err != nil {
-					return err
-				}
-				answers, err := promptForParameters(ctx, os.Stdin, os.Stderr, params, submitOpts.Parameters, newEnumResolverFunc(serviceClient, namespace, kind, name))
-				if err != nil {
-					return err
-				}
-				submitOpts.Parameters = append(submitOpts.Parameters, answers...)
 			}
 			if from != "" {
 				return submitWorkflowFromResource(ctx, serviceClient, namespace, from, &submitOpts, &cliSubmitOpts)

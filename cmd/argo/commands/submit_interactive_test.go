@@ -10,10 +10,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -171,4 +176,186 @@ func TestSubmitInteractiveRequiresFrom(t *testing.T) {
 	require.NoError(t, cmd.Flags().Set("interactive", "true"))
 	err := cmd.Args(cmd, []string{"my-wf.yaml"})
 	require.EqualError(t, err, "--interactive requires --from, because options are resolved from the stored resource")
+}
+
+// Fakes for the API clients used by --interactive. Each embeds its interface, so calling any
+// method that isn't overridden panics and the test fails loudly.
+
+type fakeWorkflowTemplateClient struct {
+	workflowtemplatepkg.WorkflowTemplateServiceClient
+	got *workflowtemplatepkg.WorkflowTemplateGetRequest
+	err error
+}
+
+func (f *fakeWorkflowTemplateClient) GetWorkflowTemplate(_ context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
+	f.got = req
+	if f.err != nil {
+		return nil, f.err
+	}
+	return &wfv1.WorkflowTemplate{Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "from-wftmpl"}}}}}, nil
+}
+
+type fakeClusterWorkflowTemplateClient struct {
+	clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient
+	got *clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest
+}
+
+func (f *fakeClusterWorkflowTemplateClient) GetClusterWorkflowTemplate(_ context.Context, req *clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
+	f.got = req
+	return &wfv1.ClusterWorkflowTemplate{Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "from-cwftmpl"}}}}}, nil
+}
+
+type fakeCronWorkflowClient struct {
+	cronworkflowpkg.CronWorkflowServiceClient
+	got *cronworkflowpkg.GetCronWorkflowRequest
+}
+
+func (f *fakeCronWorkflowClient) GetCronWorkflow(_ context.Context, req *cronworkflowpkg.GetCronWorkflowRequest, _ ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
+	f.got = req
+	return &wfv1.CronWorkflow{Spec: wfv1.CronWorkflowSpec{WorkflowSpec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "from-cronwf"}}}}}}, nil
+}
+
+type fakeWorkflowServiceClient struct {
+	workflowpkg.WorkflowServiceClient
+	got []*workflowpkg.ResolveParameterEnumRequest
+}
+
+func (f *fakeWorkflowServiceClient) ResolveParameterEnum(_ context.Context, req *workflowpkg.ResolveParameterEnumRequest, _ ...grpc.CallOption) (*workflowpkg.ResolveParameterEnumResponse, error) {
+	// Record a copy: the caller keeps adding answers to the map it passed, as a real call would have serialized it.
+	recorded := *req
+	recorded.Parameters = maps.Clone(req.Parameters)
+	f.got = append(f.got, &recorded)
+	if req.ParameterName == "ns" {
+		return &workflowpkg.ResolveParameterEnumResponse{Values: []string{"argo", "team-a"}}, nil
+	}
+	return &workflowpkg.ResolveParameterEnumResponse{Values: []string{"api-" + req.Parameters["ns"]}}, nil
+}
+
+type fakeAPIClient struct {
+	apiclient.Client
+	wftmpl  *fakeWorkflowTemplateClient
+	cwftmpl *fakeClusterWorkflowTemplateClient
+	cronwf  *fakeCronWorkflowClient
+	err     error
+}
+
+func (f *fakeAPIClient) NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error) {
+	return f.wftmpl, f.err
+}
+
+func (f *fakeAPIClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error) {
+	return f.cwftmpl, f.err
+}
+
+func (f *fakeAPIClient) NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error) {
+	return f.cronwf, f.err
+}
+
+func newFakeAPIClient() *fakeAPIClient {
+	return &fakeAPIClient{wftmpl: &fakeWorkflowTemplateClient{}, cwftmpl: &fakeClusterWorkflowTemplateClient{}, cronwf: &fakeCronWorkflowClient{}}
+}
+
+func TestGetParametersForInteractiveSubmit(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	for _, kind := range []string{"WorkflowTemplate", "workflowtemplate", "workflowtemplates", "wftmpl"} {
+		t.Run(kind, func(t *testing.T) {
+			c := newFakeAPIClient()
+			params, err := getParametersForInteractiveSubmit(ctx, c, "argo", kind, "my-tmpl")
+			require.NoError(t, err)
+			assert.Equal(t, "from-wftmpl", params[0].Name)
+			assert.Equal(t, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "my-tmpl", Namespace: "argo"}, c.wftmpl.got)
+		})
+	}
+	t.Run("ClusterWorkflowTemplate", func(t *testing.T) {
+		c := newFakeAPIClient()
+		params, err := getParametersForInteractiveSubmit(ctx, c, "argo", "cwftmpl", "my-cwft")
+		require.NoError(t, err)
+		assert.Equal(t, "from-cwftmpl", params[0].Name)
+		assert.Equal(t, "my-cwft", c.cwftmpl.got.Name)
+	})
+	t.Run("CronWorkflow", func(t *testing.T) {
+		c := newFakeAPIClient()
+		params, err := getParametersForInteractiveSubmit(ctx, c, "argo", "cronwf", "my-cron")
+		require.NoError(t, err)
+		assert.Equal(t, "from-cronwf", params[0].Name)
+		assert.Equal(t, &cronworkflowpkg.GetCronWorkflowRequest{Name: "my-cron", Namespace: "argo"}, c.cronwf.got)
+	})
+	t.Run("UnsupportedKind", func(t *testing.T) {
+		_, err := getParametersForInteractiveSubmit(ctx, newFakeAPIClient(), "argo", "pod", "x")
+		require.EqualError(t, err, `--interactive does not support resource kind "pod"`)
+	})
+	for _, kind := range []string{"wftmpl", "cwftmpl", "cronwf"} {
+		t.Run("ClientError/"+kind, func(t *testing.T) {
+			c := newFakeAPIClient()
+			c.err = errors.New("offline")
+			_, err := getParametersForInteractiveSubmit(ctx, c, "argo", kind, "x")
+			require.EqualError(t, err, "offline")
+		})
+	}
+	t.Run("GetError", func(t *testing.T) {
+		c := newFakeAPIClient()
+		c.wftmpl.err = errors.New("not found")
+		_, err := getParametersForInteractiveSubmit(ctx, c, "argo", "wftmpl", "x")
+		require.EqualError(t, err, "not found")
+	})
+}
+
+func TestAddInteractiveParameters(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpl := &wfv1.WorkflowTemplate{Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
+		enumFromParam("ns", nil),
+		enumFromParam("deployment", nil),
+		{Name: "given"},
+	}}}}
+
+	t.Run("AsksAndAppendsAnswers", func(t *testing.T) {
+		svc := &fakeWorkflowServiceClient{}
+		opts := &wfv1.SubmitOpts{Parameters: []string{"given=x"}}
+		var out bytes.Buffer
+		err := addInteractiveParameters(ctx, &templateAPIClient{fakeAPIClient: newFakeAPIClient(), tmpl: tmpl}, svc, "argo", "workflowtemplate/my-tmpl", opts, strings.NewReader("2\n1\n"), &out)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"given=x", "ns=team-a", "deployment=api-team-a"}, opts.Parameters)
+		require.Len(t, svc.got, 2)
+		assert.Equal(t, &workflowpkg.ResolveParameterEnumRequest{
+			Namespace: "argo", ResourceKind: "workflowtemplate", ResourceName: "my-tmpl", ParameterName: "deployment",
+			Parameters: map[string]string{"given": "x", "ns": "team-a"},
+		}, svc.got[1])
+		assert.Contains(t, out.String(), "1) api-team-a")
+	})
+	t.Run("MalformedFrom", func(t *testing.T) {
+		err := addInteractiveParameters(ctx, newFakeAPIClient(), &fakeWorkflowServiceClient{}, "argo", "no-slash", &wfv1.SubmitOpts{}, strings.NewReader(""), &bytes.Buffer{})
+		require.ErrorContains(t, err, "resource identifier 'no-slash' is malformed")
+	})
+	t.Run("FetchError", func(t *testing.T) {
+		c := newFakeAPIClient()
+		c.wftmpl.err = errors.New("forbidden")
+		err := addInteractiveParameters(ctx, c, &fakeWorkflowServiceClient{}, "argo", "wftmpl/x", &wfv1.SubmitOpts{}, strings.NewReader(""), &bytes.Buffer{})
+		require.EqualError(t, err, "forbidden")
+	})
+	t.Run("PromptError", func(t *testing.T) {
+		opts := &wfv1.SubmitOpts{}
+		err := addInteractiveParameters(ctx, &templateAPIClient{fakeAPIClient: newFakeAPIClient(), tmpl: tmpl}, &fakeWorkflowServiceClient{}, "argo", "wftmpl/x", opts, strings.NewReader(""), &bytes.Buffer{})
+		require.EqualError(t, err, `parameter "ns": no value given`)
+		assert.Empty(t, opts.Parameters)
+	})
+}
+
+// templateAPIClient serves a given WorkflowTemplate.
+type templateAPIClient struct {
+	*fakeAPIClient
+	tmpl *wfv1.WorkflowTemplate
+}
+
+func (c *templateAPIClient) NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error) {
+	return &staticWorkflowTemplateClient{tmpl: c.tmpl}, nil
+}
+
+type staticWorkflowTemplateClient struct {
+	workflowtemplatepkg.WorkflowTemplateServiceClient
+	tmpl *wfv1.WorkflowTemplate
+}
+
+func (s *staticWorkflowTemplateClient) GetWorkflowTemplate(context.Context, *workflowtemplatepkg.WorkflowTemplateGetRequest, ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
+	return s.tmpl, nil
 }

@@ -21,6 +21,25 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
+// addInteractiveParameters asks for the parameters of the resource that --from points at, and adds the
+// answers to submitOpts.Parameters.
+func addInteractiveParameters(ctx context.Context, apiClient apiclient.Client, serviceClient workflowpkg.WorkflowServiceClient, namespace, from string, submitOpts *wfv1.SubmitOpts, in io.Reader, out io.Writer) error {
+	kind, name, err := parseResourceIdentifier(from)
+	if err != nil {
+		return err
+	}
+	params, err := getParametersForInteractiveSubmit(ctx, apiClient, namespace, kind, name)
+	if err != nil {
+		return err
+	}
+	answers, err := promptForParameters(ctx, in, out, params, submitOpts.Parameters, newEnumResolverFunc(serviceClient, namespace, kind, name))
+	if err != nil {
+		return err
+	}
+	submitOpts.Parameters = append(submitOpts.Parameters, answers...)
+	return nil
+}
+
 // getParametersForInteractiveSubmit fetches the workflow parameters declared by the resource that --from points at.
 func getParametersForInteractiveSubmit(ctx context.Context, apiClient apiclient.Client, namespace, kind, name string) ([]wfv1.Parameter, error) {
 	switch kind {
