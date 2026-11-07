@@ -1553,6 +1553,14 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			updated.Daemoned = nil
 			break
 		}
+		// A pod force-deleted from a lost node can be seen Failed before any kubelet has reported a container
+		// status. Assessing it now would record the "can't find failed message" placeholder, and the retry
+		// policy decides on it once. Wait for the statuses, or for the pod to go away ("pod deleted").
+		if wait := deletedPodStatusWait(pod); wait > 0 {
+			woc.log.WithFields(logging.Fields{"pod": pod.Name, "wait": wait}).Info(ctx, "Pod failed while being deleted and has no container status yet, waiting")
+			woc.requeueAfter(wait)
+			return nil
+		}
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
@@ -1878,6 +1886,32 @@ func getPendingReason(pod *apiv1.Pod) string {
 		}
 	}
 	return ""
+}
+
+// deletedPodStatusMinTimeout is the minimum delay after which the pod controller releases the status finalizer of a
+// deleting pod.
+const deletedPodStatusMinTimeout = 2 * time.Minute
+
+// deletedPodStatusWait returns how long to wait before assessing a Failed pod that is being deleted and has not
+// reported a message or any container status, or 0 if it can be assessed now. It waits at least as long as the pod
+// controller normally retains the pod: the larger of 2m and the pod's podGC deleteDelayDuration, from its deletion
+// timestamp. Later status changes cannot extend the wait. The pod is normally gone (and its node marked
+// "pod deleted") before that elapses.
+func deletedPodStatusWait(pod *apiv1.Pod) time.Duration {
+	if pod.DeletionTimestamp == nil || pod.Status.Message != "" ||
+		len(pod.Status.ContainerStatuses) > 0 || len(pod.Status.InitContainerStatuses) > 0 {
+		return 0
+	}
+	timeout := deletedPodStatusMinTimeout
+	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
+		_, delay, _ := strings.Cut(val, "/")
+		// The controller writes this annotation from an already parsed duration (getPodGCDelay logs a parse error), so
+		// an error here means a hand-edited annotation; keep the minimum, as the pod controller does.
+		if d, err := (&wfv1.PodGC{DeleteDelayDuration: delay}).GetDeleteDelayDuration(); err == nil && d > timeout {
+			timeout = d
+		}
+	}
+	return max(time.Until(pod.DeletionTimestamp.Add(timeout)), 0)
 }
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
