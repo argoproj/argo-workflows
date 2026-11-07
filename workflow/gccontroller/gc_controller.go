@@ -102,11 +102,6 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 }
 
 func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
-	// No need to queue the workflow if the retention policy is not set
-	if c.retentionPolicy == nil {
-		return
-	}
-
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		c.log.WithField("obj", obj).Warn(ctx, "is not an unstructured")
@@ -116,10 +111,58 @@ func (c *Controller) retentionEnqueue(ctx context.Context, obj any) {
 	switch phase := wfv1.WorkflowPhase(un.GetLabels()[common.LabelKeyPhase]); phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		c.orderedQueueLock.Lock()
+		// No need to queue the workflow if the retention policy is not set
+		if c.retentionPolicy == nil {
+			c.orderedQueueLock.Unlock()
+			return
+		}
 		heap.Push(c.orderedQueue[phase], un)
-		c.runGC(ctx, phase)
 		c.orderedQueueLock.Unlock()
+		c.runGC(ctx, phase)
 	}
+}
+
+// UpdateRetentionPolicy replaces the retention policy when the controller configuration is
+// reloaded, and applies it to the workflows that have already completed.
+func (c *Controller) UpdateRetentionPolicy(ctx context.Context, retentionPolicy *config.RetentionPolicy) {
+	c.orderedQueueLock.Lock()
+	defer c.orderedQueueLock.Unlock()
+	if sameRetentionPolicy(c.retentionPolicy, retentionPolicy) {
+		return
+	}
+	c.retentionPolicy = retentionPolicy
+	for phase := range c.orderedQueue {
+		c.orderedQueue[phase] = NewHeap()
+	}
+	if retentionPolicy == nil {
+		return
+	}
+	// Rebuild the queues from the informer, as workflows that completed while no
+	// policy was set were never queued.
+	for _, obj := range c.wfInformer.GetIndexer().List() {
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok || !common.IsDone(un) {
+			continue
+		}
+		phase := wfv1.WorkflowPhase(un.GetLabels()[common.LabelKeyPhase])
+		if q, ok := c.orderedQueue[phase]; ok {
+			heap.Push(q, un)
+		}
+	}
+	// runGC is throttled per deletion, so apply the policy without holding up the
+	// configuration reload.
+	go func() {
+		for _, phase := range []wfv1.WorkflowPhase{wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError} {
+			c.runGC(ctx, phase)
+		}
+	}()
+}
+
+func sameRetentionPolicy(a, b *config.RetentionPolicy) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
 }
 
 func (c *Controller) Run(ctx context.Context, workflowGCWorkers int) error {
@@ -151,9 +194,33 @@ func (c *Controller) runWorker(ctx context.Context) {
 	}
 }
 
-// retentionGC queues workflows for deletion based upon the retention policy.
+// runGC queues workflows for deletion based upon the retention policy. The lock is
+// only held while popping, so that a policy reload can take effect mid-drain.
 func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+	for {
+		c.orderedQueueLock.Lock()
+		key, maxWorkflows, ok := c.popOverRetention(phase)
+		c.orderedQueueLock.Unlock()
+		if !ok {
+			return
+		}
+		c.log.WithFields(logging.Fields{"phase": phase, "key": key, "maxWorkflows": maxWorkflows}).Info(ctx, "Queueing workflow for delete due to max retention")
+		c.workqueue.Add(key)
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// popOverRetention pops the oldest workflow of the phase if the phase is over its
+// retention limit. orderedQueueLock must be held.
+func (c *Controller) popOverRetention(phase wfv1.WorkflowPhase) (string, int, bool) {
+	if c.retentionPolicy == nil {
+		return "", 0, false
+	}
 	var maxWorkflows int
 	switch phase {
 	case wfv1.WorkflowSucceeded:
@@ -163,15 +230,13 @@ func (c *Controller) runGC(ctx context.Context, phase wfv1.WorkflowPhase) {
 	case wfv1.WorkflowError:
 		maxWorkflows = c.retentionPolicy.Errored
 	default:
-		return
+		return "", 0, false
 	}
-
-	for c.orderedQueue[phase].Len() > maxWorkflows {
-		key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
-		c.log.WithFields(logging.Fields{"phase": phase, "key": key, "maxWorkflows": maxWorkflows}).Info(ctx, "Queueing workflow for delete due to max retention")
-		c.workqueue.Add(key)
-		<-ticker.C
+	if c.orderedQueue[phase].Len() <= maxWorkflows {
+		return "", 0, false
 	}
+	key, _ := cache.MetaNamespaceKeyFunc(heap.Pop(c.orderedQueue[phase]))
+	return key, maxWorkflows, true
 }
 
 // processNextWorkItem will read a single work item off the workqueue and
