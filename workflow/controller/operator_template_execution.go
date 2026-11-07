@@ -272,7 +272,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	retryParentNode := node
 	if retryParentNode == nil {
 		woc.log.WithField("nodeName", retryNodeName).Debug(ctx, "Inject a retry node")
-		_, retryParentNode = woc.initializeExecutableNode(ctx, retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+		_, retryParentNode = woc.initializeExecutableNode(ctx, retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag.DeepCopy(), true)
 	}
 	if opts.nodeFlag == nil {
 		opts.nodeFlag = &wfv1.NodeFlag{}
