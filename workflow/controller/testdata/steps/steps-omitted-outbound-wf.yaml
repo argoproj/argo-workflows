@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-omitted-outbound
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: inner
+        template: inner
+        continueOn:
+          failed: true
+      - name: dependant
+        template: run
+        dependencies: [inner]
+  - name: inner
+    steps:
+    - - name: first
+        template: run
+    - - name: second
+        template: run
+  - name: run
+    container:
+      image: alpine:3.23
