@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 
 	"github.com/go-jose/go-jose/v4/jwt"
+
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 )
 
 type Claims struct {
@@ -59,6 +62,25 @@ func (c *Claims) UnmarshalJSON(data []byte) error {
 
 	*c = Claims(localClaim)
 	return nil
+}
+
+// ExprEnv returns the environment used to evaluate `rbac-rule` expressions.
+// It contains every claim of the token -- including custom, provider specific
+// ones such as `user_name` -- overlaid with the claims that Argo normalizes
+// itself, so those always take precedence. `groups` is always the normalized
+// value, as it may be derived from a custom claim or the user info endpoint.
+func (c *Claims) ExprEnv() (map[string]any, error) {
+	env := make(map[string]any, len(c.RawClaim))
+	maps.Copy(env, c.RawClaim)
+
+	known, err := jsonutil.Jsonify(c)
+	if err != nil {
+		return nil, err
+	}
+	maps.Copy(env, known)
+	env["groups"] = c.Groups
+
+	return env, nil
 }
 
 // GetCustomGroup is responsible for extracting groups based on the
