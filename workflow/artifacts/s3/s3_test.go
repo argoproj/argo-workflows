@@ -23,7 +23,8 @@ type mockClient struct {
 	// files is a map where key is bucket name and value consists of file keys
 	files map[string][]string
 	// mockedErrs is a map where key is the function name and value is the mocked error of that function
-	mockedErrs map[string]error
+	mockedErrs     map[string]error
+	storageClasses []string
 }
 
 func newMockClient(files map[string][]string, mockedErrs map[string]error) Client {
@@ -42,13 +43,15 @@ func (s *mockClient) getMockedErr(funcName string) error {
 }
 
 // PutFile puts a single file to a bucket at the specified key
-func (s *mockClient) PutFile(bucket, key, path string) error {
+func (s *mockClient) PutFile(bucket, key, path, storageClass string) error {
+	s.storageClasses = append(s.storageClasses, storageClass)
 	return s.getMockedErr("PutFile")
 }
 
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
-func (s *mockClient) PutDirectory(bucket, key, path string) error {
+func (s *mockClient) PutDirectory(bucket, key, path, storageClass string) error {
+	s.storageClasses = append(s.storageClasses, storageClass)
 	return s.getMockedErr("PutDirectory")
 }
 
@@ -131,11 +134,12 @@ func TestOpenStreamS3Artifact(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
 	tests := map[string]struct {
-		s3client  Client
-		bucket    string
-		key       string
-		localPath string
-		errMsg    string
+		s3client     Client
+		bucket       string
+		key          string
+		localPath    string
+		storageClass string
+		errMsg       string
 	}{
 		"Success": {
 			s3client: newMockClient(
@@ -418,10 +422,11 @@ func TestSaveS3Artifact(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		s3client  Client
-		bucket    string
-		key       string
-		localPath string
+		s3client     Client
+		bucket       string
+		key          string
+		localPath    string
+		storageClass string
 		// skipBucketCreation leaves CreateBucketIfNotPresent nil, covering the
 		// path where MakeBucket must not be called at all.
 		skipBucketCreation bool
@@ -452,11 +457,12 @@ func TestSaveS3Artifact(t *testing.T) {
 					"my-bucket": {},
 				},
 				map[string]error{}),
-			bucket:    "my-bucket",
-			key:       "/folder/hello-art.tar.gz",
-			localPath: tempFile,
-			done:      true,
-			errMsg:    "",
+			bucket:       "my-bucket",
+			key:          "/folder/hello-art.tar.gz",
+			localPath:    tempFile,
+			storageClass: "INTELLIGENT_TIERING",
+			done:         true,
+			errMsg:       "",
 		},
 		"Success as Directory": {
 			s3client: newMockClient(
@@ -549,6 +555,7 @@ func TestSaveS3Artifact(t *testing.T) {
 						S3: &wfv1.S3Artifact{
 							S3Bucket: wfv1.S3Bucket{
 								Bucket:                   tc.bucket,
+								StorageClass:             tc.storageClass,
 								CreateBucketIfNotPresent: createBucketIfNotPresent,
 								EncryptionOptions: &wfv1.S3EncryptionOptions{
 									EnableEncryption: true,
@@ -563,6 +570,9 @@ func TestSaveS3Artifact(t *testing.T) {
 				assert.Equal(t, tc.errMsg, err.Error())
 			} else {
 				assert.Empty(t, tc.errMsg)
+			}
+			if mock, ok := tc.s3client.(*mockClient); ok && tc.storageClass != "" {
+				assert.Equal(t, []string{tc.storageClass}, mock.storageClasses)
 			}
 		})
 	}
