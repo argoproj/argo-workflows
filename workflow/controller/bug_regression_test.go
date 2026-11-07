@@ -4,7 +4,10 @@ package controller
 // the Engine. Each test asserts the correct behavior and locks the fix in.
 
 import (
+	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -503,4 +506,447 @@ func TestBug_RetryPath_ToleratesLateTags(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, nodeC.Phase)
 	assert.Contains(t, nodeC.Message, "absent optional")
 	assert.NotContains(t, nodeC.Message, "failed to resolve")
+}
+
+// stuckTaskResultWorkflow returns a two-step workflow in the state reported in
+// #17380: its first step completed normally, while the second step's pod reached
+// Succeeded with its WorkflowTaskResult still a report-outputs-completed=false
+// placeholder — the state of a pod whose aux container reported a non-retryable
+// failure to the API server and gave up. No operation can reconcile that task
+// result, so podReconciliation reports "pod reconciliation didn't complete, will
+// retry" forever and the run only ends when something external removes the pod.
+// specFields is spliced into the workflow spec, so callers can set (or omit)
+// activeDeadlineSeconds, and extraTemplates into its template list.
+func stuckTaskResultWorkflow(ctx context.Context, t *testing.T, specFields, extraTemplates string) *wfOperationCtx {
+	t.Helper()
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: stuck-task-result
+  namespace: argo
+spec:
+` + specFields + `
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step-1
+        template: echo
+    - - name: step-2
+        template: echo
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+` + extraTemplates)
+
+	cancel, controller := newController(ctx, wf)
+	t.Cleanup(cancel)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	step1, err := woc.wf.GetNodeByName("stuck-task-result[0].step-1")
+	require.NoError(t, err)
+
+	// step-1 finishes normally: its pod succeeds and its task result arrives, so
+	// the node is fulfilled and the workflow moves on to step-2.
+	setPodPhasesForTest(ctx, t, controller, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(n.Name, "step-1") {
+			return apiv1.PodSucceeded
+		}
+		return ""
+	})
+	woc.wf.Status.MarkTaskResultComplete(ctx, step1.ID)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.NodeSucceeded, nodePhase(t, woc.wf, step1.Name), "step-1 completes normally before step-2 gets stuck")
+
+	step2, err := woc.wf.GetNodeByName("stuck-task-result[1].step-2")
+	require.NoError(t, err)
+	// The pod's aux container holds a placeholder task result labelled
+	// report-outputs-completed=false from the moment the pod starts, and it is
+	// what keeps the node's task result unsynced.
+	injectPlaceholderTaskResult(ctx, t, woc, step2.ID)
+
+	// The step runs, so its node is recorded Running.
+	setPodPhasesForTest(ctx, t, controller, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(n.Name, "step-2") {
+			return apiv1.PodRunning
+		}
+		return ""
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.NodeRunning, nodePhase(t, woc.wf, step2.Name), "the step must be running before it completes")
+
+	// The pod then completed successfully, so the only thing missing is its task result.
+	setPodPhasesForTest(ctx, t, controller, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(n.Name, "step-2") {
+			return apiv1.PodSucceeded
+		}
+		return ""
+	})
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	return woc
+}
+
+// TestBug_WorkflowDeadlineWithUnreconcilableTaskResult pins #17380: a step whose
+// pod reached Succeeded but whose WorkflowTaskResult never completed kept
+// podReconciliation reporting "pod reconciliation didn't complete, will retry"
+// on every operation, so neither the step's nor the workflow's
+// activeDeadlineSeconds ever fired and the workflow stayed Running for as long
+// as the pod lived (observed for over five hours, blocking every subsequent
+// CronWorkflow run under concurrencyPolicy: Forbid).
+//
+// The step deadline cannot bound this case: template activeDeadlineSeconds is
+// enforced by the pod and by the executor's deadline monitor, neither of which
+// can act on a pod whose containers have already exited. The workflow deadline
+// is the only bound, so it must fire whether or not the task result reconciled.
+func TestBug_WorkflowDeadlineWithUnreconcilableTaskResult(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := stuckTaskResultWorkflow(ctx, t, "  activeDeadlineSeconds: 300", "")
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "a task result that is merely slow must be retried, not failed")
+
+	woc = rewindDeadline(ctx, t, woc)
+
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "workflow must fail once its deadline has passed")
+	assert.Equal(t, "Step exceeded its deadline", woc.wf.Status.Message, "the workflow takes the entry node's message, as it does for any other deadline failure")
+	assert.Equal(t, "true", woc.wf.Labels[common.LabelKeyCompleted], "a failed workflow must be marked completed so it is archived and GC'd")
+
+	step1, err := woc.wf.GetNodeByName("stuck-task-result[0].step-1")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, step1.Phase, "the step that completed normally is untouched")
+
+	step2, err := woc.wf.GetNodeByName("stuck-task-result[1].step-2")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, step2.Phase)
+	assert.Equal(t, "Step exceeded its deadline", step2.Message)
+	require.NotNil(t, step2.TaskResultSynced)
+	assert.True(t, *step2.TaskResultSynced,
+		"the unreconcilable task result must be force-completed, or the node is never fulfilled and the workflow cannot complete")
+}
+
+// TestBug_DeadlineStopsNestedDaemonWithUnreconcilableTaskResult covers the
+// daemon half of the same deadline path: a daemoned node counts as fulfilled
+// while it runs, so failing a workflow at its deadline leaves it daemoned unless
+// it is stopped, and markWorkflowPhase then refuses to complete a workflow that
+// still has daemon nodes. Its root-level fallback cannot reach a daemon nested
+// under a Steps or DAG boundary, so the daemon has to be stopped from that
+// boundary.
+func TestBug_DeadlineStopsNestedDaemonWithUnreconcilableTaskResult(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: stuck-with-daemon
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 300
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck-step
+        template: echo
+      - name: daemon-step
+        template: daemon
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+  - name: daemon
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Both steps run in the same group, so neither waits for the other: the
+	// daemon becomes ready and is recorded daemoned, while the other step's pod
+	// completes without ever reporting its task result.
+	stuckStep, err := woc.wf.GetNodeByName("stuck-with-daemon[0].stuck-step")
+	require.NoError(t, err)
+	injectPlaceholderTaskResult(ctx, t, woc, stuckStep.ID)
+	daemonStep, err := woc.wf.GetNodeByName("stuck-with-daemon[0].daemon-step")
+	require.NoError(t, err)
+	injectPlaceholderTaskResult(ctx, t, woc, daemonStep.ID)
+	setPodPhasesForTest(ctx, t, controller, woc, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodRunning }, withReadyContainers())
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.NodeRunning, nodePhase(t, woc.wf, daemonStep.Name))
+	daemonNode, err := woc.wf.GetNodeByName(daemonStep.Name)
+	require.NoError(t, err)
+	require.True(t, daemonNode.IsDaemoned(), "the daemon step must be recorded daemoned before the deadline")
+
+	// Only the stuck step's pod completes; the daemon keeps running.
+	setPodPhasesForTest(ctx, t, controller, woc, func(n *wfv1.NodeStatus) apiv1.PodPhase {
+		if strings.Contains(n.Name, "stuck-step") {
+			return apiv1.PodSucceeded
+		}
+		return ""
+	})
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow must not fail before its deadline")
+	}
+
+	woc = rewindDeadline(ctx, t, woc)
+
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase,
+		"a nested daemon must not keep the workflow Running past its deadline")
+	daemonNode, err = woc.wf.GetNodeByName(daemonStep.Name)
+	require.NoError(t, err)
+	assert.Nil(t, daemonNode.Daemoned, "the daemon must be stopped")
+	assert.Equal(t, wfv1.NodeSucceeded, daemonNode.Phase, "a daemon the controller stops completes Succeeded, as killDaemonedChildren records it")
+}
+
+// exitHandlerTemplate is spliced into stuckTaskResultWorkflow's template list by
+// the exit-handler test.
+const exitHandlerTemplate = `  - name: exit-handler
+    container:
+      image: argoproj/argosay:v2
+`
+
+// TestBug_DeadlineRunsExitHandlerWithUnreconcilableTaskResult covers the
+// completion half of the same deadline path: the workflow must go out through
+// the normal tail, so that spec.onExit still runs and the PVCs are still
+// deleted. Completing the workflow inside the deadline branch would skip both,
+// because every later operation returns at the completed-workflow guard.
+func TestBug_DeadlineRunsExitHandlerWithUnreconcilableTaskResult(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := stuckTaskResultWorkflow(ctx, t, `  activeDeadlineSeconds: 300
+  onExit: exit-handler`, exitHandlerTemplate)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// The first operation past the deadline fails the step and starts the exit
+	// handler; the workflow itself is not completed yet.
+	woc = rewindDeadline(ctx, t, woc)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "the workflow stays Running until its exit handler has run")
+	onExit := woc.wf.Status.Nodes.FindByDisplayName("stuck-task-result.onExit")
+	require.NotNil(t, onExit, "the exit handler must have been started by the deadline path")
+
+	// The exit handler's pod completes normally.
+	setPodPhasesForTest(ctx, t, woc.controller, woc, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
+	woc.wf.Status.MarkTaskResultComplete(ctx, onExit.ID)
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+		woc.operate(ctx)
+	}
+
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "workflow must still fail at its deadline")
+	assert.Equal(t, "true", woc.wf.Labels[common.LabelKeyCompleted])
+	onExit = woc.wf.Status.Nodes.FindByDisplayName("stuck-task-result.onExit")
+	require.NotNil(t, onExit)
+	assert.Equal(t, wfv1.NodeSucceeded, onExit.Phase, "spec.onExit must run even though the step's task result never completed")
+}
+
+// TestBug_StuckTaskResultWithoutDeadlineKeepsRetrying bounds the fix above: with
+// no workflow deadline there is nothing to enforce, so an unreconcilable task
+// result must keep being retried rather than failing the workflow.
+func TestBug_StuckTaskResultWithoutDeadlineKeepsRetrying(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := stuckTaskResultWorkflow(ctx, t, "", "")
+
+	woc.wf.Status.StartedAt = metav1.Time{Time: woc.wf.Status.StartedAt.Add(-time.Hour)}
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+		woc.operate(ctx)
+	}
+
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "without a deadline there is nothing to enforce, so the workflow is still retried")
+	step2, err := woc.wf.GetNodeByName("stuck-task-result[1].step-2")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, step2.Phase, "the step that completed is still waiting for its task result")
+}
+
+// TestBug_DeadlineWithUnreconcilableTaskResultWhileSuspended covers the same
+// deadline path for a workflow the user has suspended after its step got stuck:
+// the suspension check in operate() must not defer a workflow whose nodes were
+// just failed at its deadline, or the deadline fails the nodes and then requeues
+// forever instead of ending the run.
+func TestBug_DeadlineWithUnreconcilableTaskResultWhileSuspended(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := stuckTaskResultWorkflow(ctx, t, "  activeDeadlineSeconds: 300", "")
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// The user suspends the workflow, as `argo suspend` does.
+	suspend := true
+	woc.wf.Spec.Suspend = &suspend
+	for range 2 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+		woc.operate(ctx)
+		require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "a suspended workflow waits to be resumed while its deadline has not passed")
+	}
+
+	woc = rewindDeadline(ctx, t, woc)
+
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "an expired workflow must be failed even while it is suspended")
+	assert.Equal(t, "true", woc.wf.Labels[common.LabelKeyCompleted])
+}
+
+// TestBug_SuspendedDeadlineFinalizesAcrossReconciliations covers the same
+// deadline path for a suspended workflow with spec.onExit: the exit handler is
+// started by the first operation past the deadline and completes several
+// operations later, so the suspension bypass has to hold across
+// reconciliations rather than only in the operation that failed the nodes.
+func TestBug_SuspendedDeadlineFinalizesAcrossReconciliations(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := stuckTaskResultWorkflow(ctx, t, `  activeDeadlineSeconds: 300
+  onExit: exit-handler`, exitHandlerTemplate)
+
+	suspend := true
+	woc.wf.Spec.Suspend = &suspend
+
+	// The first operation past the deadline fails the step and starts the exit
+	// handler, which is then running while the workflow is still suspended.
+	woc = rewindDeadline(ctx, t, woc)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "the workflow is not completed until its exit handler has run")
+	onExit := woc.wf.Status.Nodes.FindByDisplayName("stuck-task-result.onExit")
+	require.NotNil(t, onExit, "the exit handler must have been started")
+
+	// Operations in which neither the exit handler nor the stuck task result
+	// changed must not lose the bypass: the workflow is still suspended, so
+	// without it the exit handler would never be allowed to finish.
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+		woc.operate(ctx)
+		require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	}
+
+	// The exit handler's pod then completes normally.
+	setPodPhasesForTest(ctx, t, woc.controller, woc, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodSucceeded })
+	woc.wf.Status.MarkTaskResultComplete(ctx, onExit.ID)
+	for range 3 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+		woc.operate(ctx)
+	}
+
+	require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase, "the workflow must complete once its exit handler has finished")
+	assert.Equal(t, "true", woc.wf.Labels[common.LabelKeyCompleted])
+	onExit = woc.wf.Status.Nodes.FindByDisplayName("stuck-task-result.onExit")
+	require.NotNil(t, onExit)
+	assert.Equal(t, wfv1.NodeSucceeded, onExit.Phase)
+}
+
+// TestBug_SuspendedWorkflowPastDeadlineStillWaits bounds the fix above: a
+// suspended workflow whose pods reconciled normally must still wait to be
+// resumed, even once its deadline has passed. Only a workflow whose nodes were
+// failed at its deadline is allowed past the suspension check.
+func TestBug_SuspendedWorkflowPastDeadlineStillWaits(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: susp-waits
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 300
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: argoproj/argosay:v2
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	// The step completes normally and its task result arrives, so pod
+	// reconciliation completes and the deadline branch never fires.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	suspend := true
+	woc.wf.Spec.Suspend = &suspend
+	// While the deadline has not passed, suspension is honoured as usual.
+	woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "a suspended workflow waits to be resumed while its deadline has not passed")
+
+	woc = rewindDeadline(ctx, t, woc)
+
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "a suspended workflow whose pods reconciled is still waiting to be resumed")
+	assert.NotEqual(t, "true", woc.wf.Labels[common.LabelKeyCompleted], "suspension must still stop the workflow from completing")
+}
+
+// setPodPhasesForTest moves each workflow pod to the phase decide returns for its
+// node, like a pod controller would, and waits for the pod informer to catch up
+// so the next operate sees it. An empty phase leaves the pod alone. It never
+// touches task results: unlike setPodPhases it lets a test leave a pod that
+// succeeded with its task result permanently incomplete (#17380).
+func setPodPhasesForTest(ctx context.Context, t *testing.T, controller *WorkflowController, woc *wfOperationCtx, decide func(node *wfv1.NodeStatus) apiv1.PodPhase, opts ...func(pod *apiv1.Pod)) {
+	t.Helper()
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.NotEmpty(t, pods.Items)
+	for i := range pods.Items {
+		pod := pods.Items[i]
+		node, ok := woc.wf.Status.Nodes[woc.nodeID(&pod)]
+		if !ok {
+			continue
+		}
+		phase := decide(&node)
+		if phase == "" || pod.Status.Phase == phase {
+			continue
+		}
+		pod.Status.Phase = phase
+		for _, opt := range opts {
+			opt(&pod)
+		}
+		updated, err := controller.kubeclientset.CoreV1().Pods(pod.Namespace).Update(ctx, &pod, metav1.UpdateOptions{})
+		require.NoError(t, err)
+		waitForInformer(ctx, controller.PodController.TestingPodInformer(), updated, func(obj any) bool {
+			return obj.(*apiv1.Pod).Status.Phase == phase
+		})
+	}
+}
+
+// withReadyContainers synthesizes what a kubelet reports for a running pod, so
+// that assessNodeStatus records a daemon template's node as daemoned: a node
+// becomes daemoned only once every container of its pod is ready. Only the main
+// containers are reported — a running aux (wait/supervisor) container keeps a
+// completed pod's node out of a terminal phase, which is a different scenario
+// from the one these tests build.
+func withReadyContainers() func(pod *apiv1.Pod) {
+	return func(pod *apiv1.Pod) {
+		pod.Status.ContainerStatuses = nil
+		for _, ctr := range pod.Spec.Containers {
+			switch ctr.Name {
+			case common.WaitContainerName, common.SupervisorContainerName, common.InitContainerName:
+				continue
+			}
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name:  ctr.Name,
+				Ready: true,
+				State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+			})
+		}
+	}
+}
+
+// rewindDeadline moves the workflow's start far enough into the past that its
+// activeDeadlineSeconds has elapsed, and re-operates.
+func rewindDeadline(ctx context.Context, t *testing.T, woc *wfOperationCtx) *wfOperationCtx {
+	t.Helper()
+	woc.wf.Status.StartedAt = metav1.Time{Time: woc.wf.Status.StartedAt.Add(-time.Hour)}
+	fresh := newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+	fresh.operate(ctx)
+	return fresh
+}
+
+// nodePhase returns the recorded phase of the named node.
+func nodePhase(t *testing.T, wf *wfv1.Workflow, name string) wfv1.NodePhase {
+	t.Helper()
+	node, err := wf.GetNodeByName(name)
+	require.NoError(t, err)
+	return node.Phase
 }
