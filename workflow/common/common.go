@@ -73,6 +73,9 @@ const (
 	AnnotationKeyTraceID = workflow.WorkflowFullName + "/trace-id"
 	// AnnotationKeySpanID is added as an annotation to workflows and pods for their span-id
 	AnnotationKeySpanID = workflow.WorkflowFullName + "/span-id"
+	// AnnotationKeyPrefixOTelContext prefixes workflow annotations carrying an OpenTelemetry context to continue,
+	// one annotation per propagated field, e.g. "opentelemetry.io/traceparent"
+	AnnotationKeyPrefixOTelContext = "opentelemetry.io/"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation

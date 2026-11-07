@@ -6,12 +6,14 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/util/wfcontext"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func workflowID(name, namespace string) string {
@@ -84,7 +86,16 @@ func (wfs *workflowSpans) deleteNode(id string) {
 	delete(wfs.nodes, id)
 }
 
-func (trc *Tracing) RecordStartWorkflow(ctx context.Context, name, namespace string) context.Context {
+// extractParentContext returns the span context the caller asked the workflow to continue,
+// carried in the workflow's annotations. It is invalid if there is none.
+func extractParentContext(ctx context.Context, annotations map[string]string) trace.SpanContext {
+	carrier := telemetry.AnnotationCarrier{Prefix: common.AnnotationKeyPrefixOTelContext, Annotations: annotations}
+	return trace.SpanContextFromContext(propagation.TraceContext{}.Extract(ctx, carrier))
+}
+
+// RecordStartWorkflow starts the workflow span. If the annotations carry a valid
+// traceparent the span continues that trace, otherwise it is a new root.
+func (trc *Tracing) RecordStartWorkflow(ctx context.Context, name, namespace string, annotations map[string]string) context.Context {
 	logger := logging.RequireLoggerFromContext(ctx)
 	id := workflowID(name, namespace)
 	spans, err := trc.createWorkflow(id)
@@ -92,15 +103,20 @@ func (trc *Tracing) RecordStartWorkflow(ctx context.Context, name, namespace str
 		logger.WithError(err).Error(ctx, "tracing create workflow for start workflow failed")
 		return ctx
 	}
-	var ts trace.TraceState
+	parent := extractParentContext(ctx, annotations)
+	ts := parent.TraceState()
 
 	if ts, err = ts.Insert("workflow", id); err != nil {
 		logger.WithError(err).Error(ctx, "tracing StartWorkflow failed")
 		return ctx
 	}
-	traceID := telemetry.DeterministicTraceID(wfcontext.UIDList(ctx)...)
+	// A continued trace keeps the caller's trace ID; only a new root gets a deterministic one
+	var traceID trace.TraceID
+	if !parent.IsValid() {
+		traceID = telemetry.DeterministicTraceID(wfcontext.UIDList(ctx)...)
+	}
 	spanID := telemetry.DeterministicSpanID(wfcontext.UIDList(ctx)...)
-	ctx = trace.ContextWithRemoteSpanContext(ctx, trace.SpanContext{}.WithTraceState(ts))
+	ctx = trace.ContextWithRemoteSpanContext(ctx, parent.WithTraceState(ts))
 	ctx, span := trc.StartWorkflow(ctx, traceID, spanID, name, namespace)
 
 	spans.workflow = &span
