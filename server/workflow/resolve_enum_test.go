@@ -168,7 +168,8 @@ func TestResolveParameterEnum(t *testing.T) {
 		assert.Equal(t, []string{"api"}, values)
 	})
 	// The UI sends every referenced parameter, as "" while it is empty, so empty must mean "no value yet",
-	// the same as missing; otherwise an empty labelSelector reference would match unlabelled resources.
+	// the same as missing; otherwise an empty labelSelector reference would search for an empty label value
+	// (for example `tier=`), which usually matches nothing.
 	for name, params := range map[string]map[string]string{
 		"CascadingParentMissing":      nil,
 		"CascadingParentEmpty":        {"ns": "", "tier": ""},
