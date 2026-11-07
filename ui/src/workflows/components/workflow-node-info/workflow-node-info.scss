@@ -4,7 +4,7 @@
     height: calc(100vh - 2 * #{$top-bar-height});
     overflow-y: auto;
 
-    .tabs {
+    .tabs__nav {
         a {
             padding-right: 0;
             padding-left: 0;
