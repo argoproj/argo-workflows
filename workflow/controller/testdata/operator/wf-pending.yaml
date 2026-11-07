@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2021-04-05T21:50:18Z"
+  name: hello-world-4srt7
+  namespace: argo
+spec:
+  entrypoint: whalesay
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+    name: whalesay
+
+status:
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  finishedAt: null
+  nodes:
+    hello-world-4srt7:
+      displayName: hello-world-4srt7
+      finishedAt: null
+      id: hello-world-4srt7
+      name: hello-world-4srt7
+      phase: Pending
+      progress: 0/1
+      startedAt: "2021-04-05T21:50:18Z"
+      templateName: whalesay
+      templateScope: local/hello-world-4srt7
+      type: Pod
+  phase: Running
+  progress: 0/1
+  startedAt: "2021-04-05T21:50:18Z"
