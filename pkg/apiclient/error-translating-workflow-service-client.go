@@ -100,3 +100,8 @@ func (c *errorTranslatingWorkflowServiceClient) SubmitWorkflow(ctx context.Conte
 	workflow, err := c.delegate.SubmitWorkflow(ctx, req)
 	return workflow, grpcutil.TranslateError(err)
 }
+
+func (c *errorTranslatingWorkflowServiceClient) ResolveParameterEnum(ctx context.Context, req *workflowpkg.ResolveParameterEnumRequest, opts ...grpc.CallOption) (*workflowpkg.ResolveParameterEnumResponse, error) {
+	resp, err := c.delegate.ResolveParameterEnum(ctx, req, opts...)
+	return resp, grpcutil.TranslateError(err)
+}

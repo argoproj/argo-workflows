@@ -152,6 +152,7 @@ nav:
           - artifact-visualization.md
           - widgets.md
           - intermediate-inputs.md
+          - dynamic-parameter-enums.md
           - title-and-description.md
       - Debugging Tools:
           - workflow-events.md

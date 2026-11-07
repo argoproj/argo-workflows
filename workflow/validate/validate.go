@@ -16,7 +16,9 @@ import (
 	"github.com/robfig/cron/v3"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/util/jsonpath"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -753,6 +755,9 @@ func validateInputs(tmpl *wfv1.Template) (map[string]any, error) {
 	}
 	scope := make(map[string]any)
 	for _, param := range tmpl.Inputs.Parameters {
+		if err = validateEnumFrom(fmt.Sprintf("templates.%s.inputs.parameters.", tmpl.Name), param); err != nil {
+			return nil, err
+		}
 		scope[varkeys.InputsParameterByName.Concretize(param.Name)] = true
 	}
 	if len(tmpl.Inputs.Parameters) > 0 {
@@ -1018,6 +1023,35 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 	return nil
 }
 
+// validateEnumFrom checks a parameter's enumFrom. Secrets are rejected here as well as by the
+// argo-server, which never lists them.
+func validateEnumFrom(prefix string, param wfv1.Parameter) error {
+	if param.EnumFrom == nil {
+		return nil
+	}
+	if param.Enum != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s cannot have both enum and enumFrom", prefix, param.Name)
+	}
+	res := param.EnumFrom.Resource
+	if res.APIVersion == "" || res.Kind == "" {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s.enumFrom.resource must have apiVersion and kind", prefix, param.Name)
+	}
+	gv, err := schema.ParseGroupVersion(res.APIVersion)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s.enumFrom.resource.apiVersion invalid: %v", prefix, param.Name, err)
+	}
+	if gv.Group == "" && res.Kind == "Secret" {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s.enumFrom cannot list Secrets", prefix, param.Name)
+	}
+	if param.EnumFrom.JSONPath == "" {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s.enumFrom.jsonPath is required", prefix, param.Name)
+	}
+	if err := jsonpath.New("enumFrom").Parse(param.EnumFrom.JSONPath); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s.enumFrom.jsonPath invalid: %v", prefix, param.Name, err)
+	}
+	return nil
+}
+
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
 func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmptyValues bool) error {
 	for _, param := range arguments.Parameters {
@@ -1038,6 +1072,10 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 				return errors.Errorf(errors.CodeBadRequest, "%s%s.valueFrom only allows: default, configMapKeyRef and supplied", prefix, param.Name)
 			}
 		}
+		if err := validateEnumFrom(prefix, param); err != nil {
+			return err
+		}
+
 		// validate enum
 		if param.Enum != nil {
 			if len(param.Enum) == 0 {

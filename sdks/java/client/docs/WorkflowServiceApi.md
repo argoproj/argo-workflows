@@ -10,6 +10,7 @@ Method | HTTP request | Description
 [**workflowServiceLintWorkflow**](WorkflowServiceApi.md#workflowServiceLintWorkflow) | **POST** /api/v1/workflows/{namespace}/lint | 
 [**workflowServiceListWorkflows**](WorkflowServiceApi.md#workflowServiceListWorkflows) | **GET** /api/v1/workflows/{namespace} | 
 [**workflowServicePodLogs**](WorkflowServiceApi.md#workflowServicePodLogs) | **GET** /api/v1/workflows/{namespace}/{name}/{podName}/log | DEPRECATED: Cannot work via HTTP if podName is an empty string. Use WorkflowLogs.
+[**workflowServiceResolveParameterEnum**](WorkflowServiceApi.md#workflowServiceResolveParameterEnum) | **POST** /api/v1/workflows/{namespace}/resolve-enum | 
 [**workflowServiceResubmitWorkflow**](WorkflowServiceApi.md#workflowServiceResubmitWorkflow) | **PUT** /api/v1/workflows/{namespace}/{name}/resubmit | 
 [**workflowServiceResumeWorkflow**](WorkflowServiceApi.md#workflowServiceResumeWorkflow) | **PUT** /api/v1/workflows/{namespace}/{name}/resume | 
 [**workflowServiceRetryWorkflow**](WorkflowServiceApi.md#workflowServiceRetryWorkflow) | **PUT** /api/v1/workflows/{namespace}/{name}/retry | 
@@ -517,6 +518,76 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | A successful response.(streaming responses) |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="workflowServiceResolveParameterEnum"></a>
+# **workflowServiceResolveParameterEnum**
+> IoArgoprojWorkflowV1alpha1ResolveParameterEnumResponse workflowServiceResolveParameterEnum(namespace, body)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.WorkflowServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
+
+    WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | Namespace the workflow will run in. Namespaced resources are listed here unless enumFrom sets a namespace.
+    IoArgoprojWorkflowV1alpha1ResolveParameterEnumRequest body = new IoArgoprojWorkflowV1alpha1ResolveParameterEnumRequest(); // IoArgoprojWorkflowV1alpha1ResolveParameterEnumRequest | 
+    try {
+      IoArgoprojWorkflowV1alpha1ResolveParameterEnumResponse result = apiInstance.workflowServiceResolveParameterEnum(namespace, body);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling WorkflowServiceApi#workflowServiceResolveParameterEnum");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**| Namespace the workflow will run in. Namespaced resources are listed here unless enumFrom sets a namespace. |
+ **body** | [**IoArgoprojWorkflowV1alpha1ResolveParameterEnumRequest**](IoArgoprojWorkflowV1alpha1ResolveParameterEnumRequest.md)|  |
+
+### Return type
+
+[**IoArgoprojWorkflowV1alpha1ResolveParameterEnumResponse**](IoArgoprojWorkflowV1alpha1ResolveParameterEnumResponse.md)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response. |  -  |
 **0** | An unexpected error response. |  -  |
 
 <a name="workflowServiceResubmitWorkflow"></a>
