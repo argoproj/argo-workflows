@@ -255,6 +255,9 @@ drop index argo_archived_workflows_i1 on argo_archived_workflows;
 -- Step 68
 create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC);
 
+-- Step 69
+alter table argo_workflows add column instanceid varchar(64);
+
 ```
 
 ### PostgreSQL
@@ -492,6 +495,9 @@ drop index argo_archived_workflows_i1;
 
 -- Step 68
 create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC);
+
+-- Step 69
+alter table argo_workflows add column instanceid varchar(64);
 
 ```
 

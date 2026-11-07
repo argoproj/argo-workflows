@@ -267,7 +267,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
+		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), config.InstanceID, tableName)
 		if err != nil {
 			log.WithError(err).Error(ctx, err.Error())
 			os.Exit(1)
