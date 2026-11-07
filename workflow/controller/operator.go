@@ -1615,6 +1615,18 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Phase = wfv1.NodeError
 		updated.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
 	}
+	// A pod that has not finished must not move a node that is already
+	// fulfilled back to a non-terminal phase. When a timeout fails a node
+	// (e.g. pendingTimeout) the pod is deleted asynchronously and can still
+	// be seen Pending (or Running, for a deadline) while it terminates;
+	// assessing that pod would resurrect the node, and once the pod is gone
+	// nothing looks at the node again, so it would stay Pending for good.
+	// A pod that has finished may still replace the phase recorded for the
+	// node, so only non-terminal outcomes are dropped here.
+	if old.Fulfilled() && updated.Phase != old.Phase && !updated.Phase.Completed() {
+		woc.log.WithFields(logging.Fields{"nodeID": old.ID, "phase": old.Phase, "podPhase": pod.Status.Phase}).Debug(ctx, "pod has not finished, keeping the node's fulfilled phase")
+		return nil
+	}
 	if old.Phase != updated.Phase {
 		woc.controller.metrics.ChangePodPhase(ctx, string(updated.Phase), pod.Namespace)
 	}
