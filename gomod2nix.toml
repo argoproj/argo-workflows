@@ -974,8 +974,8 @@ schema = 3
     version = "v0.0.0-20261012220534-4341edf3f941"
     hash = "sha256-wQ9vIu89aXy9/x6M15m9gY4euMKo99GIX64M6vmRjhM="
   [mod."google.golang.org/genproto/googleapis/api"]
-    version = "v0.0.0-20261012220534-4341edf3f941"
-    hash = "sha256-MlST4MvkHobgSWbCS3GCUaffvSnPXIQC+UMMsDuOGZs="
+    version = "v0.0.0-20261104224025-d1e00e9f33ab"
+    hash = "sha256-8VMRvaRr+LdlEOvJI23LyxXbBj3PsG1/uq0PMU/+4zo="
   [mod."google.golang.org/genproto/googleapis/rpc"]
     version = "v0.0.0-20261019180522-ce908d29299b"
     hash = "sha256-qBJJ3Go2HqyEE+jp6FMafhXbMBbA/PIXvbdROnLPAYA="
