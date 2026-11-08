@@ -53,8 +53,9 @@ func setupOffloadNodeStatusRepo(t *testing.T) *nodeOffloadRepo {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		if err := testcontainers.TerminateContainer(postgresContainer); err != nil {
-			t.Logf("failed to terminate postgres container: %s", err)
+		terminateErr := testcontainers.TerminateContainer(postgresContainer)
+		if terminateErr != nil {
+			t.Logf("failed to terminate postgres container: %s", terminateErr)
 		}
 	})
 
@@ -83,8 +84,9 @@ func setupOffloadNodeStatusRepo(t *testing.T) *nodeOffloadRepo {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		if err := sessionProxy.Close(); err != nil {
-			t.Logf("failed to close database session: %s", err)
+		closeErr := sessionProxy.Close()
+		if closeErr != nil {
+			t.Logf("failed to close database session: %s", closeErr)
 		}
 	})
 
