@@ -91,13 +91,26 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 	logCtx.Debug(ctx, "Offloading nodes")
 	err = wdc.sessionProxy.With(ctx, func(s db.Session) error {
 		_, insertErr := s.Collection(wdc.tableName).Insert(record)
-		if insertErr != nil {
-			// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
-			// have already written this record
-			if !isDuplicateKeyError(insertErr) {
-				return insertErr
-			}
-			logCtx.WithField("err", insertErr).Debug(ctx, "Ignoring duplicate key error")
+		if insertErr == nil {
+			return nil
+		}
+
+		if !isDuplicateKeyError(insertErr) {
+			return insertErr
+		}
+
+		logCtx.WithField("err", insertErr).Debug(ctx, "Refreshing timestamp for duplicate offload")
+
+		_, updateErr := s.SQL().
+			Update(wdc.tableName).
+			Set("updatedat", db.Raw("CURRENT_TIMESTAMP")).
+			Where(db.Cond{"clustername": wdc.clusterName}).
+			And(db.Cond{"uid": uid}).
+			And(db.Cond{"version": version}).
+			Exec()
+
+		if updateErr != nil {
+			return fmt.Errorf("failed to refresh timestamp for existing offload: %w", updateErr)
 		}
 		return nil
 	})
