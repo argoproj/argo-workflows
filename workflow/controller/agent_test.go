@@ -17,77 +17,9 @@ import (
 )
 
 func TestExecuteTaskSet(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template
-  namespace: default
-spec:
-  podSpecPatch: |
-    nodeName: virtual-node
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/execute-task-set-workflow.yaml")
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-nxvtg-1265710817:
-      http:
-        url: http://openlibrary.org/people/george08/nofound.json
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      name: http
-status:
-  nodes:
-    http-template-1-3690327077:
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            {
-              "swagger": "2.0",
-              "info": {
-                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
-                "version": "version not set"
-              },
-              "consumes": [
-                "application/json"
-              ],
-              "produces": [
-                "application/json"
-              ],
-              "paths": {},
-              "definitions": {}
-            }
-      phase: Succeeded
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/agent/execute-task-set.yaml", &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -174,37 +106,13 @@ func TestAssessAgentPodStatus(t *testing.T) {
 	})
 }
 
-var agentTaskSetWf = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template
-  namespace: default
-spec:
-  podSpecPatch: |
-    nodeName: virtual-node
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://example.com/foo.json"}]
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-`
-
 // Test_createAgentPod_rateLimited asserts the transient-error contract of
 // createAgentPod. When the controller's resource rate limiter denies the
 // reservation, createPodFromBuild returns ErrResourceRateLimitReached, which
 // createAgentPod must treat as transient: requeue the workflow and return
 // (nil, nil), not a pod and not a hard error.
 func Test_createAgentPod_rateLimited(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(agentTaskSetWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
 
 	t.Run("RateLimitedRequeuesAndReturnsNilNil", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -284,7 +192,7 @@ func Test_createAgentPod_rateLimited(t *testing.T) {
 // and createPodFromBuild recovers by fetching the existing pod. createAgentPod
 // must return that existing pod with no error.
 func Test_createAgentPod_alreadyExists(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(agentTaskSetWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, defaultServiceAccount)
 	defer cancel()
@@ -312,37 +220,7 @@ func Test_createAgentPod_alreadyExists(t *testing.T) {
 
 func TestDisableAgentPodCreation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template
-  namespace: default
-spec:
-  podSpecPatch: |
-    nodeName: virtual-node
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/disable-agent-pod-creation.yaml")
 	cancel, controller := newController(ctx, wf, defaultServiceAccount)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.controller.Config.DisableAgentPodCreation = true
@@ -354,57 +232,7 @@ spec:
 }
 
 func TestWorkflowDefinedExecutorPluginsUsage(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template
-  namespace: default
-spec:
-  podSpecPatch: |
-    nodeName: virtual-node
-  entrypoint: main
-  executorPlugins:
-  - spec:
-      sidecar:
-        container:
-          name: test-sidecar
-          image: busybox:1.35
-          ports:
-            - containerPort: 8080
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "200m"
-              memory: "256Mi"
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            runAsNonRoot: true
-    metadata:
-      name: test-sidecar
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-        url: "{{inputs.parameters.url}}"
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/workflow-defined-executor-plugins.yaml")
 	assert.NotNil(t, wf)
 	assert.Len(t, wf.Spec.ExecutorPlugins, 1)
 

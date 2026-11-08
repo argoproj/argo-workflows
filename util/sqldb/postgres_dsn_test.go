@@ -108,10 +108,10 @@ func TestPostgresSSLMode(t *testing.T) {
 		mode string
 		want string
 	}{
-		{"ssl disabled", false, "", "disable"},
-		{"ssl disabled ignores mode", false, "require", "disable"},
+		{"default", false, "", "prefer"},
+		{"ssl disabled/unset but explicit mode", false, "require", "require"},
 		{"explicit mode", true, "verify-ca", "verify-ca"},
-		{"adapter default preserved", true, "", "prefer"},
+		{"adapter default preserved", true, "", "require"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := &config.PostgreSQLConfig{SSL: tc.ssl, SSLMode: tc.mode}

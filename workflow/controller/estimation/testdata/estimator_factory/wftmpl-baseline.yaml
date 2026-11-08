@@ -1,0 +1,6 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wftmpl-baseline
+  labels:
+    workflows.argoproj.io/phase: Succeeded

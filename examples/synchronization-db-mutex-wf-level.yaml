@@ -11,7 +11,7 @@ spec:
   synchronization:
     mutexes:
       - name: test
-        database: true # v3.7 and after
+        database: true
   templates:
     - name: hello-world
       container:

@@ -1,7 +1,5 @@
 # Workflow Archive
 
-> v2.5 and after
-
 If you want to keep completed workflows for a long time, you can use the workflow archive to save them in a Postgres (>=9.4), MySQL (>= 5.7.8), or MariaDB (>= 10.2) database.
 The workflow archive stores the status of the workflow, which pods have been executed, what was the result etc.
 The job logs of the workflow pods will not be archived.

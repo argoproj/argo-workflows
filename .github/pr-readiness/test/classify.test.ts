@@ -30,7 +30,7 @@ test('classifySignals ignores unit/e2e and unknown checks entirely', () => {
 });
 
 test('classifySignals treats absent, skipped and cancelled checks as not-applicable', () => {
-  const signals = classifySignals([run('UI', 'skipped'), run('Codegen', 'cancelled')], config);
+  const signals = classifySignals([run('UI build and unit tests', 'skipped'), run('Codegen', 'cancelled')], config);
   assert.equal(signals.find((s) => s.id === 'ui')!.state, 'not-applicable');
   assert.equal(signals.find((s) => s.id === 'codegen')!.state, 'not-applicable');
   assert.equal(signals.find((s) => s.id === 'lint')!.state, 'not-applicable'); // absent

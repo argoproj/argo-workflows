@@ -108,7 +108,6 @@ Remember that [volume mounts on Windows can only target a directory](https://kub
 
 ## Limitations
 
-* Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (PNS) workflow executor.
 * The executor Windows container is built using [Nano Server](https://github.com/argoproj/argo-workflows/blob/b18b9920f678f420552864eccf3d4b98f3604cfa/Dockerfile.windows#L28) as the base image. Running a newer windows version (e.g. 1909) is currently [not confirmed to be working](https://github.com/argoproj/argo-workflows/issues/5376). If this is required, you need to build the executor container yourself by first adjusting the base image.
 
 ## Building the workflow executor image for Windows

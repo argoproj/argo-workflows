@@ -181,8 +181,6 @@ We recommend you put the Argo Server behind a load balancer, and that load balan
 
 ### Rate Limiting
 
-> v3.4 and after
-
 Argo Server by default rate limits to 1000 per IP per second, you can configure it through `--api-rate-limit`.
 You can access additional information through the following headers.
 

@@ -108,20 +108,8 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	})
 }
 
-const invalidWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: ui-workflow-error
-  namespace: argo
-spec:
-  entrypoint: main
-  workflowTemplateRef:
-    name: not-exists
-`
-
 func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(invalidWF)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/invalid-wf.yaml")
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
@@ -132,78 +120,9 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 	})
 }
 
-var wftWithParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: params-test-1
-  namespace: default
-spec:
-  entrypoint: main
-  arguments:
-    parameters:
-      - name: a-a
-        value: "10"
-      - name: b
-        value: ""
-      - name: c-c
-        value: "0"
-      - name: d
-        value: ""
-      - name: e-e
-        value: "10"
-      - name: f
-        value: ""
-      - name: g-g
-        value: "1"
-      - name: h
-        value: ""
-      - name: i-i
-        value: "{}"
-      - name: things
-        value: "[]"
-
-  templates:
-    - name: main
-      steps:
-        - - name: echoitems
-            template: echo
-
-    - name: echo
-      container:
-        image: busybox
-        command: [echo]
-        args: ["{{workflows.parameters.a-a}} = {{workflows.parameters.g-g}}"]
-`
-
-var wfWithParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: params-test-1-grx2n
-  namespace: default
-spec:
-  arguments:
-    parameters:
-    - name: f
-      value: f
-    - name: g-g
-      value: 2
-    - name: h
-      value: h
-    - name: i-i
-      value: '{}'
-    - name: things
-      value: '[{"a":"1","nested":{"B":"3"}},{"a":"2"}]'
-    - name: a-a
-      value: 5
-  workflowTemplateRef:
-    name: params-test-1
-`
-
 func TestWorkflowTemplateRefParamMerge(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithParam)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithParam)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-param.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_workflow_template_ref/wft-with-param.yaml")
 
 	t.Run("CheckArgumentFromWF", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -215,49 +134,10 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 	})
 }
 
-var wftWithValueFromParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: wf-template-echo
-  namespace: argo
-spec:
-  entrypoint: echo
-  arguments:
-    parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: config-properties
-            key: message
-  templates:
-    - name: echo
-      container:
-        image: busybox
-        command: [echo]
-        args: ["{{workflow.parameters.message}}"]
-`
-
-var wfWithValueParamOverride = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: wf-parameter-overwrite-
-  namespace: argo
-spec:
-  entrypoint: echo
-  arguments:
-    parameters:
-      - name: message
-        value: "configmap argument overwrite with argument"
-  workflowTemplateRef:
-    name: wf-template-echo
-`
-
 // https://github.com/argoproj/argo-workflows/issues/14426
 func TestWorkflowTemplateRefValueFromParamOverwrite(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithValueParamOverride)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueFromParam)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-value-param-override.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_workflow_template_ref/wft-with-value-from-param.yaml")
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, wf, wftmpl)
@@ -269,66 +149,15 @@ func TestWorkflowTemplateRefValueFromParamOverwrite(t *testing.T) {
 	})
 }
 
-var wftWithValueParameter = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: wf-template-echo
-  namespace: default
-spec:
-  entrypoint: echo
-  arguments:
-    parameters:
-      - name: message
-        value: "message from workflow template"
-  templates:
-    - name: echo
-      container:
-        image: busybox
-        command: [echo]
-        args: ["{{workflow.parameters.message}}"]
-`
-
-var wfWithValueFromParamOverride = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: wf-parameter-overwrite-
-  namespace: default
-spec:
-  entrypoint: echo
-  arguments:
-    parameters:
-      - name: message
-        valueFrom:
-          configMapKeyRef:
-            name: config-properties
-            key: message
-  workflowTemplateRef:
-    name: wf-template-echo
-`
-
-var configMapMessage = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: config-properties
-  namespace: default
-  labels:
-    workflows.argoproj.io/configmap-type: Parameter
-data:
-  message: "message from configmap"
-`
-
 func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithValueFromParamOverride)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithValueParameter)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-value-from-param-override.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_workflow_template_ref/wft-with-value-parameter.yaml")
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, wf, wftmpl)
 		defer cancel()
 		var cm apiv1.ConfigMap
-		wfv1.MustUnmarshal([]byte(configMapMessage), &cm)
+		wfv1.MustUnmarshal("@testdata/operator_workflow_template_ref/config-map-message.yaml", &cm)
 		_, err := controller.kubeclientset.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, &cm, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -339,63 +168,9 @@ func TestWorkflowTemplateRefValueParamOverwrite(t *testing.T) {
 	})
 }
 
-var wftWithArtifact = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: artifact-test-1
-  namespace: test-namespace
-spec:
-  entrypoint: main
-  arguments:
-    artifacts:
-    - name: binary-file
-      http:
-        url: https://a.server.io/file
-    - name: data-file
-      http:
-        url: https://b.server.io/data
-
-  templates:
-    - name: main
-      steps:
-        - - name: process-data
-            template: process
-
-    - name: process
-      inputs:
-        artifacts:
-          - name: binary-file
-            path: /usr/local/bin/binfile
-            mode: 0755
-          - name: data-file
-            path: /tmp/data
-            mode: 0755
-      container:
-        image: busybox
-        command: [sh, -c]
-        args: ["binary-file /tmp/data"]
-`
-
-const wfWithTemplateWithArtifact = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-from-artifact-test-1-
-  namespace: test-namespace
-spec:
-  arguments:
-    artifacts:
-    - name: own-file
-      http:
-        url: https://local/blob
-  workflowTemplateRef:
-    name: artifact-test-1
-`
-
 func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithTemplateWithArtifact)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftWithArtifact)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-template-with-artifact.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_workflow_template_ref/wft-with-artifact.yaml")
 
 	t.Run("CheckArtifactArgumentFromWF", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -552,61 +327,8 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 	})
 }
 
-var suspendwf = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: workflow-template-whalesay-template-z56dm
-  namespace: default
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: tt
-  entrypoint: whalesay-template
-  suspend: true
-  workflowTemplateRef:
-    name: workflow-template-whalesay-template
-status:
-  artifactRepositoryRef:
-    default: true
-  conditions:
-  - status: "False"
-    type: PodRunning
-  finishedAt: null
-  phase: Running
-  progress: 0/0
-  startedAt: "2021-05-13T22:56:17Z"
-  storedTemplates:
-    namespaced/workflow-template-whalesay-template/whalesay-template:
-      container:
-        args:
-        - sleep
-        command:
-        - cowsay
-        image: docker/whalesay
-        name: ""
-      name: whalesay-template
-  storedWorkflowTemplateSpec:
-    entrypoint: whalesay-template
-    suspend: true
-    templates:
-    - container:
-        args:
-        - sleep
-        command:
-        - cowsay
-        image: docker/whalesay
-        name: ""
-      name: whalesay-template
-    volumes:
-    - emptyDir: {}
-      name: data
-    workflowTemplateRef:
-      name: workflow-template-whalesay-template
-`
-
 func TestSuspendResumeWorkflowTemplateRef(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(suspendwf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/suspendwf.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
@@ -619,39 +341,6 @@ func TestSuspendResumeWorkflowTemplateRef(t *testing.T) {
 	assert.Nil(t, woc.wf.Status.StoredWorkflowSpec.Suspend)
 }
 
-const wfTmplUpt = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-whalesay-template
-  namespace: default
-spec:
-  templates:
-  - name: hello-hello-hello
-    steps:
-    - - name: hello1
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "hello1"}]
-    - - name: hello2a
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "hello2a"}]
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "hello2b"}]
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
-
 func TestWorkflowTemplateUpdateScenario(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	ctx := logging.TestContext(t.Context())
@@ -662,7 +351,7 @@ func TestWorkflowTemplateUpdateScenario(t *testing.T) {
 	assert.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec)
 	assert.NotEmpty(t, woc.wf.Status.StoredWorkflowSpec.Templates[0].Container)
 
-	cancel, controller = newController(ctx, woc.wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmplUpt))
+	cancel, controller = newController(ctx, woc.wf, wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_workflow_template_ref/wf-tmpl-upt.yaml"))
 	defer cancel()
 
 	woc1 := newWorkflowOperationCtx(ctx, woc.wf, controller)
@@ -671,34 +360,8 @@ func TestWorkflowTemplateUpdateScenario(t *testing.T) {
 	assert.Equal(t, woc.wf.Status.StoredWorkflowSpec, woc1.wf.Status.StoredWorkflowSpec)
 }
 
-const wfTmplWithVol = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-whalesay-template-with-volume
-  namespace: default
-spec:
-  volumeClaimTemplates:
-  - metadata:
-      name: workdir
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
-  entrypoint: whalesay-template
-  templates:
-  - name: whalesay-template
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      volumeMounts:
-      - name: workdir
-        mountPath: /mnt/vol
-`
-
 func TestWFTWithVol(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfTmplWithVol)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-tmpl-with-vol.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
@@ -714,24 +377,8 @@ func TestWFTWithVol(t *testing.T) {
 	assert.Empty(t, pvc.Items)
 }
 
-const wfTmp = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: cluster-workflow-template-hello-world-
-spec:
-  entrypoint: whalesay-template
-  arguments:
-    parameters:
-      - name: message
-        value: "hello world"
-  workflowTemplateRef:
-    name: cluster-workflow-template-whalesay-template
-    clusterScope: true
-`
-
 func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfTmp)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-tmp.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))
 	defer cancel()
@@ -741,62 +388,12 @@ func TestSubmitWorkflowTemplateRefWithoutRBAC(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
-const wfTemplateHello = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: hello-world-template-global-arg
-  namespace: default
-spec:
-  templates:
-    - name: hello-world
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["{{workflow.parameters.global-parameter}}"]
-`
-
-const wfWithDynamicRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-wf-global-arg-
-  namespace: default
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: global-parameter
-        value: hello
-  templates:
-    - name: whalesay
-      steps:
-        - - name: hello-world
-            templateRef:
-              name: '{{item.workflow-template}}'
-              template: '{{item.template-name}}'
-            withItems:
-                - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}
-          - name: hello-world-dag
-            template: diamond
-
-    - name: diamond
-      dag:
-        tasks:
-        - name: A
-          templateRef:
-            name: '{{item.workflow-template}}'
-            template: '{{item.template-name}}'
-          withItems:
-              - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}
-`
-
 func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), wfv1.MustUnmarshalWorkflowTemplate(wfTemplateHello))
+	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-dynamic-ref.yaml"), wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_workflow_template_ref/wf-template-hello.yaml"))
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(wfWithDynamicRef), controller)
+	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-dynamic-ref.yaml"), controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(ctx, woc)
@@ -815,63 +412,12 @@ func TestWorkflowTemplateWithDynamicRef(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-const wfTemplateWithPodMetadata = `
-apiVersion: argoproj.io/v1alpha1
-kind: ClusterWorkflowTemplate
-metadata:
-  name: workflow-template
-spec:
-  entrypoint: whalesay-template
-  podMetadata:
-    labels:
-      workflow-template-label: hello
-    annotations:
-      all-pods-should-have-this: value
-  arguments:
-    parameters:
-      - name: message
-        value: hello world
-
-  templates:
-    - name: whalesay-template
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]`
-
-const wfWithTemplateRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-workflow
-  namespace: argo-workflows-system
-spec:
-  podMetadata:
-    labels:
-      caller-label: hello
-  entrypoint: start
-  templates:
-    - name: start
-      steps:
-        - - name: hello
-            templateRef:
-              name: workflow-template
-              template: whalesay-template
-              clusterScope: true
-            arguments:
-              parameters:
-                - name: message
-                  value: Hello Bug`
-
 func TestWorkflowTemplateWithPodMetadata(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), wfv1.MustUnmarshalClusterWorkflowTemplate(wfTemplateWithPodMetadata))
+	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-template-ref.yaml"), wfv1.MustUnmarshalClusterWorkflowTemplate("@testdata/operator_workflow_template_ref/wf-template-with-pod-metadata.yaml"))
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(wfWithTemplateRef), controller)
+	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow("@testdata/operator_workflow_template_ref/wf-with-template-ref.yaml"), controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	pods, err := listPods(ctx, woc)

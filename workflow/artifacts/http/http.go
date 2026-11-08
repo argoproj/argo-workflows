@@ -50,16 +50,19 @@ func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
 
-	// Note that we will close the response body in either `Load()`
-	// or `ArtifactServer.returnArtifact()`, which is the caller of `OpenStream()`.
-	res, err := h.Client.Do(req) //nolint:bodyclose
+	// On success the caller owns the response body: it is closed in either
+	// `Load()` or `ArtifactServer.returnArtifact()`, which is the caller of
+	// `OpenStream()`. On failure we close it here.
+	res, err := h.Client.Do(req)
 	if err != nil {
 		return http.Response{}, err
 	}
 	if res.StatusCode == http.StatusNotFound {
+		_ = res.Body.Close()
 		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		_ = res.Body.Close()
 		return http.Response{}, errors.InternalErrorf("loading content from %s failed with reason: %s", url, res.Status)
 	}
 	return *res, nil
@@ -147,10 +150,13 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	if err != nil {
 		return err
 	}
+	// http.Client.Do closes f once the request is sent; this covers the paths
+	// where it never is. A second Close is harmless.
+	defer func() {
+		_ = f.Close()
+	}()
 	req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
 	if err != nil {
-		// The request never gets sent, so nothing else will close f.
-		_ = f.Close()
 		return err
 	}
 	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS

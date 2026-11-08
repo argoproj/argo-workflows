@@ -290,3 +290,75 @@ func TestRuntimeMetrics(t *testing.T) {
 	require.NoError(t, err)
 	assert.InDelta(t, float64(1), value, 0.001)
 }
+
+var podNameMetricRetried = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod-name-metric-retried
+  namespace: default
+spec:
+  entrypoint: work
+  templates:
+  - name: work
+    retryStrategy:
+      limit: "2"
+    metrics:
+      prometheus:
+      - name: pod_name_metric_retried_realtime
+        help: realtime
+        labels:
+        - key: pod
+          value: "{{pod.name}}"
+        gauge:
+          realtime: true
+          value: "{{duration}}"
+      - name: pod_name_metric_retried_completion
+        help: completion
+        labels:
+        - key: pod
+          value: "{{pod.name}}"
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: alpine:3.23
+`
+
+// TestPodNameMetricRetried verifies that the metrics of a retried pod
+// template resolve {{pod.name}} from its attempts: the realtime gauge,
+// registered for the Retry node, carries its first attempt's pod name, and
+// each attempt's completion is counted with its own pod name.
+func TestPodNameMetricRetried(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := v1alpha1.MustUnmarshalWorkflow(podNameMetricRetried)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	for range 2 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	require.Equal(t, v1alpha1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, c := range woc.wf.Status.Conditions {
+		assert.NotEqual(t, v1alpha1.ConditionTypeMetricsError, c.Type, c.Message)
+	}
+
+	pod0, pod1 := woc.getPodName(wf.Name+"(0)", "work"), woc.getPodName(wf.Name+"(1)", "work")
+	realtime := attribute.NewSet(attribute.String("pod", pod0))
+	_, err := testExporter.GetFloat64GaugeValue(ctx, "pod_name_metric_retried_realtime", &realtime)
+	require.NoError(t, err)
+	for pod, status := range map[string]string{pod0: "Failed", pod1: "Succeeded"} {
+		attribs := attribute.NewSet(attribute.String("pod", pod), attribute.String("status", status))
+		count, err := testExporter.GetFloat64CounterValue(ctx, "pod_name_metric_retried_completion", &attribs)
+		require.NoError(t, err, status)
+		assert.InDelta(t, 1.0, count, 0.001, status)
+	}
+}
