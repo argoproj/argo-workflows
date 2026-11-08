@@ -172,3 +172,159 @@ func TestOffloadNodeStatusRepoSaveRefreshesTimestampOnDuplicate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, nodesA, retrievedNodes)
 }
+
+func TestDeleteIfOldPreservesRefreshedRecord(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Testcontainers are not supported on Windows")
+	}
+
+	ctx := logging.TestContext(t.Context())
+	repo := setupOffloadNodeStatusRepo(t)
+
+	uid := "test-wf-preserve"
+	namespace := "default"
+	nodes := wfv1.Nodes{"node1": wfv1.NodeStatus{Message: "running"}}
+
+	// Save the record.
+	version, err := repo.Save(ctx, uid, namespace, nodes)
+	require.NoError(t, err)
+
+	// Backdate its timestamp so ListOldOffloads sees it.
+	_, err = repo.sessionProxy.Session(ctx).SQL().Exec(
+		`UPDATE argo_workflows
+         SET updatedat = CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+         WHERE clustername = ? AND uid = ? AND version = ?`,
+		repo.clusterName, uid, version,
+	)
+	require.NoError(t, err)
+
+	// GC lists old offloads and captures the version.
+	oldOffloads, err := repo.ListOldOffloads(ctx, namespace)
+	require.NoError(t, err)
+	require.Contains(t, oldOffloads[uid], version)
+
+	// Before GC deletes: Save() re-encounters the same content, refreshing updatedat.
+	reusedVersion, err := repo.Save(ctx, uid, namespace, nodes)
+	require.NoError(t, err)
+	require.Equal(t, version, reusedVersion)
+
+	// GC now calls DeleteIfOld with the previously listed version.
+	// Because updatedat was refreshed, the TTL condition is false and no row is deleted.
+	err = repo.DeleteIfOld(ctx, uid, version)
+	require.NoError(t, err)
+
+	// The record must still be retrievable.
+	retrievedNodes, err := repo.Get(ctx, uid, version)
+	require.NoError(t, err)
+	assert.Equal(t, nodes, retrievedNodes)
+}
+
+func TestDeleteIfOldRemovesGenuinelyOldRecord(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Testcontainers are not supported on Windows")
+	}
+
+	ctx := logging.TestContext(t.Context())
+	repo := setupOffloadNodeStatusRepo(t)
+
+	uid := "test-wf-old"
+	namespace := "default"
+	nodes := wfv1.Nodes{"node1": wfv1.NodeStatus{Message: "done"}}
+
+	// Save and backdate past the TTL.
+	version, err := repo.Save(ctx, uid, namespace, nodes)
+	require.NoError(t, err)
+
+	_, err = repo.sessionProxy.Session(ctx).SQL().Exec(
+		`UPDATE argo_workflows
+         SET updatedat = CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+         WHERE clustername = ? AND uid = ? AND version = ?`,
+		repo.clusterName, uid, version,
+	)
+	require.NoError(t, err)
+
+	// DeleteIfOld should delete a record that is still past the TTL.
+	err = repo.DeleteIfOld(ctx, uid, version)
+	require.NoError(t, err)
+
+	// The record must no longer be found.
+	_, err = repo.Get(ctx, uid, version)
+	require.Error(t, err)
+}
+
+func TestDeleteUnconditionallyDeletesRegardlessOfAge(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Testcontainers are not supported on Windows")
+	}
+
+	ctx := logging.TestContext(t.Context())
+	repo := setupOffloadNodeStatusRepo(t)
+
+	uid := "test-wf-unconditional"
+	namespace := "default"
+	nodes := wfv1.Nodes{"node1": wfv1.NodeStatus{Message: "done"}}
+
+	// Save without backdating – record is fresh.
+	version, err := repo.Save(ctx, uid, namespace, nodes)
+	require.NoError(t, err)
+
+	// Unconditional Delete should still remove it even though it's not old.
+	err = repo.Delete(ctx, uid, version)
+	require.NoError(t, err)
+
+	_, err = repo.Get(ctx, uid, version)
+	require.Error(t, err)
+}
+
+func TestSaveDuplicateZeroRowsReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Testcontainers are not supported on Windows")
+	}
+
+	ctx := logging.TestContext(t.Context())
+	repo := setupOffloadNodeStatusRepo(t)
+
+	uid := "test-wf-zero-rows"
+	namespace := "default"
+	nodes := wfv1.Nodes{"node1": wfv1.NodeStatus{Message: "initial"}}
+
+	// Save the initial record.
+	version, err := repo.Save(ctx, uid, namespace, nodes)
+	require.NoError(t, err)
+
+	// Install a BEFORE UPDATE trigger in PostgreSQL that deletes the row and suppresses
+	// the update. This realistically simulates a concurrent GC deletion occurring
+	// between Save()'s failed duplicate INSERT and its subsequent timestamp-refresh UPDATE.
+	_, err = repo.sessionProxy.Session(ctx).SQL().Exec(`
+		CREATE OR REPLACE FUNCTION drop_row_before_update() RETURNS TRIGGER AS $$
+		BEGIN
+			DELETE FROM argo_workflows WHERE clustername = OLD.clustername AND uid = OLD.uid AND version = OLD.version;
+			RETURN NULL;
+		END;
+		$$ LANGUAGE plpgsql;
+
+		CREATE TRIGGER trg_test_delete
+		BEFORE UPDATE ON argo_workflows
+		FOR EACH ROW EXECUTE FUNCTION drop_row_before_update();
+	`)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, _ = repo.sessionProxy.Session(ctx).SQL().Exec(`
+			DROP TRIGGER IF EXISTS trg_test_delete ON argo_workflows;
+			DROP FUNCTION IF EXISTS drop_row_before_update();
+		`)
+	})
+
+	// Call Save() again with the same nodes.
+	// The INSERT will fail with duplicate key, and the UPDATE will hit the trigger,
+	// resulting in zero rows affected and the record no longer existing.
+	// Save() must return a meaningful error rather than claiming success.
+	_, err = repo.Save(ctx, uid, namespace, nodes)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "disappeared during duplicate-save: concurrent GC may have deleted it")
+
+	// Verify the record is indeed gone.
+	_, err = repo.Get(ctx, uid, version)
+	require.Error(t, err)
+}
