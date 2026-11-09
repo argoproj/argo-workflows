@@ -35,3 +35,10 @@ spec:
       command: [sh, -c]
       args: ["echo sleeping for 1m; sleep 60; echo done"]
 ```
+
+!!! Note
+    The workflow-level `activeDeadlineSeconds` is enforced by the controller, so it also
+    bounds a workflow whose pods have already finished without their task result ever
+    reaching the controller. A template-level `activeDeadlineSeconds` cannot do that: it is
+    enforced inside the pod by the executor's deadline monitor, which cannot act once the
+    containers have exited. Set the workflow-level field as well when you need that bound.

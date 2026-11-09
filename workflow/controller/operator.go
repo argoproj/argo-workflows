@@ -418,7 +418,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		// A workflow that was failed at its deadline must be allowed to finish:
 		// returning here requeues it forever, so the deadline fails the nodes but
 		// never the workflow. This is deliberately narrow — a suspended workflow
-		// that was not failed at its deadline still waits to be resumed.
+		// whose nodes were not failed at its deadline still waits to be resumed,
+		// whether or not its deadline has passed.
 		woc.log.Info(ctx, "workflow suspended")
 		return
 	}
@@ -1466,7 +1467,10 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 // can turn off:
 //
 //   - unfinished nodes are failed, with the same message applyExecutionControl
-//     uses for a pod it terminates at the deadline;
+//     uses for a pod it terminates at the deadline. The pods themselves were
+//     already terminated in the podReconciliation pass that reported the
+//     incomplete task result: applyExecutionControl runs for every pod on every
+//     operation, deadline included, so this only has to settle the nodes;
 //   - a task result that can never arrive is force-marked complete, because a
 //     node whose task result is unsynced is not fulfilled and markWorkflowPhase
 //     would refuse to complete the workflow at all (checkTaskResultsInProgress);
@@ -1477,19 +1481,48 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 //
 // Exit-handler nodes are left alone, matching the deadline semantics everywhere
 // else.
+//
+// It also records the workflow with an annotation (see finalizingAfterDeadline)
+// so that a later operation may take a suspended workflow past the suspension
+// check while its exit handler finishes.
 func (woc *wfOperationCtx) failNodesAfterDeadline(ctx context.Context) {
+	if woc.wf.Annotations == nil {
+		woc.wf.Annotations = make(map[string]string)
+	}
+	if woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed] != "true" {
+		woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed] = "true"
+		woc.updated = true
+	}
+
 	nodes := woc.wf.Status.Nodes
+	// Stop daemons in their own pass before failing anything: killDaemonedChildren
+	// writes to this very map, so failing nodes while ranging over it would
+	// observe those writes in map order — a daemon could be failed while it is
+	// still running (visited before the boundary that stops it), or be failed
+	// again after it was recorded Succeeded (a transition markNodePhase refuses
+	// and logs as an error).
 	for _, node := range nodes {
 		if node.IsPartOfExitHandler(ctx, nodes) {
 			continue
 		}
 		woc.killDaemonedChildren(ctx, node.ID)
+	}
+	for _, node := range nodes {
+		if node.IsPartOfExitHandler(ctx, nodes) {
+			continue
+		}
 		if node.Fulfilled() {
 			continue
 		}
 		if woc.wf.Status.IsTaskResultIncomplete(node.ID) {
 			woc.log.WithField("nodeID", node.ID).Warn(ctx, "Marking task result as completed because the workflow exceeded its deadline while its task result was incomplete")
 			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+		}
+		if node.Succeeded() {
+			// A daemon stopped above completes Succeeded, as killDaemonedChildren
+			// records it: its exit code carries no failure meaning because the
+			// controller killed it, and markNodePhase would refuse the transition.
+			continue
 		}
 		woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, "Step exceeded its deadline")
 	}
@@ -1501,12 +1534,20 @@ func (woc *wfOperationCtx) failNodesAfterDeadline(ctx context.Context) {
 // finalizingAfterDeadline reports whether this workflow is finishing up after
 // its deadline passed: an exit handler is still unfinished, and a workflow only
 // starts one once its main body is over. It is read from the workflow's own
-// status rather than from the current operation, so it holds across the several
-// reconciliations an exit handler needs to complete, and it retires by itself
-// once the workflow is completed — a suspended workflow that is merely waiting
-// to be resumed never has an exit handler to run.
+// status and annotations rather than from the current operation, so it holds
+// across the several reconciliations an exit handler needs to complete, and it
+// retires by itself once the workflow is completed.
+//
+// The marker matters as much as the deadline: only a workflow whose nodes were
+// failed at its deadline by failNodesAfterDeadline may pass the suspension
+// check here. A suspended workflow that merely expired, or was suspended while
+// its exit handler was running, still waits to be resumed, exactly as it did
+// before this bypass existed.
 func (woc *wfOperationCtx) finalizingAfterDeadline(ctx context.Context) bool {
 	if !woc.workflowDeadlineExceeded() || woc.wf.Status.Phase.Completed() {
+		return false
+	}
+	if woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed] != "true" {
 		return false
 	}
 	nodes := woc.wf.Status.Nodes

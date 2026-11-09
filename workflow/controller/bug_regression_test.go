@@ -809,6 +809,8 @@ func TestBug_SuspendedDeadlineFinalizesAcrossReconciliations(t *testing.T) {
 	// handler, which is then running while the workflow is still suspended.
 	woc = rewindDeadline(ctx, t, woc)
 	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "the workflow is not completed until its exit handler has run")
+	require.Equal(t, "true", woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed],
+		"failNodesAfterDeadline must record the marker that the operations below rely on to bypass suspension")
 	onExit := woc.wf.Status.Nodes.FindByDisplayName("stuck-task-result.onExit")
 	require.NotNil(t, onExit, "the exit handler must have been started")
 
@@ -876,6 +878,93 @@ spec:
 
 	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "a suspended workflow whose pods reconciled is still waiting to be resumed")
 	assert.NotEqual(t, "true", woc.wf.Labels[common.LabelKeyCompleted], "suspension must still stop the workflow from completing")
+}
+
+// TestBug_ExpiredSuspendedExitHandlerWithoutDeadlineFailureStillWaits bounds the
+// suspension bypass from the other side: an unfinished exit handler after the
+// deadline is not enough on its own. A workflow that reached its exit handler,
+// was then suspended, and only later expired has never had its nodes failed by
+// failNodesAfterDeadline, so the marker is absent and it must still wait to be
+// resumed rather than finalizing.
+//
+// The exit handler has two steps so the suspension shows up as observable
+// progress: step-a has already finished, so without the marker gate the
+// bypassed operation would run the template engine past the suspension check
+// and start step-b while the workflow is suspended. With the gate it never
+// starts until the workflow is resumed.
+func TestBug_ExpiredSuspendedExitHandlerWithoutDeadlineFailureStillWaits(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: susp-exit-waits
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 300
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+  - name: main
+    container:
+      image: argoproj/argosay:v2
+  - name: exit-handler
+    steps:
+    - - name: step-a
+        template: echo
+    - - name: step-b
+        template: echo
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	// The step completes normally and its task result arrives, so pod
+	// reconciliation completes and the deadline branch never fires.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// The exit handler starts while the workflow is not yet suspended, and its
+	// first step finishes too.
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	onExit := woc.wf.Status.Nodes.FindByDisplayName("susp-exit-waits.onExit")
+	require.NotNil(t, onExit, "the exit handler must have started before the workflow was suspended")
+	_, err := woc.wf.GetNodeByName("susp-exit-waits.onExit[0].step-a")
+	require.NoError(t, err, "the exit handler's first step must have started")
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// The workflow is then suspended and only afterwards expires. Its pods all
+	// reconciled, so failNodesAfterDeadline never ran and the marker is absent.
+	suspend := true
+	woc.wf.Spec.Suspend = &suspend
+	woc = rewindDeadline(ctx, t, woc)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+		"suspension still applies: this workflow's nodes were never failed at its deadline")
+	assert.NotEqual(t, "true", woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed],
+		"no deadline failure occurred, so the marker that gates the bypass must be absent")
+	stepA, err := woc.wf.GetNodeByName("susp-exit-waits.onExit[0].step-a")
+	require.NoError(t, err)
+	assert.True(t, stepA.Fulfilled(), "the finished first step leaves only step-b to run, which is what the bypass would start")
+
+	// Without the marker gate this operation would have run past the
+	// suspension check and started the exit handler's second step.
+	_, err = woc.wf.GetNodeByName("susp-exit-waits.onExit[1].step-b")
+	require.Error(t, err, "a suspended workflow whose nodes were not failed at its deadline must not advance its exit handler")
+
+	// It keeps waiting across further reconciliations.
+	for range 2 {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase,
+		"a suspended workflow whose nodes were not failed at its deadline still waits to be resumed")
+	assert.NotEqual(t, "true", woc.wf.Labels[common.LabelKeyCompleted], "suspension must still stop the workflow from completing")
+	_, err = woc.wf.GetNodeByName("susp-exit-waits.onExit[1].step-b")
+	require.Error(t, err, "the exit handler's second step must not start before the workflow is resumed")
 }
 
 // setPodPhasesForTest moves each workflow pod to the phase decide returns for its
