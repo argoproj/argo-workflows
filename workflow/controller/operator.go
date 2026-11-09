@@ -1413,6 +1413,28 @@ func (woc *wfOperationCtx) markAllContainersDeleted(ctx context.Context, nodeID 
 	}
 }
 
+// failContainersWithoutStatus fails the container nodes of a failed containerSet pod
+// that have no container status, e.g. because kubelet rejected the pod at admission.
+// Otherwise they would stay Pending forever.
+func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, podNodeName, message string) {
+	if tmpl == nil || tmpl.ContainerSet == nil {
+		return
+	}
+	reported := make(map[string]bool, len(pod.Status.ContainerStatuses))
+	for _, c := range pod.Status.ContainerStatuses {
+		reported[c.Name] = true
+	}
+	for _, c := range tmpl.ContainerSet.GetContainers() {
+		if reported[c.Name] {
+			continue
+		}
+		ctrNodeName := fmt.Sprintf("%s.%s", podNodeName, c.Name)
+		if node, err := woc.wf.GetNodeByName(ctrNodeName); err == nil && !node.Fulfilled() {
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeFailed, message)
+		}
+	}
+}
+
 // shouldPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
@@ -1658,6 +1680,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		case c.State.Running != nil:
 			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeRunning)
 		}
+	}
+	if pod.Status.Phase == apiv1.PodFailed && !stoppedDaemon && updated.Phase != wfv1.NodePending {
+		woc.failContainersWithoutStatus(ctx, pod, tmpl, old.Name, updated.Message)
 	}
 
 	// only update Pod IP for daemoned nodes to reduce number of updates
