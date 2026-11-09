@@ -56,6 +56,20 @@ func (c *argoKubeWorkflowServiceClient) WatchEvents(ctx context.Context, req *wo
 	return intermediary, nil
 }
 
+func (c *argoKubeWorkflowServiceClient) WatchWorkflowPod(ctx context.Context, req *workflowpkg.WatchWorkflowPodRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowPodClient, error) {
+	intermediary := newWorkflowPodWatchIntermediary(ctx)
+	go func() {
+		defer intermediary.cancel()
+		err := c.delegate.WatchWorkflowPod(req, intermediary)
+		if err != nil {
+			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
+		}
+	}()
+	return intermediary, nil
+}
+
 func (c *argoKubeWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
 	return c.delegate.DeleteWorkflow(ctx, req)
 }
