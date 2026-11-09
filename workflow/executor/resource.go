@@ -32,11 +32,39 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
+	return we.execResource(ctx, action, manifestPath, flags, runKubectl)
+}
+
+func (we *WorkflowExecutor) execResource(ctx context.Context, action string, manifestPath string, flags []string, run kubectlRunner) (string, string, string, error) {
+	var recoveryGetFlags []string
+	if action == "create" && we.resourceTemplateRecovering {
+		var err error
+		recoveryGetFlags, err = common.ResourceRecoveryGetFlags(flags)
+		if err != nil {
+			return "", "", "", err
+		}
+	}
+	// For create actions, replace generateName with an identity scoped to this workflow run.
+	// This ensures idempotency: if the executor pod dies, kubectl create will fail
+	// with "already exists" which is handled gracefully below. Works for both inline and manifestFrom templates.
+	if action == "create" {
+		preparedPath, err := we.prepareResourceManifest(manifestPath)
+		if err != nil {
+			return "", "", "", err
+		}
+		if preparedPath != manifestPath {
+			defer func() { _ = os.Remove(preparedPath) }()
+			manifestPath = preparedPath
+		}
+	}
+
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
+	recovered := false
 	if err != nil {
 		return "", "", "", err
 	}
@@ -45,21 +73,38 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		return argoerr.IsTransientErr(ctx, err)
 	}, func() error {
-		out, err = runKubectl(ctx, args...)
+		out, err = run(ctx, args...)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		if exErr, ok := errors.AsType[*exec.ExitError](err); ok {
-			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
-		} else {
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
+		// If kubectl create fails because the resource already exists and this is a replacement
+		// executor pod (previous pod created the resource then died), retrieve the existing
+		// resource instead of failing. Only recover on replacement to preserve the original "already
+		// exists" error behavior on first run.
+		if action != "create" || !isAlreadyExistsErr(err) || !we.resourceTemplateRecovering {
+			if exErr, ok := errors.AsType[*exec.ExitError](err); ok {
+				errMsg := strings.TrimSpace(string(exErr.Stderr))
+				err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
+			} else {
+				err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
+			}
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
+			return "", "", "", err
 		}
-		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
-		return "", "", "", err
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.Info(ctx, "Resource already exists from previous executor run, retrieving existing resource")
+		getArgs, argErr := we.getKubectlArguments("get", manifestPath, recoveryGetFlags)
+		if argErr != nil {
+			return "", "", "", argErr
+		}
+		out, err = run(ctx, getArgs...)
+		if err != nil {
+			return "", "", "", argoerrors.Wrap(err, argoerrors.CodeBadRequest, "failed to get existing resource: "+err.Error())
+		}
+		recovered = true
 	}
 	if action == "delete" {
 		return "", "", "", nil
@@ -72,6 +117,13 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	if err != nil {
 		return "", "", "", err
 	}
+	if recovered && (we.workflowUID == "" || we.nodeID == "" ||
+		obj.GetAnnotations()[common.AnnotationKeyWorkflowUID] != string(we.workflowUID) ||
+		obj.GetAnnotations()[common.AnnotationKeyNodeID] != we.nodeID) {
+		// A failed executor may have died before reporting a first-run name
+		// conflict. Do not silently adopt the unrelated object on recovery.
+		return "", "", "", argoerrors.New(argoerrors.CodeForbidden, "existing resource was not created by this workflow node")
+	}
 	resourceGroup := obj.GroupVersionKind().Group
 	resourceName := obj.GetName()
 	resourceKind := obj.GroupVersionKind().Kind
@@ -83,6 +135,67 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
+}
+
+func (we *WorkflowExecutor) prepareResourceManifest(manifestPath string) (string, error) {
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return "", fmt.Errorf("read resource manifest for recovery: %w", err)
+	}
+	// Resource templates can also construct a resource entirely through flags.
+	// There is no manifest to mark in that case, so recovery cannot adopt it.
+	if len(data) == 0 {
+		if we.resourceTemplateRecovering {
+			return "", argoerrors.New(argoerrors.CodeBadRequest, "cannot recover resource create with an empty manifest")
+		}
+		return manifestPath, nil
+	}
+	rewritten := common.ReplaceGenerateNameWithDeterministic(string(data), string(we.workflowUID)+"/"+we.nodeID)
+	obj := unstructured.Unstructured{}
+	if err := yaml.Unmarshal([]byte(rewritten), &obj); err != nil {
+		return "", fmt.Errorf("parse resource manifest for recovery: %w", err)
+	}
+	if we.workflowUID != "" && we.nodeID != "" {
+		annotations := obj.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		annotations[common.AnnotationKeyWorkflowUID] = string(we.workflowUID)
+		annotations[common.AnnotationKeyNodeID] = we.nodeID
+		obj.SetAnnotations(annotations)
+		encoded, err := yaml.Marshal(obj.Object)
+		if err != nil {
+			return "", fmt.Errorf("encode resource manifest for recovery: %w", err)
+		}
+		rewritten = string(encoded)
+	}
+	if rewritten != string(data) {
+		// Input artifacts may be read-only. Leave the original artifact intact
+		// and stage the executor-owned manifest in its writable temporary volume.
+		file, err := os.CreateTemp("", "argo-resource-*.yaml")
+		if err != nil {
+			return "", fmt.Errorf("stage deterministic resource manifest: %w", err)
+		}
+		_, writeErr := file.WriteString(rewritten)
+		closeErr := file.Close()
+		if err := errors.Join(writeErr, closeErr); err != nil {
+			_ = os.Remove(file.Name())
+			return "", fmt.Errorf("write deterministic resource manifest: %w", err)
+		}
+		return file.Name(), nil
+	}
+	return manifestPath, nil
+}
+
+// isAlreadyExistsErr checks if a kubectl error indicates the resource already exists.
+func isAlreadyExistsErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	if exErr, ok := errors.AsType[*exec.ExitError](err); ok {
+		return strings.Contains(string(exErr.Stderr), "(AlreadyExists)")
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "already exists")
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {

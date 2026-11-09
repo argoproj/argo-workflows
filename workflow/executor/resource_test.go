@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -592,4 +593,11 @@ func Test_runKubectl(t *testing.T) {
 	out, err := runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "json")
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "clientVersion")
+}
+
+func TestIsAlreadyExistsErr(t *testing.T) {
+	assert.False(t, isAlreadyExistsErr(nil))
+	assert.True(t, isAlreadyExistsErr(fmt.Errorf("Error from server (AlreadyExists): jobs.batch \"test-job\" already exists")))
+	assert.True(t, isAlreadyExistsErr(fmt.Errorf("resource Already Exists")))
+	assert.False(t, isAlreadyExistsErr(fmt.Errorf("connection refused")))
 }

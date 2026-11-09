@@ -1371,6 +1371,24 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 				node.Daemoned = nil
 				woc.updated = true
 			}
+
+			// For resource template nodes, re-create the executor pod instead of failing.
+			// The executor is just infrastructure — the underlying resource may still be healthy.
+			if woc.shouldRecoverResourcePod(ctx, &node) {
+				node.ResourcePodRecoveries++
+				node.RecoveringResourcePodUID = ""
+				node.Phase = wfv1.NodePending
+				node.Message = fmt.Sprintf("executor pod missing, recovering (attempt %d)", node.ResourcePodRecoveries)
+				woc.log.WithFields(logging.Fields{
+					"nodeName":      node.Name,
+					"recoveryCount": node.ResourcePodRecoveries,
+				}).Info(ctx, "Resource template executor pod missing - marking as pending for re-creation")
+				woc.wf.Status.Nodes.Set(ctx, nodeID, node)
+				woc.updated = true
+				woc.requeue()
+				continue
+			}
+
 			woc.markNodeError(ctx, node.Name, argoerrors.New("", "pod deleted"))
 			// Mark all its children(container) as deleted if pod deleted
 			woc.markAllContainersDeleted(ctx, node.ID)
@@ -1512,6 +1530,18 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
 			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
 	}
+	// Keep the decision to replace a failed resource executor stable while its
+	// deletion propagates through the informer. Reissue the UID-guarded delete
+	// after a controller restart without charging another recovery attempt.
+	if old.RecoveringResourcePodUID != "" {
+		if string(pod.UID) == old.RecoveringResourcePodUID && old.Pending() {
+			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+			return nil
+		}
+		if string(pod.UID) != old.RecoveringResourcePodUID {
+			updated.RecoveringResourcePodUID = ""
+		}
+	}
 	// The only way a daemon node becomes Succeeded while its pod is still alive is
 	// killDaemonedChildren, which marks the node and then requests pod termination.
 	// Any pod completion seen after that is the result of our own kill and must not
@@ -1565,7 +1595,18 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 		// Check if this pod qualifies for automatic restart (failed before entering Running state)
 		// Skip if we've already initiated a restart for this pod (prevents duplicate restarts on rapid reprocessing)
-		if woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
+		if woc.shouldRecoverResourcePod(ctx, old) && isResourceTemplateInfraFailure(pod) {
+			updated.ResourcePodRecoveries++
+			updated.RecoveringResourcePodUID = podUID
+			updated.Phase = wfv1.NodePending
+			updated.Message = fmt.Sprintf("executor pod failed (%s), recovering (attempt %d)", pod.Status.Reason, updated.ResourcePodRecoveries)
+			woc.log.WithFields(logging.Fields{
+				"nodeName":      old.Name,
+				"reason":        pod.Status.Reason,
+				"recoveryCount": updated.ResourcePodRecoveries,
+			}).Info(ctx, "Recovering resource template executor pod after infrastructure failure")
+			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, podUID)
+		} else if !resourceTemplateSupportsRecovery(tmpl) && woc.shouldAutoRestartPod(ctx, pod, tmpl, old) {
 			if podUID != old.RestartingPodUID {
 				updated.FailedPodRestarts++
 				updated.RestartingPodUID = podUID
@@ -2068,6 +2109,53 @@ func (woc *wfOperationCtx) shouldAutoRestartPod(ctx context.Context, pod *apiv1.
 	}
 
 	return true
+}
+
+// Resource executor recovery is independent of failed-pod restarts. The bound
+// prevents an unhealthy executor or a controller bug from creating pods forever.
+const maxResourcePodRecoveries = 3
+
+func (woc *wfOperationCtx) shouldRecoverResourcePod(ctx context.Context, node *wfv1.NodeStatus) bool {
+	if node.ResourcePodRecoveries >= maxResourcePodRecoveries {
+		return false
+	}
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	return err == nil && resourceTemplateSupportsRecovery(tmpl)
+}
+
+func resourceTemplateSupportsRecovery(tmpl *wfv1.Template) bool {
+	if tmpl == nil || tmpl.Resource == nil {
+		return false
+	}
+	// Create uses deterministic identity and get is read-only. Other actions
+	// (for example, a JSON patch appending to a list) cannot safely be replayed
+	// when the previous executor may have performed the mutation.
+	if tmpl.Resource.Action == "get" {
+		return true
+	}
+	if tmpl.Resource.Action != "create" ||
+		(tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil) {
+		return false
+	}
+	_, err := common.ResourceRecoveryGetFlags(tmpl.Resource.Flags)
+	return err == nil
+}
+
+// isResourceTemplateInfraFailure checks if a pod failed due to infrastructure (OOM, signal, eviction)
+// rather than a legitimate executor error like an invalid manifest.
+func isResourceTemplateInfraFailure(pod *apiv1.Pod) bool {
+	if isRestartableReason(pod.Status.Reason) {
+		return true
+	}
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.Name == common.MainContainerName && cs.State.Terminated != nil {
+			return cs.State.Terminated.Reason == "OOMKilled" ||
+				cs.State.Terminated.Signal != 0 ||
+				cs.State.Terminated.ExitCode == 137 ||
+				cs.State.Terminated.ExitCode == 143
+		}
+	}
+	return false
 }
 
 func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
@@ -3848,6 +3936,11 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts(ctx)...)
+	// Signal to the replacement executor that it can handle "already exists"
+	// errors from kubectl create (the resource was created by the previous executor run).
+	if node.ResourcePodRecoveries > 0 {
+		mainCtr.Env = append(mainCtr.Env, apiv1.EnvVar{Name: common.EnvVarResourceTemplateRecovering, Value: "true"})
+	}
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(ctx, err, node.Name)
