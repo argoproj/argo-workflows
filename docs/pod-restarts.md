@@ -1,7 +1,7 @@
 # Automatic Pod Restarts
 
 Argo Workflows can automatically restart pods that fail due to infrastructure issues before the main container starts.
-This feature handles transient failures like node evictions, disk pressure, or unexpected admission errors without requiring a `retryStrategy` on your templates.
+This feature handles transient failures like node evictions, disk pressure, or admission rejections without requiring a `retryStrategy` on your templates.
 
 ## How It Works
 
@@ -23,6 +23,8 @@ The following pod failure reasons trigger automatic restarts:
 | `NodeShutdown` | Graceful node shutdown |
 | `NodeAffinity` | Node affinity/selector no longer matches |
 | `UnexpectedAdmissionError` | Unexpected error during pod admission |
+| `TopologyAffinityError` | The topology manager rejected the pod at admission |
+| `OutOf<resource>` | The node lacked the resource at admission, for example `OutOfcpu` or `OutOfmemory` |
 
 ### Conditions for Restart
 

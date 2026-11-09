@@ -88,7 +88,7 @@ attributes:
     description: "The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`"
   - name: PodRestartReason
     displayName: reason
-    description: "The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError`"
+    description: "The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, `UnexpectedAdmissionError`, `TopologyAffinityError`, or `OutOf<resource>`"
   - name: QueueName
     description: The name of the queue
   - name: RecentlyStarted
@@ -312,6 +312,8 @@ metrics:
       - `NodeShutdown`: Graceful node shutdown
       - `NodeAffinity`: Node affinity/selector no longer matches
       - `UnexpectedAdmissionError`: Unexpected error during pod admission
+      - `TopologyAffinityError`: The topology manager rejected the pod at admission
+      - `OutOf<resource>`: The node lacked a resource at admission, for example CPU or memory
 
       `condition` is extracted from the pod status message when available (e.g., `DiskPressure`, `MemoryPressure`).
       It will be empty if the condition cannot be determined.
