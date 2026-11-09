@@ -21,6 +21,11 @@ func IsRequestEntityTooLargeErr(err error) bool {
 		if strings.Contains(apiStatus.Status().Message, "request is too large") {
 			return true
 		}
+		// Above 2MiB the API server's gRPC client to etcd refuses to send it:
+		// rpc error: code = ResourceExhausted desc = trying to send message larger than max (2163613 vs. 2097152)
+		if strings.Contains(apiStatus.Status().Message, "trying to send message larger than max") {
+			return true
+		}
 	}
 	return false
 }

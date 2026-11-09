@@ -213,6 +213,7 @@ func TestTracingLoadArtifactsIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	we := WorkflowExecutor{
+		paths: PodPaths(),
 		Process: &Process{
 			Tracing: tr,
 		},

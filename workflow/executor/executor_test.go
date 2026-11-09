@@ -87,6 +87,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 			tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 			require.NoError(t, err)
 			we := WorkflowExecutor{
+				paths: PodPaths(),
 				Process: &Process{
 					Tracing: tracing,
 				},
@@ -118,11 +119,12 @@ func TestSaveParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: &mockRuntimeExecutor,
 		Process: &Process{
-			PodName:         fakePodName,
-			ClientSet:       fakeClientset,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: &mockRuntimeExecutor,
+			PodName:   fakePodName,
+			ClientSet: fakeClientset,
+			Namespace: fakeNamespace,
 		},
 		Template: templateWithOutParam,
 	}
@@ -160,6 +162,7 @@ func TestIsBaseImagePath(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
+		paths:    PodPaths(),
 		Process:  &Process{},
 		Template: templateWithSameDir,
 	}
@@ -202,6 +205,7 @@ func TestIsBaseImagePath(t *testing.T) {
 func TestIsBaseImagePathInitless(t *testing.T) {
 	newWe := func() *WorkflowExecutor {
 		return &WorkflowExecutor{
+			paths:   PodPaths(),
 			Process: &Process{},
 			Template: wfv1.Template{
 				Container: &corev1.Container{},
@@ -225,7 +229,7 @@ func TestIsBaseImagePathInitless(t *testing.T) {
 
 	t.Run("init-less mode reads the live emissary-staged output", func(t *testing.T) {
 		we := newWe()
-		we.initlessPod = true
+		we.layout = LayoutInitless
 		assert.True(t, we.isBaseImagePath("/samedir"))
 		we.Template.Outputs.Artifacts[0].Path = "/samedir/inner"
 		assert.True(t, we.isBaseImagePath("/samedir/inner"))
@@ -233,7 +237,7 @@ func TestIsBaseImagePathInitless(t *testing.T) {
 
 	t.Run("init-less mode still reads user volumes from the mirror", func(t *testing.T) {
 		we := newWe()
-		we.initlessPod = true
+		we.layout = LayoutInitless
 		// A user-declared volume overlap is delivered into the real (shared) volume
 		// and the emissary intentionally skips staging it, so it must keep reading
 		// the mirror even in init-less mode.
@@ -256,9 +260,10 @@ func TestStageArchiveFileInitlessOverlap(t *testing.T) {
 
 	newWe := func(rt *mocks.ContainerRuntimeExecutor) *WorkflowExecutor {
 		return &WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: rt,
 			Process: &Process{
-				RuntimeExecutor: rt,
-				Tracing:         tr,
+				Tracing: tr,
 			},
 			Template: wfv1.Template{
 				Inputs:  wfv1.Inputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
@@ -274,7 +279,7 @@ func TestStageArchiveFileInitlessOverlap(t *testing.T) {
 		// emptyDir instead would skip CopyFile and upload the stale input.
 		rt.On("CopyFile", mock.Anything, common.MainContainerName, "/samedir", mock.Anything, mock.Anything).Return(nil)
 		we := newWe(rt)
-		we.initlessPod = true
+		we.layout = LayoutInitless
 		art := we.Template.Outputs.Artifacts[0]
 		fileName, localArtPath, err := we.stageArchiveFile(ctx, common.MainContainerName, &art)
 		require.NoError(t, err)
@@ -312,11 +317,12 @@ func TestDefaultParameters(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: &mockRuntimeExecutor,
 		Process: &Process{
-			PodName:         fakePodName,
-			ClientSet:       fakeClientset,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: &mockRuntimeExecutor,
+			PodName:   fakePodName,
+			ClientSet: fakeClientset,
+			Namespace: fakeNamespace,
 		},
 		Template: templateWithOutParam,
 	}
@@ -345,11 +351,12 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 		},
 	}
 	we := WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: &mockRuntimeExecutor,
 		Process: &Process{
-			PodName:         fakePodName,
-			ClientSet:       fakeClientset,
-			Namespace:       fakeNamespace,
-			RuntimeExecutor: &mockRuntimeExecutor,
+			PodName:   fakePodName,
+			ClientSet: fakeClientset,
+			Namespace: fakeNamespace,
 		},
 		Template: templateWithOutParam,
 	}
@@ -749,11 +756,12 @@ func TestSaveArtifacts(t *testing.T) {
 	}{
 		{
 			workflowExecutor: &WorkflowExecutor{
+				paths:           PodPaths(),
+				RuntimeExecutor: &mockRuntimeExecutor,
 				Process: &Process{
 					PodName:          fakePodName,
 					ClientSet:        fakeClientset,
 					Namespace:        fakeNamespace,
-					RuntimeExecutor:  &mockRuntimeExecutor,
 					taskResultClient: mockTaskResultClient,
 					Tracing:          tracing,
 				},
@@ -763,11 +771,12 @@ func TestSaveArtifacts(t *testing.T) {
 		},
 		{
 			workflowExecutor: &WorkflowExecutor{
+				paths:           PodPaths(),
+				RuntimeExecutor: &mockRuntimeExecutor,
 				Process: &Process{
 					PodName:          fakePodName,
 					ClientSet:        fakeClientset,
 					Namespace:        fakeNamespace,
-					RuntimeExecutor:  &mockRuntimeExecutor,
 					taskResultClient: mockTaskResultClient,
 					Tracing:          tracing,
 				},
@@ -777,11 +786,12 @@ func TestSaveArtifacts(t *testing.T) {
 		},
 		{
 			workflowExecutor: &WorkflowExecutor{
+				paths:           PodPaths(),
+				RuntimeExecutor: &mockRuntimeExecutor,
 				Process: &Process{
 					PodName:          fakePodName,
 					ClientSet:        fakeClientset,
 					Namespace:        fakeNamespace,
-					RuntimeExecutor:  &mockRuntimeExecutor,
 					taskResultClient: mockTaskResultClient,
 					Tracing:          tracing,
 				},
@@ -821,7 +831,7 @@ func TestMonitorProgress(t *testing.T) {
 		nil,
 		taskResults,
 		nil,
-		&mocks.ContainerRuntimeExecutor{},
+		func(TaskPaths) ContainerRuntimeExecutor { return &mocks.ContainerRuntimeExecutor{} },
 		ProcessConfig{
 			PodName:                      fakePodName,
 			PodUID:                       fakePodUID,
@@ -834,14 +844,15 @@ func TestMonitorProgress(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 90*time.Second, process.taskResultRetryTimeout)
 	assert.Equal(t, defaultTaskResultBackoff, process.taskResultBackoff)
-	we := process.NewExecutor(TaskConfig{
+	cfg := TaskConfig{
 		WorkflowName:        fakeWorkflow,
 		WorkflowUID:         fakeWorkflowUID,
 		NodeID:              fakeNodeID,
 		Template:            wfv1.Template{},
 		IncludeScriptOutput: false,
 		Deadline:            time.Now(),
-	})
+	}
+	we := process.NewExecutor(Task{Config: cfg, Paths: PodPaths()}, LayoutLegacy, process.NewTaskResultSink(cfg, false))
 
 	go we.monitorProgress(ctx, progressFile)
 
@@ -871,9 +882,10 @@ func TestSaveLogs(t *testing.T) {
 			},
 		}
 		we := WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: &mockRuntimeExecutor,
 			Process: &Process{
-				RuntimeExecutor: &mockRuntimeExecutor,
-				Tracing:         tracing,
+				Tracing: tracing,
 			},
 			Template: templateWithArchiveLogs,
 		}
@@ -896,9 +908,10 @@ func TestSaveLogs(t *testing.T) {
 		rt.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).
 			Return((io.ReadCloser)(nil), os.ErrNotExist)
 		we := WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: rt,
 			Process: &Process{
-				RuntimeExecutor: rt,
-				Tracing:         tr,
+				Tracing: tr,
 			},
 			Template: wfv1.Template{ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
 		}
@@ -929,8 +942,9 @@ func TestReportOutputs(t *testing.T) {
 		tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 		require.NoError(t, err)
 		we := WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: &mockRuntimeExecutor,
 			Process: &Process{
-				RuntimeExecutor:        &mockRuntimeExecutor,
 				taskResultClient:       mockTaskResultClient,
 				Tracing:                tracing,
 				taskResultRetryTimeout: time.Minute,
@@ -938,6 +952,7 @@ func TestReportOutputs(t *testing.T) {
 			},
 			Template: templateWithArtifacts,
 		}
+		we.sink = we.NewTaskResultSink(TaskConfig{}, false)
 
 		err = we.ReportOutputs(ctx, artifacts)
 
@@ -963,7 +978,7 @@ func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration
 		}
 		return false, nil, nil
 	})
-	return &WorkflowExecutor{
+	we := &WorkflowExecutor{
 		Process: &Process{
 			taskResultClient:          clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
 			Tracing:                   tr,
@@ -973,7 +988,9 @@ func newFlakyTaskResultExecutor(t *testing.T, outage, retryTimeout time.Duration
 		},
 		workflow: fakeWorkflow,
 		nodeID:   fakeNodeID,
-	}, clientset
+	}
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: fakeWorkflow, NodeID: fakeNodeID}, false)
+	return we, clientset
 }
 
 func TestDefaultTaskResultBackoff(t *testing.T) {
@@ -1007,13 +1024,18 @@ func TestTaskResultRetries(t *testing.T) {
 	t.Run("InterimWritesUseTheirOwnLimit", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		we, _ := newFlakyTaskResultExecutor(t, -1, time.Minute)
-		we.interimResultRetryTimeout = 50 * time.Millisecond
+		we.sink.(*taskResultSink).interimRetryTimeout = 50 * time.Millisecond
 
 		start := time.Now()
 		we.InitializeOutput(ctx)
 		assert.Less(t, time.Since(start), 10*time.Second)
 		require.Len(t, we.errors, 1)
 		assert.True(t, apierr.IsServiceUnavailable(we.errors[0]), "got %v", we.errors[0])
+
+		start = time.Now()
+		err := we.sink.Progress(ctx, "1/2")
+		assert.Less(t, time.Since(start), 10*time.Second)
+		require.ErrorContains(t, err, "gave up writing task result after 50ms: ")
 	})
 	t.Run("OutagePastBackoffCapButShorterThanTimeoutSucceeds", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -1040,7 +1062,7 @@ func TestTaskResultRetries(t *testing.T) {
 		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
 
 		start := time.Now()
-		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, 50*time.Millisecond, func(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 			case <-time.After(10 * time.Second):
@@ -1055,10 +1077,13 @@ func TestTaskResultRetries(t *testing.T) {
 	})
 	t.Run("AttemptInFlightIsCutOffAfterTransientError", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
-		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+		// The second attempt has to start before the limit runs out. A slow
+		// runner (Windows timers tick every ~15ms) can take well over 50ms
+		// to get there, so allow a second.
+		we, _ := newFlakyTaskResultExecutor(t, 0, time.Second)
 
 		attempts := 0
-		err := we.retryTaskResult(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, time.Second, func(ctx context.Context) error {
 			attempts++
 			if attempts == 1 {
 				return apierr.NewServiceUnavailable("API server unavailable")
@@ -1071,7 +1096,7 @@ func TestTaskResultRetries(t *testing.T) {
 		})
 		assert.Equal(t, 2, attempts)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last transient error, got %v", err)
-		assert.ErrorContains(t, err, "gave up writing task result after 50ms: ")
+		assert.ErrorContains(t, err, "gave up writing task result after 1s: ")
 	})
 	t.Run("NonTransientContextErrorIsNotReplaced", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -1081,7 +1106,7 @@ func TestTaskResultRetries(t *testing.T) {
 		// still live, so this isn't giving up: the error comes back as is.
 		failure := fmt.Errorf("reading response: %w", context.Canceled)
 		attempts := 0
-		err := we.retryTaskResult(ctx, time.Minute, func(context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, time.Minute, func(context.Context) error {
 			attempts++
 			if attempts == 1 {
 				return apierr.NewServiceUnavailable("API server unavailable")
@@ -1249,13 +1274,47 @@ func TestWaitMainContainers(t *testing.T) {
 		rt := &mocks.ContainerRuntimeExecutor{}
 		rt.On("Wait", mock.Anything, mock.Anything).Return(nil)
 		we := &WorkflowExecutor{
+			paths:           PodPaths(),
+			RuntimeExecutor: rt,
 			Process: &Process{
-				PodName:         fakePodName,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: rt,
+				PodName:   fakePodName,
+				Namespace: fakeNamespace,
 			},
 		}
 		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}))
 		rt.AssertExpectations(t)
 	})
+}
+
+// A worker's tasks each need their own runtime; one built from anything but
+// the task's paths would read every task's outputs from the same place.
+func TestNewExecutor_BuildsRuntimeFromTaskPaths(t *testing.T) {
+	var got TaskPaths
+	p := &Process{newRuntime: func(paths TaskPaths) ContainerRuntimeExecutor {
+		got = paths
+		return &mocks.ContainerRuntimeExecutor{}
+	}}
+	want, err := WorkerPaths("/w", "node-1")
+	require.NoError(t, err)
+	p.NewExecutor(Task{Paths: want}, LayoutLegacy, nil)
+	assert.Equal(t, want, got)
+}
+
+// A worker links input artifacts like an init-less pod, so an output at an
+// input's path is read from what main left there (staged by runMain), not
+// from the input it was given.
+func TestIsBaseImagePathWorker(t *testing.T) {
+	we := &WorkflowExecutor{
+		layout:  LayoutWorker,
+		Process: &Process{},
+		Template: wfv1.Template{
+			Container: &corev1.Container{},
+			Inputs:    wfv1.Inputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
+		},
+	}
+	assert.True(t, we.isBaseImagePath("/samedir"))
+	assert.True(t, we.isBaseImagePath("/samedir/nested"))
+	assert.True(t, LayoutWorker.linksInputArtifacts())
+	assert.True(t, LayoutInitless.linksInputArtifacts())
+	assert.False(t, LayoutLegacy.linksInputArtifacts())
 }
