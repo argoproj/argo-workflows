@@ -601,10 +601,10 @@ spec:
 // as the pod lived (observed for over five hours, blocking every subsequent
 // CronWorkflow run under concurrencyPolicy: Forbid).
 //
-// The step deadline cannot bound this case: template activeDeadlineSeconds is
-// enforced by the pod and by the executor's deadline monitor, neither of which
-// can act on a pod whose containers have already exited. The workflow deadline
-// is the only bound, so it must fire whether or not the task result reconciled.
+// The step deadline cannot bound this case: a template's activeDeadlineSeconds
+// becomes the pod's own activeDeadlineSeconds, and Kubernetes stops enforcing
+// that once the pod has finished. The workflow deadline is the only bound, so
+// it must fire whether or not the task result reconciled.
 func TestBug_WorkflowDeadlineWithUnreconcilableTaskResult(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := stuckTaskResultWorkflow(ctx, t, "  activeDeadlineSeconds: 300", "")
