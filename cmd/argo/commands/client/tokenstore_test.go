@@ -3,6 +3,7 @@ package client
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -45,12 +46,16 @@ func TestTokenStoreRoundTrip(t *testing.T) {
 	require.NoError(t, SaveToken("https://a", StoredToken{Token: "Bearer v2:a", Expiry: expiry}))
 	require.NoError(t, SaveToken("https://b", StoredToken{Token: "Bearer v2:b"}))
 
-	info, err := os.Stat(path)
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
-	dirInfo, err := os.Stat(filepath.Dir(path))
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
+	// Windows has no Unix permission bits; the file is still created in the
+	// user's own profile directory.
+	if runtime.GOOS != "windows" {
+		info, statErr := os.Stat(path)
+		require.NoError(t, statErr)
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+		dirInfo, statErr := os.Stat(filepath.Dir(path))
+		require.NoError(t, statErr)
+		assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
+	}
 
 	stored, err = LoadToken("https://a")
 	require.NoError(t, err)
