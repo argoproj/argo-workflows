@@ -106,7 +106,7 @@
     {
       "description": "k8s.io/code-generator go install in Makefile",
       "customType": "regex",
-      "fileMatch": ["^Makefile$"],
+      "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
         "go install k8s\\.io/code-generator/cmd/go-to-protobuf@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
       ],
@@ -116,7 +116,7 @@
     {
       "description": "k8s.io/code-generator module path in Makefile",
       "customType": "regex",
-      "fileMatch": ["^Makefile$"],
+      "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
         "k8s\\.io/code-generator@(?<currentValue>v\\d+\\.\\d+\\.\\d+)/kube_codegen\\.sh"
       ],
@@ -126,7 +126,7 @@
     {
       "description": "Kubernetes OpenAPI spec version in Makefile",
       "customType": "regex",
-      "fileMatch": ["^Makefile$"],
+      "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
         "kubernetes/kubernetes/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/api/openapi-spec"
       ],
@@ -136,7 +136,7 @@
     {
       "description": "k8s.io proto vendor refs in argo-proto.yaml",
       "customType": "regex",
-      "fileMatch": ["^argo-proto\\.yaml$"],
+      "managerFilePatterns": ["/^argo-proto\\.yaml$/"],
       "matchStrings": [
         "owner: kubernetes\\s+name: (?<depName>api|apimachinery)\\s+ref: (?<currentValue>v\\d+\\.\\d+\\.\\d+)"
       ],
