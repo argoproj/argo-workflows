@@ -482,7 +482,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"description": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Description is the artifact description",
+							Description: "Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -868,7 +868,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"description": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Description is the artifact description",
+							Description: "Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts",
 							Type:        []string{"string"},
 							Format:      "",
 						},

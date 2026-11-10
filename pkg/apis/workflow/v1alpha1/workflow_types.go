@@ -1178,7 +1178,7 @@ type Artifact struct {
 	// Has this been deleted?
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 
-	// Description is the artifact description
+	// Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts
 	Description *AnyString `json:"description,omitempty" protobuf:"bytes,14,opt,name=description"`
 }
 

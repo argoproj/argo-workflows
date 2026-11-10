@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  |  [optional]
 **azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifact**](IoArgoprojWorkflowV1alpha1AzureArtifact.md) |  |  [optional]
 **deleted** | **Boolean** | Has this been deleted? |  [optional]
-**description** | **String** | Description is the artifact description |  [optional]
+**description** | **String** | Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts |  [optional]
 **from** | **String** | From allows an artifact to reference an artifact from a previous step |  [optional]
 **fromExpression** | **String** | FromExpression, if defined, is evaluated to specify the value for the artifact |  [optional]
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifact**](IoArgoprojWorkflowV1alpha1GCSArtifact.md) |  |  [optional]

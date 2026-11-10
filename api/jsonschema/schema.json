@@ -4103,7 +4103,7 @@
           "type": "boolean"
         },
         "description": {
-          "description": "Description is the artifact description",
+          "description": "Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts",
           "type": "string"
         },
         "from": {
@@ -4276,7 +4276,7 @@
           "type": "boolean"
         },
         "description": {
-          "description": "Description is the artifact description",
+          "description": "Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts",
           "type": "string"
         },
         "from": {

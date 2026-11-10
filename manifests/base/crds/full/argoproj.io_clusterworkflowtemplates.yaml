@@ -1154,7 +1154,8 @@ spec:
                           description: Has this been deleted?
                           type: boolean
                         description:
-                          description: Description is the artifact description
+                          description: Description is informational only; the UI shows
+                            it only when submitting a WorkflowTemplate, for spec.arguments.artifacts
                           type: string
                         from:
                           description: From allows an artifact to reference an artifact
@@ -4090,7 +4091,9 @@ spec:
                                 description: Has this been deleted?
                                 type: boolean
                               description:
-                                description: Description is the artifact description
+                                description: Description is informational only; the
+                                  UI shows it only when submitting a WorkflowTemplate,
+                                  for spec.arguments.artifacts
                                 type: string
                               from:
                                 description: From allows an artifact to reference
@@ -22621,8 +22624,9 @@ spec:
                                           description: Has this been deleted?
                                           type: boolean
                                         description:
-                                          description: Description is the artifact
-                                            description
+                                          description: Description is informational
+                                            only; the UI shows it only when submitting
+                                            a WorkflowTemplate, for spec.arguments.artifacts
                                           type: string
                                         from:
                                           description: From allows an artifact to
@@ -23978,8 +23982,10 @@ spec:
                                                 description: Has this been deleted?
                                                 type: boolean
                                               description:
-                                                description: Description is the artifact
-                                                  description
+                                                description: Description is informational
+                                                  only; the UI shows it only when
+                                                  submitting a WorkflowTemplate, for
+                                                  spec.arguments.artifacts
                                                 type: string
                                               from:
                                                 description: From allows an artifact
@@ -25496,7 +25502,9 @@ spec:
                                   description: Has this been deleted?
                                   type: boolean
                                 description:
-                                  description: Description is the artifact description
+                                  description: Description is informational only;
+                                    the UI shows it only when submitting a WorkflowTemplate,
+                                    for spec.arguments.artifacts
                                   type: string
                                 from:
                                   description: From allows an artifact to reference
@@ -28299,7 +28307,9 @@ spec:
                                 description: Has this been deleted?
                                 type: boolean
                               description:
-                                description: Description is the artifact description
+                                description: Description is informational only; the
+                                  UI shows it only when submitting a WorkflowTemplate,
+                                  for spec.arguments.artifacts
                                 type: string
                               from:
                                 description: From allows an artifact to reference
@@ -29707,7 +29717,9 @@ spec:
                                 description: Has this been deleted?
                                 type: boolean
                               description:
-                                description: Description is the artifact description
+                                description: Description is informational only; the
+                                  UI shows it only when submitting a WorkflowTemplate,
+                                  for spec.arguments.artifacts
                                 type: string
                               from:
                                 description: From allows an artifact to reference
@@ -31072,7 +31084,9 @@ spec:
                                   description: Has this been deleted?
                                   type: boolean
                                 description:
-                                  description: Description is the artifact description
+                                  description: Description is informational only;
+                                    the UI shows it only when submitting a WorkflowTemplate,
+                                    for spec.arguments.artifacts
                                   type: string
                                 from:
                                   description: From allows an artifact to reference
@@ -35637,7 +35651,9 @@ spec:
                                         description: Has this been deleted?
                                         type: boolean
                                       description:
-                                        description: Description is the artifact description
+                                        description: Description is informational
+                                          only; the UI shows it only when submitting
+                                          a WorkflowTemplate, for spec.arguments.artifacts
                                         type: string
                                       from:
                                         description: From allows an artifact to reference
@@ -36969,8 +36985,9 @@ spec:
                                               description: Has this been deleted?
                                               type: boolean
                                             description:
-                                              description: Description is the artifact
-                                                description
+                                              description: Description is informational
+                                                only; the UI shows it only when submitting
+                                                a WorkflowTemplate, for spec.arguments.artifacts
                                               type: string
                                             from:
                                               description: From allows an artifact
