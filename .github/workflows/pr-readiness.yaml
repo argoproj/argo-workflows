@@ -4,7 +4,10 @@ name: PR Readiness Helper
 # single sticky comment guiding the contributor through contributor-fixable
 # problems (lint, codegen, docs, title, DCO, feature files, and an unfilled
 # PR description checked against the template). Blocking problems also apply
-# the problem/bot-not-ready label, removed automatically once resolved.
+# the problem/bot-not-ready label, removed automatically once resolved. The
+# same comment carries a table of the author's activity in this repository for
+# maintainers, so it also runs when a PR is opened (pull_request_target runs
+# without the first-time-contributor approval that holds back CI).
 # See .github/pr-readiness/README.md for design, security model and tuning.
 #
 # Security: this runs with write permissions from the default branch's
@@ -15,6 +18,8 @@ on:
   workflow_run:
     workflows: ["CI", "Docs", "PR Title Check", "PR Feature Check"]
     types: [completed]
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
 
 permissions: {} # default deny; the job grants the minimum it needs
 
@@ -22,7 +27,7 @@ concurrency:
   # Serialize per head SHA: several of the above workflows can finish within
   # seconds of each other. Never cancel — each completion must be processed
   # so the comment converges on the final state.
-  group: pr-readiness-${{ github.event.workflow_run.head_sha }}
+  group: pr-readiness-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 env:
@@ -35,7 +40,10 @@ env:
 jobs:
   assess:
     name: Assess PR readiness
-    if: github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target'
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      github.event.workflow_run.event == 'pull_request' ||
+      github.event.workflow_run.event == 'pull_request_target'
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: write # sticky comment + not-ready label
@@ -48,8 +56,12 @@ jobs:
         with:
           egress-policy: audit
 
-      # Default branch only — never the PR head.
+      # Default branch only — never the PR head. The explicit ref matters for
+      # pull_request_target, which would otherwise check out the PR's base.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
       - name: Assess PR and render comment
         id: assess

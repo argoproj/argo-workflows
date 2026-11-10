@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MARKER, NOT_READY_LABEL, renderComment } from '../comment.ts';
+import { CONTRIBUTOR_MARKER, ENGAGED_MARKER, MARKER, NOT_READY_LABEL, isEngaged, renderComment } from '../comment.ts';
 
 test('renderComment issues variant lists each failure with guidance and log link', () => {
   const body = renderComment({
@@ -61,4 +61,40 @@ test('renderComment footer says tests are not covered and it is automated', () =
   const body = renderComment({ variant: 'issues', failures: [{ id: 'x', title: 'X', guidance: 'g', url: 'u' }], templateIssues: null, labeled: false });
   assert.ok(/unit\/e2e/i.test(body));
   assert.ok(/automated/i.test(body));
+});
+
+const TABLE = '| Contributor activity in x/y | |\n|---|---:|\n| PRs (merged / open / closed) | 0 / 1 / 0 |';
+
+test('renderComment with no variant renders only the contributor table', () => {
+  const body = renderComment({ variant: null, failures: [], templateIssues: null, labeled: false, contributorTable: TABLE });
+  assert.ok(body.startsWith(MARKER));
+  assert.ok(body.includes(CONTRIBUTOR_MARKER));
+  assert.ok(body.includes(TABLE));
+  assert.ok(!body.includes(ENGAGED_MARKER));
+  assert.ok(!/PR readiness/.test(body));
+  assert.equal(isEngaged(body), false);
+});
+
+test('renderComment puts the readiness section above the contributor table and marks itself engaged', () => {
+  const body = renderComment({
+    variant: 'issues',
+    failures: [{ id: 'lint', title: 'Lint', guidance: 'g', url: 'u' }],
+    templateIssues: null,
+    labeled: false,
+    contributorTable: TABLE,
+  });
+  assert.ok(body.indexOf('**Lint**') < body.indexOf(TABLE));
+  assert.ok(body.indexOf(TABLE) < body.indexOf('Automated PR-readiness helper'));
+  assert.equal(isEngaged(body), true);
+});
+
+test('renderComment leaves the table out when there is none', () => {
+  const body = renderComment({ variant: 'allclear', failures: [], templateIssues: null, labeled: false, contributorTable: null });
+  assert.ok(!body.includes(CONTRIBUTOR_MARKER));
+  assert.equal(isEngaged(body), true);
+});
+
+test('isEngaged treats a comment from before contributor tables as engaged', () => {
+  // Such comments only ever existed because something had failed.
+  assert.equal(isEngaged(`${MARKER}\n\n#### ⏳ PR readiness\n`), true);
 });

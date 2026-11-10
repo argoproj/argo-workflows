@@ -65,6 +65,14 @@ export interface Decision {
   templateBlocking: boolean;
 }
 
+export interface ContributorStats {
+  createdAt: string;
+  association: string;
+  prs: { merged: number; open: number; closed: number };
+  issues: { opened: number; commented: number };
+  othersPrsCommented: number;
+}
+
 export interface GitHubUser {
   login: string;
   type: string;
