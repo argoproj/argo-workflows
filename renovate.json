@@ -80,6 +80,21 @@
         "lockFileMaintenance"
       ],
       "enabled": false
+    },
+    {
+      "description": "Group tested Kubernetes versions; never automerge, bumping max is a support decision",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rancher/k3s"],
+      "groupName": "tested Kubernetes versions",
+      "automerge": false
+    },
+    {
+      "description": "Minimum tested Kubernetes version only gets patch updates; raise its minor by hand",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rancher/k3s"],
+      "matchDepTypes": ["min"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
     }
   ],
   "platformAutomerge": true,
@@ -102,6 +117,19 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\s+\\w+\\s*\\??=\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
       ],
       "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "description": "Tested Kubernetes (k3s) versions in hack/k8s-versions.sh",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)hack/k8s-versions.sh$/"
+      ],
+      "matchStrings": [
+        "\\[(?<depType>min|max)\\]=(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "rancher/k3s",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^(?<version>v\\d+\\.\\d+\\.\\d+)-k3s1$"
     },
     {
       "description": "k8s.io/code-generator go install in Makefile",
