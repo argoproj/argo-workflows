@@ -1,13 +1,61 @@
 package env
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
+
+// TestLookupEnvPositiveMilliseconds covers optional values, positive integer
+// milliseconds, and both integer-parsing and duration-conversion overflow.
+func TestLookupEnvPositiveMilliseconds(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		value   string
+		unset   bool
+		delay   *time.Duration
+		invalid bool
+	}{
+		{name: "unset", unset: true},
+		{name: "empty"},
+		{name: "zero", value: "0", invalid: true},
+		{name: "one millisecond", value: "1", delay: new(time.Millisecond)},
+		{name: "subsecond", value: "250", delay: new(250 * time.Millisecond)},
+		{name: "one second", value: "1000", delay: new(time.Second)},
+		{name: "multiple seconds", value: "20000", delay: new(20 * time.Second)},
+		{name: "maximum", value: "9223372036854", delay: new(9223372036854 * time.Millisecond)},
+		{name: "negative", value: "-1", invalid: true},
+		{name: "malformed", value: "not-an-integer", invalid: true},
+		{name: "whitespace", value: " ", invalid: true},
+		{name: "fractional", value: "0.5", invalid: true},
+		{name: "duration suffix", value: "250ms", invalid: true},
+		{name: "boolean", value: "true", invalid: true},
+		{name: "duration overflow", value: "9223372036855", invalid: true},
+		{name: "integer overflow", value: "9223372036854775808", invalid: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			const key = "TEST_POSITIVE_MILLISECONDS"
+			t.Setenv(key, tt.value)
+			if tt.unset {
+				require.NoError(t, os.Unsetenv(key))
+			}
+			delay, err := LookupEnvPositiveMilliseconds(key)
+			if tt.invalid {
+				require.ErrorContains(t, err, key+" must be an integer between 1 and 9223372036854")
+				assert.Contains(t, err.Error(), tt.value)
+				assert.Nil(t, delay)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.delay, delay)
+		})
+	}
+}
 
 func TestLookupEnvDurationOr(t *testing.T) {
 	ctx := logging.TestContext(t.Context())

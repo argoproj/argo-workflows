@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-on-exit
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: leafA
+        onExit: exitContainer
+        template: whalesay
+    - - name: leafB
+        onExit: exitContainer
+        template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+
+  - name: exitContainer
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]

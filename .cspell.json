@@ -84,12 +84,14 @@
     "STRFTIMECHAR",
     "TASKNAME",
     "taskresult",
+    "taskset",
     "tmple",
     "Triaging",
     "wftmpl",
     "workflowkey",
     "workflowtemplate",
     "workflowtemplates",
-    "zstd"
+    "zstd",
+    "pgsty"
   ]
 }

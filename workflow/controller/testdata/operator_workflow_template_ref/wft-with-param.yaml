@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: params-test-1
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: a-a
+        value: "10"
+      - name: b
+        value: ""
+      - name: c-c
+        value: "0"
+      - name: d
+        value: ""
+      - name: e-e
+        value: "10"
+      - name: f
+        value: ""
+      - name: g-g
+        value: "1"
+      - name: h
+        value: ""
+      - name: i-i
+        value: "{}"
+      - name: things
+        value: "[]"
+
+  templates:
+    - name: main
+      steps:
+        - - name: echoitems
+            template: echo
+
+    - name: echo
+      container:
+        image: busybox
+        command: [echo]
+        args: ["{{workflows.parameters.a-a}} = {{workflows.parameters.g-g}}"]
