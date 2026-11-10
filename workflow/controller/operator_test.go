@@ -9875,6 +9875,53 @@ func TestContainerSetWhenPodRejected(t *testing.T) {
 	assert.Equal(t, 2, containers)
 }
 
+var wfContainerSetParameterizedNameRejected = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-containerset-parameterized-rejected
+spec:
+  entrypoint: init
+  arguments:
+    parameters:
+      - name: ctr
+        value: main
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      containerSet:
+        containers:
+          - name: "{{workflow.parameters.ctr}}"
+            image: alpine:3.23`
+
+// TestContainerSetParameterizedNameWhenPodRejected tests that container nodes are failed
+// when their names come from parameters resolved at runtime.
+func TestContainerSetParameterizedNameWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfContainerSetParameterizedNameRejected)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	node, err := woc.wf.GetNodeByName("wf-containerset-parameterized-rejected.A.main")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Contains(t, node.Message, "Pod was rejected")
+}
+
 var wfContainerSetRetryRejected = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

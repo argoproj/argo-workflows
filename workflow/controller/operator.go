@@ -1416,22 +1416,19 @@ func (woc *wfOperationCtx) markAllContainersDeleted(ctx context.Context, nodeID 
 // failContainersWithoutStatus fails the container nodes of a failed containerSet pod
 // that have no container status, e.g. because kubelet rejected the pod at admission.
 // Otherwise they would stay Pending forever.
-func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, podNodeName, message string) {
-	if tmpl == nil || tmpl.ContainerSet == nil {
-		return
-	}
+func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod *apiv1.Pod, podNode *wfv1.NodeStatus, message string) {
 	reported := make(map[string]bool, len(pod.Status.ContainerStatuses))
 	for _, c := range pod.Status.ContainerStatuses {
-		reported[c.Name] = true
+		reported[fmt.Sprintf("%s.%s", podNode.Name, c.Name)] = true
 	}
-	for _, c := range tmpl.ContainerSet.GetContainers() {
-		if reported[c.Name] {
-			continue
+	var pending []string
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeContainer && node.BoundaryID == podNode.ID && !reported[node.Name] && !node.Fulfilled() {
+			pending = append(pending, node.Name)
 		}
-		ctrNodeName := fmt.Sprintf("%s.%s", podNodeName, c.Name)
-		if node, err := woc.wf.GetNodeByName(ctrNodeName); err == nil && !node.Fulfilled() {
-			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeFailed, message)
-		}
+	}
+	for _, name := range pending {
+		woc.markNodePhase(ctx, name, wfv1.NodeFailed, message)
 	}
 }
 
@@ -1682,7 +1679,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	}
 	if pod.Status.Phase == apiv1.PodFailed && !stoppedDaemon && updated.Phase != wfv1.NodePending {
-		woc.failContainersWithoutStatus(ctx, pod, tmpl, old.Name, updated.Message)
+		woc.failContainersWithoutStatus(ctx, pod, old, updated.Message)
 	}
 
 	// only update Pod IP for daemoned nodes to reduce number of updates
