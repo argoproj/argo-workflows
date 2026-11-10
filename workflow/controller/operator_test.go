@@ -5046,6 +5046,187 @@ spec:
       command: [sleep, "{{inputs.parameters.sleep_time}}"]
 `
 
+var retryTimeoutExpressionWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-expression-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "{{=(sprig.int(retries) + 1) * 10}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutLastRetryWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-lastretry-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "{{=lastRetry.status == 'Failed' ? '60s' : '30s'}}"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutSpacesWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-spaces-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{  retries  }}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryPendingTimeoutVarWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-pending-timeout-var-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "10s"
+    pendingTimeout: "1{{retries}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutVarWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-var-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{retries}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutSingleSpaceWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-space-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{ retries }}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+// retryTimeoutLockWf and retryPendingTimeoutLockWf wait for a mutex held by
+// another workflow, so their Retry node stays Pending while checkConstraints
+// parses its timeouts (issue #17314 rows 3 and 7).
+var retryTimeoutLockWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-timeout-waiter
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{retries}}s"
+    synchronization:
+      mutexes:
+      - name: retry-timeout-lock
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryPendingTimeoutLockWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-pending-timeout-waiter
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "10s"
+    pendingTimeout: "1{{retries}}s"
+    synchronization:
+      mutexes:
+      - name: retry-timeout-lock
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
@@ -5151,6 +5332,123 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, pods.Items)
 	})
+}
+
+// TestRetryTimeoutVariables covers issue #17314 rows 1, 2, 4, 5, 6 and 8: a
+// retry template whose timeout or pendingTimeout contains a retry-scoped
+// variable must run instead of failing the workflow with a parse error. The
+// check in checkConstraints resolves the timeouts with the first attempt's
+// values (retries=0), so the first pod's activeDeadlineSeconds is the resolved
+// timeout, give or take a second of truncation.
+func TestRetryTimeoutVariables(t *testing.T) {
+	tests := []struct {
+		name string
+		wf   string
+		// wantActiveDeadline is the timeout resolved with retries=0.
+		wantActiveDeadline int64
+	}{
+		{name: "RetriesVariable", wf: retryTimeoutVarWf, wantActiveDeadline: 10},
+		{name: "SingleSpace", wf: retryTimeoutSingleSpaceWf, wantActiveDeadline: 10},
+		{name: "MultipleSpaces", wf: retryTimeoutSpacesWf, wantActiveDeadline: 10},
+		{name: "Expression", wf: retryTimeoutExpressionWf, wantActiveDeadline: 10},
+		{name: "LastRetryExpression", wf: retryTimeoutLastRetryWf, wantActiveDeadline: 30},
+		{name: "PendingTimeoutVariable", wf: retryPendingTimeoutVarWf, wantActiveDeadline: 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(tt.wf)
+			cancel, controller := newController(logging.TestContext(t.Context()), wf)
+			defer cancel()
+
+			ctx := logging.TestContext(t.Context())
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			// the workflow runs instead of failing with a parse error
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+			// run again: the retry node must still be Running, not failed by
+			// the raw, unsubstituted timeout
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			retry := woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, retry)
+			assert.Equal(t, wfv1.NodeRunning, retry.Phase)
+
+			// the pod got the timeout resolved with the first attempt's values
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			require.NotNil(t, pods.Items[0].Spec.ActiveDeadlineSeconds)
+			assert.InDelta(t, tt.wantActiveDeadline, *pods.Items[0].Spec.ActiveDeadlineSeconds, 1)
+		})
+	}
+}
+
+// TestRetryTimeoutVarsWaitingForLock covers issue #17314 rows 3 and 7: while a
+// Retry node waits for a mutex held by another workflow, a retry variable in
+// timeout or pendingTimeout must be resolved with the first attempt's values
+// instead of failing the node with a parse error. The resolved timeout still
+// fires for the Pending node once it passes.
+func TestRetryTimeoutVarsWaitingForLock(t *testing.T) {
+	tests := []struct {
+		name string
+		wf   string
+	}{
+		{name: "TimeoutVar", wf: retryTimeoutLockWf},
+		{name: "PendingTimeoutVar", wf: retryPendingTimeoutLockWf},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx)
+			defer cancel()
+			controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+			}, workflowExistenceFunc, false)
+
+			// A second workflow holds the mutex for the whole test, so the
+			// Retry node really waits for the lock.
+			holder := wfv1.MustUnmarshalWorkflow(bareWfWithTmplMutex)
+			holder.Name = "retry-timeout-holder"
+			holder.Spec.Templates[0].Synchronization.Mutexes[0].Name = "retry-timeout-lock"
+			holder, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(holder.Namespace).Create(ctx, holder, metav1.CreateOptions{})
+			require.NoError(t, err)
+			wocHolder := newWorkflowOperationCtx(ctx, holder, controller)
+			wocHolder.operate(ctx)
+			require.NotNil(t, wocHolder.wf.Status.Synchronization)
+			require.Len(t, wocHolder.wf.Status.Synchronization.Mutex.Holding, 1)
+
+			wf := wfv1.MustUnmarshalWorkflow(tt.wf)
+			wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+			require.NoError(t, err)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+			// The second pass parses the Pending node's timeouts: the raw
+			// retry variables must not fail it with a parse error while it
+			// waits for the lock.
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			retry := woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, retry)
+			assert.Equal(t, wfv1.NodePending, retry.Phase)
+			assert.Contains(t, retry.Message, "Waiting for")
+
+			// Once resolved, the timeout still fires for the node waiting on
+			// the lock: 10s resolved from the first attempt's values, passed
+			// 11s ago.
+			retry.StartedAt = metav1.NewTime(time.Now().Add(-11 * time.Second))
+			woc.wf.Status.Nodes.Set(ctx, retry.ID, *retry)
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			retry = woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, retry)
+			assert.Equal(t, wfv1.NodeFailed, retry.Phase)
+			assert.Equal(t, ErrTimeout.Error(), retry.Message)
+		})
+	}
 }
 
 func TestStorageQuota(t *testing.T) {
@@ -10339,6 +10637,41 @@ func TestPendingTimeoutFailsNode(t *testing.T) {
 	node, err := woc.wf.GetNodeByName("hello-world-dag.dag1")
 	require.NoError(t, err)
 	node.StartedAt = metav1.NewTime(time.Now().Add(-3 * time.Second))
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	node, err = woc.wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, ErrTimeout.Error(), node.Message)
+}
+
+// TestTimeoutFailsPendingNodeBeforePendingTimeout is the mirror of
+// TestPendingTimeoutFailsNode: a template that sets both timeout and
+// pendingTimeout must fail a Pending node at the timeout, even when the
+// pendingTimeout is far beyond it. A regression skipped the timeout check for
+// every template with a pendingTimeout, leaving such a node Pending until the
+// pendingTimeout instead.
+func TestTimeoutFailsPendingNodeBeforePendingTimeout(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
+	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+	// a pendingTimeout far beyond the 4s timeout, so only the timeout can fail the node
+	wf.Spec.Templates[1].PendingTimeout = "1h"
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+
+	// timeout is 4s: start the node 5s ago rather than sleeping
+	node, err := woc.wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	node.StartedAt = metav1.NewTime(time.Now().Add(-5 * time.Second))
 	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
