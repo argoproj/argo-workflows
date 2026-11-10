@@ -10455,3 +10455,23 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
+
+func TestIsRetryAttemptName(t *testing.T) {
+	const step = "wf(0)[0].step"
+	for _, tt := range []struct {
+		name, node string
+		want       bool
+	}{
+		{"first attempt", step + "(0)", true},
+		{"multi-digit attempt", step + "(12)", true},
+		{"lifecycle hook", step + ".hooks.running", false},
+		{"exit hook", step + ".onExit", false},
+		{"hook's own attempt", step + ".hooks.running(0)", false},
+		{"not a number", step + "(x)", false},
+		{"no closing bracket", step + "(0", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isRetryAttemptName(step, tt.node))
+		})
+	}
+}

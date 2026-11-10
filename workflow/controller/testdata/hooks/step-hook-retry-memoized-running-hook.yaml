@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: step-hook-retry-memoized-running-hook
+  namespace: argo
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 1
+  templates:
+    - name: main
+      steps:
+        - - name: step
+            template: run
+            hooks:
+              running:
+                expression: steps.step.status == "Running"
+                template: hook
+    - name: run
+      container:
+        image: argoproj/argosay:v2
+    - name: hook
+      memoize:
+        key: step-hook-retry-memoized-running-hook
+        cache:
+          configMap:
+            name: step-hook-retry-memoized-running-hook
+      container:
+        image: argoproj/argosay:v2

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-hook-retry-running-hook
+  namespace: argo
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 1
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: task
+            template: run
+            hooks:
+              running:
+                expression: tasks.task.status == "Running"
+                template: hook
+    - name: run
+      container:
+        image: argoproj/argosay:v2
+    - name: hook
+      container:
+        image: argoproj/argosay:v2

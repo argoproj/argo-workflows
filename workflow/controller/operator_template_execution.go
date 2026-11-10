@@ -219,7 +219,8 @@ func (woc *wfOperationCtx) emitPassedAttemptMetrics(ctx context.Context, attempt
 
 // isRetryAttempt reports whether node is an attempt of a Retry node: named
 // "<retry node>(N)" and listed in that Retry node's children.
-// (NodeFlag.Retried does not tell: a Retry node can carry it too.)
+// (NodeFlag.Retried alone does not tell: a hook's Retry node saved by an
+// older controller can carry it too.)
 func (woc *wfOperationCtx) isRetryAttempt(node *wfv1.NodeStatus) bool {
 	open := strings.LastIndexByte(node.Name, '(')
 	if open < 0 || !strings.HasSuffix(node.Name, ")") {
@@ -245,12 +246,16 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	retryParentNode := node
 	if retryParentNode == nil {
 		woc.log.WithField("nodeName", retryNodeName).Debug(ctx, "Inject a retry node")
-		_, retryParentNode = woc.initializeExecutableNode(ctx, retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag.DeepCopy(), true)
+		_, retryParentNode = woc.initializeExecutableNode(ctx, retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
 	}
-	if opts.nodeFlag == nil {
-		opts.nodeFlag = &wfv1.NodeFlag{}
+	// The attempts get their own flag: sharing it would also flag the Retry
+	// node, which would then count as an attempt of its parent.
+	attemptFlag := opts.nodeFlag.DeepCopy()
+	if attemptFlag == nil {
+		attemptFlag = &wfv1.NodeFlag{}
 	}
-	opts.nodeFlag.Retried = true
+	attemptFlag.Retried = true
+	opts.nodeFlag = attemptFlag
 	processedRetryParentNode, continueExecution, err := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 	if err != nil {
 		return woc.markNodeError(ctx, retryNodeName, err), err
