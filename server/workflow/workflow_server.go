@@ -67,6 +67,7 @@ type workflowServer struct {
 	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
 	wfDefaults            namespacedefaults.Func
 	artifactRepositories  artifactrepositories.Interface
+	enumResolver          *enumResolver
 }
 
 var _ Server = &workflowServer{}
@@ -83,6 +84,7 @@ func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloa
 		cwftmplStore:          cwftmplStore,
 		wfDefaults:            wfDefaults,
 		artifactRepositories:  artifactRepositories,
+		enumResolver:          newEnumResolver(ctx),
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{

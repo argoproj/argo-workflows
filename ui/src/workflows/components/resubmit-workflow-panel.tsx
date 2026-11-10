@@ -60,7 +60,14 @@ export function ResubmitWorkflowPanel(props: Props) {
                 {overrideParameters && (
                     <div key='parameters' style={{marginBottom: 25}}>
                         <label>Parameters</label>
-                        {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
+                        {workflowParameters.length > 0 && (
+                            <ParametersInput
+                                namespace={props.workflow.metadata.namespace}
+                                source={{kind: 'Workflow', name: props.workflow.metadata.name}}
+                                parameters={workflowParameters}
+                                onChange={setWorkflowParameters}
+                            />
+                        )}
                         {workflowParameters.length === 0 && (
                             <>
                                 <br />

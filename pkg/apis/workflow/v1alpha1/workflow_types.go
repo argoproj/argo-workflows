@@ -1099,8 +1099,36 @@ type Parameter struct {
 	// +kubebuilder:validation:MinItems=1
 	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 
+	// EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum.
+	// You can't use it together with Enum.
+	EnumFrom *EnumFrom `json:"enumFrom,omitempty" protobuf:"bytes,8,opt,name=enumFrom"`
+
 	// Description is the parameter description
 	Description *AnyString `json:"description,omitempty" protobuf:"bytes,7,opt,name=description"`
+}
+
+// EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI
+// or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials.
+// It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.
+type EnumFrom struct {
+	// Resource is the kind of resource to list
+	Resource ResourceSelector `json:"resource" protobuf:"bytes,1,opt,name=resource"`
+	// JSONPath extracts the values from each listed resource, for example `{.metadata.name}`
+	JSONPath string `json:"jsonPath" protobuf:"bytes,2,opt,name=jsonPath"`
+	// LabelSelector filters the listed resources, for example `tier=web`.
+	// It may reference other workflow parameters, so the list can depend on another parameter's value.
+	LabelSelector string `json:"labelSelector,omitempty" protobuf:"bytes,3,opt,name=labelSelector"`
+}
+
+// ResourceSelector identifies the resources an EnumFrom lists
+type ResourceSelector struct {
+	// APIVersion of the resource, for example `v1` or `apps/v1`
+	APIVersion string `json:"apiVersion" protobuf:"bytes,1,opt,name=apiVersion"`
+	// Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.
+	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
+	// Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds.
+	// It may reference other workflow parameters, so the list can depend on another parameter's value.
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
