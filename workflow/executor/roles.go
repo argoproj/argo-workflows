@@ -134,4 +134,17 @@ var (
 		// marked complete: nothing is reported after that.
 		Finally: []Stage{removeTaskRoot, finalizeOutput},
 	}
+
+	// ResourceRole issues one resource task's request in the resource
+	// agent, whose informers then report the result.
+	ResourceRole = Role{
+		Name:   "resource",
+		Layout: LayoutResource,
+		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+			return we.Tracing.StartRunResourceTask(ctx, we.WorkflowName(), we.Namespace)
+		},
+		Run: func(ctx, _ context.Context, we *WorkflowExecutor) error {
+			return we.runResourceTask(ctx)
+		},
+	}
 )

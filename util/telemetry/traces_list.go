@@ -18,6 +18,7 @@ func AllNoParentSpans() Spans {
 }
 
 var Root = Spans{
+	&SpanRunResourceTask,
 	&SpanRunWorkerTask,
 	&SpanStartupController,
 	&SpanWorkflow,
@@ -427,6 +428,27 @@ func (t *Tracing) StartRunMainContainer(ctx context.Context, workflowName string
 		attribute.String(AttribWorkflowNamespace, workflowNamespace),
 	}
 	return t.tracer.Start(ctx, "runMainContainer", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
+}
+
+var SpanRunResourceTask = Span{
+	name: "runResourceTask",
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribWorkflowName,
+		},
+		{
+			name: AttribWorkflowNamespace,
+		},
+	},
+}
+
+// StartRunResourceTask starts a run_resource_task span
+func (t *Tracing) StartRunResourceTask(ctx context.Context, workflowName string, workflowNamespace string) (context.Context, trace.Span) {
+	attribs := []attribute.KeyValue{
+		attribute.String(AttribWorkflowName, workflowName),
+		attribute.String(AttribWorkflowNamespace, workflowNamespace),
+	}
+	return t.tracer.Start(ctx, "runResourceTask", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
 }
 
 var SpanRunSupervisorContainer = Span{

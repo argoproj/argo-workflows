@@ -618,6 +618,12 @@ spans:
     attributes:
       - name: WorkflowName
       - name: WorkflowNamespace
+  - name: RunResourceTask
+    description: Issue one resource task's request in the resource agent
+    root: true
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
   - name: RunSupervisorContainer
     description: Run the supervisor container of a workload (init-less mode)
     parents: [CreateWorkflowPod]
