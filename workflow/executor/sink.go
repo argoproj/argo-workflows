@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,14 +30,21 @@ type ResultSink interface {
 	// Start records an empty placeholder result, so the controller knows
 	// outputs are on their way.
 	Start(ctx context.Context) error
-	// Report merges r into the task's result: outputs, logs or a failure.
+	// Report merges r into the task's final result: outputs, logs or a
+	// failure. Finalize writes it, so a task's final result and its
+	// completion reach the API server in one write; once Finalize has
+	// run, Report writes r straight away.
 	Report(ctx context.Context, r wfv1.NodeResult) error
+	// Send writes r to the task's result straight away, leaving it
+	// incomplete. It is for a report that another process finalizes.
+	Send(ctx context.Context, r wfv1.NodeResult) error
 	// Progress records the task's progress. It retries only briefly: the
 	// next progress report sends the latest progress again.
 	Progress(ctx context.Context, progress wfv1.Progress) error
 	// Fail attributes a failure to the task.
 	Fail(ctx context.Context, err error)
-	// Finalize marks the task's outputs as completely reported.
+	// Finalize writes the reported result and marks the task's outputs as
+	// completely reported, in one write.
 	Finalize(ctx context.Context) error
 }
 
@@ -64,11 +73,17 @@ type taskResultSink struct {
 	// writeTerminate writes the pod's termination message.
 	writeTerminate func(msg string)
 
-	// mu guards failed and created: the deadline and progress goroutines
+	// mu guards the fields below: the deadline and progress goroutines
 	// report alongside the task's own flow.
 	mu      sync.Mutex
 	failed  bool
 	created bool
+	// final is the result Report has gathered for Finalize to write, nil
+	// if nothing was reported.
+	final *wfv1.NodeResult
+	// finalized is set once Finalize has run, after which Report writes
+	// straight away.
+	finalized bool
 }
 
 var _ ResultSink = &taskResultSink{}
@@ -99,6 +114,25 @@ func (s *taskResultSink) Start(ctx context.Context) error {
 }
 
 func (s *taskResultSink) Report(ctx context.Context, result wfv1.NodeResult) error {
+	s.mu.Lock()
+	if s.finalized {
+		s.mu.Unlock()
+		return s.write(ctx, s.retryTimeout, result)
+	}
+	defer s.mu.Unlock()
+	if s.final == nil {
+		s.final = result.DeepCopy()
+		return nil
+	}
+	merged, err := mergeResults(*s.final, result)
+	if err != nil {
+		return err
+	}
+	s.final = merged
+	return nil
+}
+
+func (s *taskResultSink) Send(ctx context.Context, result wfv1.NodeResult) error {
 	return s.write(ctx, s.retryTimeout, result)
 }
 
@@ -123,13 +157,55 @@ func (s *taskResultSink) Fail(ctx context.Context, err error) {
 	}
 }
 
+// Finalize writes the reported result together with the completed label,
+// or only the label if nothing was reported. If the API server rejects the
+// result itself, for instance as too large, it still marks the result
+// complete without it, so the controller isn't left waiting for outputs
+// that will never come, and returns the rejection.
 func (s *taskResultSink) Finalize(ctx context.Context) error {
+	s.mu.Lock()
+	final := s.final
+	s.final = nil
+	s.finalized = true
+	s.mu.Unlock()
+
+	if final == nil {
+		return s.writeCompleted(ctx, func(ctx context.Context) error {
+			return s.patch(ctx, wfv1.NodeResult{}, outputsCompletedLabels())
+		})
+	}
+	rejected := false
+	err := s.writeCompleted(ctx, func(ctx context.Context) error {
+		err := s.upsert(ctx, *final, outputsCompletedLabels())
+		rejected = err != nil && ctx.Err() == nil && !apierr.IsForbidden(err) && !errorsutil.IsTransientErr(ctx, err)
+		return err
+	})
+	if !rejected {
+		return err
+	}
+	logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "task result rejected, marking it complete without it")
+	fallback := wfv1.NodeResult{}
+	if s.recordFailure {
+		fallback.Phase = wfv1.NodeFailed
+		fallback.Message = fmt.Sprintf("failed to report outputs: %v", err)
+		if final.Phase == wfv1.NodeFailed {
+			fallback.Message = final.Message
+		}
+	}
+	if fallbackErr := s.writeCompleted(ctx, func(ctx context.Context) error {
+		return s.upsert(ctx, fallback, outputsCompletedLabels())
+	}); fallbackErr != nil {
+		return fallbackErr
+	}
+	return err
+}
+
+// writeCompleted retries op, a write that marks the result complete.
+func (s *taskResultSink) writeCompleted(ctx context.Context, op func(ctx context.Context) error) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	var count uint64
 	return s.retry(ctx, s.retryTimeout, func(ctx context.Context) error {
-		err := s.patchLabels(ctx, map[string]string{
-			common.LabelKeyReportOutputsCompleted: "true",
-		})
+		err := op(ctx)
 		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
 			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		} else if err != nil && count%20 == 0 {
@@ -146,7 +222,7 @@ func (s *taskResultSink) write(ctx context.Context, limit time.Duration, result 
 	var count uint64 // used to avoid spamming with these messages
 	logger := logging.RequireLoggerFromContext(ctx)
 	return s.retry(ctx, limit, func(ctx context.Context) error {
-		err := s.upsert(ctx, result)
+		err := s.upsert(ctx, result, nil)
 		if apierr.IsForbidden(err) {
 			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
 		} else if err != nil && count%20 == 0 {
@@ -192,22 +268,24 @@ func (s *taskResultSink) retry(ctx context.Context, limit time.Duration, op func
 	return err
 }
 
-func (s *taskResultSink) upsert(ctx context.Context, result wfv1.NodeResult) error {
+// upsert writes result to the task result, creating it if needed. labels
+// are merged into the task result's labels in the same write.
+func (s *taskResultSink) upsert(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.created {
-		err := s.create(ctx, result)
+		err := s.create(ctx, result, labels)
 		if apierr.IsAlreadyExists(err) {
-			return s.patch(ctx, result)
+			return s.patch(ctx, result, labels)
 		}
 		if err != nil {
 			return err
 		}
 	} else {
-		err := s.patch(ctx, result)
+		err := s.patch(ctx, result, labels)
 		if err != nil {
 			if apierr.IsNotFound(err) {
-				return s.create(ctx, result)
+				return s.create(ctx, result, labels)
 			}
 			return err
 		}
@@ -215,29 +293,12 @@ func (s *taskResultSink) upsert(ctx context.Context, result wfv1.NodeResult) err
 	return nil
 }
 
-func (s *taskResultSink) patch(ctx context.Context, result wfv1.NodeResult) error {
-	ctx, span := s.tracing.StartPatchTaskResult(ctx)
-	defer span.End()
-	data, err := json.Marshal(&wfv1.WorkflowTaskResult{NodeResult: result})
-	if err != nil {
-		return err
-	}
-	_, err = s.client.Patch(ctx,
-		s.nodeID,
-		types.MergePatchType,
-		data,
-		metav1.PatchOptions{},
-	)
-	return err
-}
-
-func (s *taskResultSink) patchLabels(ctx context.Context, labels map[string]string) error {
-	ctx, span := s.tracing.StartPatchTaskResultLabels(ctx)
+func (s *taskResultSink) patch(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	ctx, span := s.tracing.StartPatchTaskResult(ctx, marksCompleted(labels))
 	defer span.End()
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
-		},
+		ObjectMeta: metav1.ObjectMeta{Labels: labels},
+		NodeResult: result,
 	})
 	if err != nil {
 		return err
@@ -251,8 +312,8 @@ func (s *taskResultSink) patchLabels(ctx context.Context, labels map[string]stri
 	return err
 }
 
-func (s *taskResultSink) create(ctx context.Context, result wfv1.NodeResult) error {
-	ctx, span := s.tracing.StartCreateTaskResult(ctx)
+func (s *taskResultSink) create(ctx context.Context, result wfv1.NodeResult, labels map[string]string) error {
+	ctx, span := s.tracing.StartCreateTaskResult(ctx, marksCompleted(labels))
 	defer span.End()
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
@@ -268,6 +329,7 @@ func (s *taskResultSink) create(ctx context.Context, result wfv1.NodeResult) err
 		common.LabelKeyWorkflow:               s.workflow,
 		common.LabelKeyReportOutputsCompleted: "false",
 	})
+	maps.Copy(taskResult.Labels, labels)
 	taskResult.SetOwnerReferences([]metav1.OwnerReference{{
 		APIVersion: workflow.APIVersion,
 		Kind:       workflow.WorkflowKind,
@@ -284,4 +346,39 @@ func (s *taskResultSink) create(ctx context.Context, result wfv1.NodeResult) err
 	)
 	s.created = err == nil || apierr.IsAlreadyExists(err)
 	return err
+}
+
+// mergeResults returns b merged into a the way a JSON merge patch of b
+// would merge it into a task result holding a, so gathering reports for
+// one write ends as writing each in turn would have.
+func mergeResults(a, b wfv1.NodeResult) (*wfv1.NodeResult, error) {
+	doc, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	patch, err := json.Marshal(b)
+	if err != nil {
+		return nil, err
+	}
+	merged, err := jsonpatch.MergePatch(doc, patch)
+	if err != nil {
+		return nil, err
+	}
+	var result wfv1.NodeResult
+	if err := json.Unmarshal(merged, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// outputsCompletedLabels tells the controller that every output has been
+// reported to the task result.
+func outputsCompletedLabels() map[string]string {
+	return map[string]string{common.LabelKeyReportOutputsCompleted: "true"}
+}
+
+// marksCompleted says whether a write carrying labels marks the task
+// result complete.
+func marksCompleted(labels map[string]string) bool {
+	return labels[common.LabelKeyReportOutputsCompleted] == "true"
 }
