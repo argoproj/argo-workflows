@@ -1527,7 +1527,14 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Phase = wfv1.NodePending
 		updated.Message = getPendingReason(pod)
 		updated.Daemoned = nil
-		if old.Phase != updated.Phase || old.Message != updated.Message {
+		// Do not emit the pending metric / tracing span for a node that is
+		// already fulfilled: the guard below drops this assessment (a pod
+		// that has not finished must not demote a fulfilled node), so
+		// emitting here would record a phase change that never lands — and,
+		// for a node whose span already ended, ChangeNodePhase logs
+		// "tracing expect node for node phase failed" / "incorrect trace
+		// parentage" errors. See #17305 review (tayfunyasar).
+		if !old.Fulfilled() && (old.Phase != updated.Phase || old.Message != updated.Message) {
 			woc.controller.metrics.ChangePodPending(ctx, updated.Message, pod.Namespace)
 			namespacedName := woc.wf.Namespace + "/" + woc.wf.Name
 			woc.controller.tracing.ChangeNodePhase(ctx, namespacedName, updated.ID, updated.Phase, updated.Message)
