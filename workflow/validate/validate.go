@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sorting"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/git"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -787,6 +788,12 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	if art.Git != nil {
 		if art.Git.Repo == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s.git.repo is required", errPrefix)
+		}
+		// Placeholder repos are checked at load time, once their value is known.
+		if !strings.Contains(art.Git.Repo, "{{") {
+			if err := git.ValidateRepoURL(art.Git.Repo); err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "%s.git.repo: %s", errPrefix, err.Error())
+			}
 		}
 	}
 	if art.HDFS != nil {

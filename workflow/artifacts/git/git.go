@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -94,6 +95,9 @@ func (g *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 
 func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact, path string) error {
 	a := inputArtifact.Git
+	if err := ValidateRepoURL(a.Repo); err != nil {
+		return err
+	}
 
 	// Azure DevOps requires multi_ack* capabilities which go-git does not currently support
 	// Workaround: removing these from UnsupportedCapabilities allows clones to work (see https://github.com/go-git/go-git/pull/613)
@@ -130,7 +134,8 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	}
 
 	r, err := git.PlainClone(path, false, cloneOptions)
-	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
+	switch {
+	case errors.Is(err, transport.ErrEmptyRemoteRepository):
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "Cloned an empty repository")
 		var initErr error
 		r, initErr = git.PlainInit(path, false)
@@ -148,7 +153,11 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 			return fmt.Errorf("failed to create branch %q: %w", branchName, err)
 		}
 		return nil
-	} else if err != nil {
+	case errors.Is(err, exec.ErrNotFound):
+		// go-git clones local and file:// repos by running the git binary,
+		// which the executor image doesn't include.
+		return fmt.Errorf("failed to clone %q: local and file:// git repos need the git binary in the executor image: %w", a.Repo, err)
+	case err != nil:
 		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}
 	if len(a.Fetch) > 0 {
@@ -220,4 +229,21 @@ func (g *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifac
 
 func (g *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	return false, argoerrors.New(argoerrors.CodeNotImplemented, "IsDirectory currently unimplemented for Git")
+}
+
+// ValidateRepoURL rejects an SSH URL written as user@host/path instead of
+// user@host:path. go-git treats that form as a local path, and cloning it
+// fails with an unrelated error (e.g. "git: executable file not found").
+func ValidateRepoURL(repo string) error {
+	// An unparsable URL is left for go-git to report when it clones.
+	if ep, err := transport.NewEndpoint(repo); err != nil || ep.Protocol != "file" {
+		return nil //nolint:nilerr
+	}
+	host, path, found := strings.Cut(repo, "/")
+	if !found || !strings.Contains(host, "@") {
+		return nil
+	}
+	return argoerrors.Errorf(argoerrors.CodeBadRequest,
+		"git repo %q is not a valid SSH URL: use %q or %q",
+		repo, host+":"+path, "ssh://"+repo)
 }
