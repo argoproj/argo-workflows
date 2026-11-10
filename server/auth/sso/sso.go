@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso/clilogin"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
@@ -34,6 +35,9 @@ const (
 	issuer                              = "argo-server"                // the JWT issuer
 	secretName                          = "sso"                        // where we store SSO secret
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
+	// cliCookiePrefix marks a state cookie that holds a CLI login request rather
+	// than a final redirect path. It can't start a valid redirect path.
+	cliCookiePrefix = "cli."
 )
 
 // Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L14-L16
@@ -280,6 +284,22 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	if !isValidFinalRedirectURL(finalRedirectURL) {
 		finalRedirectURL = s.baseHRef
 	}
+	cookieValue := finalRedirectURL
+	cliRequest, err := clilogin.ParseRequest(r.URL.Query())
+	if err != nil {
+		s.logger.WithError(err).Warn(r.Context(), "rejected CLI login request")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if cliRequest != nil {
+		encoded, encodeErr := cliRequest.Encode()
+		if encodeErr != nil {
+			s.logger.WithError(encodeErr).Error(r.Context(), "failed to encode CLI login request")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		cookieValue = cliCookiePrefix + encoded
+	}
 	state, err := pkgrand.String(10)
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to create state")
@@ -288,7 +308,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    finalRedirectURL,
+		Value:    cookieValue,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -370,11 +390,12 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		groups = filteredGroups
 	}
 
+	expiry := time.Now().Add(s.expiry)
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
 			Subject: c.Subject,
-			Expiry:  jwt.NewNumericDate(time.Now().Add(s.expiry)),
+			Expiry:  jwt.NewNumericDate(expiry),
 		},
 		Groups:                  groups,
 		Email:                   c.Email,
@@ -392,13 +413,36 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	value := Prefix + raw
 	s.logger.Debug(r.Context(), "handing oauth2 callback")
-	authcookie.SetAuthCookie(w, value, s.baseHRef, time.Now().Add(s.expiry), s.secure)
+	authcookie.SetAuthCookie(w, value, s.baseHRef, expiry, s.secure)
+
+	if encoded, ok := strings.CutPrefix(cookie.Value, cliCookiePrefix); ok {
+		s.redirectToCLI(w, r, encoded, clilogin.Payload{Token: value, Expiry: expiry})
+		return
+	}
 
 	finalRedirectURL := cookie.Value
 	if !isValidFinalRedirectURL(cookie.Value) {
 		finalRedirectURL = s.baseHRef
 	}
 	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
+}
+
+// redirectToCLI hands the token to `argo auth login`, encrypted to the key the
+// CLI sent to HandleRedirect.
+func (s *sso) redirectToCLI(w http.ResponseWriter, r *http.Request, encodedRequest string, payload clilogin.Payload) {
+	cliRequest, err := clilogin.DecodeRequest(encodedRequest)
+	if err != nil {
+		s.logger.WithError(err).Error(r.Context(), "failed to decode CLI login request")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	location, err := cliRequest.Seal(payload)
+	if err != nil {
+		s.logger.WithError(err).Error(r.Context(), "failed to encrypt token for the CLI")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, location, http.StatusFound)
 }
 
 // isValidFinalRedirectURL checks whether the final redirect URL is safe.

@@ -7,6 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso/clilogin"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -362,4 +367,104 @@ func TestIsValidFinalRedirectURL(t *testing.T) {
 			assert.Equal(t, tc.expected, isValidFinalRedirectURL(tc.url))
 		})
 	}
+}
+
+func newConfiguredTestSso(t *testing.T) *sso {
+	t.Helper()
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	config := Config{
+		Issuer:       "https://test-issuer",
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+		RedirectURL:  "https://dummy",
+	}
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
+	require.NoError(t, err)
+	return ssoInterface.(*sso)
+}
+
+func cliLoginQuery(t *testing.T, session *clilogin.Session, redirect string) url.Values {
+	t.Helper()
+	params, err := session.Params(redirect)
+	require.NoError(t, err)
+	return params
+}
+
+func TestHandleRedirectStoresCLIRequest(t *testing.T) {
+	s := newConfiguredTestSso(t)
+	session, err := clilogin.NewSession()
+	require.NoError(t, err)
+	query := cliLoginQuery(t, session, "http://127.0.0.1:8085/callback")
+
+	w := httptest.NewRecorder()
+	s.HandleRedirect(w, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/oauth2/redirect?"+query.Encode(), nil))
+
+	require.Equal(t, http.StatusFound, w.Code)
+	cookies := w.Result().Cookies()
+	require.Len(t, cookies, 1)
+	encoded, ok := strings.CutPrefix(cookies[0].Value, cliCookiePrefix)
+	require.True(t, ok, "state cookie should hold the CLI request")
+	request, err := clilogin.DecodeRequest(encoded)
+	require.NoError(t, err)
+	assert.Equal(t, "http://127.0.0.1:8085/callback", request.RedirectURL)
+	assert.False(t, isValidFinalRedirectURL(cookies[0].Value), "a CLI request must never be followed as a redirect path")
+}
+
+func TestHandleRedirectRejectsNonLoopbackCLIRedirect(t *testing.T) {
+	s := newConfiguredTestSso(t)
+	session, err := clilogin.NewSession()
+	require.NoError(t, err)
+	query := cliLoginQuery(t, session, "http://evil.example.com:8085/callback")
+
+	w := httptest.NewRecorder()
+	s.HandleRedirect(w, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/oauth2/redirect?"+query.Encode(), nil))
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Empty(t, w.Result().Cookies())
+}
+
+func TestHandleRedirectWithoutCLIRequest(t *testing.T) {
+	s := newConfiguredTestSso(t)
+	w := httptest.NewRecorder()
+	s.HandleRedirect(w, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/oauth2/redirect?redirect=/workflows", nil))
+
+	require.Equal(t, http.StatusFound, w.Code)
+	cookies := w.Result().Cookies()
+	require.Len(t, cookies, 1)
+	assert.Equal(t, "/workflows", cookies[0].Value)
+}
+
+func TestRedirectToCLI(t *testing.T) {
+	s := newConfiguredTestSso(t)
+	session, err := clilogin.NewSession()
+	require.NoError(t, err)
+	request, err := clilogin.ParseRequest(cliLoginQuery(t, session, "http://127.0.0.1:8085/callback"))
+	require.NoError(t, err)
+	encoded, err := request.Encode()
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	expiry := time.Now().Add(time.Hour)
+	s.redirectToCLI(w, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/oauth2/callback", nil), encoded, clilogin.Payload{Token: Prefix + "abc", Expiry: expiry})
+
+	require.Equal(t, http.StatusFound, w.Code)
+	location, err := url.Parse(w.Header().Get("Location"))
+	require.NoError(t, err)
+	assert.Equal(t, "127.0.0.1:8085", location.Host)
+	payload, err := session.Open(location.Query())
+	require.NoError(t, err)
+	assert.Equal(t, Prefix+"abc", payload.Token)
+	assert.True(t, expiry.Equal(payload.Expiry))
+}
+
+func TestRedirectToCLIRejectsTamperedRequest(t *testing.T) {
+	s := newConfiguredTestSso(t)
+	tampered, err := (&clilogin.Request{RedirectURL: "http://evil.example.com:1/", State: strings.Repeat("a", 32), Key: "{}"}).Encode()
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	s.redirectToCLI(w, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/oauth2/callback", nil), tampered, clilogin.Payload{Token: "t"})
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Empty(t, w.Header().Get("Location"))
 }

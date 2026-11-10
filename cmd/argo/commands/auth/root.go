@@ -13,5 +13,7 @@ func NewAuthCommand() *cobra.Command {
 		},
 	}
 	command.AddCommand(NewTokenCommand())
+	command.AddCommand(NewLoginCommand())
+	command.AddCommand(NewLogoutCommand())
 	return command
 }

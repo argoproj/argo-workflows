@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	restclient "k8s.io/client-go/rest"
@@ -58,6 +59,24 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	return newAPIClient(ctx, func() string {
+		authString, err := GetAuthString(ctx)
+		if err != nil {
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.WithError(err).Error(ctx, "Failed to get auth string")
+			os.Exit(1)
+		}
+		return authString
+	})
+}
+
+// NewAPIClientWithAuth is like NewAPIClient, but authenticates with authString
+// instead of looking it up, e.g. to check a token before saving it.
+func NewAPIClientWithAuth(ctx context.Context, authString string) (context.Context, apiclient.Client, error) {
+	return newAPIClient(ctx, func() string { return authString })
+}
+
+func newAPIClient(ctx context.Context, authSupplier func() string) (context.Context, apiclient.Client, error) {
 	// Reuse the explicit kubectl client certificate flags in server mode.
 	ArgoServerOpts.ClientCert = overrides.AuthInfo.ClientCertificate
 	ArgoServerOpts.ClientKey = overrides.AuthInfo.ClientKey
@@ -76,17 +95,9 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 	}
 	return apiclient.NewClientFromOptsWithContext(ctx,
 		apiclient.Opts{
-			ArgoServerOpts: ArgoServerOpts,
-			InstanceID:     instanceID,
-			AuthSupplier: func() string {
-				authString, err := GetAuthString(ctx)
-				if err != nil {
-					logger := logging.RequireLoggerFromContext(ctx)
-					logger.WithError(err).Error(ctx, "Failed to get auth string")
-					os.Exit(1)
-				}
-				return authString
-			},
+			ArgoServerOpts:       ArgoServerOpts,
+			InstanceID:           instanceID,
+			AuthSupplier:         authSupplier,
 			ClientConfigSupplier: GetConfig,
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
@@ -118,6 +129,18 @@ func GetAuthString(ctx context.Context) (string, error) {
 	token, ok := os.LookupEnv("ARGO_TOKEN")
 	if ok {
 		return token, nil
+	}
+	if ArgoServerOpts.URL != "" {
+		stored, err := LoadToken(ServerKey())
+		if err != nil {
+			return "", err
+		}
+		if stored != nil {
+			if !stored.Expired(time.Now()) {
+				return stored.Token, nil
+			}
+			logging.RequireLoggerFromContext(ctx).Warn(ctx, "The token saved by `argo auth login` has expired. Run `argo auth login` again.")
+		}
 	}
 	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
