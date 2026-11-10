@@ -170,6 +170,26 @@ func Test_getIdentifiers(t *testing.T) {
 			expression: "flag ? item.bucket : ''",
 			want:       []string{"flag", "item", "item.bucket"},
 		},
+		{
+			// A key containing a dot joins to the same string as a nested
+			// access, so comparing the dotted path let `'a.b' in item` guard
+			// `item.a.b`, which it never tested for. The two differ only as
+			// segments: ["item","a.b"] against ["item","a","b"].
+			name:       "a dotted key does not guard the nested access it spells like",
+			expression: "'a.b' in item ? item.a.b : ''",
+			want:       []string{"item", "item.a", "item.a.b"},
+		},
+		{
+			name:       "the dotted key itself is still guarded",
+			expression: "'a.b' in item ? item['a.b'] : ''",
+			want:       []string{"item"},
+		},
+		{
+			// The mirror image: a nested test must not guard the dotted key.
+			name:       "a nested test does not guard the dotted key it spells like",
+			expression: "'b' in item.a ? item['a.b'] : ''",
+			want:       []string{"item", "item.a", "item.a.b"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

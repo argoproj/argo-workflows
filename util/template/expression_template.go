@@ -129,26 +129,38 @@ func (v *identifierVisitor) Visit(node *ast.Node) {
 }
 
 func getMemberPath(node *ast.MemberNode) (string, bool) {
+	segments, ok := memberSegments(node)
+	if !ok {
+		return "", false
+	}
+	return strings.Join(segments, "."), true
+}
+
+// memberSegments returns the access as its individual segments, base
+// identifier first. Compare these rather than the dotted join: a key that
+// itself contains a dot joins to the same string as a nested access, so
+// `item['a.b']` and `item.a.b` are indistinguishable once joined.
+func memberSegments(node *ast.MemberNode) ([]string, bool) {
 	var parts []string
 	curr := node
 	for {
 		if curr.Optional {
-			return "", false
+			return nil, false
 		}
 		prop, ok := curr.Property.(*ast.StringNode)
 		if !ok {
-			return "", false
+			return nil, false
 		}
 		parts = append([]string{prop.Value}, parts...)
 
 		if id, isIdent := curr.Node.(*ast.IdentifierNode); isIdent {
 			parts = append([]string{id.Value}, parts...)
-			return strings.Join(parts, "."), true
+			return parts, true
 		}
 
 		next, ok := curr.Node.(*ast.MemberNode)
 		if !ok {
-			return "", false
+			return nil, false
 		}
 		curr = next
 	}
@@ -182,36 +194,37 @@ func (v *guardVisitor) Visit(node *ast.Node) {
 		// other key of item, and the false branch never reads it at all.
 		if cond, ok := n.Cond.(*ast.BinaryNode); ok && cond.Operator == "in" {
 			key, keyOK := cond.Left.(*ast.StringNode)
-			base, baseOK := nodePath(cond.Right)
+			base, baseOK := nodeSegments(cond.Right)
 			if keyOK && baseOK {
-				ast.Walk(&n.Exp1, &pathMarker{guarded: v.guarded, path: base + "." + key.Value})
+				ast.Walk(&n.Exp1, &pathMarker{guarded: v.guarded, path: append(base, key.Value)})
 			}
 		}
 	}
 }
 
-// nodePath returns the dotted path an expression denotes, for the identifier
-// and member-chain forms getMemberPath already understands.
-func nodePath(node ast.Node) (string, bool) {
+// nodeSegments returns the segments an expression denotes, for the identifier
+// and member-chain forms memberSegments already understands.
+func nodeSegments(node ast.Node) ([]string, bool) {
 	switch n := node.(type) {
 	case *ast.IdentifierNode:
-		return n.Value, true
+		return []string{n.Value}, true
 	case *ast.MemberNode:
-		return getMemberPath(n)
+		return memberSegments(n)
 	}
-	return "", false
+	return nil, false
 }
 
 // pathMarker guards only the member nodes resolving to one exact path, unlike
-// memberMarker, which guards every member node it walks.
+// memberMarker, which guards every member node it walks. The path is held as
+// segments so that a key containing a dot only ever matches that same key.
 type pathMarker struct {
 	guarded map[ast.Node]bool
-	path    string
+	path    []string
 }
 
 func (m *pathMarker) Visit(node *ast.Node) {
 	if n, ok := (*node).(*ast.MemberNode); ok {
-		if path, ok := getMemberPath(n); ok && path == m.path {
+		if segments, ok := memberSegments(n); ok && slices.Equal(segments, m.path) {
 			m.guarded[*node] = true
 		}
 	}
