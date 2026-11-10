@@ -29,6 +29,13 @@ flowchart TD
     RunAgentTask[<a href='#run_agent_task'>run_agent_task</a>]
 ```
 
+### Trace: `RunResourceTask`
+
+```mermaid
+flowchart TD
+    RunResourceTask[<a href='#run_resource_task'>run_resource_task</a>]
+```
+
 ### Trace: `RunWorkerTask`
 
 ```mermaid
@@ -278,6 +285,15 @@ Run the init container of a workload.
 #### `run_main_container`
 
 Run the main container of a workload.
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
+
+#### `run_resource_task`
+
+Issue one resource task's request in the resource agent.
 
 |  attribute  |              explanation              |
 |-------------|---------------------------------------|
