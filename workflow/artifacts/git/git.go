@@ -156,7 +156,7 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	case errors.Is(err, exec.ErrNotFound):
 		// go-git clones local and file:// repos by running the git binary,
 		// which the executor image doesn't include.
-		return fmt.Errorf("failed to clone %q: local and file:// git repos need the git binary in the executor image: %w", a.Repo, err)
+		return fmt.Errorf("failed to clone %q: file:// or local-path URL detected, an executor image with the git binary must be used: %w", a.Repo, err)
 	case err != nil:
 		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}

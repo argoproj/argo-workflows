@@ -789,7 +789,7 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 		if art.Git.Repo == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s.git.repo is required", errPrefix)
 		}
-		// Placeholder repos are checked at load time, once their value is known.
+		// Skip {{...}} placeholders: the git driver validates the resolved URL in Load.
 		if !strings.Contains(art.Git.Repo, "{{") {
 			if err := git.ValidateRepoURL(art.Git.Repo); err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "%s.git.repo: %s", errPrefix, err.Error())

@@ -245,6 +245,6 @@ func TestGitArtifactDriver_Load_LocalRepoWithoutGitBinary(t *testing.T) {
 	t.Setenv("PATH", "")
 	driver := &ArtifactDriver{}
 	err := load(t, driver, &wfv1.GitArtifact{Repo: "file:///srv/repo"})
-	require.ErrorContains(t, err, "need the git binary in the executor image")
+	require.ErrorContains(t, err, "file:// or local-path URL detected, an executor image with the git binary must be used")
 	require.ErrorIs(t, err, exec.ErrNotFound)
 }
