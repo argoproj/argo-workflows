@@ -218,6 +218,132 @@ func Test_createAgentPod_alreadyExists(t *testing.T) {
 	assert.Equal(t, podName, pod.Name)
 }
 
+// templateDefaults applies to the agent pod too. Fixes #15869: createAgentPod
+// passed a bare wfv1.Template{} to addSchedulingConstraints and addMetadata, so
+// nothing a user set in templateDefaults ever reached the agent pod that runs
+// their http and plugin nodes.
+func Test_createAgentPod_templateDefaults(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		NodeSelector:      map[string]string{"workload": "agent"},
+		SchedulerName:     "custom-scheduler",
+		PriorityClassName: "high-priority",
+		Tolerations: []apiv1.Toleration{{
+			Key:      "dedicated",
+			Operator: apiv1.TolerationOpEqual,
+			Value:    "argo",
+			Effect:   apiv1.TaintEffectNoSchedule,
+		}},
+		Metadata: wfv1.Metadata{
+			Labels:      map[string]string{"team": "platform"},
+			Annotations: map[string]string{"owner": "platform"},
+		},
+		// A container default must NOT leak in: the agent runs the controller's
+		// executor image, and one agent pod is shared by every http and plugin
+		// node in the workflow, so a per-template container default is meaningless here.
+		Container: &apiv1.Container{Image: "should-not-be-used"},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	assert.Equal(t, map[string]string{"workload": "agent"}, pod.Spec.NodeSelector)
+	assert.Equal(t, "custom-scheduler", pod.Spec.SchedulerName)
+	assert.Equal(t, "high-priority", pod.Spec.PriorityClassName)
+	require.Len(t, pod.Spec.Tolerations, 1)
+	assert.Equal(t, "dedicated", pod.Spec.Tolerations[0].Key)
+	assert.Equal(t, "platform", pod.Labels["team"])
+	assert.Equal(t, "platform", pod.Annotations["owner"])
+
+	for _, c := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
+		assert.NotEqual(t, "should-not-be-used", c.Image,
+			"container templateDefaults must not reach the agent pod (container %q)", c.Name)
+	}
+}
+
+// A node-scoped placeholder in templateDefaults metadata has nothing to resolve
+// against on a pod shared by every http and plugin node. Left in place,
+// "{{pod.name}}" is not a legal label value and the API rejects the whole agent
+// pod, so the workflow's http nodes never run at all.
+func Test_createAgentPod_dropsNodeScopedMetadata(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		Metadata: wfv1.Metadata{
+			Labels:      map[string]string{"pod": "{{pod.name}}", "team": "platform"},
+			Annotations: map[string]string{"task": "{{node.taskName}}", "owner": "platform"},
+		},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	assert.NotContains(t, pod.Labels, "pod", "a node-scoped label must not reach the agent pod")
+	assert.NotContains(t, pod.Annotations, "task", "a node-scoped annotation must not reach the agent pod")
+	assert.Equal(t, "platform", pod.Labels["team"], "the resolvable entries still apply")
+	assert.Equal(t, "platform", pod.Annotations["owner"])
+}
+
+// A securityContext from templateDefaults must not cost the agent pod its
+// hardening floor. applySchedulingConstraints assigns the supplied context
+// outright, so before keepAgentPodSecurityFloor a default that set only fsGroup
+// took RuntimeDefault away from every executor plugin sidecar in the pod --
+// a sidecar that declares no seccomp profile of its own inherits the pod's.
+func Test_createAgentPod_securityContextKeepsTheFloor(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/agent-task-set-workflow.yaml")
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		SecurityContext: &apiv1.PodSecurityContext{FSGroup: new(int64(2000))},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+	require.NotNil(t, pod.Spec.SecurityContext)
+
+	assert.Equal(t, int64(2000), *pod.Spec.SecurityContext.FSGroup,
+		"the supplied field must still be applied")
+	require.NotNil(t, pod.Spec.SecurityContext.SeccompProfile,
+		"the agent pod must keep a seccomp profile its plugin sidecars inherit")
+	assert.Equal(t, apiv1.SeccompProfileTypeRuntimeDefault, pod.Spec.SecurityContext.SeccompProfile.Type)
+	require.NotNil(t, pod.Spec.SecurityContext.RunAsNonRoot)
+	assert.True(t, *pod.Spec.SecurityContext.RunAsNonRoot)
+}
+
+// The floor fills nil fields, it does not overrule a decision. Someone who
+// explicitly asks for the agent pod to run as root has said so, and getting
+// RunAsNonRoot back silently would be worse than refusing outright.
+func Test_keepAgentPodSecurityFloor_doesNotOverrideAnExplicitValue(t *testing.T) {
+	spec := &apiv1.PodSpec{SecurityContext: &apiv1.PodSecurityContext{
+		RunAsNonRoot:   new(false),
+		SeccompProfile: &apiv1.SeccompProfile{Type: apiv1.SeccompProfileTypeUnconfined},
+	}}
+
+	keepAgentPodSecurityFloor(spec)
+
+	require.NotNil(t, spec.SecurityContext.RunAsNonRoot)
+	assert.False(t, *spec.SecurityContext.RunAsNonRoot, "an explicit false must survive")
+	assert.Equal(t, apiv1.SeccompProfileTypeUnconfined, spec.SecurityContext.SeccompProfile.Type,
+		"an explicit Unconfined must survive")
+	require.NotNil(t, spec.SecurityContext.RunAsUser, "the unset field still gets the floor")
+	assert.Equal(t, int64(8737), *spec.SecurityContext.RunAsUser)
+}
+
 func TestDisableAgentPodCreation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/agent/disable-agent-pod-creation.yaml")
