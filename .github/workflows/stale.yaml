@@ -34,7 +34,7 @@ jobs:
           days-before-stale: 14 # 2 weeks of inactivity
           days-before-close: 14 # 2 more weeks of inactivity
           # labels to watch for, add, and remove
-          any-of-labels: 'problem/more information needed,problem/stale' # only process issues/PRs that have at least one of these labels
+          any-of-labels: 'problem/more information needed,problem/stale,problem/old draft' # only process issues/PRs that have at least one of these labels
           labels-to-remove-when-unstale: 'problem/more information needed' # remove label when unstale -- should be manually added back if information is insufficient
           stale-issue-label: 'problem/stale'
           stale-pr-label: 'problem/stale'
