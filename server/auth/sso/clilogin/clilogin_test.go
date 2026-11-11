@@ -18,6 +18,9 @@ import (
 
 const loopback = "http://127.0.0.1:8085/callback"
 
+// secretToken is long and distinctive, so it can't appear in the ciphertext by chance.
+const secretToken = "Bearer v2:plaintext-token-that-must-never-appear-in-the-url"
+
 func newRequest(t *testing.T, s *Session, redirect string) *Request {
 	t.Helper()
 	params, err := s.Params(redirect)
@@ -41,17 +44,18 @@ func TestRoundTrip(t *testing.T) {
 	assert.Equal(t, r, decoded)
 
 	expiry := time.Now().Add(time.Hour).Truncate(time.Second).UTC()
-	location, err := decoded.Seal(Payload{Token: "Bearer v2:abc", Expiry: expiry})
+	location, err := decoded.Seal(Payload{Token: secretToken, Expiry: expiry})
 	require.NoError(t, err)
 	u, err := url.Parse(location)
 	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1:8085", u.Host)
 	assert.Equal(t, "/callback", u.Path)
-	assert.NotContains(t, location, "abc", "the token must not be in plaintext")
+	assert.NotContains(t, location, secretToken, "the token must not be in plaintext")
+	assert.NotContains(t, location, url.QueryEscape(secretToken), "the token must not be in plaintext")
 
 	p, err := s.Open(u.Query())
 	require.NoError(t, err)
-	assert.Equal(t, "Bearer v2:abc", p.Token)
+	assert.Equal(t, secretToken, p.Token)
 	assert.True(t, expiry.Equal(p.Expiry))
 }
 

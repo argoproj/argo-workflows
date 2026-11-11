@@ -309,7 +309,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
 		Value:    cookieValue,
-		Expires:  time.Now().Add(3 * time.Minute),
+		Expires:  time.Now().Add(clilogin.LoginStateLifetime),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,

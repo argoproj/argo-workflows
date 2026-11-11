@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -130,7 +131,7 @@ func TestNormalizeToken(t *testing.T) {
 			assert.Equal(t, want, got)
 		})
 	}
-	for _, input := range []string{"", "   ", "''", "not a token"} {
+	for _, input := range []string{"", "   ", "''", "not a token", "bad", "Bearer bad", "Bearer eyJhbGciOi.k8s.token", "Basic YWRtaW46cGFzcw=="} {
 		t.Run("rejects "+input, func(t *testing.T) {
 			_, err := normalizeToken(input)
 			require.Error(t, err)
@@ -144,4 +145,33 @@ func get(ctx context.Context, u string) (*http.Response, error) {
 		return nil, err
 	}
 	return http.DefaultClient.Do(req)
+}
+
+func TestCheckTokenRejectsNonSSOTokens(t *testing.T) {
+	// A non-SSO token would pass as the server's identity on a server that
+	// also allows the `server` auth mode, so it's rejected before any request.
+	for _, token := range []string{"Bearer bad", "Bearer eyJhbGciOi.k8s.token", "Basic YWRtaW46cGFzcw=="} {
+		_, err := checkToken(logging.TestContext(t.Context()), token)
+		require.ErrorContains(t, err, "isn't an Argo Server SSO token")
+	}
+}
+
+func TestLoginTimeoutLimitedToLoginState(t *testing.T) {
+	original := client.ArgoServerOpts
+	t.Cleanup(func() { client.ArgoServerOpts = original })
+	client.ArgoServerOpts.URL = "argo.example.com:443"
+	stubBrowser(t, func(context.Context, string) error {
+		t.Fatal("the login must not start with an invalid --timeout")
+		return nil
+	})
+	for _, timeout := range []string{"0s", "-1m", "3m1s", "10m"} {
+		t.Run(timeout, func(t *testing.T) {
+			cmd := NewLoginCommand()
+			cmd.SetArgs([]string{"--timeout", timeout})
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			require.ErrorContains(t, cmd.ExecuteContext(logging.TestContext(t.Context())), "--timeout")
+		})
+	}
+	assert.Equal(t, clilogin.LoginStateLifetime.String(), NewLoginCommand().Flags().Lookup("timeout").DefValue)
 }

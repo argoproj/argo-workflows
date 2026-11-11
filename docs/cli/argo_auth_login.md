@@ -8,12 +8,13 @@ Log in to an Argo Server that uses SSO, and save the token for later commands.
 
 By default, the CLI opens your browser at the Argo Server's SSO login page and listens on a loopback port for the result.
 The Argo Server encrypts the token to a key that only this command holds.
+The login must finish within 3 minutes, because the Argo Server's login state expires then.
 
-With --paste, the CLI prints the login URL instead and you paste the token from the User Info page of the UI.
-Use --paste when your browser runs on a different machine, for example over SSH.
+With --paste, the browser login ends on the User Info page of the UI instead, and you paste the token from that page.
+Use --paste when your browser runs on a different machine, for example over SSH, and add --no-browser to only print the login URL.
 
 The CLI saves the token for the server given by --argo-server, --argo-base-href and --secure.
-Later commands use the saved token when ARGO_TOKEN isn't set.
+Later commands for that server use the saved token when ARGO_TOKEN isn't set.
 "argo auth token" prints it, so other tools can use it too.
 
 ```
@@ -27,10 +28,10 @@ argo auth login [flags]
   argo auth login --argo-server argo.example.com:443
 
 # Log in from a machine without a browser
-  argo auth login --argo-server argo.example.com:443 --paste
+  argo auth login --argo-server argo.example.com:443 --paste --no-browser
 
 # Use the saved token with another tool
-  curl -H "Authorization: $(argo auth token)" https://argo.example.com/api/v1/userinfo
+  curl -H "Authorization: $(argo auth token --argo-server argo.example.com:443)" https://argo.example.com/api/v1/userinfo
 ```
 
 ### Options
@@ -39,7 +40,7 @@ argo auth login [flags]
   -h, --help               help for login
       --no-browser         Print the login URL without opening a browser
       --paste              Paste the token from the UI instead of receiving it on a loopback port
-      --timeout duration   How long to wait for the browser login to finish (default 5m0s)
+      --timeout duration   How long to wait for the browser login to finish, at most 3m (default 3m0s)
 ```
 
 ### Options inherited from parent commands

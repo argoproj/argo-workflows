@@ -39,6 +39,10 @@ const (
 	ResponseParamToken = "token"
 )
 
+// LoginStateLifetime is how long the Argo Server keeps the state cookie for an
+// SSO login, so a login must finish within it.
+const LoginStateLifetime = 3 * time.Minute
+
 const (
 	keyAlgorithm      = jose.ECDH_ES_A256KW
 	contentEncryption = jose.A256GCM

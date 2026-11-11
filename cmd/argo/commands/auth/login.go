@@ -22,6 +22,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
 	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso/clilogin"
 )
 
@@ -62,25 +63,29 @@ func NewLoginCommand() *cobra.Command {
 
 By default, the CLI opens your browser at the Argo Server's SSO login page and listens on a loopback port for the result.
 The Argo Server encrypts the token to a key that only this command holds.
+The login must finish within 3 minutes, because the Argo Server's login state expires then.
 
-With --paste, the CLI prints the login URL instead and you paste the token from the User Info page of the UI.
-Use --paste when your browser runs on a different machine, for example over SSH.
+With --paste, the browser login ends on the User Info page of the UI instead, and you paste the token from that page.
+Use --paste when your browser runs on a different machine, for example over SSH, and add --no-browser to only print the login URL.
 
 The CLI saves the token for the server given by --argo-server, --argo-base-href and --secure.
-Later commands use the saved token when ARGO_TOKEN isn't set.
+Later commands for that server use the saved token when ARGO_TOKEN isn't set.
 "argo auth token" prints it, so other tools can use it too.`,
 		Example: `# Log in with your browser
   argo auth login --argo-server argo.example.com:443
 
 # Log in from a machine without a browser
-  argo auth login --argo-server argo.example.com:443 --paste
+  argo auth login --argo-server argo.example.com:443 --paste --no-browser
 
 # Use the saved token with another tool
-  curl -H "Authorization: $(argo auth token)" https://argo.example.com/api/v1/userinfo`,
+  curl -H "Authorization: $(argo auth token --argo-server argo.example.com:443)" https://argo.example.com/api/v1/userinfo`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if client.ArgoServerOpts.URL == "" {
 				return errors.New("argo auth login needs the Argo Server address: use --argo-server or set ARGO_SERVER")
+			}
+			if timeout <= 0 || timeout > clilogin.LoginStateLifetime {
+				return fmt.Errorf("--timeout must be more than 0 and at most %s, how long the Argo Server keeps the login state", clilogin.LoginStateLifetime)
 			}
 			ctx := cmd.Context()
 			server := client.ServerKey()
@@ -111,13 +116,22 @@ Later commands use the saved token when ARGO_TOKEN isn't set.
 	}
 	command.Flags().BoolVar(&paste, "paste", false, "Paste the token from the UI instead of receiving it on a loopback port")
 	command.Flags().BoolVar(&noBrowser, "no-browser", false, "Print the login URL without opening a browser")
-	command.Flags().DurationVar(&timeout, "timeout", 5*time.Minute, "How long to wait for the browser login to finish")
+	command.Flags().DurationVar(&timeout, "timeout", clilogin.LoginStateLifetime, "How long to wait for the browser login to finish, at most 3m")
 	return command
 }
 
+// tokenCheckTimeout bounds the call that checks a token before it is saved.
+const tokenCheckTimeout = 30 * time.Second
+
 // checkToken asks the Argo Server who the token belongs to, so that a bad token
-// is never saved.
+// is never saved. It only accepts SSO tokens: on a server that also allows the
+// `server` auth mode, any other value would pass as the server's identity.
 func checkToken(ctx context.Context, token string) (string, error) {
+	if !strings.HasPrefix(token, sso.Prefix) {
+		return "", errors.New("that isn't an Argo Server SSO token, which starts with \"" + sso.Prefix + "\"")
+	}
+	ctx, cancel := context.WithTimeout(ctx, tokenCheckTimeout)
+	defer cancel()
 	ctx, apiClient, err := client.NewAPIClientWithAuth(ctx, token)
 	if err != nil {
 		return "", err
@@ -238,6 +252,9 @@ func normalizeToken(s string) (string, error) {
 	}
 	if !strings.HasPrefix(s, "Bearer ") {
 		s = "Bearer " + s
+	}
+	if !strings.HasPrefix(s, sso.Prefix) {
+		return "", errors.New("that isn't an Argo Server SSO token: copy the ARGO_TOKEN value from the User Info page, which starts with \"" + sso.Prefix + "\"")
 	}
 	return s, nil
 }
