@@ -113,9 +113,9 @@ This is an [expr expression](variables.md#expression) with access to the followi
     expression: lastRetry.message matches 'imminent node shutdown|pod deleted'
     ```
 
-If `expression` evaluates to false, the controller does not retry the step.
+If `expression` evaluates to false, the controller does not retry the step or task.
 
-If the controller cannot evaluate `expression`, it does not retry the step.
+If the controller cannot evaluate `expression`, it does not retry the step or task.
 The retried node ends `Error`, and its message is the error from the expression.
 The last attempt keeps its own phase, for example `Failed`.
 

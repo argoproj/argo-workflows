@@ -6,7 +6,7 @@ A [`LifecycleHook`](fields.md#lifecyclehook) triggers an action based on a condi
 It is configured either at the workflow-level or template-level, for instance as a function of the `workflow.status` or `steps.status`, respectively.
 A `LifecycleHook` executes during execution time, at most once for the workflow, step or task it is attached to.
 An expanded step or DAG task (one with `withItems`, `withParam` or `withSequence`) runs its hooks once for each item.
-So a hook's arguments can use `{{item}}`.
+So a hook's `arguments` can use `{{item}}`.
 The hook runs in parallel to its step or template once the expression is satisfied.
 
 In other words, a `LifecycleHook` functions like an [exit handler](https://github.com/argoproj/argo-workflows/blob/main/examples/exit-handlers.yaml) with a conditional expression. You must not name a `LifecycleHook` `exit` or it becomes an exit handler; otherwise the hook name has no relevance.
@@ -81,7 +81,7 @@ In a DAG template, they can depend on the task names, and on the order of `targe
 
 If another step or task had already failed or errored, the template ends with that failure's phase and message instead.
 
-A hook that runs and ends `Failed` is ignored.
+The controller ignores a hook that runs and ends `Failed`.
 
 ### Workflow-level hooks and `onExit`
 
