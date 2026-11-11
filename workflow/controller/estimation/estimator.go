@@ -34,8 +34,9 @@ func (e *estimator) EstimateNodeDuration(ctx context.Context, nodeName string) w
 	node, err := e.baselineWF.GetNodeByName(oldNodeName)
 	if err != nil {
 		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithField("nodeName", oldNodeName).Error(ctx, "was unable to obtain node for nodeName")
-		// inacurate but not going to break anything
+		// The baseline workflow need not have run this node, so this is expected:
+		// the estimate is inaccurate but not going to break anything.
+		logger.WithField("nodeName", oldNodeName).Debug(ctx, "was unable to obtain node for nodeName")
 		return 0
 	}
 	return wfv1.NewEstimatedDuration(node.GetDuration())
