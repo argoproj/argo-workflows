@@ -2,8 +2,8 @@
 
 You can backfill in two ways:
 
-* Run [`argo cron backfill`](#backfill-with-the-cli), available in v3.7 and later.
-* Write [a workflow that runs the backfill](#backfill-with-a-workflow).
+* Run [`argo cron backfill`](#backfill-with-the-cli).
+* Write [a workflow that runs the backfill](#backfill-with-a-workflow), if the CronWorkflow has more than one schedule or you don't want the backfilled workflows to count as its runs.
 
 ## Use Case
 
@@ -11,7 +11,7 @@ You can backfill in two ways:
 
 ## Backfill with the CLI
 
-`argo cron backfill` creates one workflow for each time the CronWorkflow's schedule would have run between a start and an end time.
+`argo cron backfill` creates one workflow for each time the CronWorkflow's schedule would have run between `--start` and `--end`, which defaults to now.
 Each workflow receives its scheduled time as a parameter.
 The [CLI reference](cli/argo_cron_backfill.md) lists every flag and its default.
 
@@ -104,6 +104,10 @@ argo cron backfill daily-job --argname date \
   --end 2024-10-24T00:00:00-05:00
 ```
 
+A numeric offset is a fixed zone that doesn't follow daylight saving time.
+If the backfill period crosses a daylight saving change, the scheduled times after the change are an hour away from the local time you expect.
+Only `--start` sets the zone; `--end` only marks where the period ends.
+
 The parameter value always uses Go's default time format, `2006-01-02 15:04:05 -0700 MST`, whatever you set `--format` to.
 In a backfilled workflow `{{workflow.scheduledTime}}` is the time you ran the command, so read the scheduled time from the parameter.
 
@@ -122,7 +126,9 @@ The flag doesn't cap the total number of workflows the command creates.
 
 Without `--parallel`, every backfilled workflow holds a [mutex](synchronization.md) named after `--name`, so they run one at a time.
 They don't necessarily run in date order.
-With `--parallel`, they all run at once, subject to your [parallelism](parallelism.md) settings.
+The mutex replaces any `synchronization` in the CronWorkflow's `spec.workflowSpec`, so the backfilled workflows don't hold a mutex or semaphore set there.
+The command also sets their `priority` to the maximum value.
+With `--parallel`, the command leaves `synchronization` and `priority` as they are, and the workflows all run at once, subject to your [parallelism](parallelism.md) settings.
 
 To see a backfill's progress:
 
@@ -133,8 +139,11 @@ argo list -l workflows.argoproj.io/backfill=daily-job
 The backfill workflow runs with the namespace's default service account, or the one set in your [default workflow spec](default-workflow-specs.md).
 That service account needs permission to create and get workflows, as well as the [permissions every workflow needs](workflow-rbac.md).
 
-If a backfilled workflow fails, its step keeps waiting, and the backfill workflow never finishes.
-Stop it with `argo stop`; the workflows it has already created keep running.
+If a backfilled workflow fails, its step keeps waiting for as long as the failed workflow exists.
+The CronWorkflow keeps its most recent failed workflows, up to `failedJobsHistoryLimit`, which defaults to 1.
+So after a single failure the backfill workflow never finishes.
+When a later workflow of the CronWorkflow fails, the controller deletes the earlier failed one, and the step waiting on it errors.
+Stop a backfill workflow that is stuck waiting with `argo stop`; the workflows it has already created keep running.
 
 ### Interaction with the CronWorkflow
 
@@ -145,6 +154,10 @@ Backfilled workflows carry the `workflows.argoproj.io/cron-workflow` label and a
 * With `concurrencyPolicy: Forbid`, the controller skips a scheduled run while any backfilled workflow is running.
 * With `concurrencyPolicy: Replace`, the next scheduled run terminates any running backfilled workflows.
 * Deleting the CronWorkflow deletes the backfilled workflows.
+* They count towards `cronworkflow.succeeded` and `cronworkflow.failed`, so they can trigger a [`stopStrategy.expression`](cron-workflows.md#automatically-stopping-a-cronworkflow) and stop the CronWorkflow.
+
+The controller notices a backfilled workflow the next time it syncs CronWorkflows, every 10 seconds by default.
+Until then `concurrencyPolicy` doesn't take that workflow into account.
 
 ## Backfill with a Workflow
 
