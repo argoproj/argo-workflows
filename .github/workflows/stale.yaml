@@ -16,6 +16,7 @@ env:
 jobs:
   stale:
     permissions:
+      actions: write # for reading and replacing the saved state cache
       issues: write # for commenting on an issue and editing labels
       pull-requests: write # for commenting on a PR and editing labels
     runs-on: ubuntu-24.04
