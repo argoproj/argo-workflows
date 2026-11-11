@@ -116,6 +116,7 @@ jobs:
               - .features/**
               # plus lint config
               - .golangci.yml
+              - .custom-gcl.yml
               # all GH workflows / actions
               - .github/workflows/**
               # docs files below
