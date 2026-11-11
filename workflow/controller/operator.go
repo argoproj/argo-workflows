@@ -1527,14 +1527,17 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Phase = wfv1.NodePending
 		updated.Message = getPendingReason(pod)
 		updated.Daemoned = nil
-		// Do not emit the pending metric / tracing span for a node that is
-		// already fulfilled: the guard below drops this assessment (a pod
-		// that has not finished must not demote a fulfilled node), so
-		// emitting here would record a phase change that never lands — and,
-		// for a node whose span already ended, ChangeNodePhase logs
-		// "tracing expect node for node phase failed" / "incorrect trace
-		// parentage" errors. See #17305 review (tayfunyasar).
-		if !old.Fulfilled() && (old.Phase != updated.Phase || old.Message != updated.Message) {
+		// Do not emit the pending metric / tracing span for a node that
+		// already reached a terminal phase: the guard below drops this
+		// assessment (a pod that has not finished must not demote a
+		// completed node), so emitting here would record a phase change
+		// that never lands — and, for a node whose span already ended,
+		// ChangeNodePhase logs "tracing expect node for node phase
+		// failed" / "incorrect trace parentage" errors. The phase is
+		// checked on its own because Fulfilled() is false while task
+		// results are still syncing, and a completed phase must not
+		// emit either. See #17305 review (tayfunyasar).
+		if !old.Fulfilled() && !old.Phase.Completed() && (old.Phase != updated.Phase || old.Message != updated.Message) {
 			woc.controller.metrics.ChangePodPending(ctx, updated.Message, pod.Namespace)
 			namespacedName := woc.wf.Namespace + "/" + woc.wf.Name
 			woc.controller.tracing.ChangeNodePhase(ctx, namespacedName, updated.ID, updated.Phase, updated.Message)
@@ -1628,9 +1631,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// be seen Pending (or Running, for a deadline) while it terminates;
 	// assessing that pod would resurrect the node, and once the pod is gone
 	// nothing looks at the node again, so it would stay Pending for good.
-	// A pod that has finished may still replace the phase recorded for the
-	// node, so only non-terminal outcomes are dropped here.
-	if old.Fulfilled() && updated.Phase != old.Phase && !updated.Phase.Completed() {
+	// A completed phase gets the same protection while the node's task
+	// results are still syncing (Fulfilled() is false then), as long as the
+	// pod itself has not finished. A pod that has finished may still
+	// replace the phase recorded for the node, so only non-terminal
+	// outcomes are dropped here.
+	if (old.Fulfilled() || (old.Phase.Completed() && (pod.Status.Phase == apiv1.PodPending || pod.Status.Phase == apiv1.PodRunning))) && updated.Phase != old.Phase && !updated.Phase.Completed() {
 		woc.log.WithFields(logging.Fields{"nodeID": old.ID, "phase": old.Phase, "podPhase": pod.Status.Phase}).Debug(ctx, "pod has not finished, keeping the node's fulfilled phase")
 		return nil
 	}
