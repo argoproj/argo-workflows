@@ -902,7 +902,7 @@ func (wfc *WorkflowController) deleteOffloadedNodesForWorkflow(ctx context.Conte
 		if wf != nil && wf.Status.OffloadNodeStatusVersion == version {
 			continue
 		}
-		if err := wfc.offloadNodeStatusRepo.Delete(ctx, uid, version); err != nil {
+		if err := wfc.offloadNodeStatusRepo.DeleteIfOld(ctx, uid, version); err != nil {
 			return err
 		}
 	}

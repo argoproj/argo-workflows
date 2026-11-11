@@ -764,6 +764,48 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	controller.archivedWorkflowGarbageCollector(logging.TestContext(t.Context()))
 }
 
+func TestWorkflowController_deleteOffloadedNodesForWorkflow_InvokesDeleteIfOld(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("MissingWorkflow", func(t *testing.T) {
+		cancel, controller := newController(ctx)
+		defer cancel()
+
+		mockRepo := &sqldbmocks.OffloadNodeStatusRepo{}
+		mockRepo.On("DeleteIfOld", "missing-uid", "v1").Return(nil)
+		mockRepo.On("DeleteIfOld", "missing-uid", "v2").Return(nil)
+		controller.offloadNodeStatusRepo = mockRepo
+
+		err := controller.deleteOffloadedNodesForWorkflow(ctx, "missing-uid", []string{"v1", "v2"})
+		require.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("LiveWorkflowSkipsCurrentVersion", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "live-wf",
+				Namespace: "argo",
+				UID:       "live-uid",
+			},
+			Status: wfv1.WorkflowStatus{
+				OffloadNodeStatusVersion: "v2",
+			},
+		}
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+
+		mockRepo := &sqldbmocks.OffloadNodeStatusRepo{}
+		// v2 is live so it must NOT be deleted. Only v1 (old) should be deleted with DeleteIfOld.
+		mockRepo.On("DeleteIfOld", "live-uid", "v1").Return(nil)
+		controller.offloadNodeStatusRepo = mockRepo
+
+		err := controller.deleteOffloadedNodesForWorkflow(ctx, "live-uid", []string{"v1", "v2"})
+		require.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
 // TestWorkflowController_archiveWorkflowAux_ArchivesOnce pins that a successfully
 // archived workflow is written to the archive exactly once. archiveWorkflow used
 // to call archiveWorkflowAux a second time on the success path, archiving every
