@@ -1282,6 +1282,41 @@ func (wfc *WorkflowController) recordWorkflowCompleted(wf metav1.Object) {
 	}
 }
 
+func (wfc *WorkflowController) removeWorkflowPodFinalizers(ctx context.Context, wf metav1.Object) error {
+	instanceRequirement := wfc.instanceIDReq()
+	if wf.GetNamespace() == "" || wf.GetName() == "" || wf.GetUID() == "" ||
+		!instanceRequirement.Matches(labels.Set(wf.GetLabels())) ||
+		(wfc.GetManagedNamespace() != "" && wfc.GetManagedNamespace() != wf.GetNamespace()) {
+		return nil
+	}
+	selector := labels.SelectorFromSet(labels.Set{common.LabelKeyWorkflow: wf.GetName()}).Add(instanceRequirement)
+	listOptions := metav1.ListOptions{
+		LabelSelector: selector.String(),
+		Limit:         500,
+	}
+	for {
+		pods, err := wfc.kubeclientset.CoreV1().Pods(wf.GetNamespace()).List(ctx, listOptions)
+		if err != nil {
+			return err
+		}
+		for _, pod := range pods.Items {
+			owner := metav1.GetControllerOf(&pod)
+			if pod.Namespace != wf.GetNamespace() || pod.UID == "" || !selector.Matches(labels.Set(pod.Labels)) ||
+				owner == nil || owner.APIVersion != wfv1.SchemeGroupVersion.String() || owner.Kind != "Workflow" ||
+				owner.Name != wf.GetName() || owner.UID != wf.GetUID() {
+				continue
+			}
+			if slices.Contains(pod.Finalizers, common.FinalizerPodStatus) {
+				wfc.PodController.RemoveFinalizer(ctx, pod.Namespace, pod.Name, string(pod.UID))
+			}
+		}
+		if pods.Continue == "" {
+			return nil
+		}
+		listOptions.Continue = pods.Continue
+	}
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	_, err := wfc.wfInformer.AddEventHandler(
@@ -1335,20 +1370,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 
-					// Remove finalizers from Pods if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
-					if err != nil {
-						logger.WithError(err).Error(ctx, "Failed to list pods")
-					}
-					for _, p := range podList.Items {
-						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
-						}
-					}
-
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(ctx, obj)
@@ -1396,7 +1417,23 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	if err != nil {
 		return err
 	}
+	cleanupPods := func(wf *unstructured.Unstructured) {
+		if cleanupErr := wfc.removeWorkflowPodFinalizers(ctx, wf); cleanupErr != nil {
+			logger.WithField("workflow", wf.GetNamespace()+"/"+wf.GetName()).WithError(cleanupErr).Error(ctx, "Failed to list pods for finalizer cleanup")
+		}
+	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(old, obj any) {
+			prev, wf := old.(*unstructured.Unstructured), obj.(*unstructured.Unstructured)
+			if reconciliationNeeded(wf) {
+				return
+			}
+			// Clean up when reconciliation finishes, or when an already completed
+			// Workflow starts deletion. Foreground deletion can wait on these Pods.
+			if reconciliationNeeded(prev) || (prev.GetDeletionTimestamp() == nil && wf.GetDeletionTimestamp() != nil) {
+				cleanupPods(wf)
+			}
+		},
 		DeleteFunc: func(obj any) {
 			var wf *unstructured.Unstructured
 			switch x := obj.(type) {
@@ -1407,6 +1444,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			}
 			if wf != nil {
 				wfc.metrics.DeleteRealtimeMetricsForWfUID(string(wf.GetUID()))
+				cleanupPods(wf)
 			}
 		},
 	})

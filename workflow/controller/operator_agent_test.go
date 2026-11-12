@@ -142,7 +142,9 @@ func TestAgentPodRecreatedWhenFailed(t *testing.T) {
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	failed := failAgentPod(ctx, t, woc, nil)
+	failed := failAgentPod(ctx, t, woc, func(pod *v1.Pod) {
+		pod.UID = "failed-agent-uid"
+	})
 
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
