@@ -678,6 +678,8 @@ spec:
                             type: object
                           deleted:
                             type: boolean
+                          description:
+                            type: string
                           from:
                             type: string
                           fromExpression:

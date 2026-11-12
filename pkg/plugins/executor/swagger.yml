@@ -119,6 +119,8 @@ definitions:
             deleted:
                 description: Has this been deleted?
                 type: boolean
+            description:
+                $ref: '#/definitions/AnyString'
             from:
                 description: From allows an artifact to reference an artifact from a previous step
                 type: string
@@ -236,6 +238,8 @@ definitions:
             deleted:
                 description: Has this been deleted?
                 type: boolean
+            description:
+                $ref: '#/definitions/AnyString'
             from:
                 description: From allows an artifact to reference an artifact from a previous step
                 type: string
