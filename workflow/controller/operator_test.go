@@ -9896,7 +9896,8 @@ spec:
       containerSet:
         containers:
           - name: "{{workflow.parameters.ctr}}"
-            image: alpine:3.23`
+            image: alpine:3.23
+            command: [echo]`
 
 // TestContainerSetParameterizedNameWhenPodRejected tests that container nodes are failed
 // when their names come from parameters resolved at runtime.
@@ -9943,8 +9944,10 @@ spec:
         containers:
           - name: main
             image: alpine:3.23
+            command: [echo]
           - name: main2
             image: alpine:3.23
+            command: [echo]
             dependencies:
               - main`
 

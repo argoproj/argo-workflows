@@ -1421,11 +1421,26 @@ func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod 
 	for _, c := range pod.Status.ContainerStatuses {
 		reported[fmt.Sprintf("%s.%s", podNode.Name, c.Name)] = true
 	}
+	// Walk only the pod's container graph. Leaf containers link to the pod's dependents,
+	// which are outside the pod's boundary.
 	var pending []string
-	for _, node := range woc.wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypeContainer && node.BoundaryID == podNode.ID && !reported[node.Name] && !node.Fulfilled() {
+	visited := make(map[string]bool)
+	queue := append([]string(nil), podNode.Children...)
+	for len(queue) > 0 {
+		id := queue[0]
+		queue = queue[1:]
+		if visited[id] {
+			continue
+		}
+		visited[id] = true
+		node, err := woc.wf.Status.Nodes.Get(id)
+		if err != nil || node.Type != wfv1.NodeTypeContainer || node.BoundaryID != podNode.ID {
+			continue
+		}
+		if !reported[node.Name] && !node.Fulfilled() {
 			pending = append(pending, node.Name)
 		}
+		queue = append(queue, node.Children...)
 	}
 	for _, name := range pending {
 		woc.markNodePhase(ctx, name, wfv1.NodeFailed, message)
