@@ -2026,7 +2026,10 @@ func (n Nodes) Any(f func(NodeStatus) bool) bool {
 func (n Nodes) Find(f func(NodeStatus) bool) *NodeStatus {
 	for _, i := range n {
 		if f(i) {
-			return &i
+			// Copy only the match: returning &i would move the loop variable to
+			// the heap, allocating a NodeStatus for every node visited.
+			found := i
+			return &found
 		}
 	}
 	return nil
