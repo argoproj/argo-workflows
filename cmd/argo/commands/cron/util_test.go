@@ -104,3 +104,40 @@ func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())
 }
+
+var cronHashedSchedules = `
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: wonderful-tiger
+  namespace: argo
+spec:
+  schedules:
+  - 'H H * * *'
+  - 'H(0-29)/10 * * * *'
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        command: [/argosay]
+`
+
+func TestPrintCronWorkflowResolvedSchedules(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("Hashed", func(t *testing.T) {
+		cronWf := v1alpha1.MustUnmarshalCronWorkflow(cronHashedSchedules)
+		out := getCronWorkflowGet(ctx, cronWf)
+		assert.Contains(t, out, "Schedules:                     H H * * *,H(0-29)/10 * * * *")
+		assert.Contains(t, out, "ResolvedSchedules:             52 1 * * *,2-29/10 * * * *")
+	})
+
+	t.Run("NotHashed", func(t *testing.T) {
+		cronWf := v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
+		out := getCronWorkflowGet(ctx, cronWf)
+		assert.Contains(t, out, "Schedules:                     * * * * *,*/2 * * * *")
+		assert.NotContains(t, out, "ResolvedSchedules:")
+	})
+}
