@@ -3,7 +3,6 @@ package pod
 
 import (
 	"context"
-	"os"
 	"slices"
 	"syscall"
 	"time"
@@ -12,6 +11,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/signal"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func (c *Controller) runPodCleanup(ctx context.Context) {
@@ -32,14 +33,17 @@ func (c *Controller) getPodCleanupPatch(pod *apiv1.Pod, labelPodCompleted bool) 
 		un.SetLabels(map[string]string{common.LabelKeyCompleted: "true"})
 	}
 
-	finalizerEnabled := os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true"
-	if finalizerEnabled && pod.Finalizers != nil {
+	// Continue cleaning up existing finalizers when the capture flag is disabled.
+	if pod.Finalizers != nil {
 		finalizers := slices.Clone(pod.Finalizers)
 		finalizers = slices.DeleteFunc(finalizers,
 			func(s string) bool { return s == common.FinalizerPodStatus })
 		if len(finalizers) != len(pod.Finalizers) {
 			un.SetFinalizers(finalizers)
 			un.SetResourceVersion(pod.ResourceVersion)
+			if pod.UID != "" {
+				un.SetUID(pod.UID)
+			}
 		}
 	}
 
@@ -98,6 +102,37 @@ func (c *Controller) patchPodForCleanup(ctx context.Context, pods typedv1.PodInt
 	return nil
 }
 
+func (c *Controller) patchPodForCleanupByUID(ctx context.Context, pods typedv1.PodInterface, podName, uid string) (bool, error) {
+	if uid == "" {
+		return false, nil
+	}
+	pod, err := pods.Get(ctx, podName, metav1.GetOptions{})
+	if apierr.IsNotFound(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	instanceRequirement := util.InstanceIDRequirement(c.config.InstanceID)
+	if string(pod.UID) != uid || !instanceRequirement.Matches(labels.Set(pod.Labels)) {
+		return false, nil
+	}
+
+	patch, err := c.getPodCleanupPatch(pod, false)
+	if err != nil {
+		return false, err
+	}
+	if patch == nil {
+		return true, nil
+	}
+
+	_, err = pods.Patch(ctx, podName, types.MergePatchType, patch, metav1.PatchOptions{})
+	if err != nil && !apierr.IsNotFound(err) {
+		return false, err
+	}
+	return true, nil
+}
+
 // all pods will ultimately be cleaned up by either deleting them, or labelling them
 func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	key, quit := c.workqueue.Get()
@@ -148,7 +183,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 			}
 		case deletePodByUID:
 			pods := c.kubeclientset.CoreV1().Pods(namespace)
-			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+			if matched, err := c.patchPodForCleanupByUID(ctx, pods, podName, uid); err != nil || !matched {
 				return err
 			}
 			propagation := metav1.DeletePropagationBackground
@@ -163,7 +198,13 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 			}
 		case removeFinalizer:
 			pods := c.kubeclientset.CoreV1().Pods(namespace)
-			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+			var err error
+			if uid != "" {
+				_, err = c.patchPodForCleanupByUID(ctx, pods, podName, uid)
+			} else {
+				err = c.patchPodForCleanup(ctx, pods, namespace, podName, false)
+			}
+			if err != nil {
 				return err
 			}
 		}
@@ -194,7 +235,7 @@ func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace stri
 	}
 }
 
-func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, uid string) {
-	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": deletePodByUID}).Info(ctx, "queueing pod for cleanup by UID")
-	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid))
+func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, action podCleanupAction, uid string) {
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": action}).Info(ctx, "queueing pod for cleanup by UID")
+	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, action, uid))
 }
