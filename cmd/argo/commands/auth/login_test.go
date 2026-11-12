@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso/clilogin"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -174,4 +176,27 @@ func TestLoginTimeoutLimitedToLoginState(t *testing.T) {
 		})
 	}
 	assert.Equal(t, clilogin.LoginStateLifetime.String(), NewLoginCommand().Flags().Lookup("timeout").DefValue)
+}
+
+func TestSSOUser(t *testing.T) {
+	t.Run("server-only Argo Server", func(t *testing.T) {
+		// Without SSO, the Argo Server answers `Bearer v2:bad` in `server` mode
+		// with an empty response, so the token must not be saved.
+		_, err := ssoUser(&infopkg.GetUserInfoResponse{})
+		require.ErrorContains(t, err, "didn't accept the token as an SSO login")
+	})
+	t.Run("client mode token", func(t *testing.T) {
+		_, err := ssoUser(&infopkg.GetUserInfoResponse{Issuer: "https://kubernetes.default.svc", Subject: "system:serviceaccount:argo:default"})
+		require.ErrorContains(t, err, "didn't accept the token as an SSO login")
+	})
+	t.Run("SSO token", func(t *testing.T) {
+		user, err := ssoUser(&infopkg.GetUserInfoResponse{Issuer: sso.Issuer, Subject: "alice", Email: "alice@example.com"})
+		require.NoError(t, err)
+		assert.Equal(t, "alice@example.com", user)
+	})
+	t.Run("SSO token without names", func(t *testing.T) {
+		user, err := ssoUser(&infopkg.GetUserInfoResponse{Issuer: sso.Issuer})
+		require.NoError(t, err)
+		assert.Equal(t, "unknown user", user)
+	})
 }

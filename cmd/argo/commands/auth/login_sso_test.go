@@ -193,6 +193,7 @@ func TestSSOBrowserLoginEndToEnd(t *testing.T) {
 
 	claims, err := ssoIf.Authorize(payload.Token)
 	require.NoError(t, err, "the Argo Server should accept the token the CLI received")
+	assert.Equal(t, sso.Issuer, claims.Issuer, "GetUserInfo reports this issuer, which checkToken requires")
 	assert.Equal(t, "alice@example.com", claims.Email)
 	assert.Equal(t, []string{"data-eng"}, claims.Groups)
 }

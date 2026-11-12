@@ -144,6 +144,16 @@ func checkToken(ctx context.Context, token string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("the Argo Server rejected the token: %w", err)
 	}
+	return ssoUser(info)
+}
+
+// ssoUser names the user in a GetUserInfo response, and fails unless the
+// Argo Server authenticated the request with an SSO token. A server without SSO
+// answers any token in `server` mode, with an empty response.
+func ssoUser(info *infopkg.GetUserInfoResponse) (string, error) {
+	if info.Issuer != sso.Issuer {
+		return "", errors.New("the Argo Server didn't accept the token as an SSO login: check that it runs with --auth-mode=sso")
+	}
 	for _, name := range []string{info.Email, info.Name, info.Subject} {
 		if name != "" {
 			return name, nil

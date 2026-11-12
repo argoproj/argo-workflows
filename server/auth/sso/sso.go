@@ -40,6 +40,10 @@ const (
 	cliCookiePrefix = "cli."
 )
 
+// Issuer is the `iss` claim of the SSO tokens the Argo Server mints. The
+// `GetUserInfo` response carries it only when the request used such a token.
+const Issuer = issuer
+
 // Copied from https://github.com/oauth2-proxy/oauth2-proxy/blob/ab448cf38e7c1f0740b3cc2448284775e39d9661/pkg/app/redirect/validator.go#L14-L16
 // Used to check final redirects are not susceptible to open redirects.
 // Matches //, /\ and both of these with whitespace in between (eg / / or / \).
