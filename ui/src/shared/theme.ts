@@ -1,15 +1,16 @@
+import {THEME_KEY} from 'argo-ui/v2/shared/context/theme';
 import {useEffect, useState} from 'react';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
-const storageKey = 'theme';
 const media = window.matchMedia?.('(prefers-color-scheme: dark)');
 const listeners = new Set<() => void>();
 
 function readPreference(): ThemePreference {
     try {
-        const stored = localStorage.getItem(storageKey);
-        return stored === 'light' || stored === 'dark' ? stored : 'system';
+        const stored = localStorage.getItem(THEME_KEY);
+        const value = stored === null ? null : JSON.parse(stored);
+        return value === 'light' || value === 'dark' ? value : 'system';
     } catch {
         return 'system';
     }
@@ -23,13 +24,18 @@ function notify() {
 
 media?.addEventListener('change', notify);
 
+function store(value: ThemePreference) {
+    try {
+        localStorage.setItem(THEME_KEY, JSON.stringify(value));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export function setThemePreference(value: ThemePreference) {
     preference = value;
-    try {
-        localStorage.setItem(storageKey, value);
-    } catch {
-        // storage is unavailable, so the preference only lasts for this session
-    }
+    store(value);
     notify();
 }
 

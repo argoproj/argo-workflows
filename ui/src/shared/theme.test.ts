@@ -1,5 +1,7 @@
 import {act, renderHook} from '@testing-library/react';
 
+jest.mock('argo-ui/v2/shared/context/theme', () => ({THEME_KEY: 'theme'}));
+
 type Theme = typeof import('./theme');
 
 function loadTheme(systemDark: boolean) {
@@ -46,20 +48,26 @@ describe('theme', () => {
         const {result} = renderHook(() => theme.useTheme());
         act(() => theme.setThemePreference('dark'));
         expect(result.current).toEqual({preference: 'dark', theme: 'dark'});
-        expect(localStorage.getItem('theme')).toBe('dark');
+        expect(localStorage.getItem('theme')).toBe('"dark"');
         act(() => setSystemDark(false));
         expect(result.current.theme).toBe('dark');
     });
 
     it('restores the stored preference', () => {
-        localStorage.setItem('theme', 'light');
+        localStorage.setItem('theme', '"light"');
         const {theme} = loadTheme(true);
         const {result} = renderHook(() => theme.useTheme());
         expect(result.current).toEqual({preference: 'light', theme: 'light'});
     });
 
-    it('ignores an invalid stored preference', () => {
-        localStorage.setItem('theme', 'purple');
+    it('stores the preference as JSON so argo-ui can parse it', () => {
+        const {theme} = loadTheme(false);
+        theme.setThemePreference('light');
+        expect(JSON.parse(localStorage.getItem('theme')!)).toBe('light');
+    });
+
+    it.each(['purple', '"purple"', 'dark', '{'])('ignores an invalid stored preference %s', stored => {
+        localStorage.setItem('theme', stored);
         const {theme} = loadTheme(false);
         const {result} = renderHook(() => theme.useTheme());
         expect(result.current).toEqual({preference: 'system', theme: 'light'});
