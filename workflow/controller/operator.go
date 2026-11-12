@@ -347,6 +347,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.computeMetrics(ctx, woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
 	}
 
+	// failedAtDeadline records that this operation failed the workflow's nodes
+	// because its deadline had passed, so the checks below still let the workflow
+	// finish rather than deferring to a requeue that repeats forever.
+	failedAtDeadline := false
+
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
 		pdbErr := woc.createPDBResource(ctx)
 		if pdbErr != nil {
@@ -386,13 +391,35 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 
 		if !podReconciliationCompleted {
-			woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info(reconcileCtx, "pod reconciliation didn't complete, will retry")
+			if !woc.workflowDeadlineExceeded() {
+				// A task result that is merely slow is still retried: only an
+				// expired deadline fails the workflow.
+				woc.log.WithField("workflow", woc.wf.ObjectMeta.Name).Info(reconcileCtx, "pod reconciliation didn't complete, will retry")
+				woc.requeue()
+				return
+			}
+			// A deadline that a task result which can never arrive is able to
+			// switch off is not a bound (#17380): fail the workflow at its
+			// deadline instead of retrying it forever.
+			//
+			// This only fails the nodes, and then deliberately carries on to the
+			// normal tail below: it finalizes the boundaries, runs the exit
+			// handlers, deletes the PVCs and only then marks the workflow failed.
+			// Completing the workflow here would skip all of that, because every
+			// later operation returns at the completed-workflow guard.
+			woc.failNodesAfterDeadline(reconcileCtx)
 			woc.requeue()
-			return
+			failedAtDeadline = true
 		}
 	}
 
-	if woc.ShouldSuspend() && !woc.GetShutdownStrategy().Enabled() {
+	if woc.ShouldSuspend() && !woc.GetShutdownStrategy().Enabled() && !failedAtDeadline &&
+		!woc.finalizingAfterDeadline(reconcileCtx) {
+		// A workflow that was failed at its deadline must be allowed to finish:
+		// returning here requeues it forever, so the deadline fails the nodes but
+		// never the workflow. This is deliberately narrow — a suspended workflow
+		// whose nodes were not failed at its deadline still waits to be resumed,
+		// whether or not its deadline has passed.
 		woc.log.Info(ctx, "workflow suspended")
 		return
 	}
@@ -687,6 +714,12 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	startedAt := woc.wf.Status.StartedAt.Truncate(time.Second)
 	deadline := startedAt.Add(time.Duration(*woc.execWf.Spec.ActiveDeadlineSeconds) * time.Second).UTC()
 	return &deadline
+}
+
+// workflowDeadlineExceeded reports whether the workflow's activeDeadlineSeconds
+// has elapsed, i.e. whether the workflow should already have been terminated.
+func (woc *wfOperationCtx) workflowDeadlineExceeded() bool {
+	return woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
@@ -1105,7 +1138,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
-	if woc.GetShutdownStrategy().Enabled() || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+	if woc.GetShutdownStrategy().Enabled() || woc.workflowDeadlineExceeded() {
 		var message string
 		if woc.GetShutdownStrategy().Enabled() {
 			message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
@@ -1419,6 +1452,110 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
+// failNodesAfterDeadline fails every unfinished node of a workflow whose deadline
+// has passed while its pods could not be reconciled, which happens when a task
+// result can never arrive: the pod's aux container reported a non-retryable
+// failure to the API server and gave up, so podReconciliation reports an
+// incomplete task result on every operation and the
+// `pod reconciliation didn't complete, will retry` path requeues the workflow
+// forever (#17380).
+//
+// It does not complete the workflow itself, so that the exit handlers still run
+// and the PVCs are still deleted by the normal tail of operate(); see the call
+// site. Three things are undone here that would otherwise keep the workflow
+// Running, so the deadline is a bound rather than a switch a stuck task result
+// can turn off:
+//
+//   - unfinished nodes are failed, with the same message applyExecutionControl
+//     uses for a pod it terminates at the deadline. The pods themselves were
+//     already terminated in the podReconciliation pass that reported the
+//     incomplete task result: applyExecutionControl runs for every pod on every
+//     operation, deadline included, so this only has to settle the nodes;
+//   - a task result that can never arrive is force-marked complete, because a
+//     node whose task result is unsynced is not fulfilled and markWorkflowPhase
+//     would refuse to complete the workflow at all (checkTaskResultsInProgress);
+//   - daemoned children are stopped from their boundary, because a daemon counts
+//     as fulfilled while it runs and so is skipped here, while markWorkflowPhase
+//     refuses to complete a workflow that still has daemon nodes and its
+//     root-level fallback cannot reach a daemon nested under a Steps or DAG node.
+//
+// Exit-handler nodes are left alone, matching the deadline semantics everywhere
+// else.
+//
+// It also records the workflow with an annotation (see finalizingAfterDeadline)
+// so that a later operation may take a suspended workflow past the suspension
+// check while its exit handler finishes.
+func (woc *wfOperationCtx) failNodesAfterDeadline(ctx context.Context) {
+	if woc.wf.Annotations == nil {
+		woc.wf.Annotations = make(map[string]string)
+	}
+	if woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed] != "true" {
+		woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed] = "true"
+		woc.updated = true
+	}
+
+	nodes := woc.wf.Status.Nodes
+	// Stop daemons in their own pass before failing anything: killDaemonedChildren
+	// writes to this very map, so failing nodes while ranging over it would
+	// observe those writes in map order — a daemon could be failed while it is
+	// still running (visited before the boundary that stops it), or be failed
+	// again after it was recorded Succeeded (a transition markNodePhase refuses
+	// and logs as an error).
+	for _, node := range nodes {
+		if node.IsPartOfExitHandler(ctx, nodes) {
+			continue
+		}
+		woc.killDaemonedChildren(ctx, node.ID)
+	}
+	for _, node := range nodes {
+		if node.IsPartOfExitHandler(ctx, nodes) {
+			continue
+		}
+		if node.Fulfilled() {
+			continue
+		}
+		if woc.wf.Status.IsTaskResultIncomplete(node.ID) {
+			woc.log.WithField("nodeID", node.ID).Warn(ctx, "Marking task result as completed because the workflow exceeded its deadline while its task result was incomplete")
+			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+		}
+		if node.Succeeded() {
+			// A daemon stopped above completes Succeeded, as killDaemonedChildren
+			// records it: its exit code carries no failure meaning because the
+			// controller killed it, and markNodePhase would refuse the transition.
+			continue
+		}
+		woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, "Step exceeded its deadline")
+	}
+	if !woc.wf.Status.Phase.Completed() {
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow exceeded its deadline")
+	}
+}
+
+// finalizingAfterDeadline reports whether this workflow is finishing up after
+// its deadline passed: an exit handler is still unfinished, and a workflow only
+// starts one once its main body is over. It is read from the workflow's own
+// status and annotations rather than from the current operation, so it holds
+// across the several reconciliations an exit handler needs to complete, and it
+// retires by itself once the workflow is completed.
+//
+// The marker matters as much as the deadline: only a workflow whose nodes were
+// failed at its deadline by failNodesAfterDeadline may pass the suspension
+// check here. A suspended workflow that merely expired, or was suspended while
+// its exit handler was running, still waits to be resumed, exactly as it did
+// before this bypass existed.
+func (woc *wfOperationCtx) finalizingAfterDeadline(ctx context.Context) bool {
+	if !woc.workflowDeadlineExceeded() || woc.wf.Status.Phase.Completed() {
+		return false
+	}
+	if woc.wf.Annotations[common.AnnotationKeyDeadlineNodesFailed] != "true" {
+		return false
+	}
+	nodes := woc.wf.Status.Nodes
+	return nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.IsPartOfExitHandler(ctx, nodes) && !node.Fulfilled()
+	})
+}
+
 // failNodesWithoutCreatedPodsAfterDeadlineOrShutdown mark the nodes without created pods failed when shutting down or exceeding deadline.
 func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx context.Context) {
 	nodes := woc.wf.Status.Nodes
@@ -1456,8 +1593,7 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 		}
 
 		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
-		deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-		if deadlineExceeded && !node.IsPartOfExitHandler(ctx, nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
+		if woc.workflowDeadlineExceeded() && !node.IsPartOfExitHandler(ctx, nodes) && (node.Phase == wfv1.NodePending || node.IsActiveSuspendNode()) {
 			message := "Step exceeded its deadline"
 			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 			continue
