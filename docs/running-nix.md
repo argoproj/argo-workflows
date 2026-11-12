@@ -13,7 +13,7 @@ Here are the steps to follow:
 ## Warning
 
 This is still bare-bones at the moment, any feature in the Makefile not mentioned here is excluded for now.
-In practice, this means that only a `make start UI=true` equivalent is supported at the moment.
+In practice, this means that only a `make start` equivalent is supported at the moment.
 As an additional caveat, there are no LDFlags set in the build; as a result the UI will show `0.0.0-unknown` for the version.
 
 ## How do I upgrade a dependency?

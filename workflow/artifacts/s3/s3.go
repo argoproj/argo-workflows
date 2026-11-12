@@ -30,10 +30,10 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	executorretry "github.com/argoproj/argo-workflows/v4/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
@@ -132,9 +132,21 @@ type ArtifactDriver struct {
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
+	AddressingStyle       string
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
+
+func parseAddressingStyle(s string) AddressingStyle {
+	switch s {
+	case "path":
+		return PathStyle
+	case "virtual-hosted":
+		return VirtualHostedStyle
+	default:
+		return AutoDetectStyle
+	}
+}
 
 // newClient instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
@@ -154,14 +166,17 @@ func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
-		SendContentMd5: true,
+		SendContentMd5:  true,
+		AddressingStyle: parseAddressingStyle(s3Driver.AddressingStyle),
 	}
 
 	if tr, err := GetDefaultTransport(opts); err == nil {
 		if s3Driver.Secure && s3Driver.TrustedCA != "" {
 			// Trust only the provided root CA
 			pool := x509.NewCertPool()
-			pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA))
+			if !pool.AppendCertsFromPEM([]byte(s3Driver.TrustedCA)) {
+				return nil, errors.New("no valid PEM certificate found in the S3 caSecret")
+			}
 			tr.TLSClientConfig.RootCAs = pool
 		}
 		// Wrap transport with OpenTelemetry tracing
@@ -266,6 +281,13 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 			return saveS3Artifact(ctx, s3cli, path, outputArtifact)
 		})
 	return err
+}
+
+// SaveStream saves an artifact from an io.Reader to S3 compliant storage
+func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return artifactscommon.SaveStreamViaTempFile(reader, "s3-upload-*", func(path string) error {
+		return s3Driver.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete deletes an artifact from an S3 compliant storage
@@ -772,14 +794,18 @@ func (s *s3client) Delete(bucket, key string) error {
 // GetDirectory downloads a s3 directory to a local path
 func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info(s.ctx, "Getting directory from s3")
+	// trim the same prefix that ListDirectory lists under, so the remainder is relative to it
+	keyPrefix = keyPrefixForListing(keyPrefix)
 	keys, err := s.ListDirectory(bucket, keyPrefix)
 	if err != nil {
 		return err
 	}
 
 	for _, objKey := range keys {
-		relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
-		localPath := filepath.Join(path, relKeyPath)
+		localPath, err := artifactscommon.LocalPathForObject(path, keyPrefix, objKey)
+		if err != nil {
+			return err
+		}
 
 		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, objKey)
 		if err != nil {
@@ -794,18 +820,24 @@ func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 	return nil
 }
 
-// IsDirectory tests if the key is acting like a s3 directory. This just means it has at least one
-// object which is prefixed with the given key
-func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
-	doneCh := make(chan struct{})
-	defer close(doneCh)
-
+// keyPrefixForListing normalizes a key prefix to the form used to list the objects under it
+func keyPrefixForListing(keyPrefix string) string {
 	if keyPrefix != "" {
 		keyPrefix = filepath.Clean(keyPrefix) + "/"
 		if os.PathSeparator == '\\' {
 			keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
 		}
 	}
+	return keyPrefix
+}
+
+// IsDirectory tests if the key is acting like a s3 directory. This just means it has at least one
+// object which is prefixed with the given key
+func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+
+	keyPrefix = keyPrefixForListing(keyPrefix)
 
 	listOpts := minio.ListObjectsOptions{
 		Prefix:    keyPrefix,
@@ -824,12 +856,7 @@ func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
 func (s *s3client) ListDirectory(bucket, keyPrefix string) ([]string, error) {
 	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix}).Info(s.ctx, "Listing directory from s3")
 
-	if keyPrefix != "" {
-		keyPrefix = filepath.Clean(keyPrefix) + "/"
-		if os.PathSeparator == '\\' {
-			keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
-		}
-	}
+	keyPrefix = keyPrefixForListing(keyPrefix)
 
 	doneCh := make(chan struct{})
 	defer close(doneCh)
@@ -859,8 +886,7 @@ func (s *s3client) ListDirectory(bucket, keyPrefix string) ([]string, error) {
 
 // IsS3ErrCode returns if the supplied error is of a specific S3 error code
 func IsS3ErrCode(err error, code string) bool {
-	var minioErr minio.ErrorResponse
-	if errors.As(err, &minioErr) {
+	if minioErr, ok := errors.AsType[minio.ErrorResponse](err); ok {
 		return minioErr.Code == code
 	}
 	return false

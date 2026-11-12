@@ -1,0 +1,12 @@
+# The image deps in the Tiltfile cover all of ui/, but webpack only bundles
+# ui/src — so anything else under ui/ changing while Tilt is up rebuilds the
+# images and rolling-restarts argo-server, dropping its port-forward out from
+# under whatever is driving the UI (seen mid-suite as 503s or connection-refused).
+#
+# Artifacts the Playwright suite writes on every run:
+ui/test-results
+ui/playwright-report
+# ...and the suite's own sources, so editing a test while Tilt is up does not
+# restart the stack that test is about to run against:
+ui/e2e
+ui/playwright.config.ts

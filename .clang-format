@@ -1,2 +1,0 @@
-# Allow unlimited column length, rather than 80. This prevents word-wrapping comments, which end up in Swagger.
-ColumnLimit: 0

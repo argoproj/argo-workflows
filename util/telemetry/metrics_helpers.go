@@ -121,6 +121,49 @@ func (m *Metrics) AddK8sRequestTotal(ctx context.Context, val int64, requestKind
 	m.AddInt(ctx, InstrumentK8sRequestTotal.Name(), val, attribs)
 }
 
+// ObserveLocksHeld observes a value for the locks_held gauge
+// This is a helper method for use inside RegisterCallback functions
+func (m *Metrics) ObserveLocksHeld(ctx context.Context, o metric.Observer, val int64, lockType string, lockStorage string, lockName string, lockNamespace string) {
+	inst := m.GetInstrument(InstrumentLocksHeld.Name())
+	if inst == nil {
+		return
+	}
+	attribs := Attributes{
+		{Name: AttribLockType, Value: lockType},
+		{Name: AttribLockStorage, Value: lockStorage},
+		{Name: AttribLockName, Value: lockName},
+		{Name: AttribLockNamespace, Value: lockNamespace},
+	}
+	inst.ObserveInt(ctx, o, val, attribs)
+}
+
+// ObserveLocksPending observes a value for the locks_pending gauge
+// This is a helper method for use inside RegisterCallback functions
+func (m *Metrics) ObserveLocksPending(ctx context.Context, o metric.Observer, val int64, lockType string, lockStorage string, lockName string, lockNamespace string) {
+	inst := m.GetInstrument(InstrumentLocksPending.Name())
+	if inst == nil {
+		return
+	}
+	attribs := Attributes{
+		{Name: AttribLockType, Value: lockType},
+		{Name: AttribLockStorage, Value: lockStorage},
+		{Name: AttribLockName, Value: lockName},
+		{Name: AttribLockNamespace, Value: lockNamespace},
+	}
+	inst.ObserveInt(ctx, o, val, attribs)
+}
+
+// AddLocksTakenTotal adds a value to the locks_taken_total counter
+func (m *Metrics) AddLocksTakenTotal(ctx context.Context, val int64, lockType string, lockStorage string, lockName string, lockNamespace string) {
+	attribs := Attributes{
+		{Name: AttribLockType, Value: lockType},
+		{Name: AttribLockStorage, Value: lockStorage},
+		{Name: AttribLockName, Value: lockName},
+		{Name: AttribLockNamespace, Value: lockNamespace},
+	}
+	m.AddInt(ctx, InstrumentLocksTakenTotal.Name(), val, attribs)
+}
+
 // AddLogMessages adds a value to the log_messages counter
 func (m *Metrics) AddLogMessages(ctx context.Context, val int64, logLevel string) {
 	attribs := Attributes{

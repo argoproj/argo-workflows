@@ -32,7 +32,7 @@ func resourceDuration(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStat
 		visited[childID] = true
 		child, err := wf.Status.Nodes.Get(childID)
 		if err != nil {
-			logging.RequireLoggerFromContext(ctx).WithField("childID", childID).Warn(ctx, "was unable to obtain node")
+			logging.RequireLoggerFromContext(ctx).WithField("childID", childID).Debug(ctx, "was unable to obtain node")
 			continue
 		}
 		if child.Type == wfv1.NodeTypePod {

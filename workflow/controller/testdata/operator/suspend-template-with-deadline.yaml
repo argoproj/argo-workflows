@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  activeDeadlineSeconds: 0
+  templates:
+  - name: suspend
+    suspend: {}

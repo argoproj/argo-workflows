@@ -7,6 +7,6 @@ resources:
 
 components:
 - ../components/base
-- ../components/local-argo
+- ../components/in-cluster-argo
 
 namespace: argo

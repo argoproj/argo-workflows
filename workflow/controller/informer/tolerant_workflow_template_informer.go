@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	extwfv1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/listers/workflow/v1alpha1"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 )
 
 type tolerantWorkflowTemplateInformer struct {
@@ -21,14 +22,17 @@ type tolerantWorkflowTemplateInformer struct {
 
 // NewTolerantWorkflowTemplateInformer is a drop-in replacement for `extwfv1.WorkflowTemplateInformer` that ignores malformed resources.
 func NewTolerantWorkflowTemplateInformer(dynamicInterface dynamic.Interface, defaultResync time.Duration, namespace string) extwfv1.WorkflowTemplateInformer {
-	return &tolerantWorkflowTemplateInformer{delegate: dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicInterface, defaultResync, namespace, func(options *metav1.ListOptions) {
+	delegate := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicInterface, defaultResync, namespace, func(options *metav1.ListOptions) {
 		// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
 		// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
 		// Check if ResourceVersion is "0" and reset it to empty string to ensure proper pagination behavior
 		if options.ResourceVersion == "0" {
 			options.ResourceVersion = ""
 		}
-	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural})}
+	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	delegate.Informer().SetTransform(informerutil.StripManagedFields)
+	return &tolerantWorkflowTemplateInformer{delegate: delegate}
 }
 
 func (t *tolerantWorkflowTemplateInformer) Informer() cache.SharedIndexInformer {

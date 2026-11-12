@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  activeDeadlineSeconds: 7200
+  workflowMetadata:
+    annotations:
+      testAnnotation: wft
+    labels:
+      testLabel: wft
+  arguments:
+    artifacts:
+      -
+        name: message
+        path: /tmp/message
+    parameters:
+      -
+        name: message
+        value: "hello world"
+  entrypoint: whalesay
+  onExit: whalesay-exit
+  serviceAccountName: default
+  templates:
+    -
+      container:
+        args:
+          - "hello world"
+        command:
+          - cowsay
+        image: "docker/whalesay:latest"
+      name: whalesay
+    -
+      container:
+        args:
+          - "{{inputs.parameters.message}}"
+        command:
+          - cowsay
+        image: docker/whalesay
+      inputs:
+        parameters:
+          -
+            name: message
+      name: whalesay-template
+    -
+      container:
+        args:
+          - "hello from the default exit handler"
+        command:
+          - cowsay
+        image: docker/whalesay
+      name: whalesay-exit
+  ttlStrategy:
+    secondsAfterCompletion: 60
+  volumes:
+    -
+      name: test
+      secret:
+        secretName: test

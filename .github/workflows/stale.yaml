@@ -4,26 +4,38 @@ name: Mark stale issues and pull requests
 on:
   schedule:
     - cron: '0 2 * * *' # once a day at 2am
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
 jobs:
   stale:
     permissions:
+      actions: write # for reading and replacing the saved state cache
       issues: write # for commenting on an issue and editing labels
       pull-requests: write # for commenting on a PR and editing labels
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899 # v10.3.0
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           # timing
           days-before-stale: 14 # 2 weeks of inactivity
           days-before-close: 14 # 2 more weeks of inactivity
           # labels to watch for, add, and remove
-          only-labels: 'problem/more information needed' # only mark issues/PRs as stale if they have this label
-          labels-to-remove-when-unstale: 'problem/more information needed' # remove label when unstale -- should be manually added back if information is insufficient
+          any-of-labels: 'problem/more information needed,problem/stale,problem/old draft,problem/bot-not-ready' # only process issues/PRs that have at least one of these labels
+          labels-to-remove-when-unstale: 'problem/more information needed,problem/old draft' # remove labels when unstale -- should be manually added back if still applicable
           stale-issue-label: 'problem/stale'
           stale-pr-label: 'problem/stale'
           # automated messages to issue/PR authors
@@ -36,6 +48,6 @@ jobs:
           close-issue-message: >
             This issue has been closed due to inactivity and lack of information.
             If you still encounter this issue, please add the requested information and re-open.
-          close-pr-message:
+          close-pr-message: >
             This PR has been closed due to inactivity and lack of changes.
             If you would like to still work on this PR, please address the review comments and re-open.

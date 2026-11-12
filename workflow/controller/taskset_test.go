@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -9,60 +11,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestCreateTaskSet(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http 
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/create-task-set-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-nxvtg-1265710817:
-      http:
-        url: http://openlibrary.org/people/george08/nofound.json
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      name: http
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/taskset/create-task-set-taskset.yaml", &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
 		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
@@ -118,179 +81,10 @@ spec:
 }
 
 func TestRemoveCompletedTaskSetStatus(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: good
-            template: http
-            arguments:
-              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
-        - - name: bad
-            template: http
-            continueOn:
-              failed: true
-            arguments:
-              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
-
-    - name: http
-      inputs:
-        parameters:
-          - name: url
-      http:
-       url: "{{inputs.parameters.url}}"
-status:
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  finishedAt: null
-  nodes:
-    http-template-fqgsf:
-      children:
-      - http-template-fqgsf-898749974
-      displayName: http-template-fqgsf
-      finishedAt: null
-      id: http-template-fqgsf
-      name: http-template-fqgsf
-      phase: Running
-      startedAt: "2021-07-20T16:05:13Z"
-      templateName: main
-      templateScope: local/http-template-fqgsf
-      type: Steps
-    http-template-fqgsf-898749974:
-      boundaryID: http-template-fqgsf
-      children:
-      - http-template-fqgsf-2338098285
-      - http-template-fqgsf-3753847819
-      displayName: '[0]'
-      finishedAt: null
-      id: http-template-fqgsf-898749974
-      name: http-template-fqgsf[0]
-      phase: Running
-      startedAt: "2021-07-20T16:05:13Z"
-      templateScope: local/http-template-fqgsf
-      type: StepGroup
-    http-template-fqgsf-2338098285:
-      boundaryID: http-template-fqgsf
-      displayName: good
-      finishedAt: null
-      id: http-template-fqgsf-2338098285
-      inputs:
-        parameters:
-        - name: url
-          value: https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json
-      name: http-template-fqgsf[0].good
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            {
-              "swagger": "2.0",
-              "info": {
-                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
-                "version": "version not set"
-              },
-              "consumes": [
-                "application/json"
-              ],
-              "produces": [
-                "application/json"
-              ],
-              "paths": {},
-              "definitions": {}
-            }
-      phase: Succeeded
-      startedAt: "2021-07-20T16:05:13Z"
-      templateName: http
-      templateScope: local/http-template-fqgsf
-      type: HTTP
-    http-template-fqgsf-3753847819:
-      boundaryID: http-template-fqgsf
-      displayName: bad
-      finishedAt: null
-      id: http-template-fqgsf-3753847819
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      message: 404 Not Found
-      name: http-template-fqgsf[0].bad
-      phase: Failed
-      startedAt: "2021-07-20T16:05:13Z"
-      templateName: http
-      templateScope: local/http-template-fqgsf
-      type: HTTP
-  phase: Running
-  progress: 0/0
-  startedAt: "2021-07-20T16:05:13Z"
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/remove-completed-task-set-status-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-fqgsf-2338098285:
-      http:
-        url: http://openlibrary.org/people/george08/nofound.json
-      inputs:
-        parameters:
-        - name: url
-          value: http://openlibrary.org/people/george08/nofound.json
-      name: http
-status:
-  nodes:
-    http-template-fqgsf-2338098285:
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            {
-              "swagger": "2.0",
-              "info": {
-                "title": "pkg/apis/workflow/v1alpha1/generated.proto",
-                "version": "version not set"
-              },
-              "consumes": [
-                "application/json"
-              ],
-              "produces": [
-                "application/json"
-              ],
-              "paths": {},
-              "definitions": {}
-            }
-      phase: Succeeded
-    http-template-fqgsf-3753847819:
-      message: 404 Not Found
-      phase: Failed
-
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/taskset/remove-completed-task-set-status-taskset.yaml", &ts)
 	t.Run("RemoveCompletedTaskSetStatus", func(t *testing.T) {
 		cancel, controller := newController(ctx, wf, ts)
 		defer cancel()
@@ -333,67 +127,10 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 }
 
 func TestReconcileTaskSetWithMemoization(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      http:
-       url: "http://localhost"
-      memoize:
-        key: cache-demo-1
-        maxAge: "10s"
-        cache:
-          configMap:
-            name: cache-demo-1
-status:
-  nodes:
-    http-template-fqgsf-2338098285:
-      boundaryID: http-template-fqgsf
-      displayName: main
-      id: http-template-fqgsf-2338098285
-      name: http-template-fqgsf[0].main
-      memoizationStatus:
-        hit: false
-        key: cache-demo-1
-        cacheName: cache-demo-1
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            { demo }
-      phase: Succeeded
-      templateName: http
-      type: HTTP
-  phase: Running
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/reconcile-task-set-with-memoization-workflow.yaml")
 	ctx := logging.TestContext(t.Context())
 	var ts wfv1.WorkflowTaskSet
-	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTaskSet
-metadata:
-  name: http-template-1
-  namespace: default
-spec:
-  tasks:
-    http-template-fqgsf-2338098285:
-      http:
-        url: http://localhost
-      name: http
-status:
-  nodes:
-    http-template-fqgsf-2338098285:
-      outputs:
-        parameters:
-        - name: result
-          value: |
-            { demo }
-      phase: Succeeded
-    `, &ts)
+	wfv1.MustUnmarshal("@testdata/taskset/reconcile-task-set-with-memoization-taskset.yaml", &ts)
 	t.Run("MemoizeOnTaskSetSucceeded", func(t *testing.T) {
 		cancel, controller := newController(ctx, wf, ts)
 		defer cancel()
@@ -407,4 +144,154 @@ status:
 		require.NoError(t, err)
 		assert.NotEmpty(t, memo.Data["cache-demo-1"])
 	})
+}
+
+var taskSetTooLargeWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: taskset-too-large
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: running
+            template: http
+          - name: new
+            template: http
+    - name: http
+      http:
+        url: https://www.google.com/
+`
+
+func TestTaskSetRequestEntityTooLarge(t *testing.T) {
+	tooLarge := apierr.NewRequestEntityTooLargeError("limit is 3145728")
+
+	t.Run("Create", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wf := wfv1.MustUnmarshalWorkflow(httpwf)
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		creates := 0
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("create", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			creates++
+			return true, nil, tooLarge
+		})
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes[wf.Name]
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		assert.Contains(t, node.Message, "size limit")
+		assert.Contains(t, node.Message, "limit is 3145728")
+		_, err := controller.kubeclientset.CoreV1().Pods(wf.Namespace).Get(ctx, woc.getAgentPodName(), v1.GetOptions{})
+		assert.True(t, apierr.IsNotFound(err), "no agent pod is created for a taskset that was never written")
+
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Equal(t, 1, creates, "the errored task is not written again")
+	})
+
+	t.Run("Patch", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+		runningID := wf.NodeID(wf.Name + "[0].running")
+		newID := wf.NodeID(wf.Name + "[0].new")
+		ts := &wfv1.WorkflowTaskSet{
+			ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+			Spec: wfv1.WorkflowTaskSetSpec{
+				Tasks: map[string]wfv1.Template{runningID: *wf.GetTemplateByName("http")},
+			},
+		}
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("patch", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, tooLarge
+		})
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		running := woc.wf.Status.Nodes[runningID]
+		assert.Equal(t, wfv1.NodePending, running.Phase, "a task already in the taskset is left to the agent")
+		added := woc.wf.Status.Nodes[newID]
+		assert.Equal(t, wfv1.NodeError, added.Phase)
+		assert.Contains(t, added.Message, "size limit")
+	})
+
+	// newPatchTooLarge returns an operation context over a workflow whose
+	// taskset, as the informer has it, holds the running task only, with
+	// patches rejected as too large and gets answered by get.
+	newPatchTooLarge := func(ctx context.Context, t *testing.T, get k8stesting.ReactionFunc) (*wfOperationCtx, string) {
+		t.Helper()
+		wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+		runningID := wf.NodeID(wf.Name + "[0].running")
+		ts := &wfv1.WorkflowTaskSet{
+			ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+			Spec: wfv1.WorkflowTaskSetSpec{
+				Tasks: map[string]wfv1.Template{runningID: *wf.GetTemplateByName("http")},
+			},
+		}
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		t.Cleanup(cancel)
+		fake := controller.wfclientset.(*fakewfclientset.Clientset)
+		fake.PrependReactor("patch", "workflowtasksets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, tooLarge
+		})
+		fake.PrependReactor("get", "workflowtasksets", get)
+		return newWorkflowOperationCtx(ctx, wf, controller), wf.NodeID(wf.Name + "[0].new")
+	}
+
+	t.Run("TaskSetNewerThanInformer", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc, newID := newPatchTooLarge(ctx, t, func(k8stesting.Action) (bool, runtime.Object, error) {
+			// an earlier write the informer has not seen yet holds both tasks
+			wf := wfv1.MustUnmarshalWorkflow(taskSetTooLargeWf)
+			return true, &wfv1.WorkflowTaskSet{
+				ObjectMeta: v1.ObjectMeta{Name: wf.Name, Namespace: wf.Namespace},
+				Spec: wfv1.WorkflowTaskSetSpec{Tasks: map[string]wfv1.Template{
+					wf.NodeID(wf.Name + "[0].running"): *wf.GetTemplateByName("http"),
+					wf.NodeID(wf.Name + "[0].new"):     *wf.GetTemplateByName("http"),
+				}},
+			}, nil
+		})
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[newID].Phase, "a task the API server has is left to the agent")
+	})
+
+	t.Run("TaskSetUnreadable", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		woc, newID := newPatchTooLarge(ctx, t, func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInternalError(errors.New("unavailable"))
+		})
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes[newID].Phase, "nothing is errored until the taskset can be read")
+	})
+}
+
+// A node that has already finished, such as one errored because its agent
+// pod failed, keeps its phase and message when the task set still holds a
+// stale result for it (#14200).
+func TestReconcileTaskSetKeepsFinishedNode(t *testing.T) {
+	const nodeID = "http-template-fqgsf-2338098285"
+	const message = `agent pod failed with reason:"The node was low on resource: ephemeral-storage."`
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/reconcile-task-set-with-memoization-workflow.yaml")
+	node := wf.Status.Nodes[nodeID]
+	node.Phase = wfv1.NodeError
+	node.Message = message
+	wf.Status.Nodes[nodeID] = node
+	var ts wfv1.WorkflowTaskSet
+	wfv1.MustUnmarshal("@testdata/taskset/reconcile-task-set-with-memoization-taskset.yaml", &ts)
+	ts.Status.Nodes[nodeID] = wfv1.NodeResult{Phase: wfv1.NodePending, Message: "Queuing"}
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, ts)
+	defer cancel()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	time.Sleep(1 * time.Second)
+	require.NoError(t, woc.reconcileTaskSet(ctx))
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes[nodeID].Phase)
+	assert.Equal(t, message, woc.wf.Status.Nodes[nodeID].Message)
 }

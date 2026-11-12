@@ -167,7 +167,7 @@ func PrintWorkflowHelper(wf *wfv1.Workflow, getArgs GetFlags) string {
 		}
 		mainRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 
-		onExitID := wf.NodeID(wf.Name + "." + onExitSuffix)
+		onExitID := wf.ResolveNodeID(wf.Name + "." + onExitSuffix)
 		if onExitRoot, ok := roots[onExitID]; ok {
 			_, _ = fmt.Fprintf(w, "\t\t\t\t\t\n")
 			onExitRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
@@ -335,7 +335,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	// 1st Pass Process enough of nonBoundaryParent nodes to know all their children
 	for id, status := range wf.Status.Nodes {
 		if status.Type == "" {
-			log.Fatal("Missing node type in status node. Cannot get workflows created with Argo <= 2.0 using the default or wide output option.")
+			log.Fatal("Missing node type in status node. Cannot get this workflow using the default or wide output option.")
 			return nil
 		}
 		if isNonBoundaryParentNode(status.Type) {
@@ -344,6 +344,14 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 
 			for _, child := range status.Children {
 				nonBoundaryParentChildrenMap[child] = &n
+				// A TaskGroup is not itself a render node: an expanded
+				// step's items print under its StepGroup or Retry parent,
+				// as they did before the TaskGroup existed.
+				if wf.Status.Nodes[child].Type == wfv1.NodeTypeTaskGroup {
+					for _, item := range wf.Status.Nodes[child].Children {
+						nonBoundaryParentChildrenMap[item] = &n
+					}
+				}
 			}
 		}
 	}

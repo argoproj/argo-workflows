@@ -8,4 +8,7 @@ resources:
   - hello-executor-plugin-configmap.yaml
   - massive-executor-plugin-configmap.yaml
 
+patches:
+  - path: workflow-controller-deployment.yaml
+
 namespace: argo

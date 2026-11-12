@@ -24,6 +24,13 @@ type StateRecord struct {
 	Time       time.Time `db:"time"`     // timestamp of creation or last update
 }
 
+// StateCountRecord is an aggregate count of state rows for a lock, grouped by held/pending.
+type StateCountRecord struct {
+	Name  string `db:"name"`       // semaphore name identifier (as stored, e.g. "sem/<ns>/<resource>")
+	Held  bool   `db:"held"`       // true = held, false = pending
+	Count int64  `db:"lock_count"` // number of rows in this (name, held) group
+}
+
 type ControllerHealthRecord struct {
 	Controller string    `db:"controller"` // controller where the workflow is running
 	Time       time.Time `db:"time"`       // timestamp of creation or last update
@@ -63,9 +70,10 @@ type SyncQueries interface {
 	GetCurrentState(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, held bool) ([]StateRecord, error)
 	GetCurrentHolders(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string) ([]StateRecord, error)
 	GetCurrentPending(ctx context.Context, semaphoreName string) ([]StateRecord, error)
+	GetStateCountsByController(ctx context.Context, controllerName string) ([]StateCountRecord, error)
 	GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]StateRecord, error)
 	AddToQueue(ctx context.Context, record *StateRecord) error
-	RemoveFromQueue(ctx context.Context, semaphoreName, holderKey string) error
+	RemoveFromQueue(ctx context.Context, semaphoreName, holderKey, controllerName string) error
 	CheckQueueExists(ctx context.Context, semaphoreName, holderKey, controllerName string) ([]StateRecord, error)
 	UpdateStateToHeld(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName, holderKey, controllerName string) error
 	InsertHeldState(ctx context.Context, sessionProxy *sqldb.SessionProxy, record *StateRecord) error
@@ -175,6 +183,24 @@ func (q *syncQueries) GetCurrentPending(ctx context.Context, semaphoreName strin
 	return q.GetCurrentState(ctx, q.sessionProxy, semaphoreName, false)
 }
 
+// GetStateCountsByController returns, for every lock this controller currently holds or waits on,
+// the number of held and pending rows. It is a single aggregate query used to drive the
+// locks_held / locks_pending gauges: each controller reports only its own contribution, so
+// `sum by (lock_name)` across controllers yields the true global picture without double-counting.
+func (q *syncQueries) GetStateCountsByController(ctx context.Context, controllerName string) ([]StateCountRecord, error) {
+	var counts []StateCountRecord
+	err := q.sessionProxy.With(ctx, func(session db.Session) error {
+		counts = []StateCountRecord{}
+		return session.SQL().
+			Select(StateNameField, StateHeldField, db.Raw("COUNT(*) AS lock_count")).
+			From(q.config.StateTable).
+			Where(db.Cond{StateControllerField: controllerName}).
+			GroupBy(StateNameField, StateHeldField).
+			All(&counts)
+	})
+	return counts, err
+}
+
 func (q *syncQueries) GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]StateRecord, error) {
 	since := time.Now().Add(-inactiveTimeout)
 	var queue []StateRecord
@@ -186,7 +212,9 @@ func (q *syncQueries) GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.S
 			And(db.Cond{ControllerTimeField + " >": since})
 
 		return session.SQL().
-			Select(StateKeyField, StateControllerField).
+			// Priority and time are needed by the caller, which orders the
+			// queue in Go (see workflow/sync queueLess).
+			Select(StateKeyField, StateControllerField, StatePriorityField, StateTimeField).
 			From(q.config.StateTable).
 			Where(db.Cond{StateNameField: semaphoreName}).
 			And(db.Cond{StateHeldField: false}).
@@ -206,12 +234,19 @@ func (q *syncQueries) AddToQueue(ctx context.Context, record *StateRecord) error
 	})
 }
 
-func (q *syncQueries) RemoveFromQueue(ctx context.Context, semaphoreName, holderKey string) error {
+// RemoveFromQueue deletes a pending row. The controller condition matters because the state
+// table is shared: without it a controller's queue garbage collection, which validates keys
+// against its own informer, would delete the pending rows of every other controller sharing
+// the database. controllerName is always the caller's own, but the garbage collection does pass
+// other controllers' keys, because it reads them from GetCurrentState, which is not filtered by
+// controller. Such a delete now matches nothing instead of evicting their queue entry.
+func (q *syncQueries) RemoveFromQueue(ctx context.Context, semaphoreName, holderKey, controllerName string) error {
 	return q.sessionProxy.With(ctx, func(session db.Session) error {
 		_, err := session.SQL().
 			DeleteFrom(q.config.StateTable).
 			Where(db.Cond{StateNameField: semaphoreName}).
 			And(db.Cond{StateKeyField: holderKey}).
+			And(db.Cond{StateControllerField: controllerName}).
 			And(db.Cond{StateHeldField: false}).
 			Exec()
 		return err

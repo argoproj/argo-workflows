@@ -15,6 +15,9 @@ You can scale the controller vertically in these ways:
 
 If you observe the Controller using its total CPU or memory requests, you should increase those.
 
+At scale the Controller's memory usage is dominated by its informer caches, which hold every live Workflow, Pod and related object it watches.
+Since v4.1 the Controller strips `metadata.managedFields` from objects before caching them, which reduces the memory needed per cached object; keep this in mind when comparing heap profiles across versions.
+
 ### Adding Goroutines to Increase Concurrency
 
 If you have sufficient CPU cores, you can take advantage of them with more goroutines:
@@ -22,9 +25,6 @@ If you have sufficient CPU cores, you can take advantage of them with more gorou
 - If you have many Workflows and you notice they're not being reconciled fast enough, increase `--workflow-workers`.
 - If you're using `TTLStrategy` in your Workflows and you notice they're not being deleted fast enough, increase `--workflow-ttl-workers`.
 - If you're using `PodGC` in your Workflows and you notice the Pods aren't being deleted fast enough, increase `--pod-cleanup-workers`.
-
-> v3.5 and after
-
 - If you're using a lot of `CronWorkflows` and they don't seem to be firing on time, increase `--cron-workflow-workers`.
 
 ### K8S API Client Side Rate Limiting
@@ -38,7 +38,7 @@ If you frequently see messages similar to this in the Controller log (issued by 
 Waited for 7.090296384s due to client-side throttling, not priority and fairness, request: GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t
 ```
 
-Or, in >= v3.5, if you see warnings similar to this (could be any CR, not just `WorkflowTemplate`):
+Or, if you see warnings similar to this (could be any CR, not just `WorkflowTemplate`):
 
 ```txt
 Waited for 7.090296384s, request:GET:https://10.100.0.1:443/apis/argoproj.io/v1alpha1/namespaces/argo/workflowtemplates/s2t

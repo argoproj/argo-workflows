@@ -227,8 +227,6 @@ This applies to both local and multiple controller locks.
 
 ## Multiple locks
 
-> v3.6 and after
-
 You can specify multiple locks in a single Workflow or Template.
 
 ```yaml

@@ -1,19 +1,9 @@
 # Transport Layer Security
 
-> v2.8 and after
-
 If you're running Argo Server you have three options with increasing transport security (note - you should also be
 running [authentication](argo-server.md#auth-mode)):
 
 ## Default configuration
-
-> v2.8 - 2.12
-
-Defaults to [Plain Text](#plain-text)
-
-> v3.0 and after
-
-Defaults to [Encrypted](#encrypted) if cert is available
 
 Argo image/deployment defaults to [Encrypted](#encrypted) with a self-signed certificate which expires after 365 days.
 
@@ -92,6 +82,25 @@ argo --secure list
 export ARGO_SECURE=true
 argo list
 ```
+
+### Mutual TLS
+
+When Argo Server or its proxy requires mutual TLS, pass `--client-certificate` and `--client-key` together.
+Use `--certificate-authority` to trust the certificate authority that signed the server certificate.
+The flags work with both the gRPC and HTTP/1 clients, including artifact downloads with `argo cp`.
+
+```bash
+argo --argo-server argo.example.com:443 \
+  --secure \
+  --certificate-authority ca.crt \
+  --client-certificate client.crt \
+  --client-key client.key \
+  list
+```
+
+Client certificates and certificate authorities configured in a kubeconfig context are used for direct Kubernetes connections but are not automatically used in server mode.
+Pass the three flags explicitly when connecting through Argo Server.
+Unlike `--secure` and `--insecure-skip-verify`, these flags do not have `ARGO_*` environment variable equivalents.
 
 ### TLS Min Version
 

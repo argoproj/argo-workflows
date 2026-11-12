@@ -10,7 +10,7 @@ If this file and that one differ, then the argoproj file is the authoritative ve
 | Maintainer                | GitHub ID                                         | Project Roles              | Affiliation                                    |
 |---------------------------|---------------------------------------------------|----------------------------|------------------------------------------------|
 | Alan Clucas               | [Joibel](https://github.com/Joibel)               | Lead           | [Pipekit](https://pipekit.io/)                 |
-| Yuan Tang                 | [terrytangyuan](https://github.com/terrytangyuan) | Lead           | [Red Hat](https://www.redhat.com)              |
+| Yuan Tang                 | [terrytangyuan](https://github.com/terrytangyuan) | Lead           | [TensorScale](https://tensorscale.io/)              |
 | Mason Malone              | [MasonM](https://github.com/MasonM)               | Approver       | [Adobe](https://www.github.com/adobe/)         |
 | Isitha Subasinghe         | [isubasinghe](https://github.com/isubasinghe)     | Approver       | [Pipekit](https://pipekit.io/)                 |
 | Jesse Suen                | [jessesuen](https://github.com/jessesuen)         | Approver       | [Akuity](https://akuity.io/)                   |

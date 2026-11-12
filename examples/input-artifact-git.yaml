@@ -16,7 +16,7 @@ spec:
         path: /src
         git:
           repo: https://github.com/argoproj/argo-workflows.git
-          revision: "v2.1.1"
+          revision: "v2.1.1" # See singleBranch/branch alternative below
           # For private repositories, create a k8s secret containing the git credentials and
           # reference the secret keys in the secret selectors: usernameSecret, passwordSecret,
           # or sshPrivateKeySecret.
@@ -32,7 +32,16 @@ spec:
           # sshPrivateKeySecret:
           #   name: github-creds
           #   key: ssh-private-key
-          # 
+          #
+          # Recommended approach for GitHub:
+          # - Create a GitHub App, with at least "contents: read" permissions for the repo
+          # - Install the GH App to the repo, noting the InstallID found in the URL
+          # - Use ExternalSecretsOperator to generate rolling Access Tokens via the GH App credentials:
+          #   ESO Docs: https://external-secrets.io/main/api/generator/github/
+          #   Ensure the templated Secret has `username: x-access-token`, `password: "{{ .token }}"`
+          # - Use `usernameSecret` and `passwordSecret` here to reference the name and keys of the 
+          #   ESO generated GitHub token secret, which will automatically refresh every `refreshInterval` 
+          #
           # insecureIgnoreHostKey disables SSH strict host key checking during the git clone
           # NOTE: this is unnecessary for the well-known public SSH keys from the major git
           # providers (github, bitbucket, gitlab, azure) as these keys are already baked into
@@ -54,6 +63,9 @@ spec:
           # is faster than passing in a revision, as it will only fetch the references to the given branch.
           # singleBranch: true
           # branch: my-branch
+          # 
+          # If submodule cloning is not necessary/desired
+          # disableSubmodules: true
     container:
       image: golang:1.10
       command: [sh, -c]

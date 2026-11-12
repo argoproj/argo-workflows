@@ -1,18 +1,30 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "labels": [
     "type/dependencies"
   ],
   "baseBranchPatterns": [
     "main",
-    "release-3.7",
-    "release-4.0"
+    "release-4.0",
+    "release-4.1"
   ],
   "nix": {
     "enabled": true
   },
   "packageRules": [
+    {
+      "description": "Group k8s.io code-generator, proto vendor, and OpenAPI spec versions",
+      "matchPackageNames": [
+        "k8s.io/code-generator",
+        "k8s.io/api",
+        "k8s.io/apimachinery",
+        "kubernetes/kubernetes"
+      ],
+      "groupName": "k8s.io codegen and proto deps"
+    },
     {
       "description": "Disable argo updates (maintained separately)",
       "matchPackageNames": [
@@ -25,8 +37,8 @@
     {
       "description": "Only allow patch updates on release branches",
       "matchBaseBranches": [
-        "release-3.7",
-        "release-4.0"
+        "release-4.0",
+        "release-4.1"
       ],
       "matchUpdateTypes": [
         "major",
@@ -37,8 +49,8 @@
     {
       "description": "Use conservative lock file updates on release branches",
       "matchBaseBranches": [
-        "release-3.7",
-        "release-4.0"
+        "release-4.0",
+        "release-4.1"
       ],
       "rangeStrategy": "in-range-only"
     },
@@ -63,12 +75,27 @@
     {
       "description": "Disable lock file maintenance on release branches",
       "matchBaseBranches": [
-        "release-3.7",
-        "release-4.0"
+        "release-4.0",
+        "release-4.1"
       ],
       "matchUpdateTypes": [
         "lockFileMaintenance"
       ],
+      "enabled": false
+    },
+    {
+      "description": "Group tested Kubernetes versions; never automerge, bumping max is a support decision",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rancher/k3s"],
+      "groupName": "tested Kubernetes versions",
+      "automerge": false
+    },
+    {
+      "description": "Minimum tested Kubernetes version only gets patch updates; raise its minor by hand",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rancher/k3s"],
+      "matchDepTypes": ["min"],
+      "matchUpdateTypes": ["major", "minor"],
       "enabled": false
     }
   ],
@@ -80,6 +107,72 @@
     "yarnDedupeFewer",
     "gomodTidy",
     "gomodUpdateImportPaths"
+  ],
+  "customManagers": [
+    {
+      "description": "Update tool versions annotated with `# renovate:` in hack/k8s-versions.sh",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)hack/k8s-versions.sh$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\s+\\w+\\s*\\??=\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
+      ],
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "description": "Tested Kubernetes (k3s) versions in hack/k8s-versions.sh",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)hack/k8s-versions.sh$/"
+      ],
+      "matchStrings": [
+        "\\[(?<depType>min|max)\\]=(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "rancher/k3s",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^(?<version>v\\d+\\.\\d+\\.\\d+)-k3s1$"
+    },
+    {
+      "description": "k8s.io/code-generator go install in Makefile",
+      "customType": "regex",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "go install k8s\\.io/code-generator/cmd/go-to-protobuf@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "k8s.io/code-generator",
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "k8s.io/code-generator module path in Makefile",
+      "customType": "regex",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "k8s\\.io/code-generator@(?<currentValue>v\\d+\\.\\d+\\.\\d+)/kube_codegen\\.sh"
+      ],
+      "depNameTemplate": "k8s.io/code-generator",
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "Kubernetes OpenAPI spec version in Makefile",
+      "customType": "regex",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "kubernetes/kubernetes/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/api/openapi-spec"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "k8s.io proto vendor refs in argo-proto.yaml",
+      "customType": "regex",
+      "managerFilePatterns": ["/^argo-proto\\.yaml$/"],
+      "matchStrings": [
+        "owner: kubernetes\\s+name: (?<depName>api|apimachinery)\\s+ref: (?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "k8s.io/{{{depName}}}",
+      "datasourceTemplate": "go"
+    }
   ],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {

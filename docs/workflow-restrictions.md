@@ -1,7 +1,5 @@
 # Workflow Restrictions
 
-> v2.9 and after
-
 ## Introduction
 
 As the administrator of the controller, you may want to limit which types of Workflows your users can run.
@@ -36,6 +34,16 @@ The allow-listed fields are:
 * `artifactGC`
 
 All other fields on the submitted `Workflow` spec must be defined on the referenced `WorkflowTemplate` instead.
+
+### Extending the Allow-List
+
+You can add fields to the allow-list with the `WORKFLOW_USER_OVERRIDE_ALLOWLIST` [environment variable](environment-variables.md) on the Controller.
+Set it to a comma-separated list of `WorkflowSpec` field names, using the YAML/JSON names you would write in a `Workflow`, for example `WORKFLOW_USER_OVERRIDE_ALLOWLIST=podSpecPatch,volumes`.
+
+Use this when you have decided that a normally-blocked field is safe for submitters to override in your environment.
+An unknown field name fails the Controller at startup rather than being silently ignored, so typos are surfaced.
+
+The nested `artifactGC.podSpecPatch`, `artifactGC.serviceAccountName`, and `artifactGC.podMetadata` fields remain blocked and are not relaxed by this variable.
 
 ## Setting Workflow Restrictions
 

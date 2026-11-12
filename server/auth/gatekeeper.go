@@ -2,12 +2,15 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
@@ -16,13 +19,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
@@ -66,9 +72,15 @@ type gatekeeper struct {
 	ssoNamespace string
 	namespaced   bool
 	cache        *cache.ResourceCache
+	// successful client-mode token reviews, keyed by a digest of the authorization header
+	tokenReviewCache cache.Interface
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+// tokenReviewCacheSize bounds the number of distinct client-mode tokens whose successful
+// SelfSubjectReview is remembered.
+const tokenReviewCacheSize = 1000
+
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, resourceCache *cache.ResourceCache, tokenReviewCacheTTL time.Duration) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -81,8 +93,26 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		namespace,
 		ssoNamespace,
 		namespaced,
-		cache,
+		resourceCache,
+		cache.NewLRUTtlCache(tokenReviewCacheTTL, tokenReviewCacheSize),
 	}, nil
+}
+
+// reviewToken validates the caller's credentials with the API server via a SelfSubjectReview.
+// Endpoints that never call Kubernetes would otherwise accept any token that merely looks like a
+// bearer token. Successful reviews are remembered for tokenReviewCacheTTL so that the API server
+// is not consulted on every request; failures are never cached.
+func (s *gatekeeper) reviewToken(ctx context.Context, authorization string, kubeClient kubernetes.Interface) error {
+	digest := sha256.Sum256([]byte(authorization))
+	key := hex.EncodeToString(digest[:])
+	if _, ok := s.tokenReviewCache.Get(key); ok {
+		return nil
+	}
+	if _, err := kubeClient.AuthenticationV1().SelfSubjectReviews().Create(ctx, &authenticationv1.SelfSubjectReview{}, metav1.CreateOptions{}); err != nil {
+		return err
+	}
+	s.tokenReviewCache.Add(key, struct{}{})
+	return nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -137,7 +167,7 @@ func GetClaims(ctx context.Context) *authTypes.Claims {
 
 func getAuthHeaders(md metadata.MD) []string {
 	// looks for the HTTP header `Authorization: Bearer ...`
-	for _, t := range md.Get("authorization") {
+	for _, t := range md.Get(authcookie.AuthorizationMetadataKey) {
 		return []string{t}
 	}
 	// check the HTTP cookie
@@ -149,7 +179,7 @@ func getAuthHeaders(md metadata.MD) []string {
 		request := http.Request{Header: header}
 		cookies := request.Cookies()
 		for _, c := range cookies {
-			if c.Name == "authorization" {
+			if c.Name == authcookie.AuthorizationCookieName {
 				authorizations = append(authorizations, c.Value)
 			}
 		}
@@ -184,6 +214,9 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 		restConfig, clients, err := s.clientForAuthorization(authorization, s.restConfig)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+		if err := s.reviewToken(ctx, authorization, clients.Kubernetes); err != nil {
+			return nil, nil, status.Errorf(codes.Unauthenticated, "token not valid: %v", err)
 		}
 		claims, _ := serviceaccount.ClaimSetFor(restConfig)
 		return clients, claims, nil

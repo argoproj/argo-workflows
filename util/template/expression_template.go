@@ -18,6 +18,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/maps"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func init() {
@@ -28,14 +29,14 @@ func init() {
 
 var (
 	variablesToCheck = []string{
-		"item",
-		"retries",
-		"lastRetry.exitCode",
-		"lastRetry.status",
-		"lastRetry.duration",
-		"lastRetry.message",
-		"workflow.status",
-		"workflow.failures",
+		varkeys.Item.Template(),
+		varkeys.Retries.Template(),
+		varkeys.RetriesLastExitCode.Template(),
+		varkeys.RetriesLastStatus.Template(),
+		varkeys.RetriesLastDuration.Template(),
+		varkeys.RetriesLastMessage.Template(),
+		varkeys.WorkflowStatus.Template(),
+		varkeys.WorkflowFailures.Template(),
 	}
 )
 
@@ -323,7 +324,7 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 		}
 
 		rVal := reflect.ValueOf(current)
-		for rVal.Kind() == reflect.Ptr {
+		for rVal.Kind() == reflect.Pointer {
 			if rVal.IsNil() {
 				return false
 			}
@@ -346,7 +347,7 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 					if fType.Anonymous {
 						embeddedValue := rVal.Field(j)
 						// Handle pointer to embedded struct
-						for embeddedValue.Kind() == reflect.Ptr {
+						for embeddedValue.Kind() == reflect.Pointer {
 							if embeddedValue.IsNil() {
 								break
 							}

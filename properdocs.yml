@@ -58,6 +58,7 @@ exclude_docs: |
   /proposals/
   /requirements.txt
   /tested-kubernetes-versions.md
+  /AGENTS.md
 
 nav:
   - Home: README.md
@@ -126,6 +127,7 @@ nav:
       - Features:
           # this is a bit of a dumping ground, I've tried to order with key features first
           - variables.md
+          - Variable catalog: variable-flow/variables.md
           - retries.md
           - lifecyclehook.md
           - synchronization.md
@@ -252,6 +254,7 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - crd-installer.md
       - releases.md
       - upgrading.md
       - new-features.md
@@ -270,6 +273,7 @@ nav:
           - telemetry-configuration.md
           - deprecations.md
           - workflow-executors.md
+          - initless-pod.md
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md
@@ -294,6 +298,7 @@ nav:
       - tracing.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - pull-requests.md
       - running-nix.md
       - architecture.md
       - running-locally.md

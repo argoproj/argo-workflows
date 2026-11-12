@@ -133,6 +133,29 @@ type Config struct {
 	// This is useful when external agents are responsible for executing these templates and the controller should not create agent pods.
 	// Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
 	DisableAgentPodCreation bool `json:"disableAgentPodCreation,omitempty"`
+
+	// InitlessPod configures an opt-in pod layout that omits the argoexec init container.
+	// The argoexec binary is delivered to the main container via a Kubernetes image volume
+	// (KEP-4639 — Beta in K8s 1.33 behind a feature gate, GA in 1.36), and a new
+	// `supervisor` container replaces `wait`, taking on pre-main responsibilities
+	// (template write, script staging, input artifact download, readiness signaling) in
+	// addition to its existing post-main work.
+	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
+}
+
+// InitlessPodConfig configures the init-less pod layout.
+//
+// BETA — off by default and may change in incompatible ways in future minor
+// releases before being promoted to stable. See Config.InitlessPod.
+type InitlessPodConfig struct {
+	// Enabled selects the init-less pod layout for all workflow pods scheduled by this controller.
+	// Default is false (legacy pod layout with argoexec init container).
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// IsEnabled returns true if the init-less pod layout is enabled.
+func (c *InitlessPodConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
 }
 
 // FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
@@ -284,6 +307,19 @@ type DBConfig struct {
 	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
 	// DBReconnectConfig are configuration options for database retries and reconnections
 	DBReconnectConfig *DBReconnectConfig `json:"reconnectionConfig,omitempty"`
+	// ConnectionTimeoutSeconds is the timeout in seconds for establishing a database connection, 5 seconds if not set.
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty"`
+}
+
+const defaultDBConnectionTimeout = 5 * time.Second
+
+// ConnectionTimeout returns the database connection-establishment timeout,
+// defaulting to 5s when unset.
+func (c DBConfig) ConnectionTimeout() time.Duration {
+	if c.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(c.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultDBConnectionTimeout
 }
 
 // DBReconnectConfig contains database reconnect settings

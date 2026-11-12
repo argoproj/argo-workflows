@@ -1,0 +1,161 @@
+// Core decision logic for the PR-readiness helper. Pure functions here are
+// unit-tested (test/classify.test.ts); the API-calling orchestration lives in
+// main.ts.
+
+import type { CheckRun, Config, Decision, GitHubUser, JobStep, Signal, SignalMatch, SignalState, StackablePr } from './types.ts';
+
+const FAILURE_CONCLUSIONS = new Set(['failure', 'timed_out', 'action_required']);
+const NOT_APPLICABLE_CONCLUSIONS = new Set(['skipped', 'cancelled']);
+
+function matchesIgnore(name: string, patterns: string[]): boolean {
+  return patterns.some((p) => (p.endsWith('*') ? name.startsWith(p.slice(0, -1)) : name === p));
+}
+
+function findRun(checkRuns: CheckRun[], match: SignalMatch): CheckRun | undefined {
+  return checkRuns.find(
+    (r) => r.name === match.check && (!match.app || (r.app != null && r.app.slug === match.app))
+  );
+}
+
+function runState(run: CheckRun | undefined): SignalState {
+  if (!run) {
+    return 'not-applicable';
+  }
+  if (run.status !== 'completed') {
+    return 'pending';
+  }
+  if (run.conclusion !== null && FAILURE_CONCLUSIONS.has(run.conclusion)) {
+    return 'failure';
+  }
+  if (run.conclusion !== null && NOT_APPLICABLE_CONCLUSIONS.has(run.conclusion)) {
+    return 'not-applicable';
+  }
+  return 'success'; // success, neutral
+}
+
+// Maps the covered signals from checks.config.json onto the live check runs
+// for a head SHA. Uncovered checks (unit/E2E tests etc.) are invisible.
+export function classifySignals(checkRuns: CheckRun[], config: Config): Signal[] {
+  return config.signals.map((signal) => {
+    const run = findRun(checkRuns, signal.match);
+    return {
+      id: signal.id,
+      title: signal.title,
+      guidance: signal.guidance,
+      stepGuidance: signal.stepGuidance ?? null,
+      state: runState(run),
+      url: run ? run.html_url : null,
+    };
+  });
+}
+
+// Drift detection: failing check runs from apps we cover that match neither a
+// signal nor the ignore list — typically a renamed job. Logged, never posted.
+export function diagnostics(checkRuns: CheckRun[], config: Config): { unmapped: string[] } {
+  const unmapped = checkRuns
+    .filter(
+      (r) =>
+        r.status === 'completed' &&
+        r.conclusion !== null &&
+        FAILURE_CONCLUSIONS.has(r.conclusion) &&
+        r.app != null &&
+        config.coveredApps.includes(r.app.slug) &&
+        !config.signals.some((s) => findRun([r], s.match)) &&
+        !matchesIgnore(r.name, config.ignoreChecks)
+    )
+    .map((r) => r.name);
+  return { unmapped };
+}
+
+interface DecideArgs {
+  signals: ReadonlyArray<{ id: string; state: string }>;
+  templateVerdict: { compliant: boolean } | null;
+  hasExistingComment: boolean;
+}
+
+// The convergence rules. See README.md for the decision table. `blocking`
+// drives the not-ready label: the bot owns it outright, so the label is simply
+// applied while blocking and removed once not (main.ts does the sync).
+export function decide({ signals, templateVerdict, hasExistingComment }: DecideArgs): Decision {
+  const failing = signals.filter((s) => s.state === 'failure').map((s) => s.id);
+  const templateBlocking = Boolean(templateVerdict && templateVerdict.compliant === false);
+  const blocking = failing.length > 0 || templateBlocking;
+  const anyPending = signals.some((s) => s.state === 'pending');
+
+  let variant: Decision['variant'] = null;
+  let shouldComment = false;
+  if (blocking) {
+    variant = 'issues';
+    shouldComment = true;
+  } else if (hasExistingComment) {
+    variant = anyPending ? 'waiting' : 'allclear';
+    shouldComment = true;
+  }
+
+  return { variant, shouldComment, blocking, failing, templateBlocking };
+}
+
+// OWNERS is a small YAML subset: three keys, each a list of logins.
+export function parseOwners(yamlText: string): string[] {
+  const sections = new Set(['owners', 'approvers', 'reviewers']);
+  const logins: string[] = [];
+  let current: string | null = null;
+  for (const line of yamlText.split('\n')) {
+    const key = line.match(/^(\w+):/);
+    if (key) {
+      current = key[1];
+      continue;
+    }
+    const item = line.match(/^-\s*(\S+)/);
+    if (item && current !== null && sections.has(current)) {
+      logins.push(item[1]);
+    }
+  }
+  return logins;
+}
+
+export function isExemptAuthor(user: GitHubUser, ownersYaml: string): boolean {
+  if (user.type === 'Bot' || /\[bot\]$/i.test(user.login)) {
+    return true;
+  }
+  const login = user.login.toLowerCase();
+  return parseOwners(ownersYaml).some((l) => l.toLowerCase() === login);
+}
+
+export function findPullRequest<T extends { head: { sha: string } }>(openPrs: T[], headSha: string): T | null {
+  return openPrs.find((pr) => pr.head.sha === headSha) ?? null;
+}
+
+// A PR is in scope when it targets the default branch, directly or through a
+// stack: a stacked PR targets the head branch of another open PR in the same
+// repository, which in turn targets the default branch (or another stacked
+// PR). Walk the chain of open PRs; a cycle or a dead end (e.g. a release
+// branch) means out of scope.
+export function targetsDefaultBranch<T extends StackablePr>(pr: T, openPrs: T[], defaultBranch: string): boolean {
+  const seen = new Set<number>();
+  let current: T | undefined = pr;
+  while (current && !seen.has(current.number)) {
+    if (current.base.ref === defaultBranch) {
+      return true;
+    }
+    seen.add(current.number);
+    const { ref, repo }: StackablePr['base'] = current.base;
+    current = openPrs.find((p) => p.head.ref === ref && p.head.repo != null && repo != null && p.head.repo.full_name === repo.full_name);
+  }
+  return false;
+}
+
+// For checks with per-step guidance (the feature-pr-handling job), pick the
+// guidance of the failing step; fall back to the signal's generic guidance.
+export function pickStepGuidance(
+  signal: { guidance: string; stepGuidance?: Record<string, string> | null },
+  steps: JobStep[] | null
+): string {
+  if (signal.stepGuidance && Array.isArray(steps)) {
+    const failed = steps.find((s) => s.conclusion === 'failure' && signal.stepGuidance![s.name]);
+    if (failed) {
+      return signal.stepGuidance[failed.name];
+    }
+  }
+  return signal.guidance;
+}

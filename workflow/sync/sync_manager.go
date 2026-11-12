@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
+	wfmetrics "github.com/argoproj/argo-workflows/v4/workflow/metrics"
 )
 
 type (
@@ -38,6 +40,18 @@ type Manager struct {
 	dbInfo            syncdb.Info
 	queries           syncdb.SyncQueries
 	log               logging.Logger
+	metrics           syncMetrics
+}
+
+func (sm *Manager) WithMetrics(ctx context.Context, m *wfmetrics.Metrics) *Manager {
+	sm.metrics = m
+	if m != nil {
+		if err := m.RegisterLockGauges(sm.LockMetrics); err != nil {
+			sm.log.WithError(err).Error(ctx, "failed to register lock gauge callbacks")
+			os.Exit(1)
+		}
+	}
+	return sm
 }
 
 type lockTypeName string
@@ -475,18 +489,17 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var updated bool
 		var already bool
 		var msg string
-		// Backoff bounds: sm.lock is held for the whole loop, so cap each sleep
-		// modestly. Jitter prevents a fleet of replicas from retrying in lockstep
-		// after a shared conflict burst.
-		backoff := wait.Backoff{
-			Steps:    5,
-			Duration: 10 * time.Millisecond,
-			Factor:   2.0,
-			Jitter:   0.5,
-			Cap:      600 * time.Millisecond,
-		}
+		var newly []*acquiredLock
+		backoff := dbRetryBackoff
+		// tryAcquireImpl mutates wf.Status.Synchronization in memory before the
+		// transaction commits. Snapshot it and roll each failed attempt back, so
+		// that attempts are independent and an error return leaves the caller's
+		// status exactly as it was - otherwise an abort leaves a Holding entry
+		// for a row the database rolled back, which would be persisted and then
+		// failed as a stale hold on the next controller restart.
+		syncStatus := wf.Status.Synchronization.DeepCopy()
 		attempt := 0
-		err = retry.OnError(backoff, isRetryableSyncError, func() error {
+		err = retry.OnError(backoff, IsRetryableSyncError, func() error {
 			attempt++
 			sm.log.WithFields(logging.Fields{
 				"holderKey": holderKey,
@@ -494,15 +507,16 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 			}).Info(ctx, "TryAcquire - starting transaction")
 			txErr := sm.dbInfo.SessionProxy.TxWith(ctx, func(sp *sqldb.SessionProxy) error {
 				var implErr error
-				already, updated, msg, failedLockName, implErr = sm.tryAcquireImpl(ctx, wf, sp, holderKey, failedLockName, syncItems, lockKeys)
+				already, updated, msg, failedLockName, newly, implErr = sm.tryAcquireImpl(ctx, wf, sp, holderKey, failedLockName, syncItems, lockKeys)
 				return implErr
 			}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 			if txErr != nil {
+				wf.Status.Synchronization = syncStatus.DeepCopy()
 				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   attempt,
 					"error":     txErr,
-					"retryable": isRetryableSyncError(txErr),
+					"retryable": IsRetryableSyncError(txErr),
 				}).Info(ctx, "TryAcquire - transaction failed")
 			}
 			return txErr
@@ -510,18 +524,41 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		if err != nil {
 			return false, false, "", failedLockName, err
 		}
+		sm.recordAcquisitions(ctx, wf, newly)
 		return already, updated, msg, failedLockName, nil
 	}
-	return sm.tryAcquireImpl(ctx, wf, nil, holderKey, failedLockName, syncItems, lockKeys)
+	already, updated, msg, failedLockName, newly, err := sm.tryAcquireImpl(ctx, wf, nil, holderKey, failedLockName, syncItems, lockKeys)
+	if err == nil {
+		sm.recordAcquisitions(ctx, wf, newly)
+	}
+	return already, updated, msg, failedLockName, err
 }
 
-// isRetryableSyncError reports whether a TryAcquire transaction failure should
-// be retried. Matches PostgreSQL SERIALIZABLE conflict (40001), deadlock
-// (40P01), and explicit rollback messages by substring against the driver's
-// text.
-func isRetryableSyncError(err error) bool {
+// dbRetryBackoff bounds the in-place retries of the TryAcquire transaction.
+// sm.lock is held for the whole loop, so each sleep is capped modestly. Jitter
+// prevents a fleet of replicas from retrying in lockstep after a shared
+// conflict burst. An error that survives these retries is surfaced to the
+// caller, which classifies it (sqldb.IsSerializationConflict, IsTransientErr)
+// and requeues the workflow rather than failing it.
+var dbRetryBackoff = wait.Backoff{
+	Steps:    5,
+	Duration: 10 * time.Millisecond,
+	Factor:   2.0,
+	Jitter:   0.5,
+	Cap:      600 * time.Millisecond,
+}
+
+// IsRetryableSyncError reports whether a TryAcquire transaction failure should
+// be retried. A conflict reported by the database driver itself is always
+// retryable; the substring match against the driver's text (serialization
+// conflicts, deadlocks, explicit rollbacks) remains as a fallback for errors
+// that arrive with the driver type stringified away by an intermediate layer.
+func IsRetryableSyncError(err error) bool {
 	if err == nil {
 		return false
+	}
+	if sqldb.IsSerializationConflict(err) {
+		return true
 	}
 	s := strings.ToLower(err.Error())
 	return strings.Contains(s, "serialization") ||
@@ -564,14 +601,19 @@ func (sm *Manager) prepAcquire(ctx context.Context, wf *wfv1.Workflow, holderKey
 	return true, "", "", nil
 }
 
-func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sqldb.SessionProxy, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
+type acquiredLock struct {
+	name string
+	kind wfv1.SynchronizationType
+}
+
+func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sqldb.SessionProxy, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, []*acquiredLock, error) {
 	defer sm.unlockAll(ctx, lockKeys)
 	allAcquirable := true
 	msg := ""
 	for _, lockKey := range lockKeys {
 		lock, found := sm.syncLockMap[lockKey]
 		if !found {
-			return false, false, "", failedLockName, fmt.Errorf("bug: lock not found: %s", lockKey)
+			return false, false, "", failedLockName, nil, fmt.Errorf("bug: lock not found: %s", lockKey)
 		}
 		if lock.lock(ctx) {
 			acquired, already, newMsg := lock.checkAcquire(ctx, holderKey, tx)
@@ -596,6 +638,7 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sq
 	switch {
 	case allAcquirable:
 		updated := false
+		var newly []*acquiredLock
 		for i, lockKey := range lockKeys {
 			lock := sm.syncLockMap[lockKey]
 			var acquired bool
@@ -606,32 +649,46 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sq
 				// retry loop) can decide whether it is retryable. Transient
 				// database errors like PostgreSQL SQLSTATE 40001 must reach
 				// the retry detector untouched.
-				return false, false, "", failedLockName, acquireErr
+				return false, false, "", failedLockName, nil, acquireErr
 			}
 			if !acquired {
-				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
+				return false, false, "", failedLockName, nil, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}
 			currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
 			if err != nil {
-				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %w", err)
+				return false, false, "", failedLockName, nil, fmt.Errorf("failed to get current lock holders: %w", err)
 			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockAcquired(holderKey, lockKey, currentHolders) {
 				updated = true
+				newly = append(newly, &acquiredLock{name: lockKey, kind: syncItems[i].getType()})
 			}
 		}
-		return true, updated, msg, failedLockName, nil
+		return true, updated, msg, failedLockName, newly, nil
 	default: // Not all acquirable
 		updated := false
 		for i, lockKey := range lockKeys {
 			currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
 			if err != nil {
-				return false, false, "", failedLockName, fmt.Errorf("failed to get current lock holders: %w", err)
+				return false, false, "", failedLockName, nil, fmt.Errorf("failed to get current lock holders: %w", err)
 			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
 				updated = true
 			}
 		}
-		return false, updated, msg, failedLockName, nil
+		return false, updated, msg, failedLockName, nil, nil
+	}
+}
+
+func (sm *Manager) recordAcquisitions(ctx context.Context, wf *wfv1.Workflow, newly []*acquiredLock) {
+	if sm.metrics == nil || wf == nil || len(newly) == 0 {
+		return
+	}
+	for _, l := range newly {
+		namespace, name, storage, ok := parseLockKey(l.name)
+		if !ok {
+			continue
+		}
+		sm.metrics.RecordLockTaken(ctx, syncTypeLabel(l.kind), storage, name, namespace)
 	}
 }
 
@@ -668,7 +725,10 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 			}
 			lockKey := lockName
 			if wf.Status.Synchronization != nil {
-				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey.String(ctx))
+				s := wf.Status.Synchronization.GetStatus(syncItem.getType())
+				if s != nil {
+					s.LockReleased(holderKey, lockKey.String(ctx))
+				}
 			}
 		}
 	}
@@ -689,7 +749,14 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 				continue
 			}
 
-			for _, holderKey := range holding.Holders {
+			// LockReleased rewrites holding.Holders in place (slices.DeleteFunc
+			// compacts the shared backing array), so iterate over a copy:
+			// ranging over the live slice skips holders as it shrinks, leaking
+			// their semaphore slots. The mutex branch below copies for the
+			// same reason.
+			holders := make([]string, len(holding.Holders))
+			copy(holders, holding.Holders)
+			for _, holderKey := range holders {
 				syncLockHolder.release(ctx, holderKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
 				sm.log.WithFields(logging.Fields{"holderKey": holderKey, "semaphore": holding.Semaphore}).Info(ctx, "Lock released")

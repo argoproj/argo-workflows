@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-sx6lw
+spec:
+  entrypoint: whalesay
+  onExit: exit-handler
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+  - http:
+      url: https://example.com
+    name: exit-handler
+status:
+  nodes:
+    hello-world-sx6lw:
+      displayName: hello-world-sx6lw
+      finishedAt: "2021-10-27T14:38:30Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-sx6lw
+      name: hello-world-sx6lw
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2021-10-27T14:38:27Z"
+      templateName: whalesay
+      templateScope: local/hello-world-sx6lw
+      type: Pod
+  phase: Running
+  startedAt: "2021-10-27T14:38:27Z"

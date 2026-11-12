@@ -4,8 +4,10 @@ import {Link} from 'react-router-dom';
 
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../shared/annotations';
 import {uiUrl} from '../shared/base';
+import {ErrorIcon} from '../shared/components/fa-icons';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
 import {Timestamp} from '../shared/components/timestamp';
+import {getErrorCondition} from '../shared/conditions-panel';
 import {getNextScheduledTime} from '../shared/cron';
 import {CronWorkflow, CronWorkflowSpec} from '../shared/models';
 import {escapeInvalidMarkdown} from '../workflows/utils';
@@ -25,11 +27,22 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
     const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
     const markdown = `${title}${description}`;
+    const errorCondition = getErrorCondition(wf.status?.conditions || []);
 
     return (
         <div className='cron-workflows-list__row-container'>
             <div className='row argo-table-list__row'>
-                <div className='columns small-1'>{wf.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
+                <div className='columns small-1'>
+                    {errorCondition ? (
+                        <span title={errorCondition.message}>
+                            <ErrorIcon />
+                        </span>
+                    ) : wf.spec.suspend ? (
+                        <i className='fa fa-pause' />
+                    ) : (
+                        <i className='fa fa-clock' />
+                    )}
+                </div>
                 <Link to={{pathname: uiUrl(`cron-workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}} className='columns small-2'>
                     <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
                         <SuspenseReactMarkdownGfm markdown={markdown} />

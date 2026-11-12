@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-level-template-executor-
+spec:
+  entrypoint: main
+  executorPlugins:
+    - metadata:
+        name: workflow-level-hello-executor-plugin
+      spec:
+        sidecar:
+          container:
+            args:
+              - |
+                import json
+                from http.server import BaseHTTPRequestHandler, HTTPServer
+
+                class Plugin(BaseHTTPRequestHandler):
+                    def args(self):
+                        return json.loads(self.rfile.read(int(self.headers.get('Content-Length'))))
+
+                    def reply(self, reply):
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(json.dumps(reply).encode("UTF-8"))
+
+                    def unsupported(self):
+                        self.send_response(404)
+                        self.end_headers()
+
+                    def do_POST(self):
+                        if self.path == '/api/v1/template.execute':
+                            args = self.args()
+                            if 'workflowLevelHello' in args['template'].get('plugin', {}):
+                                self.reply({
+                                    'node': {
+                                        'phase': 'Succeeded',
+                                        'message': 'Workflow-level hello template!',
+                                        'outputs': {
+                                            'parameters': [
+                                                {'name': 'workflow-level-foo', 'value': 'workflow-level-bar'}
+                                            ]
+                                        }
+                                    }
+                                })
+                            else:
+                                self.reply({})
+                        else:
+                            self.unsupported()
+
+                if __name__ == '__main__':
+                    httpd = HTTPServer(('', 4356), Plugin)
+                    httpd.serve_forever()
+            command:
+              - python
+              - -c
+            image: python:alpine3.23
+            name: workflow-level-hello-executor-plugin
+            ports:
+              - containerPort: 4356
+            resources:
+              limits:
+                cpu: 200m
+                memory: 64Mi
+              requests:
+                cpu: 100m
+                memory: 32Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+
+  templates:
+    - name: main
+      plugin:
+        workflowLevelHello: {}

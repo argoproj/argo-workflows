@@ -73,7 +73,7 @@ func sumProgress(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, v
 		// this will tolerate missing child (will be "") and therefore ignored
 		child, err := wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
-			logger.WithField("childNodeID", childNodeID).Warn(ctx, "Couldn't obtain child, panicking")
+			logger.WithField("childNodeID", childNodeID).Warn(ctx, "Couldn't obtain child, skipping")
 			continue
 		}
 		progress = progress.Add(sumProgress(ctx, wf, *child, visited))

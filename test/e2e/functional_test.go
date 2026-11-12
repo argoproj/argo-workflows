@@ -1273,8 +1273,13 @@ spec:
 }
 
 func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
+	// podSpecPatch targets the auxiliary executor container by name; it's "wait"
+	// in the legacy layout and "supervisor" in init-less mode, so template it via
+	// AuxContainerName() (a static "wait" would add an imageless container and the
+	// pod would be rejected under init-less). The assertion uses the same name.
+	aux := fixtures.AuxContainerName()
 	s.Given().
-		Workflow(`
+		Workflow(fmt.Sprintf(`
 metadata:
   generateName: basic-
 spec:
@@ -1284,8 +1289,8 @@ spec:
       container:
         image: argoproj/argosay:v2
       # ordering of the containers in the next line is intentionally reversed
-      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'
-`).
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":%q, "resources":{"limits":{"cpu": "101m"}}}]}'
+`, aux)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -1296,7 +1301,7 @@ spec:
 				switch c.Name {
 				case "main":
 					assert.Equal(t, "100m", c.Resources.Limits.Cpu().String())
-				case "wait":
+				case aux:
 					assert.Equal(t, "101m", c.Resources.Limits.Cpu().String())
 				}
 			}
@@ -1703,6 +1708,49 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed)
 }
 
+// TestContainerSetSiblingRunsToCompletion asserts that when one container in a
+// containerSet exits non-zero, sibling containers are allowed to run to
+// completion rather than being terminated early.
+// podHasContainerNeedingTermination (workflow/controller/operator.go) only
+// terminates the pod once every main container has exited, so a failed
+// sibling no longer triggers cleanUpPod -> TerminateContainers early.
+func (s *FunctionalSuite) TestContainerSetSiblingRunsToCompletion() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-sibling-completes-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: fast-fail
+            image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ["echo fast-fail-ran; exit 1"]
+          - name: slow-success
+            image: argoproj/argosay:v2
+            command: [sh, -c]
+            args: ["echo slow-success-started; sleep 30; echo slow-success-finished; exit 0"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectContainerLogs("fast-fail", func(t *testing.T, logs string) {
+			assert.Contains(t, logs, "fast-fail-ran")
+		}).
+		ExpectContainerLogs("slow-success", func(t *testing.T, logs string) {
+			assert.Contains(t, logs, "slow-success-started",
+				"slow sibling should have begun running")
+			assert.Contains(t, logs, "slow-success-finished",
+				"slow sibling should have been allowed to run to completion instead of being terminated when fast-fail exited non-zero")
+		})
+}
+
 func (s *FunctionalSuite) TestTTY() {
 	s.Given().
 		Workflow(`@functional/tty.yaml`).
@@ -1854,7 +1902,7 @@ func (s *FunctionalSuite) TestWorkflowInvalidServiceAccountError() {
 		ExpectContainerLogs("main", func(t *testing.T, logs string) {
 			assert.Contains(t, logs, "hello argo")
 		}).
-		ExpectContainerLogs("wait", func(t *testing.T, logs string) {
+		ExpectContainerLogs(fixtures.AuxContainerName(), func(t *testing.T, logs string) {
 			assert.Contains(t, logs, "Error: workflowtaskresults.argoproj.io is forbidden: User \"system:serviceaccount:argo:github.com\" cannot create resource")
 			// Shouldn't have print help text
 			assert.NotContains(t, logs, "Usage:")

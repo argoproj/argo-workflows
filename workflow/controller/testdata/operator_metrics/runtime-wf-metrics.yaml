@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-task-
+spec:
+  entrypoint: dag-task
+  metrics: # Custom metric workflow level
+    prometheus:
+      - name: playground_workflow_new
+        help: "Count of workflow execution by result status  - workflow level"
+        labels:
+          - key: "playground_id_workflow_counter"
+            value: "test"
+          - key: status
+            value: "{{workflow.status}}"
+        counter:
+          value: "1"
+  templates:
+  - name: dag-task
+    dag:
+      tasks:
+      - name: TEST-ONE
+        template: echo
+
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, "hello"]

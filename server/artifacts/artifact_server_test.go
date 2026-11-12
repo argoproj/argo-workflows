@@ -3,17 +3,23 @@ package artifacts
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
@@ -22,7 +28,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	ktesting "k8s.io/client-go/testing"
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -48,7 +56,8 @@ func mustParse(text string) *url.URL {
 
 type fakeArtifactDriver struct {
 	artifactscommon.ArtifactDriver
-	data []byte
+	data            []byte
+	saveStreamError error
 }
 
 func (a *fakeArtifactDriver) Load(_ context.Context, _ *wfv1.Artifact, path string) error {
@@ -108,6 +117,10 @@ func (a *fakeArtifactDriver) OpenStream(_ context.Context, artifact *wfv1.Artifa
 
 func (a *fakeArtifactDriver) Save(_ context.Context, _ string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (a *fakeArtifactDriver) SaveStream(_ context.Context, _ io.Reader, _ *wfv1.Artifact) error {
+	return a.saveStreamError
 }
 
 func (a *fakeArtifactDriver) IsDirectory(_ context.Context, artifact *wfv1.Artifact) (bool, error) {
@@ -789,4 +802,435 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 
 	s.httpFromError(ctx, err, recorder)
 	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+}
+
+// TestArtifactServer_GetArtifactByUID_WorkflowNotInArchive verifies that querying an artifact
+// by UID for a workflow that is not yet in the archive returns 404 instead of panicking
+// with a nil pointer dereference. This covers the race window between workflow completion
+// and the archiver persisting the record.
+func TestArtifactServer_GetArtifactByUID_WorkflowNotInArchive(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	kube := kubefake.NewClientset()
+	instanceID := "my-instanceid"
+	argo := fakewfv1.NewClientset()
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+
+	a := &sqldbmocks.WorkflowArchive{}
+	// Simulate the race: workflow exists but is not yet archived — GetWorkflow returns (nil, nil).
+	a.On("GetWorkflow", mock.Anything, "not-yet-archived-uid", "", "").Return((*wfv1.Workflow)(nil), nil)
+
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		return &fakeArtifactDriver{data: []byte("my-data")}, nil
+	}
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+		},
+	})
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+
+	t.Run("GetOutputArtifactByUID", func(t *testing.T) {
+		r := &http.Request{}
+		r.URL = mustParse("/artifacts/not-yet-archived-uid/my-node-1/my-artifact")
+		recorder := httptest.NewRecorder()
+		s.GetOutputArtifactByUID(recorder, r)
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+	})
+
+	t.Run("GetInputArtifactByUID", func(t *testing.T) {
+		r := &http.Request{}
+		r.URL = mustParse("/input-artifacts/not-yet-archived-uid/my-node-1/my-artifact")
+		recorder := httptest.NewRecorder()
+		s.GetInputArtifactByUID(recorder, r)
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+	})
+}
+
+// TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound verifies that the
+// archived-workflows branch of GetArtifactFile returns 404 when GetWorkflow returns
+// (nil, nil) instead of panicking with a nil pointer dereference.
+func TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	kube := kubefake.NewClientset()
+	instanceID := "my-instanceid"
+	argo := fakewfv1.NewClientset()
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+
+	a := &sqldbmocks.WorkflowArchive{}
+	a.On("GetWorkflow", mock.Anything, "not-yet-archived-uid", "", "").Return((*wfv1.Workflow)(nil), nil)
+
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		return &fakeArtifactDriver{data: []byte("my-data")}, nil
+	}
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+		},
+	})
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+
+	r := &http.Request{}
+	r.URL = mustParse("/artifact-files/my-ns/archived-workflows/not-yet-archived-uid/my-node-1/outputs/my-artifact")
+	recorder := httptest.NewRecorder()
+	s.GetArtifactFile(recorder, r)
+	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+}
+
+// newServerForUpload creates a test server with WorkflowTemplate for upload tests
+func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
+	t.Helper()
+	return newServerForUploadWithAuth(t, saveStreamError, true)
+}
+
+// newServerForUploadWithAuth is like newServerForUpload but lets the caller control
+// whether SelfSubjectAccessReview checks (auth.CanI) are allowed or denied.
+func newServerForUploadWithAuth(t *testing.T, saveStreamError error, authorized bool) *ArtifactServer {
+	t.Helper()
+	gatekeeper := &authmocks.Gatekeeper{}
+	kube := kubefake.NewClientset()
+	kube.PrependReactor("create", "selfsubjectaccessreviews", func(_ ktesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: authorized},
+		}, nil
+	})
+	instanceID := "my-instanceid"
+
+	// WorkflowTemplate with artifact in arguments
+	wft := &wfv1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "my-ns",
+			Name:      "my-wft",
+			Labels:    map[string]string{common.LabelKeyControllerInstanceID: instanceID},
+		},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: wfv1.Arguments{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "input-artifact",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							S3: &wfv1.S3Artifact{
+								S3Bucket: wfv1.S3Bucket{
+									Endpoint: "s3.amazonaws.com",
+									Bucket:   "my-bucket",
+								},
+								Key: "original/key.zip",
+							},
+						},
+					},
+				},
+			},
+			Templates: []wfv1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"echo"},
+						Args:    []string{"hello"},
+					},
+				},
+			},
+		},
+	}
+
+	// WorkflowTemplate without location (relies on default repository)
+	wftNoLocation := &wfv1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "my-ns",
+			Name:      "my-wft-no-location",
+			Labels:    map[string]string{common.LabelKeyControllerInstanceID: instanceID},
+		},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: wfv1.Arguments{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "input-artifact",
+						// No ArtifactLocation - relies on default repository
+					},
+				},
+			},
+			Templates: []wfv1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"echo"},
+						Args:    []string{"hello"},
+					},
+				},
+			},
+		},
+	}
+
+	argo := fakewfv1.NewClientset(wft, wftNoLocation)
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+	a := &sqldbmocks.WorkflowArchive{}
+
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		return &fakeArtifactDriver{data: []byte("my-data"), saveStreamError: saveStreamError}, nil
+	}
+
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Endpoint: "my-endpoint",
+				Bucket:   "my-bucket",
+			},
+		},
+	})
+
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+}
+
+// createMultipartRequest creates a multipart form request with a file
+func createMultipartRequest(t *testing.T, path string, fileContent []byte) *http.Request {
+	t.Helper()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", "test-file.zip")
+	require.NoError(t, err)
+	_, err = part.Write(fileContent)
+	require.NoError(t, err)
+	err = writer.Close()
+	require.NoError(t, err)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, path, body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req
+}
+
+func TestArtifactServer_UploadInputArtifact(t *testing.T) {
+	t.Run("Success - upload artifact with location", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+
+		var response map[string]any
+		err := json.NewDecoder(recorder.Body).Decode(&response)
+		require.NoError(t, err)
+		assert.Equal(t, "input-artifact", response["name"])
+		assert.Contains(t, response["key"], "uploads/my-ns/")
+		assert.Contains(t, response["key"], "test-file.zip")
+
+		// key must be uploads/{namespace}/{uuid}/{filename}, with the uuid segment
+		// a proper RFC-4122 (version 4, variant 10) UUID rather than an arbitrary
+		// hex string that happens to parse.
+		key, ok := response["key"].(string)
+		require.True(t, ok)
+		parts := strings.Split(key, "/")
+		require.Len(t, parts, 4)
+		parsed, err := uuid.Parse(parts[2])
+		require.NoError(t, err)
+		assert.Equal(t, uuid.Version(4), parsed.Version())
+		assert.Equal(t, uuid.RFC4122, parsed.Variant())
+	})
+
+	t.Run("Success - upload artifact without location (uses default repository)", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft-no-location/input-artifact", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+
+		var response map[string]any
+		err := json.NewDecoder(recorder.Body).Decode(&response)
+		require.NoError(t, err)
+		assert.Equal(t, "input-artifact", response["name"])
+		assert.Contains(t, response["key"], "uploads/my-ns/")
+	})
+
+	t.Run("Error - method not allowed", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/upload-artifacts/my-ns/my-wft/input-artifact", nil)
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusMethodNotAllowed, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - invalid path", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - WorkflowTemplate not found", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/non-existent-wft/input-artifact", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - artifact not found in template", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/non-existent-artifact", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - SaveStream fails", func(t *testing.T) {
+		s := newServerForUpload(t, errors.New("storage error"))
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - path traversal in filename", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+
+		// Create multipart request with malicious filename
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("file", "../../../etc/passwd")
+		require.NoError(t, err)
+		_, err = part.Write([]byte("malicious content"))
+		require.NoError(t, err)
+		err = writer.Close()
+		require.NoError(t, err)
+
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		var response map[string]any
+		err = json.NewDecoder(recorder.Body).Decode(&response)
+		require.NoError(t, err)
+		// path.Base strips traversal — key should contain only "passwd"
+		assert.Contains(t, response["key"], "/passwd")
+		assert.NotContains(t, response["key"], "..")
+	})
+
+	t.Run("Success - Windows-style backslash traversal in filename is sanitized", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("file", `..\..\etc\passwd`)
+		require.NoError(t, err)
+		_, err = part.Write([]byte("malicious content"))
+		require.NoError(t, err)
+		err = writer.Close()
+		require.NoError(t, err)
+
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		var response map[string]any
+		err = json.NewDecoder(recorder.Body).Decode(&response)
+		require.NoError(t, err)
+		key, ok := response["key"].(string)
+		require.True(t, ok)
+		assert.True(t, strings.HasSuffix(key, "/passwd"), "expected key to end with /passwd, got %q", key)
+		assert.NotContains(t, key, `\`)
+		assert.NotContains(t, key, "..")
+	})
+
+	t.Run("Error - missing file in form", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", strings.NewReader(""))
+		req.Header.Set("Content-Type", "multipart/form-data; boundary=xxx")
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - upload without workflows.create returns 403 before body read", func(t *testing.T) {
+		s := newServerForUploadWithAuth(t, nil, false)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("test content"))
+		req.Body = io.NopCloser(&failOnReadReader{t: t})
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusForbidden, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - upload over ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES returns 413", func(t *testing.T) {
+		t.Setenv("ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES", "10")
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("this content is longer than 10 bytes"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusRequestEntityTooLarge, recorder.Result().StatusCode)
+	})
+
+	t.Run("Success - multipart temp files removed after successful upload", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("TMPDIR", tmpDir)
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		// Exceeds the handler's 32MiB in-memory threshold, forcing multipart to spill to disk.
+		largeContent := bytes.Repeat([]byte("a"), 33<<20)
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", largeContent)
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		leaked, err := filepath.Glob(filepath.Join(tmpDir, "multipart-*"))
+		require.NoError(t, err)
+		assert.Empty(t, leaked)
+	})
+
+	t.Run("Error - multipart temp files removed after SaveStream error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("TMPDIR", tmpDir)
+		s := newServerForUpload(t, errors.New("storage error"))
+		recorder := httptest.NewRecorder()
+		largeContent := bytes.Repeat([]byte("a"), 33<<20)
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", largeContent)
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
+		leaked, err := filepath.Glob(filepath.Join(tmpDir, "multipart-*"))
+		require.NoError(t, err)
+		assert.Empty(t, leaked)
+	})
+}
+
+// failOnReadReader fails the test if its Read method is invoked. It is used to prove
+// that the request body is never consumed when authorization is denied.
+type failOnReadReader struct {
+	t *testing.T
+}
+
+func (r *failOnReadReader) Read(_ []byte) (int, error) {
+	r.t.Helper()
+	r.t.Fatal("request body must not be read before authorization checks pass")
+	return 0, io.EOF
 }
