@@ -31,7 +31,6 @@ flowchart TD
     CreateTaskResult[<a href='#create_task_result'>create_task_result</a>]
     LoadArtifacts[<a href='#load_artifacts'>load_artifacts</a>]
     PatchTaskResult[<a href='#patch_task_result'>patch_task_result</a>]
-    PatchTaskResultLabels[<a href='#patch_task_result_labels'>patch_task_result_labels</a>]
     SaveArtifacts[<a href='#save_artifacts'>save_artifacts</a>]
     SaveLogs[<a href='#save_logs'>save_logs</a>]
     StageFiles[<a href='#stage_files'>stage_files</a>]
@@ -44,7 +43,6 @@ flowchart TD
     RunWorkerTask --> CreateTaskResult
     RunWorkerTask --> LoadArtifacts
     RunWorkerTask --> PatchTaskResult
-    RunWorkerTask --> PatchTaskResultLabels
     RunWorkerTask --> SaveArtifacts
     RunWorkerTask --> SaveLogs
     RunWorkerTask --> StageFiles
@@ -91,7 +89,6 @@ flowchart TD
     CreateTaskResult[<a href='#create_task_result'>create_task_result</a>]
     LoadArtifacts[<a href='#load_artifacts'>load_artifacts</a>]
     PatchTaskResult[<a href='#patch_task_result'>patch_task_result</a>]
-    PatchTaskResultLabels[<a href='#patch_task_result_labels'>patch_task_result_labels</a>]
     ProcessDataTemplate[<a href='#process_data_template'>process_data_template</a>]
     ReconcileTaskResult[<a href='#reconcile_task_result'>reconcile_task_result</a>]
     SaveArtifact[<a href='#save_artifact'>save_artifact</a>]
@@ -131,9 +128,6 @@ flowchart TD
     RunWaitContainer --> PatchTaskResult
     RunMainContainer --> PatchTaskResult
     RunSupervisorContainer --> PatchTaskResult
-    RunWaitContainer --> PatchTaskResultLabels
-    RunMainContainer --> PatchTaskResultLabels
-    RunSupervisorContainer --> PatchTaskResultLabels
     RunMainContainer --> ProcessDataTemplate
     ReconcileTaskResults --> ReconcileTaskResult
     SaveArtifacts --> SaveArtifact
@@ -161,7 +155,9 @@ This span has no attributes.
 
 Creating the WorkflowTaskResult.
 
-This span has no attributes.
+|     attribute     |                    explanation                     |
+|-------------------|----------------------------------------------------|
+| `marks_completed` | True if this write marks the task result completed |
 
 #### `create_workflow_pod`
 
@@ -210,13 +206,9 @@ The phase of one node as observed by the controller in the DAG of a workflow.
 
 Patching the WorkflowTaskResult.
 
-This span has no attributes.
-
-#### `patch_task_result_labels`
-
-Patching the labels of WorkflowTaskResult.
-
-This span has no attributes.
+|     attribute     |                    explanation                     |
+|-------------------|----------------------------------------------------|
+| `marks_completed` | True if this write marks the task result completed |
 
 #### `persist_updates`
 

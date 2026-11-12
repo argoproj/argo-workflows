@@ -140,6 +140,9 @@ Gains may vary under load: if the workflow informer is behind the controller's l
 | `REMOVE_LOCAL_ART_PATH`                | `bool`          | `false` | Whether to remove local artifacts.                                                                     |
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 
+The `EXECUTOR_RETRY_BACKOFF_*` variables also control how the executor retries transient failures when saving S3, HTTP and Artifactory artifacts, including archived logs.
+For HTTP and Artifactory, the executor retries network errors, `408`, `429` and `5xx` responses, and errors matching `TRANSIENT_ERROR_PATTERN` set in the executor `env`.
+
 You can set environment variables for the Executor in your [`workflow-controller-configmap`](workflow-controller-configmap.md) like the following:
 
 ```yaml
