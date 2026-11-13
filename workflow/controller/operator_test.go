@@ -9902,6 +9902,157 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 	}
 }
 
+// withRejection makes a pod look like kubelet rejected it at admission: the pod is Failed
+// and has no container statuses, because no container was ever created.
+func withRejection(pod *apiv1.Pod, _ *wfOperationCtx) {
+	pod.Status.Reason = "OutOfmemory"
+	pod.Status.Message = "Pod was rejected: Node didn't have enough resource: memory, requested: 1, used: 2, capacity: 2"
+	pod.Status.ContainerStatuses = nil
+}
+
+// TestContainerSetWhenPodRejected tests that the container nodes of a containerSet pod that
+// kubelet rejected (no container statuses) are failed instead of staying Pending.
+func TestContainerSetWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSetWithDependencies)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	containers := 0
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeContainer {
+			containers++
+			assert.Equal(t, wfv1.NodeFailed, node.Phase, node.Name)
+			assert.Contains(t, node.Message, "Pod was rejected", node.Name)
+		}
+	}
+	assert.Equal(t, 2, containers)
+}
+
+var wfContainerSetParameterizedNameRejected = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-containerset-parameterized-rejected
+spec:
+  entrypoint: init
+  arguments:
+    parameters:
+      - name: ctr
+        value: main
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      containerSet:
+        containers:
+          - name: "{{workflow.parameters.ctr}}"
+            image: alpine:3.23
+            command: [echo]`
+
+// TestContainerSetParameterizedNameWhenPodRejected tests that container nodes are failed
+// when their names come from parameters resolved at runtime.
+func TestContainerSetParameterizedNameWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfContainerSetParameterizedNameRejected)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	node, err := woc.wf.GetNodeByName("wf-containerset-parameterized-rejected.A.main")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Contains(t, node.Message, "Pod was rejected")
+}
+
+var wfContainerSetRetryRejected = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-containerset-retry-rejected
+spec:
+  entrypoint: init
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      retryStrategy:
+        limit: 2
+        retryPolicy: Always
+      containerSet:
+        containers:
+          - name: main
+            image: alpine:3.23
+            command: [echo]
+          - name: main2
+            image: alpine:3.23
+            command: [echo]
+            dependencies:
+              - main`
+
+// TestContainerSetRetryWhenPodRejected tests that a containerSet whose first pod kubelet rejected
+// is retried and that the workflow completes once the retry succeeds.
+func TestContainerSetRetryWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfContainerSetRetryRejected)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 2)
+
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Phase == wfv1.NodeFailed {
+			return ""
+		}
+		return apiv1.PodSucceeded
+	}, withExitCode(0))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.True(t, node.Fulfilled(), "%s is %s", node.Name, node.Phase)
+	}
+	retryNode, err := woc.wf.GetNodeByName("wf-containerset-retry-rejected.A")
+	require.NoError(t, err)
+	assert.Len(t, retryNode.Children, 2)
+}
+
 var dagContainersetWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
