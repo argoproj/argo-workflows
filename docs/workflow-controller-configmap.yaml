@@ -282,7 +282,8 @@ data:
       baseDelaySeconds: 0
       # Upper limit on the delay between attempts, in seconds. Default 30.
       maxDelaySeconds: 30
-      # Growth factor applied to the delay after each attempt. Default 2.0.
+      # Growth factor applied to the delay after each attempt. Defaults to 2.0 when reconnectionConfig is
+      # absent; when the block is present but this field is omitted, 1.0 is used (constant delay).
       retryMultiple: 2.0
     #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
     nodeStatusOffLoad: false
