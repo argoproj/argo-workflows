@@ -511,28 +511,6 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 	return w
 }
 
-func (w *When) AddNamespaceLimit(limit string) *When {
-	w.t.Helper()
-	ctx := logging.TestContext(w.t.Context())
-	patchMap := make(map[string]any)
-	metadata := make(map[string]any)
-	labels := make(map[string]any)
-	labels["workflows.argoproj.io/parallelism-limit"] = limit
-	metadata["labels"] = labels
-	patchMap["metadata"] = metadata
-
-	bs, err := json.Marshal(patchMap)
-	if err != nil {
-		w.t.Fatal(err)
-	}
-
-	_, err = w.kubeClient.CoreV1().Namespaces().Patch(ctx, Namespace, types.MergePatchType, bs, metav1.PatchOptions{})
-	if err != nil {
-		w.t.Fatal(err)
-	}
-	return w
-}
-
 type PodCondition func(p *corev1.Pod) bool
 
 var (
