@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -102,9 +104,15 @@ func (i *Interceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.I
 			if err != nil {
 				return fmt.Errorf("failed to get service account \"%s\": %w", serviceAccountName, err)
 			}
-			tokenSecret, err := secretsInterface.Get(ctx, secrets.TokenNameForServiceAccount(serviceAccount), metav1.GetOptions{})
+			tokenSecretName, err := secrets.TokenNameForServiceAccountWithSecretGetter(ctx, serviceAccount, func(ctx context.Context, name string) (*corev1.Secret, error) {
+				return secretsInterface.Get(ctx, name, metav1.GetOptions{})
+			})
 			if err != nil {
-				return fmt.Errorf("failed to get token secret \"%s\": %w", tokenSecret, err)
+				return fmt.Errorf("failed to select token secret for service account \"%s\": %w", serviceAccountName, err)
+			}
+			tokenSecret, err := secretsInterface.Get(ctx, tokenSecretName, metav1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get token secret \"%s\": %w", tokenSecretName, err)
 			}
 			r.Header["Authorization"] = []string{"Bearer " + string(tokenSecret.Data["token"])}
 			return nil
