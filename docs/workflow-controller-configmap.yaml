@@ -39,6 +39,9 @@ data:
   # This config item allows you to disable this.
   nodeEvents: |
     enabled: true
+    # Emit node events from the Pod instead of the Workflow, with annotations linking the event back to the Workflow.
+    # Default false.
+    sendAsPod: false
 
   # Whether or not to emit events on workflow status changes. These can take a up a lot of space in
   # k8s (typically etcd), see nodeEvents above.
