@@ -362,6 +362,19 @@ func (t *Then) ExpectWorkflowTaskSet(block func(t *testing.T, wfts *wfv1.Workflo
 	return t
 }
 
+// ExpectWorkflowTaskSets lists the workflow's WorkflowTaskSets that match
+// the label selector.
+func (t *Then) ExpectWorkflowTaskSets(labelSelector string, block func(t *testing.T, taskSets []wfv1.WorkflowTaskSet)) *Then {
+	t.t.Helper()
+	ctx := logging.TestContext(t.t.Context())
+	list, err := t.wftsClient.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name + "," + labelSelector})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	block(t.t, list.Items)
+	return t
+}
+
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
 	ctx := logging.TestContext(t.t.Context())
