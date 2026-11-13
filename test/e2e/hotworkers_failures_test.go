@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -14,11 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -28,8 +30,20 @@ import (
 // the ways only pools have. A worker that is told to stop hands its task
 // back once its terminationGracePeriodSeconds less its
 // releaseReserveSeconds have passed, 10 seconds in the profile, so a task
-// that must be released runs for longer than that (20 seconds). Each
-// workflow names its steps, so their nodes can be found by display name.
+// that must be released runs for much longer than that (releasedSeconds).
+// Each workflow names its steps, so their nodes can be found by display name.
+
+const (
+	// coldPoolTimeout is how long a task may take to be claimed, or to
+	// run, on a pool that may have to be created first: its pod has to be
+	// scheduled and started.
+	coldPoolTimeout = 2 * time.Minute
+	// releasedSeconds is how long a task that must be released sleeps. It
+	// has to still be running when its worker hands it back, 10 seconds
+	// after the test stops the worker, which itself only happens once the
+	// test has seen the claim.
+	releasedSeconds = 30
+)
 
 // pooledNodeIs is met once the node displayName is pooled and ok holds for
 // its ledger.
@@ -42,7 +56,12 @@ func pooledNodeIs(displayName, what string, ok func(*wfv1.PooledTaskStatus) bool
 
 // toBeClaimed is met once a worker holds the claim on the node displayName.
 func toBeClaimed(displayName string) fixtures.Condition {
-	return pooledNodeIs(displayName, "claimed", func(l *wfv1.PooledTaskStatus) bool { return l.State() == wfv1.PooledTaskClaimed })
+	return pooledNodeIs(displayName, "claimed", claimed)
+}
+
+// claimed is whether a worker holds the claim on the ledger's task.
+func claimed(l *wfv1.PooledTaskStatus) bool {
+	return l.State() == wfv1.PooledTaskClaimed
 }
 
 // toBeReleased is met once the node displayName has been released.
@@ -69,13 +88,8 @@ func node(t *testing.T, status *wfv1.WorkflowStatus, displayName string) *wfv1.N
 
 // podNodes returns the workflow's pod-type nodes, pooled or not.
 func podNodes(status *wfv1.WorkflowStatus) []wfv1.NodeStatus {
-	var nodes []wfv1.NodeStatus
-	for _, n := range status.Nodes {
-		if n.Type == wfv1.NodeTypePod {
-			nodes = append(nodes, n)
-		}
-	}
-	return nodes
+	pods := status.Nodes.Filter(func(n wfv1.NodeStatus) bool { return n.Type == wfv1.NodeTypePod })
+	return slices.Collect(maps.Values(pods))
 }
 
 // workerOf returns the worker pod that claimed the node displayName.
@@ -120,37 +134,50 @@ func (s *HotWorkersSuite) scalePool(poolName string, replicas int32) {
 }
 
 // expectNoPooledTaskSets checks the workflow left no pooled WorkflowTaskSet.
-func (s *HotWorkersSuite) expectNoPooledTaskSets(wfName string) {
-	s.T().Helper()
-	ctx := logging.TestContext(s.T().Context())
-	taskSets := versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(fixtures.Namespace)
-	list, err := taskSets.List(ctx, metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + wfName + "," + common.LabelKeyPoolHash})
-	s.CheckError(err)
-	s.Empty(list.Items, "pooled TaskSets left by %s", wfName)
+func expectNoPooledTaskSets(t *testing.T, taskSets []wfv1.WorkflowTaskSet) {
+	t.Helper()
+	assert.Empty(t, taskSets, "the workflow left pooled TaskSets")
 }
 
-// sleeper is a workflow whose one step sleeps on a one-worker pool for the
-// seconds given. The seconds are a per-task arg, so every sleeper on a pool
-// name shares the pool.
-func sleeper(poolName string, seconds int) string {
+// oneTask is a workflow whose one step, task, runs the template named. The
+// template follows it.
+func oneTask(generateName, template string) string {
 	return fmt.Sprintf(`
 metadata:
-  generateName: pool-sleep-
+  generateName: %s
 spec:
   entrypoint: main
   templates:
     - name: main
       steps:
         - - name: task
-            template: sleep
-    - name: sleep
+            template: %s
+`, generateName, template)
+}
+
+// sleepTemplate is a template, sleep, that sleeps on a one-worker pool for
+// the seconds given, with a timeout unless it is empty. The seconds, the
+// timeout and the retention aren't part of what makes a pool, so every sleep
+// template on a pool name shares the pool.
+func sleepTemplate(poolName string, seconds, retentionSeconds int, timeout string) string {
+	if timeout != "" {
+		timeout = "\n      timeout: " + timeout
+	}
+	return fmt.Sprintf(`
+    - name: sleep%s
       pool:
         name: %s
-        retentionSeconds: 300
+        retentionSeconds: %d
       container:
         image: argoproj/argosay:v2
         command: [sleep, "%d"]
-`, poolName, seconds)
+`, timeout, poolName, retentionSeconds, seconds)
+}
+
+// sleeper is a workflow whose one step sleeps on a one-worker pool for the
+// seconds given.
+func sleeper(poolName string, seconds int) string {
+	return oneTask("pool-sleep-", "sleep") + sleepTemplate(poolName, seconds, 300, "")
 }
 
 // warmPool runs a short sleeper on the pool, creating it if it doesn't
@@ -212,7 +239,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toBeClaimed("task(0)"), time.Minute)
+		WaitForWorkflow(toBeClaimed("task(0)"), coldPoolTimeout)
 	worker := workerOf(s.T(), w.GetWorkflow(), "task(0)")
 	s.deletePod(worker, new(int64(0)))
 	w.WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
@@ -222,8 +249,8 @@ spec:
 			assert.Equal(t, wfv1.NodeError, first.Phase)
 			assert.Contains(t, first.Message, "worker pod "+worker+" deleted")
 			assert.Equal(t, wfv1.NodeSucceeded, node(t, status, "task(1)").Phase)
-		})
-	s.expectNoPooledTaskSets(w.GetWorkflow().Name)
+		}).
+		ExpectWorkflowTaskSets(common.LabelKeyPoolHash, expectNoPooledTaskSets)
 }
 
 // expectReleasedOnce checks the workflow's one task succeeded on a worker
@@ -245,10 +272,10 @@ func expectReleasedOnce(worker string) func(t *testing.T, md *metav1.ObjectMeta,
 // it runs the task again without using a retry.
 func (s *HotWorkersSuite) TestGracefulDeleteWorker() {
 	w := s.Given().
-		Workflow(sleeper("e2e-graceful-delete", 20)).
+		Workflow(sleeper("e2e-graceful-delete", releasedSeconds)).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toBeClaimed("task"), time.Minute)
+		WaitForWorkflow(toBeClaimed("task"), coldPoolTimeout)
 	worker := workerOf(s.T(), w.GetWorkflow(), "task")
 	s.deletePod(worker, nil)
 	w.WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
@@ -262,10 +289,10 @@ func (s *HotWorkersSuite) TestGracefulDeleteWorker() {
 func (s *HotWorkersSuite) TestScaleDown() {
 	const poolName = "e2e-scale-down"
 	w := s.Given().
-		Workflow(sleeper(poolName, 20)).
+		Workflow(sleeper(poolName, releasedSeconds)).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toBeClaimed("task"), time.Minute)
+		WaitForWorkflow(toBeClaimed("task"), coldPoolTimeout)
 	worker := workerOf(s.T(), w.GetWorkflow(), "task")
 	s.scalePool(poolName, 0)
 	w.WaitForWorkflow(toBeReleased("task"), time.Minute)
@@ -335,7 +362,7 @@ spec:
 func (s *HotWorkersSuite) TestStopWithBacklog() {
 	const poolName = "e2e-stop"
 	w := s.Given().
-		Workflow(fmt.Sprintf(`
+		Workflow(`
 metadata:
   generateName: pool-stop-
 spec:
@@ -347,22 +374,15 @@ spec:
             template: sleep
             withSequence:
               count: "3"
-    - name: sleep
-      pool:
-        name: %s
-        retentionSeconds: 300
-      container:
-        image: argoproj/argosay:v2
-        command: [sleep, "300"]
-`, poolName)).
+`+sleepTemplate(poolName, 300, 300, "")).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-			claimed := wf.Status.Nodes.Any(func(n wfv1.NodeStatus) bool {
-				return n.PooledTask != nil && n.PooledTask.State() == wfv1.PooledTaskClaimed
+			running := wf.Status.Nodes.Any(func(n wfv1.NodeStatus) bool {
+				return n.PooledTask != nil && claimed(n.PooledTask)
 			})
-			return claimed && len(podNodes(&wf.Status)) == 3, "to run one task with two waiting"
-		}), time.Minute)
+			return running && len(podNodes(&wf.Status)) == 3, "to run one task with two waiting"
+		}), coldPoolTimeout)
 	var worker string
 	for _, n := range podNodes(&w.GetWorkflow().Status) {
 		if n.PooledTask != nil && n.PooledTask.WorkerPodName != "" {
@@ -377,36 +397,41 @@ spec:
 				assert.Equal(t, wfv1.NodeFailed, n.Phase, n.DisplayName)
 				assert.True(t, n.TaskResultSynced != nil && *n.TaskResultSynced, n.DisplayName)
 			}
-		})
-	s.expectNoPooledTaskSets(w.GetWorkflow().Name)
+		}).
+		ExpectWorkflowTaskSets(common.LabelKeyPoolHash, expectNoPooledTaskSets)
 	s.expectWorkerFree(poolName, worker)
 }
 
-// TestTerminate terminates a workflow while its task runs: the task is
+// TestPoolTerminate terminates a workflow while its task runs: the task is
 // killed, freeing its worker, and the workflow completes.
-func (s *HotWorkersSuite) TestTerminate() {
+func (s *HotWorkersSuite) TestPoolTerminate() {
 	const poolName = "e2e-terminate"
 	w := s.Given().
 		Workflow(sleeper(poolName, 300)).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toBeClaimed("task"), time.Minute)
+		WaitForWorkflow(toBeClaimed("task"), coldPoolTimeout)
 	worker := workerOf(s.T(), w.GetWorkflow(), "task")
 	w.ShutdownWorkflow(wfv1.ShutdownStrategyTerminate).
 		WaitForWorkflow(fixtures.ToBeFailed, time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, node(t, status, "task").Phase)
-		})
-	s.expectNoPooledTaskSets(w.GetWorkflow().Name)
+		}).
+		ExpectWorkflowTaskSets(common.LabelKeyPoolHash, expectNoPooledTaskSets)
 	s.expectWorkerFree(poolName, worker)
 }
 
-// unschedulable is a pooled template whose pool's pods can never be
-// scheduled, so its tasks stay queued. Its pool goes as soon as no task
-// uses it.
-const unschedulable = `
-    - name: unschedulable
+// unschedulableTemplate is a pooled template, unschedulable, whose pool's
+// pods can never be scheduled, so its tasks stay queued, with a timeout
+// unless it is empty. The tests that use it share its pool, which goes as
+// soon as no task uses it.
+func unschedulableTemplate(timeout string) string {
+	if timeout != "" {
+		timeout = "\n      timeout: " + timeout
+	}
+	return fmt.Sprintf(`
+    - name: unschedulable%s
       pool:
         name: e2e-unschedulable
         retentionSeconds: 0
@@ -415,32 +440,15 @@ const unschedulable = `
       container:
         image: argoproj/argosay:v2
         command: [sleep, "1"]
-`
+`, timeout)
+}
 
 // TestTimeoutRunning runs a task past its template's timeout: the worker
 // kills it and it fails with the absolute deadline's message.
 func (s *HotWorkersSuite) TestTimeoutRunning() {
 	s.warmPool("e2e-timeout")
 	w := s.Given().
-		Workflow(`
-metadata:
-  generateName: pool-timeout-running-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: sleep
-    - name: sleep
-      timeout: 15s
-      pool:
-        name: e2e-timeout
-        retentionSeconds: 300
-      container:
-        image: argoproj/argosay:v2
-        command: [sleep, "300"]
-`).
+		Workflow(oneTask("pool-timeout-running-", "sleep")+sleepTemplate("e2e-timeout", 300, 300, "15s")).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(toBeClaimed("task"), time.Minute)
@@ -459,17 +467,7 @@ spec:
 // fails without a worker ever claiming it.
 func (s *HotWorkersSuite) TestTimeoutQueued() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: pool-timeout-queued-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: unschedulable
-`+strings.Replace(unschedulable, "      pool:", "      timeout: 10s\n      pool:", 1)).
+		Workflow(oneTask("pool-timeout-queued-", "unschedulable")+unschedulableTemplate("10s")).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeFailed, time.Minute).
@@ -490,25 +488,7 @@ func (s *HotWorkersSuite) TestTimeoutReleased() {
 	const poolName = "e2e-timeout-released"
 	s.warmPool(poolName)
 	w := s.Given().
-		Workflow(fmt.Sprintf(`
-metadata:
-  generateName: pool-timeout-released-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: sleep
-    - name: sleep
-      timeout: 40s
-      pool:
-        name: %s
-        retentionSeconds: 0
-      container:
-        image: argoproj/argosay:v2
-        command: [sleep, "300"]
-`, poolName)).
+		Workflow(oneTask("pool-timeout-released-", "sleep")+sleepTemplate(poolName, 300, 0, "40s")).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(toBeClaimed("task"), time.Minute)
@@ -542,14 +522,7 @@ spec:
             template: sleep
           - name: queued
             template: unschedulable
-    - name: sleep
-      pool:
-        name: e2e-deadline
-        retentionSeconds: 300
-      container:
-        image: argoproj/argosay:v2
-        command: [sleep, "300"]
-`+unschedulable).
+`+sleepTemplate("e2e-deadline", 300, 300, "")+unschedulableTemplate("")).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(toBeClaimed("running"), time.Minute)
@@ -562,14 +535,14 @@ spec:
 				assert.Equal(t, wfv1.NodeFailed, n.Phase, name)
 				assert.Contains(t, n.Message, "deadline", name)
 			}
-		})
-	s.expectNoPooledTaskSets(w.GetWorkflow().Name)
+		}).
+		ExpectWorkflowTaskSets(common.LabelKeyPoolHash, expectNoPooledTaskSets)
 	s.expectWorkerFree("e2e-deadline", worker)
 }
 
-// TestRetention lets a pool sit idle past its retentionSeconds: it is
+// TestPoolRetention lets a pool sit idle past its retentionSeconds: it is
 // deleted, and the next task creates it afresh.
-func (s *HotWorkersSuite) TestRetention() {
+func (s *HotWorkersSuite) TestPoolRetention() {
 	const poolName = "e2e-retention"
 	workflow := fmt.Sprintf(`
 metadata:
@@ -594,7 +567,7 @@ spec:
 			Workflow(workflow).
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute)
+			WaitForWorkflow(fixtures.ToBeSucceeded, coldPoolTimeout)
 	}
 	run()
 	first := s.poolDeployments(poolName)
@@ -606,9 +579,9 @@ spec:
 	s.NotEqual(first[0].UID, second[0].UID, "the pool is created afresh")
 }
 
-// TestRetry retries a workflow whose second pooled step failed: only that
+// TestPoolRetry retries a workflow whose second pooled step failed: only that
 // step runs again, as a fresh task, and succeeds.
-func (s *HotWorkersSuite) TestRetry() {
+func (s *HotWorkersSuite) TestPoolRetry() {
 	w := s.Given().
 		Workflow(`
 metadata:
@@ -647,7 +620,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed, time.Minute)
+		WaitForWorkflow(fixtures.ToBeFailed, coldPoolTimeout)
 	before := w.GetWorkflow().Status.DeepCopy()
 	name := w.GetWorkflow().Name
 	w.Exec("../../dist/argo", []string{"-n", fixtures.Namespace, "retry", name, "-p", "pass=true"}, func(t *testing.T, output string, err error) {
@@ -665,8 +638,8 @@ spec:
 			assert.Equal(t, wfv1.NodeSucceeded, second.Phase)
 			require.NotNil(t, second.PooledTask)
 			assert.NotEqual(t, secondBefore.PooledTask.TaskSetUID, second.PooledTask.TaskSetUID, "the failed step runs as a fresh task")
-		})
-	s.expectNoPooledTaskSets(name)
+		}).
+		ExpectWorkflowTaskSets(common.LabelKeyPoolHash, expectNoPooledTaskSets)
 }
 
 // TestDegradedPool runs a task on a pool whose pods can't start, as its
@@ -676,6 +649,11 @@ func (s *HotWorkersSuite) TestDegradedPool() {
 	const secret = "e2e-hot-workers-late"
 	ctx := logging.TestContext(s.T().Context())
 	secrets := s.KubeClient.CoreV1().Secrets(fixtures.Namespace)
+	// A failed test exits before its cleanup runs, so a run that failed
+	// after creating the Secret leaves it behind for the next one.
+	if err := secrets.Delete(ctx, secret, metav1.DeleteOptions{}); !apierr.IsNotFound(err) {
+		s.CheckError(err)
+	}
 	s.T().Cleanup(func() { _ = secrets.Delete(context.WithoutCancel(ctx), secret, metav1.DeleteOptions{}) })
 	s.Given().
 		Workflow(`
