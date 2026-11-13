@@ -10952,6 +10952,15 @@ func TestInferFailedReasonNativeSidecar(t *testing.T) {
 			expectedMsg:   "setup: Error (exit code 1)",
 		},
 		{
+			// A status with no matching spec entry is not known to be a native
+			// sidecar, so it keeps regular init container priority.
+			name:          "UnknownInitStatusKeepsInitPriority",
+			initCtrs:      []apiv1.ContainerStatus{terminated("init", 0), terminated("unknown", 1)},
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 2), terminated("wait", 0)},
+			expectedPhase: wfv1.NodeFailed,
+			expectedMsg:   "unknown: Error (exit code 1)",
+		},
+		{
 			name:          "NativeSidecarSigtermIgnored",
 			initCtrs:      []apiv1.ContainerStatus{terminated("init", 0), terminated("daemon", 143)},
 			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 0)},
