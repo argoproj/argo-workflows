@@ -1917,6 +1917,17 @@ func getPendingReason(pod *apiv1.Pod) string {
 	return ""
 }
 
+// isNativeSidecar reports whether the named init container is a Kubernetes
+// native sidecar, i.e. has restartPolicy: Always.
+func isNativeSidecar(pod *apiv1.Pod, name string) bool {
+	for _, c := range pod.Spec.InitContainers {
+		if c.Name == name {
+			return c.RestartPolicy != nil && *c.RestartPolicy == apiv1.ContainerRestartPolicyAlways
+		}
+	}
+	return false
+}
+
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
 // Returns a tuple of the new phase and message
 func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) (wfv1.NodePhase, string) {
@@ -1963,8 +1974,20 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 	}
 	ctrs := pod.Status.ContainerStatuses
 	sort.Slice(ctrs, func(i, j int) bool { return order(ctrs[i].Name) < order(ctrs[j].Name) })
-	// Init containers have the highest preferences over other containers.
-	ctrs = append(pod.Status.InitContainerStatuses, ctrs...)
+	// Init containers have the highest preferences over other containers: they
+	// run to completion before main, so if one failed, main never ran. Native
+	// sidecars (init containers with restartPolicy: Always) are the exception:
+	// they run alongside main and are stopped after it, often exiting non-zero
+	// on SIGTERM, so they rank last with the other sidecars.
+	var initCtrs, nativeSidecarCtrs []apiv1.ContainerStatus
+	for _, ctr := range pod.Status.InitContainerStatuses {
+		if isNativeSidecar(pod, ctr.Name) {
+			nativeSidecarCtrs = append(nativeSidecarCtrs, ctr)
+		} else {
+			initCtrs = append(initCtrs, ctr)
+		}
+	}
+	ctrs = append(append(initCtrs, ctrs...), nativeSidecarCtrs...)
 	// When there isn't any containstatus (such as no stock in public cloud), return Failure.
 	if len(ctrs) == 0 {
 		return wfv1.NodeFailed, fmt.Sprintf("can't find failed message for pod %s namespace %s", pod.Name, pod.Namespace)
