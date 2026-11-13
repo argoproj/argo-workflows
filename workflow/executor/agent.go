@@ -66,6 +66,9 @@ type response struct {
 // delivers them. Every task worker's harness shares it.
 type taskSetSource struct {
 	tasks chan Task
+	// done is closed when the agent stops, after which no task worker
+	// takes a task.
+	done <-chan struct{}
 	// considered holds the node IDs already yielded, so a task is run once
 	// however many task set events list it, until its plugin asks for it
 	// again.
@@ -93,11 +96,23 @@ func (s *taskSetSource) Next(ctx context.Context) (Task, bool, error) {
 	}
 }
 
+// offer hands task to a task worker, waiting until one is free. It returns
+// false if the agent stopped first: the task workers stop taking tasks
+// then, so the send would never complete.
+func (s *taskSetSource) offer(task Task) bool {
+	select {
+	case s.tasks <- task:
+		return true
+	case <-s.done:
+		return false
+	}
+}
+
 // requeue yields task again once after has passed.
 func (s *taskSetSource) requeue(task Task, after time.Duration) {
 	time.AfterFunc(after, func() {
 		s.considered.Delete(task.Config.NodeID)
-		s.tasks <- task
+		s.offer(task)
 	})
 }
 
@@ -135,6 +150,11 @@ func (s *taskSetSink) Report(_ context.Context, r wfv1.NodeResult) error {
 	return nil
 }
 
+// Send is Report: an agent task's result has no separate completion.
+func (s *taskSetSink) Send(ctx context.Context, r wfv1.NodeResult) error {
+	return s.Report(ctx, r)
+}
+
 func (s *taskSetSink) Progress(context.Context, wfv1.Progress) error { return nil }
 
 // Fail reports the task as errored: the agent could not run it.
@@ -170,7 +190,7 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	source := &taskSetSource{tasks: make(chan Task)}
+	source := &taskSetSource{tasks: make(chan Task), done: ctx.Done()}
 	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.process.Namespace)
 
@@ -210,12 +230,14 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
-				source.tasks <- Task{Config: TaskConfig{
+				if !source.offer(Task{Config: TaskConfig{
 					WorkflowName: ae.WorkflowName,
 					WorkflowUID:  types.UID(ae.workflowUID),
 					NodeID:       nodeID,
 					Template:     tmpl,
-				}}
+				}}) {
+					return ctx.Err()
+				}
 			}
 		}
 	}

@@ -101,9 +101,56 @@ func TestAgent(t *testing.T) {
 	}
 }
 
+// TestAgentStopsWhenCancelled cancels the agent while it waits for a free
+// task worker: its only worker is busy, and stops taking tasks once the
+// context is cancelled, so the agent must not wait on it.
+func TestAgentStopsWhenCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+	defer cancel()
+
+	plugin := &namedPlugin{calls: map[string]int{}}
+	blockTemplate := v1alpha1.Template{Name: "block", Plugin: &v1alpha1.Plugin{Object: v1alpha1.Object{Value: json.RawMessage(`{"my-plugin": {}}`)}}}
+	taskSet := &v1alpha1.WorkflowTaskSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns"},
+		Spec: v1alpha1.WorkflowTaskSetSpec{Tasks: map[string]v1alpha1.Template{
+			"first":  blockTemplate,
+			"second": blockTemplate,
+		}},
+	}
+	wfClient := argofake.NewClientset(taskSet)
+	watcher := watch.NewFake()
+	wfClient.PrependWatchReactor("workflowtasksets", k8stesting.DefaultWatchReactor(watcher, nil))
+
+	tr, err := tracing.New(ctx, `argoexec`)
+	require.NoError(t, err)
+	process := &Process{
+		Namespace:       "my-ns",
+		Tracing:         tr,
+		newRuntime:      func(TaskPaths) ContainerRuntimeExecutor { return nil },
+		executorPlugins: []executorplugins.TemplateExecutor{plugin},
+	}
+	ae := NewAgentExecutor(process, wfClient, "my-wf", "my-uid", 1, 10*time.Millisecond)
+	done := make(chan error)
+	go func() { done <- ae.Agent(ctx) }()
+
+	watcher.Add(taskSet.DeepCopy())
+	// The worker is busy with one task, so the agent is left holding the other.
+	require.Eventually(t, func() bool {
+		return plugin.callCounts()["block"] == 1
+	}, 10*time.Second, 10*time.Millisecond)
+
+	cancel()
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(10 * time.Second):
+		t.Fatal("the agent did not stop when its context was cancelled")
+	}
+}
+
 // namedPlugin executes plugin templates by name: "succeed" succeeds,
-// "requeue" asks to be run again once before succeeding, and "panic"
-// panics.
+// "requeue" asks to be run again once before succeeding, "panic" panics
+// and "block" blocks until its context is cancelled.
 type namedPlugin struct {
 	mu    sync.Mutex
 	calls map[string]int
@@ -115,7 +162,7 @@ func (p *namedPlugin) callCounts() map[string]int {
 	return maps.Clone(p.calls)
 }
 
-func (p *namedPlugin) ExecuteTemplate(_ context.Context, args executorplugins.ExecuteTemplateArgs, reply *executorplugins.ExecuteTemplateReply) error {
+func (p *namedPlugin) ExecuteTemplate(ctx context.Context, args executorplugins.ExecuteTemplateArgs, reply *executorplugins.ExecuteTemplateReply) error {
 	name := args.Template.Name
 	p.mu.Lock()
 	p.calls[name]++
@@ -124,6 +171,9 @@ func (p *namedPlugin) ExecuteTemplate(_ context.Context, args executorplugins.Ex
 	switch {
 	case name == "panic":
 		panic("kaboom")
+	case name == "block":
+		<-ctx.Done()
+		return ctx.Err()
 	case name == "requeue" && calls == 1:
 		reply.Node = &v1alpha1.NodeResult{Phase: v1alpha1.NodeRunning}
 		reply.Requeue = &metav1.Duration{Duration: 10 * time.Millisecond}

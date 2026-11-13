@@ -259,6 +259,7 @@ This span has no attributes.
 #### `run_agent_task`
 
 Run one HTTP or plugin task in the agent.
+The agent pod doesn't use the `executor` configuration, so set `OTEL_EXPORTER_OTLP_ENDPOINT` on its `main` container with `podSpecPatch` to get this span.
 
 |  attribute  |              explanation              |
 |-------------|---------------------------------------|
