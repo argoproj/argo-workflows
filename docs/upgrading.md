@@ -9,8 +9,8 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ### Controller RBAC for hot workers
 
-The default installs now give the workflow controller `get`, `patch` and `delete` on `workflowtaskresults`, beside `list`, `watch` and `deletecollection`, which [hot workers](hot-workers.md) need.
-If you maintain your own controller roles and want to use hot workers, add these three verbs, and the Deployment rule of the [hot workers RBAC component](hot-workers.md#controller-rbac).
+The default installs now give the workflow controller `get`, `patch` and `delete` on `workflowtaskresults`, beside `list`, `watch` and `deletecollection`, which hot workers need.
+If you maintain your own controller roles and want to use hot workers, add these three verbs, and the Deployment rule of the hot workers RBAC component, `manifests/components/hot-workers`.
 Without hot workers, nothing changes.
 
 ### ContainerSet siblings are no longer terminated when one container fails

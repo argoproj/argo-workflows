@@ -25,6 +25,12 @@ export function hasArtifactLogs(workflow: Workflow, nodeId: string, container: s
     return node?.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
 }
 
+// nodeHasLogs is whether a pod node has logs to show: a pooled node runs on a worker pod shared with other tasks,
+// so it has only the archived logs of its only container, main
+export function nodeHasLogs(workflow: Workflow, node: NodeStatus) {
+    return !node.pooledTask || !!hasArtifactLogs(workflow, node.id, 'main');
+}
+
 export const WorkflowsService = {
     create(workflow: Workflow, namespace: string) {
         return requests
@@ -267,7 +273,8 @@ export const WorkflowsService = {
         return from(this.getWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
             switchMap(({workflow: updatedWorkflow, isPendingOrRunning}) => {
                 // A pooled node runs on a worker pod shared with other tasks, so it has only archived logs.
-                if (updatedWorkflow.status.nodes[nodeId]?.pooledTask) {
+                // With no pod picked, the logs are the whole workflow's, whichever node the viewer opened on.
+                if (podName && updatedWorkflow.status.nodes[nodeId]?.pooledTask) {
                     return getLogsFromArtifact(updatedWorkflow);
                 }
                 if (!isPendingOrRunning && hasArtifactLogs(updatedWorkflow, nodeId, container)) {

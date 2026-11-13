@@ -159,3 +159,11 @@ func TestLogWorkflowLooksUpPooledNodes(t *testing.T) {
 		assert.Equal(t, strings.Join(pooledLogNotes(pooledLogsWorkflow(), "", "main"), "\n")+"\n", stderr)
 	})
 }
+
+func TestWaitWatchOrLogSkipsPooledLookup(t *testing.T) {
+	c := &workflowmocks.WorkflowServiceClient{}
+	c.On("WorkflowLogs", mock.Anything, mock.Anything).Return(emptyLogStream{}, nil)
+	err := WaitWatchOrLog(logging.TestContext(t.Context()), c, "argo", []string{"my-wf"}, CliSubmitOpts{Log: true})
+	require.NoError(t, err)
+	c.AssertNotCalled(t, "GetWorkflow", mock.Anything, mock.Anything)
+}
