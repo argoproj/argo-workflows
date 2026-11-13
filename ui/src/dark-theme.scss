@@ -21,6 +21,14 @@
         color: $argo-color-gray-4;
     }
 
+    .workflow-details__topbar-buttons a {
+        color: $argo-color-gray-5;
+
+        &.active {
+            color: $argo-color-gray-8;
+        }
+    }
+
     .graph-options-panel .active {
         background-color: $argo-color-gray-7;
         border-color: $argo-color-gray-6;
@@ -49,6 +57,35 @@
         background-color: $argo-color-gray-7;
     }
 
+    .workflow-timeline {
+        background-color: $dark-theme-background-1;
+    }
+
+    .workflow-timeline__row {
+        border-bottom-color: $argo-color-gray-7;
+    }
+
+    .workflow-timeline__row--header {
+        background-color: $dark-theme-background-2;
+    }
+
+    .workflow-timeline__start-line {
+        border-right-color: $argo-color-gray-7;
+    }
+
+    .log-box {
+        color: $argo-color-gray-3;
+        background-color: $dark-theme-background-1;
+    }
+
+    .workflow-dag-render-options-panel,
+    .workflows-toolbar,
+    .workflow-drawer,
+    .modal-content,
+    .help-box {
+        background-color: $dark-theme-background-2;
+    }
+
     textarea {
         color: $argo-color-gray-3;
         background-color: $dark-theme-background-1;
@@ -57,10 +94,20 @@
 
 .theme-toggle {
     display: block;
-    margin-top: 4px;
+    margin: 4px auto 0;
     padding: 0;
-    border: 0;
+    font-size: 20px;
+    color: $white-color;
     background: none;
-    color: inherit;
+    border: 0;
     cursor: pointer;
+
+    &:hover {
+        color: $argo-color-gray-4;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $argo-color-teal-5;
+        outline-offset: 2px;
+    }
 }

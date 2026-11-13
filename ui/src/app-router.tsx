@@ -26,7 +26,7 @@ import {ThemeToggle} from './shared/components/theme-toggle';
 import {Version} from './shared/models';
 import * as nsUtils from './shared/namespaces';
 import {services} from './shared/services';
-import {useTheme} from './shared/theme';
+import {useThemeSync} from './shared/theme-sync';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -55,7 +55,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
     const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
-    const {theme} = useTheme();
+    const theme = useThemeSync();
     const setError = (error: Error) => {
         notificationsManager.show({
             content: 'Failed to load version/info ' + error,
@@ -67,9 +67,6 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
         const sub = popupManager.popupProps.subscribe(setPopupProps);
         return () => sub.unsubscribe();
     }, [popupManager]);
-    useEffect(() => {
-        document.body.classList.toggle('theme-dark', theme === 'dark');
-    }, [theme]);
     useEffect(() => {
         services.info
             .getUserInfo()
