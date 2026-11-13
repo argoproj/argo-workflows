@@ -39,6 +39,9 @@ data:
   # This config item allows you to disable this.
   nodeEvents: |
     enabled: true
+    # Emit node events from the Pod instead of the Workflow, with annotations linking the event back to the Workflow.
+    # Default false.
+    sendAsPod: false
 
   # Whether or not to emit events on workflow status changes. These can take a up a lot of space in
   # k8s (typically etcd), see nodeEvents above.
@@ -238,10 +241,10 @@ data:
     ignoreErrors: false
     # Use a self-signed cert for TLS
     secure: true
-    # Options for configuring individual metrics
-    options:
+    # Modifiers configure individual metrics by name
+    modifiers:
       pod_missing:
-        disable: true
+        disabled: true
       cronworkflows_triggered_total:
         disabledAttributes:
           - name
@@ -271,6 +274,17 @@ data:
       maxIdleConns: 100
       maxOpenConns: 0
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
+    # Retry settings for the initial database connection
+    reconnectionConfig:
+      # Number of connection attempts before giving up. Default 5.
+      maxRetries: 5
+      # Delay before the first retry, in seconds; grows by retryMultiple on each attempt. Default 0 (100ms).
+      baseDelaySeconds: 0
+      # Upper limit on the delay between attempts, in seconds. Default 30.
+      maxDelaySeconds: 30
+      # Growth factor applied to the delay after each attempt. Defaults to 2.0 when reconnectionConfig is
+      # absent; when the block is present but this field is omitted, 1.0 is used (constant delay).
+      retryMultiple: 2.0
     #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
     nodeStatusOffLoad: false
     # save completed workloads to the workflow archive
@@ -425,6 +439,18 @@ data:
   #   completed: 10
   #   failed: 3
   #   errored: 3
+
+  # FailedPodRestart enables automatic restart of pods that fail before entering the Running state,
+  # for example after an eviction or preemption. See docs/pod-restarts.md
+  # failedPodRestart: |
+  #   enabled: true
+  #   # Maximum number of automatic restarts per node before giving up. Default 3.
+  #   maxRestarts: 3
+
+  # InitlessPod selects the init-less pod layout for all workflow pods scheduled by this controller.
+  # See docs/initless-pod.md
+  # initlessPod: |
+  #   enabled: true
 
   # SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
   # for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
