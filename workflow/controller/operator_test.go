@@ -10905,6 +10905,86 @@ func TestInferFailedReasonArtifactPluginSidecar(t *testing.T) {
 	}
 }
 
+// TestInferFailedReasonNativeSidecar ensures that a native sidecar (an init
+// container with restartPolicy: Always) ranks with the other sidecars rather
+// than ahead of main, like regular init containers do. Native sidecars run
+// alongside main and are stopped after it, and many exit non-zero on SIGTERM,
+// so their exit code must not replace main's failure in the node message.
+func TestInferFailedReasonNativeSidecar(t *testing.T) {
+	terminated := func(name string, exitCode int32) apiv1.ContainerStatus {
+		return apiv1.ContainerStatus{
+			Name:  name,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: exitCode, Reason: "Error"}},
+		}
+	}
+	always := apiv1.ContainerRestartPolicyAlways
+	initContainers := []apiv1.Container{
+		{Name: "init"},
+		{Name: "setup"},
+		{Name: "daemon", RestartPolicy: &always},
+	}
+	tests := []struct {
+		name          string
+		initCtrs      []apiv1.ContainerStatus
+		ctrs          []apiv1.ContainerStatus
+		expectedPhase wfv1.NodePhase
+		expectedMsg   string
+	}{
+		{
+			name:          "MainFailureNotMaskedByNativeSidecar",
+			initCtrs:      []apiv1.ContainerStatus{terminated("init", 0), terminated("daemon", 1)},
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 2), terminated("wait", 0)},
+			expectedPhase: wfv1.NodeFailed,
+			expectedMsg:   "main: Error (exit code 2)",
+		},
+		{
+			name:          "ArgoInitFailureStillFirst",
+			initCtrs:      []apiv1.ContainerStatus{terminated("init", 1), terminated("daemon", 1)},
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 2), terminated("wait", 0)},
+			expectedPhase: wfv1.NodeError,
+			expectedMsg:   "init: Error (exit code 1)",
+		},
+		{
+			name:          "UserInitFailureStillFirst",
+			initCtrs:      []apiv1.ContainerStatus{terminated("init", 0), terminated("setup", 1), terminated("daemon", 1)},
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 2), terminated("wait", 0)},
+			expectedPhase: wfv1.NodeFailed,
+			expectedMsg:   "setup: Error (exit code 1)",
+		},
+		{
+			name:          "NativeSidecarSigtermIgnored",
+			initCtrs:      []apiv1.ContainerStatus{terminated("init", 0), terminated("daemon", 143)},
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 0)},
+			expectedPhase: wfv1.NodeSucceeded,
+			expectedMsg:   "",
+		},
+		{
+			name:          "NativeSidecarFailureReportedLikeSidecar",
+			initCtrs:      []apiv1.ContainerStatus{terminated("init", 0), terminated("daemon", 1)},
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 0)},
+			expectedPhase: wfv1.NodeFailed,
+			expectedMsg:   "daemon: Error (exit code 1)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			pod := apiv1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+				Spec:       apiv1.PodSpec{InitContainers: initContainers},
+				Status: apiv1.PodStatus{
+					Phase:                 apiv1.PodFailed,
+					InitContainerStatuses: tt.initCtrs,
+					ContainerStatuses:     tt.ctrs,
+				},
+			}
+			phase, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+			assert.Equal(t, tt.expectedPhase, phase)
+			assert.Equal(t, tt.expectedMsg, msg)
+		})
+	}
+}
+
 func TestSubstitute(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
