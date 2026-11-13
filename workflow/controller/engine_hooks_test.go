@@ -22,32 +22,7 @@ import (
 // and the boundary would wait on it for good.
 func TestEngine_HookScopeErrorReentersExistingHooks(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: scope-err
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - {name: g, template: echo, withItems: [one]}
-      - name: a
-        depends: g
-        template: echo
-        hooks:
-          exit:
-            template: wait
-  - name: echo
-    container:
-      image: busybox
-      command: [echo]
-  - name: wait
-    suspend: {duration: "1s"}
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/engine-hook-scope-error-reenters-existing-hooks.yaml")
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -83,32 +58,7 @@ spec:
 // engine.finished shows no scope was built; the hooked task is the control.
 func TestEngine_C67_NoScopeBuildWithoutHooks(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: no-scope
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - {name: A, template: echo, when: "false"}
-      - {name: B, template: echo, depends: A}
-      - name: C
-        template: echo
-        depends: A
-        hooks:
-          never:
-            expression: "false"
-            template: echo
-  - name: echo
-    container:
-      image: busybox
-      command: [echo]
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/engine-no-scope-build-without-hooks.yaml")
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -137,35 +87,8 @@ spec:
 
 // --- DAG exit hook tests ---
 
-var dagExitHookOnSuccess = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-hook-success
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGExitHookOnSuccess(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitHookOnSuccess)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-hook-on-success.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -186,35 +109,8 @@ func TestDAGExitHookOnSuccess(t *testing.T) {
 	assert.True(t, hasOnExit, "exit handler should fire on task success")
 }
 
-var dagExitHookOnFailure = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-hook-failure
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGExitHookOnFailure(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitHookOnFailure)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-hook-on-failure.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -237,34 +133,8 @@ func TestDAGExitHookOnFailure(t *testing.T) {
 
 // --- Steps exit hook tests ---
 
-var stepsExitHookOnSuccess = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-exit-hook-success
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: step-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestStepsExitHookOnSuccess(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsExitHookOnSuccess)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/steps-exit-hook-on-success.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -285,34 +155,8 @@ func TestStepsExitHookOnSuccess(t *testing.T) {
 	assert.True(t, hasOnExit, "exit handler should fire on step success")
 }
 
-var stepsExitHookOnFailure = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-exit-hook-failure
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: step-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestStepsExitHookOnFailure(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsExitHookOnFailure)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/steps-exit-hook-on-failure.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -335,36 +179,8 @@ func TestStepsExitHookOnFailure(t *testing.T) {
 
 // --- Expression-based exit hook tests ---
 
-var dagExitHookExpressionTrue = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-hook-expr-true
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            expression: "true"
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGExitHookExpressionTrue(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitHookExpressionTrue)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-hook-expression-true.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -385,36 +201,8 @@ func TestDAGExitHookExpressionTrue(t *testing.T) {
 	assert.True(t, hasOnExit, "exit handler with expression=true should fire")
 }
 
-var dagExitHookExpressionFalse = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-hook-expr-false
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            expression: "false"
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGExitHookExpressionFalse(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitHookExpressionFalse)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-hook-expression-false.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -432,36 +220,8 @@ func TestDAGExitHookExpressionFalse(t *testing.T) {
 
 // --- Lifecycle hook tests ---
 
-var dagLifecycleHookRunning = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-lifecycle-running
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          running:
-            expression: tasks['task-a'].status == "Running"
-            template: hook-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: hook-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hook fired"]
-`
-
 func TestDAGLifecycleHookRunning(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagLifecycleHookRunning)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-lifecycle-hook-running.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -483,35 +243,8 @@ func TestDAGLifecycleHookRunning(t *testing.T) {
 	assert.True(t, hasHook, "lifecycle hook should fire when task is Running")
 }
 
-var stepsLifecycleHookRunning = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-lifecycle-running
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: step-a
-        hooks:
-          running:
-            expression: steps['step-a'].status == "Running"
-            template: hook-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: hook-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hook fired"]
-`
-
 func TestStepsLifecycleHookRunning(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsLifecycleHookRunning)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/steps-lifecycle-hook-running.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -535,35 +268,8 @@ func TestStepsLifecycleHookRunning(t *testing.T) {
 
 // --- Exit hook blocks completion ---
 
-var dagExitHookBlocksCompletion = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-blocks
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGExitHookBlocksCompletion(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitHookBlocksCompletion)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-hook-blocks-completion.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -593,27 +299,8 @@ func TestDAGExitHookBlocksCompletion(t *testing.T) {
 
 // --- No hooks: task completes normally ---
 
-var dagNoHooks = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-no-hooks
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-`
-
 func TestDAGNoHooks(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagNoHooks)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-no-hooks.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -635,43 +322,8 @@ func TestDAGNoHooks(t *testing.T) {
 
 // --- Exit hook with both lifecycle hook and exit hook on same task ---
 
-var dagExitAndLifecycleHook = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-and-lifecycle
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          running:
-            expression: tasks['task-a'].status == "Running"
-            template: hook-handler
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: hook-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hook"]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exit"]
-`
-
 func TestDAGExitAndLifecycleHookTogether(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitAndLifecycleHook)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-and-lifecycle-hook.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -711,41 +363,8 @@ func TestDAGExitAndLifecycleHookTogether(t *testing.T) {
 
 // --- Sequential DAG tasks with exit hooks ---
 
-var dagSequentialExitHooks = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-seq-exit
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-      - name: task-b
-        dependencies: [task-a]
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGSequentialExitHooks(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagSequentialExitHooks)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-sequential-exit-hooks.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -780,40 +399,8 @@ func TestDAGSequentialExitHooks(t *testing.T) {
 
 // --- Multiple parallel tasks ---
 
-var dagMultipleTasksExitHooks = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-multi-exit
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-      - name: task-b
-        hooks:
-          exit:
-            template: exit-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: exit-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["exiting"]
-`
-
 func TestDAGMultipleTasksExitHooks(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagMultipleTasksExitHooks)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-multiple-tasks-exit-hooks.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -835,36 +422,8 @@ func TestDAGMultipleTasksExitHooks(t *testing.T) {
 
 // --- Lifecycle hook on error ---
 
-var dagLifecycleHookOnError = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-lifecycle-error
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          failed:
-            expression: tasks['task-a'].status == "Failed"
-            template: hook-handler
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-  - name: hook-handler
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["task failed"]
-`
-
 func TestDAGLifecycleHookOnError(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagLifecycleHookOnError)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-lifecycle-hook-on-error.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -887,48 +446,8 @@ func TestDAGLifecycleHookOnError(t *testing.T) {
 
 // --- Exit hook with output param arguments ---
 
-var dagExitHookWithOutputArgs = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-exit-args
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: task-a
-        hooks:
-          exit:
-            template: exit-handler
-            arguments:
-              parameters:
-              - name: input
-                value: '{{tasks.task-a.outputs.parameters.result}}'
-        template: whalesay
-  - name: whalesay
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: "hello"
-          path: /tmp/result.txt
-  - name: exit-handler
-    inputs:
-      parameters:
-      - name: input
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.input}}"]
-`
-
 func TestDAGExitHookWithOutputArgs(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagExitHookWithOutputArgs)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/dag-exit-hook-with-output-args.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -957,31 +476,7 @@ func TestDAGExitHookWithOutputArgs(t *testing.T) {
 // engine.Execute called markBoundaryError, killing the DAG boundary. With
 // the fix, A's error is isolated to A; B's exit handler still fires.
 func TestBug_HookFailureDoesNotKillSiblings(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata: {name: t, namespace: argo}
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: A
-        template: echo
-        hooks:
-          exit: {template: does-not-exist}
-      - name: B
-        template: echo
-        hooks:
-          exit: {template: exit-handler}
-      - name: C
-        template: echo
-  - name: echo
-    container: {image: alpine, command: [echo, hi]}
-  - name: exit-handler
-    container: {image: alpine, command: [echo, bye]}
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/bug-hook-failure-does-not-kill-siblings.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -1035,25 +530,7 @@ spec:
 // recording its completion. See engine_test.go (TestEngine lifecycle), which
 // likewise asserts the DAG stays Running while a task exit hook is pending.
 func TestExitHookGatesBoundaryCompletion(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata: {name: t, namespace: argo}
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: A
-        template: failing
-        hooks:
-          exit: {template: slow}
-  - name: failing
-    container: {image: alpine, command: [false]}
-  - name: slow
-    container: {image: alpine, command: [sleep, "9999"]}
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/exit-hook-gates-boundary-completion.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -1117,26 +594,7 @@ spec:
 // workflow-level onExit handling), so the "task hook errored" Error
 // entry must NOT appear. It also asserts the user-visible outcome.
 func TestBug_ExitHookNotReRunUnderParallelism(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata: {name: t, namespace: argo}
-spec:
-  entrypoint: main
-  parallelism: 1
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: A
-        template: echo
-        hooks:
-          exit: {template: exit-handler}
-  - name: echo
-    container: {image: alpine, command: [echo, hi]}
-  - name: exit-handler
-    container: {image: alpine, command: [echo, bye]}
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/engine_hooks/bug-exit-hook-not-re-run-under-parallelism.yaml")
 	// Capture controller logs so we can assert the exit handler is not errored
 	// by a spurious parallelism throttle.
 	hook := logging.NewTestHook()

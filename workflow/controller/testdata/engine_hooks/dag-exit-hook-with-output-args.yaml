@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-exit-args
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: task-a
+        hooks:
+          exit:
+            template: exit-handler
+            arguments:
+              parameters:
+              - name: input
+                value: '{{tasks.task-a.outputs.parameters.result}}'
+        template: whalesay
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          default: "hello"
+          path: /tmp/result.txt
+  - name: exit-handler
+    inputs:
+      parameters:
+      - name: input
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.input}}"]
