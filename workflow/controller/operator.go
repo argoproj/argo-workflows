@@ -1413,6 +1413,40 @@ func (woc *wfOperationCtx) markAllContainersDeleted(ctx context.Context, nodeID 
 	}
 }
 
+// failContainersWithoutStatus fails the container nodes of a failed containerSet pod
+// that have no container status, e.g. because kubelet rejected the pod at admission.
+// Otherwise they would stay Pending forever.
+func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod *apiv1.Pod, podNode *wfv1.NodeStatus, message string) {
+	reported := make(map[string]bool, len(pod.Status.ContainerStatuses))
+	for _, c := range pod.Status.ContainerStatuses {
+		reported[fmt.Sprintf("%s.%s", podNode.Name, c.Name)] = true
+	}
+	// Walk only the pod's container graph. Leaf containers link to the pod's dependents,
+	// which are outside the pod's boundary.
+	var pending []string
+	visited := make(map[string]bool)
+	queue := append([]string(nil), podNode.Children...)
+	for len(queue) > 0 {
+		id := queue[0]
+		queue = queue[1:]
+		if visited[id] {
+			continue
+		}
+		visited[id] = true
+		node, err := woc.wf.Status.Nodes.Get(id)
+		if err != nil || node.Type != wfv1.NodeTypeContainer || node.BoundaryID != podNode.ID {
+			continue
+		}
+		if !reported[node.Name] && !node.Fulfilled() {
+			pending = append(pending, node.Name)
+		}
+		queue = append(queue, node.Children...)
+	}
+	for _, name := range pending {
+		woc.markNodePhase(ctx, name, wfv1.NodeFailed, message)
+	}
+}
+
 // shouldPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
@@ -1658,6 +1692,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		case c.State.Running != nil:
 			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeRunning)
 		}
+	}
+	if pod.Status.Phase == apiv1.PodFailed && !stoppedDaemon && updated.Phase != wfv1.NodePending {
+		woc.failContainersWithoutStatus(ctx, pod, old, updated.Message)
 	}
 
 	// only update Pod IP for daemoned nodes to reduce number of updates
