@@ -20,16 +20,11 @@ sh hack/retry-download.sh go mod download
 sh hack/retry-download.sh yarn --cwd ui install
 ```
 
-The helper makes at most three attempts, waiting 5 seconds and then 10 seconds between retryable failures.
-It retries recognized HTTP 408, 429, 500, 502, 503 and 504 diagnostics, HTTP/2 stream `INTERNAL_ERROR` responses from the peer, and temporary connection or name-resolution errors.
-Other errors, including authentication failures, missing packages, checksum failures and signal-style exit statuses, fail without retries.
-Recognized permanent diagnostics take precedence when the same attempt also reports a transient error.
-Each attempt is classified using only its own output, which remains visible while the command runs.
-The final command exit status is preserved and temporary diagnostic files are removed.
+The helper retries any failed command up to three attempts total, waiting 5 seconds and then 10 seconds between attempts.
+It does not classify errors: permanent failures are retried too, avoiding dependence on package-manager diagnostic strings.
+Command output is passed through directly, and the final command exit status is preserved unless the retry delay fails, in which case the helper returns `sleep`'s status.
 Existing package caches, integrity checks and CI step timeouts remain in effect.
 Do not wrap builds, tests or non-idempotent commands with this helper.
-
-Run `go test ./hack/downloads -count=1` to test the helper, including recovery from a local HTTP 502 using a real Yarn install when Yarn is available.
 
 ## Modifications
 

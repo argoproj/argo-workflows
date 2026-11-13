@@ -55,7 +55,6 @@ jobs:
               - Dockerfile
               - hack/tilt/**
               - hack/retry-download.sh
-              - hack/downloads/**
             tests: &tests
               - *common
               - cmd/**
