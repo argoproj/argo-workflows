@@ -23,8 +23,9 @@ import (
 )
 
 // HotWorkersSuite runs pooled templates on a controller with hot workers
-// enabled (the hotworkers profile). Each test uses its own pool name, so tests
-// never share a pool; pools outlive their workflows until their retention ends.
+// enabled (the hotworkers profile). A test whose tasks run uses its own pool
+// names, so tests never share a worker; pools outlive their workflows until
+// their retention ends.
 type HotWorkersSuite struct {
 	fixtures.E2ESuite
 }
@@ -45,16 +46,12 @@ func (s *HotWorkersSuite) poolPods(poolName string) []apiv1.Pod {
 // poolName and was run by a worker.
 func pooledNodes(t *testing.T, status *wfv1.WorkflowStatus, poolName string) []wfv1.NodeStatus {
 	t.Helper()
-	var nodes []wfv1.NodeStatus
-	for _, n := range status.Nodes {
-		if n.Type != wfv1.NodeTypePod {
-			continue
-		}
+	nodes := podNodes(status)
+	for _, n := range nodes {
 		require.NotNil(t, n.PooledTask, "node %s is not pooled", n.DisplayName)
 		assert.Equal(t, poolName, n.PooledTask.PoolName)
 		assert.NotEmpty(t, n.PooledTask.TaskName)
 		assert.NotEmpty(t, n.PooledTask.WorkerPodUID, "node %s has no worker pod", n.DisplayName)
-		nodes = append(nodes, n)
 	}
 	return nodes
 }
@@ -91,8 +88,7 @@ func (s *HotWorkersSuite) TestPoolReuse() {
 				for _, n := range nodes {
 					workers[n.PooledTask.WorkerPodUID] = n.PooledTask.WorkerPodName
 				}
-				say := status.Nodes.FindByDisplayName("say")
-				require.NotNil(t, say)
+				say := node(t, status, "say")
 				require.NotNil(t, say.Outputs)
 				require.Len(t, say.Outputs.Parameters, 1)
 				assert.Equal(t, md.Name, say.Outputs.Parameters[0].Value.String())
@@ -114,7 +110,7 @@ func (s *HotWorkersSuite) TestPoolReuse() {
 	}
 	// The pods follow the layout under test: the legacy layout's init
 	// container installs argoexec, the init-less one has none.
-	initless := os.Getenv("E2E_INITLESS") == "true"
+	initless := fixtures.AuxContainerName() == common.SupervisorContainerName
 	for _, p := range before {
 		var inits, names []string
 		for _, c := range p.Spec.InitContainers {
@@ -199,9 +195,9 @@ func (s *HotWorkersSuite) TestFanOut() {
 		})
 }
 
-// TestExample runs the hot workers example, which the examples suite
+// TestHotWorkersExample runs the hot workers example, which the examples suite
 // skips, as it needs hot workers enabled.
-func (s *HotWorkersSuite) TestExample() {
+func (s *HotWorkersSuite) TestHotWorkersExample() {
 	ctx := logging.TestContext(s.T().Context())
 	data, err := os.ReadFile("../../examples/hot-workers.yaml")
 	s.CheckError(err)
@@ -217,8 +213,7 @@ func (s *HotWorkersSuite) TestExample() {
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			nodes := pooledNodes(t, status, "python-squares")
 			require.Len(t, nodes, 11)
-			sum := status.Nodes.FindByDisplayName("sum")
-			require.NotNil(t, sum)
+			sum := node(t, status, "sum")
 			assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, *sum, "main-logs")), "285", "the sum of the squares of 0 to 9")
 		})
 }

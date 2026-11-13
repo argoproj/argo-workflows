@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
+  # The hotworkers profile carries a copy of these defaults without the
+  # podSpecPatch (../../hotworkers/workflow-controller-configmap.yaml): keep
+  # the two in step.
   workflowDefaults: |
     spec:
       activeDeadlineSeconds: 300
