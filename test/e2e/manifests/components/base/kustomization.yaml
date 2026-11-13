@@ -5,6 +5,7 @@ resources:
 - ../../../../../manifests/base/crds/full
 - ../../../../../manifests/quick-start/base
 - argo-server.service-account-token-secret.yaml
+- argo-server-header-auth-secret.yaml
 
 patches:
 - path: argo-server-deployment.yaml
