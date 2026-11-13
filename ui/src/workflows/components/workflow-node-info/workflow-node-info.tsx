@@ -17,7 +17,7 @@ import {Artifact, NodeStatus, Workflow} from '../../../shared/models';
 import {getPodName, getPooledTaskPodName} from '../../../shared/pod-name';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
-import {hasArtifactLogs} from '../../../shared/services/workflows-service';
+import {nodeHasLogs} from '../../../shared/services/workflows-service';
 import {getMainContainerNames, getResolvedTemplates} from '../../../shared/template-resolution';
 import useTimestamp, {TIMESTAMP_KEYS} from '../../../shared/use-timestamp';
 
@@ -103,8 +103,7 @@ function WorkflowNodeSummary(props: Props) {
     // a pooled node has no pod of its own: it shows its task name and claimant worker pod apart, and offers only its archived logs
     const pooled = node.pooledTask && getPooledTaskPodName(node.pooledTask, models.isEndedPhase(node.phase));
     const podName = pooled ? pooled.name : getPodName(workflow, node);
-    // a pooled template is a container or script, whose only container is main
-    const hasLogs = !pooled || hasArtifactLogs(workflow, node.id, 'main');
+    const hasLogs = nodeHasLogs(workflow, node);
 
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
@@ -413,8 +412,7 @@ function WorkflowNodeContainers(props: Props) {
 
     const containers = (template.containerSet ? template.containerSet.containers : []).concat(template.sidecars || []);
     const container = (selectedSidecar && containers.find(item => item.name === selectedSidecar)) || template.container || template.script;
-    // a pooled node has only archived logs, of its only container, main
-    const hasLogs = !props.node.pooledTask || hasArtifactLogs(props.workflow, props.node.id, 'main');
+    const hasLogs = nodeHasLogs(props.workflow, props.node);
 
     return (
         <div className='workflow-node-info__containers'>

@@ -1,7 +1,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
-import {Info, NodeStatus, Workflow} from '../../../shared/models';
+import {Info, NodeStatus, PooledTaskStatus, Workflow} from '../../../shared/models';
 import {services} from '../../../shared/services';
 import {WorkflowNodeInfo} from './workflow-node-info';
 
@@ -27,6 +27,15 @@ const podNode = (extra: Partial<NodeStatus> = {}): NodeStatus =>
     }) as NodeStatus;
 
 const claimed = (status: 'True' | 'False', reason: string) => ({type: 'Claimed' as const, status, reason, lastTransitionTime: '2026-10-15T00:00:00Z'});
+
+const pooledTask = (extra: Partial<PooledTaskStatus>): PooledTaskStatus => ({
+    poolName: 'work',
+    poolHash: 'hash',
+    taskName: 'my-wf-work-123',
+    taskSetUID: 'uid',
+    enqueuedAt: '',
+    ...extra
+});
 
 const archivedLogs = {outputs: {artifacts: [{name: 'main-logs', s3: {key: 'my-wf/my-wf-work-123/main.log'}}]}};
 
@@ -57,7 +66,7 @@ describe('WorkflowNodeInfo', () => {
         renderNode(
             podNode({
                 phase: 'Pending',
-                pooledTask: {poolName: 'work', poolHash: 'hash', taskName: 'my-wf-work-123', taskSetUID: 'uid', enqueuedAt: '', conditions: [claimed('False', 'Enqueued')]}
+                pooledTask: pooledTask({conditions: [claimed('False', 'Enqueued')]})
             })
         );
 
@@ -77,15 +86,7 @@ describe('WorkflowNodeInfo', () => {
         renderNode(
             podNode({
                 phase: 'Failed',
-                pooledTask: {
-                    poolName: 'work',
-                    poolHash: 'hash',
-                    taskName: 'my-wf-work-123',
-                    taskSetUID: 'uid',
-                    enqueuedAt: '',
-                    conditions: [claimed('False', 'Released')],
-                    releases: 1
-                }
+                pooledTask: pooledTask({conditions: [claimed('False', 'Released')], releases: 1})
             })
         );
 
@@ -95,15 +96,7 @@ describe('WorkflowNodeInfo', () => {
     it('shows a claimed pooled node by its worker pod, with no live logs', () => {
         renderNode(
             podNode({
-                pooledTask: {
-                    poolName: 'work',
-                    poolHash: 'hash',
-                    taskName: 'my-wf-work-123',
-                    conditions: [claimed('True', 'Claimed')],
-                    taskSetUID: 'uid',
-                    enqueuedAt: '',
-                    workerPodName: 'work-0123456789-abcde'
-                }
+                pooledTask: pooledTask({conditions: [claimed('True', 'Claimed')], workerPodName: 'work-0123456789-abcde'})
             })
         );
 
@@ -119,15 +112,7 @@ describe('WorkflowNodeInfo', () => {
             podNode({
                 phase: 'Succeeded',
                 ...archivedLogs,
-                pooledTask: {
-                    poolName: 'work',
-                    poolHash: 'hash',
-                    taskName: 'my-wf-work-123',
-                    conditions: [claimed('True', 'Claimed')],
-                    taskSetUID: 'uid',
-                    enqueuedAt: '',
-                    workerPodName: 'work-0123456789-abcde'
-                }
+                pooledTask: pooledTask({conditions: [claimed('True', 'Claimed')], workerPodName: 'work-0123456789-abcde'})
             } as Partial<NodeStatus>)
         );
 

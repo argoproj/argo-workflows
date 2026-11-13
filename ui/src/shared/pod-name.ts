@@ -1,5 +1,5 @@
 import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
-import {NodeStatus, PooledTaskState, PooledTaskStatus, Workflow} from './models';
+import {NodeStatus, PooledTaskCondition, PooledTaskState, PooledTaskStatus, Workflow} from './models';
 
 export const POD_NAME_V1 = 'v1';
 export const POD_NAME_V2 = 'v2';
@@ -45,11 +45,15 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     return `${prefix}-${hash}`;
 }
 
+function findCondition(task: PooledTaskStatus, type: PooledTaskCondition['type']): PooledTaskCondition | undefined {
+    return (task.conditions || []).find(c => c.type === type);
+}
+
 // getPooledTaskState returns where a pooled task is in its hand-off, from its conditions:
 // Interrupted once the controller has interrupted it, Claimed while a worker holds it, and Enqueued otherwise
 // note: this is intended to be equivalent to the server-side Go code in pkg/apis/workflow/v1alpha1/pool_types.go#State
 export function getPooledTaskState(task: PooledTaskStatus): PooledTaskState {
-    const isTrue = (type: string) => (task.conditions || []).some(c => c.type === type && c.status === 'True');
+    const isTrue = (type: PooledTaskCondition['type']) => findCondition(task, type)?.status === 'True';
     if (isTrue('Interrupted')) {
         return 'Interrupted';
     }
@@ -73,7 +77,8 @@ export function getPooledTaskPodName(task: PooledTaskStatus, ended: boolean): {n
     if (!ended) {
         return {name: task.taskName, marker: 'queued'};
     }
-    const released = (task.conditions || []).some(c => c.type === 'Claimed' && c.status === 'False' && c.reason === 'Released');
+    const claimed = findCondition(task, 'Claimed');
+    const released = claimed?.status === 'False' && claimed.reason === 'Released';
     return {name: task.taskName, marker: released ? 'released' : 'unclaimed'};
 }
 

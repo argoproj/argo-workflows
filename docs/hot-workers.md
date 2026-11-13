@@ -11,7 +11,7 @@ A template opts in with `pool:`.
 On this page, a task is what a pod would run for one attempt of a pooled node, whether the node is a step or a DAG task, and `{{node.taskName}}` is its name.
 Each worker pod runs one task at a time, one after another.
 
-Use hot workers for many short tasks, where creating, scheduling and starting a pod takes a large share of each task's time, for example a fan-out of thousands of tasks of a few seconds each, or a frequent `CronWorkflow` whose tasks are quick.
+Use hot workers for many short tasks, where creating, scheduling and starting a pod takes a large share of each task's time, for example a fan-out of thousands of tasks of a few seconds each, or a frequent CronWorkflow whose tasks are quick.
 Keep long or resource-heavy tasks, and tasks that need the isolation of a pod of their own, on ordinary pods.
 A pool's worker pods share files and credentials between the tasks they run, so read [isolation and security](#isolation-and-security) before you pool a template.
 
@@ -19,10 +19,10 @@ Hot workers run only on Kubernetes, within one cluster, only on Linux nodes, and
 
 ## How hot workers work
 
-When a pooled task is ready to run, the controller creates a `WorkflowTaskSet` holding the task instead of a pod.
+When a pooled task is ready to run, the controller creates a WorkflowTaskSet holding the task instead of a pod.
 The first task for a pool creates the pool: a Deployment of worker pods, built from the template the same way a pod for that template would be.
-A worker pod claims a task by creating the task's `WorkflowTaskResult`, runs the task, and reports its outputs through that result, as a pod does.
-The controller deletes the task's `WorkflowTaskSet` once the node has finished.
+A worker pod claims a task by creating the task's WorkflowTaskResult, runs the task, and reports its outputs through that result, as a pod does.
+The controller deletes the task's WorkflowTaskSet once the node has finished.
 A pool with no tasks is deleted after its retention period.
 
 Every worker pod has two containers:
@@ -176,12 +176,12 @@ The Deployment, its pods and the pool's objects carry these labels:
 
 | Label | On |
 | --- | --- |
-| `workflows.argoproj.io/pool-name` | The pool's Deployment and pods, and its tasks' `WorkflowTaskSets` and `WorkflowTaskResults` |
+| `workflows.argoproj.io/pool-name` | The pool's Deployment and pods, and its tasks' WorkflowTaskSets and WorkflowTaskResults |
 | `workflows.argoproj.io/pool-hash` | The same, with the pool's full hash |
 | `workflows.argoproj.io/controller-instanceid` | The same, when the controller has an instance ID |
-| `workflows.argoproj.io/worker-pod`, `workflows.argoproj.io/worker-pod-uid` | A claimed task's `WorkflowTaskResult`, naming the worker pod that claimed it |
-| `workflows.argoproj.io/task-set-uid` | A claimed task's `WorkflowTaskResult`, holding the UID of the `WorkflowTaskSet` it claims |
-| `workflows.argoproj.io/interrupt` | A claimed task's `WorkflowTaskResult`, once the controller has told its worker to stop the task |
+| `workflows.argoproj.io/worker-pod`, `workflows.argoproj.io/worker-pod-uid` | A claimed task's WorkflowTaskResult, naming the worker pod that claimed it |
+| `workflows.argoproj.io/task-set-uid` | A claimed task's WorkflowTaskResult, holding the UID of the WorkflowTaskSet it claims |
+| `workflows.argoproj.io/interrupt` | A claimed task's WorkflowTaskResult, once the controller has told its worker to stop the task |
 
 `metadata` and `podMetadata` can't override the pool name, pool hash and instance ID labels on worker pods; a value you set for one of them is replaced without a warning.
 Worker pods never carry the `workflows.argoproj.io/workflow` label, because they serve many workflows.
@@ -194,7 +194,7 @@ The retention in use is on the Deployment's `workflows.argoproj.io/pool-retentio
 The controller tracks idle time in memory, so a controller restart starts the retention period again; it never deletes a pool early.
 
 The first task after a pool is deleted waits for a new pool to start.
-For a `CronWorkflow`, set `retentionSeconds` longer than its schedule's interval to keep the pool between runs.
+For a CronWorkflow, set `retentionSeconds` longer than its schedule's interval to keep the pool between runs.
 With `retentionSeconds: 0`, the pool is deleted as soon as it has no tasks, which can happen between two steps of one workflow.
 
 Upgrading the controller, or changing its `executor` or `mainContainer` settings, its pod layout or the `hotWorkers` grace period or release reserve, changes every pool's hash.
@@ -203,7 +203,7 @@ New tasks then go to new pools, each with a cold start, and the old pools are de
 ### Scaling
 
 The pool controller sets a pool's replicas only when it creates the Deployment, from `initialReplicas`, and never changes them afterwards.
-Scale a pool by scaling its Deployment, with `kubectl scale` or with an autoscaler you configure for it, such as a `HorizontalPodAutoscaler`:
+Scale a pool by scaling its Deployment, with `kubectl scale` or with an autoscaler you configure for it, such as a HorizontalPodAutoscaler:
 
 ```bash
 kubectl scale deployment python-squares-<hash> --replicas=5
@@ -230,11 +230,11 @@ While its pool can't run tasks, the node's message says why:
 
 * `pool "<name>" is degraded: <reason>` while the pool's Deployment can't be created, for example because admission or quota refuses it, or while none of the pool's pods is ready and they can't be created or can't start (an image that can't be pulled, a missing Secret or ConfigMap, a crash loop).
   The node waits until the pool recovers or a deadline passes.
-  A pod whose creation is forbidden fails its node at once instead.
+  By contrast, a node that runs in its own pod fails at once if creating that pod is forbidden.
 * `pool "<name>" can't be built: <reason>` when the pool can never be built, for example because a Deployment that isn't the pool's has its name, or the controller can't build the pool spec the task was dispatched with.
   The node fails with `Error`.
 
-The pool controller also emits a `PoolDegraded` or `PoolUnbuildable` Warning event on the pool's Deployment, or on the `WorkflowTaskSet` if there is no Deployment, when the pool's health changes.
+The pool controller also emits a `PoolDegraded` or `PoolUnbuildable` Warning event on the pool's Deployment, or on the WorkflowTaskSet if there is no Deployment, when the pool's health changes.
 
 ## RBAC
 
@@ -276,7 +276,7 @@ If you don't use Kustomize, add this rule to the controller's role:
 A pool runs as the template's or workflow's service account, as its pods would.
 The `worker` container uses that account, unless you set `executor.serviceAccountName`, in which case it uses the executor's account and `main` keeps the pool's.
 
-The worker's account needs more than the [executor's role](workflow-rbac.md), which has only `create` and `patch` on `workflowtaskresults`: it watches the namespace's `WorkflowTaskSets` for tasks and claims, releases and completes `WorkflowTaskResults`.
+The worker's account needs more than the [executor's role](workflow-rbac.md), which has only `create` and `patch` on `workflowtaskresults`: it watches the namespace's WorkflowTaskSets for tasks and claims, releases and completes WorkflowTaskResults.
 The quick-start manifests include this as the `hot-worker` Role, and bind it to the `default` service account:
 
 ```yaml title="manifests/quick-start/base/hot-worker-role.yaml"
@@ -314,7 +314,7 @@ Without one of them, it exits with an error naming every verb it isn't allowed o
 ### Retrying pooled workflows
 
 `argo retry` of a pooled workflow needs no permissions on `workflowtasksets` or `workflowtaskresults`.
-A workflow completes only once its pooled `WorkflowTaskSets` are deleted, so the controller enqueues each pooled node the retry resets afresh, and deletes any `WorkflowTaskResult` its earlier attempt left.
+A workflow completes only once its pooled WorkflowTaskSets are deleted, so the controller enqueues each pooled node the retry resets afresh, and deletes any WorkflowTaskResult its earlier attempt left.
 
 ## Differences from pods
 
@@ -365,7 +365,7 @@ A worker pod that crashes or is lost mid-task fails the node with `Error`, as a 
 * the worker pod finishes without failing before its worker hands the task back: `worker pod <name> exited`;
 * its `worker` container restarts: `worker container of pod <name> restarted`.
 
-A queued task whose `WorkflowTaskSet` is deleted, for example by hand, fails its node with `Error` and the message `WorkflowTaskSet <node ID>-task deleted`, since no worker can claim it.
+A queued task whose WorkflowTaskSet is deleted, for example by hand, fails its node with `Error` and the message `WorkflowTaskSet <node ID>-task deleted`, since no worker can claim it.
 
 The default `retryPolicy`, `OnFailure`, doesn't retry these; use `OnError` or `Always` to retry them.
 A task that fails to stage its inputs or save its outputs is also `Error`, as a pod's init, wait or supervisor container failing is.
@@ -383,7 +383,7 @@ When the worker stops a task, for a release or otherwise, `main` sends the task'
 
 A released task doesn't use a retry, even without a `retryStrategy`.
 Its node stays `Running` while it waits for another worker.
-A task whose `WorkflowTaskResult` is deleted while its `WorkflowTaskSet` remains, for example by hand, is also run again rather than failed.
+A task whose WorkflowTaskResult is deleted while its WorkflowTaskSet remains, for example by hand, is also run again rather than failed.
 
 A workflow's `podDisruptionBudget` doesn't cover its pooled tasks, because worker pods don't carry its labels: a drain releases their tasks, and they run again.
 
@@ -419,7 +419,7 @@ Their archived logs work: enable [`archiveLogs`](configure-archive-logs.md) to k
   `argo logs <workflow> <name>`, where `<name>` names only pooled tasks by task name or worker pod, prints the notes and exits non-zero.
 * The Argo Server's log API, and the UI's view of all of a workflow's logs, show nothing for pooled tasks.
 
-`argo get` shows a pooled node's worker pod once a worker has claimed it, and otherwise its task name, marked `(queued)` while it waits, or `(unclaimed)` or `(released)` if it ended before a worker held it.
+`argo get` shows a pooled node's worker pod while a worker holds it, or once it has ended on one, and otherwise its task name, marked `(queued)` while it waits, `(unclaimed)` if it ended without a worker claiming it, or `(released)` if it ended after a worker handed it back.
 
 Artifacts and logs are stored under the key they would have as a pod: the default key format, `{{workflow.name}}/{{node.taskName}}`, gives each attempt its own key, and `{{pod.name}}` in a repository's key format resolves to the task name.
 
@@ -428,8 +428,8 @@ Artifacts and logs are stored under the key they would have as a pod: the defaul
 * `{{steps.<name>.ip}}`, `{{tasks.<name>.ip}}`, the node's host node name and `fieldRef` environment variables refer to the worker pod.
 * Each `{{workflow.failures}}` entry has a `taskName`, the node's `{{node.taskName}}`, and its `podName` is the worker pod, or empty for a pooled node no worker holds: one never claimed, or one a worker released.
 * A pooled node's `resourcesDuration` stays zero.
-* A pooled task's `WorkflowTaskSet` is named `<node ID>-task`.
-  If another workflow in the namespace is named exactly that and runs HTTP or plugin templates, whichever `WorkflowTaskSet` takes the name first keeps it: if the other workflow's holds it, the pooled node fails rather than use it, and if the pooled task's holds it, the other workflow's HTTP and plugin tasks fail, saying so.
+* A pooled task's WorkflowTaskSet is named `<node ID>-task`.
+  If another workflow in the namespace is named exactly that and runs HTTP or plugin templates, whichever WorkflowTaskSet takes the name first keeps it: if the other workflow's holds it, the pooled node fails rather than use it, and if the pooled task's holds it, the other workflow's HTTP and plugin tasks fail, saying so.
 
 ## Stop, terminate, retry and delete
 
@@ -442,16 +442,16 @@ As for pods, the enclosing template fails at once, so the workflow's exit handle
 After `argo retry` of a terminated node, the old task can briefly overlap the new attempt until its worker sees that its claim is gone.
 The old task can never write the new attempt's result.
 
-A workflow completes only once all its pooled `WorkflowTaskSets` are deleted.
-If the controller can't delete them, the workflow stays running with the message `waiting to delete pooled WorkflowTaskSets: <error>` and a `WorkflowPooledTaskSetsRemain` Warning event, until the deletes succeed or you delete the `WorkflowTaskSets` yourself.
+A workflow completes only once all its pooled WorkflowTaskSets are deleted.
+If the controller can't delete them, the workflow stays running with the message `waiting to delete pooled WorkflowTaskSets: <error>` and a `WorkflowPooledTaskSetsRemain` Warning event, until the deletes succeed or you delete the WorkflowTaskSets yourself.
 
-Deleting a workflow kills its running pooled tasks: its `WorkflowTaskSets` and `WorkflowTaskResults` are garbage collected with it, and a worker whose claim is deleted stops its task and reports nothing.
+Deleting a workflow kills its running pooled tasks: its WorkflowTaskSets and WorkflowTaskResults are garbage collected with it, and a worker whose claim is deleted stops its task and reports nothing.
 
 ## Upgrading and rolling back
 
 Install the v4.2 or later CRDs before you use `pool:`.
 With the full CRDs of an earlier version, the API server drops `pool` from your templates, and they run as ordinary pods.
-With an earlier `WorkflowTaskSet` CRD, the API server drops the task's pool spec, and the node fails with `the WorkflowTaskSet was stored without spec.pool or spec.dispatch; install the current CRDs`.
+With an earlier WorkflowTaskSet CRD, the API server drops the task's pool spec, and the node fails with `the WorkflowTaskSet was stored without spec.pool or spec.dispatch; install the current CRDs`.
 
 A controller upgrade leaves running pooled tasks on their pools.
 Tasks dispatched by the new controller go to new pools, as [retention](#retention) describes.
@@ -460,7 +460,7 @@ The pool's Deployment, if it exists, keeps running until its retention passes, a
 The new controller replaces each queued task of an earlier version, which no worker has claimed, with one for a pool of its own version, so the task waits for that pool's cold start even when the earlier version's pool has idle worker pods.
 A task that a worker has already claimed finishes on that worker's pod.
 If a worker claims a task just as the new controller replaces it, the claim is interrupted, and the node fails with `Error` and the message `a worker claimed the task as it was moved to this controller version's pool` once the task stops, for a retry to run it afresh; a worker that hadn't yet started the task gives it up, and it is replaced as if unclaimed.
-A task a worker released stays queued for its earlier pool, and if that pool's `Deployment` is gone, its node stays `Pending` with `pool "<name>" is degraded: the pool spec is for controller version "<version>", and this controller, "<version>", builds pools only for its own version`.
+A task a worker released stays queued for its earlier pool, and if that pool's Deployment is gone, its node stays `Pending` with `pool "<name>" is degraded: the pool spec is for controller version "<version>", and this controller, "<version>", builds pools only for its own version`.
 
 Before you roll the controller back to a version without hot workers, let every workflow that uses pooled templates finish, then delete the pools as in [turning hot workers off](#turning-hot-workers-off).
 
@@ -490,5 +490,5 @@ Hot workers don't support:
 * autoscaling: the pool controller doesn't create autoscalers for its pools;
 * disruption budgets for pooled tasks;
 * a task whose command, running as a user other than the `worker` container's, creates directories the worker can't write into in an `emptyDir` volume or an input artifact directory: the worker pod is stuck until you delete it, as [isolation and security](#isolation-and-security) describes;
-* a time limit on a workflow's wait to delete its pooled `WorkflowTaskSets`;
+* a time limit on a workflow's wait to delete its pooled WorkflowTaskSets;
 * a WorkflowTemplate or ClusterWorkflowTemplate that holds pooled templates for other workflows and sets a workflow-level field pooled templates reject: one with its own `spec.podSpecPatch` or `spec.retryStrategy.affinity` fails its lint if any of its templates is pooled, even when the pooled template is used only from other workflows through `templateRef`.

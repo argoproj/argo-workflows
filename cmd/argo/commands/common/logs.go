@@ -17,30 +17,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
+// LogWorkflow prints the workflow's logs, then says where to find the logs of
+// its pooled tasks, which the stream can't show.
 func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) error {
-	// logs
-	stream, err := serviceClient.WorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
-		Name:       workflow,
-		Namespace:  namespace,
-		PodName:    podName,
-		LogOptions: logOptions,
-		Selector:   selector,
-		Grep:       grep,
-	})
-	if err != nil {
+	if err := streamWorkflowLogs(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions); err != nil {
 		return err
-	}
-
-	// loop on log lines
-	for {
-		event, recvErr := stream.Recv()
-		if errors.Is(recvErr, io.EOF) {
-			break
-		}
-		if recvErr != nil {
-			return recvErr
-		}
-		fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
 	}
 
 	// A pooled task is in no pod the stream reads, whether picked by name or
@@ -69,6 +50,35 @@ func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceC
 	return nil
 }
 
+// streamWorkflowLogs prints the workflow's log stream until it ends.
+func streamWorkflowLogs(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) error {
+	// logs
+	stream, err := serviceClient.WorkflowLogs(ctx, &workflowpkg.WorkflowLogRequest{
+		Name:       workflow,
+		Namespace:  namespace,
+		PodName:    podName,
+		LogOptions: logOptions,
+		Selector:   selector,
+		Grep:       grep,
+	})
+	if err != nil {
+		return err
+	}
+
+	// loop on log lines
+	for {
+		event, recvErr := stream.Recv()
+		if errors.Is(recvErr, io.EOF) {
+			break
+		}
+		if recvErr != nil {
+			return recvErr
+		}
+		fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
+	}
+	return nil
+}
+
 // pooledLogNotes says where to find the logs of the workflow's pooled nodes
 // that podName, if set, names by task name or worker pod. A pooled task runs
 // on a worker pod shared with other tasks and carrying no workflow label, so
@@ -85,7 +95,7 @@ func pooledLogNotes(wf *wfv1.Workflow, podName, container string) []string {
 	slices.SortFunc(nodes, func(a, b wfv1.NodeStatus) int {
 		return cmp.Or(a.StartedAt.Compare(b.StartedAt.Time), cmp.Compare(a.ID, b.ID))
 	})
-	artifactName := container + "-logs"
+	artifactName := container + wfv1.LogsSuffix
 	notes := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		name, _ := util.PooledTaskPodName(node.PooledTask, node.Fulfilled())

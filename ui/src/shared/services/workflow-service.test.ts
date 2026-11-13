@@ -216,5 +216,13 @@ describe('workflow service', () => {
         expect(log.content).toBe('from artifact');
         expect(getArtifactLogs).toHaveBeenCalledWith(runningWorkflow, 'test-node', 'main', '', false);
         expect(getClusterLogs).not.toHaveBeenCalled();
+
+        // with no pod picked, the logs are the whole workflow's, though the viewer opened on the pooled node
+        getArtifactLogs.mockClear();
+        const allLog = await firstValueFrom(service.getContainerLogs(runningWorkflow, '', 'test-node', 'main', '', false));
+
+        expect(allLog.content).toBe('from cluster');
+        expect(getClusterLogs).toHaveBeenCalledWith(runningWorkflow, '', 'main', '');
+        expect(getArtifactLogs).not.toHaveBeenCalled();
     });
 });
