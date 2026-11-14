@@ -632,10 +632,14 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	}
 	archivedRepo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", LabelRequirements: r}).Return(int64(2), nil)
 	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", Limit: -2, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj2, failedWfObj}, nil)
-	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", LabelRequirements: r}).Return(false, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, mock.MatchedBy(func(o sutils.ListOptions) bool {
+		return o.Namespace == "workflows"
+	})).Return(false, nil)
 	archivedRepo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(int64(1), nil)
 	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", Limit: -1, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj4}, nil)
-	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(false, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, mock.MatchedBy(func(o sutils.ListOptions) bool {
+		return o.Namespace == "test"
+	})).Return(false, nil)
 
 	kubeClientSet := fake.NewClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -1535,4 +1539,93 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 	server := NewServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
 
 	return server, ctx
+}
+
+// ListWorkflows must keep issuing a continuation token when archived workflows
+// remain: the has-more probe only sees the archive table, so a page filled with
+// live workflows used to end the listing before the archived ones were served.
+func TestListWorkflowsContinuesPastLiveWorkflows(t *testing.T) {
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(false)
+
+	archivedWfs := v1alpha1.Workflows{
+		{ObjectMeta: metav1.ObjectMeta{Name: "archived-wf-1", Namespace: "test"}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "archived-wf-2", Namespace: "test"}},
+	}
+	archivedRepo := &mocks.WorkflowArchive{}
+	archivedRepo.On("ListWorkflows", mock.Anything, mock.MatchedBy(func(o sutils.ListOptions) bool {
+		return o.Namespace == "test" && o.Offset == 0 && o.Limit > 0
+	})).Return(archivedWfs, nil)
+	archivedRepo.On("ListWorkflows", mock.Anything, mock.MatchedBy(func(o sutils.ListOptions) bool {
+		return o.Namespace == "test" && o.Offset == 2 && o.Limit > 0
+	})).Return(v1alpha1.Workflows{
+		{ObjectMeta: metav1.ObjectMeta{Name: "archived-wf-3", Namespace: "test"}},
+	}, nil)
+	// Only the archive-relative offset of the next page (3 archived rows served so
+	// far, minus 2 live rows) reports more work; the absolute offset would probe
+	// past the archive rows and drop the continuation token.
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, mock.MatchedBy(func(o sutils.ListOptions) bool {
+		return o.Namespace == "test" && o.Offset == 2
+	})).Return(true, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, mock.Anything).Return(false, nil)
+
+	kubeClientSet := fake.NewClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+
+	var liveObjs []runtime.Object
+	for i := range 2 {
+		liveObjs = append(liveObjs, &v1alpha1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("live-wf-%02d", i),
+				Namespace: "test",
+				Labels: map[string]string{
+					common.LabelKeyControllerInstanceID: "my-instanceid",
+					common.LabelKeyPhase:                string(v1alpha1.WorkflowSucceeded),
+				},
+			},
+			Spec: v1alpha1.WorkflowSpec{
+				Entrypoint: "my-entrypoint",
+				Templates:  []v1alpha1.Template{{Name: "my-entrypoint", Container: &corev1.Container{}}},
+			},
+			Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.WorkflowSucceeded},
+		})
+	}
+	wfClientset := v1alpha.NewClientset(liveObjs...)
+	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
+
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+
+	instanceIDSvc := instanceid.NewService("my-instanceid")
+	wfStore, err := store.NewSQLiteStore(instanceIDSvc)
+	require.NoError(t, err)
+	for _, obj := range liveObjs {
+		require.NoError(t, wfStore.Add(obj.(*v1alpha1.Workflow)))
+	}
+
+	namespaceAll := metav1.NamespaceAll
+	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, workflowtemplate.NewClientStore(), clusterworkflowtemplate.NewClientStore(), nil, &namespaceAll, nil)
+
+	// First page: the live workflows plus 2 archived rows; one archived row
+	// remains, so a continuation token must be issued.
+	page1, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+		Namespace:   "test",
+		ListOptions: &metav1.ListOptions{Limit: 10},
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, page1.Continue)
+
+	// Second page: the last archived workflow; nothing remains afterwards.
+	page2, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+		Namespace:   "test",
+		ListOptions: &metav1.ListOptions{Limit: 10, Continue: page1.Continue},
+	})
+	require.NoError(t, err)
+	require.Len(t, page2.Items, 1)
+	assert.Equal(t, "archived-wf-3", page2.Items[0].Name)
+	assert.Empty(t, page2.Continue)
 }
