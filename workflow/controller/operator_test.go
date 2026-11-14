@@ -1430,6 +1430,8 @@ func TestStepsRetriesVariable(t *testing.T) {
 	assert.ElementsMatch(t, expected, actual)
 }
 
+// TestAssessNodeStatus checks the node phase and message assessNodeStatus derives from a pod, or that it returns nil
+// when the node must not be updated yet.
 func TestAssessNodeStatus(t *testing.T) {
 	const templateName = "whalesay"
 	tests := []struct {
@@ -1721,6 +1723,70 @@ func TestAssessNodeStatus(t *testing.T) {
 		node:        &wfv1.NodeStatus{TemplateName: templateName},
 		wantPhase:   wfv1.NodeFailed,
 		wantMessage: "Pod Failed",
+	}, {
+		name: "pod failed while being deleted, no container status yet",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+			Status:     apiv1.PodStatus{Phase: apiv1.PodFailed},
+		},
+		node:    &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantNil: true,
+	}, {
+		name: "pod failed while being deleted, no container status after the timeout",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now().Add(-deletedPodStatusMinTimeout)}},
+			Status:     apiv1.PodStatus{Phase: apiv1.PodFailed},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "can't find failed message for pod  namespace ",
+	}, {
+		name: "pod failed while being deleted, no container status, retained by a longer podGC delay",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				DeletionTimestamp: &metav1.Time{Time: time.Now().Add(-deletedPodStatusMinTimeout)},
+				Annotations:       map[string]string{common.AnnotationKeyPodGCStrategy: "OnPodCompletion/30m"},
+			},
+			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
+		},
+		node:    &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantNil: true,
+	}, {
+		name: "pod failed while being deleted, no container status, condition changed after the deletion does not extend the wait",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now().Add(-deletedPodStatusMinTimeout)}},
+			Status: apiv1.PodStatus{
+				Phase:      apiv1.PodFailed,
+				Conditions: []apiv1.PodCondition{{Type: apiv1.DisruptionTarget, LastTransitionTime: metav1.Now()}},
+			},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "can't find failed message for pod  namespace ",
+	}, {
+		name: "pod failed while being deleted, no container status but a message",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+			Status:     apiv1.PodStatus{Phase: apiv1.PodFailed, Message: "Pod was terminated in response to imminent node shutdown."},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "Pod was terminated in response to imminent node shutdown.",
+	}, {
+		name: "pod failed while being deleted, with container statuses",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+				ContainerStatuses: []apiv1.ContainerStatus{{
+					Name:  common.MainContainerName,
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{Reason: "ContainerStatusUnknown", ExitCode: 137}},
+				}},
+			},
+		},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "main: ContainerStatusUnknown (exit code 137)",
 	}}
 
 	nonDaemonWf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
