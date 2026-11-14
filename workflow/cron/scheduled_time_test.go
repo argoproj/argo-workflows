@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestScheduledTimePreservesConfiguredTimestamp(t *testing.T) {
