@@ -315,3 +315,33 @@ func TestReplaceStrictAnyNilNestedTag(t *testing.T) {
 		assert.Equal(t, toJSONString("resolved-outer"), pass2)
 	})
 }
+
+// TestReplaceStrictAnyContextNames covers #17415: {{tasks.name}} and {{steps.name}} name the current
+// task/step and are only set when the node is executed, so the strict dependency pass must leave
+// them unresolved rather than requeue waiting for a dependency that will never exist.
+func TestReplaceStrictAnyContextNames(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	strict := []string{"tasks", "steps"}
+	for _, tag := range []string{"tasks.name", "steps.name"} {
+		t.Run(tag, func(t *testing.T) {
+			for _, in := range []string{"pre-{{" + tag + "}}-post", "{{=" + tag + "}}", "{{= " + tag + " + 'x'}}"} {
+				r, err := ReplaceStrictAny(ctx, toJSONString(in), map[string]any{}, strict)
+				require.NoError(t, err, in)
+				assert.Equal(t, toJSONString(in), r)
+			}
+		})
+	}
+	t.Run("ReplaceStillRequiresThem", func(t *testing.T) {
+		for _, in := range []string{"{{tasks.name}}", "{{steps.name}}", "{{=tasks.name}}", "{{= steps.name + 'x'}}"} {
+			_, err := Replace(ctx, toJSONString(in), map[string]any{}, false)
+			require.Error(t, err, in)
+		}
+	})
+	t.Run("TaskCalledNameIsStillStrict", func(t *testing.T) {
+		for _, in := range []string{"{{tasks.name.outputs.result}}", "{{=tasks.name.outputs.result}}"} {
+			_, err := ReplaceStrictAny(ctx, toJSONString(in), map[string]any{}, strict)
+			require.Error(t, err, in)
+			assert.True(t, IsMissingVariableErr(err), in)
+		}
+	})
+}

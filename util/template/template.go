@@ -10,6 +10,7 @@ import (
 	"github.com/valyala/fasttemplate"
 
 	exprenv "github.com/argoproj/argo-workflows/v4/util/expr/env"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 const (
@@ -69,6 +70,22 @@ func getStrictRegex(strictPrefixes []string) *regexp.Regexp {
 	// This ensures that we match a full dot-segment (e.g., "tasks" matches "tasks.A" but not "tasksA").
 	regexStr := "^((" + strings.Join(patterns, "|") + "))(\\.|$)"
 	return regexp.MustCompile(regexStr)
+}
+
+// isStrictTag reports whether tag matches strictRegex and so must resolve.
+// Under strict prefixes, {{tasks.name}} and {{steps.name}} match but name the
+// current task or step, which is only set when it is executed: they are not
+// references to a dependency, so they may stay unresolved for the pass that
+// runs at execution (#17415). Replace with allowUnresolved=false
+// (matchAllRegex) requires every tag to resolve, so it has no such exemption.
+func isStrictTag(strictRegex *regexp.Regexp, tag string) bool {
+	if strictRegex == nil {
+		return false
+	}
+	if strictRegex != matchAllRegex && (tag == varkeys.TasksName.Template() || tag == varkeys.StepsName.Template()) {
+		return false
+	}
+	return strictRegex.MatchString(tag)
 }
 
 func (t *impl) ReplaceStrict(ctx context.Context, replaceMap map[string]any, strictPrefixes []string) (string, error) {

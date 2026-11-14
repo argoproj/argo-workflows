@@ -88,7 +88,12 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 	}
 
 	for _, id := range missingIdentifiers {
-		if strictRegex != nil && strictRegex.MatchString(id) {
+		// A root such as tasks is missing whenever no task output is in scope
+		// yet; when a path under it is missing too, that path decides.
+		hasMissingChild := slices.ContainsFunc(missingIdentifiers, func(other string) bool {
+			return strings.HasPrefix(other, id+".")
+		})
+		if !hasMissingChild && isStrictTag(strictRegex, id) {
 			return 0, fmt.Errorf("failed to evaluate expression: %s is missing", id)
 		}
 	}
