@@ -18,6 +18,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -36,16 +37,30 @@ import (
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
+	obj, err := we.execResource(ctx, action, manifestPath, flags)
+	if err != nil || obj == nil {
+		return "", "", "", err
+	}
+	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(obj.GetKind()), obj.GroupVersionKind().Group, obj.GetName())
+	selfLink := inferObjectSelfLink(*obj)
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
+	return obj.GetNamespace(), resourceFullName, selfLink, nil
+}
+
+// execResource runs the kubectl action and returns the object it printed:
+// none for a delete, or a get that found nothing.
+func (we *WorkflowExecutor) execResource(ctx context.Context, action string, manifestPath string, flags []string) (*unstructured.Unstructured, error) {
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
 
 	var out []byte
 	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		return argoerr.IsTransientErr(ctx, err)
 	}, func() error {
-		out, err = runKubectl(ctx, args...)
+		out, err = kubectlRunnerFn(ctx, args...)
 		if err != nil {
 			return err
 		}
@@ -59,40 +74,39 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
 		}
 		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
-		return "", "", "", err
+		return nil, err
 	}
 	if action == "delete" {
-		return "", "", "", nil
+		return nil, nil
 	}
 	if action == "get" && len(out) == 0 {
-		return "", "", "", nil
+		return nil, nil
 	}
-	obj := unstructured.Unstructured{}
-	err = json.Unmarshal(out, &obj)
-	if err != nil {
-		return "", "", "", err
+	obj := &unstructured.Unstructured{}
+	if err := json.Unmarshal(out, obj); err != nil {
+		return nil, err
 	}
-	resourceGroup := obj.GroupVersionKind().Group
-	resourceName := obj.GetName()
-	resourceKind := obj.GroupVersionKind().Kind
-	if resourceName == "" || resourceKind == "" {
-		return "", "", "", argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+	if obj.GetName() == "" || obj.GetKind() == "" {
+		return nil, argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
-	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
-	selfLink := inferObjectSelfLink(obj)
-	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
-	return obj.GetNamespace(), resourceFullName, selfLink, nil
+	return obj, nil
+}
+
+// inferPlural guesses the resource name of a kind as `kubectl` does under
+// the hood.
+func inferPlural(kind string) string {
+	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
+	return lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{Name: kind}})
+}
+
+func inferGVR(obj unstructured.Unstructured) schema.GroupVersionResource {
+	gvk := obj.GroupVersionKind()
+	return gvk.GroupVersion().WithResource(inferPlural(gvk.Kind))
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	gvk := obj.GroupVersionKind()
-	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
-	// REST client would remove the need to infer the plural name.
-	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
-	pluralName := lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
-		Name: gvk.Kind,
-	}})
+	pluralName := inferPlural(gvk.Kind)
 
 	var selfLinkPrefix string
 	if gvk.Group == "" {
@@ -396,26 +410,36 @@ func (we *WorkflowExecutor) saveResourceParameters(ctx context.Context, resource
 			outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		var output string
-		var err error
-		switch {
-		case param.ValueFrom.JSONPath != "":
-			output, err = jsonPathFilter(obj, param.ValueFrom.JSONPath)
-			logger.WithError(err).WithField("jsonPath", param.ValueFrom.JSONPath).Info(ctx, "jsonpath")
-		case param.ValueFrom.JQFilter != "":
-			output, err = jqFilter(ctx, jsonBytes, param.ValueFrom.JQFilter)
-			logger.WithError(err).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
-		default:
-			continue
-		}
+		output, ok, err := resourceParameterValue(ctx, param, obj, jsonBytes)
 		if err != nil {
 			return err
 		}
-
+		if !ok {
+			continue
+		}
 		outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
 	return nil
+}
+
+// resourceParameterValue resolves one output parameter against the
+// resource: obj as `kubectl get -o jsonpath=` saw it, jsonBytes as
+// `kubectl get -o json` printed it. ok is false for a parameter resolved
+// neither way. JSONPath wins if a parameter sets both.
+func resourceParameterValue(ctx context.Context, param wfv1.Parameter, obj *unstructured.Unstructured, jsonBytes []byte) (string, bool, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	switch {
+	case param.ValueFrom.JSONPath != "":
+		output, err := jsonPathFilter(obj, param.ValueFrom.JSONPath)
+		logger.WithError(err).WithField("jsonPath", param.ValueFrom.JSONPath).Info(ctx, "jsonpath")
+		return output, true, err
+	case param.ValueFrom.JQFilter != "":
+		output, err := jqFilter(ctx, jsonBytes, param.ValueFrom.JQFilter)
+		logger.WithError(err).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
+		return output, true, err
+	}
+	return "", false, nil
 }
 
 // needsJSONPathRead and needsJQRead report which form of the resource resolving this output

@@ -19,6 +19,9 @@ const (
 	LayoutInitless
 	// LayoutWorker runs the whole flow in one process, main included.
 	LayoutWorker
+	// LayoutResource issues resource requests in the resource agent: no
+	// files, no containers and no plan.
+	LayoutResource
 )
 
 // linksInputArtifacts reports whether main sees its input artifacts as
@@ -37,6 +40,8 @@ func (l Layout) String() string {
 		return "initless"
 	case LayoutWorker:
 		return "worker"
+	case LayoutResource:
+		return "resource"
 	}
 	return fmt.Sprintf("Layout(%d)", int(l))
 }
