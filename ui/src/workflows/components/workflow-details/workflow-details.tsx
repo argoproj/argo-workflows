@@ -5,6 +5,7 @@ import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
+import {ExecutionParameters} from '../../../parameterization/execution-parameters';
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -517,6 +518,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             }}>
             <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': isSidePanelExpanded})}>
                 <ErrorNotice error={error} />
+                {workflow && <ExecutionParameters workflow={workflow} />}
                 {(tab === 'summary' && renderSummaryTab()) ||
                     (workflow && (
                         <div className='workflow-details__graph-container-wrapper'>

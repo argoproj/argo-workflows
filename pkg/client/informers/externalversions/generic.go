@@ -5,6 +5,7 @@ package externalversions
 import (
 	fmt "fmt"
 
+	parameterizationv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/parameterization/v1alpha1"
 	v1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -53,6 +54,32 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowTaskSets().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("workflowtemplates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Argoproj().V1alpha1().WorkflowTemplates().Informer()}, nil
+
+		// Group=parameters.workflows.example.io, Version=v1alpha1
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("actiondefinitions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ActionDefinitions().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("actionresulttemplates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ActionResultTemplates().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("parameternodeinputs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ParameterNodeInputs().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("parameterretries"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ParameterRetries().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("parameterrevisions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ParameterRevisions().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("parametersets"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ParameterSets().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("parametertemplates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ParameterTemplates().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("resourceoperations"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().ResourceOperations().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("workflowactionbindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().WorkflowActionBindings().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("workflowforms"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().WorkflowForms().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("workflowparameterbindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().WorkflowParameterBindings().Informer()}, nil
+	case parameterizationv1alpha1.SchemeGroupVersion.WithResource("workflowsubmissions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Parameters().V1alpha1().WorkflowSubmissions().Informer()}, nil
 
 	}
 

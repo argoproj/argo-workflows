@@ -16,6 +16,7 @@ import eventSources from './event-sources';
 import help from './help';
 import login from './login';
 import {ModalSwitch} from './modals/modal-switch';
+import {Parameterization, request as parameterRequest} from './parameterization/parameterization';
 import plugins from './plugins';
 import reports from './reports';
 import sensors from './sensors';
@@ -48,6 +49,7 @@ const timelineUrl = uiUrl('timeline');
 const reportsUrl = uiUrl('reports');
 
 export function AppRouter({popupManager, history, notificationsManager}: {popupManager: PopupManager; history: H.History; notificationsManager: NotificationsManager}) {
+    const [parametersEnabled, setParametersEnabled] = useState(false);
     const [popupProps, setPopupProps] = useState<PopupProps>();
     const [modals, setModals] = useState<{string: boolean}>();
     const [version, setVersion] = useState<Version>();
@@ -85,6 +87,12 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             .catch(setError);
     }, []);
 
+    useEffect(() => {
+        if (namespace)
+            parameterRequest(namespace, 'capabilities')
+                .then(() => setParametersEnabled(true))
+                .catch(() => setParametersEnabled(false));
+    }, [namespace]);
     const managedNamespace = nsUtils.getManagedNamespace();
     const namespaceSuffix = managedNamespace ? '' : '/' + (namespace || '');
     return (
@@ -97,6 +105,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                     <Layout
                         navBarStyle={{backgroundColor: navBarBackgroundColor}}
                         navItems={[
+                            ...(parametersEnabled ? [{title: 'Structured Parameters', path: uiUrl('parameters/' + namespace), iconClassName: 'fa fa-sliders-h'}] : []),
                             {
                                 title: 'Workflows',
                                 path: workflowsUrl + namespaceSuffix,
@@ -170,6 +179,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                                 <Route exact={true} strict={true} path={timelineUrl}>
                                     <Redirect to={workflowsUrl} />
                                 </Route>
+                                <Route path={uiUrl('parameters/:namespace')} component={Parameterization} />
                                 <Route path={eventFlowUrl} component={eventflow.component} />
                                 <Route path={sensorUrl} component={sensors.component} />
                                 <Route path={eventSourceUrl} component={eventSources.component} />

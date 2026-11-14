@@ -1,0 +1,100 @@
+# Experimental, opt-in, isolated namespace installation. No execution writes.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: parameterization-definitions
+  namespace: argo-parameterization-lab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: parameterization-definitions
+  namespace: argo-parameterization-lab
+rules:
+- apiGroups: [parameters.workflows.example.io]
+  resources: [parametertemplates, workflowforms, workflowparameterbindings, actiondefinitions, actionresulttemplates, workflowactionbindings]
+  verbs: [get, list, watch]
+- apiGroups: [parameters.workflows.example.io]
+  resources: [parametertemplates/status, workflowforms/status, workflowparameterbindings/status, actiondefinitions/status, actionresulttemplates/status, workflowactionbindings/status]
+  verbs: [update]
+- apiGroups: [argoproj.io]
+  resources: [workflowtemplates]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: parameterization-definitions
+  namespace: argo-parameterization-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: parameterization-definitions
+subjects:
+- kind: ServiceAccount
+  name: parameterization-definitions
+  namespace: argo-parameterization-lab
+---
+# Optional native cluster-template reads; never cluster-wide definition writes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: parameterization-lab-definitions-cluster-reader
+rules:
+- apiGroups: [argoproj.io]
+  resources: [clusterworkflowtemplates]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: parameterization-lab-definitions-cluster-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: parameterization-lab-definitions-cluster-reader
+subjects:
+- kind: ServiceAccount
+  name: parameterization-definitions
+  namespace: argo-parameterization-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: parameterization-definitions
+  namespace: argo-parameterization-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: parameterization-definitions
+  template:
+    metadata:
+      labels:
+        app: parameterization-definitions
+    spec:
+      serviceAccountName: parameterization-definitions
+      containers:
+      - name: controller
+        image: argo-parameterization-definitions:local-v37-v4.0.1
+        imagePullPolicy: Never
+        args: [--namespace=argo-parameterization-lab, --cluster-templates]
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 6061
+          periodSeconds: 2
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: '1'
+            memory: 512Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 8737
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]

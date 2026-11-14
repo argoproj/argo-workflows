@@ -1,0 +1,529 @@
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: topology-v1
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - region
+    - zones
+    - roles
+    properties:
+      region: &id001
+        type: string
+        pattern: ^[a-z][a-z0-9-]{0,20}$
+      environment:
+        type: string
+        enum:
+        - test
+        - production
+        default: test
+      zones:
+        type: array
+        minItems: 1
+        maxItems: 6
+        items:
+          type: object
+          required:
+          - name
+          - subnets
+          properties:
+            name: *id001
+            subnets:
+              type: array
+              minItems: 1
+              maxItems: 4
+              items:
+                type: object
+                required:
+                - id
+                - cidr
+                properties:
+                  id: *id001
+                  cidr:
+                    type: string
+                additionalProperties: false
+          additionalProperties: false
+      roles:
+        type: array
+        minItems: 1
+        maxItems: 4
+        uniqueItems: true
+        items: *id001
+      fail:
+        type: boolean
+        default: false
+    additionalProperties: false
+  identityRules:
+  - path: /zones
+    keyPath: /name
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowForm
+metadata:
+  name: topology-form-v1
+  namespace: argo-parameterization-lab
+spec:
+  options:
+    /region:
+      kind: configmap
+      name: demo-region-catalog
+      key: regions
+  labels:
+    /zones: Availability zones
+    /roles: Node roles
+    /fail: Simulate final check failure
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: dynamic-delivery-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  volumes:
+  - name: recovery
+    configMap:
+      name: '{{workflow.name}}-recovery'
+      optional: true
+  parallelism: 4
+  arguments:
+    parameters:
+    - name: region
+    - name: environment
+    - name: zones
+    - name: roles
+    - name: fail
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: zones
+        dependencies:
+        - approve
+        template: zone
+        withParam: '{{workflow.parameters.zones}}'
+        arguments:
+          parameters:
+          - name: zone
+            value: '{{item.name}}'
+          - name: subnets
+            value: '{{item.subnets}}'
+      - name: verify
+        dependencies:
+        - zones
+        template: verify
+  - name: approve
+    suspend: {}
+  - name: zone
+    inputs:
+      parameters:
+      - name: zone
+      - name: subnets
+    dag:
+      tasks:
+      - name: subnets
+        template: subnet
+        withParam: '{{inputs.parameters.subnets}}'
+        arguments:
+          parameters:
+          - name: zone
+            value: '{{inputs.parameters.zone}}'
+          - name: subnet
+            value: '{{item.id}}'
+          - name: cidr
+            value: '{{item.cidr}}'
+  - name: subnet
+    inputs:
+      parameters:
+      - name: zone
+      - name: subnet
+      - name: cidr
+    dag:
+      tasks:
+      - name: roles
+        template: provision
+        withParam: '{{workflow.parameters.roles}}'
+        arguments:
+          parameters:
+          - name: name
+            value: '{{inputs.parameters.zone}}-{{inputs.parameters.subnet}}-{{item}}'
+          - name: zone
+            value: '{{inputs.parameters.zone}}'
+          - name: cidr
+            value: '{{inputs.parameters.cidr}}'
+          - name: role
+            value: '{{item}}'
+  - name: provision
+    suspend: {}
+  - name: verify
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - if [ "$FAIL" = "true" ] && [ "$(cat /demo/allow 2>/dev/null || true)" != true
+        ]; then exit 7; fi; echo topology-ready
+      volumeMounts:
+      - name: recovery
+        mountPath: /demo
+        readOnly: true
+      env:
+      - name: FAIL
+        value: '{{workflow.parameters.fail}}'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ActionDefinition
+metadata:
+  name: apply-record-v1
+  namespace: argo-parameterization-lab
+spec:
+  inputSchema:
+    type: object
+    properties:
+      name:
+        type: string
+      zone:
+        type: string
+      cidr:
+        type: string
+      role:
+        type: string
+    required:
+    - name
+    - zone
+    - cidr
+    - role
+  outputSchema:
+    type: object
+    properties:
+      resourceName:
+        type: string
+  template:
+    name: apply-record
+    inputs:
+      parameters:
+      - name: name
+      - name: zone
+      - name: cidr
+      - name: role
+    outputs:
+      parameters:
+      - name: resourceName
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+    resource:
+      action: apply
+      manifest: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: '{{workflow.name}}-{{inputs.parameters.name}}'\n\
+        \  labels:\n    demo.workflow: '{{workflow.name}}'\ndata:\n  zone: '{{inputs.parameters.zone}}'\n\
+        \  cidr: '{{inputs.parameters.cidr}}'\n  role: '{{inputs.parameters.role}}'\n\
+        \  region: '{{workflow.parameters.region}}'\n  environment: '{{workflow.parameters.environment}}'\n"
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowActionBinding
+metadata:
+  name: delivery-actions-v1
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: dynamic-delivery-demo
+  calls:
+  - template: provision
+    actionDefinition: apply-record-v1
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: dynamic-delivery
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: dynamic-delivery-demo
+  parameterTemplate: topology-v1
+  form: topology-form-v1
+  actionBinding: delivery-actions-v1
+  mappings:
+  - path: /region
+    parameter: region
+    encoding: string
+  - path: /environment
+    parameter: environment
+    encoding: string
+  - path: /zones
+    parameter: zones
+    encoding: json
+  - path: /roles
+    parameter: roles
+    encoding: json
+  - path: /fail
+    parameter: fail
+    encoding: boolean
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-region-catalog
+  namespace: argo-parameterization-lab
+data:
+  regions: '[{"value": "demo-north", "label": "Demo North"}, {"value": "demo-south",
+    "label": "Demo South"}]'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: training-v1
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - dataset
+    - epochs
+    properties:
+      dataset:
+        type: string
+      epochs:
+        type: integer
+        minimum: 1
+        maximum: 100
+      shuffle:
+        type: boolean
+        default: false
+    additionalProperties: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: training-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: train
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: dataset
+    - name: epochs
+    - name: shuffle
+  templates:
+  - name: train
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "Dataset=%s epochs=%s shuffle=%s\n" "$DATASET" "$EPOCHS" "$SHUFFLE"
+      env:
+      - name: DATASET
+        value: '{{workflow.parameters.dataset}}'
+      - name: EPOCHS
+        value: '{{workflow.parameters.epochs}}'
+      - name: SHUFFLE
+        value: '{{workflow.parameters.shuffle}}'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: training
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: training-demo
+  parameterTemplate: training-v1
+  mappings:
+  - path: /dataset
+    parameter: dataset
+    encoding: string
+  - path: /epochs
+    parameter: epochs
+    encoding: decimal
+  - path: /shuffle
+    parameter: shuffle
+    encoding: boolean
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: secret-v1
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - credential
+    properties:
+      credential:
+        type: object
+        required:
+        - secretRef
+        properties:
+          secretRef:
+            type: object
+            required:
+            - name
+            - key
+            properties:
+              name:
+                type: string
+              key:
+                type: string
+            additionalProperties: false
+        additionalProperties: false
+    additionalProperties: false
+  sensitivePaths:
+  - /credential
+  secretSchemas:
+    /credential:
+      type: string
+      minLength: 16
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: secret-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: consume
+  serviceAccountName: workflow-executor
+  templates:
+  - name: consume
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "${#TOKEN}" -ge 16; case "$TOKEN" in synthetic-*) echo credential-consumed
+        ;; *) exit 2 ;; esac
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: secret-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: secret-demo
+  parameterTemplate: secret-v1
+  mappings: []
+  secrets:
+  - path: /credential
+    template: consume
+    environment: TOKEN
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: empty-v1
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    additionalProperties: false
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: decision-v1
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    required:
+    - replicas
+    - release
+    properties:
+      replicas:
+        type: integer
+        minimum: 1
+        maximum: 8
+      release:
+        type: string
+        enum:
+        - stable
+        - canary
+    additionalProperties: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: intermediate-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  templates:
+  - name: main
+    steps:
+    - - name: decision
+        template: decision
+    - - name: consume
+        template: consume
+        arguments:
+          parameters:
+          - name: count
+            value: '{{steps.decision.outputs.parameters.count}}'
+          - name: release
+            value: '{{steps.decision.outputs.parameters.release}}'
+  - name: decision
+    suspend: {}
+    outputs:
+      parameters:
+      - name: count
+        valueFrom:
+          supplied: {}
+      - name: release
+        valueFrom:
+          supplied: {}
+  - name: consume
+    inputs:
+      parameters:
+      - name: count
+      - name: release
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - printf "replicas=%s release=%s\n" "$COUNT" "$RELEASE"
+      env:
+      - name: COUNT
+        value: '{{inputs.parameters.count}}'
+      - name: RELEASE
+        value: '{{inputs.parameters.release}}'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: intermediate-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: intermediate-demo
+  parameterTemplate: empty-v1
+  mappings: []
+  inputs:
+  - template: decision
+    parameterTemplate: decision-v1
+    mappings:
+    - path: /replicas
+      parameter: count
+      encoding: decimal
+    - path: /release
+      parameter: release
+      encoding: string

@@ -665,7 +665,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		// The pending workflow that's being shutdown should still be pending and waiting to acquire the lock.
 		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowPending, wocTwo.execWf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization)
 		assert.NotNil(t, wocTwo.wf.Status.Synchronization.Mutex)
 		assert.Len(t, wocTwo.wf.Status.Synchronization.Mutex.Waiting, 1)
@@ -676,7 +676,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Nil(t, woc.wf.Status.Synchronization)
 		// The pending workflow should now be running normally
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowRunning, wocTwo.execWf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowRunning, wocTwo.wf.Status.Phase)
 	})
 }
 
