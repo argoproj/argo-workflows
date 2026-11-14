@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v4/ui"
 )
 
 func TestReplaceBaseHRef(t *testing.T) {
@@ -92,4 +95,53 @@ func TestReplaceBaseHRef(t *testing.T) {
 			assert.Equal(t, testCase.expected, result)
 		})
 	}
+}
+
+func TestAddStyle(t *testing.T) {
+	testCases := []struct {
+		name     string
+		data     string
+		css      string
+		expected string
+	}{
+		{
+			name:     "before body end tag",
+			data:     `<html><body><div id="app"></div></body></html>`,
+			css:      `.login { background: red; }`,
+			expected: `<html><body><div id="app"></div><style>.login { background: red; }</style></body></html>`,
+		},
+		{
+			name:     "without body end tag",
+			data:     `<html><body><div id="app"></div>`,
+			css:      `.login { background: red; }`,
+			expected: `<html><body><div id="app"></div><style>.login { background: red; }</style>`,
+		},
+		{
+			name:     "cannot close the style element",
+			data:     `<body></body>`,
+			css:      `</style><script>alert(1)</script>`,
+			expected: `<body><style><\/style><script>alert(1)<\/script></style></body>`,
+		},
+		{
+			name:     "with byte order mark",
+			data:     `<body></body>`,
+			css:      "\ufeff.login { background: red; }",
+			expected: `<body><style>.login { background: red; }</style></body>`,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, testCase.expected, string(addStyle([]byte(testCase.data), testCase.css)))
+		})
+	}
+}
+
+func TestGetIndexDataCSS(t *testing.T) {
+	data, err := NewFilesServer("/", false, "", "", ui.Embedded, "").getIndexData()
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "<style>")
+
+	data, err = NewFilesServer("/", false, "", "", ui.Embedded, ".login { background: red; }").getIndexData()
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "<style>.login { background: red; }</style>")
 }
