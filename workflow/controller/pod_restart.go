@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"strings"
+
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -55,10 +57,12 @@ func mainContainerNeverStarted(pod *apiv1.Pod, tmpl *wfv1.Template) bool {
 // - NodeShutdown: graceful node shutdown
 // - NodeAffinity: node affinity/selector no longer matches
 // - UnexpectedAdmissionError: unexpected error during pod admission
+// - TopologyAffinityError: the topology manager rejected the pod at admission
+// - OutOf<resource>: the node lacked the resource at admission, e.g. OutOfcpu, OutOfmemory
 func isRestartableReason(reason string) bool {
 	switch reason {
-	case "Evicted", "NodeShutdown", "NodeAffinity", "UnexpectedAdmissionError":
+	case "Evicted", "NodeShutdown", "NodeAffinity", "UnexpectedAdmissionError", "TopologyAffinityError":
 		return true
 	}
-	return false
+	return strings.HasPrefix(reason, "OutOf")
 }
