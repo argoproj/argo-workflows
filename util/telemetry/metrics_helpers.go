@@ -332,6 +332,11 @@ func (m *Metrics) AddWorkersBusyCount(ctx context.Context, val int64, workerType
 	m.AddInt(ctx, InstrumentWorkersBusyCount.Name(), val, attribs)
 }
 
+// RecordWorkflowCompletionRequeueDelay records a value to the workflow_completion_requeue_delay histogram
+func (m *Metrics) RecordWorkflowCompletionRequeueDelay(ctx context.Context, val float64) {
+	m.Record(ctx, InstrumentWorkflowCompletionRequeueDelay.Name(), val, Attributes{})
+}
+
 // ObserveWorkflowCondition observes a value for the workflow_condition gauge
 // This is a helper method for use inside RegisterCallback functions
 func (m *Metrics) ObserveWorkflowCondition(ctx context.Context, o metric.Observer, val int64, workflowType string, workflowStatus string) {
@@ -344,6 +349,11 @@ func (m *Metrics) ObserveWorkflowCondition(ctx context.Context, o metric.Observe
 		{Name: AttribWorkflowStatus, Value: workflowStatus},
 	}
 	inst.ObserveInt(ctx, o, val, attribs)
+}
+
+// RecordWorkflowReconcileUtilization records a value to the workflow_reconcile_utilization histogram
+func (m *Metrics) RecordWorkflowReconcileUtilization(ctx context.Context, val float64) {
+	m.Record(ctx, InstrumentWorkflowReconcileUtilization.Name(), val, Attributes{})
 }
 
 // RecordWorkflowtemplateRuntime records a value to the workflowtemplate_runtime histogram
