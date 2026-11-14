@@ -18,6 +18,7 @@ func AllNoParentSpans() Spans {
 }
 
 var Root = Spans{
+	&SpanRunAgentTask,
 	&SpanRunWorkerTask,
 	&SpanStartupController,
 	&SpanWorkflow,
@@ -369,6 +370,27 @@ func (t *Tracing) StartReconcileWorkflow(ctx context.Context) (context.Context, 
 		}
 	}
 	return t.tracer.Start(ctx, "reconcileWorkflow", trace.WithSpanKind(trace.SpanKindInternal))
+}
+
+var SpanRunAgentTask = Span{
+	name: "runAgentTask",
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribWorkflowName,
+		},
+		{
+			name: AttribWorkflowNamespace,
+		},
+	},
+}
+
+// StartRunAgentTask starts a run_agent_task span
+func (t *Tracing) StartRunAgentTask(ctx context.Context, workflowName string, workflowNamespace string) (context.Context, trace.Span) {
+	attribs := []attribute.KeyValue{
+		attribute.String(AttribWorkflowName, workflowName),
+		attribute.String(AttribWorkflowNamespace, workflowNamespace),
+	}
+	return t.tracer.Start(ctx, "runAgentTask", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
 }
 
 var SpanRunInitContainer = Span{
