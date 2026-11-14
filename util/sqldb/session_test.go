@@ -30,6 +30,23 @@ const (
 )
 
 func setupPostgresContainer(ctx context.Context, t *testing.T) (config.DBConfig, func(), error) {
+	postgresContainer, dbConfig, err := runPostgresContainer(ctx, t)
+	if err != nil {
+		return config.DBConfig{}, nil, err
+	}
+
+	termContainerFn := func() {
+		if err := testcontainers.TerminateContainer(postgresContainer); err != nil {
+			t.Logf("failed to terminate container: %s", err)
+		}
+	}
+
+	return dbConfig, termContainerFn, nil
+}
+
+// runPostgresContainer starts PostgreSQL on fixedPort and returns the container,
+// so that a test can stop and start it again on the same endpoint.
+func runPostgresContainer(ctx context.Context, t *testing.T) (*testpostgres.PostgresContainer, config.DBConfig, error) {
 	postgresContainer, err := testpostgres.Run(ctx,
 		"postgres:17.4-alpine",
 		testpostgres.WithDatabase(dbName),
@@ -52,7 +69,7 @@ func setupPostgresContainer(ctx context.Context, t *testing.T) (config.DBConfig,
 				WithStartupTimeout(15*time.Second)),
 	)
 	if err != nil {
-		return config.DBConfig{}, nil, err
+		return nil, config.DBConfig{}, err
 	}
 
 	host, err := postgresContainer.Host(ctx)
@@ -78,13 +95,7 @@ func setupPostgresContainer(ctx context.Context, t *testing.T) (config.DBConfig,
 		},
 	}
 
-	termContainerFn := func() {
-		if err := testcontainers.TerminateContainer(postgresContainer); err != nil {
-			t.Logf("failed to terminate container: %s", err)
-		}
-	}
-
-	return dbConfig, termContainerFn, nil
+	return postgresContainer, dbConfig, nil
 }
 
 func TestSessionReconnect(t *testing.T) {
