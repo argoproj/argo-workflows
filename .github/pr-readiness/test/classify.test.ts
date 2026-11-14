@@ -67,7 +67,8 @@ test('decide: failures present -> issues comment, blocking (label applied)', () 
   const d = decide({
     signals: [S('lint', 'failure'), S('docs', 'pending')],
     templateVerdict: null,
-    hasExistingComment: false,
+    engaged: false,
+    hasContributorReport: false,
   });
   assert.equal(d.variant, 'issues');
   assert.equal(d.shouldComment, true);
@@ -79,40 +80,44 @@ test('decide: a non-compliant template alone is blocking', () => {
   const d = decide({
     signals: [S('lint', 'success')],
     templateVerdict: { compliant: false },
-    hasExistingComment: false,
+    engaged: false,
+    hasContributorReport: false,
   });
   assert.equal(d.variant, 'issues');
   assert.equal(d.blocking, true);
 });
 
-test('decide: never post when no failures and no existing comment', () => {
+test('decide: never post when no failures, not engaged and no contributor report', () => {
   for (const state of ['pending', 'success'] as SignalState[]) {
     const d = decide({
       signals: [S('lint', state)],
       templateVerdict: { compliant: true },
-      hasExistingComment: false,
+      engaged: false,
+      hasContributorReport: false,
     });
     assert.equal(d.shouldComment, false, `state=${state}`);
     assert.equal(d.blocking, false);
   }
 });
 
-test('decide: existing comment + no failures + pending -> waiting, not blocking (label cleared)', () => {
+test('decide: engaged + no failures + pending -> waiting, not blocking (label cleared)', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('docs', 'pending')],
     templateVerdict: null,
-    hasExistingComment: true,
+    engaged: true,
+    hasContributorReport: false,
   });
   assert.equal(d.variant, 'waiting');
   assert.equal(d.shouldComment, true);
   assert.equal(d.blocking, false);
 });
 
-test('decide: existing comment + all terminal green -> all-clear, not blocking (label cleared)', () => {
+test('decide: engaged + all terminal green -> all-clear, not blocking (label cleared)', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('ui', 'not-applicable')],
     templateVerdict: { compliant: true },
-    hasExistingComment: true,
+    engaged: true,
+    hasContributorReport: false,
   });
   assert.equal(d.variant, 'allclear');
   assert.equal(d.shouldComment, true);
@@ -126,9 +131,43 @@ test('decide: blocking follows the current verdict, so a failure at a new head r
   const d = decide({
     signals: [S('lint', 'failure')],
     templateVerdict: null,
-    hasExistingComment: true,
+    engaged: true,
+    hasContributorReport: false,
   });
   assert.equal(d.blocking, true);
+});
+
+test('decide: a contributor report alone posts a table-only comment (no readiness section, not blocking)', () => {
+  for (const state of ['pending', 'success', 'not-applicable'] as SignalState[]) {
+    const d = decide({
+      signals: [S('lint', state)],
+      templateVerdict: { compliant: true },
+      engaged: false,
+      hasContributorReport: true,
+    });
+    assert.equal(d.shouldComment, true, `state=${state}`);
+    assert.equal(d.variant, null, `state=${state}`);
+    assert.equal(d.blocking, false);
+  }
+});
+
+test('decide: failures still produce the issues variant alongside a contributor report', () => {
+  const d = decide({
+    signals: [S('lint', 'failure')],
+    templateVerdict: null,
+    engaged: false,
+    hasContributorReport: true,
+  });
+  assert.equal(d.variant, 'issues');
+  assert.equal(d.blocking, true);
+});
+
+test('decide: engaged keeps following through to all-clear whether or not a report is available', () => {
+  for (const hasContributorReport of [true, false]) {
+    const d = decide({ signals: [S('lint', 'success')], templateVerdict: null, engaged: true, hasContributorReport });
+    assert.equal(d.variant, 'allclear');
+    assert.equal(d.shouldComment, true);
+  }
 });
 
 // --- author gating ---
