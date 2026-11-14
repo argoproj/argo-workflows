@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: step-exit-hook-retry
+  namespace: argo
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 1
+  templates:
+    - name: main
+      steps:
+        - - name: step
+            template: run
+            hooks:
+              exit:
+                template: hook
+    - name: run
+      container:
+        image: argoproj/argosay:v2
+    - name: hook
+      container:
+        image: argoproj/argosay:v2
