@@ -45,6 +45,32 @@ func TestMergeWorkflows(t *testing.T) {
 	assert.Equal(t, "patch", targetWf.Spec.Arguments.Parameters[0].Value.String())
 }
 
+func TestMergeToSharedPatch(t *testing.T) {
+	patch := &wfv1.Workflow{Spec: wfv1.WorkflowSpec{
+		Hooks: wfv1.LifecycleHooks{"exit": {Template: "exit-handler"}},
+		WorkflowMetadata: &wfv1.WorkflowMetadata{
+			LabelsFrom: map[string]wfv1.LabelValueFrom{
+				"name": {Expression: "workflow.name"},
+			},
+		},
+	}}
+	expected := patch.DeepCopy()
+
+	t.Run("ConcurrentMerges", func(t *testing.T) {
+		for range 8 {
+			t.Run("Merge", func(t *testing.T) {
+				t.Parallel()
+				for range 20 {
+					target := &wfv1.Workflow{}
+					require.NoError(t, MergeTo(patch, target))
+					require.Equal(t, expected.Spec, target.Spec)
+				}
+			})
+		}
+	})
+	assert.Equal(t, expected, patch, "MergeTo must not change its patch")
+}
+
 func TestMergeMetaDataTo(t *testing.T) {
 	assert := assert.New(t)
 	meta1 := &metav1.ObjectMeta{

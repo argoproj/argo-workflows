@@ -189,12 +189,15 @@ func sanitizeArtifactGC(agc *wfv1.WorkflowLevelArtifactGC) *wfv1.WorkflowLevelAr
 
 // MergeTo will merge one workflow (the "patch" workflow) into another (the "target" workflow.
 // If the target workflow defines a field, this take precedence over the patch.
+// The patch workflow is not modified.
 func MergeTo(patch, target *wfv1.Workflow) error {
 	if target == nil || patch == nil {
 		return nil
 	}
 
-	// Temporarily remove hooks and labelsFrom as they don't merge
+	// Remove hooks and labelsFrom from a copy, as the strategic merge cannot merge them.
+	// They are merged manually below, with the target taking precedence.
+	patch = patch.DeepCopy()
 	patchHooks := patch.Spec.Hooks
 	patch.Spec.Hooks = nil
 	var patchLabelsFrom map[string]wfv1.LabelValueFrom
@@ -204,10 +207,6 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	}
 
 	patchWfBytes, err := json.Marshal(patch)
-	patch.Spec.Hooks = patchHooks
-	if len(patchLabelsFrom) != 0 {
-		patch.Spec.WorkflowMetadata.LabelsFrom = patchLabelsFrom
-	}
 	if err != nil {
 		return err
 	}
@@ -277,13 +276,13 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 	}
 	targetWf := wfv1.Workflow{Spec: *wfSpec.DeepCopy()}
 	if wftSpec != nil {
-		err := MergeTo(&wfv1.Workflow{Spec: *wftSpec.DeepCopy()}, &targetWf)
+		err := MergeTo(&wfv1.Workflow{Spec: *wftSpec}, &targetWf)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if wfDefaultSpec != nil {
-		err := MergeTo(&wfv1.Workflow{Spec: *wfDefaultSpec.DeepCopy()}, &targetWf)
+		err := MergeTo(&wfv1.Workflow{Spec: *wfDefaultSpec}, &targetWf)
 		if err != nil {
 			return nil, err
 		}
