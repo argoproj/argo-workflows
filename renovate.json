@@ -35,6 +35,12 @@
       "enabled": false
     },
     {
+      "description": "Never look up the locally built Java SDK: it is not on Maven Central, and one failed lookup stops every grouped update in the run",
+      "matchDatasources": ["maven"],
+      "matchPackageNames": ["io.argoproj.workflow:argo-client-java"],
+      "enabled": false
+    },
+    {
       "description": "Only allow patch updates on release branches",
       "matchBaseBranches": [
         "release-4.0",
@@ -96,6 +102,23 @@
       "matchDepNames": ["rancher/k3s"],
       "matchDepTypes": ["min"],
       "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "description": "Offer the minimum tested Kubernetes version its patch updates separately; otherwise only the disabled minor is ever proposed",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rancher/k3s"],
+      "matchDepTypes": ["min"],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Tested Kubernetes versions on release branches are fixed at release",
+      "matchBaseBranches": [
+        "release-4.0",
+        "release-4.1"
+      ],
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["rancher/k3s"],
       "enabled": false
     }
   ],
