@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,49 +76,83 @@ func TestNewPodCleanupKeyWithUID(t *testing.T) {
 	assert.Equal(t, "my-pod", podName)
 	assert.Equal(t, deletePodByUID, action)
 	assert.Equal(t, "pod-uid-123", uid)
+
+	key = newPodCleanupKeyWithUID("my-namespace", "my-pod", removeFinalizer, "pod-uid-123")
+	assert.Equal(t, "my-namespace/my-pod/removeFinalizer/pod-uid-123", key)
+	_, _, action, uid = parsePodCleanupKey(key)
+	assert.Equal(t, removeFinalizer, action)
+	assert.Equal(t, "pod-uid-123", uid)
 }
 
 func TestPodCleanupPatch(t *testing.T) {
-	c := &Controller{}
+	for _, flag := range []string{"true", "false", "unset"} {
+		t.Run(flag, func(t *testing.T) {
+			t.Setenv(common.EnvVarPodStatusCaptureFinalizer, flag)
+			if flag == "unset" {
+				require.NoError(t, os.Unsetenv(common.EnvVarPodStatusCaptureFinalizer))
+			}
 
-	pod := &apiv1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:          map[string]string{common.LabelKeyCompleted: "false"},
-			Finalizers:      []string{common.FinalizerPodStatus},
-			ResourceVersion: "123456",
-		},
+			for _, tt := range []struct {
+				name              string
+				finalizers        []string
+				labelPodCompleted bool
+				wantPatch         string
+			}{
+				{
+					name:              "remove status finalizer and label completed",
+					finalizers:        []string{common.FinalizerPodStatus},
+					labelPodCompleted: true,
+					wantPatch:         `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`,
+				},
+				{
+					name:       "remove status finalizer without labeling",
+					finalizers: []string{common.FinalizerPodStatus},
+					wantPatch:  `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`,
+				},
+				{
+					name:              "preserve other finalizers when labeling",
+					finalizers:        []string{"example.com/retain", common.FinalizerPodStatus},
+					labelPodCompleted: true,
+					wantPatch:         `{"metadata":{"resourceVersion":"123456","finalizers":["example.com/retain"],"labels":{"workflows.argoproj.io/completed":"true"}}}`,
+				},
+				{
+					name:       "preserve other finalizers without labeling",
+					finalizers: []string{common.FinalizerPodStatus, "example.com/retain"},
+					wantPatch:  `{"metadata":{"resourceVersion":"123456","finalizers":["example.com/retain"]}}`,
+				},
+				{
+					name:       "other finalizer only",
+					finalizers: []string{"example.com/retain"},
+				},
+				{
+					name:              "label completed without removing other finalizers",
+					finalizers:        []string{"example.com/retain"},
+					labelPodCompleted: true,
+					wantPatch:         `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`,
+				},
+				{name: "nil finalizers"},
+				{name: "empty finalizers", finalizers: []string{}},
+			} {
+				t.Run(tt.name, func(t *testing.T) {
+					pod := &apiv1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels:          map[string]string{common.LabelKeyCompleted: "false"},
+							Finalizers:      tt.finalizers,
+							ResourceVersion: "123456",
+						},
+					}
+					original := pod.DeepCopy()
+					c := &Controller{}
+					patch, err := c.getPodCleanupPatch(pod, tt.labelPodCompleted)
+					require.NoError(t, err)
+					if tt.wantPatch == "" {
+						assert.Nil(t, patch)
+					} else {
+						assert.JSONEq(t, tt.wantPatch, string(patch))
+					}
+					assert.Equal(t, original, pod, "cleanup must not mutate the informer-cached pod")
+				})
+			}
+		})
 	}
-
-	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
-
-	// pod finalizer enabled, patch label
-	patch, err := c.getPodCleanupPatch(pod, true)
-	require.NoError(t, err)
-	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer enabled, do not patch label
-	patch, err = c.getPodCleanupPatch(pod, false)
-	require.NoError(t, err)
-	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer enabled, do not patch label, nil/empty finalizers
-	podWithNilFinalizers := &apiv1.Pod{}
-	patch, err = c.getPodCleanupPatch(podWithNilFinalizers, false)
-	require.NoError(t, err)
-	assert.Nil(t, patch)
-
-	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
-
-	// pod finalizer disabled, patch both
-	patch, err = c.getPodCleanupPatch(pod, true)
-	require.NoError(t, err)
-	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer disabled, do not patch label
-	patch, err = c.getPodCleanupPatch(pod, false)
-	require.NoError(t, err)
-	assert.Nil(t, patch)
 }
