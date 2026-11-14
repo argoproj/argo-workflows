@@ -186,3 +186,9 @@ spec:
         - Since it will fail each time, the retry logic is short-circuited.
 
 <!-- markdownlint-enable MD046 -->
+
+## When the pod is deleted
+
+When the pod of a ContainerSet template is deleted, containers that had already finished keep their phase.
+The pod's node ends `Error`.
+`argo retry` runs the pod again.

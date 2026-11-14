@@ -57,5 +57,7 @@ For more complicated, conditional dependencies, you can use the [Enhanced Depend
 
 By default, DAGs fail fast: when one task fails, no new tasks will be scheduled.
 Once all running tasks are completed, the DAG will be marked as failed.
+The DAG's node then has the message `child '<node ID>' failed`, where the node ID is the ID of the first failed task in the `tasks` list, whatever order the tasks failed in.
+[How DAG and Steps Templates Run](../dag-and-steps-execution.md) describes when the DAG ends `Failed` and when it ends `Error`.
 
 If [`failFast`](https://github.com/argoproj/argo-workflows/tree/main/examples/dag-disable-failFast.yaml) is set to `false` for a DAG, all branches will run to completion, regardless of failures in other branches.
