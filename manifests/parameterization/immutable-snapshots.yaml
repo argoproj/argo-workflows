@@ -1,0 +1,52 @@
+# Requires Kubernetes >= 1.30. The policy compares the actual JSON documents,
+# including arbitrary parameter values; CRD CEL hides schemaless properties.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: parameterization-immutable-snapshots
+  labels:
+    app.kubernetes.io/part-of: argo-parameterization-experiment
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [parameters.workflows.example.io]
+      apiVersions: [v1alpha1]
+      operations: [UPDATE]
+      resources:
+      - parameterrevisions
+      - workflowsubmissions
+      - actiondefinitions
+      - actionresulttemplates
+      - workflowactionbindings
+      - parameterretries
+      - parameternodeinputs
+      - resourceoperations
+      - parametertemplates
+      - workflowforms
+      - workflowparameterbindings
+  validations:
+  - expression: >-
+      request.resource.resource == "resourceoperations" ? dyn(object.spec).operation == dyn(oldObject.spec).operation :
+      request.resource.resource in ["parametertemplates", "workflowforms", "workflowparameterbindings", "actionresulttemplates"] ?
+      (!(has(oldObject.metadata.annotations) && "parameters.workflows.example.io/definition-digest" in oldObject.metadata.annotations) || object.spec == oldObject.spec) :
+      object.spec == oldObject.spec
+    message: 'This snapshot is immutable; create a new revision or operation.'
+  - expression: >-
+      !(has(oldObject.metadata.annotations) && "parameters.workflows.example.io/definition-digest" in oldObject.metadata.annotations) ||
+      (has(object.metadata.annotations) &&
+      oldObject.metadata.annotations.filter(k, k.startsWith("parameters.workflows.example.io/definition-")).all(k,
+        k in object.metadata.annotations && object.metadata.annotations[k] == oldObject.metadata.annotations[k]) &&
+      has(object.metadata.labels) && has(oldObject.metadata.labels) &&
+      object.metadata.labels["parameters.workflows.example.io/definition-family"] == oldObject.metadata.labels["parameters.workflows.example.io/definition-family"])
+    message: 'Published definition version identity and provenance cannot be removed or replaced.'
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: parameterization-immutable-snapshots
+  labels:
+    app.kubernetes.io/part-of: argo-parameterization-experiment
+spec:
+  policyName: parameterization-immutable-snapshots
+  validationActions: [Deny]

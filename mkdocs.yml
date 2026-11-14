@@ -102,6 +102,10 @@ nav:
           - walk-through/custom-template-variable-reference.md
           - walk-through/continuous-integration-examples.md
   - User Guide:
+      - Structured parameters (experimental):
+          - Getting started: parameterization/getting-started.md
+          - Resource reference: parameterization/contracts.md
+          - Bound action results: parameterization/execution-results.md
       - workflow-concepts.md
       - Custom Resource Kinds:
           - workflow-templates.md

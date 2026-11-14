@@ -1,0 +1,260 @@
+# LOCAL ONLY. Vault development mode, synthetic credentials; never deploy to shared environments.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+immutable: true
+stringData:
+  token: local-synthetic-example-only
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-vault-demo
+subjects:
+- kind: ServiceAccount
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-vault-demo-config
+  namespace: argo-parameterization-lab
+data:
+  config.json: '{"address": "http://external-vault-demo:8200", "mount": "secret",
+    "entry": "demo", "field": "token", "tokenFile": "/credential/token"}'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    matchLabels:
+      app: external-vault-demo
+  template:
+    metadata:
+      labels:
+        app: external-vault-demo
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: vault
+        image: hashicorp/vault:1.19.0
+        args:
+        - server
+        - -dev
+        - -dev-listen-address=0.0.0.0:8200
+        env:
+        - name: VAULT_DEV_ROOT_TOKEN_ID
+          valueFrom: &id001
+            secretKeyRef:
+              name: external-vault-demo
+              key: token
+        - name: VAULT_TOKEN
+          valueFrom: *id001
+        - name: VAULT_ADDR
+          value: http://127.0.0.1:8200
+        readinessProbe:
+          httpGet:
+            path: /v1/sys/health
+            port: 8200
+          periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-vault-demo
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    app: external-vault-demo
+  ports:
+  - port: 8200
+    targetPort: 8200
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-vault-demo-bridge
+  namespace: argo-parameterization-lab
+spec:
+  selector:
+    matchLabels:
+      app: external-vault-demo-bridge
+  template:
+    metadata:
+      labels:
+        app: external-vault-demo-bridge
+    spec:
+      serviceAccountName: external-vault-demo
+      containers:
+      - name: bridge
+        image: argo-parameterization-secret:local-v47-v4.0.1
+        imagePullPolicy: Never
+        args:
+        - --namespace=argo-parameterization-lab
+        - --index=external-vault-demo
+        - --config=/config/config.json
+        - --allow-development-http
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: credential
+          mountPath: /credential
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: external-vault-demo-config
+      - name: credential
+        secret:
+          secretName: external-vault-demo
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: ParameterTemplate
+metadata:
+  name: external-secret-demo
+  namespace: argo-parameterization-lab
+spec:
+  dialect: http://json-schema.org/draft-07/schema#
+  schema:
+    type: object
+    properties:
+      credential:
+        type: object
+        properties:
+          secretRef:
+            type: object
+            properties:
+              name:
+                type: string
+              key:
+                type: string
+            required:
+            - name
+            - key
+            additionalProperties: false
+          latestSecretRef:
+            type: object
+            properties:
+              configMap:
+                type: string
+              key:
+                type: string
+            required:
+            - configMap
+            - key
+            additionalProperties: false
+        oneOf:
+        - required:
+          - secretRef
+        - required:
+          - latestSecretRef
+        additionalProperties: false
+    required:
+    - credential
+    additionalProperties: false
+  sensitivePaths:
+  - /credential
+  secretSchemas:
+    /credential:
+      type: string
+      minLength: 5
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: external-secret-demo
+  namespace: argo-parameterization-lab
+  labels:
+    workflows.argoproj.io/controller-instanceid: parameterization-lab
+spec:
+  entrypoint: main
+  serviceAccountName: workflow-executor
+  arguments:
+    parameters:
+    - name: credential
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: approve
+        template: approve
+      - name: consume
+        dependencies:
+        - approve
+        template: consume
+        arguments:
+          parameters:
+          - name: credential
+            value: '{{workflow.parameters.credential}}'
+  - name: approve
+    suspend: {}
+  - name: consume
+    inputs:
+      parameters:
+      - name: credential
+    metadata:
+      annotations:
+        parameters.workflows.example.io/retry-safe: idempotent
+        parameters.workflows.example.io/result-reuse: same-inputs
+    container:
+      image: alpine:3.22
+      command:
+      - sh
+      - -ec
+      args:
+      - test "${#TOKEN}" -gt 25; echo credential-consumed
+      env:
+      - name: TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: '{{=jsonpath(inputs.parameters.credential, ''$.secretRef.name'')}}'
+            key: '{{=jsonpath(inputs.parameters.credential, ''$.secretRef.key'')}}'
+---
+apiVersion: parameters.workflows.example.io/v1alpha1
+kind: WorkflowParameterBinding
+metadata:
+  name: external-secret-demo
+  namespace: argo-parameterization-lab
+spec:
+  workflowTemplate: external-secret-demo
+  parameterTemplate: external-secret-demo
+  mappings:
+  - path: /credential
+    parameter: credential
+    encoding: secret-reference-json

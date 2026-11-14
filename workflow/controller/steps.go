@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,6 +43,14 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+	}
+
+	// A parameter retry can reopen this native boundary while retaining its
+	// completed children. Record the processed arguments for the new attempt.
+	if !node.Fulfilled() && !reflect.DeepEqual(node.Inputs, &tmpl.Inputs) {
+		node.Inputs = tmpl.Inputs.DeepCopy()
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
 	}
 
 	defer func() {

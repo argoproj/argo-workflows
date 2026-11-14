@@ -27,6 +27,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	parameterapi "github.com/argoproj/argo-workflows/v4/server/parameterization"
 	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
 	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
@@ -35,6 +36,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
+	parameterization "github.com/argoproj/argo-workflows/v4/util/parameterization"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -104,6 +106,11 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	if req.Workflow.Namespace == "" {
 		req.Workflow.Namespace = req.Namespace
+	}
+	if parameterapi.AdoptsParameterization(req.Workflow) {
+		if err := (parameterapi.Store{Client: auth.GetDynamicClient(ctx), Namespace: req.Namespace}).ValidateNativeWorkflow(ctx, req.Workflow, nil); err != nil {
+			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		}
 	}
 
 	s.instanceIDService.Label(req.Workflow)
@@ -472,6 +479,11 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	if proof, ok := parameterization.RetryProof(ctx); ok {
+		if string(wf.UID) != proof.UID || wf.ResourceVersion != proof.ResourceVersion {
+			return nil, status.Error(codes.Aborted, "workflow changed before retry")
+		}
+	}
 	err = s.validateWorkflow(wf)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
@@ -482,11 +494,58 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	previous := wf.DeepCopy()
 	wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	if parameterapi.AdoptsParameterization(wf) {
+		if proof, ok := parameterization.RetryProof(ctx); ok && proof.NextSpec != nil {
+			wf.Spec = *proof.NextSpec.DeepCopy()
+		}
+		candidate := wf.DeepCopy()
+		if proof, ok := parameterization.RetryProof(ctx); ok {
+			candidate.Annotations[parameterization.Group+"/retry"] = proof.Receipt
+			if proof.Revision != "" {
+				candidate.Annotations[parameterization.Group+"/revision"] = proof.Revision
+			}
+		}
+		if validationErr := (parameterapi.Store{Client: auth.GetDynamicClient(ctx), Namespace: req.Namespace}).ValidateNativeWorkflow(ctx, candidate, previous); validationErr != nil {
+			return nil, sutils.ToStatusError(validationErr, codes.InvalidArgument)
+		}
+	}
 
+	if proof, ok := parameterization.RetryProof(ctx); ok {
+		for id, digest := range proof.RetainedNodes {
+			node, exists := wf.Status.Nodes[id]
+			if !exists || parameterization.ResultFingerprint(node) != digest {
+				return nil, status.Error(codes.Aborted, "native retry invalidates a retained result")
+			}
+		}
+	}
+
+	// Typed retries protect against a concurrent retry recreating a Pod with the
+	// same name. Capture old Pod UIDs, then recheck the Workflow CAS precondition.
+	retryPodUIDs := map[string]types.UID{}
+	if proof, ok := parameterization.RetryProof(ctx); ok {
+		for _, name := range podsToDelete {
+			pod, readErr := kubeClient.CoreV1().Pods(wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+			if apierr.IsNotFound(readErr) {
+				continue
+			}
+			if readErr != nil {
+				return nil, sutils.ToStatusError(readErr, codes.Internal)
+			}
+			retryPodUIDs[name] = pod.UID
+		}
+		current, readErr := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
+		if readErr != nil {
+			return nil, sutils.ToStatusError(readErr, codes.Internal)
+		}
+		if string(current.UID) != proof.UID || current.ResourceVersion != proof.ResourceVersion {
+			return nil, status.Error(codes.Aborted, "workflow changed before deleting retry pods")
+		}
+	}
 	errCh := make(chan error, len(podsToDelete))
 	var wg sync.WaitGroup
 	wg.Add(len(podsToDelete))
@@ -494,9 +553,17 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		logger.WithFields(logging.Fields{"podDeleted": podName}).Info(ctx, "Deleting pod")
 		go func(podName string) {
 			defer wg.Done()
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				errCh <- err
+			options := metav1.DeleteOptions{}
+			if _, ok := parameterization.RetryProof(ctx); ok {
+				uid, exists := retryPodUIDs[podName]
+				if !exists {
+					return
+				}
+				options.Preconditions = &metav1.Preconditions{UID: &uid}
+			}
+			deleteErr := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, options)
+			if deleteErr != nil && !apierr.IsNotFound(deleteErr) {
+				errCh <- deleteErr
 				return
 			}
 		}(podName)
@@ -515,6 +582,15 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 	creator.LabelActor(ctx, wf, creator.ActionRetry)
 
+	if proof, ok := parameterization.RetryProof(ctx); ok {
+		if wf.Annotations == nil {
+			wf.Annotations = map[string]string{}
+		}
+		wf.Annotations[parameterization.Group+"/retry"] = proof.Receipt
+		if proof.Revision != "" {
+			wf.Annotations[parameterization.Group+"/revision"] = proof.Revision
+		}
+	}
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -823,6 +899,13 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	if parameterapi.AdoptsParameterization(wf) {
+		wf.Namespace = req.Namespace
+		if validationErr := (parameterapi.Store{Client: auth.GetDynamicClient(ctx), Namespace: req.Namespace}).ValidateNativeWorkflow(ctx, wf, nil); validationErr != nil {
+			return nil, sutils.ToStatusError(validationErr, codes.InvalidArgument)
+		}
 	}
 
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)

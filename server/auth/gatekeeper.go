@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/status"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
@@ -109,7 +110,37 @@ func (s *gatekeeper) reviewToken(ctx context.Context, authorization string, kube
 		return nil
 	}
 	if _, err := kubeClient.AuthenticationV1().SelfSubjectReviews().Create(ctx, &authenticationv1.SelfSubjectReview{}, metav1.CreateOptions{}); err != nil {
-		return err
+		// Older Kubernetes servers do not expose SelfSubjectReview. Authenticate
+		// bearer credentials with TokenReview instead; never turn an unavailable
+		// endpoint into successful authentication or bypass a permission denial.
+		if !strings.HasPrefix(authorization, "Bearer ") {
+			return err
+		}
+		missingAPI := apierrors.IsNotFound(err)
+		if apierrors.IsForbidden(err) {
+			// Authorization can run before endpoint dispatch on older servers.
+			// A 403 alone is never evidence that the review API is unavailable.
+			resources, discoveryErr := kubeClient.Discovery().ServerResourcesForGroupVersion(authenticationv1.SchemeGroupVersion.String())
+			if discoveryErr == nil && resources != nil && resources.GroupVersion == authenticationv1.SchemeGroupVersion.String() {
+				hasReview, hasSelfReview := false, false
+				for _, resource := range resources.APIResources {
+					hasReview = hasReview || resource.Name == "tokenreviews"
+					hasSelfReview = hasSelfReview || resource.Name == "selfsubjectreviews"
+				}
+				missingAPI = hasReview && !hasSelfReview
+			}
+		}
+		if !missingAPI {
+			return err
+		}
+		token := strings.TrimSpace(strings.TrimPrefix(authorization, "Bearer "))
+		if token == "" || s.clients == nil || s.clients.Kubernetes == nil {
+			return fmt.Errorf("token review unavailable")
+		}
+		review, reviewErr := s.clients.Kubernetes.AuthenticationV1().TokenReviews().Create(ctx, &authenticationv1.TokenReview{Spec: authenticationv1.TokenReviewSpec{Token: token}}, metav1.CreateOptions{})
+		if reviewErr != nil || review == nil || !review.Status.Authenticated || review.Status.User.Username == "" || review.Status.User.Username == "system:anonymous" {
+			return fmt.Errorf("token review rejected")
+		}
 	}
 	s.tokenReviewCache.Add(key, struct{}{})
 	return nil

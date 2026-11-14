@@ -439,6 +439,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`dag-inline-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-inline-workflowtemplate.yaml)
 
+- [`action-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parameterization/action-reference.yaml)
+
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)

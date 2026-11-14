@@ -4,6 +4,7 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import * as React from 'react';
 import {useState} from 'react';
 
+import {NodeResults} from '../../../parameterization/node-results';
 import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -489,6 +490,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: (
                         <div>
                             <WorkflowNodeSummary {...props} />
+                            {!props.archived && <NodeResults workflow={props.workflow} node={props.node} />}
                         </div>
                     )
                 }
