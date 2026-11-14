@@ -1811,7 +1811,7 @@ func (s *CLISuite) TestArchive() {
 	})
 	s.Run("Get", func() {
 		s.Given().
-			RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "get", string(uid), "--namespace", "argo"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -1832,7 +1832,7 @@ func (s *CLISuite) TestArchive() {
 	})
 	s.Run("GetByNameFlag", func() {
 		s.Given().
-			RunCli([]string{"archive", "get", "--name", name}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "get", "--name", name, "--namespace", "argo"}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "Name:")
 			})
