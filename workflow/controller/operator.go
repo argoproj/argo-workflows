@@ -2490,6 +2490,12 @@ func (woc *wfOperationCtx) executeProcessedTemplate(ctx context.Context, nodeNam
 	}
 
 	dispatch := func(ctx context.Context, nodeName string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+		// A terminal pod node can still be waiting for task results. Re-entering
+		// its executor would recreate a deleted pod outside the retry policy.
+		// Let task-result reconciliation finish it before deciding on a retry.
+		if existing, getErr := woc.wf.GetNodeByName(nodeName); getErr == nil && existing.Type == wfv1.NodeTypePod && existing.Phase.Completed() {
+			return existing, nil
+		}
 		var dispatchNode *wfv1.NodeStatus
 		var dispatchErr error
 		switch tmpl.GetType() {
