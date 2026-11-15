@@ -57,6 +57,10 @@ type SessionProxyConfig struct {
 	MaxDelay      time.Duration
 }
 
+// defaultRetryMultiple is the growth factor of the reconnect backoff when the
+// configuration does not set retryMultiple.
+const defaultRetryMultiple = 2.0
+
 func validateProxyParams(proxy *SessionProxy) error {
 	if proxy.maxRetries < 0 {
 		return fmt.Errorf("maxRetries cannot be less than 0")
@@ -75,6 +79,22 @@ func validateProxyParams(proxy *SessionProxy) error {
 
 // NewSessionProxy creates a new SessionProxy with the given configuration
 func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionProxy, error) {
+	proxy, err := newSessionProxy(config)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := proxy.connect(ctx); err != nil {
+		return nil, fmt.Errorf("failed to create initial database session: %w", err)
+	}
+
+	return proxy, nil
+}
+
+// newSessionProxy builds and validates a SessionProxy from the configuration
+// without opening a database session, so that the retry defaults can be tested
+// without a database.
+func newSessionProxy(config SessionProxyConfig) (*SessionProxy, error) {
 	dbType := dbTypeFromConfig(&config.DBConfig)
 	proxy := &SessionProxy{
 		kubectlConfig: config.KubectlConfig,
@@ -86,7 +106,7 @@ func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionPr
 		maxRetries:    config.MaxRetries,
 		baseDelay:     config.BaseDelay,
 		maxDelay:      config.MaxDelay,
-		retryMultiple: 2.0,
+		retryMultiple: defaultRetryMultiple,
 	}
 
 	if config.DBConfig.DBReconnectConfig != nil {
@@ -94,7 +114,11 @@ func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionPr
 		proxy.maxRetries = reconnectConfig.MaxRetries
 		proxy.baseDelay = time.Duration(reconnectConfig.BaseDelaySeconds) * time.Second
 		proxy.maxDelay = time.Duration(reconnectConfig.MaxDelaySeconds) * time.Second
-		proxy.retryMultiple = reconnectConfig.RetryMultiple
+		// An omitted retryMultiple keeps the documented default of 2.0 instead of
+		// silently turning the backoff into a constant delay.
+		if reconnectConfig.RetryMultiple != 0 {
+			proxy.retryMultiple = reconnectConfig.RetryMultiple
+		}
 	}
 
 	if err := validateProxyParams(proxy); err != nil {
@@ -109,16 +133,6 @@ func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionPr
 	}
 	if proxy.maxDelay == 0 {
 		proxy.maxDelay = 30 * time.Second
-	}
-
-	// just trying to account for float funkiness
-	// a value between 0 and 1 is (almost) always non-sensical, but we allow it
-	if proxy.retryMultiple <= 0.000000001 {
-		proxy.retryMultiple = 1.0
-	}
-
-	if err := proxy.connect(ctx); err != nil {
-		return nil, fmt.Errorf("failed to create initial database session: %w", err)
 	}
 
 	return proxy, nil
