@@ -360,6 +360,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return existing, nil
 	}
 
+	// Re-root under the node span: on a re-entry (informer-lag re-creation, or a
+	// later reconcile) the node already exists, so the leaf executor skipped
+	// the initializeExecutableNode call that would have carried the node span in
+	// ctx, leaving the workflow span active. Without this the pod span (started
+	// below) parents under the workflow span instead of the node.
+	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, nodeID)
+
 	// (b) shutdown-strategy guard. Do not create pods if we are shutting down.
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		woc.markNodeFailedOnShutdown(ctx, nodeName, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
