@@ -61,10 +61,10 @@ func (l ListOptions) WithStartedAtAscending(ascending bool) ListOptions {
 	return l
 }
 
-// archivedWorkflowCursor represents a keyset pagination cursor for archived
+// ArchivedWorkflowCursor represents a keyset pagination cursor for archived
 // workflows. It encodes the position using startedat and uid for deterministic
 // ordering.
-type archivedWorkflowCursor struct {
+type ArchivedWorkflowCursor struct {
 	StartedAt time.Time `json:"startedat"`
 	UID       string    `json:"uid"`
 }
@@ -72,7 +72,7 @@ type archivedWorkflowCursor struct {
 // EncodeArchivedWorkflowCursor creates a base64-encoded cursor token from a
 // startedat timestamp and uid.
 func EncodeArchivedWorkflowCursor(startedAt time.Time, uid string) string {
-	cursor := archivedWorkflowCursor{StartedAt: startedAt, UID: uid}
+	cursor := ArchivedWorkflowCursor{StartedAt: startedAt, UID: uid}
 	data, _ := json.Marshal(cursor)
 	return "c:" + base64.StdEncoding.EncodeToString(data)
 }
@@ -80,17 +80,17 @@ func EncodeArchivedWorkflowCursor(startedAt time.Time, uid string) string {
 // DecodeArchivedWorkflowCursor attempts to decode a continue token as an
 // archived workflow cursor. Returns the cursor and true if successful, or
 // zero values and false if the token is not a cursor.
-func DecodeArchivedWorkflowCursor(continueToken string) (archivedWorkflowCursor, bool) {
+func DecodeArchivedWorkflowCursor(continueToken string) (ArchivedWorkflowCursor, bool) {
 	if !strings.HasPrefix(continueToken, "c:") {
-		return archivedWorkflowCursor{}, false
+		return ArchivedWorkflowCursor{}, false
 	}
 	data, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(continueToken, "c:"))
 	if err != nil {
-		return archivedWorkflowCursor{}, false
+		return ArchivedWorkflowCursor{}, false
 	}
-	var cursor archivedWorkflowCursor
+	var cursor ArchivedWorkflowCursor
 	if err := json.Unmarshal(data, &cursor); err != nil {
-		return archivedWorkflowCursor{}, false
+		return ArchivedWorkflowCursor{}, false
 	}
 	return cursor, true
 }

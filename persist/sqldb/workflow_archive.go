@@ -239,7 +239,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			)
 
 			return s.SQL().
-				Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows")).
+				Iterator("WITH workflows AS ? ?", cteSelector, selectQuery.From("workflows").OrderBy("-startedat", "uid")).
 				All(&archivedWfs)
 		}); err != nil {
 			return nil, err
@@ -329,7 +329,8 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 				And(startedAtFromClause(options.MinStartedAt)).
 				And(startedAtToClause(options.MaxStartedAt)).
 				And(createdAfterClause(options.CreatedAfter)).
-				And(finishedBeforeClause(options.FinishedBefore))
+				And(finishedBeforeClause(options.FinishedBefore)).
+				And(cursorClause(options.CursorStartedAt, options.CursorUID))
 
 			if options.Name != "" {
 				nameFilter := options.NameFilter
@@ -520,6 +521,18 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() *db.AndExpr {
 		db.Cond{"clustername": r.clusterName},
 		namespaceEqual(r.managedNamespace),
 		db.Cond{"instanceid": r.instanceIDService.InstanceID()},
+	)
+}
+
+// cursorClause selects the workflows that come after the cursor in
+// "startedat desc, uid asc" order.
+func cursorClause(startedAt time.Time, uid string) db.LogicalExpr {
+	if startedAt.IsZero() || uid == "" {
+		return db.Cond{}
+	}
+	return db.Or(
+		db.Cond{"startedat <": startedAt},
+		db.And(db.Cond{"startedat": startedAt}, db.Cond{"uid >": uid}),
 	)
 }
 
