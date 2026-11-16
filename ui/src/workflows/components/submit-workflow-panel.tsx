@@ -43,6 +43,17 @@ export function SubmitWorkflowPanel(props: Props) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadedArtifacts, setUploadedArtifacts] = useState<Record<string, ArtifactUploadResponse>>({});
     const [uploadingArtifacts, setUploadingArtifacts] = useState<Set<string>>(new Set());
+    const [artifactsNamespace, setArtifactsNamespace] = useState(props.namespace);
+    const [artifactsDiscarded, setArtifactsDiscarded] = useState(false);
+
+    if (artifactsNamespace !== props.namespace) {
+        setArtifactsNamespace(props.namespace);
+        if (Object.keys(uploadedArtifacts).length > 0 || uploadingArtifacts.size > 0) {
+            setUploadedArtifacts({});
+            setUploadingArtifacts(new Set());
+            setArtifactsDiscarded(true);
+        }
+    }
 
     const handleArtifactUploadStart = (artifactName: string) => {
         setUploadingArtifacts(prev => new Set(prev).add(artifactName));
@@ -50,6 +61,7 @@ export function SubmitWorkflowPanel(props: Props) {
 
     const handleArtifactUpload = (artifactName: string, response: ArtifactUploadResponse) => {
         setUploadedArtifacts(prev => ({...prev, [artifactName]: response}));
+        setArtifactsDiscarded(false);
         setUploadingArtifacts(prev => {
             const next = new Set(prev);
             next.delete(artifactName);
@@ -156,13 +168,20 @@ export function SubmitWorkflowPanel(props: Props) {
                 {props.workflowArtifacts && props.workflowArtifacts.length > 0 && (
                     <div key='artifacts' style={{marginBottom: 25}}>
                         <label>Input Artifacts</label>
+                        {artifactsDiscarded && (
+                            <div>
+                                <i className='fa fa-exclamation-triangle' style={{color: '#f4c030'}} /> <small>Namespace changed. Upload the input artifacts again.</small>
+                            </div>
+                        )}
                         {props.workflowArtifacts.map(artifact => (
                             <div key={artifact.name} style={{marginTop: 10}}>
                                 <label style={{fontWeight: 'normal', fontSize: '0.9em'}}>{artifact.name}</label>
                                 <ArtifactsInput
+                                    key={props.namespace}
                                     namespace={props.namespace}
                                     workflowTemplateName={props.name}
                                     artifactName={artifact.name}
+                                    clusterScope={props.kind === 'ClusterWorkflowTemplate'}
                                     onUploadStart={() => handleArtifactUploadStart(artifact.name)}
                                     onUploadComplete={response => handleArtifactUpload(artifact.name, response)}
                                     onError={err => handleArtifactUploadError(artifact.name, err)}
