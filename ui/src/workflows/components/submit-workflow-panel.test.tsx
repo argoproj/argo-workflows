@@ -78,6 +78,18 @@ describe('SubmitWorkflowPanel input artifacts', () => {
         expect(screen.queryByText('Input Artifacts')).toBeNull();
     });
 
+    it.each([[undefined], ['']])('offers the upload only once the namespace is known (namespace %p)', namespace => {
+        installMockXHR();
+        const {container, rerender} = render(panel({namespace}));
+
+        expect(container.querySelector('input[type="file"]')).toBeNull();
+        expect(screen.queryByText('Input Artifacts')).toBeNull();
+
+        rerender(panel({namespace: 'argo'}));
+
+        expect(container.querySelector('input[type="file"]')).not.toBeNull();
+    });
+
     it('namespace change discards uploaded artifacts and asks to upload again', async () => {
         const xhr = installMockXHR();
         const {container, rerender} = render(panel());

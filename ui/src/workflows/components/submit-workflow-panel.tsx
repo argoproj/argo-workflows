@@ -165,7 +165,7 @@ export function SubmitWorkflowPanel(props: Props) {
                         <></>
                     )}
                 </div>
-                {props.workflowArtifacts && props.workflowArtifacts.length > 0 && (
+                {props.namespace && props.workflowArtifacts && props.workflowArtifacts.length > 0 && (
                     <div key='artifacts' style={{marginBottom: 25}}>
                         <label>Input Artifacts</label>
                         {artifactsDiscarded && (
