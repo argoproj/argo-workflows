@@ -194,7 +194,7 @@ func TestNewSessionProxyRetryDefaults(t *testing.T) {
 		assert.InDelta(t, 2.0, proxy.retryMultiple, 0)
 	})
 
-	t.Run("reconnect block without retryMultiple keeps the default growth factor", func(t *testing.T) {
+	t.Run("reconnect block without retryMultiple keeps the default multiplier", func(t *testing.T) {
 		proxy, err := newSessionProxy(SessionProxyConfig{DBConfig: config.DBConfig{
 			PostgreSQL:        postgres,
 			DBReconnectConfig: &config.DBReconnectConfig{MaxRetries: 3, BaseDelaySeconds: 1, MaxDelaySeconds: 10},

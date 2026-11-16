@@ -115,7 +115,7 @@ func newSessionProxy(config SessionProxyConfig) (*SessionProxy, error) {
 		proxy.baseDelay = time.Duration(reconnectConfig.BaseDelaySeconds) * time.Second
 		proxy.maxDelay = time.Duration(reconnectConfig.MaxDelaySeconds) * time.Second
 		// An omitted retryMultiple keeps the documented default of 2.0 instead of
-		// silently turning the backoff into a constant delay.
+		// silently halving the reconnect waits (the multiplier fell back to 1.0).
 		if reconnectConfig.RetryMultiple != 0 {
 			proxy.retryMultiple = reconnectConfig.RetryMultiple
 		}
