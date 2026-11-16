@@ -43,7 +43,7 @@ jobs:
           node-version: "24"
       # This is mainly here so the dependencies get saved to the cache by "actions/setup-go"
       - name: Download go dependencies
-        run: go mod download
+        run: sh hack/retry-download.sh go mod download
       # Use the same make target both locally and on CI to make it easier to debug failures.
       - name: Build & Lint docs
         run: make docs
