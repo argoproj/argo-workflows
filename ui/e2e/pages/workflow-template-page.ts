@@ -61,11 +61,12 @@ export class WorkflowTemplatePage {
             .locator('.columns.small-6');
     }
 
-    /**
-     * Submits a workflow from the template into the suite's namespace, taking
-     * the submit panel's other defaults.
-     */
-    async submit(): Promise<void> {
+    /** The submit panel's namespace field, which only the panel of a cluster template has. */
+    get namespaceInput(): Locator {
+        return this.panel.locator('xpath=.//label[normalize-space()="Namespace"]/following-sibling::input');
+    }
+
+    async openSubmitPanel(): Promise<void> {
         await this.operation('Submit').click();
         await expect(this.panel.getByRole('heading', {name: 'Submit Workflow'})).toBeVisible();
         if (this.clusterScoped) {
@@ -73,11 +74,22 @@ export class WorkflowTemplatePage {
             // for one. It is pre-filled once the details page has fetched the
             // server info (falling back to `default`); wait for that before
             // replacing it, or the late default would overwrite what we type.
-            const namespace = this.panel.locator('xpath=.//label[normalize-space()="Namespace"]/following-sibling::input');
-            await expect(namespace).not.toHaveValue('');
-            await namespace.fill(NAMESPACE);
-            await expect(namespace).toHaveValue(NAMESPACE);
+            await expect(this.namespaceInput).not.toHaveValue('');
+            await this.namespaceInput.fill(NAMESPACE);
+            await expect(this.namespaceInput).toHaveValue(NAMESPACE);
         }
+    }
+
+    async chooseArtifactFile(fileName: string, content: string): Promise<void> {
+        await this.panel.locator('input[type="file"]').setInputFiles({name: fileName, mimeType: 'text/plain', buffer: Buffer.from(content)});
+    }
+
+    /**
+     * Submits a workflow from the template into the suite's namespace, taking
+     * the submit panel's other defaults.
+     */
+    async submit(): Promise<void> {
+        await this.openSubmitPanel();
         await this.panel.getByRole('button', {name: 'Submit'}).click();
     }
 }
