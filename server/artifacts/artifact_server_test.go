@@ -878,6 +878,13 @@ func TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
 }
 
+// uploadServerOptions configures the server built by newServerForUploadWithOptions.
+type uploadServerOptions struct {
+	saveStreamError error
+	allow           func(attrs *authorizationv1.ResourceAttributes) bool // nil allows every SelfSubjectAccessReview
+	repositories    *armocks.Interface                                   // nil uses DummyArtifactRepositories with an S3 repository
+}
+
 // newServerForUpload creates a test server with WorkflowTemplate for upload tests
 func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 	t.Helper()
@@ -888,11 +895,26 @@ func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 // whether SelfSubjectAccessReview checks (auth.CanI) are allowed or denied.
 func newServerForUploadWithAuth(t *testing.T, saveStreamError error, authorized bool) *ArtifactServer {
 	t.Helper()
+	return newServerForUploadWithOptions(t, uploadServerOptions{
+		saveStreamError: saveStreamError,
+		allow:           func(*authorizationv1.ResourceAttributes) bool { return authorized },
+	})
+}
+
+// newServerForUploadWithOptions is like newServerForUpload but lets the caller decide each
+// SelfSubjectAccessReview from its resource attributes and supply the artifact repositories.
+func newServerForUploadWithOptions(t *testing.T, opts uploadServerOptions) *ArtifactServer {
+	t.Helper()
 	gatekeeper := &authmocks.Gatekeeper{}
 	kube := kubefake.NewClientset()
-	kube.PrependReactor("create", "selfsubjectaccessreviews", func(_ ktesting.Action) (bool, runtime.Object, error) {
+	kube.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (bool, runtime.Object, error) {
+		allowed := true
+		if opts.allow != nil {
+			attrs := action.(ktesting.CreateAction).GetObject().(*authorizationv1.SelfSubjectAccessReview).Spec.ResourceAttributes
+			allowed = opts.allow(attrs)
+		}
 		return true, &authorizationv1.SelfSubjectAccessReview{
-			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: authorized},
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
 	})
 	instanceID := "my-instanceid"
@@ -965,23 +987,97 @@ func newServerForUploadWithAuth(t *testing.T, saveStreamError error, authorized 
 		},
 	}
 
-	argo := fakewfv1.NewClientset(wft, wftNoLocation)
+	// ClusterWorkflowTemplates are cluster-scoped, so they carry no Namespace
+	cwft := &wfv1.ClusterWorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "my-cwft",
+			Labels: map[string]string{common.LabelKeyControllerInstanceID: instanceID},
+		},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: wfv1.Arguments{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "input-artifact",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							S3: &wfv1.S3Artifact{
+								S3Bucket: wfv1.S3Bucket{
+									Endpoint: "s3.amazonaws.com",
+									Bucket:   "my-bucket",
+								},
+								Key: "original/key.zip",
+							},
+						},
+					},
+				},
+			},
+			Templates: []wfv1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"echo"},
+						Args:    []string{"hello"},
+					},
+				},
+			},
+		},
+	}
+
+	// ClusterWorkflowTemplate without location, resolved through spec.artifactRepositoryRef
+	cwftNoLocation := &wfv1.ClusterWorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "my-cwft-no-location",
+			Labels: map[string]string{common.LabelKeyControllerInstanceID: instanceID},
+		},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint:            "main",
+			ArtifactRepositoryRef: &wfv1.ArtifactRepositoryRef{ConfigMap: "my-repos", Key: "my-key"},
+			Arguments: wfv1.Arguments{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "input-artifact",
+					},
+				},
+			},
+			Templates: []wfv1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"echo"},
+						Args:    []string{"hello"},
+					},
+				},
+			},
+		},
+	}
+
+	// ClusterWorkflowTemplate managed by a different Argo Server instance
+	cwftOtherInstance := cwft.DeepCopy()
+	cwftOtherInstance.Name = "my-cwft-other-instance"
+	cwftOtherInstance.Labels = map[string]string{common.LabelKeyControllerInstanceID: "other-instanceid"}
+
+	argo := fakewfv1.NewClientset(wft, wftNoLocation, cwft, cwftNoLocation, cwftOtherInstance)
 	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
 
 	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
-		return &fakeArtifactDriver{data: []byte("my-data"), saveStreamError: saveStreamError}, nil
+		return &fakeArtifactDriver{data: []byte("my-data"), saveStreamError: opts.saveStreamError}, nil
 	}
 
-	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
-		S3: &wfv1.S3ArtifactRepository{
-			S3Bucket: wfv1.S3Bucket{
-				Endpoint: "my-endpoint",
-				Bucket:   "my-bucket",
+	artifactRepositories := opts.repositories
+	if artifactRepositories == nil {
+		artifactRepositories = armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+			S3: &wfv1.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{
+					Endpoint: "my-endpoint",
+					Bucket:   "my-bucket",
+				},
 			},
-		},
-	})
+		})
+	}
 
 	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
 }
@@ -1220,6 +1316,168 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 		leaked, err := filepath.Glob(filepath.Join(tmpDir, "multipart-*"))
 		require.NoError(t, err)
 		assert.Empty(t, leaked)
+	})
+
+	t.Run("Success - ClusterWorkflowTemplate upload", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft/input-artifact?clusterScope=true", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		var response map[string]any
+		require.NoError(t, json.NewDecoder(recorder.Body).Decode(&response))
+		assert.Equal(t, "input-artifact", response["name"])
+		key, ok := response["key"].(string)
+		require.True(t, ok)
+		assert.True(t, strings.HasPrefix(key, "uploads/my-ns/"), "unexpected key %q", key)
+		assert.Len(t, strings.Split(key, "/"), 4)
+	})
+
+	t.Run("Success - ClusterWorkflowTemplate checks cluster-scoped get and namespaced workflow create", func(t *testing.T) {
+		type check struct{ verb, resource, namespace string }
+		var checks []check
+		s := newServerForUploadWithOptions(t, uploadServerOptions{
+			allow: func(attrs *authorizationv1.ResourceAttributes) bool {
+				checks = append(checks, check{attrs.Verb, attrs.Resource, attrs.Namespace})
+				return true
+			},
+		})
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft/input-artifact?clusterScope=true", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		assert.Contains(t, checks, check{"get", "clusterworkflowtemplates", ""})
+		assert.Contains(t, checks, check{"create", "workflows", "my-ns"})
+		for _, c := range checks {
+			assert.NotEqual(t, "workflowtemplates", c.resource)
+		}
+	})
+
+	t.Run("Success - ClusterWorkflowTemplate without location resolves via spec.artifactRepositoryRef", func(t *testing.T) {
+		repos := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+			S3: &wfv1.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+			},
+		})
+		s := newServerForUploadWithOptions(t, uploadServerOptions{repositories: repos})
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft-no-location/input-artifact?clusterScope=true", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		repos.AssertCalled(t, "Resolve", mock.Anything, &wfv1.ArtifactRepositoryRef{ConfigMap: "my-repos", Key: "my-key"}, "my-ns")
+	})
+
+	t.Run("Success - empty or false clusterScope targets the WorkflowTemplate", func(t *testing.T) {
+		for _, query := range []string{"?clusterScope=", "?clusterScope=false"} {
+			t.Run(query, func(t *testing.T) {
+				s := newServerForUpload(t, nil)
+				recorder := httptest.NewRecorder()
+				req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact"+query, []byte("test content"))
+
+				s.UploadInputArtifact(recorder, req)
+
+				assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+			})
+		}
+	})
+
+	t.Run("Error - clusterScope other than true/false returns 400", func(t *testing.T) {
+		for _, value := range []string{"TRUE", "1", "yes"} {
+			t.Run(value, func(t *testing.T) {
+				s := newServerForUpload(t, nil)
+				recorder := httptest.NewRecorder()
+				req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft/input-artifact?clusterScope="+value, []byte("test content"))
+				req.Body = io.NopCloser(&failOnReadReader{t: t})
+
+				s.UploadInputArtifact(recorder, req)
+
+				assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
+			})
+		}
+	})
+
+	t.Run("Error - ClusterWorkflowTemplate not found", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/non-existent-cwft/input-artifact?clusterScope=true", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+		assert.Contains(t, recorder.Body.String(), "Failed to get ClusterWorkflowTemplate non-existent-cwft")
+	})
+
+	t.Run("Error - ClusterWorkflowTemplate with another instance ID", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft-other-instance/input-artifact?clusterScope=true", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+		assert.Equal(t, "Not Found", strings.TrimSuffix(recorder.Body.String(), "\n"))
+	})
+
+	t.Run("Error - artifact not found in ClusterWorkflowTemplate", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft/non-existent-artifact?clusterScope=true", []byte("test content"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+		assert.Contains(t, recorder.Body.String(), "Artifact 'non-existent-artifact' not found in ClusterWorkflowTemplate my-cwft")
+	})
+
+	t.Run("Error - name resolves only within the requested kind", func(t *testing.T) {
+		for _, path := range []string{
+			"/upload-artifacts/my-ns/my-wft/input-artifact?clusterScope=true",
+			"/upload-artifacts/my-ns/my-cwft/input-artifact",
+		} {
+			t.Run(path, func(t *testing.T) {
+				s := newServerForUpload(t, nil)
+				recorder := httptest.NewRecorder()
+				req := createMultipartRequest(t, path, []byte("test content"))
+
+				s.UploadInputArtifact(recorder, req)
+
+				assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+			})
+		}
+	})
+
+	t.Run("Error - ClusterWorkflowTemplate get denied returns 403 before body read", func(t *testing.T) {
+		s := newServerForUploadWithOptions(t, uploadServerOptions{
+			allow: func(attrs *authorizationv1.ResourceAttributes) bool {
+				return attrs.Resource != "clusterworkflowtemplates"
+			},
+		})
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft/input-artifact?clusterScope=true", []byte("test content"))
+		req.Body = io.NopCloser(&failOnReadReader{t: t})
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusForbidden, recorder.Result().StatusCode)
+	})
+
+	t.Run("Error - ClusterWorkflowTemplate with workflows.create denied returns 403 before body read", func(t *testing.T) {
+		s := newServerForUploadWithOptions(t, uploadServerOptions{
+			allow: func(attrs *authorizationv1.ResourceAttributes) bool { return attrs.Resource != "workflows" },
+		})
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-cwft/input-artifact?clusterScope=true", []byte("test content"))
+		req.Body = io.NopCloser(&failOnReadReader{t: t})
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusForbidden, recorder.Result().StatusCode)
 	})
 }
 

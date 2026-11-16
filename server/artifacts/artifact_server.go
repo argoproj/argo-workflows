@@ -73,7 +73,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 }
 
 // UploadInputArtifact handles file uploads for workflow input artifacts
-// Path: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}
+// Path: /upload-artifacts/{namespace}/{templateName}/{artifactName}[?clusterScope=true]
 // Method: POST
 // Body: multipart/form-data with "file" field
 // Response: JSON with artifact location information
@@ -85,15 +85,25 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Parse path: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}
+	// Parse path: /upload-artifacts/{namespace}/{templateName}/{artifactName}
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) < 5 {
 		http.Error(w, "Invalid path. Expected: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}", http.StatusBadRequest)
 		return
 	}
 	namespace := requestPath[2]
-	workflowTemplateName := requestPath[3]
+	templateName := requestPath[3]
 	artifactName := requestPath[4]
+
+	var clusterScope bool
+	switch r.URL.Query().Get("clusterScope") {
+	case "", "false":
+	case "true":
+		clusterScope = true
+	default:
+		http.Error(w, "Invalid clusterScope. Expected: true or false", http.StatusBadRequest)
+		return
+	}
 
 	// Authenticate and authorize
 	ctx, err := a.gateKeeping(r, types.NamespaceHolder(namespace))
@@ -104,13 +114,19 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 
 	a.logger.WithFields(logging.Fields{
 		"namespace":            namespace,
-		"workflowTemplateName": workflowTemplateName,
+		"workflowTemplateName": templateName,
 		"artifactName":         artifactName,
+		"clusterScope":         clusterScope,
 	}).Info(ctx, "Upload artifact")
 
 	// Authorize before reading the request body, so an unprivileged caller
 	// cannot force the server to buffer a large upload just to be rejected.
-	allowed, err := auth.CanI(ctx, "get", "workflowtemplates", namespace, workflowTemplateName)
+	var allowed bool
+	if clusterScope {
+		allowed, err = auth.CanI(ctx, "get", "clusterworkflowtemplates", "", templateName)
+	} else {
+		allowed, err = auth.CanI(ctx, "get", "workflowtemplates", namespace, templateName)
+	}
 	if err != nil {
 		a.serverInternalError(ctx, err, w)
 		return
@@ -129,15 +145,19 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Get WorkflowTemplate to find artifact configuration
-	wfClient := auth.GetWfClient(ctx)
-	wfTemplate, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, workflowTemplateName, metav1.GetOptions{})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get WorkflowTemplate %s/%s: %v", namespace, workflowTemplateName, err), http.StatusNotFound)
-		return
+	kind, templateRef := "WorkflowTemplate", namespace+"/"+templateName
+	if clusterScope {
+		kind, templateRef = "ClusterWorkflowTemplate", templateName
 	}
-	if validateErr := a.instanceIDService.Validate(wfTemplate); validateErr != nil {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+
+	// Get the template to find artifact configuration
+	template, err := a.getUploadTemplate(ctx, clusterScope, namespace, templateName)
+	if err != nil {
+		if errors.Is(err, errUploadTemplateNotManaged) {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to get %s %s: %v", kind, templateRef, err), http.StatusNotFound)
 		return
 	}
 
@@ -181,19 +201,17 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		"size":     header.Size,
 	}).Info(ctx, "Received file for upload")
 
-	// Find the artifact in the WorkflowTemplate's arguments.artifacts
+	// Find the artifact in the template's arguments.artifacts
 	var templateArtifact *wfv1.Artifact
-	if wfTemplate.Spec.Arguments.Artifacts != nil {
-		for i := range wfTemplate.Spec.Arguments.Artifacts {
-			if wfTemplate.Spec.Arguments.Artifacts[i].Name == artifactName {
-				templateArtifact = &wfTemplate.Spec.Arguments.Artifacts[i]
-				break
-			}
+	for i := range template.artifacts {
+		if template.artifacts[i].Name == artifactName {
+			templateArtifact = &template.artifacts[i]
+			break
 		}
 	}
 
 	if templateArtifact == nil {
-		http.Error(w, fmt.Sprintf("Artifact '%s' not found in WorkflowTemplate %s/%s arguments.artifacts", artifactName, namespace, workflowTemplateName), http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("Artifact '%s' not found in %s %s arguments.artifacts", artifactName, kind, templateRef), http.StatusNotFound)
 		return
 	}
 
@@ -207,7 +225,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	// 3. workflow-controller-configmap has default artifactRepository
 	// We don't use Relocate() because it requires an existing key, but for uploads we generate a new key anyway.
 	if !artifactCopy.HasLocation() {
-		archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, a.artifactRepositories, wfTemplate.Spec.ArtifactRepositoryRef, namespace)
+		archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, a.artifactRepositories, template.repoRef, namespace)
 		if resolveErr != nil {
 			a.logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository, will check if artifact has location anyway")
 		} else if archiveLocation != nil && archiveLocation.HasLocation() {
@@ -221,7 +239,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 
 	// Check if the artifact has a location configured (S3, GCS, etc.)
 	if !artifactCopy.HasLocation() {
-		http.Error(w, fmt.Sprintf("Artifact '%s' does not have a storage location configured (s3, gcs, azure, oss). Please configure a storage location in the WorkflowTemplate or set up a default artifact repository.", artifactName), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Artifact '%s' does not have a storage location configured (s3, gcs, azure, oss). Please configure a storage location in the %s or set up a default artifact repository.", artifactName, kind), http.StatusBadRequest)
 		return
 	}
 
@@ -285,6 +303,35 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		a.logger.WithError(err).Error(ctx, "Failed to encode response")
 	}
+}
+
+var errUploadTemplateNotManaged = errors.New("template is not managed by the current Argo Server")
+
+type uploadTemplate struct {
+	artifacts []wfv1.Artifact
+	repoRef   *wfv1.ArtifactRepositoryRef
+}
+
+func (a *ArtifactServer) getUploadTemplate(ctx context.Context, clusterScope bool, namespace, name string) (*uploadTemplate, error) {
+	wfClient := auth.GetWfClient(ctx)
+	if clusterScope {
+		cwft, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if validateErr := a.instanceIDService.Validate(cwft); validateErr != nil {
+			return nil, errUploadTemplateNotManaged
+		}
+		return &uploadTemplate{artifacts: cwft.Spec.Arguments.Artifacts, repoRef: cwft.Spec.ArtifactRepositoryRef}, nil
+	}
+	wft, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if validateErr := a.instanceIDService.Validate(wft); validateErr != nil {
+		return nil, errUploadTemplateNotManaged
+	}
+	return &uploadTemplate{artifacts: wft.Spec.Arguments.Artifacts, repoRef: wft.Spec.ArtifactRepositoryRef}, nil
 }
 
 // GetArtifactFile is a single endpoint to handle serving directories as well as files, both those that have been archived and those that haven't.
