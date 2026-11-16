@@ -2,7 +2,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {createMemoryHistory} from 'history';
 import React from 'react';
 
-import {flush, installMockXHR, makeFile, MockXHR} from '../../shared/components/artifacts-input/test-utils';
+import {flush, installMockXHR, makeFile, MockXHR} from '../../shared/components/artifacts-input/artifacts-input-test-utils';
 import {Context, ContextApis} from '../../shared/context';
 import {services} from '../../shared/services';
 import {SubmitWorkflowPanel} from './submit-workflow-panel';

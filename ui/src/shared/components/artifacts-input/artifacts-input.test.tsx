@@ -2,7 +2,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
 import {ArtifactsInput, ArtifactUploadResponse} from './artifacts-input';
-import {flush, installMockXHR, makeFile} from './test-utils';
+import {flush, installMockXHR, makeFile} from './artifacts-input-test-utils';
 
 describe('ArtifactsInput', () => {
     const defaultProps = {
