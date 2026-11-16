@@ -11,10 +11,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *templateresolution.TemplateContext) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
+	heldBack := false
 	entryNode, _ := woc.wf.GetNodeByName(woc.wf.Name)
 	for hookName, hook := range woc.execWf.Spec.Hooks {
 		// the exit hook runs as the workflow's onExit node, once the entry node has finished (operate)
@@ -40,13 +42,22 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if execute || hookedNode != nil {
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).Info(ctx, "Running workflow level hooks")
 			hookNode, err := woc.reconcileTemplate(ctx, hookNodeName, toTemplateReferenceHolder(&hook), tmplCtx, hook.Arguments,
-				&executeTemplateOpts{nodeFlag: &wfv1.NodeFlag{Hooked: true}},
+				&executeTemplateOpts{nodeFlag: &wfv1.NodeFlag{Hooked: true}, recordPendingOnThrottle: true},
 			)
 			// Linked whenever it exists, errored or not, as reconcileHookNode links.
 			if woc.wf.Status.Nodes.Has(woc.wf.ResolveNodeID(hookNodeName)) {
 				woc.addChildNode(ctx, woc.wf.Name, hookNodeName)
 			}
 			if err != nil {
+				if isThrottleErr(err) {
+					// Back-pressure (parallelism, rate limit, operation deadline), not a
+					// failure: hold this hook back so the workflow stays Running and the
+					// hook is retried once a slot frees up, as template-level hooks do
+					// (hookHandler.ignoreThrottle). Sibling hooks are still driven. See #17511.
+					woc.log.WithError(err).WithField("lifeCycleHook", hookName).Debug(ctx, "workflow level hook held back; will retry")
+					heldBack = true
+					continue
+				}
 				return true, err
 			}
 			hookNodes = append(hookNodes, hookNode)
@@ -57,6 +68,11 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if !hookNode.Fulfilled() {
 			return false, nil
 		}
+	}
+	// A hook held back by back-pressure has no node in hookNodes to wait on,
+	// but its recorded node keeps it pending: the workflow is not done yet.
+	if heldBack {
+		return false, nil
 	}
 
 	return true, nil
@@ -138,6 +154,40 @@ func (woc *wfOperationCtx) errorHookNode(ctx context.Context, nodeName string, h
 		woc.addChildNode(ctx, parentNode.Name, nodeName)
 	}
 	return err
+}
+
+// recordPendingHookNode records a workflow-level hook that back-pressure held
+// back as a node of its own, so the hook's trigger is not lost: the trigger
+// lives in the node, and once the entry node finishes the hook's expression
+// stops matching, so without a node the hook would be silently dropped instead
+// of waiting for a free slot (#17511). Linking it to the workflow is the
+// caller's job, as it is for every other hook node.
+//
+// The node is created exactly as its own dispatch would create it — same type,
+// scope, inputs and phase — but without a MemoizationStatus: handleMemoization
+// runs after the constraints, so the cache has not been consulted yet and must
+// not be recorded as checked before the hook can actually run.
+func (woc *wfOperationCtx) recordPendingHookNode(ctx context.Context, nodeName string, processedTmpl *wfv1.Template, tmplCtx *templateresolution.TemplateContext, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) {
+	if _, err := woc.wf.GetNodeByName(nodeName); err == nil {
+		return // already recorded by an earlier operation
+	}
+	nodeType := wfutil.GetNodeType(processedTmpl)
+	// Composite and retry nodes initialize straight to Running (executeSteps,
+	// executeDAG, handleRetries); every other dispatch re-enters a Pending node.
+	phase := wfv1.NodePending
+	if nodeType == wfv1.NodeTypeSteps || nodeType == wfv1.NodeTypeDAG || nodeType == wfv1.NodeTypeRetry {
+		phase = wfv1.NodeRunning
+	}
+	// tmplCtx is the context the hook's reference was made from, so its scope
+	// is the one reconcileTemplate records for this task (dt.TemplateScope) —
+	// the scope an unthrottled dispatch would give the node, even when the
+	// hook resolves its template through a templateRef.
+	_, node := woc.initializeExecutableNode(ctx, nodeName, nodeType, tmplCtx.GetTemplateScope(), processedTmpl, orgTmpl, opts.boundaryID, phase, opts.nodeFlag, processedTmpl.IsDaemon())
+	if node.MemoizationStatus != nil {
+		node.MemoizationStatus = nil
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
+	}
 }
 
 // reconcileTaskSetFor dispatches the HTTP/plugin nodes at or under node to
