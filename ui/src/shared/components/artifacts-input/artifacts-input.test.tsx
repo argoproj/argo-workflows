@@ -2,51 +2,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
 import {ArtifactsInput, ArtifactUploadResponse} from './artifacts-input';
-
-// Minimal XMLHttpRequest stub — captures open/send/onload/onerror so tests can
-// simulate a completion (or a network error) at the moment they want to.
-interface MockXHR {
-    open: jest.Mock;
-    send: jest.Mock;
-    upload: {addEventListener: jest.Mock; listeners: Record<string, (event: ProgressEvent) => void>};
-    onload: (() => void) | null;
-    onerror: (() => void) | null;
-    status: number;
-    statusText: string;
-    responseText: string;
-}
-
-function installMockXHR(): MockXHR {
-    const listeners: Record<string, (event: ProgressEvent) => void> = {};
-    const xhr: MockXHR = {
-        open: jest.fn(),
-        send: jest.fn(),
-        upload: {
-            addEventListener: jest.fn((event: string, cb: (event: ProgressEvent) => void) => {
-                listeners[event] = cb;
-            }),
-            listeners
-        },
-        onload: null,
-        onerror: null,
-        status: 200,
-        statusText: 'OK',
-        responseText: ''
-    };
-    (window as unknown as {XMLHttpRequest: unknown}).XMLHttpRequest = jest.fn(() => xhr);
-    return xhr;
-}
-
-function makeFile(name = 'input.zip', contents = 'hello'): File {
-    return new File([contents], name, {type: 'application/zip'});
-}
-
-async function flush() {
-    // Let the queued promise inside uploadFile settle before assertions.
-    await act(async () => {
-        await Promise.resolve();
-    });
-}
+import {flush, installMockXHR, makeFile} from './test-utils';
 
 describe('ArtifactsInput', () => {
     const defaultProps = {
@@ -190,5 +146,59 @@ describe('ArtifactsInput', () => {
 
         expect(xhr.open).toHaveBeenCalledTimes(1);
         expect(xhr.send).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds clusterScope=true to the upload URL for a ClusterWorkflowTemplate', () => {
+        const xhr = installMockXHR();
+        render(<ArtifactsInput {...defaultProps} clusterScope />);
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        fireEvent.change(fileInput, {target: {files: [makeFile()]}});
+
+        expect(xhr.open).toHaveBeenCalledWith('POST', '/upload-artifacts/argo/my-template/input-artifact?clusterScope=true');
+    });
+
+    it('aborts an in-flight upload when unmounted without reporting a result', async () => {
+        const xhr = installMockXHR();
+        const onUploadComplete = jest.fn();
+        const onError = jest.fn();
+        const {unmount} = render(<ArtifactsInput {...defaultProps} onUploadComplete={onUploadComplete} onError={onError} />);
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        fireEvent.change(fileInput, {target: {files: [makeFile()]}});
+
+        unmount();
+        await flush();
+
+        expect(xhr.abort).toHaveBeenCalledTimes(1);
+        expect(onUploadComplete).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('does not abort when the upload has already completed', async () => {
+        const xhr = installMockXHR();
+        const {unmount} = render(<ArtifactsInput {...defaultProps} />);
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        fireEvent.change(fileInput, {target: {files: [makeFile()]}});
+
+        xhr.status = 201;
+        xhr.responseText = JSON.stringify({name: 'input-artifact', key: 'uploads/argo/abc/input.zip'});
+        act(() => {
+            xhr.onload?.();
+        });
+        await flush();
+        unmount();
+
+        expect(xhr.abort).not.toHaveBeenCalled();
+    });
+
+    it('does not abort when no upload is in flight', () => {
+        const xhr = installMockXHR();
+        const {unmount} = render(<ArtifactsInput {...defaultProps} />);
+
+        unmount();
+
+        expect(xhr.abort).not.toHaveBeenCalled();
     });
 });

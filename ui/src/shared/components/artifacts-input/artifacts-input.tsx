@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 
-import {uiUrl} from '../../base';
+import {uiUrl, uiUrlWithParams} from '../../base';
 
 import './artifacts-input.scss';
 
@@ -9,6 +9,7 @@ interface ArtifactsInputProps {
     namespace: string;
     workflowTemplateName: string;
     artifactName: string;
+    clusterScope?: boolean;
     onUploadStart?: () => void;
     onUploadComplete?: (response: ArtifactUploadResponse) => void;
     onError?: (error: Error) => void;
@@ -21,13 +22,21 @@ export interface ArtifactUploadResponse {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-export function ArtifactsInput({namespace, workflowTemplateName, artifactName, onUploadStart, onUploadComplete, onError}: ArtifactsInputProps) {
+export function ArtifactsInput({namespace, workflowTemplateName, artifactName, clusterScope, onUploadStart, onUploadComplete, onError}: ArtifactsInputProps) {
     const [status, setStatus] = useState<UploadStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [fileName, setFileName] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const xhrRef = useRef<XMLHttpRequest | null>(null);
+
+    useEffect(
+        () => () => {
+            xhrRef.current?.abort();
+        },
+        []
+    );
 
     const handleFileSelect = () => {
         fileInputRef.current?.click();
@@ -47,6 +56,7 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
             formData.append('file', file);
 
             const xhr = new XMLHttpRequest();
+            xhrRef.current = xhr;
 
             xhr.upload.addEventListener('progress', event => {
                 if (event.lengthComputable) {
@@ -57,6 +67,7 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
 
             await new Promise<ArtifactUploadResponse>((resolve, reject) => {
                 xhr.onload = () => {
+                    xhrRef.current = null;
                     if (xhr.status >= 200 && xhr.status < 300) {
                         try {
                             const response = JSON.parse(xhr.responseText) as ArtifactUploadResponse;
@@ -73,11 +84,14 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
                     }
                 };
 
+                // No onabort: the only abort is the unmount cleanup, after which nothing is reported.
                 xhr.onerror = () => {
+                    xhrRef.current = null;
                     reject(new Error('Network error'));
                 };
 
-                xhr.open('POST', uiUrl(`upload-artifacts/${encodeURIComponent(namespace)}/${encodeURIComponent(workflowTemplateName)}/${encodeURIComponent(artifactName)}`));
+                const path = `upload-artifacts/${encodeURIComponent(namespace)}/${encodeURIComponent(workflowTemplateName)}/${encodeURIComponent(artifactName)}`;
+                xhr.open('POST', clusterScope ? uiUrlWithParams(path, new URLSearchParams({clusterScope: 'true'})) : uiUrl(path));
                 xhr.send(formData);
             });
         } catch (error) {
