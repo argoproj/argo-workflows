@@ -84,8 +84,8 @@ func TestResourceAgent(t *testing.T) {
 	taskSets := wfClient.ArgoprojV1alpha1().WorkflowTaskSets("my-ns")
 	var nodes map[string]wfv1.NodeResult
 	require.Eventually(t, func() bool {
-		got, err := taskSets.Get(ctx, "my-wf", metav1.GetOptions{})
-		require.NoError(t, err)
+		got, getErr := taskSets.Get(ctx, "my-wf", metav1.GetOptions{})
+		require.NoError(t, getErr)
 		nodes = got.Status.Nodes
 		return nodes["res"].Phase == wfv1.NodeSucceeded
 	}, 10*time.Second, 10*time.Millisecond)
