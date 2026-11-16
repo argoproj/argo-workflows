@@ -878,11 +878,10 @@ func TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
 }
 
-// uploadServerOptions configures the server built by newServerForUploadWithOptions.
 type uploadServerOptions struct {
 	saveStreamError error
-	allow           func(attrs *authorizationv1.ResourceAttributes) bool // nil allows every SelfSubjectAccessReview
-	repositories    *armocks.Interface                                   // nil uses DummyArtifactRepositories with an S3 repository
+	allow           func(attrs *authorizationv1.ResourceAttributes) bool
+	repositories    *armocks.Interface
 }
 
 // newServerForUpload creates a test server with WorkflowTemplate for upload tests
@@ -901,8 +900,6 @@ func newServerForUploadWithAuth(t *testing.T, saveStreamError error, authorized 
 	})
 }
 
-// newServerForUploadWithOptions is like newServerForUpload but lets the caller decide each
-// SelfSubjectAccessReview from its resource attributes and supply the artifact repositories.
 func newServerForUploadWithOptions(t *testing.T, opts uploadServerOptions) *ArtifactServer {
 	t.Helper()
 	gatekeeper := &authmocks.Gatekeeper{}
@@ -1024,7 +1021,6 @@ func newServerForUploadWithOptions(t *testing.T, opts uploadServerOptions) *Arti
 		},
 	}
 
-	// ClusterWorkflowTemplate without location, resolved through spec.artifactRepositoryRef
 	cwftNoLocation := &wfv1.ClusterWorkflowTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "my-cwft-no-location",
@@ -1053,7 +1049,6 @@ func newServerForUploadWithOptions(t *testing.T, opts uploadServerOptions) *Arti
 		},
 	}
 
-	// ClusterWorkflowTemplate managed by a different Argo Server instance
 	cwftOtherInstance := cwft.DeepCopy()
 	cwftOtherInstance.Name = "my-cwft-other-instance"
 	cwftOtherInstance.Labels = map[string]string{common.LabelKeyControllerInstanceID: "other-instanceid"}
@@ -1398,6 +1393,9 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 				s.UploadInputArtifact(recorder, req)
 
 				assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
+				gatekeeper, ok := s.gatekeeper.(*authmocks.Gatekeeper)
+				require.True(t, ok)
+				gatekeeper.AssertNotCalled(t, "ContextWithRequest", mock.Anything, mock.Anything)
 			})
 		}
 	})

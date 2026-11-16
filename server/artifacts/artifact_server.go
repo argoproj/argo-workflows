@@ -85,7 +85,6 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Parse path: /upload-artifacts/{namespace}/{templateName}/{artifactName}
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) < 5 {
 		http.Error(w, "Invalid path. Expected: /upload-artifacts/{namespace}/{workflowTemplateName}/{artifactName}", http.StatusBadRequest)
@@ -150,7 +149,6 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		kind, templateRef = "ClusterWorkflowTemplate", templateName
 	}
 
-	// Get the template to find artifact configuration
 	template, err := a.getUploadTemplate(ctx, clusterScope, namespace, templateName)
 	if err != nil {
 		if errors.Is(err, errUploadTemplateNotManaged) {
@@ -201,7 +199,6 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		"size":     header.Size,
 	}).Info(ctx, "Received file for upload")
 
-	// Find the artifact in the template's arguments.artifacts
 	var templateArtifact *wfv1.Artifact
 	for i := range template.artifacts {
 		if template.artifacts[i].Name == artifactName {
