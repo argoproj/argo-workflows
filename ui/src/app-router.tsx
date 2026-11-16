@@ -3,6 +3,7 @@ import {NotificationsManager} from 'argo-ui/src/components/notifications/notific
 import {Notifications, NotificationType} from 'argo-ui/src/components/notifications/notifications';
 import {Popup, PopupProps} from 'argo-ui/src/components/popup/popup';
 import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import {Theme, useTheme} from 'argo-ui/v2/shared/context/theme';
 import * as H from 'history';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
@@ -26,7 +27,6 @@ import {ThemeToggle} from './shared/components/theme-toggle';
 import {Version} from './shared/models';
 import * as nsUtils from './shared/namespaces';
 import {services} from './shared/services';
-import {useThemeSync} from './shared/theme-sync';
 import userinfo from './userinfo';
 import {Widgets} from './widgets/widgets';
 import workflowEventBindings from './workflow-event-bindings';
@@ -55,7 +55,10 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
     const [version, setVersion] = useState<Version>();
     const [namespace, setNamespace] = useState<string>();
     const [navBarBackgroundColor, setNavBarBackgroundColor] = useState<string>();
-    const theme = useThemeSync();
+    const theme = useTheme();
+    useEffect(() => {
+        document.body.classList.toggle('theme-dark', theme === Theme.Dark);
+    }, [theme]);
     const setError = (error: Error) => {
         notificationsManager.show({
             content: 'Failed to load version/info ' + error,
