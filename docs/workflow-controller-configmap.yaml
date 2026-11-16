@@ -274,16 +274,16 @@ data:
       maxIdleConns: 100
       maxOpenConns: 0
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
-    # Retry settings for the initial database connection
+    # Retry settings for reconnecting when a query fails with a network error. The initial connection isn't retried.
     reconnectionConfig:
-      # Number of connection attempts before giving up. Default 5.
+      # Number of retries after the first reconnection attempt. Default 5.
       maxRetries: 5
-      # Delay before the first retry, in seconds; grows by retryMultiple on each attempt. Default 0 (100ms).
+      # The wait before retry n is baseDelaySeconds * n * retryMultiple, capped at maxDelaySeconds. Default 0 (100ms).
       baseDelaySeconds: 0
-      # Upper limit on the delay between attempts, in seconds. Default 30.
+      # Upper limit on the wait between attempts, in seconds. Default 30.
       maxDelaySeconds: 30
-      # Growth factor applied to the delay after each attempt. Defaults to 2.0 when reconnectionConfig is
-      # absent; when the block is present but this field is omitted, 1.0 is used (constant delay).
+      # Multiplier on the wait. Defaults to 2.0 when reconnectionConfig is
+      # absent; when the block is present but this field is omitted, 1.0 is used.
       retryMultiple: 2.0
     #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
     nodeStatusOffLoad: false
@@ -357,6 +357,14 @@ data:
       maxIdleConns: 100
       maxOpenConns: 0
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
+
+    # Retry settings for reconnecting when a query fails with a network error, same fields and
+    # defaults as persistence.reconnectionConfig. The initial connection isn't retried.
+    reconnectionConfig:
+      maxRetries: 5
+      baseDelaySeconds: 0
+      maxDelaySeconds: 30
+      retryMultiple: 2.0
 
     # Required - sets a unique name for this controller instance
     # Must be different for each controller instance to properly coordinate lock ownership
@@ -440,15 +448,15 @@ data:
   #   failed: 3
   #   errored: 3
 
-  # FailedPodRestart enables automatic restart of pods that fail before entering the Running state,
-  # for example after an eviction or preemption. See docs/pod-restarts.md
+  # FailedPodRestart restarts pods that fail before their main container starts,
+  # for example after an eviction or a node shutdown. See docs/pod-restarts.md
   # failedPodRestart: |
   #   enabled: true
   #   # Maximum number of automatic restarts per node before giving up. Default 3.
   #   maxRestarts: 3
 
-  # InitlessPod selects the init-less pod layout for all workflow pods scheduled by this controller.
-  # See docs/initless-pod.md
+  # InitlessPod (beta) selects the init-less pod layout for all workflow pods scheduled by this controller.
+  # It needs Kubernetes image volumes on every node that runs workflow pods, see docs/initless-pod.md
   # initlessPod: |
   #   enabled: true
 
