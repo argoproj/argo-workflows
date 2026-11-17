@@ -18,6 +18,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -145,6 +146,11 @@ func (we *WorkflowExecutor) execResource(ctx context.Context, action string, man
 func inferPlural(kind string) string {
 	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
 	return lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{Name: kind}})
+}
+
+func inferGVR(obj unstructured.Unstructured) schema.GroupVersionResource {
+	gvk := obj.GroupVersionKind()
+	return gvk.GroupVersion().WithResource(inferPlural(gvk.Kind))
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
