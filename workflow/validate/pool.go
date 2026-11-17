@@ -159,22 +159,22 @@ func (tctx *templateValidationCtx) validatePooled(tmpl *wfv1.Template) error {
 
 // pooledWorkflowSpec returns the workflow spec tmpl runs with if it is
 // pooled, with or without the workflow's templateDefaults, and nil if it
-// isn't. It merges tctx.poolSpecs the first time it is needed.
+// isn't. It merges tctx.workflowSpecLayers the first time it is needed.
 func (tctx *templateValidationCtx) pooledWorkflowSpec(tmpl *wfv1.Template) (*wfv1.WorkflowSpec, error) {
-	if tmpl.Pool == nil && !slices.ContainsFunc(tctx.poolSpecs, func(s *wfv1.WorkflowSpec) bool {
+	if tmpl.Pool == nil && !slices.ContainsFunc(tctx.workflowSpecLayers, func(s *wfv1.WorkflowSpec) bool {
 		return s.TemplateDefaults != nil && s.TemplateDefaults.Pool != nil
 	}) {
 		return nil, nil
 	}
-	if tctx.poolSpec == nil {
-		spec, err := common.MergeWorkflowSpecs(tctx.poolSpecs...)
+	if tctx.mergedWorkflowSpec == nil {
+		spec, err := common.MergeWorkflowSpecs(tctx.workflowSpecLayers...)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "merging the workflow spec for pooled templates: %s", err)
 		}
 		if spec == nil {
 			spec = &wfv1.WorkflowSpec{}
 		}
-		tctx.poolSpec = spec
+		tctx.mergedWorkflowSpec = spec
 	}
-	return tctx.poolSpec, nil
+	return tctx.mergedWorkflowSpec, nil
 }
