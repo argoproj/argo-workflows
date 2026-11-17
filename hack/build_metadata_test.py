@@ -115,8 +115,16 @@ class BuildMetadataTest(unittest.TestCase):
             (self.source / f"file-{i:04d}").write_text("fixture")
         self.run_cmd("git", "add", "file-*")
         self.run_cmd("git", "commit", "-m", "submodule fixture")
+        (self.source / "000-submodule").mkdir()
+        self.assertEqual(self.run_cmd("git", "status", "--porcelain"), "")
         self.run_cmd("bash", str(SCRIPTS / "prepare-release-context.sh"),
                              str(self.root / "context"), ok=False)
+
+    def test_shallow_source_is_rejected(self):
+        shallow = self.root / "shallow"
+        self.run_cmd("git", "clone", "--depth=1", self.source.as_uri(), str(shallow))
+        self.run_cmd("bash", str(SCRIPTS / "prepare-release-context.sh"),
+                     str(self.root / "context"), cwd=shallow, ok=False)
 
     def test_highest_semver_tag_wins(self):
         self.run_cmd("git", "tag", "-a", "v4.1.6", "-m", "old tag")
