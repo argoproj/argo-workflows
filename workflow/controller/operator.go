@@ -1032,7 +1032,8 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 }
 
 // Substitute replaces parameters in a string. Tags under strictPrefixes must
-// resolve; other unresolved tags are left for a later pass (see dag.Substitutor).
+// resolve, except {{tasks.name}} and {{steps.name}}; other unresolved tags are
+// left for a later pass (see dag.Substitutor).
 func (woc *wfOperationCtx) Substitute(text string, scope map[string]string, strictPrefixes []string) (string, error) {
 	t, err := template.NewTemplate(text)
 	if err != nil {
