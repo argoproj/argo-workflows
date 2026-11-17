@@ -86,8 +86,14 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 		return expressionReplaceCore(ctx, w, expression, env, false)
 	}
 
+	// An expression naming the current task or step, guarded or not, waits for
+	// the pass at execution, where that name is set (#17415).
+	if strictRegex != nil && strictRegex != matchAllRegex && referencesCurrentNodeName(unmarshalledExpression) {
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
+	}
+
 	for _, id := range missingIdentifiers {
-		if strictRegex != nil && strictRegex.MatchString(id) {
+		if isStrictTag(strictRegex, id) {
 			return 0, fmt.Errorf("failed to evaluate expression: %s is missing", id)
 		}
 	}
@@ -98,6 +104,39 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 	// failures are tolerated and the expression is left unresolved for later evaluation.
 	allowUnresolved := len(missingIdentifiers) > 0 || strictRegex == nil
 	return expressionReplaceCore(ctx, w, expression, env, allowUnresolved)
+}
+
+// referencesCurrentNodeName reports whether expression accesses tasks.name or
+// steps.name, including under ?? where getIdentifiers does not report it.
+func referencesCurrentNodeName(expression string) bool {
+	tree, err := parser.Parse(expression)
+	if err != nil {
+		return false
+	}
+	v := &memberPathVisitor{}
+	ast.Walk(&tree.Node, v)
+	// tasks.name.outputs.result also visits its inner tasks.name: that is a
+	// task called name, not the current one.
+	for _, path := range v.paths {
+		if isCurrentNodeName(path) && !slices.ContainsFunc(v.paths, func(other string) bool {
+			return strings.HasPrefix(other, path+".")
+		}) {
+			return true
+		}
+	}
+	return false
+}
+
+type memberPathVisitor struct {
+	paths []string
+}
+
+func (v *memberPathVisitor) Visit(node *ast.Node) {
+	if n, ok := (*node).(*ast.MemberNode); ok {
+		if path, ok := getMemberPath(n); ok {
+			v.paths = append(v.paths, path)
+		}
+	}
 }
 
 type identifierVisitor struct {
