@@ -31,7 +31,7 @@ jobs:
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -54,6 +54,7 @@ jobs:
               - Tiltfile
               - Dockerfile
               - hack/tilt/**
+              - hack/retry-download.sh
             tests: &tests
               - *common
               - cmd/**
@@ -116,6 +117,7 @@ jobs:
               - .features/**
               # plus lint config
               - .golangci.yml
+              - .custom-gcl.yml
               # all GH workflows / actions
               - .github/workflows/**
               # docs files below
@@ -143,7 +145,7 @@ jobs:
     name: Unit Tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -213,7 +215,7 @@ jobs:
     # superset of e2e-ui's, else a skipped dependency cascades and e2e-ui is
     # silently skipped on ui-only PRs
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' || needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -247,7 +249,7 @@ jobs:
     name: E2E Tests
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
     # contention on the runner, which we have no control over.
     timeout-minutes: 60
@@ -460,7 +462,7 @@ jobs:
     name: E2E Tests - Composite result
     needs: [ e2e-tools, e2e-tests, e2e-ui ]
     if: ${{ always() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -487,7 +489,7 @@ jobs:
     name: Codegen
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     env:
       GOPATH: /home/runner/go
@@ -530,7 +532,7 @@ jobs:
     name: Lint
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
     env:
       GOPATH: /home/runner/go
@@ -560,7 +562,7 @@ jobs:
     name: UI build and unit tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -577,7 +579,7 @@ jobs:
           node-version: "24" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
-      - run: yarn --cwd ui install
+      - run: sh hack/retry-download.sh yarn --cwd ui install
       - run: yarn --cwd ui build
       - run: yarn --cwd ui test
       - run: yarn --cwd ui lint
@@ -590,7 +592,7 @@ jobs:
     name: E2E UI (${{ matrix.name }})
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.ui == 'true' || needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -632,7 +634,7 @@ jobs:
         uses: ./.github/actions/e2e-cluster-up
       - name: Install UI dependencies and Playwright browser
         run: |
-          yarn --cwd ui install
+          sh hack/retry-download.sh yarn --cwd ui install
           yarn --cwd ui playwright install --with-deps chromium
       - name: Build images and start Argo in-cluster
         # tilt builds the production images (UI baked in), deploys them, and keeps
