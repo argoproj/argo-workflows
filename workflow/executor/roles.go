@@ -149,6 +149,20 @@ var (
 		},
 	}
 
+	// ResourceContainerRole is a resource pod's main container: issue the
+	// request, wait for the resource's conditions, save its parameters.
+	ResourceContainerRole = Role{
+		Name:   "resource-container",
+		Layout: LayoutLegacy,
+		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+			return we.Tracing.StartRunResourceContainer(ctx, we.WorkflowName(), we.Namespace)
+		},
+		Run: func(ctx, bgCtx context.Context, we *WorkflowExecutor) error {
+			return we.runResourceContainer(ctx, bgCtx)
+		},
+		Finally: []Stage{finalizeResourceOutput},
+	}
+
 	// ResourceRole issues one resource task's request in the resource
 	// agent, whose informers then report the result.
 	ResourceRole = Role{

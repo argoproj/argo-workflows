@@ -3,7 +3,6 @@ package executor
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"slices"
 	"sync"
@@ -328,8 +327,8 @@ func resourceOutputs(ctx context.Context, tmpl *wfv1.Template, obj *unstructured
 // resource for the informers to report on, and the task is Running.
 func (we *WorkflowExecutor) runResourceTask(ctx context.Context) error {
 	resource := we.Template.Resource
-	if resource.Action == "delete" && (resource.SuccessCondition != "" || resource.FailureCondition != "" || len(we.Template.Outputs.Parameters) > 0) {
-		return errors.New("successCondition, failureCondition and outputs are not supported for delete action")
+	if err := we.checkResourceDelete(); err != nil {
+		return err
 	}
 	// theory-debt: the manifest is staged at one fixed path, so the tasks of one process must not overlap.
 	if err := we.StageFiles(ctx); err != nil {

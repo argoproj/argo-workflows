@@ -35,6 +35,41 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
+func (we *WorkflowExecutor) runResourceContainer(ctx, bgCtx context.Context) error {
+	we.InitializeOutput(bgCtx)
+	if err := we.execAndWaitResource(ctx); err != nil {
+		we.AddError(ctx, err)
+		return err
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) execAndWaitResource(ctx context.Context) error {
+	if err := we.StageFiles(ctx); err != nil {
+		return err
+	}
+	resource := we.Template.Resource
+	if err := we.checkResourceDelete(); err != nil {
+		return err
+	}
+	namespace, name, selfLink, err := we.ExecResource(ctx, resource.Action, we.resourceManifestPath(), resource.Flags)
+	if err != nil || resource.Action == "delete" {
+		return err
+	}
+	if err := we.WaitResource(ctx, namespace, name, selfLink); err != nil {
+		return err
+	}
+	return we.SaveResourceParameters(ctx, namespace, name, !we.Template.SaveLogsAsArtifact())
+}
+
+func (we *WorkflowExecutor) checkResourceDelete() error {
+	resource := we.Template.Resource
+	if resource.Action == "delete" && (resource.SuccessCondition != "" || resource.FailureCondition != "" || len(we.Template.Outputs.Parameters) > 0) {
+		return errors.New("successCondition, failureCondition and outputs are not supported for delete action")
+	}
+	return nil
+}
+
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
 	obj, err := we.execResource(ctx, action, manifestPath, flags)

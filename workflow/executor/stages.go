@@ -112,6 +112,13 @@ var (
 		we.FinalizeOutput(ctx)
 		return nil
 	}}
+	// finalizeResourceOutput leaves the result to the wait container when the template archives its logs.
+	finalizeResourceOutput = Stage{Name: "finalize-resource-output", Run: func(ctx context.Context, we *WorkflowExecutor) error {
+		if !we.Template.SaveLogsAsArtifact() {
+			we.FinalizeOutput(ctx)
+		}
+		return nil
+	}}
 	// removeTaskRoot removes a worker task's own files once it is done.
 	removeTaskRoot = Stage{Name: "remove-task-root", Run: func(_ context.Context, we *WorkflowExecutor) error {
 		return we.removeTaskRoot()
