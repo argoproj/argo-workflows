@@ -1,5 +1,4 @@
-# TODO: Upgrade to Ubuntu 24.04 when https://bugs.launchpad.net/ubuntu/+source/curl/+bug/2073448 is addressed
-FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
+FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu26.04
 
 # k3d version: https://github.com/k3d-io/k3d/releases
 ARG K3D_VERSION=v5.8.3
