@@ -55,6 +55,10 @@ jobs:
               - Dockerfile
               - hack/tilt/**
               - hack/retry-download.sh
+              - hack/prepare-release-context.sh
+              - hack/verify-build-metadata.sh
+              - hack/build_metadata_test.py
+              - .github/workflows/release.yaml
             tests: &tests
               - *common
               - cmd/**
@@ -548,6 +552,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Test release build metadata
+        run: python3 -m unittest discover -s hack -p 'build_metadata_test.py' -v
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
       - name: Check if lint made changes not present in the PR
