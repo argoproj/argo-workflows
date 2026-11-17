@@ -39,6 +39,9 @@ data:
   # This config item allows you to disable this.
   nodeEvents: |
     enabled: true
+    # Emit node events from the Pod instead of the Workflow, with annotations linking the event back to the Workflow.
+    # Default false.
+    sendAsPod: false
 
   # Whether or not to emit events on workflow status changes. These can take a up a lot of space in
   # k8s (typically etcd), see nodeEvents above.
@@ -238,10 +241,10 @@ data:
     ignoreErrors: false
     # Use a self-signed cert for TLS
     secure: true
-    # Options for configuring individual metrics
-    options:
+    # Modifiers configure individual metrics by name
+    modifiers:
       pod_missing:
-        disable: true
+        disabled: true
       cronworkflows_triggered_total:
         disabledAttributes:
           - name
@@ -271,6 +274,17 @@ data:
       maxIdleConns: 100
       maxOpenConns: 0
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
+    # Retry settings for reconnecting when a query fails with a network error. The initial connection isn't retried.
+    reconnectionConfig:
+      # Number of retries after the first reconnection attempt. Default 5.
+      maxRetries: 5
+      # The wait before retry n is baseDelaySeconds * n * retryMultiple, capped at maxDelaySeconds. Default 0 (100ms).
+      baseDelaySeconds: 0
+      # Upper limit on the wait between attempts, in seconds. Default 30.
+      maxDelaySeconds: 30
+      # Multiplier on the wait. Defaults to 2.0 when reconnectionConfig is
+      # absent; when the block is present but this field is omitted, 1.0 is used.
+      retryMultiple: 2.0
     #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
     nodeStatusOffLoad: false
     # save completed workloads to the workflow archive
@@ -343,6 +357,14 @@ data:
       maxIdleConns: 100
       maxOpenConns: 0
       connMaxLifetime: 0s # 0 means connections don't have a max lifetime
+
+    # Retry settings for reconnecting when a query fails with a network error, same fields and
+    # defaults as persistence.reconnectionConfig. The initial connection isn't retried.
+    reconnectionConfig:
+      maxRetries: 5
+      baseDelaySeconds: 0
+      maxDelaySeconds: 30
+      retryMultiple: 2.0
 
     # Required - sets a unique name for this controller instance
     # Must be different for each controller instance to properly coordinate lock ownership
@@ -425,6 +447,18 @@ data:
   #   completed: 10
   #   failed: 3
   #   errored: 3
+
+  # FailedPodRestart restarts pods that fail before their main container starts,
+  # for example after an eviction or a node shutdown. See docs/pod-restarts.md
+  # failedPodRestart: |
+  #   enabled: true
+  #   # Maximum number of automatic restarts per node before giving up. Default 3.
+  #   maxRestarts: 3
+
+  # InitlessPod (beta) selects the init-less pod layout for all workflow pods scheduled by this controller.
+  # It needs Kubernetes image volumes on every node that runs workflow pods, see docs/initless-pod.md
+  # initlessPod: |
+  #   enabled: true
 
   # SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
   # for a semaphore from its associated ConfigMap(s). Defaults to 0 seconds (re-fetch every time the semaphore is checked).
