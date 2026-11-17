@@ -1,5 +1,5 @@
 # Pod GC provides the ability to delete pods automatically without deleting the workflow.
-# This example also demonstrates the use of `podGC.labelSelector` (available since v3.0.0-rc3)
+# This example also demonstrates the use of `podGC.labelSelector`
 # to only delete the pods whose labels match with the specified label selector.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -19,9 +19,8 @@ spec:
     # Default: do not delete pods
     strategy: OnPodSuccess
     # The duration before pods in the GC queue get deleted. Defaults to 5s
-    # Requires Argo >= 3.5
     deleteDelayDuration: 30s
-    # Use label selector to only delete the pods whose labels match with the specified label selector (available since v3.0.0-rc3).
+    # Use label selector to only delete the pods whose labels match with the specified label selector.
     labelSelector:
       matchLabels:
         should-be-deleted: "true"

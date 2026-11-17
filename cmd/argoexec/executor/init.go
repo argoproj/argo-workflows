@@ -63,15 +63,14 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 	annotationPatchTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressPatchTickDuration))
 	progressFileTickDuration, _ := time.ParseDuration(os.Getenv(common.EnvVarProgressFileTickDuration))
 
-	cre, err := emissary.New()
-	CheckErr(err)
-
 	process, err := executor.NewProcess(
 		ctx,
 		clientset,
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
-		cre,
+		func(paths executor.TaskPaths) executor.ContainerRuntimeExecutor {
+			return emissary.New(paths.VarRunArgo)
+		},
 		executor.ProcessConfig{
 			PodName:                      podName,
 			PodUID:                       types.UID(os.Getenv(common.EnvVarPodUID)),
@@ -82,9 +81,9 @@ func InitProcess(ctx context.Context, clientConfig clientcmd.ClientConfig) *exec
 			TerminationGracePeriod:       TerminationGracePeriodDuration(),
 			ArtifactPluginNames:          os.Getenv(common.EnvVarArtifactPluginNames),
 			RemoveLocalArtPath:           os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
-			InitlessPod:                  common.IsInitlessPod(),
 			RetryBackoff:                 retry.ExecutorRetry(ctx),
 			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
+			TaskResultRetryTimeout:       retry.ExecutorTaskResultRetryTimeout(ctx),
 		},
 	)
 	CheckErr(err)
@@ -138,17 +137,11 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 // environment.
 func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo string) *executor.WorkflowExecutor {
 	process := InitProcess(ctx, clientConfig)
-	wfExecutor := process.NewExecutor(TaskConfigFromEnv(varRunArgo))
-
-	logging.RequireLoggerFromContext(ctx).
-		WithFields(argo.GetVersion().Fields()).
-		WithField("namespace", wfExecutor.Namespace).
-		WithField("podName", wfExecutor.PodName).
-		WithField("templateName", wfExecutor.Template.Name).
-		WithField("includeScriptOutput", wfExecutor.IncludeScriptOutput).
-		WithField("deadline", wfExecutor.Deadline).
-		Info(ctx, "Executor initialized")
-	return wfExecutor
+	task, _, _ := (&PodSource{VarRunArgo: varRunArgo}).Next(ctx) // yields once and never errors
+	// This process only runs the resource or data action. The pod's plan,
+	// and every read of main's files, is in its wait or supervisor
+	// container, which takes its own layout, so the layout here is unused.
+	return process.NewExecutor(task, executor.LayoutLegacy, podSink(process)(task))
 }
 
 // TerminationGracePeriodDuration returns the terminationGracePeriodSeconds of

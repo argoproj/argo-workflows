@@ -1,19 +1,9 @@
 # Transport Layer Security
 
-> v2.8 and after
-
 If you're running Argo Server you have three options with increasing transport security (note - you should also be
 running [authentication](argo-server.md#auth-mode)):
 
 ## Default configuration
-
-> v2.8 - 2.12
-
-Defaults to [Plain Text](#plain-text)
-
-> v3.0 and after
-
-Defaults to [Encrypted](#encrypted) if cert is available
 
 Argo image/deployment defaults to [Encrypted](#encrypted) with a self-signed certificate which expires after 365 days.
 

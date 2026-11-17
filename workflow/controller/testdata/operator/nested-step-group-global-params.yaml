@@ -1,0 +1,125 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-outputs-bg7gl
+spec:
+
+  entrypoint: generate-globals
+  templates:
+  -
+    inputs: {}
+    metadata: {}
+    name: generate-globals
+    outputs: {}
+    steps:
+    - -
+        name: generate
+        template: nested-global-output-generation
+  -
+    container:
+      args:
+      - sleep 1; echo -n hello world > /tmp/hello_world.txt
+      command:
+      - sh
+      - -c
+      image: alpine:3.23
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: output-generation
+    outputs:
+      parameters:
+      - name: hello-param
+        valueFrom:
+          path: /tmp/hello_world.txt
+  -
+    inputs: {}
+    metadata: {}
+    name: nested-global-output-generation
+    outputs:
+      parameters:
+      - globalName: global-param
+        name: hello-param
+        valueFrom:
+          parameter: '{{steps.generate-output.outputs.parameters.hello-param}}'
+    steps:
+    - -
+        name: generate-output
+        template: output-generation
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-04-24T15:55:18Z"
+  nodes:
+    global-outputs-bg7gl:
+      children:
+      - global-outputs-bg7gl-1831647575
+      displayName: global-outputs-bg7gl
+      id: global-outputs-bg7gl
+      name: global-outputs-bg7gl
+      outboundNodes:
+      - global-outputs-bg7gl-1290716463
+      phase: Running
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: generate-globals
+      templateScope: local/global-outputs-bg7gl
+      type: Steps
+    global-outputs-bg7gl-1290716463:
+      boundaryID: global-outputs-bg7gl-2228002836
+      displayName: generate-output
+      finishedAt: "2020-04-24T15:55:16Z"
+      hostNodeName: minikube
+      id: global-outputs-bg7gl-1290716463
+      name: global-outputs-bg7gl[0].generate[0].generate-output
+      outputs:
+        parameters:
+        - name: hello-param
+          value: hello world
+          valueFrom:
+            path: /tmp/hello_world.txt
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: Pod
+    global-outputs-bg7gl-1831647575:
+      boundaryID: global-outputs-bg7gl
+      children:
+      - global-outputs-bg7gl-2228002836
+      displayName: '[0]'
+      id: global-outputs-bg7gl-1831647575
+      name: global-outputs-bg7gl[0]
+      phase: Running
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: generate-globals
+      templateScope: local/global-outputs-bg7gl
+      type: StepGroup
+    global-outputs-bg7gl-2228002836:
+      boundaryID: global-outputs-bg7gl
+      children:
+      - global-outputs-bg7gl-3089902334
+      displayName: generate
+      id: global-outputs-bg7gl-2228002836
+      name: global-outputs-bg7gl[0].generate
+      phase: Running
+      outboundNodes:
+      - global-outputs-bg7gl-1290716463
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: nested-global-output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: Steps
+    global-outputs-bg7gl-3089902334:
+      boundaryID: global-outputs-bg7gl-2228002836
+      children:
+      - global-outputs-bg7gl-1290716463
+      displayName: '[0]'
+      id: global-outputs-bg7gl-3089902334
+      name: global-outputs-bg7gl[0].generate[0]
+      phase: Running
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: nested-global-output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: StepGroup
+  startedAt: "2020-04-24T15:55:11Z"

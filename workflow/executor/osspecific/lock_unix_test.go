@@ -66,8 +66,8 @@ func TestWaitForSharedLock_UnblocksOnClose(t *testing.T) {
 	}()
 
 	select {
-	case <-done:
-		t.Fatal("WaitForSharedLock returned before exclusive lock was released")
+	case err := <-done:
+		t.Fatalf("WaitForSharedLock returned before exclusive lock was released: %v", err)
 	case <-time.After(100 * time.Millisecond):
 	}
 
@@ -104,8 +104,8 @@ func TestWaitForSharedLock_UnblocksOnProcessKill(t *testing.T) {
 	}()
 
 	select {
-	case <-done:
-		t.Fatal("WaitForSharedLock returned before subprocess died")
+	case err := <-done:
+		t.Fatalf("WaitForSharedLock returned before subprocess died: %v", err)
 	case <-time.After(100 * time.Millisecond):
 	}
 

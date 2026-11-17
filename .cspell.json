@@ -45,6 +45,7 @@
     "Anthos",
     "apiclient",
     "appr",
+    "argname",
     "argodbuser",
     "argoexec",
     "artgc",
@@ -72,11 +73,13 @@
     "klog",
 	"multiclient",
 	"mainctrfs",
+    "maxworkflowcount",
     "mypassword",
     "nonroot",
     "podpriority",
     "promtail",
     "robfig",
+    "SAMEORIGIN",
     "secretkey",
     "Siri",
     "STEPNAME",
@@ -84,12 +87,14 @@
     "STRFTIMECHAR",
     "TASKNAME",
     "taskresult",
+    "taskset",
     "tmple",
     "Triaging",
     "wftmpl",
     "workflowkey",
     "workflowtemplate",
     "workflowtemplates",
-    "zstd"
+    "zstd",
+    "pgsty"
   ]
 }

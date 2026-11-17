@@ -1,7 +1,5 @@
 # One Workflow Submitting Another
 
-> v2.8 and after
-
 If you want one workflow to create another, you can do this using `curl`. You'll need an [access token](access-token.md). Typically the best way is to submit from a workflow template:
 
 ```yaml

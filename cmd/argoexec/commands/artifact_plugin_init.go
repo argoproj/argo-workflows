@@ -42,7 +42,8 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 				signal.Notify(signals)
 				defer signal.Reset()
 
-				forwardSignals(ctx, signals, command.Process.Pid, false)
+				stopForwarding := forwardSignals(ctx, signals, command.Process.Pid, false)
+				defer stopForwarding()
 			}()
 			err := loadArtifactPlugin(ctx, wfv1.ArtifactPluginName(artifactPlugin))
 			if err != nil {

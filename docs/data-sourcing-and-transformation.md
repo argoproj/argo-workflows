@@ -1,7 +1,5 @@
 # Data Sourcing and Transformations
 
-> v3.1 and after
-
 We have intentionally made this feature available with only bare-bones functionality. Our hope is that we are able to build this feature with our community's feedback. If you have ideas and use cases for this feature, please open an [enhancement proposal](https://github.com/argoproj/argo-workflows/issues/new?assignees=&labels=enhancement&template=enhancement_proposal.md) on GitHub.
 
 Additionally, please take a look at our current ideas at the bottom of this document.

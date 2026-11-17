@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-with-input-defaults
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: wait
+        template: wait
+    - - name: print
+        template: print
+        arguments:
+          parameters:
+          - name: input
+            value: "{{steps.wait.outputs.parameters.input}}"
+          - name: select
+            value: "{{steps.wait.outputs.parameters.select}}"
+  - name: wait
+    suspend:
+      duration: "0s"
+    inputs:
+      parameters:
+        - name: input
+          default: "Hello World"
+        - name: select
+          default: "default"
+          enum:
+            - default
+            - option1
+            - option2
+    outputs:
+      parameters:
+        - name: input
+          valueFrom:
+            supplied: {}
+        - name: select
+          valueFrom:
+            supplied: {}
+  - name: print
+    inputs:
+      parameters:
+        - name: input
+        - name: select
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.input}} - {{inputs.parameters.select}}"]

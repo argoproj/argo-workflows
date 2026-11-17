@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-cs-steps
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: daemon
+        template: cs
+    - - name: after
+        template: noop
+  - name: cs
+    daemon: true
+    containerSet:
+      containers:
+      - name: step-1
+        image: alpine
+        command: [sh, -c, sleep 999999]
+      - name: step-2
+        image: alpine
+        command: [sh, -c, sleep 999999]
+  - name: noop
+    container:
+      image: alpine
+      command: [sh, -c, "true"]

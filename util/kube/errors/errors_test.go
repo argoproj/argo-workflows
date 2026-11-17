@@ -27,6 +27,13 @@ func TestIsRequestEntityTooLargeErr(t *testing.T) {
 	assert.True(t, IsRequestEntityTooLargeErr(err))
 
 	err = &apierr.StatusError{ErrStatus: metav1.Status{
+		Status:  metav1.StatusFailure,
+		Code:    http.StatusInternalServerError,
+		Message: "rpc error: code = ResourceExhausted desc = trying to send message larger than max (2163613 vs. 2097152)",
+	}}
+	assert.True(t, IsRequestEntityTooLargeErr(err))
+
+	err = &apierr.StatusError{ErrStatus: metav1.Status{
 		Status: metav1.StatusFailure,
 		Code:   http.StatusInternalServerError,
 	}}

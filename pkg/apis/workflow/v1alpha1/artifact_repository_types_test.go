@@ -24,49 +24,49 @@ func TestArtifactRepository(t *testing.T) {
 		assert.IsType(t, &ArtifactoryArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.Artifactory)
-		assert.Equal(t, "http://my-repo/{{workflow.name}}/{{pod.name}}", l.Artifactory.URL)
+		assert.Equal(t, "http://my-repo/{{workflow.name}}/{{node.taskName}}", l.Artifactory.URL)
 	})
 	t.Run("Azure", func(t *testing.T) {
 		r := &ArtifactRepository{Azure: &AzureArtifactRepository{}}
 		assert.IsType(t, &AzureArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.Azure)
-		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.Azure.Blob)
+		assert.Equal(t, "{{workflow.name}}/{{node.taskName}}", l.Azure.Blob)
 	})
 	t.Run("GCS", func(t *testing.T) {
 		r := &ArtifactRepository{GCS: &GCSArtifactRepository{}}
 		assert.IsType(t, &GCSArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.GCS)
-		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.GCS.Key)
+		assert.Equal(t, "{{workflow.name}}/{{node.taskName}}", l.GCS.Key)
 	})
 	t.Run("HDFS", func(t *testing.T) {
 		r := &ArtifactRepository{HDFS: &HDFSArtifactRepository{}}
 		assert.IsType(t, &HDFSArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.HDFS)
-		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.HDFS.Path)
+		assert.Equal(t, "{{workflow.name}}/{{node.taskName}}", l.HDFS.Path)
 	})
 	t.Run("Plugin", func(t *testing.T) {
 		r := &ArtifactRepository{Plugin: &PluginArtifactRepository{}}
 		assert.IsType(t, &PluginArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.Plugin)
-		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.Plugin.Key)
+		assert.Equal(t, "{{workflow.name}}/{{node.taskName}}", l.Plugin.Key)
 	})
 	t.Run("OSS", func(t *testing.T) {
 		r := &ArtifactRepository{OSS: &OSSArtifactRepository{}}
 		assert.IsType(t, &OSSArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.OSS)
-		assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.OSS.Key)
+		assert.Equal(t, "{{workflow.name}}/{{node.taskName}}", l.OSS.Key)
 	})
 	t.Run("S3", func(t *testing.T) {
 		r := &ArtifactRepository{S3: &S3ArtifactRepository{KeyPrefix: "my-key-prefix"}}
 		assert.IsType(t, &S3ArtifactRepository{}, r.Get())
 		l := r.ToArtifactLocation()
 		require.NotNil(t, l.S3)
-		assert.Equal(t, "my-key-prefix/{{workflow.name}}/{{pod.name}}", l.S3.Key)
+		assert.Equal(t, "my-key-prefix/{{workflow.name}}/{{node.taskName}}", l.S3.Key)
 	})
 }
 

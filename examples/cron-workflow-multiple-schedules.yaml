@@ -3,7 +3,7 @@ kind: CronWorkflow
 metadata:
   name: hello-world-multiple-schedules
 spec:
-  schedules: # v3.6 and after
+  schedules:
     - "*/3 * * * 1-5"
     - "*/2 * * * *"
   timezone: "America/Los_Angeles"   # Default to local machine timezone
