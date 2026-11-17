@@ -1495,7 +1495,9 @@ func (e *Engine) resolveTask(ctx context.Context, task dag.Task, scope *wfScope)
 // values containing quotes or backslashes arrive intact. References to tasks
 // and steps must resolve: a missing one means the producer's output is not
 // in scope yet, reported as ErrRequeue so the caller waits rather than run
-// with the literal tag (#15513). Other tags stay for later passes.
+// with the literal tag (#15513). {{tasks.name}} and {{steps.name}} are the
+// exception: they name the current node, not a producer, and are set when it
+// is executed (#17415). Other tags stay for later passes.
 func substituteJSON[T any](ctx context.Context, v T, params map[string]any) (T, error) {
 	var out T
 	b, err := json.Marshal(v)

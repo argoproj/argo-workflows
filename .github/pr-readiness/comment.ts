@@ -1,9 +1,18 @@
 // Renders the sticky PR-readiness comment. One comment per PR, identified by
-// MARKER, edited in place.
+// MARKER, edited in place. It holds up to two sections: readiness guidance for
+// the contributor (once something has failed) and the contributor activity
+// table for maintainers.
 
 import type { CommentVariant, TemplateIssue } from './types.ts';
 
 export const MARKER = '<!-- pr-readiness-bot -->';
+
+// Emitted whenever the comment carries a readiness section, so later runs know
+// to follow through to waiting / all-clear rather than going quiet.
+export const ENGAGED_MARKER = '<!-- pr-readiness:engaged -->';
+
+// Wraps the contributor activity table.
+export const CONTRIBUTOR_MARKER = '<!-- pr-readiness:contributor -->';
 
 // Must match the label that exists in the repo (Settings → Labels):
 // "problem/bot-not-ready — Readiness bot declares this as not ready, see
@@ -27,40 +36,53 @@ interface RenderArgs {
   failures: ReadonlyArray<FailureItem>;
   templateIssues: TemplateIssue[] | null;
   labeled: boolean;
+  // Pre-rendered contributor activity table, or null to leave it out.
+  contributorTable?: string | null;
 }
 
-export function renderComment({ variant, failures, templateIssues, labeled }: RenderArgs): string {
-  const head = [MARKER, ''];
+// Whether an existing comment of ours already carries a readiness section.
+// A comment without the contributor marker predates contributor tables, when
+// the bot only ever commented because something had failed.
+export function isEngaged(body: string): boolean {
+  return body.includes(ENGAGED_MARKER) || !body.includes(CONTRIBUTOR_MARKER);
+}
 
+export function renderComment({ variant, failures, templateIssues, labeled, contributorTable = null }: RenderArgs): string {
+  const lines = variant !== null ? [MARKER, ENGAGED_MARKER, ''] : [MARKER, ''];
+  if (variant !== null) {
+    lines.push(...readinessSection(variant, failures, templateIssues, labeled));
+  }
+  if (contributorTable) {
+    if (variant !== null) {
+      lines.push('');
+    }
+    lines.push(CONTRIBUTOR_MARKER, '', contributorTable);
+  }
+  lines.push(FOOTER);
+  return lines.join('\n');
+}
+
+function readinessSection(
+  variant: CommentVariant,
+  failures: ReadonlyArray<FailureItem>,
+  templateIssues: TemplateIssue[] | null,
+  labeled: boolean
+): string[] {
   if (variant === 'allclear') {
-    return head
-      .concat([
-        '#### ✅ PR readiness: all clear',
-        '',
-        'All contributor-fixable checks are passing. A maintainer will take it from here — thanks!',
-        FOOTER,
-      ])
-      .join('\n');
+    return ['#### ✅ PR readiness: all clear', '', 'All contributor-fixable checks are passing. A maintainer will take it from here — thanks!'];
   }
 
   if (variant === 'waiting') {
-    return head
-      .concat([
-        '#### ⏳ PR readiness',
-        '',
-        'The earlier issues are resolved — waiting for the remaining checks to finish…',
-        FOOTER,
-      ])
-      .join('\n');
+    return ['#### ⏳ PR readiness', '', 'The earlier issues are resolved — waiting for the remaining checks to finish…'];
   }
 
   // variant === 'issues'
-  const lines = head.concat([
+  const lines = [
     '#### 👋 PR readiness check',
     '',
     'Thanks for your contribution! A few automated checks need attention before a maintainer reviews — these are all things you can fix yourself:',
     '',
-  ]);
+  ];
 
   for (const f of failures) {
     lines.push(`- **${f.title}** — ${f.guidance} ([log](${f.url}))`);
@@ -89,6 +111,5 @@ export function renderComment({ variant, failures, templateIssues, labeled }: Re
     );
   }
 
-  lines.push(FOOTER);
-  return lines.join('\n');
+  return lines;
 }

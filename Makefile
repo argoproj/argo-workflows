@@ -324,7 +324,7 @@ cli: dist/argo ## Build the CLI
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
-	JOBS=max yarn --cwd ui install
+	JOBS=max sh hack/retry-download.sh yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 else
@@ -709,15 +709,16 @@ else
 	# Coverage goes to a directory, not -coverprofile: gotestsum reruns a failed
 	# test with the same arguments, and a rerun would overwrite the profile with
 	# just that test's coverage. Every run adds its counters to the directory.
+	# -coverpkg counts a package's code wherever a test runs it, not only in that
+	# package's own tests. Generated clients and the e2e suite are left out.
 	rm -rf $(COVERAGE_DIR) && mkdir -p $(COVERAGE_DIR)
-	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 -covermode=atomic $(GOTEST_FLAGS) -args -test.gocoverdir=$(CURDIR)/$(COVERAGE_DIR))
-	# Match what -coverprofile reported: each tested package's coverage, and 0%
-	# for packages without tests (which -cover also instruments in other
-	# packages' test binaries, so the directory holds counts for them too).
-	go tool covdata textfmt -i=$(COVERAGE_DIR) -o $(COVERAGE_PROFILE) \
-		-pkg=$$(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./... | paste -sd, -)
+	go list ./... | grep -v -E '/pkg/client/|/test/e2e' | sort > $(COVERAGE_DIR)/packages.txt
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 -covermode=atomic -coverpkg=$$(paste -sd, $(COVERAGE_DIR)/packages.txt) $(GOTEST_FLAGS) -args -test.gocoverdir=$(CURDIR)/$(COVERAGE_DIR))
+	go tool covdata textfmt -i=$(COVERAGE_DIR) -o $(COVERAGE_PROFILE)
+	# Packages no test imports (mostly mains, e.g. cmd/argo) have no counts in
+	# the directory; report them at 0% so they still count as uncovered.
 	# With no packages, go test would test the current directory, so skip it.
-	pkgs=$$(go list -f '{{if not (or .TestGoFiles .XTestGoFiles)}}{{.ImportPath}}{{end}}' ./...); \
+	pkgs=$$(go tool covdata pkglist -i=$(COVERAGE_DIR) | sort | comm -13 - $(COVERAGE_DIR)/packages.txt); \
 	if [ -n "$$pkgs" ]; then \
 		go test -covermode=atomic -coverprofile=$(COVERAGE_DIR)/untested.out $$pkgs > /dev/null && \
 		tail -n +2 $(COVERAGE_DIR)/untested.out >> $(COVERAGE_PROFILE); \
@@ -864,7 +865,7 @@ test-%-sdk:
 # Explicit target so it is not captured by the `test-%` Go e2e pattern rule above.
 .PHONY: test-ui-e2e
 test-ui-e2e:
-	yarn --cwd ui install
+	sh hack/retry-download.sh yarn --cwd ui install
 	yarn --cwd ui e2e
 
 Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt

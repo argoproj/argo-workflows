@@ -1,4 +1,6 @@
 codecov:
+  # GitHub's default branch; Codecov still had the pre-rename master
+  branch: main
   notify:
     # both unit-test jobs run under the same condition, so coverage always
     # arrives as two uploads; do not evaluate statuses until both are in, or
@@ -12,9 +14,15 @@ ignore:
 - "**/*generated.go"
 - "**/*generated.deepcopy.go"
 - "**/*_test.go"
+# mockery output
+- "**/mocks/**"
 - "pkg/apis/client/.*"
 - "pkg/client/.*"
 - "vendor/.*"
+# codegen and test tooling, not shipped code
+- "hack/.*"
+- "test/.*"
+- "util/telemetry/builder/.*"
 flags:
   unit-tests:
     carryforward: true
