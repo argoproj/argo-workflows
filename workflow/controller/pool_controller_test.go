@@ -50,7 +50,7 @@ func TestPoolControllerOffWithoutTheFlag(t *testing.T) {
 	defer cancel()
 
 	wfc.setUpPoolController(ctx)
-	wfc.runPoolController(ctx)
+	wfc.runPoolController(ctx, 2)
 	require.NoError(t, wfc.registerPoolGauges())
 	assert.Nil(t, wfc.poolController)
 	assert.Nil(t, wfc.poolDeploymentInformer)
@@ -67,7 +67,7 @@ func TestPoolControllerWithoutDeploymentRBAC(t *testing.T) {
 	})
 
 	wfc.setUpPoolController(ctx)
-	wfc.runPoolController(ctx)
+	wfc.runPoolController(ctx, 2)
 	assert.Nil(t, wfc.poolController)
 	assert.Nil(t, wfc.poolDeploymentInformer)
 	require.NotNil(t, wfc.poolHealth)
@@ -119,7 +119,7 @@ func TestPoolControllerCreatesPoolForTaskSet(t *testing.T) {
 	wfc.setUpPoolController(ctx)
 	require.NotNil(t, wfc.poolController)
 	assert.Same(t, wfc.poolController, wfc.poolHealth)
-	wfc.runPoolController(ctx)
+	wfc.runPoolController(ctx, 2)
 
 	in, x := poolDeploymentTestInputs()
 	// Written by this controller's version, which only builds its own pools.
