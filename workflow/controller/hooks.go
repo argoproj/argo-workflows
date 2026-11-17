@@ -172,6 +172,14 @@ func (woc *wfOperationCtx) recordPendingHookNode(ctx context.Context, nodeName s
 		return // already recorded by an earlier operation
 	}
 	nodeType := wfutil.GetNodeType(processedTmpl)
+	// A retry strategy the template does not set itself but inherits from
+	// spec.retryStrategy still makes handleRetries parent the dispatch under a
+	// Retry node; record the held-back hook as that node, or its attempts link
+	// under a non-Retry parent and never resolve their Retry parent
+	// (isRetryAttempt, FindRetryNode → nodeAntiAffinity, per-attempt metrics).
+	if woc.retryStrategy(processedTmpl) != nil {
+		nodeType = wfv1.NodeTypeRetry
+	}
 	// Composite and retry nodes initialize straight to Running (executeSteps,
 	// executeDAG, handleRetries); every other dispatch re-enters a Pending node.
 	phase := wfv1.NodePending
@@ -183,6 +191,13 @@ func (woc *wfOperationCtx) recordPendingHookNode(ctx context.Context, nodeName s
 	// the scope an unthrottled dispatch would give the node, even when the
 	// hook resolves its template through a templateRef.
 	_, node := woc.initializeExecutableNode(ctx, nodeName, nodeType, tmplCtx.GetTemplateScope(), processedTmpl, orgTmpl, opts.boundaryID, phase, opts.nodeFlag, processedTmpl.IsDaemon())
+	if nodeType == wfv1.NodeTypeSuspend {
+		// executeSuspend extracts enum/default from the input values when it
+		// creates the node; a node recorded here is found existing on
+		// re-entry, so the extraction has to happen now or the suspend input
+		// form loses them.
+		woc.resolveInputFieldsForSuspendNode(ctx, node)
+	}
 	if node.MemoizationStatus != nil {
 		node.MemoizationStatus = nil
 		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)

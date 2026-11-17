@@ -572,6 +572,140 @@ func TestWfHookParallelismBackpressureSteps(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
+// TestWfHookParallelismBackpressureRetry verifies that a held-back hook whose
+// template inherits the workflow's spec.retryStrategy is recorded as the Retry
+// node an unthrottled dispatch would create (handleRetries injects one before
+// dispatching), so its attempts resolve their Retry parent — for retry
+// anti-affinity and per-attempt metrics (#17511).
+func TestWfHookParallelismBackpressureRetry(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/wf-hook-parallelism-backpressure-retry.yaml")
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// The business pod occupies the only parallelism slot: the hook is held
+	// back and recorded as the Retry node its dispatch would have created —
+	// the inherited retry strategy applies to a hook like to any template.
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	hookNode := woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-retry.hooks.running")
+	require.NotNil(t, hookNode, "the held-back hook must be preserved as a node of its own")
+	assert.Equal(t, wfv1.NodeTypeRetry, hookNode.Type, "the recorded node must be the Retry node the inherited strategy implies")
+	assert.Equal(t, wfv1.NodeRunning, hookNode.Phase)
+	// Deliberately not marked Retried the way handleRetries marks an injected
+	// Retry node: getChildNodeIdsRetried would then count this hooked child as
+	// an attempt of its parent Retry node (the workflow root under
+	// spec.retryStrategy) and re-dispatch the entry template under the hook's
+	// name — hooked children are what that filter exists to exclude.
+	require.NotNil(t, hookNode.NodeFlag)
+	assert.False(t, hookNode.NodeFlag.Retried, "the recorded hook must stay excluded from its parent Retry node's attempts")
+	assert.Empty(t, hookNode.Children, "a held-back hook must not have run an attempt yet")
+	_, hookPodExists, _ := woc.podExists(hookNode.ID)
+	assert.False(t, hookPodExists, "no hook pod may be created while the hook is held back")
+
+	// Business pod running: still one active pod, the hook stays held back.
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-retry.hooks.running")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeTypeRetry, hookNode.Type)
+	assert.Empty(t, hookNode.Children, "a held-back hook must not have run an attempt yet")
+
+	// Business pod completed: the slot frees up and the hook dispatches its
+	// first attempt under the recorded Retry node.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-retry.hooks.running")
+	require.NotNil(t, hookNode)
+	require.Len(t, hookNode.Children, 1, "the dispatch must run its attempt under the recorded Retry node")
+	attempt, err := woc.wf.Status.Nodes.Get(hookNode.Children[0])
+	require.NoError(t, err)
+	require.NotNil(t, woc.wf.Status.Nodes.FindRetryNodeByChild(attempt.ID),
+		"the attempt must resolve its Retry parent, as it would after an unthrottled dispatch")
+	// The attempt pod reaches the pod informer asynchronously from the test's
+	// point of view, so wait for its delivery instead of racing it.
+	require.Eventually(t, func() bool {
+		_, exists, err := woc.podExists(attempt.ID)
+		return err == nil && exists
+	}, 10*time.Second, time.Millisecond, "the hook must be dispatched once a parallelism slot is free")
+
+	// The attempt completes: the Retry node — and the workflow — succeed.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-retry.hooks.running")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeSucceeded, hookNode.Phase)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// TestWfHookParallelismBackpressureSuspend verifies that the suspend input
+// preparation executeSuspend performs when it creates a node also runs for a
+// node recorded while the hook was held back: such a node is found existing
+// on re-entry, so executeSuspend's own preparation never sees it and the
+// enum/default the suspend input form shows would otherwise be lost (#17511).
+func TestWfHookParallelismBackpressureSuspend(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/wf-hook-parallelism-backpressure-suspend.yaml")
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// The business pod occupies the only parallelism slot: the suspend hook is
+	// held back and recorded with its inputs already prepared — enum and
+	// default extracted from the input value, as executeSuspend would.
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	hookNode := woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-suspend.hooks.running")
+	require.NotNil(t, hookNode, "the held-back hook must be preserved as a node of its own")
+	assert.Equal(t, wfv1.NodeTypeSuspend, hookNode.Type)
+	assert.Equal(t, wfv1.NodePending, hookNode.Phase)
+	decision := hookNode.Inputs.GetParameterByName("decision")
+	require.NotNil(t, decision, "the recorded node must carry its template's inputs")
+	require.Len(t, decision.Enum, 2, "the suspend input's enum must be resolved when the node is recorded")
+	assert.Equal(t, "approve", decision.Enum[0].String())
+	require.NotNil(t, decision.Default, "the suspend input's default must be resolved when the node is recorded")
+	assert.Equal(t, "approve", decision.Default.String())
+	_, hookPodExists, _ := woc.podExists(hookNode.ID)
+	assert.False(t, hookPodExists, "no hook pod may be created while the hook is held back")
+
+	// Business pod running: still one active pod, the hook stays held back
+	// with its prepared inputs untouched.
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-suspend.hooks.running")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodePending, hookNode.Phase)
+	decision = hookNode.Inputs.GetParameterByName("decision")
+	require.NotNil(t, decision)
+	require.Len(t, decision.Enum, 2, "the resolved inputs must survive the held-back operations")
+
+	// Business pod completed: the slot frees up and the hook suspends. Its
+	// node already exists, so executeSuspend skips its own input preparation —
+	// what the record-time preparation resolved is what the node keeps.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("running-hook-parallelism-suspend.hooks.running")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeRunning, hookNode.Phase, "the hook must suspend once a slot is free")
+	decision = hookNode.Inputs.GetParameterByName("decision")
+	require.NotNil(t, decision)
+	require.Len(t, decision.Enum, 2, "the resolved inputs must survive the dispatch")
+	require.NotNil(t, decision.Default)
+	assert.Equal(t, "approve", decision.Default.String())
+}
+
 // TestExitHookSkippedOutputAbsenceSemantics verifies that hook/exit-handler arguments mirror the
 // task/step absence semantics for a skipped node's defaultless output: a pure reference is dropped
 // so the hook template's own input default applies, and an inline `??` expression sees the absent
