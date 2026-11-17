@@ -1032,7 +1032,8 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 }
 
 // Substitute replaces parameters in a string. Tags under strictPrefixes must
-// resolve; other unresolved tags are left for a later pass (see dag.Substitutor).
+// resolve, except {{tasks.name}} and {{steps.name}}; other unresolved tags are
+// left for a later pass (see dag.Substitutor).
 func (woc *wfOperationCtx) Substitute(text string, scope map[string]string, strictPrefixes []string) (string, error) {
 	t, err := template.NewTemplate(text)
 	if err != nil {
@@ -1476,6 +1477,40 @@ func (woc *wfOperationCtx) markAllContainersDeleted(ctx context.Context, nodeID 
 	}
 }
 
+// failContainersWithoutStatus fails the container nodes of a failed containerSet pod
+// that have no container status, e.g. because kubelet rejected the pod at admission.
+// Otherwise they would stay Pending forever.
+func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod *apiv1.Pod, podNode *wfv1.NodeStatus, message string) {
+	reported := make(map[string]bool, len(pod.Status.ContainerStatuses))
+	for _, c := range pod.Status.ContainerStatuses {
+		reported[fmt.Sprintf("%s.%s", podNode.Name, c.Name)] = true
+	}
+	// Walk only the pod's container graph. Leaf containers link to the pod's dependents,
+	// which are outside the pod's boundary.
+	var pending []string
+	visited := make(map[string]bool)
+	queue := append([]string(nil), podNode.Children...)
+	for len(queue) > 0 {
+		id := queue[0]
+		queue = queue[1:]
+		if visited[id] {
+			continue
+		}
+		visited[id] = true
+		node, err := woc.wf.Status.Nodes.Get(id)
+		if err != nil || node.Type != wfv1.NodeTypeContainer || node.BoundaryID != podNode.ID {
+			continue
+		}
+		if !reported[node.Name] && !node.Fulfilled() {
+			pending = append(pending, node.Name)
+		}
+		queue = append(queue, node.Children...)
+	}
+	for _, name := range pending {
+		woc.markNodePhase(ctx, name, wfv1.NodeFailed, message)
+	}
+}
+
 // shouldPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
@@ -1721,6 +1756,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		case c.State.Running != nil:
 			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeRunning)
 		}
+	}
+	if pod.Status.Phase == apiv1.PodFailed && !stoppedDaemon && updated.Phase != wfv1.NodePending {
+		woc.failContainersWithoutStatus(ctx, pod, old, updated.Message)
 	}
 
 	// only update Pod IP for daemoned nodes to reduce number of updates
@@ -3239,9 +3277,13 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(ctx context.Context, nodeName 
 	}
 
 	if lockName == "" {
-		// If we are no longer waiting for a lock, nil out the sync status
+		// If we are no longer waiting for a lock, nil out the sync status.
+		// An ended node, re-entered while it holds its lock until its task
+		// result arrives, keeps its message: it says how the node ended.
 		node.SynchronizationStatus = nil
-		node.Message = ""
+		if !node.Phase.Completed() {
+			node.Message = ""
+		}
 	} else {
 		node.SynchronizationStatus.Waiting = lockName
 	}
@@ -4331,7 +4373,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		ctx = woc.markWorkflowError(ctx, err)
 		return ctx, err
 	default:
-		err := woc.controller.setWorkflowDefaults(woc.wf)
+		err := woc.controller.setWorkflowDefaults(ctx, woc.wf)
 		if err != nil {
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
@@ -4345,10 +4387,19 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
+		// validate.Workflow treats the defaults' workflowMetadata labels and annotations as
+		// valid sources for {{workflow.labels.x}}, so it needs the namespace layer too or a
+		// workflow relying on one is rejected at submit.
+		wfDefaults, err := woc.controller.mergedWorkflowDefaults(ctx, woc.wf.Namespace)
+		if err != nil {
+			ctx = woc.markWorkflowError(ctx, err)
+			return ctx, err
+		}
+
 		// Validate the execution wfSpec
-		err := waitutil.Backoff(retry.DefaultRetry(ctx),
+		err = waitutil.Backoff(retry.DefaultRetry(ctx),
 			func() (bool, error) {
-				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
+				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, wfDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
 				}
@@ -4420,7 +4471,12 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
-	wfDefault := woc.controller.Config.WorkflowDefaults
+	// Namespace defaults reach workflowTemplateRef workflows here rather than through
+	// setWorkflowDefaults, which this path never calls.
+	wfDefault, err := woc.controller.mergedWorkflowDefaults(ctx, woc.wf.Namespace)
+	if err != nil {
+		return err
+	}
 	if wfDefault == nil {
 		wfDefault = &wfv1.Workflow{}
 	}

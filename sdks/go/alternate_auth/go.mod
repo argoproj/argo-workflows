@@ -5,7 +5,7 @@ go 1.27.3
 replace github.com/argoproj/argo-workflows/v4 => ../../..
 
 require (
-	github.com/argoproj/argo-workflows/v4 v4.1.4
+	github.com/argoproj/argo-workflows/v4 v4.1.6
 	k8s.io/apimachinery v0.35.4
 	k8s.io/client-go v0.35.4
 )
@@ -46,11 +46,11 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20261005182115-fad411399dd8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
-	google.golang.org/grpc v1.83.2 // indirect
+	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

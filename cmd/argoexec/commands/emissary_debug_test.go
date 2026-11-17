@@ -27,7 +27,7 @@ func TestEmissary_DebugPauseAfter(t *testing.T) {
 			runCtx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			command := []string{"sh", "-c", "exit 0"}
-			driver := mainDriverFunc(func(ctx context.Context, task maindriver.Task, sink maindriver.ResultSink) (int, error) {
+			driver := mainDriverFunc(func(ctx context.Context, task maindriver.Task, sink maindriver.OutputStager) (int, error) {
 				code, err := (maindriver.Container{}).Run(ctx, task, sink)
 				require.NoError(t, err)
 				require.Zero(t, code)
@@ -41,7 +41,7 @@ func TestEmissary_DebugPauseAfter(t *testing.T) {
 				return code, err
 			})
 
-			err := runEmissary(runCtx, "producer", newPodSource("producer", false, command), driver)
+			err := runEmissary(runCtx, "producer", newPodTask("producer", false, command), driver)
 			marker, readErr := os.ReadFile(filepath.Join(varRunArgo, "ctr", "producer", "exitcode"))
 			require.NoError(t, readErr)
 			// When only the producer gets an interrupt, the context of a sibling

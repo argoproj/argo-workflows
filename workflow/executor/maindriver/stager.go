@@ -15,17 +15,17 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// PodSink stages main's outputs under VarRunArgo/outputs for the wait or
+// PodStager stages main's outputs under VarRunArgo/outputs for the wait or
 // supervisor container. Logs stay in WorkDir.
-type PodSink struct {
+type PodStager struct {
 	VarRunArgo    string
 	ContainerName string
 	Template      *wfv1.Template
 }
 
-var _ ResultSink = PodSink{}
+var _ OutputStager = PodStager{}
 
-func (s PodSink) Put(ctx context.Context, _ string, out Output) error {
+func (s PodStager) Stage(ctx context.Context, _ string, out Output) error {
 	if s.ContainerName != common.MainContainerName {
 		logging.RequireLoggerFromContext(ctx).WithField("path", out.Path).Debug(ctx, "not saving output - not main container")
 		return nil
@@ -40,7 +40,7 @@ func (s PodSink) Put(ctx context.Context, _ string, out Output) error {
 	}
 }
 
-func (s PodSink) saveArtifact(ctx context.Context, srcPath string) error {
+func (s PodStager) saveArtifact(ctx context.Context, srcPath string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if common.FindOverlappingVolume(s.Template, srcPath) != nil {
@@ -74,7 +74,7 @@ func (s PodSink) saveArtifact(ctx context.Context, srcPath string) error {
 	return nil
 }
 
-func (s PodSink) saveParameter(ctx context.Context, srcPath string) error {
+func (s PodStager) saveParameter(ctx context.Context, srcPath string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if common.FindOverlappingVolume(s.Template, srcPath) != nil {

@@ -50,5 +50,5 @@ func run(script string) error {
 	if err != nil {
 		return err
 	}
-	return runEmissary(ctx, "main", newPodSource("main", true, append([]string{"powershell", "-c"}, script)), maindriver.Container{})
+	return runEmissary(ctx, "main", newPodTask("main", true, append([]string{"powershell", "-c"}, script)), maindriver.Container{})
 }

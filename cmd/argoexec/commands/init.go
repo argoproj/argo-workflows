@@ -1,52 +1,21 @@
 package commands
 
 import (
-	"context"
-	"fmt"
-
-	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
+	argoexecexecutor "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
+// NewInitCommand is the legacy init container: the plan's Prepare phase.
 func NewInitCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   "init",
 		Short: "Load artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := tracing.InjectTraceContext(cmd.Context())
-			err := loadArtifacts(ctx)
-			if err != nil {
-				return fmt.Errorf("%w", err)
-			}
-			return nil
+			// Returned unwrapped: main() reads the exit code with a type assertion.
+			return argoexecexecutor.RunHarness(cmd.Context(), clientConfig, varRunArgo, wfexecutor.InitRole)
 		},
 	}
 	return &command
-}
-
-func loadArtifacts(ctx context.Context) error {
-	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
-	defer func() {
-		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
-			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
-		}
-	}()
-	errHandler := wfExecutor.HandleError(ctx)
-	ctx, span := wfExecutor.Tracing.StartRunInitContainer(ctx, wfExecutor.WorkflowName(), wfExecutor.Namespace)
-	defer span.End()
-	defer errHandler()
-	defer stats.LogStats()
-
-	// The legacy init container is the plan's Prepare phase: install the
-	// binary, stage files, download input artifacts. Plugin artifacts are
-	// loaded by their own artifact-plugin-init containers.
-	if err := wfExecutor.Prepare(ctx); err != nil {
-		wfExecutor.AddError(ctx, err)
-		return err
-	}
-	return nil
 }
