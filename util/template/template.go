@@ -82,10 +82,15 @@ func isStrictTag(strictRegex *regexp.Regexp, tag string) bool {
 	if strictRegex == nil {
 		return false
 	}
-	if strictRegex != matchAllRegex && (tag == varkeys.TasksName.Template() || tag == varkeys.StepsName.Template()) {
+	if strictRegex != matchAllRegex && isCurrentNodeName(tag) {
 		return false
 	}
 	return strictRegex.MatchString(tag)
+}
+
+// isCurrentNodeName reports whether tag is {{tasks.name}} or {{steps.name}}.
+func isCurrentNodeName(tag string) bool {
+	return tag == varkeys.TasksName.Template() || tag == varkeys.StepsName.Template()
 }
 
 func (t *impl) ReplaceStrict(ctx context.Context, replaceMap map[string]any, strictPrefixes []string) (string, error) {

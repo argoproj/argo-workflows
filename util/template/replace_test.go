@@ -324,10 +324,14 @@ func TestReplaceStrictAnyContextNames(t *testing.T) {
 	strict := []string{"tasks", "steps"}
 	for _, tag := range []string{"tasks.name", "steps.name"} {
 		t.Run(tag, func(t *testing.T) {
-			for _, in := range []string{"pre-{{" + tag + "}}-post", "{{=" + tag + "}}", "{{= " + tag + " + 'x'}}"} {
-				r, err := ReplaceStrictAny(ctx, toJSONString(in), map[string]any{}, strict)
-				require.NoError(t, err, in)
-				assert.Equal(t, toJSONString(in), r)
+			// A dependency's output in scope makes the tasks root present, so a
+			// guarded reference would otherwise evaluate to its fallback.
+			for _, env := range []map[string]any{{}, {"tasks.a.outputs.result": "r"}} {
+				for _, in := range []string{"pre-{{" + tag + "}}-post", "{{=" + tag + "}}", "{{= " + tag + " + 'x'}}", "{{=" + tag + " ?? 'x'}}"} {
+					r, err := ReplaceStrictAny(ctx, toJSONString(in), env, strict)
+					require.NoError(t, err, in)
+					assert.Equal(t, toJSONString(in), r)
+				}
 			}
 		})
 	}
