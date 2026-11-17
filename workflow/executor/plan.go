@@ -22,6 +22,9 @@ const (
 	// LayoutAgent runs HTTP and plugin templates in the agent, which calls
 	// the endpoint or plugin itself: no files, no containers and no plan.
 	LayoutAgent
+	// LayoutResource issues resource requests in the resource agent: no
+	// files, no containers and no plan.
+	LayoutResource
 )
 
 // linksInputArtifacts reports whether main sees its input artifacts as
@@ -42,6 +45,8 @@ func (l Layout) String() string {
 		return "worker"
 	case LayoutAgent:
 		return "agent"
+	case LayoutResource:
+		return "resource"
 	}
 	return fmt.Sprintf("Layout(%d)", int(l))
 }
