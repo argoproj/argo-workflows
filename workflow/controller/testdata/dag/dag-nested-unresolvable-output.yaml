@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-nested-unresolvable-output
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: inner
+            template: inner
+          - name: after
+            depends: inner
+            template: consume
+            arguments:
+              parameters:
+                - name: v
+                  value: "{{tasks.inner.outputs.parameters.out}}"
+    - name: inner
+      outputs:
+        parameters:
+          - name: out
+            valueFrom:
+              parameter: "{{tasks.on-fail.outputs.result}}"
+      dag:
+        tasks:
+          - name: first
+            template: echo
+          - name: on-fail
+            depends: first.Failed
+            template: script
+    - name: echo
+      container:
+        image: argoproj/argosay:v2
+    - name: script
+      script:
+        image: argoproj/argosay:v2
+        command: [sh]
+        source: echo hi
+    - name: consume
+      inputs:
+        parameters:
+          - name: v
+      container:
+        image: argoproj/argosay:v2

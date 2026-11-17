@@ -1312,6 +1312,39 @@ func TestDAGOmittedOutputRefTerminalError(t *testing.T) {
 	assert.Contains(t, nodeC.Message, "absent optional")
 }
 
+// TestDAGNestedUnresolvableOutput is a regression test for
+// https://github.com/argoproj/argo-workflows/issues/12869: a nested DAG whose
+// own output parameter references a task that ends up Omitted (on-fail depends
+// on first.Failed, but first Succeeds) cannot resolve its outputs. The nested
+// DAG must end Error with its outbound nodes set, so the parent DAG and the
+// workflow complete instead of hanging Running.
+func TestDAGNestedUnresolvableOutput(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag/dag-nested-unresolvable-output.yaml")
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, v1.PodSucceeded)
+	for i := 0; i < 5 && !woc.wf.Status.Fulfilled(); i++ {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+
+	onFail := woc.wf.Status.Nodes.FindByDisplayName("on-fail")
+	require.NotNil(t, onFail)
+	assert.Equal(t, wfv1.NodeOmitted, onFail.Phase)
+
+	inner := woc.wf.Status.Nodes.FindByDisplayName("inner")
+	require.NotNil(t, inner)
+	assert.Equal(t, wfv1.NodeError, inner.Phase)
+	assert.Contains(t, inner.Message, "tasks.on-fail.outputs.result")
+	assert.NotEmpty(t, inner.OutboundNodes, "the errored nested DAG must still link its dependants")
+
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase, "the workflow must complete instead of hanging Running")
+}
+
 // TestDAGWhenExprSkipEval verifies that expression templates in a DAG task's arguments are not
 // evaluated when the task's "when" clause evaluates to false.
 // Scenario: workflow parameter "data" is empty. Task B has when: "{{= workflow.parameters.data != " }}"
