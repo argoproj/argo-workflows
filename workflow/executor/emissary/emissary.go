@@ -1,6 +1,7 @@
 package emissary
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -78,7 +79,9 @@ func (e emissary) WriteTemplate(t wfv1.Template) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(e.varRunArgo+"/template", data, 0o444) // chmod -r--r--r--
+	// Written atomically so an init container re-run in a recreated pod sandbox
+	// can replace the read-only template it wrote before.
+	return osspecific.WriteFileAtomic(e.varRunArgo, "template", bytes.NewReader(data), 0o444) // r--r--r--
 }
 
 func (e emissary) GetFileContents(_ string, sourcePath string) (string, error) {
