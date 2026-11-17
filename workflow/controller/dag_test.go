@@ -4664,3 +4664,75 @@ func TestDaemonRetryAfterConsumer(t *testing.T) {
 		})
 	}
 }
+
+// TestArgumentsReferenceCurrentNodeName covers #17415: {{tasks.name}} and {{steps.name}} in
+// arguments must resolve to the current task or step name rather than leaving the workflow
+// requeuing forever. The steps template runs under a DAG task: as the entrypoint, the entry
+// node's own empty steps.name would be substituted into its body first.
+func TestArgumentsReferenceCurrentNodeName(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		main string
+	}{
+		{"DAGTasksName", `
+  - name: main
+    dag:
+      tasks:
+      - name: start
+        template: print
+        arguments:
+          parameters:
+          - name: simple
+            value: 'simple {{tasks.name}}'
+          - name: expr
+            value: '{{= "expr " + tasks.name}}'`},
+		{"StepsStepsName", `
+  - name: main
+    dag:
+      tasks:
+      - name: outer
+        template: inner
+  - name: inner
+    steps:
+    - - name: start
+        template: print
+        arguments:
+          parameters:
+          - name: simple
+            value: 'simple {{steps.name}}'
+          - name: expr
+            value: '{{= "expr " + steps.name}}'`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx)
+			defer cancel()
+			wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: current-node-name
+spec:
+  entrypoint: main
+  templates:` + tc.main + `
+  - name: print
+    inputs:
+      parameters:
+      - name: simple
+      - name: expr
+    container:
+      image: alpine
+      args: ['{{inputs.parameters.simple}}', '{{inputs.parameters.expr}}']
+`)
+			wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(ctx, wf, metav1.CreateOptions{})
+			require.NoError(t, err)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			assert.Equal(t, []string{"simple start", "expr start"}, pods.Items[0].Spec.Containers[1].Args)
+		})
+	}
+}

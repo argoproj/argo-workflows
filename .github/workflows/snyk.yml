@@ -20,7 +20,7 @@ jobs:
   golang:
     name: Scan Go deps
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
@@ -40,7 +40,7 @@ jobs:
   node:
     name: Scan Node deps
     if: github.repository == 'argoproj/argo-workflows'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:

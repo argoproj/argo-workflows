@@ -35,6 +35,7 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v4/util"
 	"github.com/argoproj/argo-workflows/v4/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
@@ -108,6 +109,7 @@ type Process struct {
 	retryBackoff                 wait.Backoff
 	environ                      []string
 	mainDriver                   maindriver.MainDriver
+	executorPlugins              []executorplugins.TemplateExecutor
 	resourceStateCheckInterval   time.Duration
 	// taskResultRetryTimeout limits the retries of the final task result
 	// writes and interimResultRetryTimeout those of the writes before
@@ -207,6 +209,9 @@ type ProcessConfig struct {
 	// MainDriver runs main in-process for the worker layout. Nil in a pod,
 	// where main runs in its own container.
 	MainDriver maindriver.MainDriver
+	// ExecutorPlugins are the agent's executor plugins, offered each plugin
+	// template in turn. Nil outside the agent.
+	ExecutorPlugins []executorplugins.TemplateExecutor
 }
 
 // TaskConfig carries the per-task values a WorkflowExecutor is constructed
@@ -311,6 +316,7 @@ func NewProcess(
 		retryBackoff:                 cfg.RetryBackoff,
 		environ:                      cfg.Environ,
 		mainDriver:                   cfg.MainDriver,
+		executorPlugins:              cfg.ExecutorPlugins,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
 		taskResultRetryTimeout:       cmp.Or(cfg.TaskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout),
 		interimResultRetryTimeout:    defaultInterimResultRetryTimeout,
@@ -1102,11 +1108,25 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	return nil
 }
 
-// FinalizeOutput marks the task's outputs as completely reported.
+// FinalizeOutput writes the task's final result and marks its outputs as
+// completely reported, in one write.
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
 	if err := we.sink.Finalize(ctx); err != nil {
 		we.AddError(ctx, err)
 	}
+}
+
+// FinalizeOutputFor is FinalizeOutput for a command that runs outside the
+// harness and whose own error is err. It returns err or, if err is nil, the
+// first recorded error, so a failed final write fails the command: otherwise
+// the pod succeeds without its outputs, or with its result never marked
+// complete.
+func (we *WorkflowExecutor) FinalizeOutputFor(ctx context.Context, err error) error {
+	we.FinalizeOutput(ctx)
+	if err != nil {
+		return err
+	}
+	return we.HasError()
 }
 
 // InitializeOutput records the task's placeholder result.
@@ -1116,26 +1136,28 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 	}
 }
 
-// ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
-func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact) error {
+// ReportOutputs reports the captured outputs. A final report is written by
+// FinalizeOutput, in the same write that marks the outputs complete; the
+// caller passes final=false only when another container finalizes the task
+// result, and then the outputs are written straight away.
+func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact, final bool) error {
 	outputs := we.capturedOutputs().DeepCopy()
 	outputs.Artifacts = artifacts
-	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
+	result := wfv1.NodeResult{Outputs: outputs}
+	if !final {
+		return we.sink.Send(ctx, result)
+	}
+	return we.sink.Report(ctx, result)
 }
 
-// ReportOutputsLogs updates the WorkflowTaskResult log fields
+// ReportOutputsLogs reports the log artifacts, for FinalizeOutput to write.
 func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
 	var outputs wfv1.Outputs
 	artifacts := wfv1.Artifacts{}
 	logArtifacts := we.SaveLogs(ctx)
 	artifacts = append(artifacts, logArtifacts...)
 	outputs.Artifacts = artifacts
-	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
-}
-
-// reportResult writes one of the task's final results.
-func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
-	return we.sink.Report(ctx, result)
+	return we.sink.Report(ctx, wfv1.NodeResult{Outputs: &outputs})
 }
 
 // AddError adds an error to the list of encountered errors during execution

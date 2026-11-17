@@ -15,6 +15,7 @@ linters:
     - forbidigo
     - gocheckcompilerdirectives
     - gocritic
+    - gohawk
     - gosec
     - govet
     - iface
@@ -43,6 +44,10 @@ linters:
     - wastedassign
     - whitespace
   settings:
+    custom:
+      gohawk:
+        type: module
+        description: Correctness-focused ownership, lifecycle, and concurrency checks.
     forbidigo:
       # Patterns are grouped by their msg prefix ("executor-env:", "woc:", ...)
       # so that exclusion rules below can scope each group to a set of paths via
