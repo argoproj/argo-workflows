@@ -111,9 +111,6 @@ type Process struct {
 	mainDriver                   maindriver.MainDriver
 	executorPlugins              []executorplugins.TemplateExecutor
 	resourceStateCheckInterval   time.Duration
-	// resourceWatch is the resource agent's informers. Nil outside the
-	// resource agent.
-	resourceWatch *resourceWatch
 	// taskResultRetryTimeout limits the retries of the final task result
 	// writes and interimResultRetryTimeout those of the writes before
 	// them; taskResultBackoff spaces out the retries of both. NewProcess

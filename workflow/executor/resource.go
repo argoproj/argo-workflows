@@ -18,7 +18,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -33,6 +32,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func (we *WorkflowExecutor) runResourceContainer(ctx, bgCtx context.Context) error {
@@ -68,6 +68,19 @@ func (we *WorkflowExecutor) checkResourceDelete() error {
 		return errors.New("successCondition, failureCondition and outputs are not supported for delete action")
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) resourceManifestPath() string {
+	from := we.Template.Resource.ManifestFrom
+	if from == nil {
+		return common.ExecutorResourceManifestPath
+	}
+	for _, art := range we.Template.Inputs.Artifacts {
+		if art.Name == from.Artifact.Name {
+			return art.Path
+		}
+	}
+	return common.ExecutorResourceManifestPath
 }
 
 // ExecResource will run kubectl action against a manifest
@@ -132,11 +145,6 @@ func (we *WorkflowExecutor) execResource(ctx context.Context, action string, man
 func inferPlural(kind string) string {
 	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
 	return lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{Name: kind}})
-}
-
-func inferGVR(obj unstructured.Unstructured) schema.GroupVersionResource {
-	gvk := obj.GroupVersionKind()
-	return gvk.GroupVersion().WithResource(inferPlural(gvk.Kind))
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
