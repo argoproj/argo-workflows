@@ -19,9 +19,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/dispatch"
 )
 
-// poolWorkers is how many pools the pool controller reconciles at once.
-const poolWorkers = 2
-
 // Whether hot workers were enabled when the controller started, which is
 // what it runs with until it restarts.
 const (
@@ -97,13 +94,14 @@ func (wfc *WorkflowController) setUpPoolController(ctx context.Context) {
 }
 
 // runPoolController starts the Deployment informer and the pool controller,
-// if setUpPoolController set them up.
-func (wfc *WorkflowController) runPoolController(ctx context.Context) {
+// if setUpPoolController set them up, reconciling up to workers pools at once
+// (--pool-workers).
+func (wfc *WorkflowController) runPoolController(ctx context.Context, workers int) {
 	if wfc.poolController == nil {
 		return
 	}
 	go wfc.poolDeploymentInformer.Run(ctx.Done())
-	go wfc.poolController.Run(ctx, poolWorkers)
+	go wfc.poolController.Run(ctx, workers)
 }
 
 // poolDispatched hands the pool controller, if it runs, the spec.pool of a

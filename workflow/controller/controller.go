@@ -386,7 +386,7 @@ func (wfc *WorkflowController) ShutdownMetrics(ctx context.Context) error {
 }
 
 // Run starts a Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers, poolWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
 	ctx, span := wfc.tracing.StartStartupController(ctx)
@@ -503,7 +503,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	span.End()
 	ctx = wfc.tracing.BreakTrace(ctx)
 
-	wfc.runPoolController(ctx)
+	wfc.runPoolController(ctx, poolWorkers)
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
 
