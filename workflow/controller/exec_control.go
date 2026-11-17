@@ -13,15 +13,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
-// shutdownMessage is the message of a node whose running task the workflow's
-// shutdown strategy stopped.
+// shutdownMessage is the message of a node whose task the workflow's shutdown
+// strategy stopped, or kept from starting.
 func shutdownMessage(strategy wfv1.ShutdownStrategy) string {
-	return fmt.Sprintf("workflow shutdown with strategy:  %s", strategy)
-}
-
-// notStartedOnShutdownMessage is the message of a node whose task the
-// workflow's shutdown strategy kept from starting.
-func notStartedOnShutdownMessage(strategy wfv1.ShutdownStrategy) string {
 	return fmt.Sprintf("workflow shutdown with strategy: %s", strategy)
 }
 

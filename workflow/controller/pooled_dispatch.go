@@ -39,7 +39,7 @@ func (woc *wfOperationCtx) executePooled(ctx context.Context, node *wfv1.NodeSta
 	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID)
 
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitTemplate) {
-		woc.markNodeFailedOnShutdown(ctx, node.Name, notStartedOnShutdownMessage(woc.GetShutdownStrategy()))
+		woc.markNodeFailedOnShutdown(ctx, node.Name, shutdownMessage(woc.GetShutdownStrategy()))
 		return node, nil
 	}
 	// Read on every dispatch, so turning the flag on in the configmap starts
