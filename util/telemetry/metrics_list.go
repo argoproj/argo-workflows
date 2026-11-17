@@ -430,7 +430,7 @@ var InstrumentResourceRateLimiterLatency = BuiltinInstrument{
 
 var InstrumentRetryStrategyTerminationsTotal = BuiltinInstrument{
 	name:        "retry_strategy_terminations_total",
-	description: "Total number of otherwise eligible retries suppressed by a retryStrategy duration budget",
+	description: "Total number of otherwise eligible retries suppressed by a `retryStrategy` duration budget",
 	unit:        "{retry}",
 	instType:    Int64Counter,
 	attributes: []BuiltinAttribute{
