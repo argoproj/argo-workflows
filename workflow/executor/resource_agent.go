@@ -96,6 +96,10 @@ func (s resourceSink) Report(ctx context.Context, r wfv1.NodeResult) error {
 	}
 }
 
+func (s resourceSink) Send(ctx context.Context, r wfv1.NodeResult) error {
+	return s.Report(ctx, r)
+}
+
 func (resourceSink) Progress(context.Context, wfv1.Progress) error { return nil }
 
 func (s resourceSink) Fail(ctx context.Context, err error) {
