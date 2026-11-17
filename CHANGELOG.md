@@ -1,5 +1,28 @@
 # Changelog
 
+## v4.1.6 (2026-10-22)
+
+Full Changelog: [v4.1.5...v4.1.6](https://github.com/argoproj/argo-workflows/compare/v4.1.5...v4.1.6)
+
+### Selected Changes
+
+* [43021573c](https://github.com/argoproj/argo-workflows/commit/43021573c5a35cbafae009043c132dfcef43a112) chore(deps): update go to 1.26.10 (release-4.1) (#17261)
+* [8ae732d30](https://github.com/argoproj/argo-workflows/commit/8ae732d301662376780808b829fbc460ec4af4e1) fix(executor): inject TRACEPARENT into the child env, not argoexec's own (cherry-pick #17016 for 4.1) (#17207)
+* [c4d6a0eed](https://github.com/argoproj/argo-workflows/commit/c4d6a0eed872ddab08ea45d0237b0b6d4130d482) fix: use correct container name for archived logs (cherry-pick #16869 for 4.1) (#17205)
+* [ccffad633](https://github.com/argoproj/argo-workflows/commit/ccffad633006c2b1db33edf617ced6ff9cd05bdc) fix(ui): limit workflows listed on the event flow page (cherry-pick #17109 for 4.1) (#17194)
+* [822217c2d](https://github.com/argoproj/argo-workflows/commit/822217c2d8e3036580f80095d7e1028c9da2c2f4) fix(validate): skip validation of templateRef with a dynamic name. Fixes #16008 (cherry-pick #17063 for 4.1) (#17187)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 5
+* Claude Opus 5.5 (1M context)
+* gaurang_mishra
+* Gaurang Mishra
+* Jade
+
+</details>
+
 ## v4.1.5 (2026-10-09)
 
 Full Changelog: [v4.1.4...v4.1.5](https://github.com/argoproj/argo-workflows/compare/v4.1.4...v4.1.5)
@@ -217,7 +240,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.13...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.13...v4.1.0-rc1)
+Full Changelog: [v4.0.15...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.15...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -837,6 +860,42 @@ Full Changelog: [v4.0.13...v4.1.0-rc1](https://github.com/argoproj/argo-workflow
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.15 (2026-10-22)
+
+Full Changelog: [v4.0.14...v4.0.15](https://github.com/argoproj/argo-workflows/compare/v4.0.14...v4.0.15)
+
+### Selected Changes
+
+* [ed8eaf403](https://github.com/argoproj/argo-workflows/commit/ed8eaf4033e81773165e37a68a076c1fc203c102) fix(build): install Go 1.26 in the Windows builder, not an exact patch (release-4.0) (#17271)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 5.5 (1M context)
+
+</details>
+
+## v4.0.14 (2026-10-22)
+
+Full Changelog: [v4.0.13...v4.0.14](https://github.com/argoproj/argo-workflows/compare/v4.0.13...v4.0.14)
+
+### Selected Changes
+
+* [48750c9e1](https://github.com/argoproj/argo-workflows/commit/48750c9e126858c2fad090e63fb0b5edfaa37525) chore(deps): update go to 1.26.10 and x/net to v0.60.0 (release-4.0) (#17262)
+* [f0b3a567d](https://github.com/argoproj/argo-workflows/commit/f0b3a567dceb15cab78875868278eea335735c50) fix: use correct container name for archived logs (cherry-pick #16869 for 4.0) (#17206)
+* [f7d7ff55f](https://github.com/argoproj/argo-workflows/commit/f7d7ff55fbe0db74b3059d727eb71f1b0ac2831b) fix(ui): limit workflows listed on the event flow page (cherry-pick #17109 for 4.0) (#17195)
+* [678df90c2](https://github.com/argoproj/argo-workflows/commit/678df90c2f78b404c16feca6083b84e9fdefdd2f) fix(validate): skip validation of templateRef with a dynamic name. Fixes #16008 (cherry-pick #17063 for 4.0) (#17188)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 5.5 (1M context)
+* gaurang_mishra
+* Gaurang Mishra
+* Jade
 
 </details>
 

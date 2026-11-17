@@ -67,19 +67,17 @@ spec:
         volumeMounts:
           - mountPath: /go/pkg/mod
             name: work
-            subPath: mod
+            subPath: GOMODCACHE
           - mountPath: /root/.cache/go-build
             name: work
-            subPath: cache
-        image: golang:1.18
+            subPath: GOCACHE
+        image: golang:1.27.3
         workingDir: /go/src/github.com/golang/example
         command: [ sh, -euxc ]
         args:
           - |
-            mkdir -p $(go env GOMODCACHE)
-            [ -e /mnt/GOMODCACHE ] && cp -Rf /mnt/GOMODCACHE $(go env GOMODCACHE)
-            mkdir -p $(go env GOCACHE)
-            [ -e /mnt/GOCACHE ] &&  cp -Rf /mnt/GOCACHE $(go env GOCACHE)
+            if [ -d /mnt/GOMODCACHE ]; then cp -R /mnt/GOMODCACHE/. "$(go env GOMODCACHE)"; fi
+            if [ -d /mnt/GOCACHE ]; then cp -R /mnt/GOCACHE/. "$(go env GOCACHE)"; fi
 
     - name: cache-store
       container:
@@ -90,17 +88,23 @@ spec:
           - mountPath: /root/.cache/go-build
             name: work
             subPath: GOCACHE
-        image: golang:1.18
-        workingDir: /go/src/github.com/golang/example
+        image: golang:1.27.3
+        command: [ sh, -euxc ]
+        args:
+          - |
+            # Artifacts on a volume mount aren't saved, so copy the caches off the volume.
+            mkdir -p /tmp/cache
+            cp -R /go/pkg/mod /tmp/cache/GOMODCACHE
+            cp -R /root/.cache/go-build /tmp/cache/GOCACHE
       outputs:
         artifacts:
           - name: GOMODCACHE
-            path: /go/pkg/mod
+            path: /tmp/cache/GOMODCACHE
             optional: true
             s3:
               key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOMODCACHE"
           - name: GOCACHE
-            path: /root/.cache/go-build
+            path: /tmp/cache/GOCACHE
             optional: true
             s3:
               key: "github.com/golang/examples/{{workflow.parameters.branch}}/GOCACHE"
@@ -117,7 +121,7 @@ spec:
           - mountPath: /root/.cache/go-build
             name: work
             subPath: GOCACHE
-        image: golang:1.18
+        image: golang:1.27.3
         workingDir: /go/src/github.com/golang/example
         command: [ sh, -euxc ]
         args:
@@ -126,7 +130,7 @@ spec:
 
     - name: deps
       container:
-        image: golang:1.18
+        image: golang:1.27.3
         volumeMounts:
           - mountPath: /go/src/github.com/golang/example
             name: work
@@ -145,7 +149,7 @@ spec:
 
     - name: build
       container:
-        image: golang:1.18
+        image: golang:1.27.3
         volumeMounts:
           - mountPath: /go/src/github.com/golang/example
             name: work
@@ -164,7 +168,7 @@ spec:
 
     - name: test
       container:
-        image: golang:1.18
+        image: golang:1.27.3
         volumeMounts:
           - mountPath: /go/src/github.com/golang/example
             name: work
@@ -182,13 +186,14 @@ spec:
             go install github.com/jstemmer/go-junit-report@latest
             go install github.com/alexec/junit2html@v0.0.2
 
-            trap 'cat test.out | go-junit-report | junit2html > test-report.html' EXIT
+            # Write the report off the work volume: artifacts on a volume mount aren't saved.
+            trap 'cat test.out; go-junit-report < test.out | junit2html > /tmp/test-report.html' EXIT
 
-            go test -v ./... 2>&1 > test.out
+            go test -v ./... > test.out 2>&1
       outputs:
         artifacts:
           - name: test-report
-            path: /go/src/github.com/golang/example/test-report.html
+            path: /tmp/test-report.html
             archive:
               none: { }
             s3:

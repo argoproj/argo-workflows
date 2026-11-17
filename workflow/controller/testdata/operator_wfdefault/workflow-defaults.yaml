@@ -1,0 +1,31 @@
+  metadata: 
+    annotations: 
+      testAnnotation: test
+    labels: 
+      testLabel: test
+  spec: 
+    entrypoint: whalesay
+    activeDeadlineSeconds: 7200
+    arguments:
+      parameters: 
+        - 
+          name: message
+          value: "hello world"
+    onExit: whalesay-exit
+    serviceAccountName: default
+    templates: 
+      - 
+        container: 
+          args: 
+            - "hello from the default exit handler"
+          command: 
+            - cowsay
+          image: docker/whalesay
+        name: whalesay-exit
+    ttlStrategy: 
+      secondsAfterCompletion: 60
+    volumes: 
+      - 
+        name: test
+        secret: 
+          secretName: test

@@ -1409,13 +1409,13 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
 |`failedJobsHistoryLimit`|`integer`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
-|`schedules`|`Array< string >`|v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format|
+|`schedules`|`Array< string >`|Schedules is a list of schedules to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`integer`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
-|`stopStrategy`|[`StopStrategy`](#stopstrategy)|v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition|
+|`stopStrategy`|[`StopStrategy`](#stopstrategy)|StopStrategy defines if the CronWorkflow should stop scheduling based on a condition|
 |`successfulJobsHistoryLimit`|`integer`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
-|`when`|`string`|v3.6 and after: When is an expression that determines if a run should be scheduled.|
+|`when`|`string`|When is an expression that determines if a run should be scheduled.|
 |`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be run|
 |`workflowSpec`|[`WorkflowSpec`](#workflowspec)|WorkflowSpec is the spec of the workflow to be run|
 
@@ -1428,10 +1428,10 @@ CronWorkflowStatus is the status of a CronWorkflow
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
-|`failed`|`integer`|v3.6 and after: Failed counts how many times child workflows failed|
+|`failed`|`integer`|Failed counts how many times child workflows failed|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
-|`phase`|`string`|v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true|
-|`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times child workflows succeeded|
+|`phase`|`string`|Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true|
+|`succeeded`|`integer`|Succeeded counts how many times child workflows succeeded|
 
 ## WorkflowEventBindingSpec
 
@@ -1898,8 +1898,8 @@ Synchronization holds synchronization lock configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`mutexes`|`Array<`[`Mutex`](#mutex)`>`|v3.6 and after: Mutexes holds the list of Mutex lock details|
-|`semaphores`|`Array<`[`SemaphoreRef`](#semaphoreref)`>`|v3.6 and after: Semaphores holds the list of Semaphores configuration|
+|`mutexes`|`Array<`[`Mutex`](#mutex)`>`|Mutexes holds the list of Mutex lock details|
+|`semaphores`|`Array<`[`SemaphoreRef`](#semaphoreref)`>`|Semaphores holds the list of Semaphores configuration|
 
 ## Template
 
@@ -2446,7 +2446,7 @@ ArtifactRepositoryRefStatus is the resolved artifact repository reference with n
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`artifactRepository`|[`ArtifactRepository`](#artifactrepository)|The repository the workflow will use. This maybe empty before v3.1.|
+|`artifactRepository`|[`ArtifactRepository`](#artifactrepository)|The repository the workflow will use.|
 |`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
 |`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
 |`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
@@ -2637,12 +2637,12 @@ SynchronizationStatus stores the status of semaphore and mutex.
 
 ## StopStrategy
 
-StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
+StopStrategy defines if the CronWorkflow should stop scheduling based on an expression.
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`expression`|`string`|v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.|
+|`expression`|`string`|Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.|
 
 ## Event
 
@@ -4089,14 +4089,6 @@ NodeSynchronizationStatus stores the status of a node
 ## MutexStatus
 
 MutexStatus contains which objects hold mutex locks, and which objects this workflow is waiting on to release locks.
-
-<details markdown>
-<summary>Examples with this field (click to open)</summary>
-
-- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
-
-- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-wf-level.yaml)
-</details>
 
 ### Fields
 | Field Name | Field Type | Description   |

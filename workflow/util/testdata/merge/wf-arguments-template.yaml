@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-workflow-template
+spec:
+  entrypoint: main
+  ttlStrategy:
+    secondsAfterCompletion: 600
+    secondsAfterSuccess: 600
+    secondsAfterFailure: 600
+  arguments:
+    parameters:
+      - name: PARAM1
+        value: WorkflowTemplate value 1 ignored
+      - name: PARAM2
+      - name: PARAM3
+        value: WorkflowTemplate value 3
+      - name: PARAM4
+      - name: PARAM5
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: PARAM1
+            value: "{{workflow.parameters.PARAM1}}"
+          - name: PARAM2
+            value: "{{workflow.parameters.PARAM2}}"
+          - name: PARAM3
+            value: "{{workflow.parameters.PARAM3}}"
+          - name: PARAM4
+            value: "{{workflow.parameters.PARAM4}}"
+          - name: PARAM5
+            value: "{{workflow.parameters.PARAM5}}"
+      script:
+        image: busybox:latest
+        command:
+          - sh
+        source: |
+          echo -e "
+            PARAM1={{inputs.parameters.PARAM1}}
+            PARAM2={{inputs.parameters.PARAM2}}
+            PARAM3={{inputs.parameters.PARAM3}}
+            PARAM4={{inputs.parameters.PARAM4}}
+            PARAM5={{inputs.parameters.PARAM5}}
+          "

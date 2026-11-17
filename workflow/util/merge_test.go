@@ -13,38 +13,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-var origWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-hello-world-
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: original
-  entrypoint: start
-  onExit: end
-  serviceAccountName: default
-  workflowTemplateRef:
-    name: workflow-template-submittable
-`
-
-var patchWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-hello-world-
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: patch
-  serviceAccountName: argo1
-  podGC:
-    strategy: OnPodSuccess
-`
-
 func TestParseUserOverrideAllowlist(t *testing.T) {
 	for _, env := range []string{"", "  "} {
 		got, err := parseUserOverrideAllowlist(env)
@@ -66,8 +34,8 @@ func TestParseUserOverrideAllowlist(t *testing.T) {
 }
 
 func TestMergeWorkflows(t *testing.T) {
-	patchWf := wfv1.MustUnmarshalWorkflow(origWF)
-	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
+	patchWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/orig-wf.yaml")
+	targetWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch.yaml")
 
 	err := MergeTo(patchWf, targetWf)
 	require.NoError(t, err)
@@ -101,296 +69,13 @@ func TestMergeMetaDataTo(t *testing.T) {
 	assert.NotContains(meta2.Labels, "test")
 }
 
-var wfDefault = `
-metadata:
-  annotations:
-    testAnnotation: default
-  labels:
-    testLabel: default
-spec:
-  entrypoint: whalesay
-  activeDeadlineSeconds: 7200
-  arguments:
-    artifacts:
-      -
-        name: message
-        path: /tmp/message
-    parameters:
-      -
-        name: message
-        value: "hello world"
-  onExit: whalesay-exit
-  serviceAccountName: default
-  templates:
-    -
-      container:
-        args:
-          - "hello from the default exit handler"
-        command:
-          - cowsay
-        image: docker/whalesay
-      name: whalesay-exit
-  ttlStrategy:
-    secondsAfterCompletion: 60
-  volumes:
-    -
-      name: test
-      secret:
-        secretName: test
-`
-
-var wft = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-submittable
-  namespace: default
-spec:
-  workflowMetaData:
-    annotations:
-      testAnnotation: wft
-    labels:
-      testLabel: wft
-  entrypoint: whalesay-template
-  arguments:
-    parameters:
-      - name: message
-        value: hello world
-  templates:
-    - name: whalesay-template
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-`
-
-var wf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-    -
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      name: whalesay
-`
-
-var resultSpec = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  activeDeadlineSeconds: 7200
-  workflowMetadata:
-    annotations:
-      testAnnotation: wft
-    labels:
-      testLabel: wft
-  arguments:
-    artifacts:
-      -
-        name: message
-        path: /tmp/message
-    parameters:
-      -
-        name: message
-        value: "hello world"
-  entrypoint: whalesay
-  onExit: whalesay-exit
-  serviceAccountName: default
-  templates:
-    -
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      name: whalesay
-    -
-      container:
-        args:
-          - "{{inputs.parameters.message}}"
-        command:
-          - cowsay
-        image: docker/whalesay
-      inputs:
-        parameters:
-          -
-            name: message
-      name: whalesay-template
-    -
-      container:
-        args:
-          - "hello from the default exit handler"
-        command:
-          - cowsay
-        image: docker/whalesay
-      name: whalesay-exit
-  ttlStrategy:
-    secondsAfterCompletion: 60
-  volumes:
-    -
-      name: test
-      secret:
-        secretName: test
-
-`
-
-var wfArguments = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: test-workflow
-spec:
-  workflowTemplateRef:
-    name: test-workflow-template
-  arguments:
-    parameters:
-      - name: PARAM1
-        valueFrom:
-          configMapKeyRef:
-            name: test-config-map
-            key: PARAM1
-      - name: PARAM2
-        valueFrom:
-          configMapKeyRef:
-            name: test-config-map
-            key: PARAM2
-      - name: PARAM4
-        valueFrom:
-          configMapKeyRef:
-            name: test-config-map
-            key: PARAM4
-      - name: PARAM5
-        value: "Workflow value 5"`
-
-var wfArgumentsTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-workflow-template
-spec:
-  entrypoint: main
-  ttlStrategy:
-    secondsAfterCompletion: 600
-    secondsAfterSuccess: 600
-    secondsAfterFailure: 600
-  arguments:
-    parameters:
-      - name: PARAM1
-        value: WorkflowTemplate value 1 ignored
-      - name: PARAM2
-      - name: PARAM3
-        value: WorkflowTemplate value 3
-      - name: PARAM4
-      - name: PARAM5
-  templates:
-    - name: main
-      inputs:
-        parameters:
-          - name: PARAM1
-            value: "{{workflow.parameters.PARAM1}}"
-          - name: PARAM2
-            value: "{{workflow.parameters.PARAM2}}"
-          - name: PARAM3
-            value: "{{workflow.parameters.PARAM3}}"
-          - name: PARAM4
-            value: "{{workflow.parameters.PARAM4}}"
-          - name: PARAM5
-            value: "{{workflow.parameters.PARAM5}}"
-      script:
-        image: busybox:latest
-        command:
-          - sh
-        source: |
-          echo -e "
-            PARAM1={{inputs.parameters.PARAM1}}
-            PARAM2={{inputs.parameters.PARAM2}}
-            PARAM3={{inputs.parameters.PARAM3}}
-            PARAM4={{inputs.parameters.PARAM4}}
-            PARAM5={{inputs.parameters.PARAM5}}
-          "
-`
-
-var wfArgumentsResult = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-workflow
-spec:
-  entrypoint: main
-  ttlStrategy:
-    secondsAfterCompletion: 600
-    secondsAfterSuccess: 600
-    secondsAfterFailure: 600
-  arguments:
-    parameters:
-      - name: PARAM1
-        valueFrom:
-          configMapKeyRef:
-            name: test-config-map
-            key: PARAM1
-      - name: PARAM2
-        valueFrom:
-          configMapKeyRef:
-            name: test-config-map
-            key: PARAM2
-      - name: PARAM3
-        value: WorkflowTemplate value 3
-      - name: PARAM4
-        valueFrom:
-          configMapKeyRef:
-            name: test-config-map
-            key: PARAM4
-      - name: PARAM5
-        value: "Workflow value 5"
-  templates:
-    - name: main
-      inputs:
-        parameters:
-          - name: PARAM1
-            value: "{{workflow.parameters.PARAM1}}"
-          - name: PARAM2
-            value: "{{workflow.parameters.PARAM2}}"
-          - name: PARAM3
-            value: "{{workflow.parameters.PARAM3}}"
-          - name: PARAM4
-            value: "{{workflow.parameters.PARAM4}}"
-          - name: PARAM5
-            value: "{{workflow.parameters.PARAM5}}"
-      script:
-        image: busybox:latest
-        command:
-          - sh
-        source: |
-          echo -e "
-            PARAM1={{inputs.parameters.PARAM1}}
-            PARAM2={{inputs.parameters.PARAM2}}
-            PARAM3={{inputs.parameters.PARAM3}}
-            PARAM4={{inputs.parameters.PARAM4}}
-            PARAM5={{inputs.parameters.PARAM5}}
-          "
-`
-
 func TestJoinWfSpecs(t *testing.T) {
 	assert := assert.New(t)
-	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
-	wf1 := wfv1.MustUnmarshalWorkflow(wf)
+	wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-default.yaml")
+	wf1 := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf.yaml")
 	// wf1 := wfv1.MustUnmarshalWorkflow(wf1)
-	wft := wfv1.MustUnmarshalWorkflowTemplate(wft)
-	result := wfv1.MustUnmarshalWorkflow(resultSpec)
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/merge/wft.yaml")
+	result := wfv1.MustUnmarshalWorkflow("@testdata/merge/result-spec.yaml")
 
 	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
 	require.NoError(t, err)
@@ -401,9 +86,9 @@ func TestJoinWfSpecs(t *testing.T) {
 
 func TestJoinWfSpecArguments(t *testing.T) {
 	assert := assert.New(t)
-	wf := wfv1.MustUnmarshalWorkflow(wfArguments)
-	wft := wfv1.MustUnmarshalWorkflowTemplate(wfArgumentsTemplate)
-	result := wfv1.MustUnmarshalWorkflow(wfArgumentsResult)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-arguments.yaml")
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/merge/wf-arguments-template.yaml")
+	result := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-arguments-result.yaml")
 
 	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
 	require.NoError(t, err)
@@ -412,8 +97,8 @@ func TestJoinWfSpecArguments(t *testing.T) {
 
 func TestJoinWfSpecArgumentsWithNil(t *testing.T) {
 	assert := assert.New(t)
-	wf := wfv1.MustUnmarshalWorkflow(wfArguments)
-	result := wfv1.MustUnmarshalWorkflow(wfArguments)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-arguments.yaml")
+	result := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-arguments.yaml")
 	targetWf, err := JoinWorkflowSpec(&wf.Spec, nil, nil)
 	require.NoError(t, err)
 	assert.Equal(result.Spec.Arguments, targetWf.Spec.Arguments)
@@ -422,8 +107,8 @@ func TestJoinWfSpecArgumentsWithNil(t *testing.T) {
 func TestJoinWorkflowMetaData(t *testing.T) {
 	assert := assert.New(t)
 	t.Run("WfDefaultMetaData", func(t *testing.T) {
-		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
-		wf1 := wfv1.MustUnmarshalWorkflow(wf)
+		wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-default.yaml")
+		wf1 := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf.yaml")
 		JoinWorkflowMetaData(&wf1.ObjectMeta, &wfDefault.ObjectMeta)
 		assert.Contains(wf1.Labels, "testLabel")
 		assert.Equal("default", wf1.Labels["testLabel"])
@@ -431,8 +116,8 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 		assert.Equal("default", wf1.Annotations["testAnnotation"])
 	})
 	t.Run("WFTMetadata", func(t *testing.T) {
-		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
-		wf2 := wfv1.MustUnmarshalWorkflow(wf)
+		wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-default.yaml")
+		wf2 := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf.yaml")
 		JoinWorkflowMetaData(&wf2.ObjectMeta, &wfDefault.ObjectMeta)
 		assert.Contains(wf2.Labels, "testLabel")
 		assert.Equal("default", wf2.Labels["testLabel"])
@@ -440,8 +125,8 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 		assert.Equal("default", wf2.Annotations["testAnnotation"])
 	})
 	t.Run("WfMetadata", func(t *testing.T) {
-		wfDefault := wfv1.MustUnmarshalWorkflow(wfDefault)
-		wf2 := wfv1.MustUnmarshalWorkflow(wf)
+		wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-default.yaml")
+		wf2 := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf.yaml")
 		wf2.Labels = map[string]string{"testLabel": "wf"}
 		wf2.Annotations = map[string]string{"testAnnotation": "wf"}
 		JoinWorkflowMetaData(&wf2.ObjectMeta, &wfDefault.ObjectMeta)
@@ -452,49 +137,10 @@ func TestJoinWorkflowMetaData(t *testing.T) {
 	})
 }
 
-var baseNilWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-hello-world-
-spec:
-`
-
-var baseHookWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-hello-world-
-spec:
-  hooks:
-    foo:
-      template: a
-      expression: workflow.status == "Pending"
-`
-
-var patchNilHookWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-spec:
-`
-
-var patchHookWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-spec:
-  hooks:
-    foo:
-      template: c
-      expression: workflow.status == "Pending"
-    bar:
-      template: b
-      expression: workflow.status == "Pending"
-`
-
 func TestMergeHooks(t *testing.T) {
 	t.Run("NilBaseAndNilPatch", func(t *testing.T) {
-		patchHookWf := wfv1.MustUnmarshalWorkflow(patchNilHookWF)
-		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilWF)
+		patchHookWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-nil-hook.yaml")
+		targetHookWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/base-nil.yaml")
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
@@ -502,8 +148,8 @@ func TestMergeHooks(t *testing.T) {
 	})
 
 	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
-		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
-		targetHookWf := wfv1.MustUnmarshalWorkflow(baseNilWF)
+		patchHookWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-hook.yaml")
+		targetHookWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/base-nil.yaml")
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
@@ -514,8 +160,8 @@ func TestMergeHooks(t *testing.T) {
 
 	// Ensure hook bar ends up in result, but foo is unchanged
 	t.Run("NotNilBaseAndPatch", func(t *testing.T) {
-		patchHookWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
-		targetHookWf := wfv1.MustUnmarshalWorkflow(baseHookWF)
+		patchHookWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-hook.yaml")
+		targetHookWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/base-hook.yaml")
 
 		err := MergeTo(patchHookWf, targetHookWf)
 		require.NoError(t, err)
@@ -525,33 +171,10 @@ func TestMergeHooks(t *testing.T) {
 	})
 }
 
-var patchLabelsFromWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-spec:
-  workflowMetadata:
-    labelsFrom:
-      foo:
-        expression: PATCH
-      bar:
-        expression: PATCH
-`
-var baseLabelsFromWF = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-spec:
-  workflowMetadata:
-    labelsFrom:
-      foo:
-        expression: BASE
-      baz:
-        expression: BASE
-`
-
 func TestMergeLabelsFrom(t *testing.T) {
 	t.Run("NilBaseAndNotNilPatch", func(t *testing.T) {
-		patchWf := wfv1.MustUnmarshalWorkflow(patchLabelsFromWF)
-		targetWf := wfv1.MustUnmarshalWorkflow(baseNilWF)
+		patchWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-labels-from.yaml")
+		targetWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/base-nil.yaml")
 
 		err := MergeTo(patchWf, targetWf)
 		require.NoError(t, err)
@@ -561,8 +184,8 @@ func TestMergeLabelsFrom(t *testing.T) {
 	})
 
 	t.Run("NotNilBaseAndPatch", func(t *testing.T) {
-		patchWf := wfv1.MustUnmarshalWorkflow(patchLabelsFromWF)
-		targetWf := wfv1.MustUnmarshalWorkflow(baseLabelsFromWF)
+		patchWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-labels-from.yaml")
+		targetWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/base-labels-from.yaml")
 
 		err := MergeTo(patchWf, targetWf)
 		require.NoError(t, err)
@@ -864,65 +487,10 @@ func TestAllWorkflowSpecFieldsAccountedFor(t *testing.T) {
 	}
 }
 
-var wfWithArtifactOverride = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-with-artifact-override-
-spec:
-  workflowTemplateRef:
-    name: template-with-artifact
-  arguments:
-    artifacts:
-      - name: my-uploaded-file
-        s3:
-          endpoint: s3.amazonaws.com
-          bucket: my-bucket
-          key: uploads/argo/12345678-1234-1234-1234-123456789012/file.zip
-          accessKeySecret:
-            name: s3-creds
-            key: accessKey
-          secretKeySecret:
-            name: s3-creds
-            key: secretKey
-`
-
-var wftWithArtifact = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: template-with-artifact
-spec:
-  entrypoint: argosay
-  arguments:
-    artifacts:
-      - name: my-uploaded-file
-        s3:
-          endpoint: s3.amazonaws.com
-          bucket: my-bucket
-          key: input-file/placeholder
-          accessKeySecret:
-            name: s3-creds
-            key: accessKey
-          secretKeySecret:
-            name: s3-creds
-            key: secretKey
-  templates:
-    - name: argosay
-      inputs:
-        artifacts:
-          - name: my-uploaded-file
-            path: /tmp/file
-      container:
-        image: argoproj/argosay:v2
-        command: [sh, -c]
-        args: ["echo 'artifact loaded'"]
-`
-
 func TestJoinWorkflowSpecWithArtifactOverride(t *testing.T) {
 	assert := assert.New(t)
-	wf := wfv1.MustUnmarshalWorkflow(wfWithArtifactOverride)
-	wft := wfv1.MustUnmarshalWorkflowTemplate(wftWithArtifact)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/merge/wf-with-artifact-override.yaml")
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/merge/wft-with-artifact.yaml")
 
 	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
 	require.NoError(t, err)

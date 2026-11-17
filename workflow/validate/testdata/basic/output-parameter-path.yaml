@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: get-current-date-
+spec:
+  entrypoint: get-current-date
+  templates:
+  - name: get-current-date
+    outputs:
+      parameters:
+      - name: current-date
+        valueFrom:
+          path: /tmp/current-date
+    container:
+      image: busybox
+      command: [sh, -c, 'date > {{outputs.parameters.current-date.path}}']

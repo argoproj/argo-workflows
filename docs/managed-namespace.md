@@ -1,7 +1,5 @@
 # Managed Namespace
 
-> v2.5 and after
-
 You can install Argo in either namespace scoped or cluster scoped configurations.
 The main difference is whether you install Roles or ClusterRoles, respectively.
 
@@ -16,7 +14,7 @@ For example:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - quay.io/argoproj/workflow-controller:v3.6.7
+        - quay.io/argoproj/argoexec:v4.1.5
         - --namespaced
         - --managed-namespace
         - default

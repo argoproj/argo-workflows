@@ -229,6 +229,9 @@ const (
 	LabelValueTypeConfigMapParameter = "Parameter"
 	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.
 	LabelValueTypeConfigMapExecutorPlugin = "ExecutorPlugin"
+	// LabelValueTypeConfigMapWorkflowDefaults is a key for configmaps that contain
+	// namespace-level workflow defaults.
+	LabelValueTypeConfigMapWorkflowDefaults = "WorkflowDefaults"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -266,13 +269,6 @@ const (
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
-	// StatusMarkerPath is the marker file the supervisor writes atomically once
-	// pre-main setup concludes (init-less pod mode). The emissary in main waits
-	// for it before exec'ing the user command. Its contents encode the outcome:
-	// empty means success; a non-empty body is the failure reason, which the
-	// emissary logs before exiting non-zero.
-	StatusMarkerPath = VarRunArgoPath + "/status"
-
 	// ExitCodeSupervisorPreMainFailure is the exit code main's emissary uses
 	// when the supervisor's status marker reports a failure before exec'ing the user
 	// command (init-less pod mode). 65 = sysexits.h EX_DATAERR, chosen to be
@@ -294,6 +290,12 @@ const (
 	// none. It is an internal controller contract: user-supplied values are never expected to
 	// collide with it, and a collision merely makes the argument behave as if it were omitted.
 	AbsentOptionalArgumentValue = "__argo-internal.absent-optional-output__"
+
+	// TaskGroupHookStoppedMessage starts the message of a TaskGroup that a
+	// hook error in its template completed before every item had started,
+	// followed by the number of items not started. `argo retry` resets a
+	// TaskGroup with this message so that its remaining items are created.
+	TaskGroupHookStoppedMessage = "items not started because a hook errored: "
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars

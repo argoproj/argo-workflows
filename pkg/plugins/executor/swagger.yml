@@ -4677,12 +4677,12 @@ definitions:
         description: Synchronization holds synchronization lock configuration
         properties:
             mutexes:
-                description: 'v3.6 and after: Mutexes holds the list of Mutex lock details'
+                description: Mutexes holds the list of Mutex lock details
                 items:
                     $ref: '#/definitions/Mutex'
                 type: array
             semaphores:
-                description: 'v3.6 and after: Semaphores holds the list of Semaphores configuration'
+                description: Semaphores holds the list of Semaphores configuration
                 items:
                     $ref: '#/definitions/SemaphoreRef'
                 type: array

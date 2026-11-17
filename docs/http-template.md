@@ -1,7 +1,5 @@
 # HTTP Template
 
-> v3.2 and after
-
 `HTTP Template` is a type of template which can execute HTTP Requests.
 The body of the response is automatically exported into the `result` output parameter.
 
@@ -39,7 +37,7 @@ spec:
         #  response.statusCode: int, the response status code
         #  response.body: string, the response body
         #  response.headers: map[string][]string, the response headers
-        successCondition: "response.body contains \"google\"" # available since v3.3
+        successCondition: "response.body contains \"google\""
         body: "test body" # Change request body
 ```
 
@@ -50,3 +48,23 @@ The Agent and the Workflow Controller communicate through the `WorkflowTaskSet` 
 
 In order to use the Argo Agent, you will need to ensure that you have added the appropriate [workflow RBAC](workflow-rbac.md) to add an agent role with to Argo Workflows.
 An example agent role can be found in [the quick-start manifests](https://github.com/argoproj/argo-workflows/tree/main/manifests/quick-start/base/agent-role.yaml).
+
+## Argo Agent Pod Failures
+
+Each Workflow that uses the Agent runs it in one pod.
+If the Agent's container exits with an error, the kubelet restarts it, and the restarted Agent runs again every HTTP or Plugin task that has no result yet.
+If the pod itself fails, for example because the node evicts it, the controller deletes the pod and creates a replacement, which also runs every task that has no result yet.
+A request or plugin call can therefore run more than once, so make it safe to repeat.
+
+The controller replaces a failed pod no sooner than one minute after that pod was created, and records an `AgentPodFailed` Warning event on the Workflow, with the reason the pod failed, each time it does.
+There is no limit on the number of replacements: as with a crashing container, a task that never gets a result fails by the Workflow's `activeDeadlineSeconds`, or by its template `timeout` unless its plugin has reported it `Running`.
+Without either setting, the task can run until the Workflow stops for another reason.
+When the Workflow is stopping, terminating, or past its `activeDeadlineSeconds`, the controller errors the nodes of the tasks that have no result instead.
+
+## WorkflowTaskSet Size Limit
+
+The WorkflowTaskSet holds the full template of every HTTP and Plugin node that is pending or running in a Workflow, so a wide fan-out of these templates can exceed the Kubernetes object size limit (about 1.5 MiB with the default etcd configuration).
+When the controller cannot write new tasks to the WorkflowTaskSet because the WorkflowTaskSet would be too large, it marks every one of those nodes `Error` with a message naming the size limit, including any that would have fit on their own.
+Tasks already in the WorkflowTaskSet keep running.
+[`parallelism`](synchronization.md#workflow-level-parallelism) does not count HTTP or Plugin nodes, so it does not limit this fan-out.
+To stay below the limit, use a [template-level semaphore](synchronization.md#template-level-synchronization) to run fewer HTTP or Plugin nodes at once, or reduce the size of their templates.

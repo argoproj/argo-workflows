@@ -14,7 +14,7 @@ go get github.com/argoproj/argo-workflows/v4@latest
 
 - Go 1.24 or later
 - Kubernetes 1.28+ (if using Kubernetes client)
-- Argo Workflows 3.4+ installed in your cluster
+- Argo Workflows v4.0+ installed in your cluster
 
 ## Quick Start
 

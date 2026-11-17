@@ -4402,7 +4402,7 @@
       "properties": {
         "artifactRepository": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository",
-          "description": "The repository the workflow will use. This maybe empty before v3.1."
+          "description": "The repository the workflow will use."
         },
         "configMap": {
           "description": "The name of the config map. Defaults to \"artifact-repositories\".",
@@ -5088,7 +5088,7 @@
           "type": "integer"
         },
         "schedules": {
-          "description": "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
+          "description": "Schedules is a list of schedules to run the Workflow in Cron format",
           "items": {
             "type": "string"
           },
@@ -5100,7 +5100,7 @@
         },
         "stopStrategy": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.StopStrategy",
-          "description": "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition"
+          "description": "StopStrategy defines if the CronWorkflow should stop scheduling based on a condition"
         },
         "successfulJobsHistoryLimit": {
           "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
@@ -5115,7 +5115,7 @@
           "type": "string"
         },
         "when": {
-          "description": "v3.6 and after: When is an expression that determines if a run should be scheduled.",
+          "description": "When is an expression that determines if a run should be scheduled.",
           "type": "string"
         },
         "workflowMetadata": {
@@ -5151,7 +5151,7 @@
           "type": "array"
         },
         "failed": {
-          "description": "v3.6 and after: Failed counts how many times child workflows failed",
+          "description": "Failed counts how many times child workflows failed",
           "type": "integer"
         },
         "lastScheduledTime": {
@@ -5159,11 +5159,11 @@
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled"
         },
         "phase": {
-          "description": "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
+          "description": "Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
           "type": "string"
         },
         "succeeded": {
-          "description": "v3.6 and after: Succeeded counts how many times child workflows succeeded",
+          "description": "Succeeded counts how many times child workflows succeeded",
           "type": "integer"
         }
       },
@@ -7158,10 +7158,10 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.StopStrategy": {
-      "description": "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after",
+      "description": "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression.",
       "properties": {
         "expression": {
-          "description": "v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
+          "description": "Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
           "type": "string"
         }
       },
@@ -7283,14 +7283,14 @@
       "description": "Synchronization holds synchronization lock configuration",
       "properties": {
         "mutexes": {
-          "description": "v3.6 and after: Mutexes holds the list of Mutex lock details",
+          "description": "Mutexes holds the list of Mutex lock details",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
           },
           "type": "array"
         },
         "semaphores": {
-          "description": "v3.6 and after: Semaphores holds the list of Semaphores configuration",
+          "description": "Semaphores holds the list of Semaphores configuration",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
           },

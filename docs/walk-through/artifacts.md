@@ -157,7 +157,7 @@ For example, to allow the user to execute `/bin/kubectl`, we set `mode: 0755`.
 
 ## Artifact Garbage Collection
 
-As of version 3.4 you can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](../configure-artifact-repository.md) for the current supported store engine).
+You can configure your Workflow to automatically delete Artifacts that you don't need (visit [artifact repository capability](../configure-artifact-repository.md) for the current supported store engine).
 
 Artifacts can be deleted `OnWorkflowCompletion` or `OnWorkflowDeletion`.
 You can specify your Garbage Collection strategy on both the Workflow level and the Artifact level, so for example, you may have temporary artifacts that can be deleted right away but a final output that should be persisted:
@@ -392,9 +392,9 @@ kubectl patch workflow my-wf \
 
 Or for simplicity use the Argo CLI `argo delete` command with flag `--force`, which under the hood removes the finalizer before performing the deletion.
 
-### Release Versions >= 3.5
+### Forcing Finalizer Removal
 
-A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails.
+The Workflow Spec has a flag called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails.
 This covers both a GC Pod that ran and failed and a strategy that was abandoned because the controller could not start it:
 
 ```yaml

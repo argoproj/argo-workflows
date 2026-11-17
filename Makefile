@@ -74,8 +74,11 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 30m
 TEST_RETRIES          ?= 2
-# extra flags passed to `go test` for the unit `test` target (e.g. coverage flags in CI)
+# extra flags passed to `go test` for the unit `test` target
 GOTEST_FLAGS          ?=
+# when set, the unit `test` target writes a coverage profile to this path (CI uploads it to codecov)
+COVERAGE_PROFILE      ?=
+COVERAGE_DIR          := dist/coverage
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -321,7 +324,7 @@ cli: dist/argo ## Build the CLI
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
-	JOBS=max yarn --cwd ui install
+	JOBS=max sh hack/retry-download.sh yarn --cwd ui install
 	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 else
@@ -468,7 +471,7 @@ GOMOD_TOOLCHAIN := go$(shell sed -n 's/^go //p' go.mod)
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/vektra/mockery/v3@v3.8.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -647,17 +650,29 @@ dist/manifests/%: manifests/%
 manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
+# Keep this version in step with `version:` in .custom-gcl.yml.
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.13.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.13.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.15.0/install.sh | sh -s -- -b `go env GOPATH`/bin v2.15.0
+
+# golangci-lint with the module plugins in .custom-gcl.yml (gohawk) compiled in.
+# It must be built with the go.mod toolchain, as golangci-lint refuses to lint
+# code targeting a newer Go than it was built with; the toolchain is in the name
+# so a go.mod bump triggers a rebuild.
+TOOL_CUSTOM_GCL := dist/custom-gcl-$(GOMOD_TOOLCHAIN)
+ifneq ($(USE_NIX), true)
+$(TOOL_CUSTOM_GCL): $(TOOL_GOLANGCI_LINT)
+endif
+$(TOOL_CUSTOM_GCL): .custom-gcl.yml
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_GOLANGCI_LINT) custom --destination dist --name $(notdir $@)
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
 ifneq ($(USE_NIX), true)
 # golangci-lint loads packages in implicit vendor mode, so the vendor tree must
 # be fresh. Skipped under Nix, which deletes vendor/ in the recipe below.
-lint-go: $(TOOL_GOLANGCI_LINT) vendor/modules.txt
+lint-go: vendor/modules.txt
 endif
-lint-go: ui/dist/app/index.html
+lint-go: $(TOOL_CUSTOM_GCL) ui/dist/app/index.html
 ifeq ($(USE_NIX), true)
 	rm -Rf v3 vendor
 endif
@@ -668,7 +683,7 @@ ifneq ($(USE_NIX), true)
 	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || go mod vendor
 endif
 	# Lint Go files (with auto-discovered build tags)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) $(TOOL_CUSTOM_GCL) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
 
 lint-ui: ui/dist/app/index.html
 	# Lint the UI
@@ -688,7 +703,27 @@ ifneq ($(USE_NIX), true)
 else
 	go build ./...
 endif
+ifeq ($(COVERAGE_PROFILE),)
 	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 $(GOTEST_FLAGS))
+else
+	# Coverage goes to a directory, not -coverprofile: gotestsum reruns a failed
+	# test with the same arguments, and a rerun would overwrite the profile with
+	# just that test's coverage. Every run adds its counters to the directory.
+	# -coverpkg counts a package's code wherever a test runs it, not only in that
+	# package's own tests. Generated clients and the e2e suite are left out.
+	rm -rf $(COVERAGE_DIR) && mkdir -p $(COVERAGE_DIR)
+	go list ./... | grep -v -E '/pkg/client/|/test/e2e' | sort > $(COVERAGE_DIR)/packages.txt
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 -covermode=atomic -coverpkg=$$(paste -sd, $(COVERAGE_DIR)/packages.txt) $(GOTEST_FLAGS) -args -test.gocoverdir=$(CURDIR)/$(COVERAGE_DIR))
+	go tool covdata textfmt -i=$(COVERAGE_DIR) -o $(COVERAGE_PROFILE)
+	# Packages no test imports (mostly mains, e.g. cmd/argo) have no counts in
+	# the directory; report them at 0% so they still count as uncovered.
+	# With no packages, go test would test the current directory, so skip it.
+	pkgs=$$(go tool covdata pkglist -i=$(COVERAGE_DIR) | sort | comm -13 - $(COVERAGE_DIR)/packages.txt); \
+	if [ -n "$$pkgs" ]; then \
+		go test -covermode=atomic -coverprofile=$(COVERAGE_DIR)/untested.out $$pkgs > /dev/null && \
+		tail -n +2 $(COVERAGE_DIR)/untested.out >> $(COVERAGE_PROFILE); \
+	fi
+endif
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
@@ -830,7 +865,7 @@ test-%-sdk:
 # Explicit target so it is not captured by the `test-%` Go e2e pattern rule above.
 .PHONY: test-ui-e2e
 test-ui-e2e:
-	yarn --cwd ui install
+	sh hack/retry-download.sh yarn --cwd ui install
 	yarn --cwd ui e2e
 
 Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt

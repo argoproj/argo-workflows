@@ -1,7 +1,5 @@
 # Template Defaults
 
-> v3.1 and after
-
 ## Introduction
 
 `TemplateDefaults` feature enables the user to configure the default template values in workflow spec level that will apply to all the templates in the workflow. If the template has a value that also has a default value in `templateDefault`, the Template's value will take precedence. These values will be applied during the runtime. Template values and default values are merged using Kubernetes strategic merge patch. To check whether and how list values are merged, inspect the `patchStrategy` and `patchMergeKey` tags in the [workflow definition](https://github.com/argoproj/argo-workflows/blob/main/pkg/apis/workflow/v1alpha1/workflow_types.go).

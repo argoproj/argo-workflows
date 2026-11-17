@@ -1,6 +1,5 @@
 # This example demonstrates how to include and obtain logs from pods created by a
-# custom resource submitted via resource template. Note that this feature is only
-# available in v3.3 and above.
+# custom resource submitted via resource template.
 #
 # This is particularly useful since Argo Workflows does not know how
 # other CRDs (Kubeflow training CRDs, Spark application CRD, etc.) work

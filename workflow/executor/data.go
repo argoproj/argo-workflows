@@ -30,7 +30,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 		return err
 	}
 	we.capturedOutputs().Result = new(string(out))
-	err = we.ReportOutputs(ctx, nil)
+	err = we.ReportOutputs(ctx, nil, true)
 	if err != nil {
 		return err
 	}

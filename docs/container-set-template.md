@@ -1,7 +1,5 @@
 # ContainerSet Template
 
-> v3.1 and after
-
 A ContainerSet template is similar to a normal container template, but it allows you to run multiple containers within a single Pod.
 
 Since multiple containers run within a single Pod, they schedule on the same host.
@@ -123,8 +121,6 @@ This is a good example of when using a ContainerSet template would not be effici
 
 ## Inner `retryStrategy` usage
 
-> v3.3 and after
-
 Set an inner `retryStrategy` to apply to all containers of a container set, including the `duration` between each retry and the total number of `retries`.
 
 See the example below:
@@ -190,3 +186,9 @@ spec:
         - Since it will fail each time, the retry logic is short-circuited.
 
 <!-- markdownlint-enable MD046 -->
+
+## When the pod is deleted
+
+When the pod of a ContainerSet template is deleted, containers that had already finished keep their phase.
+The pod's node ends `Error`.
+`argo retry` runs the pod again.

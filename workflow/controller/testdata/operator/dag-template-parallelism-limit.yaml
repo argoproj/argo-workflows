@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-parallelism-limit
+spec:
+  entrypoint: dag-parallelism-limit
+  templates:
+  - name: dag-parallelism-limit
+    parallelism: 2
+    dag:
+      tasks:
+      - name: a
+        template: sleep
+      - name: b
+        template: sleep
+      - name: c
+        template: sleep
+      - name: d
+        template: sleep
+      - name: e
+        template: sleep
+  - name: sleep
+    container:
+      image: alpine:3.23
+      command: [sh, -c, sleep 10]

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: metadata-template
+  labels:
+    image: foo:bar
+  annotations:
+    k8s-webhook-handler.io/repo: "git@github.com:argoproj/argo.git"
+    k8s-webhook-handler.io/revision: 1e111caa1d2cc672b3b53c202b96a5f660a7e9b2
+spec:
+  entrypoint: foo
+  templates:
+    - name: foo
+      container:
+        image: "{{workflow.labels.image}}"
+        env:
+          - name: REPO
+            value: "{{workflow.annotations.k8s-webhook-handler.io/repo}}"
+          - name: REVISION
+            value: "{{workflow.annotations.k8s-webhook-handler.io/revision}}"
+        command: [sh, -c]
+        args: ["echo hello world"]

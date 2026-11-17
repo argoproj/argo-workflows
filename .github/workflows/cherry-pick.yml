@@ -21,13 +21,13 @@ jobs:
         (github.event.action == 'labeled' && startsWith(github.event.label.name, 'cherry-pick/')) ||
         (github.event.action == 'closed' && contains(toJSON(github.event.pull_request.labels.*.name), 'cherry-pick/'))
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       labels: ${{ steps.extract-labels.outputs.labels }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
         with:
           egress-policy: audit
 

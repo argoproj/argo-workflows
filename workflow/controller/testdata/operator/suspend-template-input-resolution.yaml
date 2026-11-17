@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    inputs:
+        parameters:
+            - name: param1
+              value: "{\"enum\": [\"one\", \"two\", \"three\"]}"
+            - name: param2
+              value: "value2"
+    suspend: {}
