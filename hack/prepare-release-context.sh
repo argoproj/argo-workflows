@@ -30,4 +30,4 @@ git -C "$destination/source" -c core.hooksPath=/dev/null checkout --detach FETCH
 # Docker's ordinary ignore list drops tracked files and .git, making VCS
 # stamping impossible. Override it only for this clean, committed snapshot.
 cp "$destination/source/Dockerfile" "$destination/Dockerfile"
-: > "$destination/Dockerfile.dockerignore"
+printf '!**\n' > "$destination/Dockerfile.dockerignore"

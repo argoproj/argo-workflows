@@ -553,7 +553,7 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Test release build metadata
-        run: python3 -m unittest discover -s hack -p 'build_metadata_test.py' -v
+        run: ARGO_METADATA_DOCKER_TEST=1 python3 -m unittest discover -s hack -p 'build_metadata_test.py' -v
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
       - name: Check if lint made changes not present in the PR

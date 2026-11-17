@@ -3,6 +3,7 @@
 Run: python3 -m unittest discover -s hack -p 'build_metadata_test.py' -v
 """
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -37,7 +38,7 @@ class BuildMetadataTest(unittest.TestCase):
 
     def run_cmd(self, *args, cwd=None, ok=True):
         result = subprocess.run(args, cwd=cwd or self.source, env=self.env,
-                                text=True, capture_output=True, timeout=120)
+                                text=True, capture_output=True, timeout=300)
         if ok:
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         else:
@@ -77,7 +78,7 @@ class BuildMetadataTest(unittest.TestCase):
         self.assertFalse((source / ".git/hooks/post-checkout").exists())
         self.assertNotIn("test-only-secret", (source / ".git/config").read_text())
         self.assertTrue((source / "README.md").exists())
-        self.assertEqual((source.parent / "Dockerfile.dockerignore").read_text(), "")
+        self.assertEqual((source.parent / "Dockerfile.dockerignore").read_text(), "!**\n")
         binary = self.build(source)
         self.verify(source, binary)
         self.assertIn("\tv4.1.6", self.run_cmd("go", "version", "-m", str(binary)))
@@ -124,6 +125,33 @@ class BuildMetadataTest(unittest.TestCase):
         binary = self.build(source)
         self.verify(source, binary)
         self.assertIn("\tv4.1.7", self.run_cmd("go", "version", "-m", str(binary)))
+
+    @unittest.skipUnless(os.environ.get("ARGO_METADATA_DOCKER_TEST") == "1",
+                         "set ARGO_METADATA_DOCKER_TEST=1 to exercise Docker contexts")
+    def test_docker_context_preserves_git_metadata(self):
+        builder = re.search(r"^FROM (golang:\S+) AS builder$",
+                            (SCRIPTS.parent / "Dockerfile").read_text(), re.M).group(1)
+        (self.source / "Dockerfile").write_text(
+            f"FROM {builder}\nRUN apk add --no-cache git bash\n"
+            "WORKDIR /src\nCOPY . .\n"
+            "RUN go build -buildvcs=true -o /binary .\n")
+        self.run_cmd("git", "add", "Dockerfile")
+        self.run_cmd("git", "commit", "-m", "Docker fixture")
+        self.run_cmd("git", "tag", "v4.1.6")
+        source = self.prepare()
+        tag = "argo-metadata-test:" + self.root.name.lower()
+        self.addCleanup(subprocess.run, ["docker", "image", "rm", "-f", tag],
+                        capture_output=True)
+        self.run_cmd("docker", "build", "-t", tag, str(self.source))
+        before = self.run_cmd("docker", "run", "--rm", tag,
+                              "go", "version", "-m", "/binary")
+        self.assertIn("(devel)", before)
+        self.run_cmd("docker", "build", "-t", tag, "-f",
+                     str(source.parent / "Dockerfile"), str(source))
+        after = self.run_cmd("docker", "run", "--rm", tag,
+                             "go", "version", "-m", "/binary")
+        self.assertIn("\tv4.1.6", after)
+        self.assertIn("vcs.modified=false", after)
 
     def test_dirty_source_is_rejected(self):
         (self.source / "main.go").write_text("package main\nfunc main() { println(1) }\n")
