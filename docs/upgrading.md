@@ -235,8 +235,8 @@ The `container`, `script`, `http`, `plugin` and `resource` defaults are dropped,
 
 Two of them are applied with a caveat, because the agent pod is not an ordinary workload pod:
 
-- `securityContext` is merged over the agent pod's own hardened default rather than replacing it. A default that sets only `fsGroup` therefore no longer takes `runAsNonRoot`, `runAsUser` or the `RuntimeDefault` seccomp profile away from the agent pod's executor plugin sidecars. Any field you set explicitly still wins, and `podSpecPatch` still overrides everything.
-- `metadata` labels and annotations whose values still contain an unresolved `{{...}}` are dropped. One agent pod serves every `http` and `plugin` node, so there is no node to resolve `{{pod.name}}` or `{{inputs.parameters.x}}` against. Workflow-scoped placeholders such as `{{workflow.name}}` are resolved before this point and are unaffected.
+* `securityContext` is merged over the agent pod's own hardened default rather than replacing it. A default that sets only `fsGroup` therefore no longer takes `runAsNonRoot`, `runAsUser` or the `RuntimeDefault` seccomp profile away from the agent pod's executor plugin sidecars. Any field you set explicitly still wins, and `podSpecPatch` still overrides everything.
+* `metadata` labels and annotations whose values still contain an unresolved `{{...}}` are dropped. One agent pod serves every `http` and `plugin` node, so there is no node to resolve `{{pod.name}}` or `{{inputs.parameters.x}}` against. Workflow-scoped placeholders such as `{{workflow.name}}` are resolved before this point and are unaffected.
 
 If your `templateDefaults` carries scheduling constraints that only your workflow's other pods can satisfy, the agent pod is now subject to them too and may stay `Pending`.
 Move those constraints onto the templates that need them, or widen them so the agent pod can also be scheduled.
