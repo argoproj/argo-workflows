@@ -76,7 +76,8 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 
 // enqueueWorkflowOfDeletedClaim requeues the workflow of a deleted result if
 // it was a pooled task's claim: its worker released it, or it was discarded
-// or interrupted. A pod's result going is no news to its workflow.
+// or interrupted. Deleting a pod's result is ignored, since the workflow
+// doesn't need to react to it.
 func (wfc *WorkflowController) enqueueWorkflowOfDeletedClaim(obj any) {
 	result, ok := informerutil.Untombstone(obj).(*wfv1.WorkflowTaskResult)
 	if !ok {

@@ -358,7 +358,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// (b) shutdown-strategy guard. Do not create pods if we are shutting down.
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
-		woc.markNodeFailedOnShutdown(ctx, nodeName, notStartedOnShutdownMessage(woc.GetShutdownStrategy()))
+		woc.markNodeFailedOnShutdown(ctx, nodeName, shutdownMessage(woc.GetShutdownStrategy()))
 		return nil, nil
 	}
 
@@ -964,11 +964,9 @@ func (woc *wfOperationCtx) artifactContainer(ctx context.Context, tmpl *wfv1.Tem
 	ctr := buildExecContainer(name, tmpl, execCfg)
 	ctr.Env = append(ctr.Env, apiv1.EnvVar{Name: common.EnvVarContainerName, Value: name})
 	ctr.Image = driver.Image
-	x, err := woc.controller.entrypoint.Lookup(ctx, driver.Image, entrypoint.Options{
-		Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
-	})
+	x, err := lookupEntrypoint(ctx, woc.lookupImage, driver.Image, woc.wf.Namespace, &woc.execWf.Spec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", driver.Image, err)
+		return nil, err
 	}
 
 	cmd := []string{binaryPath}
