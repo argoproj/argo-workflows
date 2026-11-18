@@ -47,19 +47,27 @@ func (i *Instrument) Record(ctx context.Context, val float64, attribs Attributes
 }
 
 func (i *Instrument) RegisterCallback(m *Metrics, f metric.Callback) error {
-	switch inst := i.otel.(type) {
-	case *metric.Float64ObservableCounter:
-		_, err := (*m.otelMeter).RegisterCallback(f, *inst)
-		return err
-	case *metric.Float64ObservableGauge:
-		_, err := (*m.otelMeter).RegisterCallback(f, *inst)
-		return err
-	case *metric.Int64ObservableGauge:
-		_, err := (*m.otelMeter).RegisterCallback(f, *inst)
-		return err
-	default:
-		return fmt.Errorf("Metrics registerCallback() to invalid type %s (%t)", i.name, i.otel)
+	return m.RegisterCallback(f, i)
+}
+
+// RegisterCallback registers f to observe all of instruments, so that they
+// are observed together, from what one call of f reads.
+func (m *Metrics) RegisterCallback(f metric.Callback, instruments ...*Instrument) error {
+	observables := make([]metric.Observable, 0, len(instruments))
+	for _, i := range instruments {
+		switch inst := i.otel.(type) {
+		case *metric.Float64ObservableCounter:
+			observables = append(observables, *inst)
+		case *metric.Float64ObservableGauge:
+			observables = append(observables, *inst)
+		case *metric.Int64ObservableGauge:
+			observables = append(observables, *inst)
+		default:
+			return fmt.Errorf("Metrics registerCallback() to invalid type %s (%t)", i.name, i.otel)
+		}
 	}
+	_, err := (*m.otelMeter).RegisterCallback(f, observables...)
+	return err
 }
 
 func (i *Instrument) ObserveInt(ctx context.Context, o metric.Observer, val int64, attribs Attributes) {

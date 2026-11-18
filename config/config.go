@@ -177,7 +177,8 @@ func (c *InitlessPodConfig) IsEnabled() bool {
 // incompatible ways. See Config.HotWorkers.
 type HotWorkersConfig struct {
 	// Enabled turns hot workers on. Default is false; leave it off until hot
-	// workers are functional.
+	// workers are functional. The workflow controller reads it only when it
+	// starts, so restart the controller after changing it.
 	Enabled bool `json:"enabled,omitempty"`
 
 	// LeaseSlackSeconds is how long past a claimed task's deadline the controller

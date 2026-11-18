@@ -1,0 +1,30 @@
+# Optional component granting the RBAC the workflow controller needs when hot
+# workers are enabled (`hotWorkers.enabled` in the workflow controller
+# configmap): its pool controller creates, patches, watches and deletes each
+# pool's Deployment. Default installs leave it out, so a controller without
+# hot workers needs no access to Deployments. Add it to a cluster or namespace
+# install's kustomization:
+#
+#   components:
+#     - <path to>/manifests/components/hot-workers
+#
+# It adds the rule to the controller's ClusterRole (argo-cluster-role) and its
+# Role (argo-role), whichever the install has: a namespace install has only
+# the Role, and in a cluster install the ClusterRole already covers what the
+# rule grants the Role in the controller's own namespace.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+patches:
+  - path: workflow-controller-rbac.yaml
+    target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: ClusterRole
+      name: argo-cluster-role
+  - path: workflow-controller-rbac.yaml
+    target:
+      group: rbac.authorization.k8s.io
+      version: v1
+      kind: Role
+      name: argo-role

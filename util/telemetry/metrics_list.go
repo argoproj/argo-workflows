@@ -307,6 +307,60 @@ var InstrumentPodsTotalCount = BuiltinInstrument{
 	},
 }
 
+var InstrumentPoolBacklog = BuiltinInstrument{
+	name:        "pool_backlog",
+	description: "A gauge of the number of pooled tasks waiting for a hot worker",
+	unit:        "{task}",
+	instType:    Int64ObservableGauge,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribPoolNamespace,
+		},
+		{
+			name: AttribPoolName,
+		},
+		{
+			name: AttribPoolHash,
+		},
+	},
+}
+
+var InstrumentPoolClaimedTasks = BuiltinInstrument{
+	name:        "pool_claimed_tasks",
+	description: "A gauge of the number of pooled tasks claimed by a hot worker and not yet completed",
+	unit:        "{task}",
+	instType:    Int64ObservableGauge,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribPoolNamespace,
+		},
+		{
+			name: AttribPoolName,
+		},
+		{
+			name: AttribPoolHash,
+		},
+	},
+}
+
+var InstrumentPoolReadyPods = BuiltinInstrument{
+	name:        "pool_ready_pods",
+	description: "A gauge of the number of ready hot worker pods in a pool",
+	unit:        "{pod}",
+	instType:    Int64ObservableGauge,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribPoolNamespace,
+		},
+		{
+			name: AttribPoolName,
+		},
+		{
+			name: AttribPoolHash,
+		},
+	},
+}
+
 var InstrumentQueueAddsCount = BuiltinInstrument{
 	name:        "queue_adds_count",
 	description: "A counter of additions to the work queues inside the controller",
