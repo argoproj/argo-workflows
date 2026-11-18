@@ -95,6 +95,24 @@ describe('WorkflowLogsViewer', () => {
     });
 
     it.each([
+        ['a pod', podNode, 'my-wf-work-123', true],
+        ['a pooled pod', pooledNode, 'my-wf-work-456', false]
+    ])('offers the init, wait and supervisor containers only for %s', async (_, node, podName, offered) => {
+        renderViewer(node, podName);
+        const input = await screen.findByDisplayValue('main');
+        fireEvent.focus(input);
+        fireEvent.click(input);
+
+        for (const container of ['init', 'wait', 'supervisor']) {
+            if (offered) {
+                expect(screen.getByText(container)).toBeTruthy();
+            } else {
+                expect(screen.queryByText(container)).toBeNull();
+            }
+        }
+    });
+
+    it.each([
         ['a pod', podNode, 'my-wf-work-123', 'a (my-wf-work-123)'],
         ['a pooled pod', pooledNode, 'my-wf-work-456', 'b (work-abc)']
     ])('keeps the initial node for All after opening on %s', async (_, node, podName, label) => {

@@ -566,7 +566,9 @@ data:
   # This is useful when external agents are responsible for executing these templates and the controller should not create agent pods. 
   # Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
   # Defaults to false
-  disableAgentPodCreation: "false"  # hotWorkers runs container and script templates that set `pool` on pools of long-lived worker pods
+  disableAgentPodCreation: "false"
+
+  # hotWorkers runs container and script templates that set `pool` on pools of long-lived worker pods
   # instead of a pod per task. Off by default; all durations are whole seconds. >= v4.2
   hotWorkers: |
     enabled: false
