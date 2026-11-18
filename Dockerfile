@@ -62,8 +62,10 @@ FROM builder AS argoexec-build
 ARG GIT_COMMIT
 ARG GIT_TAG
 ARG GIT_TREE_STATE
+# true builds argoexec with -cover, for e2e coverage
+ARG COVER=false
 
-RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE} COVER=${COVER}
 
 ####################################################################################################
 

@@ -196,6 +196,29 @@ Tests often fail: that's good. To diagnose failure:
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
 
+#### Measuring E2E Coverage
+
+CI measures the coverage that the E2E tests give `argoexec` and the `argo` CLI on every push to `main`, and on pull requests labelled `ci/e2e-coverage`.
+To measure it locally, start a fresh cluster with coverage enabled, which needs Kubernetes 1.36 or later:
+
+```bash
+make k3d-down
+make start PROFILE=minimal COVER=true
+```
+
+`COVER=true` builds `argoexec` and `dist/argo` with `-cover`, mounts `dist/e2e-coverage` into the k3d cluster, and applies an admission policy that gives every container in the `argo` namespace a `GOCOVERDIR` there.
+Run the tests with `COVER=true` too, so that every CLI call writes its coverage to `dist/e2e-coverage/cli`, then merge everything into `e2e-coverage.out`:
+
+```bash
+make test-executor COVER=true
+make e2e-coverage.out
+go tool cover -func=e2e-coverage.out
+```
+
+A process writes its coverage when it exits, so a container that is killed with `SIGKILL` writes none.
+The controller and the Argo Server don't handle `SIGTERM`, so they aren't measured.
+Make doesn't rebuild an up-to-date `dist/argo` for `COVER=true`, so delete it first if you built it without coverage.
+
 ### Running UI E2E tests locally
 
 The UI has browser-level end-to-end tests written with [Playwright](https://playwright.dev), separate from the

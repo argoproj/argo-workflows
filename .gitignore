@@ -18,6 +18,7 @@ debug.test
 git-ask-pass.sh
 *.iml
 /coverage.out
+/e2e-coverage.out
 .envrc
 /.vendor-new
 /kustomize
