@@ -22,15 +22,25 @@ import (
 // pool under wfSpec, the workflow spec it runs with. It returns nil for a
 // template without pool. wfSpec may be nil to check the template alone.
 //
-// Validation calls it on each template as written, and again with the
-// workflow's templateDefaults merged in when pool.Pooled says the merged
-// template is pooled. Once dispatch is wired, the controller also calls it on
+// Validation calls it on each template as written. When the workflow has
+// templateDefaults, it instead checks the template as written for everything
+// but its volume claim mounts, then calls it with templateDefaults merged in
+// when pool.Pooled says the merged template is pooled (see validatePooled).
+// Once dispatch is wired, the controller also calls it on
 // the merged, substituted template it dispatches, with the execution
 // workflow's spec, to catch what only merging and substitution show. It finds
 // a {{pod.name}} tag only in a template whose variables aren't substituted
 // yet, and skips a pool name or number holding a variable, which is checked
 // once substituted.
 func Poolable(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error {
+	if err := poolableExceptClaims(tmpl, wfSpec); err != nil || tmpl.Pool == nil || wfSpec == nil {
+		return err
+	}
+	return rejectVolumeClaimMounts("templates."+tmpl.Name, tmpl, wfSpec)
+}
+
+// poolableExceptClaims is Poolable without rejectVolumeClaimMounts.
+func poolableExceptClaims(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error {
 	if tmpl.Pool == nil {
 		return nil
 	}
@@ -65,7 +75,7 @@ func Poolable(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error {
 	if err := pool.CheckWorkflowSpec(wfSpec); err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "%s: %s", prefix, err)
 	}
-	return rejectVolumeClaimMounts(prefix, tmpl, wfSpec)
+	return nil
 }
 
 // validatePool checks the pool block. Only a name the user sets needs
@@ -133,16 +143,22 @@ func rejectVolumeClaimMounts(prefix string, tmpl *wfv1.Template, wfSpec *wfv1.Wo
 // merges them, if that makes it pooled (pool.Pooled), under the
 // workflow-level fields it runs with (see Poolable). A pool inherited from
 // templateDefaults pools only container and script templates.
+//
+// Merging only adds to a template, so every check failing on it as written
+// fails once merged, and failing as written names the template's own field.
+// Volume claim mounts are the exception: a volume from templateDefaults
+// resolves a mount before the workflow's claims do, so those are checked
+// once merged.
 func (tctx *templateValidationCtx) validatePooled(tmpl *wfv1.Template) error {
 	wfSpec, err := tctx.pooledWorkflowSpec(tmpl)
 	if err != nil || wfSpec == nil {
 		return err
 	}
-	if err := Poolable(tmpl, wfSpec); err != nil {
-		return err
-	}
 	if wfSpec.TemplateDefaults == nil {
-		return nil
+		return Poolable(tmpl, wfSpec)
+	}
+	if err := poolableExceptClaims(tmpl, wfSpec); err != nil {
+		return err
 	}
 	merged := tmpl.DeepCopy()
 	if err := common.MergeTemplateDefaults(merged, wfSpec.TemplateDefaults); err != nil {

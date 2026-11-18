@@ -283,6 +283,11 @@ func TestPoolableWorkflowLevel(t *testing.T) {
 			tmpl.Container.VolumeMounts = []apiv1.VolumeMount{{Name: "claim", MountPath: "/claim"}}
 			tmpl.Volumes = []apiv1.Volume{{Name: "claim", VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}}}}
 		}, wfDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{VolumeClaimTemplates: []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "claim"}}}}}},
+		{name: "templateDefaults volumes win over claims", change: func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
+			wf.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{Name: "claim"}}}
+			wf.Spec.TemplateDefaults = &wfv1.Template{Volumes: []apiv1.Volume{{Name: "claim", VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}}}}}
+			tmpl.Container.VolumeMounts = []apiv1.VolumeMount{{Name: "claim", MountPath: "/claim"}}
+		}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Workflow(ctx, wftmplGetter, cwftmplGetter, pooledWorkflow(tt.change), tt.wfDefaults, Opts{Submit: true})
