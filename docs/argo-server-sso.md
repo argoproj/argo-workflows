@@ -107,7 +107,7 @@ metadata:
   annotations:
     # The rule is an expression used to determine if this service account
     # should be used.
-    # * `groups` - an array of the OIDC groups
+    # * `groups` - an array of the OIDC groups, empty if the user has none
     # * `iss` - the issuer ("argo-server")
     # * `sub` - the subject (typically the username)
     # Must evaluate to a boolean.
@@ -125,6 +125,9 @@ metadata:
 ```
 
 If no rule matches, we deny the user access.
+If a rule fails to evaluate, for example because it refers to a claim that the user's token doesn't have, we also deny the user access and don't try rules with a lower precedence.
+The exception is a rule in the request namespace with [namespace delegation](#sso-rbac-namespace-delegation).
+A user without groups has an empty `groups` list, so `'admin' in groups` is false for them, and a rule that is true for an empty list matches them, such as `!('contractors' in groups)` or `all(groups, # startsWith 'corp-')`.
 
 Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
 
@@ -181,6 +184,7 @@ metadata:
 ```
 
 With this configuration, when a user is logged in via SSO, makes a request in `my-namespace`, and the `rbac-rule` matches, this service account allows the user to perform that operation. If no service account matches in the namespace, the first service account (`user-default-login`) and its associated role will be used to perform the operation.
+If a rule in the namespace fails to evaluate, the argo-server logs the error and carries on as if no service account in the namespace matched.
 
 ## SSO Login Time
 
