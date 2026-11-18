@@ -120,6 +120,14 @@
       "matchManagers": ["custom.regex"],
       "matchDepNames": ["rancher/k3s"],
       "enabled": false
+    },
+    {
+      "description": "Nix pins need manual fetch/vendor hash updates in the same PR, never automerge",
+      "matchFileNames": [
+        "dev/nix/**",
+        "devenv.nix"
+      ],
+      "automerge": false
     }
   ],
   "platformAutomerge": true,
@@ -157,23 +165,26 @@
       "extractVersionTemplate": "^(?<version>v\\d+\\.\\d+\\.\\d+)-k3s1$"
     },
     {
-      "description": "k8s.io/code-generator go install in Makefile",
+      "description": "k8s.io/code-generator pins in Makefile (go install and go list)",
       "customType": "regex",
       "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
-        "go install k8s\\.io/code-generator/cmd/go-to-protobuf@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+        "go install k8s\\.io/code-generator/cmd/go-to-protobuf@(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+        "go list -mod=mod -m -f '\\{\\{\\.Dir\\}\\}' k8s\\.io/code-generator@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
       ],
       "depNameTemplate": "k8s.io/code-generator",
       "datasourceTemplate": "go"
     },
     {
-      "description": "k8s.io/code-generator module path in Makefile",
+      "description": "protoc plugin pins in Makefile",
       "customType": "regex",
       "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
-        "k8s\\.io/code-generator@(?<currentValue>v\\d+\\.\\d+\\.\\d+)/kube_codegen\\.sh"
+        "go install (?<depName>google\\.golang\\.org/protobuf)/cmd/protoc-gen-go@(?<currentValue>v[\\d.]+)",
+        "go install (?<depName>google\\.golang\\.org/grpc/cmd/protoc-gen-go-grpc)@(?<currentValue>v[\\d.]+)",
+        "go install (?<depName>github\\.com/grpc-ecosystem/grpc-gateway/v2)/protoc-gen-grpc-gateway@(?<currentValue>v[\\d.]+)",
+        "go install (?<depName>github\\.com/grpc-ecosystem/grpc-gateway/v2)/protoc-gen-openapiv2@(?<currentValue>v[\\d.]+)"
       ],
-      "depNameTemplate": "k8s.io/code-generator",
       "datasourceTemplate": "go"
     },
     {
@@ -195,6 +206,19 @@
       ],
       "depNameTemplate": "k8s.io/{{{depName}}}",
       "datasourceTemplate": "go"
+    },
+    {
+      "description": "Tool pins annotated with `# renovate:` in the nix dev env (kept in lockstep with the Makefile pins)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^dev/nix/flake\\.nix$/",
+        "/^devenv\\.nix$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\\w+ = \"(?<currentValue>[^\"]+)\";",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\"[^\"@]+@(?<currentValue>[^\"]+)\""
+      ],
+      "extractVersionTemplate": "^v?(?<version>.+)$"
     }
   ],
   "osvVulnerabilityAlerts": true,
