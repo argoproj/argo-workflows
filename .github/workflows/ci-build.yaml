@@ -585,7 +585,21 @@ jobs:
           cache-dependency-path: ui/yarn.lock
       - run: sh hack/retry-download.sh yarn --cwd ui install
       - run: yarn --cwd ui build
-      - run: yarn --cwd ui test
+      - run: yarn --cwd ui test --coverage --coverageReporters=lcovonly
+      - name: Make coverage paths relative to the repo root
+        # jest writes them relative to ui/
+        run: sed -i 's|^SF:src/|SF:ui/src/|' ui/coverage/lcov.info
+      - name: Upload coverage report
+        # runs on PRs as well as main so codecov can comment a coverage report on the PR
+        if: github.repository == 'argoproj/argo-workflows'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: ui/coverage/lcov.info
+          disable_search: true
+          flags: ui
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - run: yarn --cwd ui lint
       - run: yarn --cwd ui deduplicate
       # if lint or deduplicate make changes that are not in the PR, fail the build
