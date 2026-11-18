@@ -43,7 +43,7 @@ func TestFakeFaultStagesARace(t *testing.T) {
 	candidate := b.candidate(t, task.Key)
 	// The node is dropped between the worker creating its claim and reading
 	// the TaskSet.
-	var dropped *Claim
+	var dropped *FoundClaim
 	f.SetFault(func(op Op) error {
 		if op.Verb == "get" && op.Resource == ResourceTaskSets {
 			f.SetFault(nil)

@@ -766,6 +766,64 @@ status:
 	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".broken")), "the real failure is re-run")
 }
 
+// A memoized pooled node's placeholder doesn't keep the original workflow's
+// ledger, so nothing treats it as pooled or looks for its old TaskSet.
+func TestFormulateResubmitWorkflowMemoizedPooled(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: done
+        template: run
+      - name: broken
+        template: run
+  - name: run
+    pool: {}
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-done, wf-broken]
+    wf-done:
+      id: wf-done
+      name: wf.done
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      pooledTask: {poolName: run, poolHash: hash, taskName: wf-run-1, taskSetUID: old-uid}
+    wf-broken:
+      id: wf-broken
+      name: wf.broken
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      pooledTask: {poolName: run, poolHash: hash, taskName: wf-run-2, taskSetUID: old-uid-2}
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	done, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".done"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeSkipped, done.Type)
+	assert.Nil(t, done.PooledTask)
+	for _, node := range newWf.Status.Nodes {
+		assert.Nil(t, node.PooledTask, "node %s", node.Name)
+	}
+}
+
 // A workflow left behind by the memoized resubmit of an older version can reference nodes that no
 // longer exist. It must still be resubmittable.
 func TestFormulateResubmitWorkflowMemoizedDanglingInput(t *testing.T) {
@@ -1756,6 +1814,32 @@ func TestRetryExitHandler(t *testing.T) {
 	require.NoError(t, err)
 	t.Log(string(newWfBytes))
 	assert.NotContains(t, string(newWfBytes), "retry-script-6xt68-3924170365")
+}
+
+// TestFormulateRetryWorkflowPooledNodes checks a retry asks for no pod of a
+// pooled node, deleted or in the exit handler: it has none.
+func TestFormulateRetryWorkflowPooledNodes(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "pooled-retry", Labels: map[string]string{}},
+		Status: wfv1.WorkflowStatus{
+			Phase: wfv1.WorkflowFailed,
+			Nodes: map[string]wfv1.NodeStatus{
+				"pooled-retry": {ID: "pooled-retry", Name: "pooled-retry", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"a", "b"}, OutboundNodes: []string{"a", "b"}},
+				"a":            {ID: "a", Name: "pooled-retry.a", TemplateName: "work", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "pooled-retry", PooledTask: &wfv1.PooledTaskStatus{TaskSetUID: "ts-a"}},
+				"b":            {ID: "b", Name: "pooled-retry.b", TemplateName: "plain", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "pooled-retry"},
+				"exit":         {ID: "exit", Name: "pooled-retry.onExit", TemplateName: "work", Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, PooledTask: &wfv1.PooledTaskStatus{TaskSetUID: "ts-exit"}},
+			},
+		},
+	}
+	retried, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	assert.Equal(t, []string{GeneratePodName(wf.Name, "pooled-retry.b", "plain", "b", GetWorkflowPodNameVersion(wf))}, podsToDelete)
+	// The failed pooled node is deleted, with its ledger, so the controller
+	// enqueues it afresh; the root is reset to run it again.
+	assert.Len(t, retried.Status.Nodes, 1)
+	require.Contains(t, retried.Status.Nodes, "pooled-retry")
+	assert.Equal(t, wfv1.NodeRunning, retried.Status.Nodes["pooled-retry"].Phase)
 }
 
 func TestFormulateRetryWorkflow(t *testing.T) {

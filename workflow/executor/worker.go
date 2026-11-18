@@ -311,7 +311,7 @@ func (we *WorkflowExecutor) watchDeadline(ctx context.Context, pid int) *deadlin
 		case <-w.done:
 			return
 		case <-deadline:
-			w.reason = deadlineExceededMessage
+			w.reason = common.DeadlineExceededMessage
 		case <-ctx.Done():
 			w.reason = "worker stopped"
 		}

@@ -646,11 +646,14 @@ var protocolTests = []struct {
 		task := testTask("node-1")
 		ts := b.enqueue(t, task)
 		h := b.claim(t, testWorker("worker-a"), task.Key)
-		claim, err := b.dispatcher.Drop(logging.TestContext(t.Context()), task.Key, ts.UID)
+		stored, ok := b.result(t, task.Key)
+		require.True(t, ok)
+		found, err := b.dispatcher.Drop(logging.TestContext(t.Context()), task.Key, ts.UID)
 		require.NoError(t, err)
-		require.NotNil(t, claim)
-		assert.Equal(t, h.Claim(), *claim)
-		_, ok := b.taskSet(t, task.Key)
+		require.NotNil(t, found)
+		assert.Equal(t, h.Claim(), found.Claim)
+		assert.Equal(t, stored, found.Result, "the result as read live")
+		_, ok = b.taskSet(t, task.Key)
 		assert.False(t, ok)
 		_, ok = b.result(t, task.Key)
 		assert.True(t, ok, "the claim is left for the interrupt")
@@ -767,6 +770,7 @@ var protocolTests = []struct {
 		gone := b.enqueue(t, testTask("gone"))
 		goneClaim := b.claim(t, testWorker("worker-c"), key("gone"))
 		b.deleteResult(t, key("gone"))
+		racingResult, _ := b.result(t, key("racing"))
 
 		outcomes := b.dispatcher.Shutdown(ctx, []LedgerEntry{
 			{Key: key("queued"), Ledger: ledger(queued.UID, "")},
@@ -775,10 +779,9 @@ var protocolTests = []struct {
 			{Key: key("claimed"), Ledger: ledger(claimed.UID, claimedClaim.Claim().UID)},
 			{Key: key("gone"), Ledger: ledger(gone.UID, goneClaim.Claim().UID, "interrupt")},
 		})
-		racingFound := racingClaim.Claim()
 		assert.Equal(t, []ShutdownOutcome{
 			{Key: key("queued"), Finished: true},
-			{Key: key("racing"), Found: &racingFound},
+			{Key: key("racing"), Found: &FoundClaim{Claim: racingClaim.Claim(), Result: racingResult}},
 			{Key: key("claimed")},
 			{Key: key("gone"), Finished: true},
 		}, outcomes)
@@ -800,6 +803,7 @@ var protocolTests = []struct {
 		racingClaim := b.claim(t, testWorker("worker-a"), key("racing"))
 		claimed := b.enqueue(t, testTask("claimed"))
 		claimedClaim := b.claim(t, testWorker("worker-b"), key("claimed"))
+		racingResult, _ := b.result(t, key("racing"))
 		b.setFault(faults(
 			failing("delete", ResourceTaskSets, dropFails.Name),
 			failing("get", ResourceResults, "read-fails"),
@@ -818,11 +822,10 @@ var protocolTests = []struct {
 			require.ErrorIs(t, outcomes[i].Err, errTransient, outcomes[i].NodeID)
 			outcomes[i].Err = nil
 		}
-		racingFound := racingClaim.Claim()
 		assert.Equal(t, []ShutdownOutcome{
 			{Key: key("drop-fails")},
 			{Key: key("read-fails")},
-			{Key: key("racing"), Found: &racingFound},
+			{Key: key("racing"), Found: &FoundClaim{Claim: racingClaim.Claim(), Result: racingResult}},
 			{Key: key("claimed")},
 		}, outcomes, "none is finished")
 		_, ok := b.taskSet(t, key("drop-fails"))
