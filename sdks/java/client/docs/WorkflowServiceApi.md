@@ -19,6 +19,7 @@ Method | HTTP request | Description
 [**workflowServiceSuspendWorkflow**](WorkflowServiceApi.md#workflowServiceSuspendWorkflow) | **PUT** /api/v1/workflows/{namespace}/{name}/suspend | 
 [**workflowServiceTerminateWorkflow**](WorkflowServiceApi.md#workflowServiceTerminateWorkflow) | **PUT** /api/v1/workflows/{namespace}/{name}/terminate | 
 [**workflowServiceWatchEvents**](WorkflowServiceApi.md#workflowServiceWatchEvents) | **GET** /api/v1/stream/events/{namespace} | 
+[**workflowServiceWatchWorkflowPod**](WorkflowServiceApi.md#workflowServiceWatchWorkflowPod) | **GET** /api/v1/stream/workflows/{namespace}/{name}/pods/{podName} | 
 [**workflowServiceWatchWorkflows**](WorkflowServiceApi.md#workflowServiceWatchWorkflows) | **GET** /api/v1/workflow-events/{namespace} | 
 [**workflowServiceWorkflowLogs**](WorkflowServiceApi.md#workflowServiceWorkflowLogs) | **GET** /api/v1/workflows/{namespace}/{name}/log | 
 
@@ -1165,6 +1166,78 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**StreamResultOfEvent**](StreamResultOfEvent.md)
+
+### Authorization
+
+[BearerToken](../README.md#BearerToken)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | A successful response.(streaming responses) |  -  |
+**0** | An unexpected error response. |  -  |
+
+<a name="workflowServiceWatchWorkflowPod"></a>
+# **workflowServiceWatchWorkflowPod**
+> StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowPodWatchEvent workflowServiceWatchWorkflowPod(namespace, name, podName)
+
+
+
+### Example
+```java
+// Import classes:
+import io.argoproj.workflow.ApiClient;
+import io.argoproj.workflow.ApiException;
+import io.argoproj.workflow.Configuration;
+import io.argoproj.workflow.auth.*;
+import io.argoproj.workflow.models.*;
+import io.argoproj.workflow.apis.WorkflowServiceApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost:2746");
+    
+    // Configure API key authorization: BearerToken
+    ApiKeyAuth BearerToken = (ApiKeyAuth) defaultClient.getAuthentication("BearerToken");
+    BearerToken.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //BearerToken.setApiKeyPrefix("Token");
+
+    WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
+    String namespace = "namespace_example"; // String | 
+    String name = "name_example"; // String | 
+    String podName = "podName_example"; // String | 
+    try {
+      StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowPodWatchEvent result = apiInstance.workflowServiceWatchWorkflowPod(namespace, name, podName);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling WorkflowServiceApi#workflowServiceWatchWorkflowPod");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **namespace** | **String**|  |
+ **name** | **String**|  |
+ **podName** | **String**|  |
+
+### Return type
+
+[**StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowPodWatchEvent**](StreamResultOfIoArgoprojWorkflowV1alpha1WorkflowPodWatchEvent.md)
 
 ### Authorization
 

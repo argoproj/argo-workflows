@@ -4,7 +4,7 @@ import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
 import {uiUrl} from '../base';
 import * as models from '../models';
-import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../models';
+import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Pod, Workflow, WorkflowList, WorkflowPhase} from '../models';
 import {ResubmitOpts, RetryOpts} from '../models';
 import {SubmitOpts} from '../models/submit-opts';
 import {Pagination} from '../pagination';
@@ -89,6 +89,12 @@ export const WorkflowsService = {
         return requests
             .loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`)
             .pipe(map(data => data && (JSON.parse(data).result as Event)));
+    },
+
+    watchPod(namespace: string, name: string, podName: string): Observable<models.kubernetes.WatchEvent<Pod>> {
+        return requests
+            .loadEventSource(`api/v1/stream/workflows/${namespace}/${name}/pods/${podName}`)
+            .pipe(map(data => data && (JSON.parse(data).result as models.kubernetes.WatchEvent<Pod>)));
     },
 
     watchFields(query: {

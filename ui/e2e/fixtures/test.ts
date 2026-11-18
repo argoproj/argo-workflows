@@ -6,6 +6,7 @@ import {LoginPage} from '../pages/login-page';
 import {WorkflowDetailsPage} from '../pages/workflow-details-page';
 import {WorkflowListPage} from '../pages/workflow-list-page';
 import {WorkflowLogsPanel} from '../pages/workflow-logs-panel';
+import {WorkflowPodPanel} from '../pages/workflow-pod-panel';
 import {WorkflowTemplatePage} from '../pages/workflow-template-page';
 import {ApiClient} from './api';
 
@@ -17,6 +18,7 @@ interface Fixtures {
     workflowDetailsPage: WorkflowDetailsPage;
     workflowListPage: WorkflowListPage;
     workflowLogsPanel: WorkflowLogsPanel;
+    workflowPodPanel: WorkflowPodPanel;
     workflowTemplatePage: WorkflowTemplatePage;
     /** Points `workflowTemplatePage` at cluster workflow templates; set with `test.use()`. */
     clusterScopedTemplates: boolean;
@@ -57,6 +59,9 @@ export const test = base.extend<Fixtures>({
     },
     workflowLogsPanel: async ({page}, use) => {
         await use(new WorkflowLogsPanel(page));
+    },
+    workflowPodPanel: async ({page}, use) => {
+        await use(new WorkflowPodPanel(page));
     },
     workflowTemplatePage: async ({page, clusterScopedTemplates}, use) => {
         await use(new WorkflowTemplatePage(page, clusterScopedTemplates));

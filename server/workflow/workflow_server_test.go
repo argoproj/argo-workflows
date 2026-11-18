@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
@@ -1027,6 +1029,127 @@ func TestPodLogs(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 	cancel()
+}
+
+type testWatchWorkflowPodServer struct {
+	testServerStream
+	events chan *workflowpkg.WorkflowPodWatchEvent
+}
+
+func (t testWatchWorkflowPodServer) Send(e *workflowpkg.WorkflowPodWatchEvent) error {
+	t.events <- e
+	return nil
+}
+
+type podWatchHarness struct {
+	events       chan *workflowpkg.WorkflowPodWatchEvent
+	fakeWatch    *watch.FakeWatcher
+	restrictions chan ktesting.WatchRestrictions
+	done         chan error
+	cancel       context.CancelFunc
+}
+
+func startWatchWorkflowPod(t *testing.T, workflowName, podName string) *podWatchHarness {
+	t.Helper()
+	server, ctx := getWorkflowServer(t)
+	kubeClient := auth.GetKubeClient(ctx).(*fake.Clientset)
+	h := &podWatchHarness{
+		events:       make(chan *workflowpkg.WorkflowPodWatchEvent, 8),
+		fakeWatch:    watch.NewFake(),
+		restrictions: make(chan ktesting.WatchRestrictions, 1),
+		done:         make(chan error, 1),
+	}
+	kubeClient.PrependWatchReactor("pods", func(action ktesting.Action) (bool, watch.Interface, error) {
+		h.restrictions <- action.(ktesting.WatchAction).GetWatchRestrictions()
+		return true, h.fakeWatch, nil
+	})
+	ctx, h.cancel = context.WithCancel(ctx)
+	t.Cleanup(h.cancel)
+	go func() {
+		h.done <- server.WatchWorkflowPod(&workflowpkg.WatchWorkflowPodRequest{
+			Namespace: "workflows",
+			Name:      workflowName,
+			PodName:   podName,
+		}, &testWatchWorkflowPodServer{testServerStream{ctx}, h.events})
+	}()
+	return h
+}
+
+func receiveWithin[T any](t *testing.T, ch <-chan T) T {
+	t.Helper()
+	select {
+	case v := <-ch:
+		return v
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for a value")
+		var zero T
+		return zero
+	}
+}
+
+func TestWatchWorkflowPod(t *testing.T) {
+	const workflowName = "hello-world-9tql2"
+	newPod := func() *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:          workflowName,
+				Namespace:     "workflows",
+				ManagedFields: []metav1.ManagedFieldsEntry{{Manager: "kubelet"}},
+			},
+		}
+	}
+
+	t.Run("ScopesTheWatchToTheWorkflowAndPod", func(t *testing.T) {
+		h := startWatchWorkflowPod(t, workflowName, "the-pod")
+		restrictions := receiveWithin(t, h.restrictions)
+		assert.Equal(t, "workflows.argoproj.io/workflow=hello-world-9tql2", restrictions.Labels.String())
+		assert.Equal(t, "metadata.name=the-pod", restrictions.Fields.String())
+	})
+
+	t.Run("StreamsPodEventsWithoutManagedFields", func(t *testing.T) {
+		h := startWatchWorkflowPod(t, workflowName, workflowName)
+		receiveWithin(t, h.restrictions)
+		pod := newPod()
+		for _, eventType := range []watch.EventType{watch.Added, watch.Modified, watch.Deleted} {
+			h.fakeWatch.Action(eventType, pod)
+			got := receiveWithin(t, h.events)
+			assert.Equal(t, string(eventType), got.Type)
+			assert.Equal(t, workflowName, got.Object.Name)
+			assert.Empty(t, got.Object.ManagedFields)
+		}
+		assert.NotEmpty(t, pod.ManagedFields, "the object shared with the watch must not be mutated")
+	})
+
+	t.Run("ReturnsNilWhenTheContextIsCancelled", func(t *testing.T) {
+		h := startWatchWorkflowPod(t, workflowName, workflowName)
+		receiveWithin(t, h.restrictions)
+		h.cancel()
+		require.NoError(t, receiveWithin(t, h.done))
+	})
+
+	t.Run("ReturnsResourceExhaustedWhenTheWatchCloses", func(t *testing.T) {
+		h := startWatchWorkflowPod(t, workflowName, workflowName)
+		receiveWithin(t, h.restrictions)
+		h.fakeWatch.Stop()
+		err := receiveWithin(t, h.done)
+		require.Error(t, err)
+		assert.Equal(t, codes.ResourceExhausted, status.Code(err))
+	})
+
+	t.Run("ReturnsAnErrorForANonPodObject", func(t *testing.T) {
+		h := startWatchWorkflowPod(t, workflowName, workflowName)
+		receiveWithin(t, h.restrictions)
+		h.fakeWatch.Error(&metav1.Status{Status: metav1.StatusFailure, Message: "boom", Code: 500})
+		err := receiveWithin(t, h.done)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "boom")
+	})
+
+	t.Run("DoesNotWatchWhenTheWorkflowDoesNotExist", func(t *testing.T) {
+		h := startWatchWorkflowPod(t, "hello-world-9tql2-not", "any-pod")
+		require.Error(t, receiveWithin(t, h.done))
+		assert.Empty(t, h.restrictions, "no pod watch may start for a workflow the caller cannot read")
+	})
 }
 
 func TestSubmitWorkflowFromResource(t *testing.T) {
