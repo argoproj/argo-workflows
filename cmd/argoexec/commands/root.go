@@ -63,6 +63,7 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(NewResourceCommand())
 	command.AddCommand(NewSupervisorCommand())
 	command.AddCommand(NewWaitCommand())
+	command.AddCommand(NewWorkerCommand())
 	command.AddCommand(NewDataCommand())
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.AddCommand(artifact.NewArtifactCommand())
