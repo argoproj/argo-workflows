@@ -33,6 +33,9 @@ type HotWorkersSuite struct {
 // The default artifact repository's bucket.
 const hotWorkersBucket = "my-bucket"
 
+// mainLogs names the artifact main's archived log is saved as.
+const mainLogs = "main" + wfv1.LogsSuffix
+
 // poolPods lists the pods of every pool named poolName.
 func (s *HotWorkersSuite) poolPods(poolName string) []apiv1.Pod {
 	s.T().Helper()
@@ -93,7 +96,7 @@ func (s *HotWorkersSuite) TestPoolReuse() {
 				require.Len(t, say.Outputs.Parameters, 1)
 				assert.Equal(t, md.Name, say.Outputs.Parameters[0].Value.String())
 				assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, *say, "message")), md.Name)
-				assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, *say, "main-logs")), ":) Hello from "+md.Name)
+				assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, *say, mainLogs)), ":) Hello from "+md.Name)
 			}).
 			ExpectPods(func(t *testing.T, pods []apiv1.Pod) {
 				assert.Empty(t, pods, "a pooled workflow has no pods of its own")
@@ -156,7 +159,7 @@ func (s *HotWorkersSuite) TestHTTPInputArtifactWithCredentials() {
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			nodes := pooledNodes(t, status, "e2e-http")
 			require.Len(t, nodes, 1)
-			assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, nodes[0], "main-logs")), `"authorized": true`)
+			assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, nodes[0], mainLogs)), `"authorized": true`)
 		})
 }
 
@@ -179,7 +182,7 @@ func (s *HotWorkersSuite) TestFanOut() {
 				require.Len(t, n.Inputs.Parameters, 1)
 				i := n.Inputs.Parameters[0].Value.String()
 				prefix := md.Name + "/" + n.PooledTask.TaskName + "/"
-				for name, want := range map[string]string{"out": "output of task " + i, "main-logs": "log of task " + i} {
+				for name, want := range map[string]string{"out": "output of task " + i, mainLogs: "log of task " + i} {
 					key := artifactKey(t, n, name)
 					assert.True(t, strings.HasPrefix(key, prefix), "key %s of %s isn't under %s", key, n.DisplayName, prefix)
 					if other, ok := keys[key]; ok {
@@ -214,7 +217,7 @@ func (s *HotWorkersSuite) TestHotWorkersExample() {
 			nodes := pooledNodes(t, status, "python-squares")
 			require.Len(t, nodes, 11)
 			sum := node(t, status, "sum")
-			assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, *sum, "main-logs")), "285", "the sum of the squares of 0 to 9")
+			assert.Contains(t, fixtures.ArtifactContent(t, hotWorkersBucket, artifactKey(t, *sum, mainLogs)), "285", "the sum of the squares of 0 to 9")
 		})
 }
 
