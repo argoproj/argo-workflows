@@ -351,7 +351,7 @@ spec:
 			assert.Equal(t, "main: the container exited before the task ended", first.Message)
 			require.NotNil(t, first.Outputs)
 			assert.Nil(t, first.Outputs.ExitCode)
-			assert.NotNil(t, first.Outputs.GetArtifactByName("main-logs"))
+			assert.NotNil(t, first.Outputs.GetArtifactByName(mainLogs))
 			assert.Equal(t, wfv1.NodeSucceeded, node(t, status, "task(1)").Phase)
 		})
 }
