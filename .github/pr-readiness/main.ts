@@ -1,8 +1,8 @@
 // Orchestration for the PR Readiness Helper workflow. A single entry point,
 // run(), called from one actions/github-script step in pr-readiness.yaml:
 // resolve the PR, gate the author, classify checks, check the description
-// against the template, sync the not-ready label, and render the sticky
-// comment (or the dry-run summary). All decision logic lives in the
+// against the template, fetch the author's contributor activity, sync the
+// not-ready label, and render the sticky comment (or the dry-run summary). All decision logic lives in the
 // unit-tested modules this file imports.
 
 import * as fs from 'node:fs';
@@ -10,7 +10,9 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance, targetsDefaultBranch } from './classify.ts';
-import { MARKER, NOT_READY_LABEL, renderComment } from './comment.ts';
+import { MARKER, NOT_READY_LABEL, isEngaged, renderComment } from './comment.ts';
+import { fetchContributorStats, renderContributorTable } from './contributor.ts';
+import type { GraphQL } from './contributor.ts';
 import { checkTemplate } from './template.ts';
 import type { Config, JobStep } from './types.ts';
 
@@ -32,9 +34,16 @@ interface Core {
 }
 interface RepoContext {
   repo: { owner: string; repo: string };
-  payload: { workflow_run: { head_sha: string }; repository: { default_branch: string } };
+  // workflow_run on CI completion; pull_request on pull_request_target
+  // (opened / reopened / ready_for_review).
+  payload: {
+    workflow_run?: { head_sha: string };
+    pull_request?: { head: { sha: string } };
+    repository: { default_branch: string };
+  };
 }
 interface Octokit {
+  graphql: GraphQL;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   paginate(route: unknown, params: Record<string, unknown>): Promise<any[]>;
   rest: {
@@ -64,7 +73,10 @@ function errMessage(e: unknown): string {
 
 export async function run({ github, context, core }: { github: Octokit; context: RepoContext; core: Core }): Promise<void> {
   const { owner, repo } = context.repo;
-  const headSha = context.payload.workflow_run.head_sha;
+  const headSha = context.payload.workflow_run?.head_sha ?? context.payload.pull_request?.head.sha;
+  if (!headSha) {
+    throw new Error('event payload has neither workflow_run nor pull_request');
+  }
   const defaultBranch = context.payload.repository.default_branch;
   const dryRun = process.env.DRY_RUN === 'true';
   const stop = (reason: string): void => {
@@ -74,7 +86,8 @@ export async function run({ github, context, core }: { github: Octokit; context:
   };
 
   // Resolve the PR by head SHA — workflow_run.pull_requests is empty for
-  // fork PRs, so list open PRs and match instead.
+  // fork PRs, so list open PRs and match instead. pull_request_target runs
+  // resolve the same way, which also gives the stack walk below its input.
   const openPrs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
   const pr = findPullRequest(openPrs, headSha);
   if (!pr) {
@@ -127,10 +140,22 @@ export async function run({ github, context, core }: { github: Octokit; context:
   const template = fs.readFileSync('.github/pull_request_template.md', 'utf8');
   const templateVerdict = checkTemplate(pr.body || '', template);
 
+  // Contributor activity for maintainers. Best-effort: on failure the table
+  // is left out and an existing comment is left as it is unless readiness
+  // has something new to say.
+  let contributorTable: string | null = null;
+  try {
+    const stats = await fetchContributorStats(github.graphql, `${owner}/${repo}`, pr.user.login, pr.author_association ?? 'NONE');
+    contributorTable = renderContributorTable(`${owner}/${repo}`, stats, new Date());
+  } catch (e) {
+    core.warning(`could not fetch contributor activity for ${pr.user.login}: ${errMessage(e)}`);
+  }
+
   const decision = decide({
     signals,
     templateVerdict,
-    hasExistingComment: Boolean(existing),
+    engaged: Boolean(existing) && isEngaged(existing.body),
+    hasContributorReport: contributorTable !== null,
   });
 
   // Sync the not-ready label to the verdict: the bot owns the label, so it is
@@ -156,6 +181,7 @@ export async function run({ github, context, core }: { github: Octokit; context:
     failures: signals.filter((s) => decision.failing.includes(s.id)),
     templateIssues: decision.templateBlocking ? templateVerdict.issues : null,
     labeled,
+    contributorTable,
   });
 
   for (const name of unmapped) {
@@ -165,7 +191,7 @@ export async function run({ github, context, core }: { github: Octokit; context:
   core.info(
     `PR #${pr.number} by ${pr.user.login} head=${headSha} | signals: ` +
       signals.map((s) => `${s.id}=${s.state}`).join(' ') +
-      ` | template=${templateVerdict.compliant ? 'ok' : 'issues'}` +
+      ` | template=${templateVerdict.compliant ? 'ok' : 'issues'} contributor=${contributorTable !== null}` +
       ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} blocking=${decision.blocking} label: ${hadLabel} -> ${labeled}`
   );
   if (decision.shouldComment) {
