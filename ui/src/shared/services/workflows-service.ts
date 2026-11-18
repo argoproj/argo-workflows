@@ -1,4 +1,4 @@
-import {EMPTY, from, Observable, of} from 'rxjs';
+import {EMPTY, from, Observable, of, throwError} from 'rxjs';
 import {catchError, filter, map, mergeMap, switchMap} from 'rxjs/operators';
 
 import {NameFilterKeys} from '../../workflows/components/workflow-filters/workflow-filters';
@@ -29,6 +29,18 @@ export function hasArtifactLogs(workflow: Workflow, nodeId: string, container: s
 // so it has only the archived logs of its only container, main
 export function nodeHasLogs(workflow: Workflow, node: NodeStatus) {
     return !node.pooledTask || !!hasArtifactLogs(workflow, node.id, 'main');
+}
+
+// pooledNoLogsMessage says why a pooled node has no logs to show yet, or none for container: only main's logs are
+// archived, once the task finishes
+function pooledNoLogsMessage(container: string, isPendingOrRunning: boolean) {
+    if (container !== 'main') {
+        return `A pooled task has only main's archived logs, not ${container}'s`;
+    }
+    if (isPendingOrRunning) {
+        return 'A pooled task has no live logs; its logs are archived when it finishes, if log archiving is enabled';
+    }
+    return 'This pooled task has no archived logs';
 }
 
 export const WorkflowsService = {
@@ -275,6 +287,9 @@ export const WorkflowsService = {
                 // A pooled node runs on a worker pod shared with other tasks, so it has only archived logs.
                 // With no pod picked, the logs are the whole workflow's, whichever node the viewer opened on.
                 if (podName && updatedWorkflow.status.nodes[nodeId]?.pooledTask) {
+                    if (!hasArtifactLogs(updatedWorkflow, nodeId, container)) {
+                        return throwError(() => new Error(pooledNoLogsMessage(container, isPendingOrRunning)));
+                    }
                     return getLogsFromArtifact(updatedWorkflow);
                 }
                 if (!isPendingOrRunning && hasArtifactLogs(updatedWorkflow, nodeId, container)) {

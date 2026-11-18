@@ -20,34 +20,57 @@ import (
 // LogWorkflow prints the workflow's logs, then says where to find the logs of
 // its pooled tasks, which the stream can't show.
 func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) error {
+	// A task or worker pod name never also names a workflow pod, so a POD
+	// that names pooled tasks names nothing the stream could show. Say so
+	// before streaming, which with --follow waits for the workflow to end.
+	if podName != "" {
+		if notes := lookUpPooledLogNotes(ctx, serviceClient, namespace, workflow, podName, logOptions.Container); len(notes) > 0 {
+			return pooledOnlyError(podName, notes)
+		}
+	}
 	if err := streamWorkflowLogs(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions); err != nil {
 		return err
 	}
 
 	// A pooled task is in no pod the stream reads, whether picked by name or
-	// by selector, so say where its logs are instead.
+	// by selector, so say where its logs are instead. With a POD, this finds a
+	// task that POD came to name while the stream ran.
+	notes := lookUpPooledLogNotes(ctx, serviceClient, namespace, workflow, podName, logOptions.Container)
+	if podName != "" && len(notes) > 0 {
+		return pooledOnlyError(podName, notes)
+	}
+	printPooledLogNotes(notes)
+	return nil
+}
+
+// lookUpPooledLogNotes gets the workflow's nodes and returns pooledLogNotes for
+// them. A failed lookup (the workflow was deleted, or the caller may not get
+// it) only loses the notes, so it returns none; a POD that named only pooled
+// tasks then can't be told from one that matched nothing.
+func lookUpPooledLogNotes(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, container string) []string {
 	wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 		Name:      workflow,
 		Namespace: namespace,
 		Fields:    "metadata.name,metadata.namespace,status.nodes",
 	})
-	// The stream itself succeeded, so a failed lookup (the workflow was
-	// deleted, or the caller may not get it) only loses the notes; a POD that
-	// named only pooled tasks then can't be told from one that matched nothing.
 	if err != nil {
 		logging.RequireLoggerFromContext(ctx).WithError(err).Debug(ctx, "Could not look up pooled tasks for their log notes")
 		return nil
 	}
-	notes := pooledLogNotes(wf, podName, logOptions.Container)
+	return pooledLogNotes(wf, podName, container)
+}
+
+// pooledOnlyError prints the notes of the pooled tasks podName names, and
+// returns the error that says it names only pooled tasks.
+func pooledOnlyError(podName string, notes []string) error {
+	printPooledLogNotes(notes)
+	return fmt.Errorf("%s names only pooled tasks, which have no live logs", podName)
+}
+
+func printPooledLogNotes(notes []string) {
 	for _, note := range notes {
 		_, _ = fmt.Fprintln(os.Stderr, note)
 	}
-	// A task or worker pod name never also names a workflow pod, so a POD
-	// that matched pooled nodes matched nothing the stream could show.
-	if podName != "" && len(notes) > 0 {
-		return fmt.Errorf("%s names only pooled tasks, which have no live logs", podName)
-	}
-	return nil
 }
 
 // streamWorkflowLogs prints the workflow's log stream until it ends.

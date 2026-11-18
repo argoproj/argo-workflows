@@ -111,8 +111,8 @@ Add `pool:` to a container or script template:
 | Field | Meaning |
 | --- | --- |
 | `name` | The pool's name. It must be a DNS label of at most 35 characters. It may hold a variable, such as `{{workflow.parameters.pool}}`, and is then checked once substituted. See [how pools are formed](#how-pools-are-formed). |
-| `initialReplicas` | How many worker pods a new pool starts with, at least `1`. It applies only when the pool is created; to change the size of an existing pool, [scale it](#scaling). |
-| `retentionSeconds` | How long the pool is kept once no task uses it. The value of the most recently dispatched task for the pool applies. |
+| `initialReplicas` | How many worker pods a new pool starts with, at least `1`. It applies only when the pool is created; to change the size of an existing pool, [scale it](#scaling). It may be a whole number, written with or without quotes, or a variable that resolves to one. |
+| `retentionSeconds` | How long the pool is kept once no task uses it, at least `0`. The value of the most recently dispatched task for the pool applies. It may be a whole number, written with or without quotes, or a variable that resolves to one. |
 
 See the [hot workers example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hot-workers.yaml) for a complete workflow.
 
@@ -124,6 +124,9 @@ The [differences from pods](#differences-from-pods) list every exception.
 `pool` can also be set in `templateDefaults`, in the workflow or in the controller's [default workflow spec](default-workflow-specs.md).
 An inherited `pool` pools only container and script templates; other template types ignore it, as they ignore an inherited `timeout`.
 Setting `pool` directly on any other template type is rejected.
+Every container and script template that inherits `pool` is a pooled template, so one that uses anything [a pooled template can't use](#what-a-pooled-template-cant-use), such as a sidecar or `daemon`, rejects the workflow.
+A template can't opt out of an inherited `pool`: its own `pool`, even an empty one, merges with the inherited one.
+To run some templates as pods, set `pool` only on the templates you want pooled, not in `templateDefaults`.
 
 ### What a pooled template can't use
 
@@ -159,7 +162,7 @@ A pool is identified by its namespace and a hash of everything its worker pods a
 * the template's pod-level settings, such as its image, `imagePullPolicy`, `resources`, `workingDir`, `ports`, `securityContext`, volumes and volume mounts, `envFrom` and `valueFrom` environment variables, `metadata`, node selector, affinity, tolerations, scheduler, priority class, host aliases, pod resources and resource claims;
 * the pod-level settings of the workflow spec, such as `podMetadata`, `imagePullSecrets`, `hostNetwork`, `dnsPolicy` and the workflow volumes the template mounts;
 * the service account and `automountServiceAccountToken`, the `executor` settings, the artifact repository, and the secrets and plugins of the template's artifacts;
-* the controller's version, instance ID and pod layout, the executor image, the `executor` and `mainContainer` settings of the `workflow-controller-configmap`, and the `hotWorkers` grace period and release reserve.
+* the controller's version, instance ID and pod layout, the executor image, its `--executor-image-pull-policy`, `--loglevel`, `--log-format` and `--gloglevel` flags, the `executor`, `mainContainer` and `kubeConfig` settings of the `workflow-controller-configmap`, and the `hotWorkers` grace period and release reserve.
 
 Templates whose pool names and all of these settings match share a pool, even across templates, workflows and WorkflowTemplates.
 Command, args, plain `value:` environment variables, inputs, outputs, script source, timeouts and retry settings are per task, so tasks that differ only in these share a pool.
@@ -197,7 +200,7 @@ The first task after a pool is deleted waits for a new pool to start.
 For a CronWorkflow, set `retentionSeconds` longer than its schedule's interval to keep the pool between runs.
 With `retentionSeconds: 0`, the pool is deleted as soon as it has no tasks, which can happen between two steps of one workflow.
 
-Upgrading the controller, or changing its `executor` or `mainContainer` settings, its pod layout or the `hotWorkers` grace period or release reserve, changes every pool's hash.
+Upgrading the controller, or changing its executor image or those flags, its `executor`, `mainContainer` or `kubeConfig` settings, its pod layout or the `hotWorkers` grace period or release reserve, changes every pool's hash.
 New tasks then go to new pools, each with a cold start, and the old pools are deleted once their retention passes.
 
 ### Scaling
@@ -416,7 +419,7 @@ Their archived logs work: enable [`archiveLogs`](configure-archive-logs.md) to k
 * The UI shows a pooled node's task name and worker pod as separate rows, and links to its archived logs.
 * `argo logs <workflow>`, also with `--selector`, prints a note for each pooled task saying where its archived logs are, with the `argo cp` command that fetches them once they exist.
   `argo cp` downloads through the Argo Server, so it fails when the CLI talks to Kubernetes directly, without one.
-  `argo logs <workflow> <name>`, where `<name>` names only pooled tasks by task name or worker pod, prints the notes and exits non-zero.
+  `argo logs <workflow> <name>`, where `<name>` names only pooled tasks by task name or worker pod, prints the notes and exits non-zero without streaming, also with `--follow`.
 * The Argo Server's log API, and the UI's view of all of a workflow's logs, show nothing for pooled tasks.
 
 `argo get` shows a pooled node's worker pod while a worker holds it, or once it has ended on one, and otherwise its task name, marked `(queued)` while it waits, `(unclaimed)` if it ended without a worker claiming it, or `(released)` if it ended after a worker handed it back.

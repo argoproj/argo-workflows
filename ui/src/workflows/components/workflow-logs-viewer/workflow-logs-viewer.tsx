@@ -207,16 +207,19 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         templates = [templateFromRef];
     }
 
-    const containers = [
-        ...new Set(
-            ['init', 'wait', `supervisor`].concat(
-                templates
-                    .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
-                    .reduce((a, v) => a.concat(v), [])
-                    .map(c => c.name)
-            )
-        )
-    ];
+    // a pooled template has only main, and only main's logs are archived
+    const containers = selectedPooled
+        ? ['main']
+        : [
+              ...new Set(
+                  ['init', 'wait', `supervisor`].concat(
+                      templates
+                          .map(t => ((t.containerSet && t.containerSet.containers) || [{name: 'main'}]).concat(t.sidecars || []).concat(t.initContainers || []))
+                          .reduce((a, v) => a.concat(v), [])
+                          .map(c => c.name)
+                  )
+              )
+          ];
     const [candidateContainer, setCandidateContainer] = useState(container);
     const filteredTimezones = timezones.filter(tz => tz.startsWith(uiTimezone) || uiTimezone === '');
 

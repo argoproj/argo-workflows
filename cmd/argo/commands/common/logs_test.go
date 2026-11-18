@@ -125,11 +125,30 @@ func TestLogWorkflowLooksUpPooledNodes(t *testing.T) {
 		c.AssertNumberOfCalls(t, "GetWorkflow", 1)
 	})
 	t.Run("naming a pooled task", func(t *testing.T) {
+		for _, follow := range []bool{false, true} {
+			c := &workflowmocks.WorkflowServiceClient{}
+			c.On("GetWorkflow", mock.Anything, mock.Anything).Return(pooledLogsWorkflow(), nil)
+			var err error
+			stderr := captureStderr(t, func() {
+				err = LogWorkflow(logging.TestContext(t.Context()), c, "argo", "my-wf", "my-wf-work-3", "", "", &corev1.PodLogOptions{Container: "main", Follow: follow})
+			})
+			require.EqualError(t, err, "my-wf-work-3 names only pooled tasks, which have no live logs", "follow %v", follow)
+			assert.Equal(t, strings.Join(pooledLogNotes(pooledLogsWorkflow(), "my-wf-work-3", "main"), "\n")+"\n", stderr, "follow %v", follow)
+			c.AssertNotCalled(t, "WorkflowLogs", mock.Anything, mock.Anything)
+		}
+	})
+	t.Run("naming a task enqueued while streaming", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
 		c.On("WorkflowLogs", mock.Anything, mock.Anything).Return(emptyLogStream{}, nil)
-		c.On("GetWorkflow", mock.Anything, mock.Anything).Return(pooledLogsWorkflow(), nil)
-		err := LogWorkflow(logging.TestContext(t.Context()), c, "argo", "my-wf", "my-wf-work-3", "", "", &corev1.PodLogOptions{Container: "main"})
+		c.On("GetWorkflow", mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil).Once()
+		c.On("GetWorkflow", mock.Anything, mock.Anything).Return(pooledLogsWorkflow(), nil).Once()
+		var err error
+		stderr := captureStderr(t, func() {
+			err = LogWorkflow(logging.TestContext(t.Context()), c, "argo", "my-wf", "my-wf-work-3", "", "", &corev1.PodLogOptions{Container: "main", Follow: true})
+		})
 		require.EqualError(t, err, "my-wf-work-3 names only pooled tasks, which have no live logs")
+		assert.Equal(t, strings.Join(pooledLogNotes(pooledLogsWorkflow(), "my-wf-work-3", "main"), "\n")+"\n", stderr)
+		c.AssertNumberOfCalls(t, "WorkflowLogs", 1)
 	})
 	t.Run("naming a pod", func(t *testing.T) {
 		c := &workflowmocks.WorkflowServiceClient{}
