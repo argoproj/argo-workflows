@@ -1,10 +1,12 @@
 import {NavigationManager} from 'argo-ui/src/components/navigation';
 import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
 import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
+import {ThemeProvider} from 'argo-ui/v2/shared/context/theme';
 import type {History} from 'history';
 import * as React from 'react';
 
 import 'argo-ui/src/styles/main.scss';
+import './dark-theme.scss';
 
 import {AppRouter} from './app-router';
 import {ContextApis, Provider} from './shared/context';
@@ -22,8 +24,10 @@ export function App({history}: {history: History}) {
     };
 
     return (
-        <Provider value={providerContext}>
-            <AppRouter history={history} notificationsManager={notificationsManager} popupManager={popupManager} />
-        </Provider>
+        <ThemeProvider>
+            <Provider value={providerContext}>
+                <AppRouter history={history} notificationsManager={notificationsManager} popupManager={popupManager} />
+            </Provider>
+        </ThemeProvider>
     );
 }
