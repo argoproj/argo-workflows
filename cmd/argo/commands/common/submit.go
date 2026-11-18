@@ -31,7 +31,8 @@ func NewCliSubmitOpts() CliSubmitOpts {
 func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts CliSubmitOpts) error {
 	if cliSubmitOpts.Log {
 		for _, workflow := range workflowNames {
-			if err := LogWorkflow(ctx, serviceClient, namespace, workflow, "", "", "", &corev1.PodLogOptions{
+			// only the stream: the notes LogWorkflow adds for pooled tasks cost a lookup of the whole workflow
+			if err := streamWorkflowLogs(ctx, serviceClient, namespace, workflow, "", "", "", &corev1.PodLogOptions{
 				Container: common.MainContainerName,
 				Follow:    true,
 				Previous:  false,

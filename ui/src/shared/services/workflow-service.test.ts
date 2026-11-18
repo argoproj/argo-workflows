@@ -186,4 +186,59 @@ describe('workflow service', () => {
         expect(getArtifactLogs).toHaveBeenCalledWith(completedWorkflow, 'test-node', 'step-1', '', false);
         expect(getClusterLogs).not.toHaveBeenCalled();
     });
+
+    test('getContainerLogs for a pooled node', async () => {
+        const runningWorkflow = {
+            ...workflow('test-workflow-1', 'argo', 'test-uid'),
+            spec: {templates: [{name: 'pooled-container', pool: {}}]},
+            status: {
+                nodes: {
+                    'test-node': {
+                        id: 'test-node',
+                        phase: 'Running',
+                        type: 'Pod',
+                        templateName: 'pooled-container',
+                        pooledTask: {
+                            conditions: [{type: 'Claimed', status: 'True', reason: 'Claimed', lastTransitionTime: ''}],
+                            taskName: 'test-workflow-1-pooled-container-1',
+                            workerPodName: 'pool-0123456789-abcde'
+                        }
+                    }
+                }
+            }
+        } as unknown as Workflow;
+        jest.spyOn(service, 'get').mockResolvedValue(runningWorkflow);
+        const getArtifactLogs = jest.spyOn(service, 'getContainerLogsFromArtifact').mockReturnValue(of({content: 'from artifact', podName: 'test-pod'}));
+        const getClusterLogs = jest.spyOn(service, 'getContainerLogsFromCluster').mockReturnValue(of({content: 'from cluster', podName: 'test-pod'}));
+
+        // a running pooled node has no logs yet, and calls neither source
+        await expect(firstValueFrom(service.getContainerLogs(runningWorkflow, 'test-workflow-1-pooled-container-1', 'test-node', 'main', '', false))).rejects.toThrow(
+            'A pooled task has no live logs; its logs are archived when it finishes, if log archiving is enabled'
+        );
+        expect(getArtifactLogs).not.toHaveBeenCalled();
+        expect(getClusterLogs).not.toHaveBeenCalled();
+
+        // once it has finished with main's logs archived, its archived logs, and only main's
+        const finishedNode = {...runningWorkflow.status.nodes['test-node'], phase: 'Succeeded', outputs: {artifacts: [{name: 'main-logs'}]}};
+        const finishedWorkflow = {...runningWorkflow, status: {nodes: {'test-node': finishedNode}}} as unknown as Workflow;
+        jest.spyOn(service, 'get').mockResolvedValue(finishedWorkflow);
+
+        const log = await firstValueFrom(service.getContainerLogs(finishedWorkflow, 'test-workflow-1-pooled-container-1', 'test-node', 'main', '', false));
+
+        expect(log.content).toBe('from artifact');
+        expect(getArtifactLogs).toHaveBeenCalledWith(finishedWorkflow, 'test-node', 'main', '', false);
+        expect(getClusterLogs).not.toHaveBeenCalled();
+        await expect(firstValueFrom(service.getContainerLogs(finishedWorkflow, 'test-workflow-1-pooled-container-1', 'test-node', 'wait', '', false))).rejects.toThrow(
+            "A pooled task has only main's archived logs, not wait's"
+        );
+        jest.spyOn(service, 'get').mockResolvedValue(runningWorkflow);
+
+        // with no pod picked, the logs are the whole workflow's, though the viewer opened on the pooled node
+        getArtifactLogs.mockClear();
+        const allLog = await firstValueFrom(service.getContainerLogs(runningWorkflow, '', 'test-node', 'main', '', false));
+
+        expect(allLog.content).toBe('from cluster');
+        expect(getClusterLogs).toHaveBeenCalledWith(runningWorkflow, '', 'main', '');
+        expect(getArtifactLogs).not.toHaveBeenCalled();
+    });
 });

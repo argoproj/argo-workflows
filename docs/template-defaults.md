@@ -27,6 +27,9 @@ spec:
 
 [template defaults example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/template-defaults.yaml)
 
+A `pool` in `templateDefaults` runs every container and script template on [hot workers](hot-workers.md); other template types ignore it.
+Each of those templates is then checked as a pooled template, and none can opt out; see [hot workers `templateDefaults`](hot-workers.md#templatedefaults).
+
 ## Configuring `templateDefaults` in Controller Level
 
 Operator can configure the `templateDefaults` in [workflow defaults](default-workflow-specs.md). This `templateDefault` will be applied to all the workflow which runs on the controller.

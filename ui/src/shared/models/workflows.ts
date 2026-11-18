@@ -468,6 +468,10 @@ export interface Template {
      */
     podResources?: kubernetes.ResourceRequirements;
     /**
+     * Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled.
+     */
+    pool?: Pool;
+    /**
      * Resource template subtype which can run k8s resources
      */
     resource?: ResourceTemplate;
@@ -716,6 +720,11 @@ export interface NodeStatus {
      * Memoization
      */
     memoizationStatus: MemoizationStatus;
+
+    /**
+     * PooledTask records the task of a node whose template has a pool, which runs on a pool's worker pod instead of its own pod.
+     */
+    pooledTask?: PooledTaskStatus;
 }
 
 export interface TemplateRef {
@@ -1024,6 +1033,71 @@ export interface WorkflowStep {
  * MemoizationStatus holds information about a node with memoization enabled.
  */
 
+/**
+ * Pool runs a container or script template's tasks on a pool of long-lived worker pods.
+ */
+export interface Pool {
+    /**
+     * Name of the pool. Defaults to `<workflowtemplate>-<template>` for a template from a (Cluster)WorkflowTemplate, otherwise the template's name.
+     */
+    name?: string;
+    /**
+     * InitialReplicas is the number of worker pods a new pool starts with. Defaults to 1.
+     */
+    initialReplicas?: number;
+    /**
+     * RetentionSeconds is how long the pool is kept once no task uses it.
+     */
+    retentionSeconds?: number;
+}
+
+/**
+ * PooledTaskState is where a pooled task is in its hand-off to a worker, derived from its ledger's conditions.
+ */
+export type PooledTaskState = 'Enqueued' | 'Claimed' | 'Interrupted';
+
+/**
+ * PooledTaskCondition is a condition of a pooled task's ledger: Claimed (reason Enqueued, Claimed or Released) or Interrupted.
+ */
+export interface PooledTaskCondition {
+    type: 'Claimed' | 'Interrupted';
+    status: 'True' | 'False' | 'Unknown';
+    reason: string;
+    message?: string;
+    lastTransitionTime: kubernetes.Time;
+}
+
+/**
+ * PooledTaskStatus is the controller's record of a pooled node's task.
+ */
+export interface PooledTaskStatus {
+    poolName: string;
+    poolHash: string;
+    /**
+     * TaskName is the task's `{{node.taskName}}`: the name its pod would have.
+     */
+    taskName: string;
+    taskSetUID: string;
+    enqueuedAt: kubernetes.Time;
+    deadline?: kubernetes.Time;
+    activeDeadlineSeconds?: number;
+    claimUID?: string;
+    /**
+     * WorkerPodName is the name of the worker pod running the task, once claimed.
+     */
+    workerPodName?: string;
+    workerPodUID?: string;
+    workerRestartCount?: number;
+    /**
+     * Conditions record the task's hand-off to a worker; its state is derived from them.
+     */
+    conditions?: PooledTaskCondition[];
+    /**
+     * Releases is how many times a worker has released the task.
+     */
+    releases?: number;
+}
+
 export interface MemoizationStatus {
     /**
      * Hit is true if there was a previous cache entry and false otherwise
@@ -1054,6 +1128,11 @@ export const NODE_PHASE = {
     ERROR: 'Error',
     OMITTED: 'Omitted'
 };
+
+// isEndedPhase says whether a node or workflow phase is one it ends in
+export function isEndedPhase(phase: string) {
+    return [NODE_PHASE.SUCCEEDED, NODE_PHASE.FAILED, NODE_PHASE.ERROR, NODE_PHASE.SKIPPED, NODE_PHASE.OMITTED].includes(phase);
+}
 
 export function getColorForNodePhase(p: NodePhase) {
     switch (p) {
