@@ -213,16 +213,7 @@ func (s *HotWorkersSuite) expectWorkerFree(poolName, worker string) {
 // retryPolicy OnError retries it.
 func (s *HotWorkersSuite) TestForceDeleteWorker() {
 	w := s.Given().
-		Workflow(`
-metadata:
-  generateName: pool-force-delete-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: task
+		Workflow(oneTask("pool-force-delete-", "task")+`
     - name: task
       pool:
         name: e2e-force-delete
@@ -307,16 +298,7 @@ func (s *HotWorkersSuite) TestScaleDown() {
 // OnFailure retries it.
 func (s *HotWorkersSuite) TestOOMKilled() {
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: pool-oom-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: task
+		Workflow(oneTask("pool-oom-", "task")+`
     - name: task
       pool:
         name: e2e-oom
@@ -544,16 +526,7 @@ spec:
 // deleted, and the next task creates it afresh.
 func (s *HotWorkersSuite) TestPoolRetention() {
 	const poolName = "e2e-retention"
-	workflow := fmt.Sprintf(`
-metadata:
-  generateName: pool-retention-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: echo
+	workflow := oneTask("pool-retention-", "echo") + fmt.Sprintf(`
     - name: echo
       pool:
         name: %s
@@ -623,9 +596,9 @@ spec:
 		WaitForWorkflow(fixtures.ToBeFailed, coldPoolTimeout)
 	before := w.GetWorkflow().Status.DeepCopy()
 	name := w.GetWorkflow().Name
-	w.Exec("../../dist/argo", []string{"-n", fixtures.Namespace, "retry", name, "-p", "pass=true"}, func(t *testing.T, output string, err error) {
-		require.NoError(t, err, output)
-	}).
+	w.Then().
+		RunCli([]string{"retry", name, "-p", "pass=true"}, fixtures.NoError).
+		When().
 		WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute).
 		Then().
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -656,16 +629,7 @@ func (s *HotWorkersSuite) TestDegradedPool() {
 	}
 	s.T().Cleanup(func() { _ = secrets.Delete(context.WithoutCancel(ctx), secret, metav1.DeleteOptions{}) })
 	s.Given().
-		Workflow(`
-metadata:
-  generateName: pool-degraded-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: task
-            template: late
+		Workflow(oneTask("pool-degraded-", "late")+`
     - name: late
       pool:
         name: e2e-degraded
