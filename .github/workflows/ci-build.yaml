@@ -260,10 +260,9 @@ jobs:
     env:
       KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
-      # e2e coverage: on main, and on PRs labelled ci/e2e-coverage (applies from
-      # the next push or re-run). Only the K8s max jobs: the coverage admission
-      # policy needs 1.36+.
-      E2E_COVERAGE: ${{ ((github.event_name == 'push' && github.ref == 'refs/heads/main') || contains(github.event.pull_request.labels.*.name, 'ci/e2e-coverage')) && (matrix.k8s_version || 'max') == 'max' && 'true' || 'false' }}
+      # e2e coverage: on pushes to main, and only the K8s max jobs: the coverage
+      # admission policy needs 1.36+.
+      E2E_COVERAGE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && (matrix.k8s_version || 'max') == 'max' && 'true' || 'false' }}
     strategy:
       fail-fast: false
       matrix:

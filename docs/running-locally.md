@@ -198,7 +198,7 @@ If tests run slowly or time out, factory reset your Kubernetes cluster.
 
 #### Measuring E2E Coverage
 
-CI measures the coverage that the E2E tests give `argoexec` and the `argo` CLI on every push to `main`, and on pull requests labelled `ci/e2e-coverage`.
+CI measures the coverage that the E2E tests give `argoexec` and the `argo` CLI on every push to `main`.
 To measure it locally, start a fresh cluster with coverage enabled, which needs Kubernetes 1.36 or later:
 
 ```bash
