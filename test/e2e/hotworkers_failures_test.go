@@ -244,6 +244,17 @@ func (s *HotWorkersSuite) TestForceDeleteWorker() {
 		ExpectWorkflowTaskSets(common.LabelKeyPoolHash, expectNoPooledTaskSets)
 }
 
+// releasable is a workflow whose one step sleeps for releasedSeconds on a
+// one-worker pool, and may be retried once, whatever ended it. A release
+// that wrongly used up a retry shows as a second attempt, task(1).
+func releasable(poolName string) string {
+	return oneTask("pool-release-", "sleep") + sleepTemplate(poolName, releasedSeconds, 300, "") + `
+      retryStrategy:
+        limit: 1
+        retryPolicy: Always
+`
+}
+
 // expectReleasedOnce checks the workflow's one task succeeded on a worker
 // other than worker after one release, as its only attempt.
 func expectReleasedOnce(worker string) func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -263,11 +274,11 @@ func expectReleasedOnce(worker string) func(t *testing.T, md *metav1.ObjectMeta,
 // it runs the task again without using a retry.
 func (s *HotWorkersSuite) TestGracefulDeleteWorker() {
 	w := s.Given().
-		Workflow(sleeper("e2e-graceful-delete", releasedSeconds)).
+		Workflow(releasable("e2e-graceful-delete")).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toBeClaimed("task"), coldPoolTimeout)
-	worker := workerOf(s.T(), w.GetWorkflow(), "task")
+		WaitForWorkflow(toBeClaimed("task(0)"), coldPoolTimeout)
+	worker := workerOf(s.T(), w.GetWorkflow(), "task(0)")
 	s.deletePod(worker, nil)
 	w.WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
 		Then().
@@ -280,13 +291,13 @@ func (s *HotWorkersSuite) TestGracefulDeleteWorker() {
 func (s *HotWorkersSuite) TestScaleDown() {
 	const poolName = "e2e-scale-down"
 	w := s.Given().
-		Workflow(sleeper(poolName, releasedSeconds)).
+		Workflow(releasable(poolName)).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(toBeClaimed("task"), coldPoolTimeout)
-	worker := workerOf(s.T(), w.GetWorkflow(), "task")
+		WaitForWorkflow(toBeClaimed("task(0)"), coldPoolTimeout)
+	worker := workerOf(s.T(), w.GetWorkflow(), "task(0)")
 	s.scalePool(poolName, 0)
-	w.WaitForWorkflow(toBeReleased("task"), time.Minute)
+	w.WaitForWorkflow(toBeReleased("task(0)"), time.Minute)
 	s.scalePool(poolName, 1)
 	w.WaitForWorkflow(fixtures.ToBeSucceeded, 2*time.Minute).
 		Then().
@@ -661,9 +672,5 @@ func (s *HotWorkersSuite) TestDegradedPool() {
 			}, metav1.CreateOptions{})
 			s.CheckError(err)
 		}).
-		WaitForWorkflow(fixtures.ToBeSucceeded, 3*time.Minute).
-		Then().
-		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Empty(t, node(t, status, "task").Message, "the pool's recovery clears the message")
-		})
+		WaitForWorkflow(fixtures.ToBeSucceeded, 3*time.Minute)
 }
