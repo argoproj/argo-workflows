@@ -78,13 +78,22 @@ func (s PodTaskConfig) command(ctx context.Context) ([]string, error) {
 	}
 	command = append(command, fileArgs...)
 	logger.WithField("count", len(fileArgs)).Info(ctx, "Loaded container args from file")
+	return OffloadLargeArgs(ctx, command, "/tmp")
+}
 
-	// Check for a large args and offload to file if needed
-	// This avoids the exec() "argument list too long" error
-	// Downstream programs should support @filename for parsing large args
+// OffloadLargeArgs writes each argument of command longer than exec allows
+// (common.MaxEnvVarLen) to dir/argo_arg_<i>.txt and replaces it with
+// @<file>, avoiding exec's "argument list too long" error. Downstream
+// programs must support @filename for such arguments. command is modified
+// in place and returned.
+func OffloadLargeArgs(ctx context.Context, command []string, dir string) ([]string, error) {
+	if len(command) == 0 {
+		return command, nil
+	}
+	logger := logging.RequireLoggerFromContext(ctx)
 	for i, arg := range command[1:] {
 		if len(arg) > common.MaxEnvVarLen {
-			filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
+			filePath := filepath.Join(dir, fmt.Sprintf("argo_arg_%d.txt", i))
 			if err := os.WriteFile(filePath, []byte(arg), 0o644); err != nil {
 				return nil, fmt.Errorf("failed to write large arg %d to file: %w", i, err)
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -153,6 +154,20 @@ func TerminationGracePeriodDuration() time.Duration {
 		return time.Duration(x) * time.Second
 	}
 	return 30 * time.Second
+}
+
+// ReleaseReserve is the time a hot worker pool pod's containers keep back at
+// the end of the pod's grace period to release its task
+// (ARGO_RELEASE_RESERVE_SECONDS), which the controller sets on both from
+// its validated config.
+func ReleaseReserve() (time.Duration, error) {
+	const maxSeconds = math.MaxInt64 / int64(time.Second)
+	v := os.Getenv(common.EnvVarReleaseReserveSeconds)
+	reserve, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || reserve <= 0 || reserve > maxSeconds {
+		return 0, fmt.Errorf("%s must be a whole number of seconds between 1 and %d, not %q", common.EnvVarReleaseReserveSeconds, maxSeconds, v)
+	}
+	return time.Duration(reserve) * time.Second, nil
 }
 
 // CheckErr is a convenience function to panic upon error
