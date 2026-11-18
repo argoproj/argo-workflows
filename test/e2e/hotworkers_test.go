@@ -30,6 +30,26 @@ type HotWorkersSuite struct {
 	fixtures.E2ESuite
 }
 
+// SetupSuite deletes the pools an earlier run left, and waits for their
+// pods to go. A failed test ends the run before it can put its pool back,
+// so a rerun within the pool's retention would otherwise find it as the
+// test left it, such as scaled to no replicas.
+func (s *HotWorkersSuite) SetupSuite() {
+	s.E2ESuite.SetupSuite()
+	ctx := logging.TestContext(s.T().Context())
+	pods := s.KubeClient.CoreV1().Pods(fixtures.Namespace)
+	pooled := metav1.ListOptions{LabelSelector: common.LabelKeyPoolName}
+	stale, err := pods.List(ctx, pooled)
+	s.CheckError(err)
+	s.CheckError(s.KubeClient.AppsV1().Deployments(fixtures.Namespace).DeleteCollection(ctx, metav1.DeleteOptions{}, pooled))
+	// A pool with a task left is created again, with new pods.
+	s.Eventually(func() bool {
+		left, err := pods.List(ctx, pooled)
+		s.CheckError(err)
+		return !slices.ContainsFunc(left.Items, func(p apiv1.Pod) bool { return hasPod(stale.Items, p.UID) })
+	}, 2*time.Minute, time.Second, "the pools of an earlier run are gone")
+}
+
 // The default artifact repository's bucket.
 const hotWorkersBucket = "my-bucket"
 
