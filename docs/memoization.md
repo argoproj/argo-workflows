@@ -22,7 +22,8 @@ All cache ConfigMaps must have the label `workflows.argoproj.io/configmap-type: 
 
 > v4.0 and after
 
-Alternatively, cache entries can be stored in a PostgreSQL or MySQL database. This is recommended for production use — it has no size limits, supports long-term persistence, and includes automatic garbage collection.
+Alternatively, cache entries can be stored in a PostgreSQL or MySQL database to avoid the 1 MiB ConfigMap size limit.
+Both backends scope caches to the controller's namespace, so workflows managed by that controller can share a cache across workflow namespaces.
 
 To enable SQL-backed memoization, add a `memoization` block to the `workflow-controller-configmap`:
 
@@ -49,10 +50,23 @@ data:
 
 SQL-backed memoization stores entries in the configured table. Set `memoization.tableName` to override the default table name; if omitted, it defaults to `cache_entries`.
 The database connection settings remain under `postgresql` or `mysql`.
+The controller fails startup if the configured database cannot be connected to or initialized.
+It does not fall back to ConfigMaps when SQL memoization is configured.
+On configuration changes, the controller creates and initializes a new connection before replacing the previous backend.
+Removing `memoization` restores ConfigMap-backed caching; existing cache entries are not copied between backends.
 
-Each cache entry stores its expiry time when it is written, derived from the template's `maxAge` field. If `maxAge` is not specified on the template, it defaults to 30 days (2592000 seconds). This default can be overridden by setting the `DEFAULT_MAX_AGE` environment variable on the workflow controller for SQL-backed memoization (accepts Go duration strings like `720h` or integer seconds like `2592000`).
+If the template specifies `memoize.maxAge`, each SQL entry stores its expiry time when it is written.
+If `maxAge` is omitted, the SQL entry has no expiry and is not removed by SQL garbage collection.
+There is no default TTL.
+ConfigMap caches retain their existing unused-entry garbage collection, controlled by `CACHE_GC_PERIOD` and `CACHE_GC_AFTER_NOT_HIT_DURATION`.
 
-The garbage collector periodically deletes expired entries. The GC period defaults to 24 hours and can be configured via the `MEMO_CACHE_GC_PERIOD` environment variable.
+The SQL backend records expiry at save time; ConfigMap-backed memoization checks `maxAge` at lookup time without recording an expiry timestamp.
+The controller also checks the requesting template's `maxAge` on SQL cache hits, so a shorter `maxAge` can reject an entry before its stored expiry.
+Increasing `maxAge` does not extend the stored expiry of an existing SQL entry.
+
+The SQL garbage collector periodically deletes expired entries.
+The GC period defaults to 24 hours and can be configured via `MEMO_CACHE_GC_PERIOD`.
+Set it to `0` or a negative duration to disable SQL pruning; expired entries still produce cache misses.
 
 MySQL is also supported:
 
@@ -100,7 +114,7 @@ spec:
 |-------|----------|-------------|
 | `key` | Yes | The cache lookup key. |
 | `cache` | Yes | Specifies the cache storage. When using the ConfigMap backend, a ConfigMap is created. When using the SQL backend, `cache.configMap.name` acts as a logical group name in the database — no ConfigMap is created. |
-| `maxAge` | No | Maximum age of a cache entry (e.g. `"180s"`, `"24h"`). Entries older than this are treated as misses at lookup time. When omitted for SQL-backed memoization, it defaults to 30 days or the controller's `DEFAULT_MAX_AGE` setting. |
+| `maxAge` | No | Maximum age of a cache entry (e.g. `"180s"`, `"24h"`). Entries older than this are treated as misses at lookup time. SQL entries also record this expiry at save time. When omitted, no age limit is applied at lookup and SQL entries have no expiry. |
 
 [Find a simple example for memoization here](https://github.com/argoproj/argo-workflows/blob/main/examples/memoize-simple.yaml).
 

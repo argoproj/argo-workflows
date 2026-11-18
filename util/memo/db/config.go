@@ -74,12 +74,10 @@ func ConfigFromConfig(cfg *config.MemoizationConfig) Config {
 	}
 }
 
-// SessionProxyFromConfig creates a SessionProxy from a MemoizationConfig, returning nil and logging
-// an error if the connection cannot be established. Callers that receive nil should decide how to
-// degrade memoization without crashing the controller.
-func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MemoizationConfig) *sqldb.SessionProxy {
+// SessionProxyFromConfig creates a connection and applies its pool settings.
+func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MemoizationConfig) (*sqldb.SessionProxy, error) {
 	if cfg == nil {
-		return nil
+		return nil, fmt.Errorf("memoization configuration is required")
 	}
 	sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
 		KubectlConfig: kubectlConfig,
@@ -87,17 +85,14 @@ func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interf
 		DBConfig:      cfg.DBConfig,
 	})
 	if err != nil {
-		log := logging.RequireLoggerFromContext(ctx)
-		log.WithError(err).Error(ctx, "unable to create memoization database connection")
-		return nil
+		return nil, err
 	}
-	sqldb.ConfigureDBSession(sessionProxy.Session(), cfg.ConnectionPool)
-	return sessionProxy
+	sqldb.ConfigureDBSession(sessionProxy.Session(ctx), cfg.ConnectionPool)
+	return sessionProxy, nil
 }
 
 // Migrate runs database migrations for the memoization cache table. It is a no-op when
-// cfg.SkipMigration is true. Returns an error if migration fails; callers should decide how to
-// degrade memoization without crashing the controller.
+// cfg.SkipMigration is true. Returns an error if migration fails.
 func Migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, cfg Config) error {
 	if sessionProxy == nil {
 		return nil
@@ -111,7 +106,7 @@ func Migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, cfg Config) 
 		return nil
 	}
 	logger.Info(ctx, "Running memoization db migration")
-	if err := migrate(ctx, sessionProxy.Session(), sessionProxy.DBType(), cfg.TableName); err != nil {
+	if err := migrate(ctx, sessionProxy.Session(ctx), sessionProxy.DBType(), cfg.TableName); err != nil {
 		return err
 	}
 	logger.Info(ctx, "Memoization db migration complete")

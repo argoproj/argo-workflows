@@ -31,14 +31,14 @@ func TestCacheRecordUpdates(t *testing.T) {
 		NodeID:    "node-1",
 		Outputs:   `{"result":"ok"}`,
 		CreatedAt: now,
-		ExpiresAt: expiresAt,
+		ExpiresAt: &expiresAt,
 	}
 
 	assert.Equal(t, map[string]any{
 		"node_id":    "node-1",
 		"outputs":    `{"result":"ok"}`,
 		"created_at": now,
-		"expires_at": expiresAt,
+		"expires_at": &expiresAt,
 	}, cacheRecordUpdates(record))
 }
 

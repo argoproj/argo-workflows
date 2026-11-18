@@ -16,7 +16,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	wfsync "github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -174,7 +173,11 @@ func (woc *wfOperationCtx) handleMemoization(ctx context.Context, nodeName strin
 	}
 
 	if node == nil || unlockedNode {
-		memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+		if processedTmpl.Memoize.Cache == nil || processedTmpl.Memoize.Cache.ConfigMap == nil || processedTmpl.Memoize.Cache.ConfigMap.Name == "" {
+			err := fmt.Errorf("memoize.cache.configMap.name is required")
+			return true, woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, boundaryID, nodeFlag, err), err
+		}
+		memoizationCache := woc.controller.cacheFactory.GetCache(processedTmpl.Memoize.Cache.ConfigMap.Name)
 		if memoizationCache == nil {
 			err := fmt.Errorf("cache could not be found or created")
 			woc.log.WithFields(logging.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err).Error(ctx, "memoization cache could not be found or created")

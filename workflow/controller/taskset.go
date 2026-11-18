@@ -16,7 +16,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
@@ -222,28 +221,17 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			node.Message = taskResult.Message
 			node.FinishedAt = metav1.Now()
 
-			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
-			// The node is finished with the template it was dispatched with
-			// (the task set holds it), as the Engine has already run.
+			// The task set holds the template the node was dispatched with.
 			tmpl := workflowTaskSet.Spec.Tasks[nodeID]
-			woc.handleNodeFulfilled(ctx, node, &tmpl)
-			if node.MemoizationStatus != nil && node.Succeeded() {
-				c := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, node.MemoizationStatus.CacheName)
-				if c == nil {
-					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
-				} else {
-					nodeTmpl, tmplErr := woc.GetNodeTemplate(ctx, node)
-					maxAge := ""
-					if tmplErr != nil {
-						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(tmplErr).Warn(ctx, "Failed to get node template for cache save; using default maxAge")
-					} else if nodeTmpl != nil && nodeTmpl.Memoize != nil {
-						maxAge = nodeTmpl.Memoize.MaxAge
-					}
-					if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAge); err != nil {
-						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
-					}
+			if node.Succeeded() {
+				if err := woc.saveMemoizationCache(ctx, node, &tmpl); err != nil {
+					woc.log.WithField("nodeID", node.ID).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+					node.Phase = wfv1.NodeError
+					node.Message = err.Error()
 				}
 			}
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			woc.handleNodeFulfilled(ctx, node, &tmpl)
 			woc.updated = true
 		}
 	}

@@ -104,15 +104,3 @@ func TestConfigMapCacheSave(t *testing.T) {
 	wfv1.MustUnmarshal([]byte(cm.Data["hi-there-world"]), &entry)
 	assert.Equal(t, entry.LastHitTimestamp.Time, entry.CreationTimestamp.Time)
 }
-
-func TestConfigMapCacheSaveIgnoresInvalidDefaultMaxAge(t *testing.T) {
-	t.Setenv("DEFAULT_MAX_AGE", "definitely-not-a-duration")
-
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx)
-	defer cancel()
-
-	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
-	outputs := &wfv1.Outputs{}
-	require.NoError(t, c.Save(ctx, "hi-there-world", "", outputs, ""))
-}
