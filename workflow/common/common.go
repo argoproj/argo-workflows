@@ -20,6 +20,12 @@ const (
 	SupervisorContainerName     = "supervisor"
 	ArtifactPluginSidecarPrefix = "artifact-plugin-"
 	ArtifactPluginInitPrefix    = InitContainerName + "-artifact-"
+	// WorkerContainerName is the argoexec container of a pool's worker pod,
+	// which claims pooled tasks and handles their artifacts and results. It is
+	// deliberately not one of IsArgoAuxilliary's names: those apply to every
+	// pod, and a user sidecar named worker on a workflow pod stays a user
+	// container.
+	WorkerContainerName = "worker"
 
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
