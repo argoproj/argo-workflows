@@ -107,3 +107,8 @@ func (h WorkflowServiceClient) SubmitWorkflow(ctx context.Context, in *workflowp
 	out := &wfv1.Workflow{}
 	return out, h.Post(ctx, in, out, "/api/v1/workflows/{namespace}/submit")
 }
+
+func (h WorkflowServiceClient) ResolveParameterEnum(ctx context.Context, in *workflowpkg.ResolveParameterEnumRequest, _ ...grpc.CallOption) (*workflowpkg.ResolveParameterEnumResponse, error) {
+	out := &workflowpkg.ResolveParameterEnumResponse{}
+	return out, h.Post(ctx, in, out, "/api/v1/workflows/{namespace}/resolve-enum")
+}

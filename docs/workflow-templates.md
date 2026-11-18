@@ -298,3 +298,6 @@ spec:
           - echo
           - '{{inputs.parameters.message}}'
 ```
+
+To fill the drop-down list from live Kubernetes resources, such as namespaces or Deployments, use `enumFrom` instead.
+See [Dynamic Parameter Enums](dynamic-parameter-enums.md).

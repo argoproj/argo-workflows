@@ -29,6 +29,7 @@ func NewSubmitCommand() *cobra.Command {
 		cliSubmitOpts  = common.NewCliSubmitOpts()
 		priority       int32
 		from           string
+		interactive    bool
 	)
 	command := &cobra.Command{
 		Use:   "submit [FILE... | --from `kind/name]",
@@ -53,6 +54,10 @@ func NewSubmitCommand() *cobra.Command {
 
   argo submit --from cronwf/my-cron-wf
 
+# Prompt for each parameter, choosing from lists for enum and enumFrom parameters:
+
+  argo submit --from workflowtemplate/my-wftmpl --interactive
+
 # Submit multiple workflows from stdin:
 
   cat my-wf.yaml | argo submit -
@@ -60,6 +65,9 @@ func NewSubmitCommand() *cobra.Command {
 		Args: func(cmd *cobra.Command, args []string) error {
 			if from != "" && len(args) != 0 {
 				return errors.New("cannot combine --from with file arguments")
+			}
+			if interactive && from == "" {
+				return errors.New("--interactive requires --from, because options are resolved from the stored resource")
 			}
 			return nil
 		},
@@ -86,6 +94,11 @@ func NewSubmitCommand() *cobra.Command {
 
 			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
 			namespace := client.Namespace(ctx)
+			if interactive {
+				if err := addInteractiveParameters(ctx, apiClient, serviceClient, namespace, from, &submitOpts, os.Stdin, os.Stderr); err != nil {
+					return err
+				}
+			}
 			if from != "" {
 				return submitWorkflowFromResource(ctx, serviceClient, namespace, from, &submitOpts, &cliSubmitOpts)
 			}
@@ -99,6 +112,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.Strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
+	command.Flags().BoolVar(&interactive, "interactive", false, "prompt for each parameter not set with --parameter, choosing from a list for enum and enumFrom parameters. Requires --from")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
 	command.Flags().StringVar(&cliSubmitOpts.GetArgs.Status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
 	command.Flags().StringVar(&cliSubmitOpts.GetArgs.NodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
@@ -175,21 +189,27 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 	return nil
 }
 
-func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *common.CliSubmitOpts) error {
+func parseResourceIdentifier(resourceIdentifier string) (kind, name string, err error) {
 	parts := strings.SplitN(resourceIdentifier, "/", 2)
 	if len(parts) != 2 {
-		return fmt.Errorf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
+		return "", "", fmt.Errorf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
 	}
-	kind := parts[0]
-	name := parts[1]
+	return parts[0], parts[1], nil
+}
+
+func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *common.CliSubmitOpts) error {
+	kind, name, err := parseResourceIdentifier(resourceIdentifier)
+	if err != nil {
+		return err
+	}
 
 	tempwf := wfv1.Workflow{}
 
-	if err := validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts); err != nil {
+	if err = validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts); err != nil {
 		return err
 	}
 	if cliOpts.ScheduledTime != "" {
-		_, err := time.Parse(time.RFC3339, cliOpts.ScheduledTime)
+		_, err = time.Parse(time.RFC3339, cliOpts.ScheduledTime)
 		if err != nil {
 			return fmt.Errorf("scheduled-time contains invalid time.RFC3339 format. (e.g.: `2006-01-02T15:04:05-07:00`)")
 		}

@@ -60,6 +60,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate":                   schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data":                          schema_pkg_apis_workflow_v1alpha1_Data(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DataSource":                    schema_pkg_apis_workflow_v1alpha1_DataSource(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.EnumFrom":                      schema_pkg_apis_workflow_v1alpha1_EnumFrom(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Event":                         schema_pkg_apis_workflow_v1alpha1_Event(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig":                schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorPlugin":                schema_pkg_apis_workflow_v1alpha1_ExecutorPlugin(ref),
@@ -119,6 +120,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC":                         schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Prometheus":                    schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact":                   schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceSelector":              schema_pkg_apis_workflow_v1alpha1_ResourceSelector(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate":              schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryAffinity":                 schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity":         schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref),
@@ -2691,6 +2693,44 @@ func schema_pkg_apis_workflow_v1alpha1_DataSource(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_EnumFrom(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"resource": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Resource is the kind of resource to list",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceSelector"),
+						},
+					},
+					"jsonPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "JSONPath extracts the values from each listed resource, for example `{.metadata.name}`",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"labelSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LabelSelector filters the listed resources, for example `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"resource", "jsonPath"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceSelector"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -5041,6 +5081,12 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							},
 						},
 					},
+					"enumFrom": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. You can't use it together with Enum.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.EnumFrom"),
+						},
+					},
 					"description": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Description is the parameter description",
@@ -5053,7 +5099,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ValueFrom"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.EnumFrom", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ValueFrom"},
 	}
 }
 
@@ -5267,6 +5313,43 @@ func schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref common.ReferenceCallback)
 					},
 				},
 				Required: []string{"data"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ResourceSelector(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ResourceSelector identifies the resources an EnumFrom lists",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion of the resource, for example `v1` or `apps/v1`",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"apiVersion", "kind"},
 			},
 		},
 	}

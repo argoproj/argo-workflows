@@ -348,3 +348,17 @@ func x(ctx context.Context, authorization string) context.Context {
 func TestGetClaimSet(t *testing.T) {
 	assert.Nil(t, GetClaims(logging.TestContext(t.Context())))
 }
+
+func TestCallerKey(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	with := func(pairs ...string) context.Context {
+		return metadata.NewIncomingContext(ctx, metadata.Pairs(pairs...))
+	}
+	alice := CallerKey(with("authorization", "Bearer alice"))
+	assert.Equal(t, alice, CallerKey(with("authorization", "Bearer alice")))
+	assert.NotEqual(t, alice, CallerKey(with("authorization", "Bearer bob")))
+	assert.NotEqual(t, alice, CallerKey(ctx), "anonymous callers must not share a key with token holders")
+	assert.Equal(t, CallerKey(ctx), CallerKey(with("x-other", "1")))
+	assert.NotEqual(t, CallerKey(ctx), CallerKey(with("cookie", "authorization=Bearer carol")))
+	assert.NotContains(t, alice, "alice")
+}

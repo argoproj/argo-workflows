@@ -64,7 +64,12 @@ export function RetryWorkflowNode(props: Props) {
                     <div key='parameters' style={{marginBottom: 25}}>
                         <label>Parameters</label>
                         {workflowParameters.length > 0 ? (
-                            <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />
+                            <ParametersInput
+                                namespace={props.workflow.metadata.namespace}
+                                source={{kind: 'Workflow', name: props.workflow.metadata.name}}
+                                parameters={workflowParameters}
+                                onChange={setWorkflowParameters}
+                            />
                         ) : (
                             <>
                                 <br />

@@ -208,9 +208,44 @@ export interface Parameter {
      */
     enum?: Array<string>;
     /**
+     * EnumFrom specifies how to dynamically resolve an enum from Kubernetes resources
+     */
+    enumFrom?: EnumFrom;
+    /**
      * Description is the parameter description
      */
     description?: string;
+}
+
+/**
+ * The stored object a parameter is defined on. The server reads a parameter's enumFrom from here.
+ */
+export interface ParameterSource {
+    kind: 'WorkflowTemplate' | 'ClusterWorkflowTemplate' | 'CronWorkflow' | 'Workflow';
+    name: string;
+    /**
+     * Set when the parameter is one of this template's inputs rather than a workflow argument
+     */
+    templateName?: string;
+}
+
+/**
+ * EnumFrom specifies how to dynamically resolve an enum from Kubernetes resources
+ */
+export interface EnumFrom {
+    resource: {
+        apiVersion: string;
+        kind: string;
+        /**
+         * Namespace to list in; may reference other parameters, e.g. "{{workflow.parameters.ns}}"
+         */
+        namespace?: string;
+    };
+    /**
+     * JSONPath expression to extract values, e.g. "{.metadata.name}"
+     */
+    jsonPath: string;
+    labelSelector?: string;
 }
 
 /**

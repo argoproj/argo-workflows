@@ -5,7 +5,7 @@ import {NameFilterKeys} from '../../workflows/components/workflow-filters/workfl
 import {uiUrl} from '../base';
 import * as models from '../models';
 import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Workflow, WorkflowList, WorkflowPhase} from '../models';
-import {ResubmitOpts, RetryOpts} from '../models';
+import {ParameterSource, ResubmitOpts, RetryOpts} from '../models';
 import {SubmitOpts} from '../models/submit-opts';
 import {Pagination} from '../pagination';
 import requests from './requests';
@@ -31,6 +31,22 @@ export const WorkflowsService = {
             .post(`api/v1/workflows/${namespace}`)
             .send({workflow})
             .then(res => res.body as Workflow);
+    },
+
+    // Resolves the enumFrom of a parameter stored on `source`. The server reads the enumFrom itself;
+    // the client only says which parameter it wants.
+    resolveParameterEnum(namespace: string, source: ParameterSource, parameterName: string, parameters: Record<string, string>): Promise<{values: string[]; truncated: boolean}> {
+        return requests
+            .post(`api/v1/workflows/${namespace}/resolve-enum`)
+            .send({
+                namespace,
+                resourceKind: source.kind,
+                resourceName: source.name,
+                templateName: source.templateName,
+                parameterName,
+                parameters
+            })
+            .then(res => ({values: (res.body.values as string[]) || [], truncated: !!res.body.truncated}));
     },
 
     list(

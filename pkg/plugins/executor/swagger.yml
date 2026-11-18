@@ -1450,6 +1450,23 @@ definitions:
                 $ref: '#/definitions/Quantity'
         title: Represents an empty directory for a pod.
         type: object
+    EnumFrom:
+        description: |-
+            EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI
+            or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials.
+            It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.
+        properties:
+            jsonPath:
+                description: JSONPath extracts the values from each listed resource, for example `{.metadata.name}`
+                type: string
+            labelSelector:
+                description: |-
+                    LabelSelector filters the listed resources, for example `tier=web`.
+                    It may reference other workflow parameters, so the list can depend on another parameter's value.
+                type: string
+            resource:
+                $ref: '#/definitions/ResourceSelector'
+        type: object
     EnvFromSource:
         description: EnvFromSource represents the source of a set of ConfigMaps or Secrets
         properties:
@@ -2778,6 +2795,8 @@ definitions:
                 items:
                     $ref: '#/definitions/AnyString'
                 type: array
+            enumFrom:
+                $ref: '#/definitions/EnumFrom'
             globalName:
                 description: |-
                     GlobalName exports an output parameter to the global scope, making it available as
@@ -3881,6 +3900,21 @@ definitions:
     ResourceResizeRestartPolicy:
         title: ResourceResizeRestartPolicy specifies how to handle container resource resize.
         type: string
+    ResourceSelector:
+        description: ResourceSelector identifies the resources an EnumFrom lists
+        properties:
+            apiVersion:
+                description: APIVersion of the resource, for example `v1` or `apps/v1`
+                type: string
+            kind:
+                description: Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.
+                type: string
+            namespace:
+                description: |-
+                    Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds.
+                    It may reference other workflow parameters, so the list can depend on another parameter's value.
+                type: string
+        type: object
     ResourceTemplate:
         description: |-
             ResourceTemplate is a template subtype to manipulate kubernetes resources

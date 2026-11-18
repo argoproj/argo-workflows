@@ -29,6 +29,10 @@ argo submit [FILE... | --from `kind/name] [flags]
 
   argo submit --from cronwf/my-cron-wf
 
+# Prompt for each parameter, choosing from lists for enum and enumFrom parameters:
+
+  argo submit --from workflowtemplate/my-wftmpl --interactive
+
 # Submit multiple workflows from stdin:
 
   cat my-wf.yaml | argo submit -
@@ -43,6 +47,7 @@ argo submit [FILE... | --from `kind/name] [flags]
       --from kind/name               Submit from an existing kind/name E.g., --from=cronwf/hello-world-cwf
       --generate-name string         override metadata.generateName
   -h, --help                         help for submit
+      --interactive                  prompt for each parameter not set with --parameter, choosing from a list for enum and enumFrom parameters. Requires --from
   -l, --labels string                Comma separated labels to apply to the workflow. Will override previous values.
       --log                          log the workflow until it completes
       --name string                  override metadata.name

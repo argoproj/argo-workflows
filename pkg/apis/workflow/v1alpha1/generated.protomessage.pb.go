@@ -95,6 +95,8 @@ func (*Data) ProtoMessage() {}
 
 func (*DataSource) ProtoMessage() {}
 
+func (*EnumFrom) ProtoMessage() {}
+
 func (*Event) ProtoMessage() {}
 
 func (*ExecutorConfig) ProtoMessage() {}
@@ -212,6 +214,8 @@ func (*PodGC) ProtoMessage() {}
 func (*Prometheus) ProtoMessage() {}
 
 func (*RawArtifact) ProtoMessage() {}
+
+func (*ResourceSelector) ProtoMessage() {}
 
 func (*ResourceTemplate) ProtoMessage() {}
 

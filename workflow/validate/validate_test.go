@@ -3985,3 +3985,61 @@ spec:
 `)
 	require.ErrorContains(t, err, "invalid dependency false")
 }
+
+func TestWorkflowTemplateWithEnumFrom(t *testing.T) {
+	tmpl := func(argEnumFrom, inputEnumFrom string) string {
+		return `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: enum-from
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: ns
+` + argEnumFrom + `
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: deployment
+` + inputEnumFrom + `
+      container:
+        image: argoproj/argosay:v2
+`
+	}
+	const namespaces = `        enumFrom:
+          resource: {apiVersion: v1, kind: Namespace}
+          jsonPath: "{.metadata.name}"`
+	const deployments = `            enumFrom:
+              resource: {apiVersion: apps/v1, kind: Deployment, namespace: "{{workflow.parameters.ns}}"}
+              jsonPath: "{.metadata.name}"`
+	ctx := logging.TestContext(t.Context())
+
+	require.NoError(t, validateWorkflowTemplate(ctx, tmpl(namespaces, deployments), Opts{Lint: true}))
+
+	for name, tc := range map[string]struct {
+		arg, input, err string
+	}{
+		"EnumAndEnumFrom": {namespaces + "\n        enum: [a]", "", "spec.arguments.ns cannot have both enum and enumFrom"},
+		"MissingKind": {`        enumFrom:
+          resource: {apiVersion: v1}
+          jsonPath: "{.metadata.name}"`, "", "spec.arguments.ns.enumFrom.resource must have apiVersion and kind"},
+		"MissingJSONPath": {`        enumFrom:
+          resource: {apiVersion: v1, kind: Namespace}`, "", "spec.arguments.ns.enumFrom.jsonPath is required"},
+		"InvalidJSONPath": {`        enumFrom:
+          resource: {apiVersion: v1, kind: Namespace}
+          jsonPath: "{.metadata.name"`, "", "spec.arguments.ns.enumFrom.jsonPath invalid: unclosed action"},
+		"Secret": {`        enumFrom:
+          resource: {apiVersion: v1, kind: Secret}
+          jsonPath: "{.metadata.name}"`, "", "spec.arguments.ns.enumFrom cannot list Secrets"},
+		"SecretInTemplateInput": {namespaces, `            enumFrom:
+              resource: {apiVersion: v1, kind: Secret}
+              jsonPath: "{.metadata.name}"`, "templates.main.inputs.parameters.deployment.enumFrom cannot list Secrets"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.EqualError(t, validateWorkflowTemplate(ctx, tmpl(tc.arg, tc.input), Opts{Lint: true}), tc.err)
+		})
+	}
+}

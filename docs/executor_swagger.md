@@ -1217,6 +1217,28 @@ can be used as map keys in json.
 
 
 
+### <span id="enum-from"></span> EnumFrom
+
+
+> EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI
+or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials.
+It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| jsonPath | string| `string` |  | | JSONPath extracts the values from each listed resource, for example `{.metadata.name}` |  |
+| labelSelector | string| `string` |  | | LabelSelector filters the listed resources, for example `tier=web`.</br>It may reference other workflow parameters, so the list can depend on another parameter's value. |  |
+| resource | [ResourceSelector](#resource-selector)| `ResourceSelector` |  | |  |  |
+
+
+
 ### <span id="env-from-source"></span> EnvFromSource
 
 
@@ -2625,6 +2647,7 @@ be cluster-scoped, so there is no namespace field.
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter </br>*Minimum items: 1.*|  |
+| enumFrom | [EnumFrom](#enum-from)| `EnumFrom` |  | |  |  |
 | globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as</br>workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters |  |
 | name | string| `string` |  | | Name is the parameter name </br>*Validation regex: `^[-a-zA-Z0-9_]+$`.*|  |
 | value | [AnyString](#any-string)| `AnyString` |  | |  |  |
@@ -3336,6 +3359,26 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | ResourceResizeRestartPolicy | string| string | |  |  |
+
+
+
+### <span id="resource-selector"></span> ResourceSelector
+
+
+> ResourceSelector identifies the resources an EnumFrom lists
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| apiVersion | string| `string` |  | | APIVersion of the resource, for example `v1` or `apps/v1` |  |
+| kind | string| `string` |  | | Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets. |  |
+| namespace | string| `string` |  | | Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds.</br>It may reference other workflow parameters, so the list can depend on another parameter's value. |  |
 
 
 

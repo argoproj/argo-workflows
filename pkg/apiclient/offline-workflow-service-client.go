@@ -89,3 +89,7 @@ func (o OfflineWorkflowServiceClient) WorkflowLogs(context.Context, *workflowpkg
 func (o OfflineWorkflowServiceClient) SubmitWorkflow(context.Context, *workflowpkg.WorkflowSubmitRequest, ...grpc.CallOption) (*wfv1.Workflow, error) {
 	return nil, ErrOffline
 }
+
+func (o OfflineWorkflowServiceClient) ResolveParameterEnum(context.Context, *workflowpkg.ResolveParameterEnumRequest, ...grpc.CallOption) (*workflowpkg.ResolveParameterEnumResponse, error) {
+	return nil, ErrOffline
+}

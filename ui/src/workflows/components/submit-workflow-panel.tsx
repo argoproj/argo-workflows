@@ -142,8 +142,23 @@ export function SubmitWorkflowPanel(props: Props) {
                 </div>
                 <div key='parameters' style={{marginBottom: 25}}>
                     <label>Parameters</label>
-                    {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
-                    {parameters.length > 0 && <ParametersInput parameters={parameters} onChange={setParameters} />}
+                    {workflowParameters.length > 0 && (
+                        <ParametersInput
+                            namespace={props.namespace}
+                            source={{kind: props.kind, name: props.name}}
+                            parameters={workflowParameters}
+                            onChange={setWorkflowParameters}
+                        />
+                    )}
+                    {parameters.length > 0 && (
+                        <ParametersInput
+                            namespace={props.namespace}
+                            source={{kind: props.kind, name: props.name, templateName: entrypoint}}
+                            parameters={parameters}
+                            workflowParameters={workflowParameters}
+                            onChange={setParameters}
+                        />
+                    )}
                     {workflowParameters.length === 0 && parameters.length === 0 ? (
                         <>
                             <br />

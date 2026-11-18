@@ -1,0 +1,37 @@
+# This WorkflowTemplate shows dropdowns filled from live Kubernetes resources with `enumFrom`.
+# When you submit it from the UI, `namespace` lists the cluster's namespaces and `deployment`
+# lists the Deployments in whichever namespace you picked.
+# Values are looked up with your own Kubernetes credentials, so you only see what you can list.
+# See docs/dynamic-parameter-enums.md.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: enum-from
+  annotations:
+    workflows.argoproj.io/description: |
+      Pick a namespace and a Deployment in it from dropdowns filled from the cluster.
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: namespace
+        value: default
+        enumFrom:
+          resource:
+            apiVersion: v1
+            kind: Namespace
+          jsonPath: '{.metadata.name}'
+      - name: deployment
+        value: ''
+        enumFrom:
+          resource:
+            apiVersion: apps/v1
+            kind: Deployment
+            # Cascading: re-resolved whenever the namespace parameter changes.
+            namespace: '{{workflow.parameters.namespace}}'
+          jsonPath: '{.metadata.name}'
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, 'Selected {{workflow.parameters.namespace}}/{{workflow.parameters.deployment}}']

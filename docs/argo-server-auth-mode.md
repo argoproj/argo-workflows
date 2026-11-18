@@ -13,3 +13,6 @@ To configure the Server's auth modes, use one or multiple `--auth-mode` flags. F
 ```bash
 argo server --auth-mode=sso --auth-mode=client
 ```
+
+In `server` mode, and in `sso` mode without SSO RBAC, every user acts as the Server's Service Account.
+That includes features that read other cluster resources on the user's behalf, such as [dynamic parameter enums](dynamic-parameter-enums.md#server-auth-mode).

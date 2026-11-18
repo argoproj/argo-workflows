@@ -3302,6 +3302,45 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/resolve-enum": {
+      "post": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "WorkflowService_ResolveParameterEnum",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Namespace the workflow will run in. Namespaced resources are listed here unless enumFrom sets a namespace.",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResolveParameterEnumRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResolveParameterEnumResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/submit": {
       "post": {
         "tags": [
@@ -9602,6 +9641,28 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.EnumFrom": {
+      "description": "EnumFrom lists Kubernetes resources to offer as a parameter's values when you submit from the UI or with `argo submit --interactive`. The Argo Server lists them with the submitting user's credentials. It only changes how the UI and CLI ask for the parameter: Argo doesn't check the submitted value against the list.",
+      "type": "object",
+      "required": [
+        "resource",
+        "jsonPath"
+      ],
+      "properties": {
+        "jsonPath": {
+          "description": "JSONPath extracts the values from each listed resource, for example `{.metadata.name}`",
+          "type": "string"
+        },
+        "labelSelector": {
+          "description": "LabelSelector filters the listed resources, for example `tier=web`. It may reference other workflow parameters, so the list can depend on another parameter's value.",
+          "type": "string"
+        },
+        "resource": {
+          "description": "Resource is the kind of resource to list",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceSelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Event": {
       "type": "object",
       "required": [
@@ -10783,6 +10844,10 @@
             "type": "string"
           }
         },
+        "enumFrom": {
+          "description": "EnumFrom fills the list of values to choose from with live Kubernetes resources, instead of a fixed Enum. You can't use it together with Enum.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EnumFrom"
+        },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
           "type": "string"
@@ -10917,6 +10982,77 @@
       "properties": {
         "data": {
           "description": "Data is the string contents of the artifact",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ResolveParameterEnumRequest": {
+      "description": "ResolveParameterEnumRequest identifies a parameter with an enumFrom on a stored object. The server reads the\nenumFrom from that object rather than accepting one from the client, so callers can only run lookups that a\ntemplate author has defined.",
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "description": "Namespace the workflow will run in. Namespaced resources are listed here unless enumFrom sets a namespace.",
+          "type": "string"
+        },
+        "parameterName": {
+          "description": "Name of the parameter whose enumFrom to resolve.",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "Current values of other parameters, substituted into {{io.argoproj.workflow.v1alpha1.parameters.\u003cname\u003e}} references.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "resourceKind": {
+          "description": "Kind of the object holding the parameter: WorkflowTemplate, ClusterWorkflowTemplate, CronWorkflow or Workflow.",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Name of the object holding the parameter. WorkflowTemplates, CronWorkflows and Workflows are read from namespace.",
+          "type": "string"
+        },
+        "templateName": {
+          "description": "Optional. Look the parameter up in this template's inputs instead of spec.arguments.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ResolveParameterEnumResponse": {
+      "type": "object",
+      "properties": {
+        "truncated": {
+          "description": "True if more resources or values existed than the Argo Server returns; values then holds only the first ones.",
+          "type": "boolean"
+        },
+        "values": {
+          "description": "Distinct values extracted from the listed resources, sorted.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ResourceSelector": {
+      "description": "ResourceSelector identifies the resources an EnumFrom lists",
+      "type": "object",
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion of the resource, for example `v1` or `apps/v1`",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind of the resource, for example `Namespace` or `Deployment`. The Argo Server never lists Secrets.",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Namespace to list in. Defaults to the namespace you submit the workflow to. The Argo Server ignores it for cluster-scoped kinds. It may reference other workflow parameters, so the list can depend on another parameter's value.",
           "type": "string"
         }
       }
