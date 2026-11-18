@@ -5,9 +5,13 @@
 FROM docker.io/library/golang:1.27-trixie
 
 # Unit tests expect no cluster: KUBECONFIG=/dev/null is what `make test` uses.
+# GOFLAGS matches what the Makefile exports: without the build tag, k8s.io types lack ProtoMessage() and
+# pkg/apiclient panics at startup. Keep it in step with the Makefile, since `go build` here does not go through make.
+# The patched vendor tree (see `make vendor` below) is the other half of how release builds handle this.
 ENV DEBIAN_FRONTEND=noninteractive \
     CGO_ENABLED=0 \
-    KUBECONFIG=/dev/null
+    KUBECONFIG=/dev/null \
+    GOFLAGS=-tags=kubernetes_protomessage_one_more_release
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl git make jq procps \
@@ -25,8 +29,10 @@ COPY . /src
 WORKDIR /src
 
 # Go dependencies. If go.mod asks for a newer Go than this image has, the toolchain is downloaded here and stays
-# in the module cache for offline use.
-RUN go mod download
+# in the module cache for offline use. Release builds use the vendor tree that `make vendor` creates and patches
+# (hack/vendor-patches.sh), so build from the same tree; Go then uses vendor/ automatically.
+RUN go mod download \
+    && make vendor
 
 # The UI is embedded into the argo binary (ui/embed.go), so build it before the Go binaries.
 # yarn.lock pulls argo-ui from git, which is why git is installed above.
