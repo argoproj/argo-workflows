@@ -169,6 +169,12 @@ func TestSQLDBCacheOutputsRoundTrip(t *testing.T) {
 	originalJSON, _ := json.Marshal(outputs)
 	loadedJSON, _ := json.Marshal(entry.Outputs)
 	assert.JSONEq(t, string(originalJSON), string(loadedJSON))
+
+	_, err = sp.Session(ctx).SQL().Update(testTableName).Set("outputs", "{invalid JSON").Where("cache_key = ?", "complex-key").Exec()
+	require.NoError(t, err)
+	entry, err = c.Load(ctx, "complex-key")
+	require.ErrorContains(t, err, "malformed memoization db entry")
+	assert.Nil(t, entry, "corrupt cache data must not be returned as a hit")
 }
 
 func TestSQLDBCacheGetOutputsWithMaxAge(t *testing.T) {

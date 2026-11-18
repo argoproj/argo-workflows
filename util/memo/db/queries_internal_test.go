@@ -6,8 +6,17 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	upperdb "github.com/upper/db/v4"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
+
+func TestMigrateRejectsInvalidTableName(t *testing.T) {
+	err := migrate(logging.TestContext(t.Context()), nil, sqldb.Postgres, "invalid-name")
+	require.ErrorContains(t, err, "invalid table name")
+}
 
 func TestCacheRecordCond(t *testing.T) {
 	record := &CacheRecord{

@@ -71,6 +71,50 @@ func TestUpdateConfigMemoizationMigrationFailure(t *testing.T) {
 	require.EqualError(t, failedSession.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
 }
 
+func TestUpdateConfigMemoizationInvalidTableClosesNewSession(t *testing.T) {
+	stubMemoizationSetup(t)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.Config.Memoization = &config.MemoizationConfig{TableName: "invalid-name", SkipMigration: true}
+	candidate := sqldb.NewSessionProxyFromSession(nil, &config.DBConfig{}, "user", "password")
+	memoSessionProxyFromConfig = func(context.Context, kubernetes.Interface, string, *config.MemoizationConfig) (*sqldb.SessionProxy, error) {
+		return candidate, nil
+	}
+	require.ErrorContains(t, controller.updateConfig(ctx), "invalid table name")
+	assert.Nil(t, controller.memoSessionProxy)
+	assert.False(t, controller.getMemoizationQueries().IsEnabled())
+	require.EqualError(t, candidate.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
+}
+
+type closeErrorSession struct {
+	db.Session
+	closed bool
+}
+
+func (s *closeErrorSession) Close() error {
+	s.closed = true
+	return errors.New("close failed")
+}
+
+func TestUpdateConfigMemoizationCloseFailureStillDisablesBackend(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	session := &closeErrorSession{}
+	previous := sqldb.NewSessionProxyFromSession(session, &config.DBConfig{}, "user", "password")
+	controller.memoSessionProxy = previous
+	queries, err := memodb.NewQueries("cache_entries", previous)
+	require.NoError(t, err)
+	controller.setMemoizationQueries(queries)
+	controller.cacheFactory.SetQueries(queries)
+	require.NoError(t, controller.updateConfig(ctx))
+	assert.True(t, session.closed)
+	assert.Nil(t, controller.memoSessionProxy)
+	assert.False(t, controller.getMemoizationQueries().IsEnabled())
+	require.NoError(t, controller.cacheFactory.GetCache("after-disable").Save(ctx, "key", "node", nil, ""))
+}
+
 func TestUpdateConfigMemoizationRecreatesConnection(t *testing.T) {
 	stubMemoizationSetup(t)
 	ctx := logging.TestContext(t.Context())

@@ -16,6 +16,9 @@ import (
 	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/upper/db/v4"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -66,9 +69,25 @@ func setupMySQL(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 
 func connectTestDB(ctx context.Context, t *testing.T, cfg config.DBConfig) *sqldb.SessionProxy {
 	t.Helper()
-	sp, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{DBConfig: cfg, Username: testDBUser, Password: testDBPassword})
+	credentials := &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "memo-db", Namespace: testNamespace},
+		Data:       map[string][]byte{"username": []byte(testDBUser), "password": []byte(testDBPassword)},
+	}
+	var database *config.DatabaseConfig
+	if cfg.PostgreSQL != nil {
+		database = &cfg.PostgreSQL.DatabaseConfig
+	} else {
+		database = &cfg.MySQL.DatabaseConfig
+	}
+	database.UsernameSecret = apiv1.SecretKeySelector{LocalObjectReference: apiv1.LocalObjectReference{Name: credentials.Name}, Key: "username"}
+	database.PasswordSecret = apiv1.SecretKeySelector{LocalObjectReference: apiv1.LocalObjectReference{Name: credentials.Name}, Key: "password"}
+	cfg.ConnectionPool = &config.ConnectionPool{MaxOpenConns: 4, MaxIdleConns: 2, ConnMaxLifetime: config.TTL(time.Minute)}
+	sp, err := memodb.SessionProxyFromConfig(ctx, fake.NewClientset(credentials), testNamespace, &config.MemoizationConfig{DBConfig: cfg})
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, sp.Close()) })
+	assert.Equal(t, 4, sp.Session(ctx).MaxOpenConns())
+	assert.Equal(t, 2, sp.Session(ctx).MaxIdleConns())
+	assert.Equal(t, time.Minute, sp.Session(ctx).ConnMaxLifetime())
 	require.NoError(t, memodb.Migrate(ctx, sp, memodb.Config{TableName: testTableName}))
 	return sp
 }
@@ -84,7 +103,37 @@ func TestQueries(t *testing.T) {
 			sp := setup(ctx, t)
 			q, err := memodb.NewQueries(testTableName, sp)
 			require.NoError(t, err)
+			assert.True(t, q.IsEnabled())
 			require.NoError(t, memodb.Migrate(ctx, sp, memodb.Config{TableName: testTableName}), "migration is repeatable")
+
+			t.Run("custom-table", func(t *testing.T) {
+				cfg := memodb.Config{TableName: "custom_cache"}
+				require.NoError(t, memodb.Migrate(ctx, sp, cfg))
+				require.NoError(t, memodb.Migrate(ctx, sp, cfg), "custom table migration is repeatable")
+				custom, err := memodb.NewQueries(cfg.TableName, sp)
+				require.NoError(t, err)
+				require.NoError(t, custom.Save(ctx, testNamespace, testCacheName, "custom-key", "node", sampleOutputs("custom"), ""))
+				record, err := custom.Load(ctx, testNamespace, testCacheName, "custom-key")
+				require.NoError(t, err)
+				require.NotNil(t, record)
+				assert.Contains(t, record.Outputs, "custom")
+				record, err = q.Load(ctx, testNamespace, testCacheName, "custom-key")
+				require.NoError(t, err)
+				assert.Nil(t, record, "custom and default tables are independent")
+			})
+			t.Run("database-errors", func(t *testing.T) {
+				missing, err := memodb.NewQueries("missing_cache", sp)
+				require.NoError(t, err)
+				record, err := missing.Load(ctx, testNamespace, testCacheName, "key")
+				require.Error(t, err)
+				assert.Nil(t, record)
+				require.Error(t, missing.Save(ctx, testNamespace, testCacheName, "key", "node", nil, ""))
+				pruned, err := missing.Prune(ctx)
+				require.Error(t, err)
+				assert.Zero(t, pruned)
+				// A reserved SQL identifier passes the name validation but fails DDL.
+				require.Error(t, memodb.Migrate(ctx, sp, memodb.Config{TableName: "select"}))
+			})
 
 			t.Run("save-load-replace", func(t *testing.T) {
 				rec, err := q.Load(ctx, testNamespace, testCacheName, "key")
@@ -136,9 +185,12 @@ func TestQueries(t *testing.T) {
 			t.Run("explicit-expiry-and-prune", func(t *testing.T) {
 				for key, age := range map[string]string{"expired": "-1s", "zero": "0"} {
 					require.NoError(t, q.Save(ctx, testNamespace, testCacheName, key, "node", sampleOutputs("old"), age))
-					rec, err := q.Load(ctx, testNamespace, testCacheName, key)
-					require.NoError(t, err)
-					assert.Nil(t, rec)
+					// MySQL's second-precision timestamp can round a zero-age expiry forward.
+					require.EventuallyWithT(t, func(c *assert.CollectT) {
+						rec, err := q.Load(ctx, testNamespace, testCacheName, key)
+						require.NoError(c, err)
+						assert.Nil(c, rec)
+					}, 2*time.Second, 10*time.Millisecond)
 				}
 				n, err := q.Prune(ctx)
 				require.NoError(t, err)
