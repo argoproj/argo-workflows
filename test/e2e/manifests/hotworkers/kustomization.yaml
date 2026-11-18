@@ -1,0 +1,18 @@
+# minimal profile + hot workers. Used by CI for the test-hotworkers matrix
+# entries. Enables hot workers in the workflow controller ConfigMap and adds
+# the optional RBAC component that lets the controller manage pool
+# Deployments. The quick-start base already binds the hot-worker Role to the
+# default service account, which the test workflows' pools run as.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../minimal
+
+components:
+  - ../../../../manifests/components/hot-workers
+
+patches:
+  - path: workflow-controller-configmap.yaml
+
+namespace: argo
