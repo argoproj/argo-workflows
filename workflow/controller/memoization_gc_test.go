@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 )
 
 type testMemoizationDB struct {
-	pruned chan struct{}
+	pruned   chan struct{}
+	pruneErr error
 }
 
 func (*testMemoizationDB) Load(context.Context, string, string, string) (*memodb.CacheRecord, error) {
@@ -27,7 +29,7 @@ func (t *testMemoizationDB) Prune(context.Context) (int64, error) {
 	case t.pruned <- struct{}{}:
 	default:
 	}
-	return 1, nil
+	return 1, t.pruneErr
 }
 
 func (*testMemoizationDB) IsEnabled() bool {
@@ -52,6 +54,33 @@ func TestMemoizationCacheGarbageCollectorDisabled(t *testing.T) {
 				t.Fatal("disabled GC should exit without waiting for cancellation")
 			}
 		})
+	}
+}
+
+func TestMemoizationCacheGarbageCollectorContinuesAfterError(t *testing.T) {
+	t.Setenv("MEMO_CACHE_GC_PERIOD", "1ms")
+	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+	defer cancel()
+	queries := &testMemoizationDB{pruned: make(chan struct{}, 2), pruneErr: errors.New("prune failed")}
+	controller := &WorkflowController{}
+	controller.setMemoizationQueries(queries)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		controller.memoizationCacheGarbageCollector(ctx)
+	}()
+	for range 2 {
+		select {
+		case <-queries.pruned:
+		case <-time.After(time.Second):
+			t.Fatal("GC must continue after a pruning failure")
+		}
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("GC must stop on cancellation after a pruning failure")
 	}
 }
 

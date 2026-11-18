@@ -123,6 +123,29 @@ func TestSaveMemoizationCache(t *testing.T) {
 	require.NoError(t, woc.saveMemoizationCache(ctx, &wfv1.NodeStatus{}, nil))
 }
 
+func TestSaveMemoizationCacheTemplateErrors(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-cached.yaml")
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	node := &wfv1.NodeStatus{
+		ID: "node", Name: "node",
+		MemoizationStatus: &wfv1.MemoizationStatus{Key: "key", CacheName: "cache"},
+		TemplateRef:       &wfv1.TemplateRef{Name: "missing-template", Template: "main"},
+	}
+	controller.cacheFactory.SetQueries(&recordingMemoizationDB{save: func(string, string, string, string, *wfv1.Outputs, string) error {
+		t.Fatal("must not save when resolving the template fails")
+		return nil
+	}})
+	require.ErrorContains(t, woc.saveMemoizationCache(ctx, node, nil), "failed to get node template for cache save")
+
+	node.TemplateRef = nil
+	node.TemplateName = wf.Spec.Templates[0].Name
+	node.Inputs = &wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "missing-value"}}}
+	require.ErrorContains(t, woc.saveMemoizationCache(ctx, node, nil), "inputs.parameters.missing-value had no value")
+}
+
 func TestSQLMemoizationTaskSetSave(t *testing.T) {
 	for _, fails := range []bool{false, true} {
 		t.Run(map[bool]string{false: "success", true: "error"}[fails], func(t *testing.T) {
