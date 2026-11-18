@@ -21,6 +21,10 @@
 #                                       init-less pod layout (requires K8s image volumes —
 #                                       Beta in 1.33 behind a feature gate, GA in 1.36)
 #   --pod-status-capture-finalizer=...  controller pod-status-capture finalizer toggle
+#   --coverage=true                     build argoexec with -cover and give workflow pods a
+#                                       GOCOVERDIR (needs a cluster from `make k3d-up` with
+#                                       E2E_COVERAGE_DIR set, and K8s 1.36+). See
+#                                       docs/running-locally.md.
 #   --debug=controller,server           run the named components under headless Delve
 #                                       (controller :2345, server :2346) and attach an
 #                                       IDE. See docs/running-locally.md.
@@ -37,6 +41,7 @@ config.define_string('secure')
 config.define_string('api')
 config.define_string('base-href')
 config.define_string('pod-status-capture-finalizer')
+config.define_string('coverage')
 # --debug=controller,server runs the named components under headless Delve. See
 # the "Debugging under Tilt" section of docs/running-locally.md.
 config.define_string_list('debug')
@@ -54,6 +59,7 @@ base_href = '/' + cfg.get('base-href', '/').strip('/')
 if base_href != '/':
     base_href += '/'
 finalizer = cfg.get('pod-status-capture-finalizer', 'true')
+coverage = cfg.get('coverage', 'false') == 'true'
 # Debugging is a dev-only convenience; force it off under CI so `tilt ci` builds
 # the real production images and never wraps them in dlv. Tilt's string_list
 # collects repeated flags but doesn't split on commas, so split here to accept
@@ -80,6 +86,8 @@ GIT_COMMIT = str(local('git rev-parse HEAD', quiet=True)).strip()
 GIT_TAG = str(local('git describe --exact-match --tags --abbrev=0 2>/dev/null || echo untagged', quiet=True)).strip()
 GIT_TREE_STATE = str(local('[ -z "$(git status --porcelain)" ] && echo clean || echo dirty', quiet=True)).strip()
 BUILD_ARGS = '--build-arg GIT_COMMIT=%s --build-arg GIT_TAG=%s --build-arg GIT_TREE_STATE=%s' % (GIT_COMMIT, GIT_TAG, GIT_TREE_STATE)
+# only the executor image takes COVER (see the Makefile's COVER)
+EXEC_BUILD_ARGS = BUILD_ARGS + (' --build-arg COVER=true' if coverage else '')
 
 # The argo CRDs are too large for client-side apply (the last-applied
 # annotation exceeds 256KB), so apply them server-side out of band, like
@@ -176,6 +184,9 @@ for o in objs:
 rest = encode_yaml_stream(objs)
 
 k8s_yaml('test/e2e/manifests/argo-ns.yaml')
+if coverage:
+    # gives every pod in the argo namespace a per-container GOCOVERDIR
+    k8s_yaml('test/e2e/manifests/coverage/go-coverage-policy.yaml')
 local_resource('argo-crds',
     cmd='kubectl apply --server-side --force-conflicts -f .tilt/crds.yaml',
     deps=['.tilt/crds.yaml'],
@@ -243,7 +254,8 @@ else:
     cli_target = 'argocli-dev'
     cli_deps = ['dist/argo', 'hack/ssh_known_hosts', 'hack/nsswitch.conf', 'Dockerfile']
     cli_prebuild = 'make dist/argo STATIC_FILES=false'
-    exec_prebuild = 'make dist/argoexec'
+    # make won't rebuild an up-to-date binary for a COVER change
+    exec_prebuild = ('rm -f dist/argoexec && make dist/argoexec COVER=true' if coverage else 'make dist/argoexec')
     exec_target = 'argoexec-dev'
 
 # The argocli image is needed even without the server: e2e test workflows
@@ -264,7 +276,7 @@ else:
     local_resource('argocli-image', cmd=cli_cmd, deps=cli_deps, labels=['images'])
 
 exec_cmd = ' && '.join(([exec_prebuild] if exec_prebuild else []) + [
-    'docker build -f Dockerfile %s --target %s -t %s/argoexec:latest .' % (BUILD_ARGS, exec_target, IMAGE_NS),
+    'docker build -f Dockerfile %s --target %s -t %s/argoexec:latest .' % (EXEC_BUILD_ARGS, exec_target, IMAGE_NS),
     k3d_import('%s/argoexec:latest' % IMAGE_NS),
 ])
 local_resource('argoexec-image', cmd=exec_cmd, deps=exec_src, labels=['images'])

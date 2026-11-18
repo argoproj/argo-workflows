@@ -30,6 +30,9 @@ fi
 
 if k3d cluster list "${CLUSTER_NAME}" >/dev/null 2>&1; then
   echo "k3d cluster '${CLUSTER_NAME}' already exists"
+  if [ -n "${E2E_COVERAGE_DIR:-}" ]; then
+    echo "warning: an existing cluster keeps its volumes; recreate it (make k3d-down) to mount ${E2E_COVERAGE_DIR} for coverage" >&2
+  fi
 else
   args=(--wait)
   if [ -n "${K3S_IMAGE}" ]; then
@@ -40,6 +43,15 @@ else
   # from). See test/e2e/manifests/kubelet-configuration.yaml.
   args+=(--volume "${REPO_ROOT}/test/e2e/manifests/kubelet-configuration.yaml:/etc/rancher/k3s/kubelet.yaml@server:0")
   args+=(--k3s-arg "--kubelet-arg=config=/etc/rancher/k3s/kubelet.yaml@server:0")
+  # e2e coverage (`make k3d-up COVER=true`): the go-coverage admission policy
+  # gives each container a subdirectory of this, as a hostPath. kubelet creates
+  # the subdirectories with this directory's mode, and many e2e pods run as
+  # non-root users, so it must be 0777 (not 1777: owners differ).
+  if [ -n "${E2E_COVERAGE_DIR:-}" ]; then
+    mkdir -p "${E2E_COVERAGE_DIR}"
+    chmod 0777 "${E2E_COVERAGE_DIR}"
+    args+=(--volume "${E2E_COVERAGE_DIR}:/var/lib/go-coverage@server:0")
+  fi
   echo "creating k3d cluster '${CLUSTER_NAME}'"
   k3d cluster create "${CLUSTER_NAME}" "${args[@]}"
 fi

@@ -17,6 +17,11 @@ inputs:
   kubeconfig:
     description: Path k3d-up merges the cluster kubeconfig into.
     default: /home/runner/.kube/config
+  coverage:
+    description: >-
+      Mount dist/e2e-coverage into the cluster for e2e coverage (`make k3d-up
+      COVER=true`). Needs K8s 1.36+ for the admission policy that uses it.
+    default: "false"
 
 runs:
   using: composite
@@ -51,12 +56,13 @@ runs:
         # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
         K8S_VERSION: ${{ inputs.k8s-version }}
         CLI_AUTH_KUBECONFIG: ${{ inputs.cli-auth-kubeconfig }}
+        COVER: ${{ inputs.coverage }}
       run: |
         # k3d and Tilt come from the e2e-tools artifact (installed above).
         # k3d runs k3s with its embedded containerd (2.x in these k3s
         # versions), which supports the Kubernetes image volumes the
         # init-less pod layout uses to deliver argoexec.
-        make k3d-up
+        make k3d-up COVER="$COVER"
         # tests and debug steps assume the argo namespace is the current context
         kubectl config set-context --current --namespace=argo
         # the CLI auth e2e tests (TestTokenArg) use this kubeconfig user

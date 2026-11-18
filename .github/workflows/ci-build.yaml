@@ -260,6 +260,10 @@ jobs:
     env:
       KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
+      # e2e coverage: on main, and on PRs labelled ci/e2e-coverage (applies from
+      # the next push or re-run). Only the K8s max jobs: the coverage admission
+      # policy needs 1.36+.
+      E2E_COVERAGE: ${{ ((github.event_name == 'push' && github.ref == 'refs/heads/main') || contains(github.event.pull_request.labels.*.name, 'ci/e2e-coverage')) && (matrix.k8s_version || 'max') == 'max' && 'true' || 'false' }}
     strategy:
       fail-fast: false
       matrix:
@@ -390,6 +394,7 @@ jobs:
         with:
           k8s-version: ${{ matrix.k8s_version || 'max' }}
           cli-auth-kubeconfig: "true"
+          coverage: ${{ env.E2E_COVERAGE }}
       - name: Build images and start Argo in-cluster
         # tilt builds the production images, deploys them, and then keeps
         # running through the test steps so its port-forwards (argo-server,
@@ -402,7 +407,8 @@ jobs:
             --secure=${{matrix.secure || 'false'}} \
             --auth-mode=client \
             --initless=${{matrix.initless || 'false'}} \
-            --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
+            --pod-status-capture-finalizer=true \
+            --coverage=${{ env.E2E_COVERAGE }} > /tmp/tilt.log 2>&1 &
           # resources only register once the Tiltfile finishes evaluating; wait
           # for one we know is always defined before trusting `--all`, which
           # would otherwise pass on the (Tiltfile) resource alone
@@ -423,7 +429,7 @@ jobs:
           # don't default in the expression: `matrix.retries || '2'` would turn
           # an explicit `retries: 0` into 2, because 0 is falsy
           MATRIX_RETRIES: ${{ matrix.retries }}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false INITLESS=${{ matrix.initless || 'false' }} TEST_RETRIES="${MATRIX_RETRIES:-2}"
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false INITLESS=${{ matrix.initless || 'false' }} TEST_RETRIES="${MATRIX_RETRIES:-2}" COVER=${{ env.E2E_COVERAGE }}
       - name: Upload test results
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -432,6 +438,24 @@ jobs:
           path: test/reports/json/${{matrix.test}}.json
           if-no-files-found: warn
           retention-days: 10
+      # e2e coverage is informational for now: a problem collecting it shouldn't
+      # fail the job. A failed run's coverage is still real coverage.
+      - name: Merge e2e coverage
+        if: ${{ !cancelled() && env.E2E_COVERAGE == 'true' }}
+        continue-on-error: true
+        run: make e2e-coverage.out
+      - name: Upload e2e coverage
+        if: ${{ !cancelled() && env.E2E_COVERAGE == 'true' && github.repository == 'argoproj/argo-workflows' }}
+        continue-on-error: true
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: e2e-coverage.out
+          disable_search: true
+          flags: e2e
+          name: ${{matrix.test}}-${{matrix.profile}}${{ matrix.initless && '-initless' || '' }}
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       # failure debugging below
       - name: Failure debug - logs
