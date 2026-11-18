@@ -143,7 +143,7 @@ Many past advisories were incomplete fixes, so look for siblings of these:
 
 ## How we rate severity
 
-We use CVSS 3.1 and publish advisories through GitHub Security Advisories. As guidance:
+We use CVSS 4.0 and publish advisories through GitHub Security Advisories. As guidance:
 
 - **Critical**: unauthenticated remote code execution; authentication bypass on argo-server; reading
   workflows, templates, secrets or credentials with no valid token; workflow author expressions running
