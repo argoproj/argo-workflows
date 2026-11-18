@@ -4,7 +4,7 @@
 # This is used in the CI workflow for e2e tests, the devcontainer, and to generate docs.
 declare -A K8S_VERSIONS=(
   [min]=v1.35.9
-  [max]=v1.36.2
+  [max]=v1.37.2
 )
 
 # renovate: datasource=github-releases depName=k3d-io/k3d
