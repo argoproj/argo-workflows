@@ -6465,16 +6465,16 @@ func TestRegressionR4_C58_CsAutoRestartOriginal(t *testing.T) {
 // decided always-link rule and fail at base, which returned before linking for
 // those too.
 
-// r4C55HookLinked runs wf to completion and asserts that hookName is an Error
-// node linked under parentName and that `argo retry` (restartSuccessful when
-// asked, so every node is reset) accepts the result.
-func r4C55HookLinked(t *testing.T, manifest, parentName, hookName string, restartSuccessful bool) {
+// r4C55HookLinked runs wf to completion (pods set by decide) and asserts that
+// hookName is an Error node linked under parentName and that `argo retry`
+// (restartSuccessful when asked, so every node is reset) accepts the result.
+func r4C55HookLinked(t *testing.T, manifest string, decide func(node *wfv1.NodeStatus) apiv1.PodPhase, parentName, hookName string, restartSuccessful bool) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(manifest)
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	woc := runToCompletion(ctx, t, controller, wf, allSucceed)
+	woc := runToCompletion(ctx, t, controller, wf, decide)
 	dumpNodes(t, "finished", woc.wf)
 	hook, err := woc.wf.GetNodeByName(hookName)
 	require.NoError(t, err)
@@ -6533,7 +6533,7 @@ spec:
     container:
       image: busybox
       command: [echo, hi]
-`+r4C55HookMissingCM, "g2dag.b", "g2dag.b.onExit", true)
+`+r4C55HookMissingCM, allSucceed, "g2dag.b", "g2dag.b.onExit", true)
 }
 
 func TestRegressionR4_C55_RetryAfterExitHookArgError(t *testing.T) {
@@ -6559,7 +6559,7 @@ spec:
     container:
       image: busybox
       command: [echo]
-`+r4C55HookMissingCM, "g3steps[0].a", "g3steps[0].a.onExit", false)
+`+r4C55HookMissingCM, allSucceed, "g3steps[0].a", "g3steps[0].a.onExit", false)
 }
 
 // Decided behaviour (always-link rule): fails at base.
@@ -6586,7 +6586,7 @@ spec:
     container:
       image: busybox
       command: [echo]
-`+r4C55HookMissingCM, "g4dag.a", "g4dag.a.hooks.running", true)
+`+r4C55HookMissingCM, allSucceed, "g4dag.a", "g4dag.a.hooks.running", true)
 }
 
 // Decided behaviour (always-link rule): fails at base.
@@ -6608,7 +6608,36 @@ spec:
     container:
       image: busybox
       command: [echo]
-`+r4C55HookMissingCM, "g5wf", "g5wf.hooks.running", true)
+`+r4C55HookMissingCM, allSucceed, "g5wf", "g5wf.hooks.running", true)
+}
+
+// The two shapes g2-g5 do not cover: a lifecycle hook on a steps node, and a
+// hook whose expression only triggers on failure. The step's pod fails, the
+// failure hook fires and errors on creation, and its node must still be linked.
+func TestRegressionR4_C55_StepFailureHookArgErrorLinked(t *testing.T) {
+	r4C55HookLinked(t, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: g6steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: will-fail
+        template: run
+        hooks:
+          failure:
+            expression: steps["will-fail"].status == "Failed"
+            template: hook
+  - name: run
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["exit 1"]
+`+r4C55HookMissingCM, func(*wfv1.NodeStatus) apiv1.PodPhase { return apiv1.PodFailed }, "g6steps[0].will-fail", "g6steps[0].will-fail.hooks.failure", false)
 }
 
 // C29: `argo terminate` while a task's Steps exit hook runs. Base did not

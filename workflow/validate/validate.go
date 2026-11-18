@@ -137,13 +137,36 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 	return manifest
 }
 
-// validateHooks takes an array of hooks to validate and the name of the
-// container they are in and generates an error for the first invalid hook
-// or nil if they are all valid
-func validateHooks(hooks wfv1.LifecycleHooks, hookBaseName string) error {
-	for hookName, hook := range hooks {
-		if hookName != wfv1.ExitLifecycleEvent && hook.Expression == "" {
+// validateHooks validates each hook's arguments, and that they satisfy its template's inputs, as
+// validateSteps does for a step. wfTmplRef is set for workflow-level hooks of a workflow using
+// workflowTemplateRef: hook.Template then names a template in the referenced WorkflowTemplate.
+func (tctx *templateValidationCtx) validateHooks(ctx context.Context, hooks wfv1.LifecycleHooks, hookBaseName string, tmplCtx *templateresolution.TemplateContext, wfTmplRef *wfv1.WorkflowTemplateRef, workflowTemplateValidation bool) error {
+	for _, hookName := range slices.Sorted(maps.Keys(hooks)) {
+		// For exit hooks, expression is optional and empty arguments fall back to
+		// spec.arguments, so the checks below do not apply to them.
+		if hookName == wfv1.ExitLifecycleEvent {
+			continue
+		}
+		hook := hooks[hookName]
+		if hook.Expression == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s.%s %s", hookBaseName, hookName, "Expression required")
+		}
+		// The template passes below skip the artifact location check (ProcessArgs with validateOnly),
+		// so without this an artifact argument with no source would only fail once the hook fires.
+		if err := validateArguments(fmt.Sprintf("%s.%s.arguments.", hookBaseName, hookName), hook.Arguments, false); err != nil {
+			return err
+		}
+		tmplHolder := &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}
+		if wfTmplRef != nil && hook.TemplateRef == nil {
+			tmplHolder = &wfv1.WorkflowStep{TemplateRef: wfTmplRef.ToTemplateRef(hook.Template)}
+		}
+		// Hook arguments may reference the caller's variables (e.g. {{steps.x.status}}), which do not
+		// resolve inside the hook template. The fake-arguments pass validates and caches the template
+		// body, so the real-arguments pass only checks that the arguments satisfy the inputs.
+		for _, args := range []wfv1.ArgumentsProvider{&FakeArguments{}, &hook.Arguments} {
+			if _, err := tctx.validateTemplateHolder(ctx, tmplHolder, tmplCtx, args, workflowTemplateValidation); err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "%s.%s %s", hookBaseName, hookName, err.Error())
+			}
 		}
 	}
 	return nil
@@ -331,7 +354,17 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 			return err
 		}
 	}
-	err = validateHooks(wf.Spec.Hooks, "hooks")
+	hooks := wf.Spec.Hooks
+	var hooksWfTmplRef *wfv1.WorkflowTemplateRef
+	if hasWorkflowTemplateRef {
+		// Same precedence as the controller's merge (workflow/util.MergeTo): a workflow hook replaces
+		// the referenced template's hook of the same name as a whole.
+		hooks = make(wfv1.LifecycleHooks)
+		maps.Copy(hooks, wfSpecHolder.GetWorkflowSpec().Hooks)
+		maps.Copy(hooks, wf.Spec.Hooks)
+		hooksWfTmplRef = wf.Spec.WorkflowTemplateRef
+	}
+	err = tctx.validateHooks(ctx, hooks, "hooks", tmplCtx, hooksWfTmplRef, opts.WorkflowTemplateValidation)
 	if err != nil {
 		return err
 	}
@@ -1055,8 +1088,8 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments, allowEmpty
 		}
 	}
 	for _, art := range arguments.Artifacts {
-		if art.From == "" && !art.HasLocationOrKey() {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, artifact location, or key is required", prefix, art.Name)
+		if art.From == "" && art.FromExpression == "" && !art.HasLocationOrKey() {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s.from, fromExpression, artifact location, or key is required", prefix, art.Name)
 		}
 		if art.From != "" && art.FromExpression != "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s shouldn't have both `from` and `fromExpression` in Artifact", prefix, art.Name)
@@ -1104,7 +1137,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
 
-			err = validateHooks(step.Hooks, fmt.Sprintf("templates.%s.steps[%d].%s", tmpl.Name, i, step.Name))
+			err = tctx.validateHooks(ctx, step.Hooks, fmt.Sprintf("templates.%s.steps[%d].%s", tmpl.Name, i, step.Name), tmplCtx, nil, workflowTemplateValidation)
 			if err != nil {
 				return err
 			}
@@ -1574,6 +1607,10 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		_, err = tctx.validateTemplateHolder(ctx, &task, tmplCtx, &task.Arguments, workflowTemplateValidation)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		}
+		err = tctx.validateHooks(ctx, task.Hooks, fmt.Sprintf("templates.%s.tasks.%s", tmpl.Name, task.Name), tmplCtx, nil, workflowTemplateValidation)
+		if err != nil {
+			return err
 		}
 	}
 

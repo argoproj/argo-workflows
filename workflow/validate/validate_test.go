@@ -976,10 +976,10 @@ spec:
 
 func TestInvalidArgumentNoFromOrLocation(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), invalidStepsArgumentNoFromOrLocation)
-	require.ErrorContains(t, err, "from, artifact location, or key is required")
+	require.ErrorContains(t, err, "from, fromExpression, artifact location, or key is required")
 
 	err = validate(logging.TestContext(t.Context()), invalidDAGArgumentNoFromOrLocation)
-	require.ErrorContains(t, err, "from, artifact location, or key is required")
+	require.ErrorContains(t, err, "from, fromExpression, artifact location, or key is required")
 }
 
 var invalidArgumentNoValue = `
@@ -3984,4 +3984,383 @@ spec:
       image: alpine:3.23
 `)
 	require.ErrorContains(t, err, "invalid dependency false")
+}
+
+var lifecycleHookArgsWorkflowLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hook-args-
+spec:
+  entrypoint: main
+  hooks:
+    Failed:
+      expression: workflow.status == "Failed"
+      template: handle
+      arguments:
+        parameters:
+          - name: platform
+            value: "{{workflow.name}} {{workflow.status}} {{workflow.failures}}"
+%s
+  templates:
+    - name: main
+      steps:
+        - - name: will-fail
+            template: fail
+    - name: fail
+      container:
+        image: alpine:3.23
+    - name: handle
+      inputs:
+        parameters:
+          - name: platform
+          - name: region
+      container:
+        image: alpine:3.23
+        args: ["{{inputs.parameters.platform}}/{{inputs.parameters.region}}"]
+`
+
+var lifecycleHookArgsStep = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hook-args-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: will-fail
+            template: fail
+            hooks:
+              failure:
+                expression: steps["will-fail"].status == "Failed"
+                template: handle
+                arguments:
+                  parameters:
+                    - name: platform
+                      value: "{{steps.will-fail.status}}"
+%s
+    - name: fail
+      container:
+        image: alpine:3.23
+    - name: handle
+      inputs:
+        parameters:
+          - name: platform
+          - name: region
+      container:
+        image: alpine:3.23
+        args: ["{{inputs.parameters.platform}}/{{inputs.parameters.region}}"]
+`
+
+var lifecycleHookArgsDAGTask = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hook-args-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: will-fail
+            template: fail
+            hooks:
+              failure:
+                expression: tasks["will-fail"].status == "Failed"
+                template: handle
+                arguments:
+                  parameters:
+                    - name: platform
+                      value: "{{tasks.will-fail.status}}"
+%s
+    - name: fail
+      container:
+        image: alpine:3.23
+    - name: handle
+      inputs:
+        parameters:
+          - name: platform
+          - name: region
+      container:
+        image: alpine:3.23
+        args: ["{{inputs.parameters.platform}}/{{inputs.parameters.region}}"]
+`
+
+var lifecycleHookArgsWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hook-args-wftmpl
+spec:
+  entrypoint: main
+  hooks:
+    Failed:
+      expression: workflow.status == "Failed"
+      template: handle
+      arguments:
+        parameters:
+          - name: platform
+            value: demo
+  templates:
+    - name: main
+      container:
+        image: alpine:3.23
+    - name: handle
+      inputs:
+        parameters:
+          - name: platform
+          - name: region
+      container:
+        image: alpine:3.23
+        args: ["{{inputs.parameters.platform}}/{{inputs.parameters.region}}"]
+`
+
+var lifecycleHookArgsWorkflowTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hook-args-
+spec:
+  workflowTemplateRef:
+    name: hook-args-wftmpl
+%s
+`
+
+// TestLifecycleHookArguments: a lifecycle hook's arguments must satisfy its template's inputs, as a
+// normal step's must; otherwise the hook only fails once it fires, typically while the workflow is
+// already failing.
+func TestLifecycleHookArguments(t *testing.T) {
+	const regionArg = `
+                    - name: region
+                      value: eu`
+	const wfRegionArg = `
+          - name: region
+            value: eu`
+	tests := []struct {
+		name    string
+		tmpl    string
+		extra   string
+		wantErr string
+	}{
+		{"WorkflowLevelMissing", lifecycleHookArgsWorkflowLevel, "", "hooks.Failed templates.handle inputs.parameters.region was not supplied"},
+		{"WorkflowLevelSupplied", lifecycleHookArgsWorkflowLevel, wfRegionArg, ""},
+		{"StepMissing", lifecycleHookArgsStep, "", "templates.main.steps[0].will-fail.failure templates.handle inputs.parameters.region was not supplied"},
+		{"StepSupplied", lifecycleHookArgsStep, regionArg, ""},
+		{"DAGTaskMissing", lifecycleHookArgsDAGTask, "", "templates.main.tasks.will-fail.failure templates.handle inputs.parameters.region was not supplied"},
+		{"DAGTaskSupplied", lifecycleHookArgsDAGTask, regionArg, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			for _, opts := range []Opts{{}, {Submit: true}, {Lint: true}} {
+				err := Workflow(ctx, wftmplGetter, cwftmplGetter, unmarshalWf(fmt.Sprintf(tt.tmpl, tt.extra)), nil, opts)
+				if tt.wantErr == "" {
+					require.NoError(t, err, "opts %+v", opts)
+				} else {
+					require.EqualError(t, err, tt.wantErr, "opts %+v", opts)
+				}
+			}
+		})
+	}
+}
+
+func TestDAGTaskHookNoExpression(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := strings.Replace(fmt.Sprintf(lifecycleHookArgsDAGTask, ""), `expression: tasks["will-fail"].status == "Failed"`, "", 1)
+	err := validate(ctx, wf)
+	require.EqualError(t, err, "templates.main.tasks.will-fail.failure Expression required")
+}
+
+func TestLifecycleHookArgumentsWorkflowTemplateRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validateWorkflowTemplate(ctx, lifecycleHookArgsWorkflowTemplate, Opts{})
+	require.EqualError(t, err, "hooks.Failed templates.handle inputs.parameters.region was not supplied")
+
+	// Stored without validation, as a template created before this check existed would be.
+	require.NoError(t, createWorkflowTemplateFromSpec(ctx, lifecycleHookArgsWorkflowTemplate))
+	defer func() { _ = deleteWorkflowTemplate(ctx, "hook-args-wftmpl") }()
+
+	err = validate(ctx, fmt.Sprintf(lifecycleHookArgsWorkflowTemplateRef, ""))
+	require.EqualError(t, err, "hooks.Failed templates.handle inputs.parameters.region was not supplied")
+
+	// A workflow hook of the same name replaces the template's hook as a whole.
+	err = validate(ctx, fmt.Sprintf(lifecycleHookArgsWorkflowTemplateRef, `
+  hooks:
+    Failed:
+      expression: workflow.status == "Failed"
+      template: handle
+      arguments:
+        parameters:
+          - name: platform
+            value: demo
+          - name: region
+            value: eu`))
+	require.NoError(t, err)
+}
+
+var lifecycleHookArgValues = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hook-arg-values-
+spec:
+  entrypoint: main
+%s
+  templates:
+    - name: main
+      steps:
+        - - name: gen
+            template: produce
+        - - name: will-fail
+            template: produce
+%s
+    - name: produce
+      container:
+        image: alpine:3.23
+      outputs:
+        artifacts:
+          - name: out
+            path: /tmp/out
+    - name: consume
+      inputs:
+        parameters:
+          - name: platform
+            default: demo
+        artifacts:
+          - name: source
+            path: /tmp/src
+      container:
+        image: alpine:3.23
+`
+
+// TestLifecycleHookArgumentValues: hook arguments get the same checks as a step's arguments. The
+// template passes alone accept an artifact argument with no source, which fails only once the
+// hook fires.
+func TestLifecycleHookArgumentValues(t *testing.T) {
+	const wfHook = `  hooks:
+    Failed:
+      expression: workflow.status == "Failed"
+      template: consume
+      arguments:
+%s`
+	const stepHook = `            hooks:
+              failure:
+                expression: steps["will-fail"].status == "Failed"
+                template: consume
+                arguments:
+%s`
+	tests := []struct {
+		name    string
+		wfHook  string
+		step    string
+		wantErr string
+	}{
+		{
+			name: "WorkflowLevelArtifactWithoutSource",
+			wfHook: fmt.Sprintf(wfHook, `        artifacts:
+          - name: source`),
+			wantErr: "hooks.Failed.arguments.source.from, fromExpression, artifact location, or key is required",
+		},
+		{
+			name: "WorkflowLevelParameterWithoutValue",
+			wfHook: fmt.Sprintf(wfHook, `        parameters:
+          - name: platform
+        artifacts:
+          - name: source
+            raw:
+              data: hi`),
+			wantErr: "hooks.Failed.arguments.platform.value or hooks.Failed.arguments.platform.valueFrom is required",
+		},
+		{
+			name: "StepArtifactWithoutSource",
+			step: fmt.Sprintf(stepHook, `                  artifacts:
+                    - name: source`),
+			wantErr: "templates.main.steps[1].will-fail.failure.arguments.source.from, fromExpression, artifact location, or key is required",
+		},
+		{
+			name: "StepArtifactFromEarlierStep",
+			step: fmt.Sprintf(stepHook, `                  artifacts:
+                    - name: source
+                      from: "{{steps.gen.outputs.artifacts.out}}"`),
+		},
+		{
+			name: "StepArtifactFromExpression",
+			step: fmt.Sprintf(stepHook, `                  artifacts:
+                    - name: source
+                      fromExpression: "steps.gen.outputs.artifacts.out"`),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			for _, opts := range []Opts{{}, {Submit: true}, {Lint: true}} {
+				err := Workflow(ctx, wftmplGetter, cwftmplGetter, unmarshalWf(fmt.Sprintf(lifecycleHookArgValues, tt.wfHook, tt.step)), nil, opts)
+				if tt.wantErr == "" {
+					require.NoError(t, err, "opts %+v", opts)
+				} else {
+					require.EqualError(t, err, tt.wantErr, "opts %+v", opts)
+				}
+			}
+		})
+	}
+}
+
+// TestStepArtifactFromExpression: a plain step's artifact argument may be given only by
+// fromExpression, which the controller resolves at runtime; validateArguments used to reject it.
+func TestStepArtifactFromExpression(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, wf := range []string{`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: {generateName: x-}
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: gen
+            template: gen
+        - - name: s
+            template: consume
+            arguments:
+              artifacts: [{name: source, fromExpression: "steps.gen.outputs.artifacts.out"}]
+    - name: gen
+      container: {image: alpine}
+      outputs:
+        artifacts: [{name: out, path: /tmp/out}]
+    - name: consume
+      inputs:
+        artifacts: [{name: source, path: /tmp/src}]
+      container: {image: alpine}
+`, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: {generateName: x-}
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: gen
+            template: gen
+          - name: c
+            template: consume
+            dependencies: [gen]
+            arguments:
+              artifacts: [{name: source, fromExpression: "tasks.gen.outputs.artifacts.out"}]
+    - name: gen
+      container: {image: alpine}
+      outputs:
+        artifacts: [{name: out, path: /tmp/out}]
+    - name: consume
+      inputs:
+        artifacts: [{name: source, path: /tmp/src}]
+      container: {image: alpine}
+`} {
+		require.NoError(t, validate(ctx, wf))
+	}
 }

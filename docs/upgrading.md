@@ -202,6 +202,19 @@ After `argo retry`, a succeeded task's or step's exit hook that has its own `ret
 Previously it ran a new attempt.
 A hook without a `retryStrategy` was not re-run at either version.
 
+### Lifecycle hook arguments are validated at submission
+
+Lint, submit and controller validation now check the arguments of a non-`exit` lifecycle hook (`spec.hooks.<event>`, or `hooks.<event>` on a step or DAG task) the same way they check a step's arguments ([#17193](https://github.com/argoproj/argo-workflows/pull/17193), fixes [#17192](https://github.com/argoproj/argo-workflows/issues/17192)).
+Previously such a hook passed validation and only failed once it fired.
+
+Validation now rejects any of these in a workflow or template: a hook whose arguments don't satisfy its template's inputs, a hook argument with no value (parameter) or no source (artifact), a hook referencing an undefined template, or a DAG task hook with no `expression`.
+`exit` hooks are unchanged.
+
+A CronWorkflow that has such a hook, or references a WorkflowTemplate that does, now fails validation on every scheduled run and stops creating workflows (with a `SpecError` condition), even if the hook never fires.
+Fix or remove the hook to resume the CronWorkflow.
+Creating or updating a WorkflowTemplate with such a hook through the API now fails.
+Upgrading doesn't revalidate the templates already in your cluster, but a workflow that references an invalid template fails validation at submit, or in the controller with `invalid spec`, instead of at hook time.
+
 ### A template `timeout` no longer raises a pod's `activeDeadlineSeconds`
 
 A template's `timeout` now only lowers a pod's `activeDeadlineSeconds` and never raises it ([#17218](https://github.com/argoproj/argo-workflows/pull/17218)).
