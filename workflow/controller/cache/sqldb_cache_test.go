@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 
@@ -91,8 +90,7 @@ func newTestSQLDBCache(t *testing.T, sp *sqldb.SessionProxy) MemoizationCache {
 	t.Helper()
 	queries, err := memodb.NewQueries(testTableName, sp)
 	require.NoError(t, err)
-	var lock sync.RWMutex
-	return newSQLDBCache(testNamespace, testCacheName, func() memodb.MemoizationDB { return queries }, &lock)
+	return newSQLDBCache(testNamespace, testCacheName, func() memodb.MemoizationDB { return queries })
 }
 
 func TestSQLDBCacheSaveAndLoad(t *testing.T) {
@@ -124,6 +122,12 @@ func TestSQLDBCacheSaveAndLoad(t *testing.T) {
 	assert.Equal(t, "result", entry.Outputs.Parameters[0].Name)
 	assert.Equal(t, "hello", entry.Outputs.Parameters[0].Value.String())
 	assert.False(t, entry.CreationTimestamp.IsZero())
+
+	require.NoError(t, c.Save(ctx, "no-outputs", "node-empty", nil, ""))
+	entry, err = c.Load(ctx, "no-outputs")
+	require.NoError(t, err)
+	require.NotNil(t, entry)
+	assert.Nil(t, entry.Outputs)
 }
 
 func TestSQLDBCacheInvalidKey(t *testing.T) {

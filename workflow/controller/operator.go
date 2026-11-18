@@ -58,7 +58,6 @@ import (
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
@@ -1291,8 +1290,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 				}
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
-						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, newState.MemoizationStatus.CacheName)
-						err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs)
+						err := woc.saveMemoizationCache(ctx, newState, nil)
 						if err != nil {
 							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 							newState.Phase = wfv1.NodeError
@@ -2878,8 +2876,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(ctx context.Context, nodeNam
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
-	// Set the MemoizationStatus
-	if node.MemoizationStatus == nil && executeTmpl.Memoize != nil {
+	if node.MemoizationStatus == nil && executeTmpl.Memoize != nil && executeTmpl.Memoize.Cache != nil && executeTmpl.Memoize.Cache.ConfigMap != nil {
 		memoizationStatus := &wfv1.MemoizationStatus{
 			Hit:       false,
 			Key:       executeTmpl.Memoize.Key,

@@ -39,5 +39,9 @@ func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, table
 				"primary key (namespace, cache_name, cache_key))"),
 		}),
 		sqldb.AnsiSQLChange(`create index ` + memoizationExpiresAtIndexName(tableName) + ` on ` + tableName + ` (expires_at)`),
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.Postgres: sqldb.AnsiSQLChange(`alter table ` + tableName + ` alter column expires_at drop not null`),
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`alter table ` + tableName + ` modify expires_at timestamp null`),
+		}),
 	})
 }

@@ -32,6 +32,6 @@ status:
           value: |
             { demo }
       phase: Pending
-      templateName: http
+      templateName: main
       type: HTTP
   phase: Running

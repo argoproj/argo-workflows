@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ type SQLDBMemoizeSuite struct {
 
 // memoWorkflow builds a workflow spec with a unique cache key per test run to avoid
 // stale cache hits from previous runs.
-func memoWorkflow(cacheKey string) string {
+func memoWorkflow(cacheKey, maxAge string) string {
 	return fmt.Sprintf(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -49,7 +50,7 @@ spec:
           - name: message
       memoize:
         key: "{{inputs.parameters.message}}"
-        maxAge: "10m"
+        maxAge: "%s"
         cache:
           configMap:
             name: sqldb-memo-cache
@@ -57,10 +58,18 @@ spec:
         image: argoproj/argosay:v2
         command: [echo]
         args: ["{{inputs.parameters.message}}"]
-`, cacheKey, cacheKey)
+`, cacheKey, cacheKey, maxAge)
 }
 
 func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
+	s.testSQLDBMemoize("10m")
+}
+
+func (s *SQLDBMemoizeSuite) TestSQLDBMemoizeWithoutMaxAge() {
+	s.testSQLDBMemoize("")
+}
+
+func (s *SQLDBMemoizeSuite) testSQLDBMemoize(maxAge string) {
 	s.Require().NotNil(s.Config.Memoization, "memoization DB must be configured for SQL cache test")
 
 	ctx := logging.TestContext(s.T().Context())
@@ -70,7 +79,7 @@ func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
 
 	// Submit the workflow and wait for it to succeed.
 	s.Given().
-		Workflow(memoWorkflow(cacheKey)).
+		Workflow(memoWorkflow(cacheKey, maxAge)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -93,12 +102,12 @@ func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
 		})
 
 	// Also verify the entry landed in the configured SQL database, not a ConfigMap.
-	s.assertDBCacheEntry(ctx, cacheKey)
+	s.assertDBCacheEntry(ctx, cacheKey, maxAge)
 	s.assertNoConfigMap(ctx, "sqldb-memo-cache")
 }
 
 // assertDBCacheEntry checks the configured memoization table directly.
-func (s *SQLDBMemoizeSuite) assertDBCacheEntry(ctx context.Context, key string) {
+func (s *SQLDBMemoizeSuite) assertDBCacheEntry(ctx context.Context, key, maxAge string) {
 	memoCfg := s.Config.Memoization
 	// E2E tests connect to the configured SQL backend via a port-forward on localhost.
 	cfg := *memoCfg
@@ -129,12 +138,14 @@ func (s *SQLDBMemoizeSuite) assertDBCacheEntry(ctx context.Context, key string) 
 
 	// Also verify outputs are stored as valid JSON.
 	var outputs string
+	var expiresAt sql.NullTime
 	row, err = session.SQL().
-		QueryRow(fmt.Sprintf(`SELECT outputs FROM %s WHERE namespace = ? AND cache_name = ? AND cache_key = ?`, tableName),
+		QueryRow(fmt.Sprintf(`SELECT outputs, expires_at FROM %s WHERE namespace = ? AND cache_name = ? AND cache_key = ?`, tableName),
 			fixtures.Namespace, "sqldb-memo-cache", key)
 	s.Require().NoError(err)
-	s.Require().NoError(row.Scan(&outputs))
+	s.Require().NoError(row.Scan(&outputs, &expiresAt))
 	s.NotEmpty(outputs)
+	s.Equal(maxAge != "", expiresAt.Valid, "only an explicit maxAge sets an expiry")
 }
 
 // assertNoConfigMap verifies the controller did NOT fall back to creating a ConfigMap cache.

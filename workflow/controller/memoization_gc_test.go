@@ -18,7 +18,7 @@ func (*testMemoizationDB) Load(context.Context, string, string, string) (*memodb
 	return nil, nil
 }
 
-func (*testMemoizationDB) Save(context.Context, string, string, string, string, *wfv1.Outputs, int64) error {
+func (*testMemoizationDB) Save(context.Context, string, string, string, string, *wfv1.Outputs, string) error {
 	return nil
 }
 
@@ -32,6 +32,27 @@ func (t *testMemoizationDB) Prune(context.Context) (int64, error) {
 
 func (*testMemoizationDB) IsEnabled() bool {
 	return true
+}
+
+func TestMemoizationCacheGarbageCollectorDisabled(t *testing.T) {
+	for _, period := range []string{"0", "-1s"} {
+		t.Run(period, func(t *testing.T) {
+			t.Setenv("MEMO_CACHE_GC_PERIOD", period)
+			ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
+			defer cancel()
+			controller := &WorkflowController{}
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				controller.memoizationCacheGarbageCollector(ctx)
+			}()
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				t.Fatal("disabled GC should exit without waiting for cancellation")
+			}
+		})
+	}
 }
 
 func TestMemoizationCacheGarbageCollectorHandlesRuntimeEnable(t *testing.T) {

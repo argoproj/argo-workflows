@@ -23,19 +23,19 @@ const (
 
 // CacheRecord is the database row for a single memoization cache entry.
 type CacheRecord struct {
-	Namespace string    `db:"namespace"`
-	CacheName string    `db:"cache_name"`
-	CacheKey  string    `db:"cache_key"`
-	NodeID    string    `db:"node_id"`
-	Outputs   string    `db:"outputs"` // JSON
-	CreatedAt time.Time `db:"created_at"`
-	ExpiresAt time.Time `db:"expires_at"`
+	Namespace string     `db:"namespace"`
+	CacheName string     `db:"cache_name"`
+	CacheKey  string     `db:"cache_key"`
+	NodeID    string     `db:"node_id"`
+	Outputs   string     `db:"outputs"` // JSON
+	CreatedAt time.Time  `db:"created_at"`
+	ExpiresAt *time.Time `db:"expires_at"`
 }
 
 // MemoizationDB is the interface for database-backed memoization cache operations.
 type MemoizationDB interface {
 	Load(ctx context.Context, namespace, cacheName, cacheKey string) (*CacheRecord, error)
-	Save(ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error
+	Save(ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAge string) error
 	Prune(ctx context.Context) (int64, error)
 	IsEnabled() bool
 }
@@ -49,7 +49,7 @@ func (n *nullMemoizationDB) Load(context.Context, string, string, string) (*Cach
 	return nil, nil
 }
 
-func (n *nullMemoizationDB) Save(context.Context, string, string, string, string, *wfv1.Outputs, int64) error {
+func (n *nullMemoizationDB) Save(context.Context, string, string, string, string, *wfv1.Outputs, string) error {
 	return nil
 }
 
@@ -127,7 +127,7 @@ func (q *queries) Load(ctx context.Context, namespace, cacheName, cacheKey strin
 			Where(db.Cond{colNamespace: namespace}).
 			And(db.Cond{colCacheName: cacheName}).
 			And(db.Cond{colCacheKey: cacheKey}).
-			And(db.Cond{colExpiresAt + " >": now}).
+			And(db.Or(db.Cond{colExpiresAt: nil}, db.Cond{colExpiresAt + " >": now})).
 			One(&r)
 	})
 	if errors.Is(err, db.ErrNoMoreRows) {
@@ -159,13 +159,21 @@ func (q *queries) Prune(ctx context.Context) (int64, error) {
 }
 
 func (q *queries) Save(
-	ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error {
+	ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAge string) error {
 	outputsJSON, err := json.Marshal(outputs)
 	if err != nil {
 		return fmt.Errorf("unable to marshal memoization outputs: %w", err)
 	}
 	now := time.Now().UTC()
-	expiresAt := now.Add(time.Duration(maxAgeSeconds) * time.Second)
+	var expiresAt *time.Time
+	if maxAge != "" {
+		age, err := time.ParseDuration(maxAge)
+		if err != nil {
+			return fmt.Errorf("invalid maxAge %q: %w", maxAge, err)
+		}
+		expiry := now.Add(age)
+		expiresAt = &expiry
+	}
 	record := &CacheRecord{
 		Namespace: namespace,
 		CacheName: cacheName,

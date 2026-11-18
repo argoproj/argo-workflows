@@ -2,18 +2,15 @@ package controller
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upper/db/v4"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v4/config"
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
@@ -24,108 +21,103 @@ func TestUpdateConfig(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-
-	err := controller.updateConfig(ctx)
-	require.NoError(t, err)
+	require.NoError(t, controller.updateConfig(ctx))
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)
 	assert.NotNil(t, controller.wfArchive)
 	assert.NotNil(t, controller.offloadNodeStatusRepo)
-	assert.Equal(t, memodb.NullMemoizationDB, controller.memoQueries)
+	assert.Equal(t, memodb.NullMemoizationDB, controller.getMemoizationQueries())
 }
 
-func TestUpdateConfigMemoizationSessionFailureDisablesMemoization(t *testing.T) {
+func stubMemoizationSetup(t *testing.T) {
+	t.Helper()
+	connect, migrate := memoSessionProxyFromConfig, memoizationMigrate
+	t.Cleanup(func() { memoSessionProxyFromConfig, memoizationMigrate = connect, migrate })
+	memoSessionProxyFromConfig = func(context.Context, kubernetes.Interface, string, *config.MemoizationConfig) (*sqldb.SessionProxy, error) {
+		return sqldb.NewSessionProxyFromSession(nil, &config.DBConfig{}, "user", "password"), nil
+	}
+	memoizationMigrate = func(context.Context, *sqldb.SessionProxy, memodb.Config) error { return nil }
+}
+
+func TestUpdateConfigMemoizationConnectionFailure(t *testing.T) {
+	stubMemoizationSetup(t)
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-
 	controller.Config.Memoization = &config.MemoizationConfig{}
-
-	origMemoSessionProxyFromConfig := memoSessionProxyFromConfig
-	memoSessionProxyFromConfig = func(context.Context, kubernetes.Interface, string, *config.MemoizationConfig) *sqldb.SessionProxy {
-		return nil
+	connectionErr := errors.New("connection refused")
+	memoSessionProxyFromConfig = func(context.Context, kubernetes.Interface, string, *config.MemoizationConfig) (*sqldb.SessionProxy, error) {
+		return nil, connectionErr
 	}
-	t.Cleanup(func() {
-		memoSessionProxyFromConfig = origMemoSessionProxyFromConfig
-	})
-
-	err := controller.updateConfig(ctx)
-	require.NoError(t, err)
+	require.ErrorIs(t, controller.updateConfig(ctx), connectionErr)
 	assert.Nil(t, controller.memoSessionProxy)
-	assert.Equal(t, memodb.NullMemoizationDB, controller.getMemoizationQueries())
-
-	cache := controller.getMemoizationCache(ctx, "default", "memo-disabled-cache")
-	require.NotNil(t, cache)
-	require.NoError(t, cache.Save(ctx, "memo-key", "", &wfv1.Outputs{}, ""))
-
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "memo-disabled-cache", metav1.GetOptions{})
-	assert.True(t, apierr.IsNotFound(err))
+	assert.False(t, controller.getMemoizationQueries().IsEnabled())
 }
 
-type observingCacheFactory struct {
-	setQueries func(memodb.MemoizationDB)
-}
-
-func (o *observingCacheFactory) GetCache(context.Context, controllercache.Type, string, string) controllercache.MemoizationCache {
-	return nil
-}
-
-func (o *observingCacheFactory) SetQueries(q memodb.MemoizationDB) {
-	if o.setQueries != nil {
-		o.setQueries(q)
+func TestUpdateConfigMemoizationMigrationFailure(t *testing.T) {
+	stubMemoizationSetup(t)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.Config.Memoization = &config.MemoizationConfig{}
+	var failedSession *sqldb.SessionProxy
+	migrationErr := errors.New("migration failed")
+	memoizationMigrate = func(_ context.Context, sp *sqldb.SessionProxy, _ memodb.Config) error {
+		failedSession = sp
+		return migrationErr
 	}
+	require.ErrorIs(t, controller.updateConfig(ctx), migrationErr)
+	assert.Nil(t, controller.memoSessionProxy)
+	require.EqualError(t, failedSession.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
 }
+
+func TestUpdateConfigMemoizationRecreatesConnection(t *testing.T) {
+	stubMemoizationSetup(t)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.Config.Memoization = &config.MemoizationConfig{}
+	require.NoError(t, controller.updateConfig(ctx))
+	oldSession := controller.memoSessionProxy
+	oldQueries := controller.getMemoizationQueries()
+	t.Cleanup(func() { _ = controller.memoSessionProxy.Close() })
+
+	controller.Config.Memoization.TableName = "replacement_cache"
+	controller.Config.Memoization.PostgreSQL = &config.PostgreSQLConfig{DatabaseConfig: config.DatabaseConfig{Host: "new-host"}}
+	connect := memoSessionProxyFromConfig
+	memoSessionProxyFromConfig = func(ctx context.Context, client kubernetes.Interface, ns string, cfg *config.MemoizationConfig) (*sqldb.SessionProxy, error) {
+		assert.Equal(t, "new-host", cfg.PostgreSQL.Host)
+		return connect(ctx, client, ns, cfg)
+	}
+	require.NoError(t, controller.updateConfig(ctx))
+	assert.NotSame(t, oldSession, controller.memoSessionProxy)
+	assert.NotSame(t, oldQueries, controller.getMemoizationQueries())
+	require.EqualError(t, oldSession.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
+
+	// A failed reload must not replace the working backend.
+	currentSession, currentQueries := controller.memoSessionProxy, controller.getMemoizationQueries()
+	memoizationMigrate = func(context.Context, *sqldb.SessionProxy, memodb.Config) error { return errors.New("boom") }
+	require.Error(t, controller.updateConfig(ctx))
+	assert.Same(t, currentSession, controller.memoSessionProxy)
+	assert.Same(t, currentQueries, controller.getMemoizationQueries())
+}
+
+type observingCacheFactory struct{ setQueries func(memodb.MemoizationDB) }
+
+func (*observingCacheFactory) GetCache(string) controllercache.MemoizationCache { return nil }
+func (o *observingCacheFactory) SetQueries(q memodb.MemoizationDB)              { o.setQueries(q) }
 
 func TestUpdateConfigMemoizationDisableDetachesCachesBeforeClosingSession(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-
-	sessionProxy := sqldb.NewSessionProxyFromSession(nil, &config.DBConfig{}, "user", "password")
-	controller.memoSessionProxy = sessionProxy
-
-	var setQueriesSawClosedProxy bool
-	controller.cacheFactory = &observingCacheFactory{
-		setQueries: func(memodb.MemoizationDB) {
-			err := sessionProxy.With(ctx, func(db.Session) error { return nil })
-			setQueriesSawClosedProxy = err != nil && err.Error() == "session proxy is closed"
-		},
-	}
-
-	err := controller.updateConfig(ctx)
-	require.NoError(t, err)
-	assert.False(t, setQueriesSawClosedProxy)
+	session := sqldb.NewSessionProxyFromSession(nil, &config.DBConfig{}, "user", "password")
+	controller.memoSessionProxy = session
+	controller.cacheFactory = &observingCacheFactory{setQueries: func(q memodb.MemoizationDB) {
+		assert.Nil(t, q)
+		require.EqualError(t, session.With(ctx, func(db.Session) error { return nil }), "no active session")
+	}}
+	require.NoError(t, controller.updateConfig(ctx))
 	assert.Nil(t, controller.memoSessionProxy)
-	require.EqualError(t, sessionProxy.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
-}
-
-func TestUpdateConfigMemoizationMigrationFailureDisablesMemoization(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx)
-	defer cancel()
-
-	controller.Config.Memoization = &config.MemoizationConfig{}
-	sessionProxy := sqldb.NewSessionProxyFromSession(nil, &config.DBConfig{}, "user", "password")
-	controller.memoSessionProxy = sessionProxy
-
-	origMemoizationMigrate := memoizationMigrate
-	memoizationMigrate = func(context.Context, *sqldb.SessionProxy, memodb.Config) error {
-		return stderrors.New("boom")
-	}
-	t.Cleanup(func() {
-		memoizationMigrate = origMemoizationMigrate
-	})
-
-	err := controller.updateConfig(ctx)
-	require.NoError(t, err)
-	assert.Nil(t, controller.memoSessionProxy)
-	assert.Equal(t, memodb.NullMemoizationDB, controller.getMemoizationQueries())
-	require.EqualError(t, sessionProxy.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
-
-	cache := controller.getMemoizationCache(ctx, "default", "memo-migrate-disabled-cache")
-	require.NotNil(t, cache)
-	require.NoError(t, cache.Save(ctx, "memo-key", "", &wfv1.Outputs{}, ""))
-
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "memo-migrate-disabled-cache", metav1.GetOptions{})
-	assert.True(t, apierr.IsNotFound(err))
+	require.EqualError(t, session.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
 }

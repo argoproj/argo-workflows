@@ -16,7 +16,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/variables"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
@@ -793,11 +792,7 @@ func (e *Engine) saveMemoizationCache(ctx context.Context) error {
 	if err != nil {
 		return nil //nolint:nilerr // node not yet in status → nothing to memoize
 	}
-	if node.MemoizationStatus == nil {
-		return nil
-	}
-	c := e.woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-	if saveErr := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs); saveErr != nil {
+	if saveErr := e.woc.saveMemoizationCache(ctx, node, e.tmpl); saveErr != nil {
 		e.log.WithError(saveErr).Error(ctx, "Failed to save node outputs to cache")
 		_ = e.woc.markNodePhase(ctx, e.nodeName, wfv1.NodeError, saveErr.Error())
 		return saveErr
