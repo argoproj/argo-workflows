@@ -12,4 +12,24 @@ describe('Button', () => {
         fireEvent.click(button);
         expect(handleClick).toHaveBeenCalledTimes(1);
     });
+
+    it('renders a button element without an href', () => {
+        render(<Button onClick={jest.fn()}>Click me</Button>);
+        expect(screen.getByRole('button', {name: 'Click me'})).toBeInTheDocument();
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    it('renders an anchor element with an href', () => {
+        render(
+            <Button href='https://example.com/logs' target='_blank'>
+                Logs
+            </Button>
+        );
+        const link = screen.getByRole('link', {name: 'Logs'});
+        expect(link.tagName).toBe('A');
+        expect(link).toHaveAttribute('href', 'https://example.com/logs');
+        expect(link).toHaveAttribute('target', '_blank');
+        expect(link).toHaveClass('argo-button', 'argo-button--base');
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
 });

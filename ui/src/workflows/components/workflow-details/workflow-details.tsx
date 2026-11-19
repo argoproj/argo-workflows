@@ -9,9 +9,10 @@ import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
-import {openLinkWithKey, processURL} from '../../../shared/components/links';
+import {linkTarget, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
+import {ToolbarAction, ToolbarActions} from '../../../shared/components/toolbar-actions';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -192,7 +193,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
 
     function getItems() {
         const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
-        const items = Object.keys(workflowOperationsMap)
+        const items: ToolbarAction[] = Object.keys(workflowOperationsMap)
             .filter(actionName => !workflowOperationsMap[actionName].disabled(workflow))
             .map(actionName => {
                 const workflowOperation = workflowOperationsMap[actionName];
@@ -247,14 +248,15 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             title: 'Share'
         });
 
-        if (links) {
+        if (links && workflow) {
             links
                 .filter(link => link.scope === 'workflow')
                 .forEach(link => {
                     items.push({
                         title: link.name,
                         iconClassName: 'fa fa-external-link-alt',
-                        action: () => openLink(link)
+                        href: processURL(link.url, linkObject()),
+                        target: linkTarget(link.target)
                     });
                 });
         }
@@ -285,16 +287,11 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             const url: string = clusterScope ? uiUrl(`cluster-workflow-templates/${templateName}`) : uiUrl(`workflow-templates/${workflow.metadata.namespace}/${templateName}`);
             const icon: string = clusterScope ? 'fa fa-window-restore' : 'fa fa-window-maximize';
 
-            const templateLink: Link = {
-                name: 'Open Workflow Template',
-                scope: 'workflow',
-                url
-            };
-
             items.push({
-                title: templateLink.name,
+                title: 'Open Workflow Template',
                 iconClassName: icon,
-                action: () => openLink(templateLink)
+                href: url,
+                target: '_blank'
             });
         }
 
@@ -423,19 +420,18 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         })();
     }, [namespace, name, uid]);
 
-    function openLink(link: Link) {
-        const object = {
+    function linkObject() {
+        return {
             metadata: {
                 namespace: workflow.metadata.namespace,
                 name: workflow.metadata.name
             },
             workflow,
             status: {
-                startedAt: workflow.status.startedAt,
-                finishedAt: workflow.status.finishedAt
+                startedAt: workflow.status?.startedAt,
+                finishedAt: workflow.status?.finishedAt
             }
         };
-        openLinkWithKey(processURL(link.url, object), link.target);
     }
 
     function setParameter(key: string, value: string) {
@@ -494,25 +490,24 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                     {title: namespace, path: uiUrl('workflows/' + namespace)},
                     {title: name, path: uiUrl('workflows/' + namespace + '/' + name)}
                 ],
-                actionMenu: {
-                    items: getItems()
-                },
                 tools: (
-                    <div className='workflow-details__topbar-buttons'>
-                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
-                            <i className='fa fa-columns' />
-                            {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
-                        </a>
-                        <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
-                            <i className='argo-icon-notification' />
-                        </a>
-                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
-                            <i className='argo-icon-timeline' />
-                        </a>
-                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
-                            <i className='argo-icon-workflow' />
-                        </a>
-                    </div>
+                    <ToolbarActions items={getItems()}>
+                        <div className='workflow-details__topbar-buttons'>
+                            <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
+                                <i className='fa fa-columns' />
+                                {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
+                            </a>
+                            <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
+                                <i className='argo-icon-notification' />
+                            </a>
+                            <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
+                                <i className='argo-icon-timeline' />
+                            </a>
+                            <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
+                                <i className='argo-icon-workflow' />
+                            </a>
+                        </div>
+                    </ToolbarActions>
                 )
             }}>
             <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': isSidePanelExpanded})}>
