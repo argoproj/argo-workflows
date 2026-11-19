@@ -472,3 +472,19 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 		assert.False(t, template.IsMissingVariableErr(err))
 	})
 }
+
+// A failed container's message names it, then gives its reason and exit
+// code, and its own message if it has one.
+func TestContainerFailureMessage(t *testing.T) {
+	assert.Equal(t, "main: Error (exit code 2)", ContainerFailureMessage("main", "Error", 2, ""))
+	assert.Equal(t, "wait: OOMKilled (exit code 137): out of memory", ContainerFailureMessage("wait", "OOMKilled", 137, "out of memory"))
+}
+
+// A script's staged source follows its args; a container's args are its own.
+func TestMainArgs(t *testing.T) {
+	const source = "/argo/staging/script"
+	assert.Equal(t, []string{"-x"}, MainArgs(&wfv1.Template{Container: &corev1.Container{Args: []string{"-x"}}}, source))
+	assert.Equal(t, []string{"-x", source}, MainArgs(&wfv1.Template{Script: &wfv1.ScriptTemplate{Container: corev1.Container{Args: []string{"-x"}}, Source: "echo"}}, source))
+	assert.Nil(t, MainArgs(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}, source), "no source, no path")
+	assert.Nil(t, MainArgs(&wfv1.Template{}, source))
+}
