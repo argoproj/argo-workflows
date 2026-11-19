@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
-import {Tooltip} from '../../../shared/components/tooltip';
+import {TooltipIcon} from '../../../shared/components/tooltip';
 import {Workflow} from '../../../shared/models';
 
 import './workflows-summary-container.scss';
@@ -22,10 +22,7 @@ export function WorkflowsSummaryContainer(props: {workflows: Workflow[]}) {
     return (
         <div className='wf-summary-container'>
             <p className='wf-summary-container__title'>
-                Workflows Summary{' '}
-                <Tooltip content='Only workflows in view are summarized'>
-                    <i className='fa fa-info-circle' />
-                </Tooltip>
+                Workflows Summary <TooltipIcon content='Only workflows in view are summarized' icon='fa-info-circle' />
             </p>
             <div className='row'>
                 <div className='columns small-12 xlarge-12'>
