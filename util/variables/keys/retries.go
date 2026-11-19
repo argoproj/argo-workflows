@@ -38,5 +38,5 @@ var (
 	RetriesLastExitCode = retry("lastRetry.exitCode", "Exit code of the previous attempt (or 0 on first attempt)")
 	RetriesLastStatus   = retry("lastRetry.status", "Phase of the previous attempt (or empty on first)")
 	RetriesLastDuration = retry("lastRetry.duration", "Duration of the previous attempt in seconds")
-	RetriesLastMessage  = retry("lastRetry.message", "Message of the previous attempt")
+	RetriesLastMessage  = retry("lastRetry.message", "Message of the previous attempt. For a failed DAG template: `child '<node ID>' failed`, naming the first failed task")
 )
