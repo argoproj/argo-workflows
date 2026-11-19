@@ -140,6 +140,28 @@ func TestStoreOperation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 5)
 	})
+	t.Run("TestListWorkflows order and paging", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		names := func(list *wfv1.WorkflowList) []string {
+			out := make([]string, len(list.Items))
+			for i, wf := range list.Items {
+				out[i] = wf.Name
+			}
+			return out
+		}
+		// workflow-0 was deleted above; a lower index started more recently
+		wfList, err := store.ListWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{Limit: 3})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"workflow-1", "workflow-2", "workflow-3"}, names(wfList))
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{Limit: 3, Continue: "3"})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"workflow-4", "workflow-5", "workflow-6"}, names(wfList))
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{LabelSelector: "test-label in (label-2,label-7)"})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"workflow-2", "workflow-7"}, names(wfList))
+	})
 	t.Run("TestListWorkflows name", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		wfList, err := store.ListWorkflows(ctx, "argo", "Exact", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
@@ -247,5 +269,5 @@ func generateWorkflow(now time.Time, uid int) *wfv1.Workflow {
 			"workflows.argoproj.io/controller-instanceid": "my-instanceid",
 			"test-label": fmt.Sprintf("label-%d", uid),
 		},
-	}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.NewTime(ts)}}
+	}, Status: wfv1.WorkflowStatus{StartedAt: metav1.NewTime(ts), FinishedAt: metav1.NewTime(ts)}}
 }
