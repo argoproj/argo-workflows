@@ -12,6 +12,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
@@ -141,6 +142,13 @@ type Config struct {
 	// (template write, script staging, input artifact download, readiness signaling) in
 	// addition to its existing post-main work.
 	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
+
+	// HotWorkers configures hot workers, which will run container and script
+	// templates that set `pool` on pools of long-lived worker pods instead of a
+	// pod for each attempt of a step or DAG task.
+	// EXPERIMENTAL and not yet functional: leave it off. See
+	// [#16530](https://github.com/argoproj/argo-workflows/issues/16530).
+	HotWorkers *HotWorkersConfig `json:"hotWorkers,omitempty"`
 }
 
 // InitlessPodConfig configures the init-less pod layout.
@@ -156,6 +164,122 @@ type InitlessPodConfig struct {
 // IsEnabled returns true if the init-less pod layout is enabled.
 func (c *InitlessPodConfig) IsEnabled() bool {
 	return c != nil && c.Enabled
+}
+
+// HotWorkersConfig configures pools of long-lived worker pods for templates that
+// set `pool`. A pooled task is one attempt of a step or DAG task whose template
+// sets `pool`. All durations are whole seconds. A setting outside its limits
+// makes the workflow controller exit with an error naming it, both when the
+// controller starts and when it reads the changed configmap, so the controller
+// doesn't run until you fix the setting.
+//
+// EXPERIMENTAL and not yet functional — off by default, and may change in
+// incompatible ways. See Config.HotWorkers.
+type HotWorkersConfig struct {
+	// Enabled turns hot workers on. Default is false; leave it off until hot
+	// workers are functional.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// LeaseSlackSeconds is how long past a claimed task's deadline the controller
+	// waits for its worker before interrupting the task, and how long after
+	// interrupting a task it waits for its worker to confirm the task stopped
+	// before treating it as stopped. It must be at least 1. Default is 300.
+	LeaseSlackSeconds *int64 `json:"leaseSlackSeconds,omitempty"`
+
+	// DefaultRetentionSeconds is how long a pool is kept once no task uses it,
+	// for templates whose pool doesn't set retentionSeconds. It must be at
+	// least 1, although a template's retentionSeconds can be 0. Default is 600.
+	DefaultRetentionSeconds *int64 `json:"defaultRetentionSeconds,omitempty"`
+
+	// TerminationGracePeriodSeconds is the worker pods' termination grace
+	// period. It must be greater than releaseReserveSeconds. Default is 30.
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
+
+	// ReleaseReserveSeconds is how long before the end of the grace period a
+	// worker that is being stopped stops its running task, so it can hand the
+	// task back for another worker. It must be at least 3, to leave time for
+	// main to kill the task's processes (SIGTERM, then SIGKILL after half the
+	// reserve), for the worker to notice main has stopped and to delete its
+	// claim, and less than terminationGracePeriodSeconds. Default is 10.
+	ReleaseReserveSeconds *int64 `json:"releaseReserveSeconds,omitempty"`
+}
+
+const (
+	defaultHotWorkersLeaseSlackSeconds             = 300
+	defaultHotWorkersRetentionSeconds              = 600
+	defaultHotWorkersTerminationGracePeriodSeconds = 30
+	defaultHotWorkersReleaseReserveSeconds         = 10
+	// minHotWorkersReleaseReserveSeconds is the least release reserve that
+	// leaves time for main's SIGKILL escalation, at half the reserve, the
+	// worker noticing main has stopped, which takes up to a second, and the
+	// claim's deletion.
+	minHotWorkersReleaseReserveSeconds = 3
+)
+
+// IsEnabled returns true if hot workers are enabled.
+func (c *HotWorkersConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
+}
+
+// GetLeaseSlackSeconds returns the configured lease slack or its default.
+func (c *HotWorkersConfig) GetLeaseSlackSeconds() int64 {
+	if c == nil {
+		return defaultHotWorkersLeaseSlackSeconds
+	}
+	return ptr.Deref(c.LeaseSlackSeconds, defaultHotWorkersLeaseSlackSeconds)
+}
+
+// GetDefaultRetentionSeconds returns the configured default pool retention or its default.
+func (c *HotWorkersConfig) GetDefaultRetentionSeconds() int64 {
+	if c == nil {
+		return defaultHotWorkersRetentionSeconds
+	}
+	return ptr.Deref(c.DefaultRetentionSeconds, defaultHotWorkersRetentionSeconds)
+}
+
+// GetTerminationGracePeriodSeconds returns the configured worker pod grace period or its default.
+func (c *HotWorkersConfig) GetTerminationGracePeriodSeconds() int64 {
+	if c == nil {
+		return defaultHotWorkersTerminationGracePeriodSeconds
+	}
+	return ptr.Deref(c.TerminationGracePeriodSeconds, defaultHotWorkersTerminationGracePeriodSeconds)
+}
+
+// GetReleaseReserveSeconds returns the configured release reserve or its default.
+func (c *HotWorkersConfig) GetReleaseReserveSeconds() int64 {
+	if c == nil {
+		return defaultHotWorkersReleaseReserveSeconds
+	}
+	return ptr.Deref(c.ReleaseReserveSeconds, defaultHotWorkersReleaseReserveSeconds)
+}
+
+// Validate rejects a non-positive duration, a release reserve too short to
+// release a task in, and one that leaves no time within the grace period.
+// A nil config is valid.
+func (c *HotWorkersConfig) Validate() error {
+	if c == nil {
+		return nil
+	}
+	for _, f := range []struct {
+		name  string
+		value *int64
+	}{
+		{"leaseSlackSeconds", c.LeaseSlackSeconds},
+		{"defaultRetentionSeconds", c.DefaultRetentionSeconds},
+		{"terminationGracePeriodSeconds", c.TerminationGracePeriodSeconds},
+		{"releaseReserveSeconds", c.ReleaseReserveSeconds},
+	} {
+		if f.value != nil && *f.value <= 0 {
+			return fmt.Errorf("hotWorkers.%s must be positive, got %d", f.name, *f.value)
+		}
+	}
+	if reserve := c.GetReleaseReserveSeconds(); reserve < minHotWorkersReleaseReserveSeconds {
+		return fmt.Errorf("hotWorkers.releaseReserveSeconds (%d) must be at least %d, to leave time for main's SIGKILL escalation, the worker noticing main has stopped, and the claim's deletion", reserve, minHotWorkersReleaseReserveSeconds)
+	}
+	if reserve, grace := c.GetReleaseReserveSeconds(), c.GetTerminationGracePeriodSeconds(); reserve >= grace {
+		return fmt.Errorf("hotWorkers.releaseReserveSeconds (%d) must be less than hotWorkers.terminationGracePeriodSeconds (%d)", reserve, grace)
+	}
+	return nil
 }
 
 // FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.

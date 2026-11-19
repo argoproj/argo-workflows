@@ -12845,6 +12845,21 @@ spec:
                     type: object
                   podSpecPatch:
                     type: string
+                  pool:
+                    properties:
+                      initialReplicas:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                      name:
+                        type: string
+                      retentionSeconds:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
                   priorityClassName:
                     type: string
                   resource:
@@ -30891,6 +30906,42 @@ spec:
                         PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                         container fields which are not strings (e.g. resource limits).
                       type: string
+                    pool:
+                      description: |-
+                        Pool is reserved for hot workers, which will run a template's tasks on a
+                        pool of long-lived worker pods instead of a pod per task.
+                        EXPERIMENTAL and not yet functional. See
+                        https://github.com/argoproj/argo-workflows/issues/16530
+                      properties:
+                        initialReplicas:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            InitialReplicas is the number of worker pods a new pool starts with, at
+                            least 1. It applies only when the pool is created. Defaults to 1. It is a
+                            whole number, or a template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                        name:
+                          description: |-
+                            Name of the pool. Templates with the same pool name and the same pod
+                            settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                            template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                            the template's name. It must be a DNS label of at most 35 characters. It
+                            may hold a template variable, such as `inputs.parameters.pool`, and is
+                            then checked once substituted.
+                          type: string
+                        retentionSeconds:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            RetentionSeconds is how long the pool is kept once no task uses it, at
+                            least 0. The most recently dispatched task's value applies. Defaults to
+                            the controller's hot workers retention. It is a whole number, or a
+                            template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                      type: object
                     priorityClassName:
                       description: PriorityClassName to apply to workflow pods.
                       type: string
@@ -44599,6 +44650,83 @@ spec:
                       type: string
                     podIP:
                       type: string
+                    pooledTask:
+                      properties:
+                        activeDeadlineSeconds:
+                          format: int64
+                          type: integer
+                        claimUID:
+                          type: string
+                        conditions:
+                          items:
+                            properties:
+                              lastTransitionTime:
+                                format: date-time
+                                type: string
+                              message:
+                                maxLength: 32768
+                                type: string
+                              observedGeneration:
+                                format: int64
+                                minimum: 0
+                                type: integer
+                              reason:
+                                maxLength: 1024
+                                minLength: 1
+                                pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                                type: string
+                              status:
+                                enum:
+                                - "True"
+                                - "False"
+                                - Unknown
+                                type: string
+                              type:
+                                maxLength: 316
+                                pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                                type: string
+                            required:
+                            - lastTransitionTime
+                            - message
+                            - reason
+                            - status
+                            - type
+                            type: object
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - type
+                          x-kubernetes-list-type: map
+                        deadline:
+                          format: date-time
+                          type: string
+                        enqueuedAt:
+                          format: date-time
+                          type: string
+                        poolHash:
+                          type: string
+                        poolName:
+                          type: string
+                        releases:
+                          format: int32
+                          type: integer
+                        taskName:
+                          type: string
+                        taskSetUID:
+                          type: string
+                        workerPodName:
+                          type: string
+                        workerPodUID:
+                          type: string
+                        workerRestartCount:
+                          format: int32
+                          type: integer
+                      required:
+                      - enqueuedAt
+                      - poolHash
+                      - poolName
+                      - taskName
+                      - taskSetUID
+                      type: object
                     progress:
                       type: string
                     resourcesDuration:
