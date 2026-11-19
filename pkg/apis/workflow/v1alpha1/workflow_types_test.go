@@ -1681,6 +1681,59 @@ func TestInlineStore(t *testing.T) {
 	}
 }
 
+func TestSemaphoreStatus_LockWaiting_UnchangedHolders(t *testing.T) {
+	const lockKey = "default/ConfigMap/semaphore-config/workflow"
+
+	t.Run("creates the waiting entry", func(t *testing.T) {
+		ss := &SemaphoreStatus{}
+		assert.True(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/holder"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/holder"}, waiting.Holders)
+	})
+
+	t.Run("unchanged holders are not a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},
+		}
+		assert.False(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/holder"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/holder"}, waiting.Holders)
+	})
+
+	t.Run("holder order is not a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/b", "default/a"}}},
+		}
+		assert.False(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/a", "default/b"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/b", "default/a"}, waiting.Holders)
+	})
+
+	t.Run("nil and empty holders are the same", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey}},
+		}
+		assert.False(t, ss.LockWaiting("default/waiter", lockKey, []string{}))
+	})
+
+	t.Run("a changed holder set is a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},
+		}
+		assert.True(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/other"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/other"}, waiting.Holders)
+	})
+
+	t.Run("a different lock is a new waiting entry", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},
+		}
+		assert.True(t, ss.LockWaiting("default/waiter", "other-lock", []string{"default/holder"}))
+		assert.Len(t, ss.Waiting, 2)
+	})
+}
+
 func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
 	t.Run("Remove holder from waiting when acquiring lock", func(t *testing.T) {
 		ss := &SemaphoreStatus{
