@@ -48,7 +48,7 @@ data:
         key: password
 ```
 
-SQL-backed memoization stores entries in the configured table. Set `memoization.tableName` to override the default table name; if omitted, it defaults to `cache_entries`.
+SQL-backed memoization stores entries in the table named by `memoization.tableName`, which defaults to `cache_entries`.
 The database connection settings remain under `postgresql` or `mysql`.
 The controller exits if it can't connect to or initialize the configured database, at startup or when the configuration changes.
 It does not fall back to ConfigMaps when SQL memoization is configured.
