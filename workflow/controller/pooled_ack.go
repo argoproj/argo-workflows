@@ -115,9 +115,15 @@ func (woc *wfOperationCtx) finishedNow(node *wfv1.NodeStatus) bool {
 // pooledTaskSetCached reports whether the pooled TaskSet informer holds the
 // TaskSet ref names.
 func (woc *wfOperationCtx) pooledTaskSetCached(ref dispatch.TaskSetRef) bool {
-	key := woc.pooledKeyFor(ref.NodeID)
-	_, ok := cachedWithUID[metav1.Object](woc.controller.pooledTaskSetInformer.GetStore(), key.Namespace+"/"+key.TaskSetName(), ref.UID)
+	_, ok := woc.cachedPooledTaskSet(ref)
 	return ok
+}
+
+// cachedPooledTaskSet is the TaskSet ref names, as the pooled TaskSet
+// informer holds it.
+func (woc *wfOperationCtx) cachedPooledTaskSet(ref dispatch.TaskSetRef) (metav1.Object, bool) {
+	key := woc.pooledKeyFor(ref.NodeID)
+	return cachedWithUID[metav1.Object](woc.controller.pooledTaskSetInformer.GetStore(), key.Namespace+"/"+key.TaskSetName(), ref.UID)
 }
 
 // pooledTaskSetAdoptable reports whether the cache holds the pooled TaskSet

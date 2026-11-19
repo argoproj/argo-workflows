@@ -322,6 +322,49 @@ This metric ignores the `PodInitializing` reason and does not count it.
 The `reason` attribute is the value from the Reason message before the `:` in the message.
 This is not directly controlled by the workflow controller, so it is possible for some pod pending states to be missed.
 
+#### `pool_backlog`
+
+A gauge of the number of pooled tasks waiting for a hot worker.
+A pooled task is one attempt of a step or DAG task whose template runs on a hot worker pool.
+Reports, per hot worker pool, the tasks enqueued for the pool that no worker holds a claim on.
+A task a worker released, as when its pod is deleted during scale-down, counts again until another worker claims it.
+A task the controller has ended does not count, even while its worker is still stopping it.
+The controller reads it from its caches at scrape time.
+A pool is reported while it has a pooled task or a Deployment, or, when the pool controller isn't running, a pod that isn't being deleted; its series disappear once it has none of these.
+
+|  attribute  |                explanation                 |
+|-------------|--------------------------------------------|
+| `namespace` | The namespace of the hot worker pool       |
+| `pool_name` | ⚠️ The name of the hot worker pool          |
+| `pool_hash` | ⚠️ The hash identifying the hot worker pool |
+
+#### `pool_claimed_tasks`
+
+A gauge of the number of pooled tasks claimed by a hot worker and not yet completed.
+A pooled task is one attempt of a step or DAG task whose template runs on a hot worker pool.
+Reports, per hot worker pool, the tasks a worker has claimed and not yet reported.
+Each worker pod runs one task at a time, so `pool_claimed_tasks / pool_ready_pods` is the pool's saturation.
+It can briefly exceed 1 while worker pods are being replaced.
+The controller reads it from its caches at scrape time, and reports it for the same pools as `pool_backlog`.
+
+|  attribute  |                explanation                 |
+|-------------|--------------------------------------------|
+| `namespace` | The namespace of the hot worker pool       |
+| `pool_name` | ⚠️ The name of the hot worker pool          |
+| `pool_hash` | ⚠️ The hash identifying the hot worker pool |
+
+#### `pool_ready_pods`
+
+A gauge of the number of ready hot worker pods in a pool.
+Reports, per hot worker pool, the worker pods that are ready and not being deleted.
+The controller reads it from its caches at scrape time, and reports it for the same pools as `pool_backlog`.
+
+|  attribute  |                explanation                 |
+|-------------|--------------------------------------------|
+| `namespace` | The namespace of the hot worker pool       |
+| `pool_name` | ⚠️ The name of the hot worker pool          |
+| `pool_hash` | ⚠️ The hash identifying the hot worker pool |
+
 #### `queue_adds_count`
 
 A counter of additions to the work queues inside the controller.
@@ -335,6 +378,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -354,6 +398,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -374,6 +419,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -394,6 +440,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -412,6 +459,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -430,6 +478,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -448,6 +497,7 @@ Queues:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving
@@ -503,6 +553,7 @@ Worker Types:
 
 - `cron_wf_queue`: the queue of CronWorkflow updates from the cluster
 - `pod_cleanup_queue`: pods which are queued for deletion
+- `pool_queue`: hot worker pools to reconcile, created or deleted
 - `workflow_queue`: the queue of Workflow updates from the cluster
 - `workflow_ttl_queue`: workflows which are queued for deletion due to age
 - `workflow_archive_queue`: workflows which are queued for archiving

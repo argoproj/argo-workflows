@@ -20,6 +20,21 @@ func ResourceVersionUnchanged(oldObj, newObj any) bool {
 	return oldMeta.GetResourceVersion() == newMeta.GetResourceVersion()
 }
 
+// ChangeHandlers call f with every added, changed or deleted object, skipping
+// the store replays ResourceVersionUnchanged reports.
+func ChangeHandlers(f func(any)) cache.ResourceEventHandlerFuncs {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc: f,
+		UpdateFunc: func(oldObj, newObj any) {
+			if ResourceVersionUnchanged(oldObj, newObj) {
+				return
+			}
+			f(newObj)
+		},
+		DeleteFunc: f,
+	}
+}
+
 // Untombstone returns the last known state of an object a delete event carries,
 // unwrapping a cache.DeletedFinalStateUnknown.
 func Untombstone(obj any) any {
