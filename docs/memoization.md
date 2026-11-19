@@ -65,8 +65,8 @@ The controller also checks the requesting template's `maxAge` on SQL cache hits,
 Increasing `maxAge` does not extend the stored expiry of an existing SQL entry.
 
 The SQL garbage collector periodically deletes expired entries.
-The GC period defaults to 24 hours and can be configured via `MEMO_CACHE_GC_PERIOD`.
-Set it to `0` or a negative duration to disable SQL pruning; expired entries still produce cache misses.
+The GC period is configured in seconds with `MEMO_CACHE_GC_PERIOD_SECONDS`, which defaults to `86400` (24 hours).
+Set it to `0` or a negative integer to disable SQL pruning; expired entries still produce cache misses.
 
 MySQL is also supported:
 

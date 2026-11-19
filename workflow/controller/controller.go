@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -991,14 +992,17 @@ func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Cont
 	logger = logger.WithField("component", "memo_cache_garbage_collector")
 	ctx = logging.WithLogger(ctx, logger)
 
-	periodicity := env.LookupEnvDurationOr(ctx, "MEMO_CACHE_GC_PERIOD", 24*time.Hour)
-	if periodicity <= 0 {
-		logger.Info(ctx, "MEMO_CACHE_GC_PERIOD is zero or negative - cache GC disabled")
+	periodSeconds := env.LookupEnvIntOr(ctx, "MEMO_CACHE_GC_PERIOD_SECONDS", 24*60*60)
+	if periodSeconds <= 0 {
+		logger.Info(ctx, "MEMO_CACHE_GC_PERIOD_SECONDS is zero or negative - cache GC disabled")
 		return
+	}
+	if int64(periodSeconds) > math.MaxInt64/int64(time.Second) {
+		logger.WithField("MEMO_CACHE_GC_PERIOD_SECONDS", periodSeconds).WithPanic().Error(ctx, "Memoization cache GC period exceeds the maximum duration")
 	}
 	logger.Info(ctx, "Memoization cache GC goroutine started")
 
-	ticker := time.NewTicker(periodicity)
+	ticker := time.NewTicker(time.Duration(periodSeconds) * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
