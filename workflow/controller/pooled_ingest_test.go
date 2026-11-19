@@ -369,7 +369,7 @@ func TestPooledResultDiscardFailureLeavesNode(t *testing.T) {
 	assert.Equal(t, *before, *mustNode(t, woc, pooledStep))
 	_, exists := fake.Result(wf.Namespace, before.ID)
 	assert.True(t, exists)
-	n := requeued.take()
+	n, _ := requeued.take()
 	assert.Equal(t, 1, n, "a failed discard requeues")
 
 	fake.SetFault(nil)
