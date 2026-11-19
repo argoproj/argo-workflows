@@ -20,7 +20,7 @@ All cache ConfigMaps must have the label `workflows.argoproj.io/configmap-type: 
 
 ### SQL Database
 
-> v4.0 and after
+> v4.2 and after
 
 Alternatively, cache entries can be stored in a PostgreSQL or MySQL database to avoid the 1 MiB ConfigMap size limit.
 Both backends scope caches to the controller's namespace, so workflows managed by that controller can share a cache across workflow namespaces.
