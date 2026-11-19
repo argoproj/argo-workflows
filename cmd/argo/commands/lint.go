@@ -21,7 +21,7 @@ func NewLintCommand() *cobra.Command {
 		strict    bool
 		lintKinds []string
 		output    = common.EnumFlagValue{
-			AllowedValues: []string{"pretty", "simple"},
+			AllowedValues: []string{"pretty", "simple", "json"},
 			Value:         "pretty",
 		}
 		offline bool
