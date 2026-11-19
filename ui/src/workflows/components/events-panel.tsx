@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {map} from 'rxjs/operators';
 
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {Notice} from '../../shared/components/notice';
@@ -32,17 +31,7 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
         const lw = new ListWatch<Event>(
             // no list function, so we fake it
             () => Promise.resolve({metadata: {}, items: []}),
-            () =>
-                // ListWatch can only handle Kubernetes Watch Event - so we fake it
-                services.workflows.watchEvents(namespace, fieldSelector).pipe(
-                    map(
-                        x =>
-                            x && {
-                                type: 'ADDED',
-                                object: x
-                            }
-                    )
-                ),
+            () => services.workflows.watchEvents(namespace, fieldSelector),
             () => setError(null),
             () => setError(null),
             items => setEvents([...items]),
