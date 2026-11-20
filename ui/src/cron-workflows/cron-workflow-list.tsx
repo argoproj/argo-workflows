@@ -39,12 +39,24 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     // state for URL, query, and label parameters
     const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespaceReady, setNamespaceReady] = useState(!!nsUtils.getNamespace(match.params.namespace));
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
 
     const [storedDisplayISOFormatCreation, setStoredDisplayISOFormatCreation] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION);
     const [storedDisplayISOFormatNextScheduled, setStoredDisplayISOFormatNextScheduled] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED);
+
+    // Listen for managed namespace changes (e.g., on first load when /api/v1/info returns)
+    // In managed namespace mode, managed namespace always takes precedence over explicit path
+    useEffect(() => {
+        return nsUtils.onManagedNamespaceChange(managedNs => {
+            if (managedNs) {
+                setNamespace(managedNs);
+                setNamespaceReady(true);
+            }
+        });
+    }, []);
 
     useEffect(
         useQueryParams(history, p => {
@@ -69,6 +81,9 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const [cronWorkflows, setCronWorkflows] = useState<CronWorkflow[]>();
 
     useEffect(() => {
+        if (!namespaceReady) {
+            return;
+        }
         (async () => {
             try {
                 const list = await services.cronWorkflows.list(namespace, labels);
@@ -86,7 +101,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                 setError(newError);
             }
         })();
-    }, [namespace, labels.toString(), states.toString()]); // referential equality, so use values, not refs
+    }, [namespaceReady, namespace, labels.toString(), states.toString()]); // referential equality, so use values, not refs
 
     useCollectEvent('openedCronWorkflowList');
 
