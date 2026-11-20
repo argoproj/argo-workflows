@@ -37,9 +37,9 @@ func (c *Controller) DeletePod(ctx context.Context, namespace, name string) {
 }
 
 func (c *Controller) DeletePodByUID(ctx context.Context, namespace, name, uid string) {
-	c.queuePodForCleanupByUID(ctx, namespace, name, uid)
+	c.queuePodForCleanupByUID(ctx, namespace, name, deletePodByUID, uid)
 }
 
-func (c *Controller) RemoveFinalizer(ctx context.Context, namespace, name string) {
-	c.queuePodForCleanup(ctx, namespace, name, removeFinalizer)
+func (c *Controller) RemoveFinalizer(ctx context.Context, namespace, name, uid string) {
+	c.queuePodForCleanupByUID(ctx, namespace, name, removeFinalizer, uid)
 }

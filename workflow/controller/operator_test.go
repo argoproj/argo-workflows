@@ -5313,6 +5313,11 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
+		controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			pod := action.(k8stesting.CreateAction).GetObject().(*apiv1.Pod)
+			pod.UID = "pending-timeout-pod-uid"
+			return false, nil, nil
+		})
 
 		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)

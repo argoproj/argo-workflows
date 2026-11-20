@@ -1282,6 +1282,41 @@ func (wfc *WorkflowController) recordWorkflowCompleted(wf metav1.Object) {
 	}
 }
 
+func (wfc *WorkflowController) removeWorkflowPodFinalizers(ctx context.Context, wf metav1.Object) error {
+	instanceRequirement := wfc.instanceIDReq()
+	if wf.GetNamespace() == "" || wf.GetName() == "" || wf.GetUID() == "" ||
+		!instanceRequirement.Matches(labels.Set(wf.GetLabels())) ||
+		(wfc.GetManagedNamespace() != "" && wfc.GetManagedNamespace() != wf.GetNamespace()) {
+		return nil
+	}
+	selector := labels.SelectorFromSet(labels.Set{common.LabelKeyWorkflow: wf.GetName()}).Add(instanceRequirement)
+	listOptions := metav1.ListOptions{
+		LabelSelector: selector.String(),
+		Limit:         500,
+	}
+	for {
+		pods, err := wfc.kubeclientset.CoreV1().Pods(wf.GetNamespace()).List(ctx, listOptions)
+		if err != nil {
+			return err
+		}
+		for _, pod := range pods.Items {
+			owner := metav1.GetControllerOf(&pod)
+			if pod.Namespace != wf.GetNamespace() || pod.UID == "" || !selector.Matches(labels.Set(pod.Labels)) ||
+				owner == nil || owner.APIVersion != wfv1.SchemeGroupVersion.String() || owner.Kind != "Workflow" ||
+				owner.Name != wf.GetName() || owner.UID != wf.GetUID() {
+				continue
+			}
+			if slices.Contains(pod.Finalizers, common.FinalizerPodStatus) {
+				wfc.PodController.RemoveFinalizer(ctx, pod.Namespace, pod.Name, string(pod.UID))
+			}
+		}
+		if pods.Continue == "" {
+			return nil
+		}
+		listOptions.Continue = pods.Continue
+	}
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	_, err := wfc.wfInformer.AddEventHandler(
@@ -1336,17 +1371,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					// key function.
 
 					// Remove finalizers from Pods if they exist before deletion
-					pods := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
-					podList, err := pods.List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", common.LabelKeyWorkflow, obj.(*unstructured.Unstructured).GetName()),
-					})
-					if err != nil {
+					if err := wfc.removeWorkflowPodFinalizers(ctx, obj.(*unstructured.Unstructured)); err != nil {
 						logger.WithError(err).Error(ctx, "Failed to list pods")
-					}
-					for _, p := range podList.Items {
-						if slices.Contains(p.Finalizers, common.FinalizerPodStatus) {
-							wfc.PodController.RemoveFinalizer(ctx, p.Namespace, p.Name)
-						}
 					}
 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
