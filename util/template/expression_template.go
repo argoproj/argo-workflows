@@ -35,6 +35,7 @@ var (
 		varkeys.RetriesLastStatus.Template(),
 		varkeys.RetriesLastDuration.Template(),
 		varkeys.RetriesLastMessage.Template(),
+		varkeys.RetriesExitCodes.Template(),
 		varkeys.WorkflowStatus.Template(),
 		varkeys.WorkflowFailures.Template(),
 	}
