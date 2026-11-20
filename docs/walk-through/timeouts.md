@@ -35,3 +35,8 @@ spec:
       command: [sh, -c]
       args: ["echo sleeping for 1m; sleep 60; echo done"]
 ```
+
+!!! Note
+    The controller enforces the workflow-level `activeDeadlineSeconds`, so it also ends a workflow whose pods have finished without their WorkflowTaskResult ever reaching the controller.
+    A template-level `activeDeadlineSeconds` can't do that, because it becomes the pod's own `activeDeadlineSeconds`, and Kubernetes stops enforcing that once the pod has finished.
+    Set the workflow-level field as well if you need the workflow itself to time out.
