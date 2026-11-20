@@ -114,6 +114,13 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	ctx, log := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName}).InContext(ctx)
 	log.Info(ctx, "cleaning up pod")
 	err := func() error {
+		if uid != "" {
+			// a pod with the same name may have replaced the one this item is for
+			if pod, _ := c.GetPod(namespace, podName); pod != nil && string(pod.UID) != uid {
+				log.Info(ctx, "ignoring cleanup of a replaced pod")
+				return nil
+			}
+		}
 		switch action {
 		case terminateContainers:
 			pod, err := c.GetPod(namespace, podName)
@@ -161,6 +168,19 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case recheckHeldPod:
+			pod, err := c.GetPod(namespace, podName)
+			if err != nil || pod == nil || pod.DeletionTimestamp == nil || !hasOurFinalizer(pod.Finalizers) {
+				return err
+			}
+			if !c.heldPodReleasable(pod) {
+				c.queuePodForCleanupAfter(ctx, namespace, podName, recheckHeldPod, c.recheckPeriod)
+				return nil
+			}
+			pods := c.kubeclientset.CoreV1().Pods(namespace)
+			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+				return err
+			}
 		case removeFinalizer:
 			pods := c.kubeclientset.CoreV1().Pods(namespace)
 			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
@@ -194,7 +214,7 @@ func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace stri
 	}
 }
 
-func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, uid string) {
-	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": deletePodByUID}).Info(ctx, "queueing pod for cleanup by UID")
-	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid))
+func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, action podCleanupAction, uid string) {
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": action}).Info(ctx, "queueing pod for cleanup by UID")
+	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, action, uid))
 }
