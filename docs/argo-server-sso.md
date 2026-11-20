@@ -201,6 +201,45 @@ sso:
     Argo does not support refresh-token-based mid-session revalidation.
     See the [Token Revocation](#token-revocation) section above to force re-login for all users.
 
+## Log in from the CLI
+
+> v4.2 and after
+
+`argo auth login` logs you in to an Argo Server that uses SSO and saves the token for later CLI commands.
+It needs the Argo Server address from `--argo-server` or `ARGO_SERVER`, plus `--argo-base-href` if the server runs under a path.
+
+```bash
+argo auth login --argo-server argo.example.com:443
+```
+
+The CLI opens your browser at the Argo Server's SSO login page and listens on a random port on `127.0.0.1` for the result.
+After you log in, the Argo Server redirects your browser to that port with the token.
+The Argo Server encrypts the token to an ephemeral key that only the waiting `argo auth login` holds, so the token doesn't appear in plaintext in your browser history.
+The Argo Server only redirects to a plain `http://` loopback IP address with an explicit port, and it keeps no login state, so this works with several Argo Server replicas.
+You don't need to register another redirect URL with your identity provider: the login still uses `/oauth2/callback`.
+You must finish logging in within 3 minutes, because the Argo Server's login state expires then.
+
+If your browser runs on a different machine, for example when you use SSH, add `--paste`.
+The browser login then ends on the User Info page of the UI.
+Copy the `ARGO_TOKEN` value from that page and paste it at the prompt.
+Add `--no-browser` to print the login URL without trying to open a browser.
+You can also pipe the token to `argo auth login --paste` on stdin.
+
+The CLI only accepts SSO tokens, which start with `Bearer v2:`, and checks the token with the Argo Server before saving it.
+It saves tokens in `argo/tokens.json` in your user configuration directory (for example `~/.config` on Linux or `~/Library/Application Support` on macOS), with file mode `0600`, keyed by server address and base href.
+
+When `ARGO_TOKEN` isn't set, CLI commands for that Argo Server use the saved token.
+`argo auth token` prints it, so other tools that call the Argo Server API can use your SSO identity:
+
+```bash
+curl -H "Authorization: $(argo auth token --argo-server argo.example.com:443)" https://argo.example.com/api/v1/userinfo
+```
+
+The token lasts for [`sessionExpiry`](#sso-login-time).
+After a browser login, the CLI knows when the token expires, then warns you to log in again and falls back to your kubeconfig.
+A pasted token's expiry is unknown to the CLI, so you see an authentication error from the Argo Server when it expires.
+`argo auth logout` deletes the saved token, but the token stays valid on the Argo Server until it expires.
+
 ## Custom claims
 
 If your OIDC provider provides groups information with a claim name other than `groups`, you could configure config-map to specify custom claim name for groups.

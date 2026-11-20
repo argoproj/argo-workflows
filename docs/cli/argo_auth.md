@@ -51,5 +51,7 @@ argo auth [flags]
 ### SEE ALSO
 
 * [argo](argo.md)	 - argo is the command line interface to Argo
+* [argo auth login](argo_auth_login.md)	 - Log in to an Argo Server that uses SSO
+* [argo auth logout](argo_auth_logout.md)	 - Delete the token saved by argo auth login
 * [argo auth token](argo_auth_token.md)	 - Print the auth token
 
