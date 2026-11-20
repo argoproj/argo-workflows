@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2750,11 +2751,39 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
-// IsPartOfExitHandler returns whether node is part of exit handler.
+// IsPartOfExitHandler returns whether node is part of an exit handler.
+//
+// An exit handler is a node whose display name ends in ".onExit": the
+// workflow onExit, a lifecycle hooks.exit (reconciled under that same name),
+// or a step or DAG task onExit. Nested nodes are found by walking BoundaryID.
+// A retryStrategy wraps the handler in a Retry node and runs each attempt as
+// "<name>(N)". The attempt keeps the Retry node's boundary — empty for a
+// workflow-level handler — so the walk follows the Retry node that lists the
+// attempt as a child before it follows BoundaryID (#17265).
 func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool {
 	log := logging.RequireLoggerFromContext(ctx)
 	currentNode := n
-	for !currentNode.IsExitNode() {
+	seen := make(map[string]struct{})
+	for {
+		if currentNode.IsExitNode() {
+			return true
+		}
+		if currentNode.ID != "" {
+			if _, ok := seen[currentNode.ID]; ok {
+				return false
+			}
+			seen[currentNode.ID] = struct{}{}
+			// Retry attempts and hooks of a Retry node are listed in its Children
+			// rather than walking through it via BoundaryID. Downstream DAG tasks
+			// and StepGroups can also appear in Children as outbound dependency
+			// edges, so only climb when currentNode belongs to that Retry node.
+			if parent := nodes.Find(func(candidate NodeStatus) bool {
+				return candidate.Type == NodeTypeRetry && candidate.HasChild(currentNode.ID) && isOwnedByRetryNode(&candidate, currentNode)
+			}); parent != nil {
+				currentNode = parent
+				continue
+			}
+		}
 		if currentNode.BoundaryID == "" {
 			return false
 		}
@@ -2764,7 +2793,23 @@ func (n *NodeStatus) IsPartOfExitHandler(ctx context.Context, nodes Nodes) bool 
 		}
 		currentNode = boundaryNode
 	}
-	return true
+}
+
+func isOwnedByRetryNode(retryNode, child *NodeStatus) bool {
+	if retryNode == nil || child == nil || retryNode.Name == "" {
+		return false
+	}
+	if rest, ok := strings.CutPrefix(child.Name, retryNode.Name+"("); ok && strings.HasSuffix(rest, ")") {
+		if _, err := strconv.Atoi(rest[:len(rest)-1]); err == nil {
+			return true
+		}
+	}
+	if child.NodeFlag != nil && child.NodeFlag.Hooked {
+		if child.Name == retryNode.Name+".onExit" || strings.HasPrefix(child.Name, retryNode.Name+".hooks.") {
+			return true
+		}
+	}
+	return false
 }
 
 // IsExitNode returns whether or not node run as exit handler.
