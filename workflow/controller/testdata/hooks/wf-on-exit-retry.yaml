@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-on-exit-retry
+  namespace: argo
+spec:
+  entrypoint: main
+  onExit: hook
+  retryStrategy:
+    limit: 1
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+    - name: hook
+      container:
+        image: argoproj/argosay:v2
