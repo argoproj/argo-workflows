@@ -133600,6 +133600,11 @@ spec:
                       type: string
                     progress:
                       type: string
+                    recoveringResourcePodUID:
+                      type: string
+                    resourcePodRecoveries:
+                      format: int32
+                      type: integer
                     resourcesDuration:
                       additionalProperties:
                         format: int64

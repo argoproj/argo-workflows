@@ -4757,6 +4757,18 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.RecoveringResourcePodUID)
+	copy(dAtA[i:], m.RecoveringResourcePodUID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RecoveringResourcePodUID)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0x82
+	i = encodeVarintGenerated(dAtA, i, uint64(m.ResourcePodRecoveries))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xf8
 	i -= len(m.RestartingPodUID)
 	copy(dAtA[i:], m.RestartingPodUID)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RestartingPodUID)))
@@ -11444,6 +11456,9 @@ func (m *NodeStatus) Size() (n int) {
 	n += 2 + sovGenerated(uint64(m.FailedPodRestarts))
 	l = len(m.RestartingPodUID)
 	n += 2 + l + sovGenerated(uint64(l))
+	n += 2 + sovGenerated(uint64(m.ResourcePodRecoveries))
+	l = len(m.RecoveringResourcePodUID)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14381,6 +14396,8 @@ func (this *NodeStatus) String() string {
 		`TaskResultSynced:` + valueToStringGenerated(this.TaskResultSynced) + `,`,
 		`FailedPodRestarts:` + fmt.Sprintf("%v", this.FailedPodRestarts) + `,`,
 		`RestartingPodUID:` + fmt.Sprintf("%v", this.RestartingPodUID) + `,`,
+		`ResourcePodRecoveries:` + fmt.Sprintf("%v", this.ResourcePodRecoveries) + `,`,
+		`RecoveringResourcePodUID:` + fmt.Sprintf("%v", this.RecoveringResourcePodUID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -30150,6 +30167,57 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.RestartingPodUID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 31:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourcePodRecoveries", wireType)
+			}
+			m.ResourcePodRecoveries = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ResourcePodRecoveries |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 32:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RecoveringResourcePodUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RecoveringResourcePodUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

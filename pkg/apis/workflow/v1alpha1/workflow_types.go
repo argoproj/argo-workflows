@@ -2656,6 +2656,15 @@ type NodeStatus struct {
 	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
 	// Cleared when the replacement pod starts running.
 	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
+
+	// ResourcePodRecoveries counts recorded recoveries after infrastructure failure
+	// or loss of a running resource executor. It is independent of FailedPodRestart.
+	ResourcePodRecoveries int32 `json:"resourcePodRecoveries,omitempty" protobuf:"varint,31,opt,name=resourcePodRecoveries"`
+
+	// RecoveringResourcePodUID identifies the failed resource executor being replaced.
+	// Duplicate observations of this pod must not consume another recovery attempt.
+	// Cleared when a different executor pod is observed.
+	RecoveringResourcePodUID string `json:"recoveringResourcePodUID,omitempty" protobuf:"bytes,32,opt,name=recoveringResourcePodUID"`
 }
 
 // Completed is used to determine if this node can proceed

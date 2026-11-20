@@ -2489,6 +2489,8 @@ NodeStatus contains status information about an individual node in the workflow
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
 |`progress`|`string`|Progress to completion|
+|`recoveringResourcePodUID`|`string`|RecoveringResourcePodUID identifies the failed resource executor being replaced. Duplicate observations of this pod must not consume another recovery attempt. Cleared when a different executor pod is observed.|
+|`resourcePodRecoveries`|`integer`|ResourcePodRecoveries counts recorded recoveries after infrastructure failure or loss of a running resource executor. It is independent of FailedPodRestart.|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`restartingPodUID`|`string`|RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|

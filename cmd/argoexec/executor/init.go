@@ -121,14 +121,15 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 	}
 
 	return executor.TaskConfig{
-		WorkflowName:             os.Getenv(common.EnvVarWorkflowName),
-		WorkflowUID:              types.UID(os.Getenv(common.EnvVarWorkflowUID)),
-		NodeID:                   os.Getenv(common.EnvVarNodeID),
-		Template:                 *tmpl,
-		IncludeScriptOutput:      os.Getenv(common.EnvVarIncludeScriptOutput) == "true",
-		Deadline:                 deadline,
-		ProgressFile:             os.Getenv(common.EnvVarProgressFile),
-		InputArtifactPluginNames: inputPlugins,
+		WorkflowName:               os.Getenv(common.EnvVarWorkflowName),
+		WorkflowUID:                types.UID(os.Getenv(common.EnvVarWorkflowUID)),
+		NodeID:                     os.Getenv(common.EnvVarNodeID),
+		Template:                   *tmpl,
+		IncludeScriptOutput:        os.Getenv(common.EnvVarIncludeScriptOutput) == "true",
+		Deadline:                   deadline,
+		ProgressFile:               os.Getenv(common.EnvVarProgressFile),
+		InputArtifactPluginNames:   inputPlugins,
+		ResourceTemplateRecovering: os.Getenv(common.EnvVarResourceTemplateRecovering) == "true",
 	}
 }
 

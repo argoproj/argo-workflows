@@ -4518,6 +4518,20 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"resourcePodRecoveries": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResourcePodRecoveries counts recorded recoveries after infrastructure failure or loss of a running resource executor. It is independent of FailedPodRestart.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"recoveringResourcePodUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RecoveringResourcePodUID identifies the failed resource executor being replaced. Duplicate observations of this pod must not consume another recovery attempt. Cleared when a different executor pod is observed.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
