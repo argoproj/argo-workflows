@@ -171,6 +171,26 @@ func TestIsRestartableReason(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "TopologyAffinityError",
+			reason:   "TopologyAffinityError",
+			expected: true,
+		},
+		{
+			name:     "OutOfcpu",
+			reason:   "OutOfcpu",
+			expected: true,
+		},
+		{
+			name:     "OutOfmemory",
+			reason:   "OutOfmemory",
+			expected: true,
+		},
+		{
+			name:     "OutOf extended resource",
+			reason:   "OutOfnvidia.com/gpu",
+			expected: true,
+		},
+		{
 			name:     "OOMKilled is not restartable",
 			reason:   "OOMKilled",
 			expected: false,
@@ -237,6 +257,17 @@ func TestAnalyzePodForRestart(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "pod rejected by kubelet should restart",
+			pod: &apiv1.Pod{
+				Status: apiv1.PodStatus{
+					Phase:   apiv1.PodFailed,
+					Reason:  "OutOfmemory",
+					Message: "Pod was rejected: Node didn't have enough resource: memory, requested: 1, used: 2, capacity: 2",
 				},
 			},
 			expected: true,
