@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argo/lint/mocks"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 	workflowmocks "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow/mocks"
 	wftemplatemocks "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate/mocks"
 	wf "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -347,4 +348,157 @@ func TestGetObjectName(t *testing.T) {
 			assert.Equal(t, test.expected, getObjectName(test.kind, test.obj, test.objIndex))
 		})
 	}
+}
+
+// A broken WorkflowTemplate in a directory must name its file and object rather
+// than letting a valid neighbor produce "no linting errors found!" (#9550).
+func TestLintDirectoryWithInvalidFile(t *testing.T) {
+	dir := t.TempDir()
+	valid := `apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: good
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+`
+	invalid := `apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: bad
+spec:
+  templates: []
+  templates: []
+`
+	require.NoError(t, os.WriteFile(dir+"/good.yaml", []byte(valid), 0o600))
+	require.NoError(t, os.WriteFile(dir+"/bad.yaml", []byte(invalid), 0o600))
+
+	templateMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
+	templateMock.On("LintWorkflowTemplate", mock.Anything, mock.Anything).Return(nil, nil)
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true,
+		ServiceClients: ServiceClients{WorkflowTemplatesClient: templateMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when one file has a YAML error")
+	assert.Contains(t, res.Msg(), "bad.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `key "templates" already set in map`)
+	assert.Contains(t, res.Msg(), `in "bad" (WorkflowTemplate)`, "the object name must be reported when available")
+	templateMock.AssertNumberOfCalls(t, "LintWorkflowTemplate", 1)
+}
+
+// TestLintFileWithUnparseableYAML verifies that a file which is not valid YAML at all
+// fails the lint with the file name, instead of being skipped silently (#9550).
+func TestLintFileWithUnparseableYAML(t *testing.T) {
+	dir := t.TempDir()
+	broken := `foo: [
+`
+	require.NoError(t, os.WriteFile(dir+"/broken.yaml", []byte(broken), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true,
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a file is not valid YAML")
+	assert.Contains(t, res.Msg(), "broken.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), "did not find expected node content")
+}
+
+// TestLintUnknownKindWithDuplicateKey verifies that a strict-invalid document whose
+// kind is NOT an Argo kind (e.g. a ConfigMap with duplicate keys) fails the lint
+// instead of being skipped as an unknown object (#9550, CodeRabbit review).
+func TestLintUnknownKindWithDuplicateKey(t *testing.T) {
+	dir := t.TempDir()
+	dupKeyConfigMap := `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dup
+data:
+  key: value
+  key: duplicated
+`
+	require.NoError(t, os.WriteFile(dir+"/dupcm.yaml", []byte(dupKeyConfigMap), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true,
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a non-argo file has a YAML error")
+	assert.Contains(t, res.Msg(), "dupcm.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `key "key" already set in map`)
+}
+
+func TestLintCronKindIgnoresMalformedWorkflowTemplate(t *testing.T) {
+	path := "../../../test/e2e/cron/cron-and-malformed-template.yaml"
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{path},
+		Strict:         true,
+		ServiceClients: ServiceClients{CronWorkflowsClient: &apiclient.OfflineCronWorkflowServiceClient{}},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.True(t, res.Success, res.Msg())
+	assert.NotContains(t, res.Msg(), `spec.entrypoints`)
+
+	templateMock := &wftemplatemocks.WorkflowTemplateServiceClient{}
+	res, err = Lint(ctx, &Options{
+		Files:          []string{path},
+		Strict:         true,
+		ServiceClients: ServiceClients{WorkflowTemplatesClient: templateMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success)
+	assert.Contains(t, res.Msg(), `unknown field "spec.entrypoints"`)
+	templateMock.AssertNotCalled(t, "LintWorkflowTemplate")
+}
+
+// TestLintWorkflowEventBindingWithDuplicateKey verifies that a strict-invalid
+// WorkflowEventBinding is reported, even though there is no lint endpoint for that kind.
+func TestLintWorkflowEventBindingWithDuplicateKey(t *testing.T) {
+	dir := t.TempDir()
+	dupKeyWeb := `apiVersion: argoproj.io/v1alpha1
+kind: WorkflowEventBinding
+metadata:
+  name: bad-binding
+spec:
+  event: {}
+  event: {}
+`
+	require.NoError(t, os.WriteFile(dir+"/badweb.yaml", []byte(dupKeyWeb), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true,
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a WorkflowEventBinding has a YAML error")
+	assert.Contains(t, res.Msg(), "badweb.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `in "bad-binding" (WorkflowEventBinding)`)
+	assert.Contains(t, res.Msg(), `key "event" already set in map`)
 }
