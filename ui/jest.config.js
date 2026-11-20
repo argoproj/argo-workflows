@@ -4,6 +4,8 @@ module.exports = {
   // Playwright specs under e2e/ are run by `yarn e2e`, not Jest.
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/e2e/"],
   setupFilesAfterEnv: ["<rootDir>/setupTests.ts"],
+  // with --coverage, count every source file, not only the ones a test imports
+  collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.test.{ts,tsx}", "!src/**/*.d.ts"],
   transformIgnorePatterns: [
     "node_modules/(?!(argo-ui)/)"
   ],
