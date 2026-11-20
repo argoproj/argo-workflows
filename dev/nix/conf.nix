@@ -7,6 +7,10 @@
 rec {
   # Keep in sync with go.mod
   goVersion = "1.27.4";
+  # Hash of https://go.dev/dl/go<goVersion>.src.tar.gz; update it with goVersion:
+  #   nix store prefetch-file https://go.dev/dl/go<goVersion>.src.tar.gz
+  # Only used while nixpkgs' Go is older than goVersion and the flake builds Go itself.
+  goSrcHash = "sha256-c8+4VxrsDAEXdofbhxY9Rqog6XeWcncokaoXZU2aYJk=";
   version = "latest";
   env = {
     DEFAULT_REQUEUE_TIME = "1s";
