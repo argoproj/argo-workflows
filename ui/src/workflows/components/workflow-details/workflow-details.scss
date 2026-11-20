@@ -1,5 +1,29 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
+// The action buttons and the tab icons share one toolbar row, split 9/3. With
+// many buttons the left side overflows onto the icons, so give the icons the
+// width they need and let the buttons scroll instead.
+.top-bar.row:has(.workflow-details__topbar-buttons) {
+  display: flex;
+  flex-wrap: nowrap;
+
+  > .top-bar__left-side {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+
+  > .top-bar__right-side {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: none;
+  }
+}
+
 .workflow-details {
 
   overflow-y: hidden;
