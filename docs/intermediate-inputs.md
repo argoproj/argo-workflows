@@ -1,4 +1,4 @@
-# Intermediate Parameters
+# `enum` and Intermediate Parameters
 
 Traditionally, Argo workflows has supported input parameters from UI only when the workflow starts,
 and after that, it's pretty much on autopilot. But, there are a lot of use cases where human interaction is required.
@@ -141,6 +141,42 @@ spec:
           args:
             - echo Updating DB {{inputs.parameters.db_name}}
 ```
+
+## `enum` For UI Drop-downs
+
+With workflow templates, users can specify options under `enum` to enable drop-down list selection when submitting `WorkflowTemplate`s from the UI. This allows the operator to restrict allowed when initiating a workflow.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-with-enum-values
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+          -   one
+          -   two
+          -   three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+```
+
 
 ### Some Important Details
 
