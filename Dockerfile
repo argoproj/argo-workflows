@@ -5,6 +5,10 @@ ARG GIT_TREE_STATE=unknown
 
 FROM golang:1.27.3-alpine3.23 AS builder
 
+# Release builds provide a sanitized Git checkout and require native VCS stamping.
+ARG GOFLAGS
+ARG VERIFY_BUILD_METADATA=false
+
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
     git \
@@ -63,7 +67,8 @@ ARG GIT_COMMIT
 ARG GIT_TAG
 ARG GIT_TREE_STATE
 
-RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/argoexec GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE} \
+    && if [ "$VERIFY_BUILD_METADATA" = true ]; then bash hack/verify-build-metadata.sh dist/argoexec; fi
 
 ####################################################################################################
 
@@ -73,7 +78,8 @@ ARG GIT_COMMIT
 ARG GIT_TAG
 ARG GIT_TREE_STATE
 
-RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build make dist/workflow-controller GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE} \
+    && if [ "$VERIFY_BUILD_METADATA" = true ]; then bash hack/verify-build-metadata.sh dist/workflow-controller; fi
 
 ####################################################################################################
 
@@ -88,7 +94,8 @@ COPY --from=argo-ui ui/dist/app ui/dist/app
 # update timestamp so that `make` doesn't try to rebuild this -- it was already built in the previous stage
 RUN touch ui/dist/app/index.html
 
-RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build STATIC_FILES=true make dist/argo GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE}
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build STATIC_FILES=true make dist/argo GIT_COMMIT=${GIT_COMMIT} GIT_TAG=${GIT_TAG} GIT_TREE_STATE=${GIT_TREE_STATE} \
+    && if [ "$VERIFY_BUILD_METADATA" = true ]; then bash hack/verify-build-metadata.sh dist/argo; fi
 
 ####################################################################################################
 

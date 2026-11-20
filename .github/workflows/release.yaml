@@ -58,6 +58,8 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Go needs release tags and ancestry for native module versions.
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -110,7 +112,14 @@ jobs:
             image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
           fi
 
+          context=$(mktemp -d)
+          trap 'rm -rf "$context"' EXIT
+          bash hack/prepare-release-context.sh "$context/build"
+
           docker buildx build \
+            --file "$context/build/Dockerfile" \
+            --build-arg GOFLAGS=-buildvcs=true \
+            --build-arg VERIFY_BUILD_METADATA=true \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
             --output "type=image,push=true" \
@@ -120,7 +129,7 @@ jobs:
             --platform="${PLATFORM}" \
             --target $TARGET \
             --provenance=false \
-            --tag quay.io/$image_name .
+            --tag quay.io/$image_name "$context/build/source"
 
   build-windows:
     name: Build & push windows
