@@ -4,74 +4,39 @@ package db_test
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	testcontainers "github.com/testcontainers/testcontainers-go"
-	testmysql "github.com/testcontainers/testcontainers-go/modules/mysql"
-	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/upper/db/v4"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	sqldbtest "github.com/argoproj/argo-workflows/v4/test/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const (
-	testDBName     = "memotest"
-	testDBUser     = "user"
-	testDBPassword = "pass"
-	testNamespace  = "default"
-	testCacheName  = "my-cache"
+	testNamespace = "default"
+	testCacheName = "my-cache"
 )
 
 var testTableName = memodb.TableName(nil)
-
-func setupPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
-	t.Helper()
-	pg, err := testpostgres.Run(ctx, "postgres:17.4-alpine",
-		testpostgres.WithDatabase(testDBName), testpostgres.WithUsername(testDBUser), testpostgres.WithPassword(testDBPassword),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(30*time.Second)))
-	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, testcontainers.TerminateContainer(pg)) })
-	host, err := pg.Host(ctx)
-	require.NoError(t, err)
-	portStr, err := pg.MappedPort(ctx, "5432/tcp")
-	require.NoError(t, err)
-	port, err := strconv.Atoi(portStr.Port())
-	require.NoError(t, err)
-	return connectTestDB(ctx, t, config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{DatabaseConfig: config.DatabaseConfig{Host: host, Port: port, Database: testDBName}}})
-}
-
-func setupMySQL(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
-	t.Helper()
-	my, err := testmysql.Run(ctx, "mysql:8.4.5", testmysql.WithDatabase(testDBName), testmysql.WithUsername(testDBUser), testmysql.WithPassword(testDBPassword))
-	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, testcontainers.TerminateContainer(my)) })
-	host, err := my.Host(ctx)
-	require.NoError(t, err)
-	portStr, err := my.MappedPort(ctx, "3306/tcp")
-	require.NoError(t, err)
-	port, err := strconv.Atoi(portStr.Port())
-	require.NoError(t, err)
-	return connectTestDB(ctx, t, config.DBConfig{MySQL: &config.MySQLConfig{DatabaseConfig: config.DatabaseConfig{Host: host, Port: port, Database: testDBName}}})
-}
 
 func connectTestDB(ctx context.Context, t *testing.T, cfg config.DBConfig) *sqldb.SessionProxy {
 	t.Helper()
 	credentials := &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "memo-db", Namespace: testNamespace},
-		Data:       map[string][]byte{"username": []byte(testDBUser), "password": []byte(testDBPassword)},
+		Data:       map[string][]byte{"username": []byte(sqldbtest.Username), "password": []byte(sqldbtest.Password)},
 	}
 	var database *config.DatabaseConfig
 	if cfg.PostgreSQL != nil {
@@ -97,10 +62,17 @@ func sampleOutputs(message string) *wfv1.Outputs {
 }
 
 func TestQueries(t *testing.T) {
-	for name, setup := range map[string]func(context.Context, *testing.T) *sqldb.SessionProxy{"postgres": setupPostgres, "mysql": setupMySQL} {
+	backends := map[string]func(context.Context, *testing.T) config.DBConfig{"Postgres": sqldbtest.Postgres}
+	for name, variant := range sqldb.MySQLVariants {
+		backends[name] = func(ctx context.Context, t *testing.T) config.DBConfig { return sqldbtest.MySQL(ctx, t, variant) }
+	}
+	backends["MySQL57Strict"] = func(ctx context.Context, t *testing.T) config.DBConfig {
+		return sqldbtest.MySQL(ctx, t, sqldb.MySQLVariant{Image: "mysql:5.7.44", WaitMessage: "port: 3306  MySQL Community Server"}, "--explicit-defaults-for-timestamp=OFF", "--sql-mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE")
+	}
+	for name, setup := range backends {
 		t.Run(name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
-			sp := setup(ctx, t)
+			sp := connectTestDB(ctx, t, setup(ctx, t))
 			q, err := memodb.NewQueries(testTableName, sp)
 			require.NoError(t, err)
 			assert.True(t, q.IsEnabled())
@@ -121,6 +93,18 @@ func TestQueries(t *testing.T) {
 				require.NoError(t, err)
 				assert.Nil(t, record, "custom and default tables are independent")
 			})
+			t.Run("mixed-case-rejected", func(t *testing.T) {
+				require.ErrorContains(t, memodb.Migrate(ctx, sp, memodb.Config{TableName: "MemoCache"}), "invalid table name")
+			})
+			t.Run("long-name-and-future-expiry", func(t *testing.T) {
+				name := strings.Repeat("a.", 126) + "a"
+				require.NoError(t, q.Save(ctx, testNamespace, name, "future", "node", nil, "175200h"))
+				record, err := q.Load(ctx, testNamespace, name, "future")
+				require.NoError(t, err)
+				require.NotNil(t, record)
+				require.NotNil(t, record.ExpiresAt)
+				assert.True(t, record.ExpiresAt.After(time.Date(2038, 1, 19, 0, 0, 0, 0, time.UTC)))
+			})
 			t.Run("database-errors", func(t *testing.T) {
 				missing, err := memodb.NewQueries("missing_cache", sp)
 				require.NoError(t, err)
@@ -131,8 +115,9 @@ func TestQueries(t *testing.T) {
 				pruned, err := missing.Prune(ctx)
 				require.Error(t, err)
 				assert.Zero(t, pruned)
-				// A reserved SQL identifier passes the name validation but fails DDL.
-				require.Error(t, memodb.Migrate(ctx, sp, memodb.Config{TableName: "select"}))
+				_, err = sp.Session(ctx).SQL().Exec("CREATE TABLE malformed_cache (id integer)")
+				require.NoError(t, err)
+				require.Error(t, memodb.Migrate(ctx, sp, memodb.Config{TableName: "malformed_cache"}))
 			})
 
 			t.Run("save-load-replace", func(t *testing.T) {
@@ -148,6 +133,17 @@ func TestQueries(t *testing.T) {
 					assert.Contains(t, rec.Outputs, value)
 					require.NotNil(t, rec.ExpiresAt)
 					assert.WithinDuration(t, rec.CreatedAt.Add(time.Hour), *rec.ExpiresAt, time.Second)
+				}
+			})
+			t.Run("case-sensitive-keys", func(t *testing.T) {
+				for _, key := range []string{"case-key", "Case-key"} {
+					require.NoError(t, q.Save(ctx, testNamespace, testCacheName, key, key, nil, ""))
+				}
+				for _, key := range []string{"case-key", "Case-key"} {
+					record, err := q.Load(ctx, testNamespace, testCacheName, key)
+					require.NoError(t, err)
+					require.NotNil(t, record)
+					assert.Equal(t, key, record.NodeID)
 				}
 			})
 			t.Run("namespace-isolation", func(t *testing.T) {
@@ -198,6 +194,29 @@ func TestQueries(t *testing.T) {
 				n, err = q.Prune(ctx)
 				require.NoError(t, err)
 				assert.Zero(t, n)
+			})
+			t.Run("save-racing-prune", func(t *testing.T) {
+				for i := range 50 {
+					key := fmt.Sprintf("racing-%d", i)
+					require.NoError(t, q.Save(ctx, testNamespace, testCacheName, key, "old", nil, "-1h"))
+					start := make(chan struct{})
+					done := make(chan error, 2)
+					go func() {
+						<-start
+						done <- retry.OnError(retry.DefaultBackoff, sqldb.IsTransientError, func() error { return q.Save(ctx, testNamespace, testCacheName, key, "new", nil, "") })
+					}()
+					go func() {
+						<-start
+						done <- retry.OnError(retry.DefaultBackoff, sqldb.IsTransientError, func() error { _, err := q.Prune(ctx); return err })
+					}()
+					close(start)
+					require.NoError(t, <-done)
+					require.NoError(t, <-done)
+					record, err := q.Load(ctx, testNamespace, testCacheName, key)
+					require.NoError(t, err)
+					require.NotNil(t, record, "a successful save must survive concurrent pruning")
+					assert.Equal(t, "new", record.NodeID)
+				}
 			})
 			t.Run("invalid-max-age", func(t *testing.T) {
 				require.ErrorContains(t, q.Save(ctx, testNamespace, testCacheName, "invalid", "node", nil, "bad"), "invalid maxAge")

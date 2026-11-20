@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"strings"
 	"time"
 
 	"github.com/upper/db/v4"
@@ -100,7 +99,7 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 			return nil
 		}
 
-		if !isDuplicateKeyError(insertErr) {
+		if !sqldb.IsDuplicateKey(insertErr) {
 			return insertErr
 		}
 
@@ -144,18 +143,6 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 	// Don't need to clean up the old records here, we have a scheduled cleanup mechanism.
 	// If we clean them up here, when we update, if there is an update conflict, we will not be able to go back.
 	return version, nil
-}
-
-func isDuplicateKeyError(err error) bool {
-	// postgres
-	if strings.Contains(err.Error(), "duplicate key") {
-		return true
-	}
-	// mysql
-	if strings.Contains(err.Error(), "Duplicate entry") {
-		return true
-	}
-	return false
 }
 
 func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.Nodes, error) {

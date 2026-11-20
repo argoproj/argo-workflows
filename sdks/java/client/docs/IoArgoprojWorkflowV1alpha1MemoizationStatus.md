@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **cacheName** | **String** | Cache is the name of the cache that was used | 
 **hit** | **Boolean** | Hit indicates whether this node was created from a cache entry | 
 **key** | **String** | Key is the name of the key used for this node&#39;s cache | 
+**maxAge** | **String** | MaxAge is the resolved maximum age used when saving this node&#39;s cache entry. |  [optional]
 
 
 

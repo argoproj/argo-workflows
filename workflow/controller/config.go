@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"golang.org/x/time/rate"
@@ -28,12 +29,29 @@ var (
 	memoizationMigrate         = memodb.Migrate
 )
 
-// configureMemoization prepares the new backend before replacing the live one.
+// configureMemoization only changes a backend after this replica has become leader.
 func (wfc *WorkflowController) configureMemoization(ctx context.Context) error {
+	wfc.memoizationConfigLock.Lock()
+	defer wfc.memoizationConfigLock.Unlock()
+	if !wfc.memoizationInitialized {
+		return nil
+	}
+	return wfc.reconfigureMemoization(ctx)
+}
+
+// reconfigureMemoization runs under memoizationConfigLock, never a query lock.
+func (wfc *WorkflowController) reconfigureMemoization(ctx context.Context) error {
+	memoCfg := wfc.Config.Memoization
+	serialized, err := json.Marshal(memoCfg)
+	if err != nil {
+		return err
+	}
+	if string(serialized) == wfc.memoizationConfig {
+		return nil
+	}
 	var sessionProxy *sqldb.SessionProxy
 	var queries memodb.MemoizationDB
-	if memoCfg := wfc.Config.Memoization; memoCfg != nil {
-		var err error
+	if memoCfg != nil {
 		sessionProxy, err = memoSessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
 		if err != nil {
 			return fmt.Errorf("failed to connect to memoization database: %w", err)
@@ -50,15 +68,8 @@ func (wfc *WorkflowController) configureMemoization(ctx context.Context) error {
 		}
 	}
 
-	previous := wfc.memoSessionProxy
-	wfc.memoSessionProxy = sessionProxy
-	wfc.setMemoizationQueries(queries)
-	wfc.cacheFactory.SetQueries(queries)
-	if previous != nil {
-		if err := previous.Close(); err != nil {
-			logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Failed to close memoization database session")
-		}
-	}
+	wfc.cacheFactory.SetQueries(ctx, queries)
+	wfc.memoizationConfig = string(serialized)
 	return nil
 }
 
@@ -149,17 +160,22 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 // initDB inits argo DB tables
 func (wfc *WorkflowController) initDB(ctx context.Context) error {
 	persistence := wfc.Config.Persistence
-	if persistence == nil || persistence.SkipMigration {
-		logger := logging.RequireLoggerFromContext(ctx)
-		logger.Info(ctx, "DB migration is disabled")
-		return nil
+	if persistence != nil && !persistence.SkipMigration {
+		tableName, err := persist.GetTableName(persistence)
+		if err != nil {
+			return err
+		}
+		if err := persist.Migrate(ctx, wfc.sessionProxy.Session(ctx), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType()); err != nil {
+			return err
+		}
 	}
-	tableName, err := persist.GetTableName(persistence)
-	if err != nil {
+	wfc.memoizationConfigLock.Lock()
+	defer wfc.memoizationConfigLock.Unlock()
+	if err := wfc.reconfigureMemoization(ctx); err != nil {
 		return err
 	}
-
-	return persist.Migrate(ctx, wfc.sessionProxy.Session(ctx), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType())
+	wfc.memoizationInitialized = true
+	return nil
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {

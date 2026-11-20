@@ -43,7 +43,7 @@ func TestSQLMemoizationOperate(t *testing.T) {
 				wf.Spec.Templates[0].Memoize.Key = ""
 			}
 			calls := 0
-			controller.cacheFactory.SetQueries(&recordingMemoizationDB{load: func(ns, name, key string) (*memodb.CacheRecord, error) {
+			controller.cacheFactory.SetQueries(ctx, &recordingMemoizationDB{load: func(ns, name, key string) (*memodb.CacheRecord, error) {
 				calls++
 				assert.Equal(t, "default", ns, "cache stays in the controller namespace")
 				assert.Equal(t, "whalesay-cache", name)
@@ -103,10 +103,9 @@ func TestSaveMemoizationCache(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-cached.yaml")
 	wf.Spec.Templates[0].Memoize.MaxAge = "{{inputs.parameters.cacheAge}}"
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	node := &wfv1.NodeStatus{ID: "node", Outputs: &wfv1.Outputs{}, MemoizationStatus: &wfv1.MemoizationStatus{Key: "key", CacheName: "cache"}}
-	tmpl := &wfv1.Template{Memoize: &wfv1.Memoize{MaxAge: "1h"}}
+	node := &wfv1.NodeStatus{ID: "node", Outputs: &wfv1.Outputs{}, MemoizationStatus: &wfv1.MemoizationStatus{Key: "key", CacheName: "cache", MaxAge: "1h"}}
 	saveErr := errors.New("save failed")
-	controller.cacheFactory.SetQueries(&recordingMemoizationDB{save: func(ns, name, key, id string, outputs *wfv1.Outputs, maxAge string) error {
+	controller.cacheFactory.SetQueries(ctx, &recordingMemoizationDB{save: func(ns, name, key, id string, outputs *wfv1.Outputs, maxAge string) error {
 		assert.Equal(t, "default", ns)
 		assert.Equal(t, "cache", name)
 		assert.Equal(t, "key", key)
@@ -115,35 +114,11 @@ func TestSaveMemoizationCache(t *testing.T) {
 		assert.Equal(t, "1h", maxAge)
 		return saveErr
 	}})
-	require.ErrorIs(t, woc.saveMemoizationCache(ctx, node, tmpl), saveErr)
-	node.TemplateName = wf.Spec.Templates[0].Name
-	node.Inputs = &wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "cacheAge", Value: wfv1.AnyStringPtr("1h")}}}
-	require.ErrorIs(t, woc.saveMemoizationCache(ctx, node, nil), saveErr, "pod completion resolves maxAge from saved inputs")
-	require.ErrorContains(t, woc.saveMemoizationCache(ctx, node, &wfv1.Template{}), "no memoize template")
-	require.NoError(t, woc.saveMemoizationCache(ctx, &wfv1.NodeStatus{}, nil))
-}
-
-func TestSaveMemoizationCacheTemplateErrors(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx)
-	defer cancel()
-	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-cached.yaml")
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	node := &wfv1.NodeStatus{
-		ID: "node", Name: "node",
-		MemoizationStatus: &wfv1.MemoizationStatus{Key: "key", CacheName: "cache"},
-		TemplateRef:       &wfv1.TemplateRef{Name: "missing-template", Template: "main"},
-	}
-	controller.cacheFactory.SetQueries(&recordingMemoizationDB{save: func(string, string, string, string, *wfv1.Outputs, string) error {
-		t.Fatal("must not save when resolving the template fails")
-		return nil
-	}})
-	require.ErrorContains(t, woc.saveMemoizationCache(ctx, node, nil), "failed to get node template for cache save")
-
-	node.TemplateRef = nil
-	node.TemplateName = wf.Spec.Templates[0].Name
-	node.Inputs = &wfv1.Inputs{Parameters: []wfv1.Parameter{{Name: "missing-value"}}}
-	require.ErrorContains(t, woc.saveMemoizationCache(ctx, node, nil), "inputs.parameters.missing-value had no value")
+	require.ErrorIs(t, woc.saveMemoizationCache(ctx, node), saveErr)
+	// The template may no longer be available; completion uses persisted status only.
+	node.TemplateRef = &wfv1.TemplateRef{Name: "missing-template", Template: "main"}
+	require.ErrorIs(t, woc.saveMemoizationCache(ctx, node), saveErr)
+	require.NoError(t, woc.saveMemoizationCache(ctx, &wfv1.NodeStatus{}))
 }
 
 func TestSQLMemoizationTaskSetSave(t *testing.T) {
@@ -157,7 +132,7 @@ func TestSQLMemoizationTaskSetSave(t *testing.T) {
 			defer cancel()
 			require.NoError(t, controller.wfTaskSetInformer.Informer().GetIndexer().Add(&taskSet))
 			calls := 0
-			controller.cacheFactory.SetQueries(&recordingMemoizationDB{save: func(ns, name, key, id string, outputs *wfv1.Outputs, maxAge string) error {
+			controller.cacheFactory.SetQueries(ctx, &recordingMemoizationDB{save: func(ns, name, key, id string, outputs *wfv1.Outputs, maxAge string) error {
 				calls++
 				assert.Equal(t, "default", ns)
 				assert.Equal(t, "cache-demo-1", name)

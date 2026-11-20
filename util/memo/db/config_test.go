@@ -1,6 +1,7 @@
 package db_test
 
 import (
+	"strings"
 	"testing"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -63,7 +64,10 @@ func TestNullMemoizationDB(t *testing.T) {
 }
 
 func TestNewQueriesRejectsInvalidTableName(t *testing.T) {
-	queries, err := memodb.NewQueries("invalid-table-name", nil)
-	require.Error(t, err)
-	assert.Nil(t, queries)
+	for _, name := range []string{"invalid-table-name", "MemoCache", "1cache", strings.Repeat("a", 49)} {
+		queries, err := memodb.NewQueries(name, nil)
+		require.ErrorContains(t, err, "invalid table name")
+		assert.Nil(t, queries)
+	}
+	assert.Len(t, memodb.VersionTableName(strings.Repeat("a", 48)), 63)
 }

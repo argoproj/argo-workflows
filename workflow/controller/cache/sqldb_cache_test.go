@@ -5,73 +5,33 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	testcontainers "github.com/testcontainers/testcontainers-go"
-	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	sqldbtest "github.com/argoproj/argo-workflows/v4/test/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const (
-	testDBName     = "cachetest"
-	testDBUser     = "user"
-	testDBPassword = "pass"
-	testNamespace  = "default"
-	testCacheName  = "my-cache"
+	testNamespace = "default"
+	testCacheName = "my-cache"
 )
 
 var testTableName = memodb.TableName(nil)
 
 func setupTestPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	t.Helper()
-	pg, err := testpostgres.Run(ctx,
-		"postgres:17.4-alpine",
-		testpostgres.WithDatabase(testDBName),
-		testpostgres.WithUsername(testDBUser),
-		testpostgres.WithPassword(testDBPassword),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(30*time.Second),
-		),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		if termErr := testcontainers.TerminateContainer(pg); termErr != nil {
-			t.Logf("failed to terminate postgres container: %s", termErr)
-		}
-	})
-
-	host, err := pg.Host(ctx)
-	require.NoError(t, err)
-	portStr, err := pg.MappedPort(ctx, "5432/tcp")
-	require.NoError(t, err)
-	port, err := strconv.Atoi(portStr.Port())
-	require.NoError(t, err)
-
-	dbCfg := config.DBConfig{
-		PostgreSQL: &config.PostgreSQLConfig{
-			DatabaseConfig: config.DatabaseConfig{
-				Host:     host,
-				Port:     port,
-				Database: testDBName,
-			},
-		},
-	}
+	dbCfg := sqldbtest.Postgres(ctx, t)
 	sp, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
 		DBConfig:   dbCfg,
-		Username:   testDBUser,
-		Password:   testDBPassword,
+		Username:   sqldbtest.Username,
+		Password:   sqldbtest.Password,
 		MaxRetries: 5,
 		BaseDelay:  200 * time.Millisecond,
 		MaxDelay:   10 * time.Second,
@@ -79,10 +39,7 @@ func setupTestPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = sp.Close() })
 
-	memoCfg := &config.MemoizationConfig{
-		DBConfig: dbCfg,
-	}
-	require.NoError(t, memodb.Migrate(ctx, sp, memodb.ConfigFromConfig(memoCfg)))
+	require.NoError(t, memodb.Migrate(ctx, sp, memodb.ConfigFromConfig(nil)))
 	return sp
 }
 
@@ -90,7 +47,7 @@ func newTestSQLDBCache(t *testing.T, sp *sqldb.SessionProxy) MemoizationCache {
 	t.Helper()
 	queries, err := memodb.NewQueries(testTableName, sp)
 	require.NoError(t, err)
-	return newSQLDBCache(testNamespace, testCacheName, func() memodb.MemoizationDB { return queries })
+	return newSQLDBCache(testNamespace, testCacheName, func(fn func(memodb.MemoizationDB) error) error { return fn(queries) })
 }
 
 func TestSQLDBCacheSaveAndLoad(t *testing.T) {

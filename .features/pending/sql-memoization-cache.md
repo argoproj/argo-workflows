@@ -10,4 +10,5 @@ ConfigMaps remain the default; opt in by adding a `memoization` block to the `wo
 SQL-backed entries are stored in the configured table, which defaults to `cache_entries`.
 Memoization still requires an explicit cache key.
 SQL entries record an expiry only when the template specifies `memoize.maxAge`; entries without it have no default expiry.
-A periodic garbage collector deletes expired entries whose `expires_at` has elapsed.
+The leader garbage-collects expired entries at startup and periodically thereafter.
+HTTP and plugin nodes now end in Error if saving their memoized outputs fails, on either backend, instead of only logging the error.

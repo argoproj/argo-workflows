@@ -2,6 +2,8 @@ package cache
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"regexp"
 	"sync"
 	"time"
@@ -10,10 +12,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 )
 
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
+
+func validateCacheKey(key string) error {
+	if !cacheKeyRegex.MatchString(key) {
+		return fmt.Errorf("invalid cache key: %s", key)
+	}
+	return nil
+}
 
 type MemoizationCache interface {
 	Load(ctx context.Context, key string) (*Entry, error)
@@ -56,13 +66,21 @@ type cacheFactory struct {
 	kubeclient kubernetes.Interface
 	namespace  string
 	lock       sync.RWMutex
-	queries    memodb.MemoizationDB
+	backend    *queryBackend
+}
+
+type queryBackend struct {
+	queries memodb.MemoizationDB
+	active  sync.WaitGroup
 }
 
 type Factory interface {
 	GetCache(name string) MemoizationCache
-	// SetQueries selects SQL-backed caching, or ConfigMap-backed caching when nil.
-	SetQueries(q memodb.MemoizationDB)
+	// SetQueries takes ownership of a new SQL backend, or selects ConfigMap caching when nil.
+	// Replaced backends close after their in-flight operations finish, without blocking reconfiguration.
+	SetQueries(ctx context.Context, q memodb.MemoizationDB)
+	// WithQueries retains a backend for one operation without holding the factory lock during I/O.
+	WithQueries(fn func(memodb.MemoizationDB) error) error
 }
 
 func NewCacheFactory(ki kubernetes.Interface, namespace string) Factory {
@@ -77,11 +95,25 @@ func NewCacheFactory(ki kubernetes.Interface, namespace string) Factory {
 // cached instances so they are recreated against the new backend. A nil MemoizationDB
 // selects ConfigMap-backed caching; a non-nil MemoizationDB selects SQL-backed
 // memoization semantics, even if the DB implementation is disabled/no-op.
-func (cf *cacheFactory) SetQueries(q memodb.MemoizationDB) {
+func (cf *cacheFactory) SetQueries(ctx context.Context, q memodb.MemoizationDB) {
 	cf.lock.Lock()
-	defer cf.lock.Unlock()
-	cf.queries = q
+	previous := cf.backend
+	cf.backend = nil
+	if q != nil {
+		cf.backend = &queryBackend{queries: q}
+	}
 	cf.caches = make(map[string]MemoizationCache)
+	cf.lock.Unlock()
+	if previous != nil {
+		if closer, ok := previous.queries.(io.Closer); ok {
+			go func() {
+				previous.active.Wait()
+				if err := closer.Close(); err != nil {
+					logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Failed to close retired memoization database")
+				}
+			}()
+		}
+	}
 }
 
 // GetCache returns a cache in the controller's namespace, shared by its workflows.
@@ -100,8 +132,8 @@ func (cf *cacheFactory) GetCache(name string) MemoizationCache {
 		return c
 	}
 
-	if cf.queries != nil {
-		c = newSQLDBCache(cf.namespace, name, cf.getQueries)
+	if cf.backend != nil {
+		c = newSQLDBCache(cf.namespace, name, cf.WithQueries)
 	} else {
 		c = NewConfigMapCache(cf.namespace, cf.kubeclient, name)
 	}
@@ -109,11 +141,16 @@ func (cf *cacheFactory) GetCache(name string) MemoizationCache {
 	return c
 }
 
-func (cf *cacheFactory) getQueries() memodb.MemoizationDB {
+func (cf *cacheFactory) WithQueries(fn func(memodb.MemoizationDB) error) error {
 	cf.lock.RLock()
-	defer cf.lock.RUnlock()
-	if cf.queries == nil {
-		return memodb.NullMemoizationDB
+	backend := cf.backend
+	if backend != nil {
+		backend.active.Add(1)
 	}
-	return cf.queries
+	cf.lock.RUnlock()
+	if backend == nil {
+		return fn(memodb.NullMemoizationDB)
+	}
+	defer backend.active.Done()
+	return fn(backend.queries)
 }

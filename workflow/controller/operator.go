@@ -1290,7 +1290,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 				}
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
-						err := woc.saveMemoizationCache(ctx, newState, nil)
+						err := woc.saveMemoizationCache(ctx, newState)
 						if err != nil {
 							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 							newState.Phase = wfv1.NodeError
@@ -2881,6 +2881,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(ctx context.Context, nodeNam
 			Hit:       false,
 			Key:       executeTmpl.Memoize.Key,
 			CacheName: executeTmpl.Memoize.Cache.ConfigMap.Name,
+			MaxAge:    executeTmpl.Memoize.MaxAge,
 		}
 		node.MemoizationStatus = memoizationStatus
 	}
