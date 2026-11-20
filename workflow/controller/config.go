@@ -66,7 +66,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		}
 		sqldb.ConfigureDBSession(wfc.sessionProxy.Session(ctx), persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), wfc.Config.InstanceID, tableName)
 			if err != nil {
 				return err
 			}

@@ -231,6 +231,9 @@ func MigrateChanges(clusterName, tableName string, dbType sqldb.DBType) []sqldb.
 			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
 		}),
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
+		// add instanceid column to the offloaded node status table, so offload GC only deletes its own instance's records.
+		// NULL marks records written before this column existed. #17387
+		sqldb.AnsiSQLChange(`alter table ` + tableName + ` add column instanceid varchar(64)`),
 	}
 }
 
