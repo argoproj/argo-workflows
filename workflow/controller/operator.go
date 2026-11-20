@@ -2314,6 +2314,13 @@ type executeTemplateOpts struct {
 	// When set, this represents the parent scope (where the template reference was made from),
 	// while tmplCtx may be the resolved context (for child template resolution).
 	templateScope string
+	// recordPendingOnThrottle records a node for a template that back-pressure
+	// (parallelism, rate limit, operation deadline) held back, instead of
+	// leaving no trace of it. Workflow-level hooks set it: a hook's trigger
+	// lives in its node, and once the entry node finishes its expression stops
+	// matching, so without a node the hook would be dropped rather than wait
+	// for a free slot (#17511).
+	recordPendingOnThrottle bool
 }
 
 // prepareTemplate prepares the template of node nodeName to be reconciled, for
@@ -2390,6 +2397,13 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 		IsOnExit:      opts.onExitTemplate,
 	}})
 	if err != nil {
+		if opts.recordPendingOnThrottle && isThrottleErr(err) {
+			// Held back rather than failed: keep the trigger alive as a node of
+			// its own so the caller re-enters this hook on every operation (#17511).
+			// tmplCtx (not newTmplCtx) is the context the reference was made
+			// from — the scope this task's node is recorded with above.
+			woc.recordPendingHookNode(ctx, nodeName, processedTmpl, tmplCtx, orgTmpl, opts)
+		}
 		return nil, err
 	}
 	node, err := woc.wf.GetNodeByName(nodeName)

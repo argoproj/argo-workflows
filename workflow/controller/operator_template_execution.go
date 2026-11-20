@@ -173,7 +173,11 @@ func (woc *wfOperationCtx) handleMemoization(ctx context.Context, nodeName strin
 		return false, node, nil
 	}
 
-	if node == nil || unlockedNode {
+	// A node that exists but carries no MemoizationStatus has not consulted the
+	// cache yet: a hook node recorded while back-pressure held it back is
+	// created before this point (#17511), so the cache must still be loaded
+	// here rather than treated as already checked.
+	if node == nil || unlockedNode || node.MemoizationStatus == nil {
 		memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
 		if memoizationCache == nil {
 			err := fmt.Errorf("cache could not be found or created")
