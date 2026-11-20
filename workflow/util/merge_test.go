@@ -576,7 +576,7 @@ func TestMergeLabelsFrom(t *testing.T) {
 
 // MergeTo is called concurrently with the workflow defaults of the controller as the patch, so it must not write to it.
 func TestMergeToDoesNotChangeThePatch(t *testing.T) {
-	patchWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-hook.yaml")
+	patchWf := wfv1.MustUnmarshalWorkflow(patchHookWF)
 	patchWf.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{LabelsFrom: map[string]wfv1.LabelValueFrom{"foo": {Expression: "PATCH"}}}
 	wantPatch := patchWf.DeepCopy()
 
@@ -585,7 +585,7 @@ func TestMergeToDoesNotChangeThePatch(t *testing.T) {
 	errs := make([]error, workers)
 	var wg sync.WaitGroup
 	for i := range workers {
-		targets[i] = wfv1.MustUnmarshalWorkflow("@testdata/merge/base-nil.yaml")
+		targets[i] = wfv1.MustUnmarshalWorkflow(baseNilWF)
 		wg.Go(func() {
 			errs[i] = MergeTo(patchWf, targets[i])
 		})
