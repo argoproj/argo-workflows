@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world-hash
+spec:
+  schedules:
+    - "H H/2 * * *"
+    - "H(1-20) H/2 * * *"
+    - "H(0-29)/10 * * * *"
+  timezone: "America/Los_Angeles"   # Default to local machine timezone
+  startingDeadlineSeconds: 0
+  concurrencyPolicy: "Replace"      # Default to "Allow"
+  successfulJobsHistoryLimit: 4     # Default 3
+  failedJobsHistoryLimit: 4         # Default 1
+  suspend: false                    # Set to "true" to suspend scheduling
+  workflowSpec:
+    entrypoint: hello-world-with-time
+    templates:
+      - name: hello-world-with-time
+        container:
+          image: busybox
+          command: [echo]
+          args: ["🕓 hello world. Scheduled on: {{workflow.scheduledTime}}"]

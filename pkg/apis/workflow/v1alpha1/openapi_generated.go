@@ -2441,6 +2441,22 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							Format:      "",
 						},
 					},
+					"resolvedSchedules": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResolvedSchedules maps a schedule of the spec using a `H` (hash) token to what it resolved to. Set by the controller, schedules without a `H` are not listed",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},

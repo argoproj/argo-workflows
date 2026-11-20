@@ -2,6 +2,7 @@ import x from 'cronstrue';
 import * as React from 'react';
 
 import {WarningIcon} from '../shared/components/fa-icons';
+import {isHashedSchedule, validateHashedSchedule} from '../shared/cron';
 
 /*
     https://github.com/bradymholt/cRonstrue
@@ -18,6 +19,13 @@ export function PrettySchedule({schedule}: {schedule: string}) {
             throw new Error('cron schedules must consist of 5 values only');
         } else if (schedule.startsWith('@every')) {
             return null;
+        } else if (isHashedSchedule(schedule)) {
+            const error = validateHashedSchedule(schedule);
+            if (error) {
+                throw new Error(error);
+            }
+            // the controller resolves it, so it is only shown once the CronWorkflow has been scheduled
+            return <span title='Resolved from the name and namespace of the CronWorkflow'>hashed schedule</span>;
         }
 
         const pretty = x.toString(schedule);

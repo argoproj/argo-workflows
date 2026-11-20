@@ -8,8 +8,8 @@ import {ErrorIcon} from '../shared/components/fa-icons';
 import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-markdown-gfm';
 import {Timestamp} from '../shared/components/timestamp';
 import {getErrorCondition} from '../shared/conditions-panel';
-import {getNextScheduledTime} from '../shared/cron';
-import {CronWorkflow, CronWorkflowSpec} from '../shared/models';
+import {getNextScheduledTime, getResolvedSchedules} from '../shared/cron';
+import {CronWorkflow} from '../shared/models';
 import {escapeInvalidMarkdown} from '../workflows/utils';
 import {PrettySchedule} from './pretty-schedule';
 
@@ -28,6 +28,8 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
     const markdown = `${title}${description}`;
     const errorCondition = getErrorCondition(wf.status?.conditions || []);
+    // the schedules are shown as configured, but described and counted down with `H` resolved
+    const resolvedSchedules = getResolvedSchedules(wf);
 
     return (
         <div className='cron-workflows-list__row-container'>
@@ -48,9 +50,9 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                         <SuspenseReactMarkdownGfm markdown={markdown} />
                     </div>
                 </Link>
-                <div className='columns small-2'>{wf.metadata.namespace}</div>
+                <div className='columns small-1'>{wf.metadata.namespace}</div>
                 <div className='columns small-1'>{wf.spec.timezone}</div>
-                <div className='columns small-1'>
+                <div className='columns small-2'>
                     {wf.spec.schedules.map(schedule => (
                         <>
                             {schedule}
@@ -59,7 +61,7 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                     ))}
                 </div>
                 <div className='columns small-1'>
-                    {wf.spec.schedules.map(schedule => (
+                    {resolvedSchedules.map(schedule => (
                         <>
                             <PrettySchedule schedule={schedule} />
                             <br />
@@ -73,7 +75,9 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                     {wf.spec.suspend ? (
                         ''
                     ) : (
-                        <Ticker intervalMs={1000}>{() => <Timestamp date={getCronNextScheduledTime(wf.spec)} displayISOFormat={props.displayISOFormatNextScheduled} />}</Ticker>
+                        <Ticker intervalMs={1000}>
+                            {() => <Timestamp date={getCronNextScheduledTime(resolvedSchedules, wf.spec.timezone)} displayISOFormat={props.displayISOFormatNextScheduled} />}
+                        </Ticker>
                     )}
                 </div>
             </div>
@@ -81,11 +85,12 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
     );
 }
 
-function getCronNextScheduledTime(spec: CronWorkflowSpec): Date {
+function getCronNextScheduledTime(schedules: string[], timezone: string): Date {
     let out: Date;
-    spec.schedules.forEach(schedule => {
-        const next = getNextScheduledTime(schedule, spec.timezone);
-        if (!out || next.getTime() < out.getTime()) {
+    schedules.forEach(schedule => {
+        const next = getNextScheduledTime(schedule, timezone);
+        // a schedule which is not resolved yet, or which we cannot parse, has no next time
+        if (next && (!out || next.getTime() < out.getTime())) {
             out = next;
         }
     });
