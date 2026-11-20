@@ -1,13 +1,14 @@
 import * as React from 'react';
 import {CSSProperties, useEffect, useState} from 'react';
 
+import {getErrorMessage, HttpError} from '../errors';
 import {Notice} from './notice';
 import {PhaseIcon} from './phase-icon';
 
 // Display an error notice.
 // If the error was a HTTP error (i.e. from super-agent), rather than just an unhelpful "Internal Server Error",
 // it will display any message in the body.
-export function ErrorNotice(props: {style?: CSSProperties; error: Error & {response?: {body: {message?: string}}}; onReload?: () => void; reloadAfterSeconds?: number}) {
+export function ErrorNotice(props: {style?: CSSProperties; error: HttpError; onReload?: () => void; reloadAfterSeconds?: number}) {
     if (!props.error) {
         return null;
     }
@@ -43,8 +44,7 @@ export function ErrorNotice(props: {style?: CSSProperties; error: Error & {respo
     return (
         <Notice {...props.style}>
             <span>
-                <PhaseIcon value='Error' /> {error.message || 'Unknown error. Open your browser error console for more information.'}
-                {error.response && error.response.body && error.response.body.message && ': ' + error.response.body.message}
+                <PhaseIcon value='Error' /> {getErrorMessage(error)}
             </span>
             {reload && (
                 <span>

@@ -206,15 +206,21 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                 .then(async yes => {
                                     if (!yes) return;
 
+                                    // `error` in this closure is stale, so track failure locally
+                                    let failed = false;
+                                    const onError = (err: Error) => {
+                                        failed = true;
+                                        setError(err);
+                                    };
                                     const allPromises = [];
                                     if (isWorkflowInCluster(workflow)) {
-                                        allPromises.push(services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(setError));
+                                        allPromises.push(services.workflows.delete(workflow.metadata.name, workflow.metadata.namespace).catch(onError));
                                     }
                                     if (isArchivedWorkflow(workflow) && (globalDeleteArchived || !isWorkflowInCluster(workflow))) {
-                                        allPromises.push(services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(setError));
+                                        allPromises.push(services.workflows.deleteArchived(workflow.metadata.uid, workflow.metadata.namespace).catch(onError));
                                     }
                                     await Promise.all(allPromises);
-                                    if (error !== null) {
+                                    if (failed) {
                                         return;
                                     }
 
