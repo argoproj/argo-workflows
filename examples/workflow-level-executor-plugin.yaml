@@ -16,6 +16,8 @@ spec:
         name: workflow-level-hello-executor-plugin
       spec:
         sidecar:
+          # Enable if the plugin needs Kubernetes API access as the workflow's service account.
+          automountWorkflowServiceAccountToken: false
           container:
             name: workflow-level-hello-executor-plugin
             image: python:alpine3.23
