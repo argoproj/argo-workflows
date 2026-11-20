@@ -122,7 +122,7 @@ func newSso(
 	secure bool,
 ) (Interface, error) {
 	baseHRef = authcookie.NormalizePath(baseHRef)
-	if c.Issuer == "" {
+	if c.Issuer == "" && (c.IssuerSecret.Name == "" || c.IssuerSecret.Key == "") {
 		return nil, fmt.Errorf("issuer empty")
 	}
 	if c.ClientID.Name == "" || c.ClientID.Key == "" {
@@ -134,6 +134,37 @@ func newSso(
 	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
+	}
+
+	resolvedIssuer := c.Issuer
+	if resolvedIssuer == "" {
+		issuerSecretObj := clientSecretObj
+		if c.IssuerSecret.Name != c.ClientSecret.Name {
+			issuerSecretObj, err = secretsIf.Get(ctx, c.IssuerSecret.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+		issuerValue := issuerSecretObj.Data[c.IssuerSecret.Key]
+		if issuerValue == nil {
+			return nil, fmt.Errorf("key %s missing in secret %s", c.IssuerSecret.Key, c.IssuerSecret.Name)
+		}
+		resolvedIssuer = string(issuerValue)
+	}
+	resolvedRedirectURL := c.RedirectURL
+	if resolvedRedirectURL == "" && c.RedirectURLSecret.Name != "" {
+		redirectURLSecretObj := clientSecretObj
+		if c.RedirectURLSecret.Name != c.ClientSecret.Name {
+			redirectURLSecretObj, err = secretsIf.Get(ctx, c.RedirectURLSecret.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+		}
+		redirectURLValue := redirectURLSecretObj.Data[c.RedirectURLSecret.Key]
+		if redirectURLValue == nil {
+			return nil, fmt.Errorf("key %s missing in secret %s", c.RedirectURLSecret.Key, c.RedirectURLSecret.Name)
+		}
+		resolvedRedirectURL = string(redirectURLValue)
 	}
 
 	// Create http client
@@ -153,7 +184,7 @@ func newSso(
 		oidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)
 	}
 
-	provider, err := factory(oidcContext, c.Issuer)
+	provider, err := factory(oidcContext, resolvedIssuer)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +250,7 @@ func newSso(
 	config := &oauth2.Config{
 		ClientID:     string(clientID),
 		ClientSecret: string(clientSecret),
-		RedirectURL:  c.RedirectURL,
+		RedirectURL:  resolvedRedirectURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
@@ -248,7 +279,7 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "logoutRedirectUrl": c.LogoutRedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "logoutRedirectUrl": c.LogoutRedirectURL, "issuer": resolvedIssuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
@@ -269,7 +300,7 @@ func newSso(
 		expiry:            c.GetSessionExpiry(),
 		customClaimName:   c.CustomGroupClaimName,
 		userInfoPath:      c.UserInfoPath,
-		issuer:            c.Issuer,
+		issuer:            resolvedIssuer,
 		filterGroupsRegex: filterGroupsRegex,
 		logger:            logger,
 	}, nil
