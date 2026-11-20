@@ -162,6 +162,33 @@ spec:
 		})
 }
 
+// The agent pod must not need a legacy <sa>.service-account-token secret.
+func (s *AgentSuite) TestServiceAccountWithoutTokenSecret() {
+	s.Given().
+		KubectlApply("testdata/agent-no-token-secret-rbac.yaml", fixtures.NoError).
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: http-template-no-token-secret-
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  serviceAccountName: agent-no-token
+  templates:
+    - name: main
+      http:
+        url: "http://httpbin:9100/status/200"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestAgentSuite(t *testing.T) {
 	suite.Run(t, new(AgentSuite))
 }
