@@ -1319,6 +1319,7 @@ func TestControllerConfigMapInformer(t *testing.T) {
 		kubeclientset:    fake.NewClientset(),
 		configController: cc,
 	}
+	controller.cacheFactory = controllercache.NewCacheFactory(controller.kubeclientset, "default")
 	allowSelfSubjectAccessReviews(controller.kubeclientset.(*fake.Clientset))
 
 	cm := &apiv1.ConfigMap{

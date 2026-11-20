@@ -4246,6 +4246,8 @@ type MemoizationStatus struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 	// Cache is the name of the cache that was used
 	CacheName string `json:"cacheName" protobuf:"bytes,3,opt,name=cacheName"`
+	// MaxAge is the resolved maximum age used when saving this node's cache entry.
+	MaxAge string `json:"maxAge,omitempty" protobuf:"bytes,4,opt,name=maxAge"`
 }
 
 // Cache is the configuration for the type of cache to be used

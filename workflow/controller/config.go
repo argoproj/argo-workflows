@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"golang.org/x/time/rate"
@@ -15,13 +16,62 @@ import (
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 )
+
+var (
+	memoSessionProxyFromConfig = memodb.SessionProxyFromConfig
+	memoizationMigrate         = memodb.Migrate
+)
+
+// configureMemoization only changes a backend after this replica has become leader.
+func (wfc *WorkflowController) configureMemoization(ctx context.Context) error {
+	wfc.memoizationConfigLock.Lock()
+	defer wfc.memoizationConfigLock.Unlock()
+	if !wfc.memoizationInitialized {
+		return nil
+	}
+	return wfc.reconfigureMemoization(ctx)
+}
+
+// reconfigureMemoization runs under memoizationConfigLock, never a query lock.
+func (wfc *WorkflowController) reconfigureMemoization(ctx context.Context) error {
+	memoCfg := wfc.Config.Memoization
+	serialized, err := json.Marshal(memoCfg)
+	if err != nil {
+		return err
+	}
+	if string(serialized) == wfc.memoizationConfig {
+		return nil
+	}
+	var sessionProxy *sqldb.SessionProxy
+	var queries memodb.MemoizationDB
+	if memoCfg != nil {
+		sessionProxy, err = memoSessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
+		if err != nil {
+			return fmt.Errorf("failed to connect to memoization database: %w", err)
+		}
+		cfg := memodb.ConfigFromConfig(memoCfg)
+		if err = memoizationMigrate(ctx, sessionProxy, cfg); err != nil {
+			_ = sessionProxy.Close()
+			return fmt.Errorf("failed to migrate memoization database: %w", err)
+		}
+		queries, err = memodb.NewQueries(cfg.TableName, sessionProxy)
+		if err != nil {
+			_ = sessionProxy.Close()
+			return err
+		}
+	}
+
+	wfc.cacheFactory.SetQueries(ctx, queries)
+	wfc.memoizationConfig = string(serialized)
+	return nil
+}
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -90,6 +140,10 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		logger.Info(ctx, "Persistence configuration disabled")
 	}
 
+	if err := wfc.configureMemoization(ctx); err != nil {
+		return err
+	}
+
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory(ctx)
 	wfc.rateLimiter = wfc.newRateLimiter()
@@ -106,17 +160,22 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 // initDB inits argo DB tables
 func (wfc *WorkflowController) initDB(ctx context.Context) error {
 	persistence := wfc.Config.Persistence
-	if persistence == nil || persistence.SkipMigration {
-		logger := logging.RequireLoggerFromContext(ctx)
-		logger.Info(ctx, "DB migration is disabled")
-		return nil
+	if persistence != nil && !persistence.SkipMigration {
+		tableName, err := persist.GetTableName(persistence)
+		if err != nil {
+			return err
+		}
+		if err := persist.Migrate(ctx, wfc.sessionProxy.Session(ctx), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType()); err != nil {
+			return err
+		}
 	}
-	tableName, err := persist.GetTableName(persistence)
-	if err != nil {
+	wfc.memoizationConfigLock.Lock()
+	defer wfc.memoizationConfigLock.Unlock()
+	if err := wfc.reconfigureMemoization(ctx); err != nil {
 		return err
 	}
-
-	return persist.Migrate(ctx, wfc.sessionProxy.Session(ctx), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType())
+	wfc.memoizationInitialized = true
+	return nil
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {
