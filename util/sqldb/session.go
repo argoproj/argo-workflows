@@ -10,6 +10,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -32,7 +33,7 @@ type SessionProxy struct {
 	dbType        DBType
 
 	// Current session and state
-	sess   db.Session
+	sess   *liveSession
 	mu     sync.RWMutex
 	closed bool
 
@@ -43,6 +44,47 @@ type SessionProxy struct {
 	retryMultiple float64
 
 	insideTransaction bool
+}
+
+// liveSession wraps a session with a reference count of the With callers
+// using it. A reconnect or Close retires it instead of closing it directly,
+// so it is only closed once the callers that took it have finished. Closing
+// a session that is still in use makes the next statement on it panic.
+type liveSession struct {
+	sess      db.Session
+	refs      atomic.Int32
+	retired   atomic.Bool
+	closeOnce sync.Once
+}
+
+// release drops a reference taken by acquire and closes the session if it
+// was retired and this was the last reference.
+func (l *liveSession) release() {
+	l.refs.Add(-1)
+	_ = l.tryClose()
+}
+
+// retire closes the session once every caller that took a reference has
+// released it. It must only be called after the proxy no longer hands out
+// the session, so no new references can appear. The close error is returned
+// only when the session closes here: a deferred close on the last release
+// has no caller left to report it to.
+func (l *liveSession) retire() error {
+	l.retired.Store(true)
+	return l.tryClose()
+}
+
+// tryClose closes the session if it is retired and has no references left,
+// and returns the close error when this call performs the close.
+func (l *liveSession) tryClose() error {
+	if l.retired.Load() && l.refs.Load() == 0 {
+		var err error
+		l.closeOnce.Do(func() {
+			err = l.sess.Close()
+		})
+		return err
+	}
+	return nil
 }
 
 // SessionProxyConfig contains configuration for creating a SessionProxy
@@ -127,7 +169,7 @@ func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionPr
 // NewSessionProxyFromSession creates a SessionProxy from an existing session with credentials
 func NewSessionProxyFromSession(sess db.Session, dbConfig *config.DBConfig, username, password string) *SessionProxy {
 	return &SessionProxy{
-		sess:          sess,
+		sess:          &liveSession{sess: sess},
 		dbConfig:      dbConfig,
 		username:      username,
 		password:      password,
@@ -155,7 +197,7 @@ func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error
 				username:          sp.username,
 				password:          sp.password,
 				dbType:            sp.dbType,
-				sess:              sess,
+				sess:              &liveSession{sess: sess},
 				closed:            sp.closed,
 				maxRetries:        sp.maxRetries,
 				baseDelay:         sp.baseDelay,
@@ -194,7 +236,7 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 	}
 	sp.closed = false
 
-	sp.sess = sess
+	sp.sess = &liveSession{sess: sess}
 	return nil
 }
 
@@ -266,25 +308,42 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 	return false
 }
 
+var (
+	errProxyClosed = errors.New("session proxy is closed")
+	errNoSession   = errors.New("no active session")
+)
+
+// acquire returns the current session with a reference that keeps it open
+// until release is called, so a reconnect cannot close it mid-statement.
+func (sp *SessionProxy) acquire() (*liveSession, error) {
+	sp.mu.RLock()
+	defer sp.mu.RUnlock()
+	if sp.closed {
+		return nil, errProxyClosed
+	}
+	if sp.sess == nil {
+		return nil, errNoSession
+	}
+	sp.sess.refs.Add(1)
+	return sp.sess, nil
+}
+
 // With executes fn with a db Session bound to ctx, so cancelling ctx cancels
 // the running statement.
 func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	sp.mu.RLock()
-	if sp.closed {
-		sp.mu.RUnlock()
-		logger.Warn(ctx, "session proxy is closed")
-		return fmt.Errorf("session proxy is closed")
+	sess, err := sp.acquire()
+	if err != nil {
+		if errors.Is(err, errProxyClosed) {
+			logger.Warn(ctx, "session proxy is closed")
+		}
+		return err
 	}
 
-	sess := sp.sess
-	sp.mu.RUnlock()
-
-	if sess == nil {
-		return fmt.Errorf("no active session")
-	}
-
-	err := fn(sess.WithContext(ctx))
+	err = func() error {
+		defer sess.release()
+		return fn(sess.sess.WithContext(ctx))
+	}()
 	if err == nil {
 		return nil
 	}
@@ -298,15 +357,13 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 		return fmt.Errorf("operation failed and reconnection failed: %w", reconnectErr)
 	}
 
-	sp.mu.RLock()
-	sess = sp.sess
-	sp.mu.RUnlock()
-
-	if sess == nil {
+	sess, err = sp.acquire()
+	if err != nil {
 		return fmt.Errorf("no active session after reconnection")
 	}
+	defer sess.release()
 
-	if retryErr := fn(sess.WithContext(ctx)); retryErr != nil {
+	if retryErr := fn(sess.sess.WithContext(ctx)); retryErr != nil {
 		return fmt.Errorf("operation failed after reconnection: %w", retryErr)
 	}
 
@@ -316,7 +373,7 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 // reconnectIfStale reconnects only if the current session is still the
 // same one that produced the error. If another goroutine already
 // reconnected (sp.sess != staleSess), this is a no-op.
-func (sp *SessionProxy) reconnectIfStale(ctx context.Context, staleSess db.Session) error {
+func (sp *SessionProxy) reconnectIfStale(ctx context.Context, staleSess *liveSession) error {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 	if sp.sess != staleSess {
@@ -339,10 +396,13 @@ func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
 
 	for attempt := 0; attempt <= sp.maxRetries; attempt++ {
 		// Perform the reconnection attempt
-		// Close the bad connection if it exists
+		// Retire the bad connection if it exists: it closes once the With
+		// callers using it have finished, rather than right now.
 		if sp.sess != nil {
-			sp.sess.Close()
+			old := sp.sess
+			sp.sess = nil
 			sp.closed = true
+			_ = old.retire()
 		}
 
 		err = sp.connect(ctx)
@@ -381,7 +441,7 @@ func (sp *SessionProxy) Session(ctx context.Context) db.Session {
 	if sp.sess == nil {
 		return nil
 	}
-	return sp.sess.WithContext(ctx)
+	return sp.sess.sess.WithContext(ctx)
 }
 
 // Close closes the session proxy and underlying session
@@ -396,7 +456,9 @@ func (sp *SessionProxy) Close() error {
 	sp.closed = true
 
 	if sp.sess != nil {
-		return sp.sess.Close()
+		old := sp.sess
+		sp.sess = nil
+		return old.retire()
 	}
 
 	return nil

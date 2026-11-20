@@ -181,3 +181,119 @@ func TestSessionWithCancelsStatement(t *testing.T) {
 		return count == 0
 	}, 10*time.Second, 200*time.Millisecond)
 }
+
+// A reconnect must not break a caller that is still using the session it
+// took before the reconnect: With hands fn a session and releases the lock,
+// so fn can still be running when another caller reconnects.
+func TestSessionProxyReconnectWhileSessionInUse(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("This test uses the Linux container image and therefore cannot be performed on the Windows platform")
+	}
+	ctx := logging.TestContext(t.Context())
+	cfg, terminate, err := setupPostgresContainer(ctx, t)
+	require.NoError(t, err)
+	t.Cleanup(terminate)
+	proxy, err := NewSessionProxy(ctx, SessionProxyConfig{DBConfig: cfg, Username: userName, Password: password})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = proxy.Close() })
+
+	query := func(s db.Session) error {
+		row, err := s.SQL().QueryRow("SELECT 1")
+		if err != nil {
+			return err
+		}
+		var one int
+		return row.Scan(&one)
+	}
+
+	inFn := make(chan struct{})
+	release := make(chan struct{})
+	type result struct {
+		err      error
+		panicked string
+	}
+	results := make(chan result, 1)
+	go func() {
+		var r result
+		defer func() {
+			if p := recover(); p != nil {
+				r.panicked = fmt.Sprint(p)
+			}
+			results <- r
+		}()
+		r.err = proxy.With(ctx, func(s db.Session) error {
+			if err := query(s); err != nil {
+				return err
+			}
+			close(inFn)
+			<-release
+			// The next statement on the session taken before the reconnect.
+			return query(s)
+		})
+	}()
+
+	<-inFn
+	require.NoError(t, proxy.Reconnect(ctx))
+	close(release)
+	r := <-results
+
+	assert.Empty(t, r.panicked, "a statement on the session in use panicked after a reconnect")
+	assert.NoError(t, r.err, "a statement on the session in use failed after a reconnect")
+}
+
+// releaseProbeSession satisfies only the calls SessionProxy.With makes around
+// the callback, so the reference-counting tests below need no database.
+type releaseProbeSession struct {
+	db.Session
+	closed   bool
+	closeErr error
+}
+
+func (s *releaseProbeSession) WithContext(ctx context.Context) db.Session { return s }
+func (s *releaseProbeSession) Close() error                               { s.closed = true; return s.closeErr }
+
+func TestSessionProxyWithReleasesReferenceOnPanic(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	probe := &releaseProbeSession{}
+	live := &liveSession{sess: probe}
+	sp := &SessionProxy{sess: live}
+
+	// The happy path still balances the reference.
+	require.NoError(t, sp.With(ctx, func(db.Session) error { return nil }))
+	require.Equal(t, int32(0), live.refs.Load())
+
+	// A panicking callback must also release the reference, so a later
+	// reconnect or Close is not blocked forever on a phantom caller.
+	assert.Panics(t, func() {
+		_ = sp.With(ctx, func(db.Session) error { panic("callback panic") })
+	})
+	require.Equal(t, int32(0), live.refs.Load(),
+		"With must release its session reference even when fn panics")
+
+	// With the reference released, retiring the session must actually close
+	// it instead of leaking the session for the life of the process.
+	require.NoError(t, live.retire())
+	assert.True(t, probe.closed, "retired session with no remaining references must be closed")
+}
+
+func TestSessionProxyCloseReturnsSessionError(t *testing.T) {
+	probe := &releaseProbeSession{closeErr: errors.New("close failed")}
+	sp := &SessionProxy{sess: &liveSession{sess: probe}}
+
+	// An unused session closes on Close, which must report the session's own
+	// close error instead of dropping it.
+	require.ErrorIs(t, sp.Close(), probe.closeErr)
+	assert.True(t, probe.closed)
+	require.NoError(t, sp.Close(), "a second Close is a no-op")
+
+	// While a With caller still holds the session, Close only retires it and
+	// returns nil; the deferred close runs on the last release.
+	probe = &releaseProbeSession{closeErr: errors.New("close failed")}
+	live := &liveSession{sess: probe}
+	live.refs.Add(1)
+	sp = &SessionProxy{sess: live}
+	require.NoError(t, sp.Close())
+	assert.False(t, probe.closed, "a session still in use must not be closed")
+	live.release()
+	assert.True(t, probe.closed)
+}
