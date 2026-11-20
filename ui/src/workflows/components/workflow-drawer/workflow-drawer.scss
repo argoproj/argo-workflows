@@ -123,3 +123,20 @@
     }
   }
 }
+
+.workflow-outputs-modal {
+  &__section {
+    margin-top: 1em;
+  }
+
+  &__value {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: normal;
+  }
+
+  &__artifact {
+    font-style: italic;
+  }
+}
