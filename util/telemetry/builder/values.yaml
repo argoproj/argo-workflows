@@ -552,7 +552,7 @@ spans:
     description: Creating the WorkflowTaskResult
     attributes:
       - name: TaskResultMarksCompleted
-    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer, RunWorkerTask]
+    parents: [RunWaitContainer, RunMainContainer, RunResourceContainer, RunSupervisorContainer, RunWorkerTask]
   - name: CreateWorkflowPod
     description: Creating a workflow pod for a node
     parents: [Node]
@@ -589,7 +589,7 @@ spans:
     description: Patching the WorkflowTaskResult
     attributes:
       - name: TaskResultMarksCompleted
-    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer, RunWorkerTask]
+    parents: [RunWaitContainer, RunMainContainer, RunResourceContainer, RunSupervisorContainer, RunWorkerTask]
   - name: PersistUpdates
     description: Persisting workflow status updates to Kubernetes
     parents: [Workflow]
@@ -627,6 +627,12 @@ spans:
       - name: WorkflowNamespace
   - name: RunMainContainer
     description: Run the main container of a workload
+    parents: [CreateWorkflowPod]
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
+  - name: RunResourceContainer
+    description: Run the resource container of a resource template's pod
     parents: [CreateWorkflowPod]
     attributes:
       - name: WorkflowName
@@ -673,7 +679,7 @@ spans:
     parents: [RunWaitContainer, RunSupervisorContainer, RunWorkerTask]
   - name: StageFiles
     description: Staging script or manifest files for execution
-    parents: [RunInitContainer, RunSupervisorContainer, RunWorkerTask]
+    parents: [RunInitContainer, RunResourceContainer, RunSupervisorContainer, RunWorkerTask]
   - name: StartupCacheSync
     description: Controllers informer caches have been synchronized
     parents: [StartupController]
