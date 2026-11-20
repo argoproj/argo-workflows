@@ -251,513 +251,71 @@ func TestParamWithoutValue(t *testing.T) {
 	require.ErrorContains(t, err, "not supplied")
 }
 
-var globalParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: global-parameters-complex-
-spec:
-  priority: 100
-  entrypoint: test-workflow
-  arguments:
-    parameters:
-    - name: message1
-      value: hello world
-    - name: message2
-      value: foo bar
-
-  templates:
-  - name: test-workflow
-    inputs:
-      parameters:
-      - name: message1
-      - name: message-internal
-        value: "{{workflow.parameters.message1}}"
-    steps:
-    - - name: step1
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message1
-            value: world hello
-          - name: message2
-            value: "{{inputs.parameters.message1}}"
-          - name: message3
-            value: "{{workflow.parameters.message2}}"
-          - name: message4
-            value: "{{inputs.parameters.message-internal}}"
-
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message1
-      - name: message2
-      - name: message3
-      - name: message4
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["Global 1: {{workflow.parameters.message1}} Input 1: {{inputs.parameters.message1}} Input 2/Steps Input 1/Global 1: {{inputs.parameters.message2}} Input 3/Global 2: {{inputs.parameters.message3}} Input4/Steps Input 2 internal/Global 1: {{inputs.parameters.message4}}"]
-`
-
-var unsuppliedArgValue = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: step-with-unsupplied-param-
-spec:
-  arguments:
-    parameters:
-    - name: missing
-  entrypoint: whalesay
-  templates:
-  -
-    container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: whalesay
-    outputs: {}
-`
-
-var nestedGlobalParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: global-output
-spec:
-  entrypoint: global-output
-  templates:
-  - name: global-output
-    steps:
-    - - name: nested
-        template: nested-level1
-    - - name: consume-global
-        template: consume-global
-        arguments:
-          artifacts:
-          - name: art
-            from: "{{workflow.outputs.artifacts.global-art}}"
-
-  - name: nested-level1
-    steps:
-      - - name: nested
-          template: nested-level2
-
-  - name: nested-level2
-    steps:
-      - - name: nested
-          template: output-global
-
-  - name: output-global
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["sleep 1; echo -n art > /tmp/art.txt; echo -n param > /tmp/param.txt"]
-    outputs:
-      artifacts:
-      - name: hello-art
-        path: /tmp/art.txt
-        globalName: global-art
-
-  - name: consume-global
-    inputs:
-      artifacts:
-      - name: art
-        path: /art
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["cat /art"]
-`
-
 func TestGlobalParam(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), globalParam)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/global-param.yaml")
 	require.NoError(t, err)
 
-	err = validate(logging.TestContext(t.Context()), nestedGlobalParam)
+	err = validate(logging.TestContext(t.Context()), "@testdata/invalid-names/nested-global-param.yaml")
 	require.NoError(t, err)
 
-	err = validate(logging.TestContext(t.Context()), unsuppliedArgValue)
+	err = validate(logging.TestContext(t.Context()), "@testdata/invalid-names/unsupplied-arg-value.yaml")
 	require.EqualError(t, err, "spec.arguments.missing.value or spec.arguments.missing.valueFrom is required")
 }
 
-var invalidTemplateNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay_d
-  templates:
-  - name: whalesay_d
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-`
-
 func TestInvalidTemplateName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidTemplateNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-template-names.yaml")
 	require.ErrorContains(t, err, invalidErr)
 }
 
-var invalidArgParamNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: param#1
-      value: paramValue
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-`
-
 func TestInvalidArgParamName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidArgParamNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-arg-param-names.yaml")
 	require.Error(t, err)
 }
 
-var invalidArgArtNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: arguments-artifacts-
-spec:
-  entrypoint: kubectl-input-artifact
-  arguments:
-    artifacts:
-    - name: "&-kubectl"
-      http:
-        url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
-
-  templates:
-  - name: kubectl-input-artifact
-    inputs:
-      artifacts:
-      - name: "&-kubectl"
-        path: /usr/local/bin/kubectl
-        mode: 0755
-    container:
-      image: debian:9.4
-      command: [sh, -c]
-      args: ["kubectl version"]
-`
-
 func TestInvalidArgArtName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidArgArtNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-arg-art-names.yaml")
 	require.ErrorContains(t, err, invalidErr)
 }
-
-var invalidStepNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-
-spec:
-  entrypoint: hello-hello-hello
-
-  templates:
-  - name: hello-hello-hello
-    steps:
-    - - name: hello1.blah
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello1"
-    - - name: hello2a
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2a"
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2b"
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
 
 func TestInvalidStepName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidStepNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-step-names.yaml")
 	require.ErrorContains(t, err, invalidErr)
 }
-
-var invalidInputParamNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message+123
-        default: "abc"
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message+123}}"]
-`
 
 func TestInvalidInputParamName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidInputParamNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-input-param-names.yaml")
 	require.ErrorContains(t, err, invalidErr)
 }
-
-var invalidInputArtNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-
-spec:
-  entrypoint: hello-hello-hello
-
-  templates:
-  - name: hello-hello-hello
-    steps:
-    - - name: hello1
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello1"
-    - - name: hello2a
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2a"
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2b"
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-      artifacts:
-      - name: test(jpg
-        path: /test.jpg
-        http:
-          url: https://commons.wikimedia.org/wiki/File:Example.jpg
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
 
 func TestInvalidInputArtName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidInputArtNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-input-art-names.yaml")
 	require.ErrorContains(t, err, invalidErr)
 }
 
-var invalidOutputArtNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: output-artifact-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      artifacts:
-      - name: "!1"
-        path: /tmp/hello_world.txt
-`
-
 func TestInvalidOutputArtName(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidOutputArtNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-output-art-names.yaml")
 	require.Error(t, err, invalidErr)
 }
 
-var invalidOutputParamNames = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: output-artifact-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: blah-122lsfj}
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
-var invalidOutputMissingValueFrom = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: output-param-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: outparam
-`
-
-var invalidOutputMultipleValueFrom = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: output-param-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: outparam
-        valueFrom:
-          path: /abc
-          jqFilter: abc
-`
-
-var invalidOutputIncompatibleValueFromPath = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: output-param-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: outparam
-        valueFrom:
-          parameter: abc
-`
-
-var invalidOutputIncompatibleValueFromParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: output-param-
-spec:
-  entrypoint: my-steps
-  templates:
-  - name: my-steps
-    steps:
-    - - name: step1
-        template: whalesay
-    outputs:
-      parameters:
-      - name: myoutput
-        valueFrom:
-          path: /abc
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: outparam
-        valueFrom:
-          path: /abc
-`
-
 func TestInvalidOutputParam(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), invalidOutputParamNames)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-output-param-names.yaml")
 	require.ErrorContains(t, err, invalidErr)
 
-	err = validate(logging.TestContext(t.Context()), invalidOutputMissingValueFrom)
+	err = validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-output-missing-value-from.yaml")
 	require.ErrorContains(t, err, "does not have valueFrom or value specified")
 
-	err = validate(logging.TestContext(t.Context()), invalidOutputMultipleValueFrom)
+	err = validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-output-multiple-value-from.yaml")
 	require.ErrorContains(t, err, "multiple valueFrom")
 
-	err = validate(logging.TestContext(t.Context()), invalidOutputIncompatibleValueFromPath)
+	err = validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-output-incompatible-value-from-path.yaml")
 	require.ErrorContains(t, err, ".path must be specified for Container templates")
 
-	err = validate(logging.TestContext(t.Context()), invalidOutputIncompatibleValueFromParam)
+	err = validate(logging.TestContext(t.Context()), "@testdata/invalid-names/invalid-output-incompatible-value-from-param.yaml")
 	require.ErrorContains(t, err, ".parameter or expression must be specified for Steps templates")
 }
 
-var multipleTemplateTypes = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: multiple-template-types-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        import random
-        i = random.randint(1, 100)
-        print(i)
-`
-
 func TestMultipleTemplateTypes(t *testing.T) {
-	err := validate(logging.TestContext(t.Context()), multipleTemplateTypes)
+	err := validate(logging.TestContext(t.Context()), "@testdata/invalid-names/multiple-template-types.yaml")
 	require.ErrorContains(t, err, "multiple template types specified")
 }
 
