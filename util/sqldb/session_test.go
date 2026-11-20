@@ -181,3 +181,45 @@ func TestSessionWithCancelsStatement(t *testing.T) {
 		return count == 0
 	}, 10*time.Second, 200*time.Millisecond)
 }
+
+func TestNewSessionProxyRetryDefaults(t *testing.T) {
+	postgres := &config.PostgreSQLConfig{DatabaseConfig: config.DatabaseConfig{Database: dbName, Host: "localhost", Port: fixedPort}}
+
+	t.Run("no reconnect block keeps the defaults", func(t *testing.T) {
+		proxy, err := newSessionProxy(SessionProxyConfig{DBConfig: config.DBConfig{PostgreSQL: postgres}})
+		require.NoError(t, err)
+		assert.Equal(t, 5, proxy.maxRetries)
+		assert.Equal(t, 100*time.Millisecond, proxy.baseDelay)
+		assert.Equal(t, 30*time.Second, proxy.maxDelay)
+		assert.InDelta(t, 2.0, proxy.retryMultiple, 0)
+	})
+
+	t.Run("reconnect block without retryMultiple keeps the default multiplier", func(t *testing.T) {
+		proxy, err := newSessionProxy(SessionProxyConfig{DBConfig: config.DBConfig{
+			PostgreSQL:        postgres,
+			DBReconnectConfig: &config.DBReconnectConfig{MaxRetries: 3, BaseDelaySeconds: 1, MaxDelaySeconds: 10},
+		}})
+		require.NoError(t, err)
+		assert.Equal(t, 3, proxy.maxRetries)
+		assert.Equal(t, time.Second, proxy.baseDelay)
+		assert.Equal(t, 10*time.Second, proxy.maxDelay)
+		assert.InDelta(t, 2.0, proxy.retryMultiple, 0)
+	})
+
+	t.Run("explicit retryMultiple is used", func(t *testing.T) {
+		proxy, err := newSessionProxy(SessionProxyConfig{DBConfig: config.DBConfig{
+			PostgreSQL:        postgres,
+			DBReconnectConfig: &config.DBReconnectConfig{RetryMultiple: 1.5},
+		}})
+		require.NoError(t, err)
+		assert.InDelta(t, 1.5, proxy.retryMultiple, 0)
+	})
+
+	t.Run("negative retryMultiple is rejected", func(t *testing.T) {
+		_, err := newSessionProxy(SessionProxyConfig{DBConfig: config.DBConfig{
+			PostgreSQL:        postgres,
+			DBReconnectConfig: &config.DBReconnectConfig{RetryMultiple: -1},
+		}})
+		require.ErrorContains(t, err, "retryMultiple cannot be less than 0")
+	})
+}
