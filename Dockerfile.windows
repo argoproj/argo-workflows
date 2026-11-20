@@ -11,7 +11,9 @@ ARG GIT_TREE_STATE=unknown
 
 # had issues with official golange image for windows so I'm using plain servercore
 FROM mcr.microsoft.com/windows/servercore:${IMAGE_OS_VERSION} as builder
-ENV GOLANG_VERSION=1.27.3
+# Major.minor only: Chocolatey stops publishing patches for older Go minors, so an
+# exact patch can disappear. Go's toolchain switching fetches the go.mod version.
+ENV GOLANG_VERSION=1.27
 SHELL ["powershell", "-Command"]
 
 # install chocolatey package manager

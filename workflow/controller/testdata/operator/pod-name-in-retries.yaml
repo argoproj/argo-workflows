@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: output-value-placeholders-wf
+spec:
+  entrypoint: tell-pod-name
+  templates:
+  - name: tell-pod-name
+    retryStrategy:
+      limit: 2
+    outputs:
+      parameters:
+      - name: pod-name
+        value: "{{pod.name}}"
+    container:
+      image: argoproj/argosay:v2

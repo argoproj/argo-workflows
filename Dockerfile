@@ -20,7 +20,8 @@ RUN apk update && apk add --no-cache \
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY hack/retry-download.sh /usr/local/bin/retry-download.sh
+RUN --mount=type=cache,target=/go/pkg/mod sh /usr/local/bin/retry-download.sh go mod download
 
 COPY . .
 
@@ -41,10 +42,11 @@ FROM node:20-alpine AS argo-ui
 RUN apk update && apk add --no-cache git
 
 COPY ui/package.json ui/yarn.lock ui/
+COPY hack/retry-download.sh /usr/local/bin/retry-download.sh
 
 RUN --mount=type=cache,target=/root/.yarn \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
-  yarn --cwd ui install --network-timeout 1000000
+  sh /usr/local/bin/retry-download.sh yarn --cwd ui install --network-timeout 1000000
 
 COPY ui ui
 COPY api api
@@ -90,7 +92,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:034df5c1737e8241f6ed6423a12e720ee0f6d6f088609ee172f98f6f2166ef5d AS argoexec-base
+FROM gcr.io/distroless/static-debian13:latest@sha256:448810357cc8e67b7208988abdba0f5ec3d3aebee0a5b13eb624979792cffc0f AS argoexec-base
 
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
@@ -115,7 +117,7 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:034df5c1737e8241f6ed6423a12e720ee0f6d6f088609ee172f98f6f2166ef5d AS workflow-controller
+FROM gcr.io/distroless/static-debian13:latest@sha256:448810357cc8e67b7208988abdba0f5ec3d3aebee0a5b13eb624979792cffc0f AS workflow-controller
 
 USER 8737
 
@@ -127,7 +129,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:034df5c1737e8241f6ed6423a12e720ee0f6d6f088609ee172f98f6f2166ef5d AS argocli
+FROM gcr.io/distroless/static-debian13:latest@sha256:448810357cc8e67b7208988abdba0f5ec3d3aebee0a5b13eb624979792cffc0f AS argocli
 
 USER 8737
 

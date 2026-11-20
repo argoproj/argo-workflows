@@ -41,8 +41,8 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		}
 	}
 
-	// A retried pod template leaves {{pod.name}} to its attempts, so its
-	// metrics resolve it here from the attempt: the node itself, or a Retry
+	// A retried pod template leaves {{pod.name}} and {{node.taskName}} to its
+	// attempts, so its metrics resolve them here from the attempt: the node itself, or a Retry
 	// node's latest attempt, read from the status since the caller's copy of
 	// the Retry node can predate the attempt just linked to it.
 	podNode := node
@@ -54,7 +54,9 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		}
 	}
 	if podNode.Type == wfv1.NodeTypePod {
-		localScope[varkeys.PodName.Template()] = woc.getPodName(podNode.Name, wfutil.GetTemplateFromNode(*podNode))
+		podName := woc.getPodName(podNode.Name, wfutil.GetTemplateFromNode(*podNode))
+		localScope[varkeys.PodName.Template()] = podName
+		localScope[varkeys.NodeTaskName.Template()] = podName
 	}
 
 	if len(node.Children) != 0 {

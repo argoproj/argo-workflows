@@ -14,6 +14,8 @@ Per-directory guidance lives in nested AGENTS.md files: `workflow/controller/AGE
 - Local dev stack (k3d + Tilt, everything in-cluster with hot reload), ports, profiles, debugging: see docs/running-locally.md.
 - Lint: `make lint` (golangci-lint `--fix` + UI lint — commit what `--fix` changes; CI runs `git diff --exit-code`).
 - Codegen: `make codegen -B`. Pre-PR: `make pre-commit -B` (= codegen, lint, docs).
+- Vendoring: use `make vendor`, never plain `go mod vendor` — the make target also runs `hack/vendor-patches.sh`, which patches vendored `google.golang.org/protobuf` so messages embedding Kubernetes types keep marshalling once Kubernetes v1.36 removes `ProtoMessage()`.
+  Builds driven through make are also covered by the `kubernetes_protomessage_one_more_release` build tag the Makefile exports, but plain `go build`/`go test`/gopls get no tag and rely on the patched vendor tree — plain `go mod vendor` silently reverts the patch, and the only runtime safety net is the startup probe in `pkg/apiclient/protocompat.go`.
 
 ## Conventions
 
@@ -38,7 +40,7 @@ Cross-cutting invariants: the executor never writes the Workflow object — outp
 
 `argoexec emissary` is PID 1 wrapping the user command in every container: writes `/var/run/argo/ctr/<name>/exitcode`, waits on ContainerSet dependencies, reads the template from `/var/run/argo/template`. `init`/`wait` (legacy pod layout) or `supervisor` (init-less beta) stage input artifacts before main and run the shared `PostMain` capture sequence after (script result → parameters/artifacts/logs → report outputs). Output capture deliberately uses a background context so termination doesn't lose outputs.
 
-A task's flow is a `Plan` of three phases (Prepare, Run, Collect) over named `Stage`s. Every stage is declared in `workflow/executor/stages.go` (the registry, enforced by a test) and plans are selected per template in `workflow/executor/plan.go`. New executor behaviour is a new stage or a new plan, not a new hand-written sequence in a command.
+A task's flow is a `Plan` of three phases (Prepare, Run, Collect) over named `Stage`s. Every stage is declared in `workflow/executor/stages.go` (the registry, enforced by a test) and plans are selected per template and `Layout` (legacy pod, init-less pod, worker) in `workflow/executor/plan.go`. A `Role` is the part of a task's flow one process runs; roles are declared in `workflow/executor/roles.go` (also a registry), and the `init`, `wait` and `supervisor` commands are each one call to `RunHarness` (`cmd/argoexec/executor/harness.go`) with their role. The `Harness` (`workflow/executor/harness.go`) builds a fresh executor and `ResultSink` (`workflow/executor/sink.go`) per task and owns panic recovery and failure reporting. In a pod, main's `emissary` runs outside the harness, through `workflow/executor/maindriver`; the test-only `WorkerRole` instead runs a task's whole flow in one process, main included, through the process's `MainDriver`. New executor behaviour is a new stage, plan or role, not a new hand-written sequence in a command.
 
 ### Server (`server/`)
 

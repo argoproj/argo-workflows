@@ -22,6 +22,44 @@ See [Telemetry Configuration](telemetry-configuration.md#tracing) for setup deta
 
 <!-- Generated documentation BEGIN -->
 
+### Trace: `RunAgentTask`
+
+```mermaid
+flowchart TD
+    RunAgentTask[<a href='#run_agent_task'>run_agent_task</a>]
+```
+
+### Trace: `RunWorkerTask`
+
+```mermaid
+flowchart TD
+    RunWorkerTask[<a href='#run_worker_task'>run_worker_task</a>]
+    CaptureScriptResult[<a href='#capture_script_result'>capture_script_result</a>]
+    CreateTaskResult[<a href='#create_task_result'>create_task_result</a>]
+    LoadArtifacts[<a href='#load_artifacts'>load_artifacts</a>]
+    PatchTaskResult[<a href='#patch_task_result'>patch_task_result</a>]
+    SaveArtifacts[<a href='#save_artifacts'>save_artifacts</a>]
+    SaveLogs[<a href='#save_logs'>save_logs</a>]
+    StageFiles[<a href='#stage_files'>stage_files</a>]
+    LoadArtifact[<a href='#load_artifact'>load_artifact</a>]
+    SaveArtifact[<a href='#save_artifact'>save_artifact</a>]
+    SaveContainerLogs[<a href='#save_container_logs'>save_container_logs</a>]
+    UnarchiveArtifact[<a href='#unarchive_artifact'>unarchive_artifact</a>]
+    ArchiveArtifact[<a href='#archive_artifact'>archive_artifact</a>]
+    RunWorkerTask --> CaptureScriptResult
+    RunWorkerTask --> CreateTaskResult
+    RunWorkerTask --> LoadArtifacts
+    RunWorkerTask --> PatchTaskResult
+    RunWorkerTask --> SaveArtifacts
+    RunWorkerTask --> SaveLogs
+    RunWorkerTask --> StageFiles
+    LoadArtifacts --> LoadArtifact
+    SaveArtifacts --> SaveArtifact
+    SaveLogs --> SaveContainerLogs
+    LoadArtifact --> UnarchiveArtifact
+    SaveArtifact --> ArchiveArtifact
+```
+
 ### Trace: `StartupController`
 
 ```mermaid
@@ -58,7 +96,6 @@ flowchart TD
     CreateTaskResult[<a href='#create_task_result'>create_task_result</a>]
     LoadArtifacts[<a href='#load_artifacts'>load_artifacts</a>]
     PatchTaskResult[<a href='#patch_task_result'>patch_task_result</a>]
-    PatchTaskResultLabels[<a href='#patch_task_result_labels'>patch_task_result_labels</a>]
     ProcessDataTemplate[<a href='#process_data_template'>process_data_template</a>]
     ReconcileTaskResult[<a href='#reconcile_task_result'>reconcile_task_result</a>]
     SaveArtifact[<a href='#save_artifact'>save_artifact</a>]
@@ -98,9 +135,6 @@ flowchart TD
     RunWaitContainer --> PatchTaskResult
     RunMainContainer --> PatchTaskResult
     RunSupervisorContainer --> PatchTaskResult
-    RunWaitContainer --> PatchTaskResultLabels
-    RunMainContainer --> PatchTaskResultLabels
-    RunSupervisorContainer --> PatchTaskResultLabels
     RunMainContainer --> ProcessDataTemplate
     ReconcileTaskResults --> ReconcileTaskResult
     SaveArtifacts --> SaveArtifact
@@ -128,7 +162,9 @@ This span has no attributes.
 
 Creating the WorkflowTaskResult.
 
-This span has no attributes.
+|     attribute     |                    explanation                     |
+|-------------------|----------------------------------------------------|
+| `marks_completed` | True if this write marks the task result completed |
 
 #### `create_workflow_pod`
 
@@ -177,13 +213,9 @@ The phase of one node as observed by the controller in the DAG of a workflow.
 
 Patching the WorkflowTaskResult.
 
-This span has no attributes.
-
-#### `patch_task_result_labels`
-
-Patching the labels of WorkflowTaskResult.
-
-This span has no attributes.
+|     attribute     |                    explanation                     |
+|-------------------|----------------------------------------------------|
+| `marks_completed` | True if this write marks the task result completed |
 
 #### `persist_updates`
 
@@ -224,6 +256,16 @@ Reconciliation between actual and desired state for a single workflow.
 
 This span has no attributes.
 
+#### `run_agent_task`
+
+Run one HTTP or plugin task in the agent.
+The agent pod doesn't use the `executor` configuration, so set `OTEL_EXPORTER_OTLP_ENDPOINT` on its `main` container with `podSpecPatch` to get this span.
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
+
 #### `run_init_container`
 
 Run the init container of a workload.
@@ -254,6 +296,16 @@ Run the supervisor container of a workload (init-less mode).
 #### `run_wait_container`
 
 Run the wait container of a workload.
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
+
+#### `run_worker_task`
+
+Run one task's whole flow in a worker process.
+Workflows never emits this span, because no command runs a worker.
 
 |  attribute  |              explanation              |
 |-------------|---------------------------------------|

@@ -1,0 +1,133 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-workflow-test
+spec:
+  entrypoint: main
+#  podGC:
+#    strategy: OnPodCompletion
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: regular-1
+        template: run
+        arguments:
+          parameters:
+          - name: id
+            value: 1
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: regular-2
+        template: run
+        depends: regular-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 2
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-retries-1
+        template: run-with-retries
+        arguments:
+          parameters:
+          - name: id
+            value: 3
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-retries-2
+        template: run-with-retries
+        depends: with-retries-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 4
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-dag-1
+        template: run-with-dag
+        arguments:
+          parameters:
+          - name: id
+            value: 5
+          - name: cache-key
+            value: '{{workflow.name}}'
+      - name: with-dag-2
+        template: run-with-dag
+        depends: with-dag-1.Succeeded
+        arguments:
+          parameters:
+          - name: id
+            value: 6
+          - name: cache-key
+            value: '{{workflow.name}}'
+
+  - name: run
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+    memoize:
+      key: "regular-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache
+
+  - name: run-with-retries
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+    memoize:
+      key: "retry-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache
+    retryStrategy:
+      limit: '1'
+      retryPolicy: Always
+
+  - name: run-raw
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    script:
+      image: ubuntu:22.04
+      command: [bash]
+      source: |
+        sleep 30
+        echo result: {{inputs.parameters.id}}
+
+  - name: run-with-dag
+    inputs:
+      parameters:
+      - name: id
+      - name: cache-key
+    dag:
+      tasks:
+      - name: run-raw-step
+        template: run-raw
+        arguments:
+          parameters:
+          - name: id
+            value: '{{inputs.parameters.id}}'
+          - name: cache-key
+            value: '{{inputs.parameters.cache-key}}'
+    memoize:
+      key: "dag-{{inputs.parameters.cache-key}}"
+      cache:
+        configMap:
+          name: memoization-test-cache

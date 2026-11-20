@@ -14,9 +14,8 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sethvargo/go-limiter"
 	"github.com/sethvargo/go-limiter/httplimit"
@@ -80,6 +79,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/plugin"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/namespacedefaults"
 )
 
 // Server is the interface for the Argo API server
@@ -296,7 +296,15 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
 	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
-	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
+	// The server has no ConfigMap informer, so namespace defaults are listed by label per
+	// request, then layered over the controller-level defaults exactly as the controller
+	// does it.
+	namespaceDefaults := namespacedefaults.NewLister(as.clients.Kubernetes)
+	wfDefaults := func(ctx context.Context, namespace string) (*v1alpha1.Workflow, error) {
+		return namespacedefaults.Merged(ctx, namespaceDefaults, config.WorkflowDefaults, namespace)
+	}
+
+	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, wfDefaults)
 
 	syncServer := serversync.NewSyncServer(ctx, as.clients.Kubernetes, as.namespace, config.Synchronization)
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
@@ -304,8 +312,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		log.Error(ctx, err.Error())
 		os.Exit(1)
 	}
-	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories)
-	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
+	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, wfDefaults, &resourceCacheNamespace, artifactRepositories)
+	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, wfDefaults, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -365,7 +373,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wftmplStore types.WorkflowTemplateStore, cwftmplStore types.ClusterWorkflowTemplateStore, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, syncServer syncpkg.SyncServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string, wfDefaults *v1alpha1.Workflow) *grpc.Server {
+func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wftmplStore types.WorkflowTemplateStore, cwftmplStore types.ClusterWorkflowTemplateStore, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, syncServer syncpkg.SyncServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string, wfDefaults namespacedefaults.Func, controllerDefaults *v1alpha1.Workflow) *grpc.Server {
 	serverLog := logging.RequireLoggerFromContext(ctx)
 
 	// "Prometheus histograms are a great way to measure latency distributions of your RPCs. However, since it is bad practice to have metrics of high cardinality the latency monitoring metrics are disabled by default. To enable them please call the following in your server initialization code:"
@@ -378,7 +386,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 		grpc.MaxRecvMsgSize(as.maxGRPCMessageSize),
 		grpc.MaxSendMsgSize(as.maxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		grpc.ChainUnaryInterceptor(
 			grpc_prometheus.UnaryServerInterceptor,
 			grpcutil.LoggerUnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
@@ -386,8 +394,8 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 			as.gatekeeper.UnaryServerInterceptor(),
 			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderUnaryServerInterceptor(argo.GetVersion()),
-		)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		),
+		grpc.ChainStreamInterceptor(
 			grpc_prometheus.StreamServerInterceptor,
 			grpcutil.LoggerStreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
@@ -395,7 +403,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 			as.gatekeeper.StreamServerInterceptor(),
 			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderStreamServerInterceptor(argo.GetVersion()),
-		)),
+		),
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
@@ -407,7 +415,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewServer(instanceIDService, wftmplStore, cwftmplStore))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService, wftmplStore, cwftmplStore, wfDefaults))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, wfArchiveServer)
-	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService, cwftmplStore, wfDefaults))
+	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService, cwftmplStore, controllerDefaults))
 	syncpkg.RegisterSyncServiceServer(grpcServer, syncServer)
 	grpc_prometheus.Register(grpcServer)
 	return grpcServer
@@ -432,7 +440,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	mux := http.NewServeMux()
 	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
-	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
+	// The gateway stream forwarder (and anything else downstream) pulls the
+	// logger from the request context, so inject it at the outermost layer.
+	handler := withRequestLogger(log, rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux)))
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(as.maxGRPCMessageSize)),
 	}
@@ -449,15 +459,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
-	// NOTE: if a marshaller option is not supplied, grpc-gateway will default to the jsonpb from
-	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
-	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
-	// we use our own Marshaler
-	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler))
-	gwmux := runtime.NewServeMux(gwMuxOpts,
-		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
-		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
-	)
+	gwmux := newGatewayMux()
 	mustRegisterGWHandler(ctx, infopkg.RegisterInfoServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(ctx, eventpkg.RegisterEventServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(ctx, eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
@@ -614,6 +616,29 @@ func (as *argoServer) validateArtifactDriverImages(ctx context.Context, cfg *con
 
 	log.WithField("driverCount", len(cfg.ArtifactDrivers)).Info(ctx, "Artifact driver validation passed: All configured artifact driver images are present in the server pod")
 	return nil
+}
+
+// withRequestLogger injects the server logger into every HTTP request context.
+// Downstream handlers — in particular the gateway stream forwarder's keepalive
+// goroutine — read it from there.
+func withRequestLogger(log logging.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(logging.WithLogger(r.Context(), log)))
+	})
+}
+
+// newGatewayMux builds the grpc-gateway mux with the server's marshaler and
+// header-matching configuration. Kept as its own function so the gateway
+// round-trip test exercises exactly the production configuration.
+// NOTE: the marshaler must stay encoding/json-based: grpc-gateway's default
+// protojson marshaler ignores MarshalJSON methods, which both our API types and
+// the gateway.MessageV2Of bridge for gogo-generated messages rely on — with
+// protojson, bridged responses would serialize as {}.
+func newGatewayMux() *runtime.ServeMux {
+	return runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler)),
+		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
+	)
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error

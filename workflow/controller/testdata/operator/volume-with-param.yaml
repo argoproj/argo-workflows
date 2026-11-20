@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: volume-with-param
+spec:
+  entrypoint: append-to-accesslog
+  arguments:
+    parameters:
+    - name: volname
+      value: my-volume
+    - name: node-selctor
+      value: my-node
+
+  nodeSelector:
+    kubernetes.io/hostname: my-host
+
+  volumes:
+  - name: workdir
+    persistentVolumeClaim:
+      claimName: "{{workflow.parameters.volname}}"
+
+  templates:
+  - name: append-to-accesslog
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol

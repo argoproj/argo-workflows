@@ -1,16 +1,25 @@
 package executor
 
 import (
+	"bytes"
+	"context"
+	"os"
+	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	utilretry "github.com/argoproj/argo-workflows/v4/util/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
@@ -22,23 +31,30 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 	ctx := logging.TestContext(t.Context())
 	tracingObj, err := tracing.New(ctx, `argoexec`)
 	require.NoError(t, err)
-	return &WorkflowExecutor{
+	we := &WorkflowExecutor{
+		paths:           PodPaths(),
+		RuntimeExecutor: mockRuntime,
 		Process: &Process{
 			PodName:            fakePodName,
 			podUID:             types.UID(fakePodUID),
 			ClientSet:          fake.NewClientset(),
 			Namespace:          fakeNamespace,
-			RuntimeExecutor:    mockRuntime,
 			taskResultClient:   argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
 			Tracing:            tracingObj,
 			memoizedConfigMaps: map[string]string{},
 			retryBackoff:       utilretry.ExecutorRetry(ctx),
+			// The defaults NewProcess would set.
+			taskResultRetryTimeout:    utilretry.DefaultExecutorTaskResultRetryTimeout,
+			interimResultRetryTimeout: defaultInterimResultRetryTimeout,
+			taskResultBackoff:         defaultTaskResultBackoff,
 		},
 		workflow:    fakeWorkflow,
 		workflowUID: types.UID(fakeWorkflowUID),
 		nodeID:      fakeNodeID,
 		Template:    tmpl,
 	}
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+	return we
 }
 
 // TestPostMain_ResourceShortCircuit verifies that Resource templates take the
@@ -134,4 +150,129 @@ func TestPostMain_WaitErrorIsAggregated(t *testing.T) {
 
 	err := we.PostMain(ctx, ctx, false)
 	require.Error(t, err, "Wait error must surface via HasError")
+}
+
+// serialTaskResults wraps a task result client and records how many writes
+// were in flight at once. Progress writes stall until their ctx ends, as
+// they would against an API server that has stopped answering.
+type serialTaskResults struct {
+	argoprojv1.WorkflowTaskResultInterface
+	progressStarted chan struct{}
+	startOnce       sync.Once
+	progressWrites  atomic.Int32
+
+	mu          sync.Mutex
+	inFlight    int
+	maxInFlight int
+}
+
+func (c *serialTaskResults) begin() (end func()) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.inFlight++
+	c.maxInFlight = max(c.maxInFlight, c.inFlight)
+	return func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		c.inFlight--
+	}
+}
+
+func (c *serialTaskResults) stallProgress(ctx context.Context) error {
+	c.progressWrites.Add(1)
+	c.startOnce.Do(func() { close(c.progressStarted) })
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func (c *serialTaskResults) Create(ctx context.Context, tr *wfv1.WorkflowTaskResult, opts metav1.CreateOptions) (*wfv1.WorkflowTaskResult, error) {
+	end := c.begin()
+	defer end()
+	if tr.Progress != "" {
+		return nil, c.stallProgress(ctx)
+	}
+	return c.WorkflowTaskResultInterface.Create(ctx, tr, opts)
+}
+
+func (c *serialTaskResults) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (*wfv1.WorkflowTaskResult, error) {
+	end := c.begin()
+	defer end()
+	if bytes.Contains(data, []byte(`"progress"`)) {
+		return nil, c.stallProgress(ctx)
+	}
+	return c.WorkflowTaskResultInterface.Patch(ctx, name, pt, data, opts, subresources...)
+}
+
+// TestPostMain_ProgressReportsStopBeforeFinalReports verifies that main
+// exiting while a progress report is stuck retrying stops the progress
+// monitor, and cuts off the stuck report, before the final reports write
+// the same task result. Both Collect variants are covered; the pod layouts
+// differ only in Prepare.
+func TestPostMain_ProgressReportsStopBeforeFinalReports(t *testing.T) {
+	for name, tmpl := range map[string]wfv1.Template{
+		"Container": {Name: "container-tmpl"},
+		"Resource":  {Name: "resource-tmpl", Resource: &wfv1.ResourceTemplate{Action: "get"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			mockRuntime := &mocks.ContainerRuntimeExecutor{}
+			we := newTestPostMainExecutor(t, tmpl, mockRuntime)
+			taskResults := &serialTaskResults{WorkflowTaskResultInterface: we.taskResultClient, progressStarted: make(chan struct{})}
+			we.taskResultClient = taskResults
+			we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+			we.annotationPatchTickDuration = time.Millisecond
+			we.readProgressFileTickDuration = time.Millisecond
+			we.progressFile = filepath.Join(t.TempDir(), "progress")
+			require.NoError(t, os.WriteFile(we.progressFile, []byte("1/2\n"), 0o600))
+			// main exits while a progress report is stuck.
+			mockRuntime.On("Wait", mock.Anything, []string{"main"}).Run(func(mock.Arguments) {
+				select {
+				case <-taskResults.progressStarted:
+				case <-time.After(10 * time.Second):
+				}
+			}).Return(nil)
+
+			require.NoError(t, we.PostMain(ctx, ctx, false))
+			we.FinalizeOutput(ctx)
+			progressWrites := taskResults.progressWrites.Load()
+			require.Positive(t, progressWrites, "no progress report was made")
+			time.Sleep(20 * time.Millisecond) // many progress ticks
+			assert.Equal(t, progressWrites, taskResults.progressWrites.Load(), "progress reports continued after Wait returned")
+			assert.Equal(t, 1, taskResults.maxInFlight, "task result writes overlapped")
+			assert.Empty(t, we.errors)
+		})
+	}
+}
+
+// ctxCheckingTaskResults fails calls made on a cancelled context, as a real
+// API client does.
+type ctxCheckingTaskResults struct {
+	argoprojv1.WorkflowTaskResultInterface
+}
+
+func (c ctxCheckingTaskResults) Create(ctx context.Context, r *wfv1.WorkflowTaskResult, opts metav1.CreateOptions) (*wfv1.WorkflowTaskResult, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return c.WorkflowTaskResultInterface.Create(ctx, r, opts)
+}
+
+// SIGTERM can cancel ctx before the wait/supervisor container gets this far;
+// the Run phase must still write the placeholder result, as it did before
+// the plan existed (InitializeOutput on the background context).
+func TestPostMain_PlaceholderResultSurvivesCancellation(t *testing.T) {
+	bgCtx := logging.TestContext(t.Context())
+	ctx, cancel := context.WithCancel(bgCtx)
+	cancel()
+	mockRuntime := &mocks.ContainerRuntimeExecutor{}
+	mockRuntime.On("Wait", mock.Anything, []string{"main"}).Return(context.Canceled)
+	we := newTestPostMainExecutor(t, wfv1.Template{Name: "container-tmpl"}, mockRuntime)
+	client := ctxCheckingTaskResults{we.taskResultClient}
+	we.taskResultClient = client
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+
+	we.runRecording(ctx, we.selectedPlan().Run, true)
+
+	_, err := client.Get(bgCtx, fakeNodeID, metav1.GetOptions{})
+	require.NoError(t, err)
 }

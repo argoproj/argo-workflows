@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sorting"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/git"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -516,6 +517,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	if tmpl.IsPodType() {
 		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.RetryStrategy != nil {
 		localParams[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()
@@ -785,6 +788,12 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	if art.Git != nil {
 		if art.Git.Repo == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s.git.repo is required", errPrefix)
+		}
+		// Skip {{...}} placeholders: the git driver validates the resolved URL while loading the artifact.
+		if !strings.Contains(art.Git.Repo, "{{") {
+			if err := git.ValidateRepoURL(art.Git.Repo); err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "%s.git.repo: %s", errPrefix, err.Error())
+			}
 		}
 	}
 	if art.HDFS != nil {
