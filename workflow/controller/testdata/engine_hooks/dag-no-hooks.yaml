@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-no-hooks
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: task-a
+        template: whalesay
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
