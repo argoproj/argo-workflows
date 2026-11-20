@@ -1,0 +1,119 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: install-python-ansible
+spec:
+  nodeSelector:
+    kubernetes.io/os: linux
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: subscription-id
+        value: ""
+      - name: resource-group
+        value: ""
+      - name: vm-name
+        value: "WinSrv22"
+      - name: admin-username
+        value: "tester"
+
+  templates:
+    - name: main
+      steps:
+        - - name: retrieve-secrets
+            templateRef:
+              name: retrieve-secrets
+              template: retrieve-secrets
+        - - name: get-private-ip
+            template: get-private-ip
+            arguments:
+              parameters:
+                - name: client-id
+                  value: "{{steps.retrieve-secrets.outputs.parameters.client-id}}"
+                - name: client-secret
+                  value: "{{steps.retrieve-secrets.outputs.parameters.client-secret}}"
+                - name: tenant-id
+                  value: "{{steps.retrieve-secrets.outputs.parameters.tenant-id}}"
+                - name: subscription-id
+                  value: "{{workflow.parameters.subscription-id}}"
+                - name: resource-group
+                  value: "{{workflow.parameters.resource-group}}"
+                - name: vm-name
+                  value: "{{workflow.parameters.vm-name}}"
+                - name: admin-username
+                  value: "{{workflow.parameters.admin-username}}"
+        - - name: run-ansible
+            template: run-ansible
+            arguments:
+              parameters:
+                - name: private-ip
+                  value: "{{steps.get-private-ip.outputs.parameters.private-ip}}"
+                - name: admin-password
+                  value: "{{steps.retrieve-secrets.outputs.parameters.admin-password}}"
+                - name: admin-username
+                  value: "{{workflow.parameters.admin-username}}"
+              artifacts:
+                - name: playbook
+                  path: /playbook.yml
+                  raw:
+                    data: |
+                      ---
+                      - name: Install Python3 on Windows VM
+                        hosts: all
+                        tasks:
+                          - name: Install Choco using Powershell
+                            win_shell: powershell -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+                          - name: Add Choco to PATH
+                            win_shell: SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+                          - name: Install Python3 using Choco
+                            win_shell: powershell choco install -y python3
+                          - name: Verify Chocolatey installation
+                            win_command: choco --version
+                          - name: Verify Python installation
+                            win_command: python --version
+
+    - name: get-private-ip
+      nodeSelector:
+        kubernetes.io/os: linux
+      inputs:
+        parameters:
+          - name: client-id
+          - name: client-secret
+          - name: tenant-id
+          - name: subscription-id
+          - name: resource-group
+          - name: vm-name
+      container:
+        image: bitnami/azure-cli:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            mkdir -p /tmp/outputs &&
+            az login --service-principal -u {{inputs.parameters.client-id}} -p {{inputs.parameters.client-secret}} --tenant {{inputs.parameters.tenant-id}} &&
+            az vm show -d -g {{inputs.parameters.resource-group}} -n {{inputs.parameters.vm-name}} --query privateIps -o tsv > /tmp/outputs/private-ip
+      outputs:
+        parameters:
+          - name: private-ip
+            valueFrom:
+              path: /tmp/outputs/private-ip
+
+    - name: run-ansible
+      nodeSelector:
+        kubernetes.io/os: linux
+      inputs:
+        parameters:
+          - name: private-ip
+          - name: admin-password
+          - name: admin-username
+        artifacts:
+          - name: playbook
+            path: /playbook.yml
+      container:
+        image: williamyeh/ansible:alpine3
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "[{{workflow.parameters.vm-name}}]" > /etc/ansible/hosts
+            echo "{{workflow.parameters.vm-name}} ansible_host={{inputs.parameters.private-ip}} ansible_user={{inputs.parameters.admin-username}} ansible_password={{inputs.parameters.admin-password}} ansible_connection=winrm ansible_winrm_transport=ntlm ansible_winrm_port=5985 ansible_winrm_scheme=http" >> /etc/ansible/hosts
+
+            ansible-playbook /playbook.yml
