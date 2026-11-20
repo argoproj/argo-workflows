@@ -185,7 +185,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	}
 	ctx = wfcontext.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
-	cronWorkflowOperationCtx := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults, cc.cronWfInformer.Informer().GetIndexer())
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
@@ -220,41 +220,58 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 }
 
 func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error {
-	_, err := cc.cronWfInformer.Informer().AddEventHandler(
-		cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj any) bool {
-				un, ok := obj.(*unstructured.Unstructured)
-				if !ok {
-					cc.logger.WithField("obj", obj).Warn(ctx, "Cron Workflow FilterFunc: is not an unstructured")
-					return false
+	_, err := cc.cronWfInformer.Informer().AddEventHandler(cc.cronWorkflowEventHandler(ctx))
+	return err
+}
+
+// cronWorkflowEventHandler returns the informer event handler for
+// CronWorkflows. It is separate from registration so that tests can deliver
+// events to it directly, the way client-go does after a relist.
+func (cc *Controller) cronWorkflowEventHandler(ctx context.Context) cache.FilteringResourceEventHandler {
+	return cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj any) bool {
+			// A delete delivered after a watch gap arrives as a
+			// cache.DeletedFinalStateUnknown tombstone. Rejecting it here
+			// would drop the event entirely, because client-go's
+			// FilteringResourceEventHandler.OnDelete only calls DeleteFunc
+			// when the filter passes: the key would never be enqueued,
+			// processNextCronItem would never take its not-found path, and
+			// the scheduled job would keep submitting Workflows for a
+			// CronWorkflow that no longer exists (#17442). The object is
+			// gone either way, so let the delete through. DeleteFunc derives
+			// the key with DeletionHandlingMetaNamespaceKeyFunc, which reads
+			// it off the tombstone, so nothing else here needs the object.
+			if _, tombstone := obj.(cache.DeletedFinalStateUnknown); tombstone {
+				return true
+			}
+			un, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				cc.logger.WithField("obj", obj).Warn(ctx, "Cron Workflow FilterFunc: is not an unstructured")
+				return false
+			}
+			return !isCompleted(un)
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj any) {
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					cc.cronWfQueue.Add(key)
 				}
-				return !isCompleted(un)
 			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj any) {
-					key, err := cache.MetaNamespaceKeyFunc(obj)
-					if err == nil {
-						cc.cronWfQueue.Add(key)
-					}
-				},
-				UpdateFunc: func(old, newObj any) {
-					key, err := cache.MetaNamespaceKeyFunc(newObj)
-					if err == nil {
-						cc.cronWfQueue.Add(key)
-					}
-				},
-				DeleteFunc: func(obj any) {
-					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-					if err == nil {
-						cc.cronWfQueue.Add(key)
-					}
-				},
+			UpdateFunc: func(old, newObj any) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
+				if err == nil {
+					cc.cronWfQueue.Add(key)
+				}
 			},
-		})
-	if err != nil {
-		return err
+			DeleteFunc: func(obj any) {
+				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+				if err == nil {
+					cc.cronWfQueue.Add(key)
+				}
+			},
+		},
 	}
-	return nil
 }
 
 func isCompleted(wf v1.Object) bool {
@@ -303,7 +320,7 @@ func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.Cro
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	cwoc := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
+	cwoc := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults, cc.cronWfInformer.Informer().GetIndexer())
 	err := cwoc.enforceHistoryLimit(ctx, workflows)
 	if err != nil {
 		return err
