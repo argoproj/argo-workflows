@@ -18,6 +18,7 @@ type Options struct {
 	Namespace          string
 	ServiceAccountName string
 	ImagePullSecrets   []apiv1.LocalObjectReference
+	ImagePullPolicy    apiv1.PullPolicy
 }
 
 type Image struct {
