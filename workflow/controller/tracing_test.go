@@ -9,6 +9,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
@@ -66,4 +67,59 @@ func TestTracingReconcileSpans(t *testing.T) {
 	// Verify both spans share the same trace ID
 	assert.Equal(t, reconcileSpan.SpanContext().TraceID(), taskResultsSpan.SpanContext().TraceID(),
 		"reconcileTaskResults should share trace ID with reconcileWorkflow")
+}
+
+var tracingTestWorkflowWithParent = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: tracing-test-parent
+  namespace: default
+  annotations:
+    opentelemetry.io/traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+      command: [echo, hello]
+`
+
+// TestTracingContinuesAnnotatedTrace verifies that a workflow annotated with a traceparent
+// continues the caller's trace, and passes it on to its pods.
+func TestTracingContinuesAnnotatedTrace(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	te, exporter, err := tracing.CreateDefaultTestTracing(ctx)
+	require.NoError(t, err)
+
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.tracing = te
+
+	wf := wfv1.MustUnmarshalWorkflow(tracingTestWorkflowWithParent)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	const callerTraceID = "0af7651916cd43dd8448eb211c80319c"
+
+	reconcileSpan, err := exporter.GetSpanByName("reconcileWorkflow")
+	require.NoError(t, err)
+	assert.Equal(t, callerTraceID, reconcileSpan.SpanContext().TraceID().String())
+
+	assert.Equal(t, callerTraceID, woc.wf.Annotations[common.AnnotationKeyTraceID])
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+	traceparent := ""
+	for _, env := range pods.Items[0].Spec.Containers[0].Env {
+		if env.Name == "TRACEPARENT" {
+			traceparent = env.Value
+		}
+	}
+	assert.Contains(t, traceparent, "-"+callerTraceID+"-", "pod TRACEPARENT should continue the caller's trace")
+	assert.NotContains(t, traceparent, "b7ad6b7169203331", "pod TRACEPARENT should have its own span ID")
 }
