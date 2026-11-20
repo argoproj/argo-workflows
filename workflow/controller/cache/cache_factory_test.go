@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -25,9 +26,8 @@ func TestCacheFactoryUsesControllerNamespace(t *testing.T) {
 	require.NoError(t, cache.Save(ctx, "key", "node", &wfv1.Outputs{}, ""))
 	_, err := client.CoreV1().ConfigMaps("controller").Get(ctx, "shared-cache", metav1.GetOptions{})
 	require.NoError(t, err)
-
 	queries := &testMemoizationDB{enabled: true}
-	factory.SetQueries(queries)
+	factory.SetQueries(ctx, queries)
 	sqlCache := factory.GetCache("shared-cache")
 	require.NoError(t, sqlCache.Save(ctx, "key", "node", &wfv1.Outputs{}, "1h"))
 	assert.Equal(t, "controller", queries.namespace)
@@ -40,71 +40,100 @@ type testMemoizationDB struct {
 	saveCalls atomic.Int32
 	start     chan struct{}
 	block     chan struct{}
+	closed    chan struct{}
 	namespace string
 	cacheName string
 }
 
-func (t *testMemoizationDB) wait() {
-	if t.start != nil {
-		close(t.start)
+func (q *testMemoizationDB) wait() {
+	if q.start != nil {
+		close(q.start)
 	}
-	if t.block != nil {
-		<-t.block
+	if q.block != nil {
+		<-q.block
 	}
 }
-func (t *testMemoizationDB) Load(context.Context, string, string, string) (*memodb.CacheRecord, error) {
-	t.wait()
+func (q *testMemoizationDB) Load(context.Context, string, string, string) (*memodb.CacheRecord, error) {
+	q.wait()
 	return nil, nil
 }
-func (t *testMemoizationDB) Save(_ context.Context, namespace, cacheName, _, _ string, _ *wfv1.Outputs, _ string) error {
-	t.wait()
-	t.namespace, t.cacheName = namespace, cacheName
-	t.saveCalls.Add(1)
+func (q *testMemoizationDB) Save(_ context.Context, ns, name, _, _ string, _ *wfv1.Outputs, _ string) error {
+	q.wait()
+	q.namespace, q.cacheName = ns, name
+	q.saveCalls.Add(1)
 	return nil
 }
-func (*testMemoizationDB) Prune(context.Context) (int64, error) { return 0, nil }
-func (t *testMemoizationDB) IsEnabled() bool                    { return t.enabled }
+func (q *testMemoizationDB) Prune(context.Context) (int64, error) { q.wait(); return 0, nil }
+func (q *testMemoizationDB) IsEnabled() bool                      { return q.enabled }
+func (q *testMemoizationDB) Close() error {
+	if q.closed != nil {
+		close(q.closed)
+	}
+	return nil
+}
 
 func TestCacheFactoryStaleSQLCacheNoopsAfterDisable(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	factory := NewCacheFactory(fake.NewSimpleClientset(), "controller")
 	queries := &testMemoizationDB{enabled: true}
-	factory.SetQueries(queries)
+	factory.SetQueries(ctx, queries)
 	cache := factory.GetCache("shared-cache")
-	factory.SetQueries(nil)
-	require.NoError(t, cache.Save(ctx, "key", "node", &wfv1.Outputs{}, "1h"))
+	factory.SetQueries(ctx, nil)
+	require.NoError(t, cache.Save(ctx, "key", "node", nil, "1h"))
+	entry, err := cache.Load(ctx, "key")
+	require.NoError(t, err)
+	assert.Nil(t, entry)
 	assert.Zero(t, queries.saveCalls.Load())
 }
 
-func TestCacheFactoryReconfigureDoesNotWaitForQueries(t *testing.T) {
-	for _, operation := range []string{"load", "save"} {
+func TestCacheFactoryReconfigureDrainsQueriesWithoutHoldingLock(t *testing.T) {
+	for _, operation := range []string{"load", "save", "prune"} {
 		t.Run(operation, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
 			factory := NewCacheFactory(fake.NewSimpleClientset(), "controller")
-			queries := &testMemoizationDB{enabled: true, start: make(chan struct{}), block: make(chan struct{})}
-			factory.SetQueries(queries)
+			old := &testMemoizationDB{enabled: true, start: make(chan struct{}), block: make(chan struct{}), closed: make(chan struct{})}
+			factory.SetQueries(ctx, old)
 			cache := factory.GetCache("shared-cache")
+			release := sync.OnceFunc(func() { close(old.block) })
+			t.Cleanup(release)
 			done := make(chan error, 1)
 			go func() {
-				if operation == "save" {
-					done <- cache.Save(ctx, "key", "node", &wfv1.Outputs{}, "1h")
-				} else {
+				switch operation {
+				case "save":
+					done <- cache.Save(ctx, "key", "node", nil, "1h")
+				case "load":
 					_, err := cache.Load(ctx, "key")
 					done <- err
+				case "prune":
+					done <- factory.WithQueries(func(q memodb.MemoizationDB) error { _, err := q.Prune(ctx); return err })
 				}
 			}()
-			t.Cleanup(func() { close(queries.block); require.NoError(t, <-done) })
 			select {
-			case <-queries.start:
+			case <-old.start:
 			case <-time.After(time.Second):
 				t.Fatal("query did not start")
 			}
+			replacement := &testMemoizationDB{enabled: true}
 			reconfigured := make(chan struct{})
-			go func() { factory.SetQueries(nil); close(reconfigured) }()
+			go func() { factory.SetQueries(ctx, replacement); close(reconfigured) }()
 			select {
 			case <-reconfigured:
 			case <-time.After(time.Second):
-				t.Fatal("factory lock held during SQL query")
+				t.Fatal("configuration waited for query I/O")
+			}
+			select {
+			case <-old.closed:
+				t.Fatal("closed a backend with an in-flight query")
+			default:
+			}
+			require.NoError(t, factory.GetCache("shared-cache").Save(ctx, "new-key", "new-node", nil, ""))
+			assert.EqualValues(t, 1, replacement.saveCalls.Load())
+			release()
+			require.NoError(t, <-done)
+			select {
+			case <-old.closed:
+			case <-time.After(time.Second):
+				t.Fatal("retired backend was not closed after draining")
 			}
 		})
 	}

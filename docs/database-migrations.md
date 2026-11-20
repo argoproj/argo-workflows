@@ -1,17 +1,22 @@
 # Database Migrations
 
-This page lists the SQL migrations that Argo Workflows applies automatically at startup.
+This page lists the SQL migrations that Argo Workflows applies when initializing its databases.
+Memoization migrations run only on the leader, including when its memoization configuration changes.
 Migrations are applied incrementally and tracked by a version table.
-Each migration is only run once. Do not re-order or remove entries.
+Each migration is only run once.
+Do not re-order or remove entries.
 
 The table names and cluster name shown here are defaults.
 Your deployment may use different values depending on your configuration.
 
-See [Workflow Archive](workflow-archive.md) and [Synchronization](synchronization.md) for configuration details.
+See [Workflow Archive](workflow-archive.md), [Synchronization](synchronization.md), and [Memoization](memoization.md) for configuration details.
+For memoization, the default migration history table is `cache_entries_schema_history`; a custom cache table uses `<tableName>_schema_history`.
+The expiry index is named `<tableName>_i1`.
 
 ## Steps
 
-Each migration is numbered as a `Step`. When Argo Workflows runs the automatic migration at controller startup, it records the highest applied step number in a version table (`schema_history` for the archive database,`sync_schema_history` for the sync database) and only runs steps with a higher number on subsequent starts.
+Each migration is numbered as a `Step`.
+When Argo Workflows runs the automatic migration at controller startup, it records the highest applied step number in a version table (`schema_history` for the archive database,`sync_schema_history` for the sync database) and only runs steps with a higher number on subsequent starts.
 Steps may be missing where the step does nothing for the database type.
 This means steps must never be re-ordered or removed — a new schema change is always appended as a new step.
 
@@ -20,6 +25,39 @@ Argo Workflows will not detect partial manual application — it only reads the 
 If the version table is out of sync with the actual schema, the controller may try to re-apply steps and fail, or skip steps that you have not run.
 
 Programmatic migrations are not described here and the code needs to be consulted for those steps.
+## Memoization Database
+
+### MySQL
+
+```sql
+-- Step 0
+create table if not exists `cache_entries` (namespace        varchar(64)  not null, cache_name       varchar(253) not null, cache_key        varchar(256) not null, node_id          text         not null, outputs          longtext     not null, created_at       datetime(6)  not null, expires_at       datetime(6)  null, primary key (namespace, cache_name, cache_key)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+-- Step 1
+create index cache_entries_i1 on `cache_entries` (expires_at);
+
+```
+
+### PostgreSQL
+
+```sql
+-- Step 0
+create table if not exists "cache_entries" (
+    namespace        varchar(64)  not null,
+    cache_name       varchar(253) not null,
+    cache_key        varchar(256) not null,
+    node_id          text         not null,
+    outputs          text         not null,
+    created_at       timestamp    not null,
+    expires_at       timestamp    null,
+    primary key (namespace, cache_name, cache_key)
+);
+
+-- Step 1
+create index cache_entries_i1 on "cache_entries" (expires_at);
+
+```
+
 ## Archive Database
 
 ### MySQL

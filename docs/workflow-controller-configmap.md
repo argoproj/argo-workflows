@@ -382,15 +382,15 @@ MemoizationConfig contains memoization cache configuration for database-backed s
 
 ### Fields
 
-|         Field Name         |                Field Type                 |                                                   Description                                                    |
-|----------------------------|-------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `PostgreSQL`               | [`PostgreSQLConfig`](#postgresqlconfig)   | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time                               |
-| `MySQL`                    | [`MySQLConfig`](#mysqlconfig)             | MySQL configuration for MySQL database, don't use PostgreSQL at the same time                                    |
-| `ConnectionPool`           | [`ConnectionPool`](#connectionpool)       | Pooled connection settings for all types of database connections                                                 |
-| `DBReconnectConfig`        | [`DBReconnectConfig`](#dbreconnectconfig) | DBReconnectConfig are configuration options for database retries and reconnections                               |
-| `ConnectionTimeoutSeconds` | `int32`                                   | ConnectionTimeoutSeconds is the timeout in seconds for establishing a database connection, 5 seconds if not set. |
-| `TableName`                | `string`                                  | TableName is the name of the table to use for memoization cache entries. Defaults to "cache_entries" if not set. |
-| `SkipMigration`            | `bool`                                    | SkipMigration skips automatic database migration on startup.                                                     |
+|         Field Name         |                Field Type                 |                                                                                      Description                                                                                       |
+|----------------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PostgreSQL`               | [`PostgreSQLConfig`](#postgresqlconfig)   | PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time                                                                                                     |
+| `MySQL`                    | [`MySQLConfig`](#mysqlconfig)             | MySQL configuration for MySQL database, don't use PostgreSQL at the same time                                                                                                          |
+| `ConnectionPool`           | [`ConnectionPool`](#connectionpool)       | Pooled connection settings for all types of database connections                                                                                                                       |
+| `DBReconnectConfig`        | [`DBReconnectConfig`](#dbreconnectconfig) | DBReconnectConfig are configuration options for database retries and reconnections                                                                                                     |
+| `ConnectionTimeoutSeconds` | `int32`                                   | ConnectionTimeoutSeconds is the timeout in seconds for establishing a database connection, 5 seconds if not set.                                                                       |
+| `TableName`                | `string`                                  | TableName is the name of the table to use for memoization cache entries. Defaults to "cache_entries"; use at most 48 lowercase letters, digits or underscores, starting with a letter. |
+| `SkipMigration`            | `bool`                                    | SkipMigration skips schema migrations by the leader, including after memoization configuration changes.                                                                                |
 
 ## ArtifactDriver
 

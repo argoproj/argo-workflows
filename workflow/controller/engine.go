@@ -792,7 +792,7 @@ func (e *Engine) saveMemoizationCache(ctx context.Context) error {
 	if err != nil {
 		return nil //nolint:nilerr // node not yet in status → nothing to memoize
 	}
-	if saveErr := e.woc.saveMemoizationCache(ctx, node, e.tmpl); saveErr != nil {
+	if saveErr := e.woc.saveMemoizationCache(ctx, node); saveErr != nil {
 		e.log.WithError(saveErr).Error(ctx, "Failed to save node outputs to cache")
 		_ = e.woc.markNodePhase(ctx, e.nodeName, wfv1.NodeError, saveErr.Error())
 		return saveErr

@@ -4,33 +4,44 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type sqlDBCache struct {
-	namespace  string
-	name       string
-	getQueries func() memodb.MemoizationDB
+	namespace   string
+	name        string
+	withQueries func(func(memodb.MemoizationDB) error) error
 }
 
-func newSQLDBCache(namespace, name string, getQueries func() memodb.MemoizationDB) MemoizationCache {
+func newSQLDBCache(namespace, name string, withQueries func(func(memodb.MemoizationDB) error) error) MemoizationCache {
 	return &sqlDBCache{
-		namespace:  namespace,
-		name:       name,
-		getQueries: getQueries,
+		namespace:   namespace,
+		name:        name,
+		withQueries: withQueries,
 	}
 }
 
 func (c *sqlDBCache) Load(ctx context.Context, key string) (*Entry, error) {
-	if !cacheKeyRegex.MatchString(key) {
-		return nil, fmt.Errorf("invalid cache key: %s", key)
+	if err := validateCacheKey(key); err != nil {
+		return nil, err
 	}
-	// Snapshot the backend before querying; configuration changes do not wait on I/O.
-	record, err := c.getQueries().Load(ctx, c.namespace, c.name, key)
+	var record *memodb.CacheRecord
+	err := retryMemoization(ctx, func() error {
+		return c.withQueries(func(queries memodb.MemoizationDB) error {
+			var loadErr error
+			record, loadErr = queries.Load(ctx, c.namespace, c.name, key)
+			return loadErr
+		})
+	})
 	if err != nil {
 		return nil, fmt.Errorf("memoization db load failed: %w", err)
 	}
@@ -50,8 +61,30 @@ func (c *sqlDBCache) Load(ctx context.Context, key string) (*Entry, error) {
 }
 
 func (c *sqlDBCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, maxAge string) error {
-	if !cacheKeyRegex.MatchString(key) {
-		return fmt.Errorf("invalid cache key: %s", key)
+	if err := validateCacheKey(key); err != nil {
+		return err
 	}
-	return c.getQueries().Save(ctx, c.namespace, c.name, key, nodeID, value, maxAge)
+	return retryMemoization(ctx, func() error {
+		return c.withQueries(func(queries memodb.MemoizationDB) error {
+			return queries.Save(ctx, c.namespace, c.name, key, nodeID, value, maxAge)
+		})
+	})
+}
+
+func retryMemoization(ctx context.Context, operation func() error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	var lastErr error
+	err := wait.ExponentialBackoffWithContext(ctx, wait.Backoff{Duration: time.Second, Factor: 2, Jitter: 0.1, Steps: 5, Cap: 30 * time.Second}, func(context.Context) (bool, error) {
+		lastErr = operation()
+		if sqldb.IsTransientError(lastErr) || argoerr.IsTransientErr(ctx, lastErr) {
+			return false, nil
+		}
+		return true, lastErr
+	})
+	if wait.Interrupted(err) && ctx.Err() == nil && lastErr != nil {
+		return lastErr
+	}
+	return err
 }

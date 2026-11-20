@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"regexp"
 
 	"k8s.io/client-go/kubernetes"
@@ -13,12 +12,10 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-const (
-	defaultTableName = "cache_entries"
-	versionTable     = "memoization_schema_history"
-)
+const defaultTableName = "cache_entries"
 
-var validTableName = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
+// Leave room for the schema-history suffix within PostgreSQL's 63-byte identifier limit.
+var validTableName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,47}$`)
 
 // Config holds resolved configuration for database-backed memoization.
 type Config struct {
@@ -35,30 +32,14 @@ func TableName(cfg *config.MemoizationConfig) string {
 
 func validateTableName(tableName string) error {
 	if !validTableName.MatchString(tableName) {
-		return fmt.Errorf("invalid table name %q: must match [A-Za-z0-9_]+", tableName)
+		return fmt.Errorf("invalid table name %q: must start with a lowercase letter and contain only lowercase letters, digits or underscores (maximum 48 characters)", tableName)
 	}
 	return nil
 }
 
-// memoizationVersionTableName returns the schema history table name for the given memoization
-// cache table. The default table name uses a fixed well-known name; custom table names get a
-// deterministic hash suffix to avoid collisions.
-func memoizationVersionTableName(tableName string) string {
-	if tableName == defaultTableName {
-		return versionTable
-	}
-	hasher := fnv.New64a()
-	_, _ = hasher.Write([]byte(tableName))
-	return fmt.Sprintf("memoization_schema_history_%x", hasher.Sum64())
-}
-
-// memoizationExpiresAtIndexName returns the name of the expires_at index for the given
-// memoization cache table, using a deterministic hash suffix to avoid collisions across
-// multiple cache tables.
-func memoizationExpiresAtIndexName(tableName string) string {
-	hasher := fnv.New64a()
-	_, _ = hasher.Write([]byte(tableName))
-	return fmt.Sprintf("memoization_expires_at_%x", hasher.Sum64())
+// VersionTableName returns the migration history table associated with a cache table.
+func VersionTableName(tableName string) string {
+	return tableName + "_schema_history"
 }
 
 // ConfigFromConfig converts a controller MemoizationConfig (with DB credentials, connection
@@ -87,7 +68,6 @@ func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interf
 	if err != nil {
 		return nil, err
 	}
-	sqldb.ConfigureDBSession(sessionProxy.Session(ctx), cfg.ConnectionPool)
 	return sessionProxy, nil
 }
 
@@ -106,7 +86,7 @@ func Migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, cfg Config) 
 		return nil
 	}
 	logger.Info(ctx, "Running memoization db migration")
-	if err := migrate(ctx, sessionProxy.Session(ctx), sessionProxy.DBType(), cfg.TableName); err != nil {
+	if err := sqldb.Migrate(ctx, sessionProxy.Session(ctx), sessionProxy.DBType(), VersionTableName(cfg.TableName), MigrateChanges(cfg.TableName, sessionProxy.DBType())); err != nil {
 		return err
 	}
 	logger.Info(ctx, "Memoization db migration complete")

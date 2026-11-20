@@ -224,7 +224,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			// The task set holds the template the node was dispatched with.
 			tmpl := workflowTaskSet.Spec.Tasks[nodeID]
 			if node.Succeeded() {
-				if err := woc.saveMemoizationCache(ctx, node, &tmpl); err != nil {
+				if err := woc.saveMemoizationCache(ctx, node); err != nil {
 					woc.log.WithField("nodeID", node.ID).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 					node.Phase = wfv1.NodeError
 					node.Message = err.Error()

@@ -4316,6 +4316,11 @@ func (m *MemoizationStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.MaxAge)
+	copy(dAtA[i:], m.MaxAge)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.MaxAge)))
+	i--
+	dAtA[i] = 0x22
 	i -= len(m.CacheName)
 	copy(dAtA[i:], m.CacheName)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CacheName)))
@@ -11205,6 +11210,8 @@ func (m *MemoizationStatus) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	l = len(m.CacheName)
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.MaxAge)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14197,6 +14204,7 @@ func (this *MemoizationStatus) String() string {
 		`Hit:` + fmt.Sprintf("%v", this.Hit) + `,`,
 		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`CacheName:` + fmt.Sprintf("%v", this.CacheName) + `,`,
+		`MaxAge:` + fmt.Sprintf("%v", this.MaxAge) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -27855,6 +27863,38 @@ func (m *MemoizationStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.CacheName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxAge", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MaxAge = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

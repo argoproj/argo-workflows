@@ -83,8 +83,8 @@ func (c *configMapCache) Load(ctx context.Context, key string) (*Entry, error) {
 }
 
 func (c *configMapCache) load(ctx context.Context, key string) (*Entry, error) {
-	if !cacheKeyRegex.MatchString(key) {
-		return nil, fmt.Errorf("invalid cache key: %s", key)
+	if err := validateCacheKey(key); err != nil {
+		return nil, err
 	}
 
 	c.lock.Lock()
@@ -152,10 +152,8 @@ func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, va
 }
 
 func (c *configMapCache) save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
-	if !cacheKeyRegex.MatchString(key) {
-		errString := fmt.Sprintf("invalid cache key: %s", key)
-		err := errors.New(errString)
-		c.logError(ctx, err, logging.Fields{"key": key}, errString)
+	if err := validateCacheKey(key); err != nil {
+		c.logError(ctx, err, logging.Fields{"key": key}, err.Error())
 		return err
 	}
 

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/upper/db/v4"
@@ -80,6 +79,11 @@ func (q *queries) IsEnabled() bool {
 	return true
 }
 
+// Close releases the session once the factory has drained this backend's operations.
+func (q *queries) Close() error {
+	return q.sessionProxy.Close()
+}
+
 func cacheRecordCond(record *CacheRecord) db.Cond {
 	return db.Cond{
 		colNamespace: record.Namespace,
@@ -88,45 +92,32 @@ func cacheRecordCond(record *CacheRecord) db.Cond {
 	}
 }
 
-func cacheRecordUpdates(record *CacheRecord) map[string]any {
-	return map[string]any{
-		"node_id":    record.NodeID,
-		"outputs":    record.Outputs,
-		"created_at": record.CreatedAt,
-		"expires_at": record.ExpiresAt,
+func saveRecord(sess db.Session, tableName string, dbType sqldb.DBType, record *CacheRecord) error {
+	var upsert string
+	switch dbType {
+	case sqldb.Postgres:
+		upsert = " ON CONFLICT (namespace, cache_name, cache_key) DO UPDATE SET node_id = EXCLUDED.node_id, outputs = EXCLUDED.outputs, created_at = EXCLUDED.created_at, expires_at = EXCLUDED.expires_at"
+	case sqldb.MySQL:
+		upsert = " ON DUPLICATE KEY UPDATE node_id = VALUES(node_id), outputs = VALUES(outputs), created_at = VALUES(created_at), expires_at = VALUES(expires_at)"
+	default:
+		return fmt.Errorf("unsupported memoization database type %q", dbType)
 	}
-}
-
-func isDuplicateKeyError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "Duplicate entry")
-}
-
-func saveRecord(sess db.Session, tableName string, record *CacheRecord) error {
-	collection := sess.Collection(tableName)
-	_, err := collection.Insert(record)
-	if err == nil {
-		return nil
-	}
-	if !isDuplicateKeyError(err) {
-		return err
-	}
-	return collection.Find(cacheRecordCond(record)).Update(cacheRecordUpdates(record))
+	_, err := sess.SQL().InsertInto(tableName).
+		Columns("namespace", "cache_name", "cache_key", "node_id", "outputs", "created_at", "expires_at").
+		Values(record.Namespace, record.CacheName, record.CacheKey, record.NodeID, record.Outputs, record.CreatedAt, record.ExpiresAt).
+		Amend(func(query string) string { return query + upsert }).Exec()
+	return err
 }
 
 // Load retrieves the outputs for the given cache key.
 // Returns nil when the entry does not exist or has expired.
 func (q *queries) Load(ctx context.Context, namespace, cacheName, cacheKey string) (*CacheRecord, error) {
-	var r CacheRecord
+	r := CacheRecord{Namespace: namespace, CacheName: cacheName, CacheKey: cacheKey}
 	now := time.Now().UTC()
 	err := q.sessionProxy.With(ctx, func(sess db.Session) error {
 		return sess.SQL().
 			SelectFrom(q.tableName).
-			Where(db.Cond{colNamespace: namespace}).
-			And(db.Cond{colCacheName: cacheName}).
-			And(db.Cond{colCacheKey: cacheKey}).
+			Where(cacheRecordCond(&r)).
 			And(db.Or(db.Cond{colExpiresAt: nil}, db.Cond{colExpiresAt + " >": now})).
 			One(&r)
 	})
@@ -184,6 +175,6 @@ func (q *queries) Save(
 		ExpiresAt: expiresAt,
 	}
 	return q.sessionProxy.With(ctx, func(sess db.Session) error {
-		return saveRecord(sess, q.tableName, record)
+		return saveRecord(sess, q.tableName, q.sessionProxy.DBType(), record)
 	})
 }

@@ -10324,6 +10324,10 @@
         "key": {
           "description": "Key is the name of the key used for this node's cache",
           "type": "string"
+        },
+        "maxAge": {
+          "description": "MaxAge is the resolved maximum age used when saving this node's cache entry.",
+          "type": "string"
         }
       }
     },

@@ -210,6 +210,7 @@ func (woc *wfOperationCtx) handleMemoization(ctx context.Context, nodeName strin
 			Hit:       hit,
 			Key:       processedTmpl.Memoize.Key,
 			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
+			MaxAge:    processedTmpl.Memoize.MaxAge,
 		}
 		if hit {
 			if node == nil {
