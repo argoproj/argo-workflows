@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: no-scope
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - {name: A, template: echo, when: "false"}
+      - {name: B, template: echo, depends: A}
+      - name: C
+        template: echo
+        depends: A
+        hooks:
+          never:
+            expression: "false"
+            template: echo
+  - name: echo
+    container:
+      image: busybox
+      command: [echo]

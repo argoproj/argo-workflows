@@ -1,0 +1,113 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-16T01:00:14Z"
+  generateName: workflow-template-hello-world-
+  generation: 6
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: workflow-template-hello-world-jdkdw
+  namespace: default
+  resourceVersion: "564728"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/workflow-template-hello-world-jdkdw
+  uid: 57dac176-2e10-4f1d-b77c-db321d187d83
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+  entrypoint: start
+  templates: null
+  ttlStrategy:
+    secondsAfterCompletion: 10
+  workflowTemplateRef:
+    name: workflow-template-submittable-2.9
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-06-16T01:00:19Z"
+  nodes:
+    workflow-template-hello-world-jdkdw:
+      displayName: workflow-template-hello-world-jdkdw
+      finishedAt: "2020-06-16T01:00:17Z"
+      hostNodeName: docker-desktop
+      id: workflow-template-hello-world-jdkdw
+      inputs:
+        parameters:
+        - name: message
+          value: hello world
+      name: workflow-template-hello-world-jdkdw
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: workflow-template-hello-world-jdkdw/workflow-template-hello-world-jdkdw/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-06-16T01:00:14Z"
+      templateRef:
+        name: workflow-template-submittable-2.9
+        template: start
+      templateScope: local/workflow-template-hello-world-jdkdw
+      type: Pod
+  phase: Succeeded
+  resourcesDuration:
+    cpu: 2
+    memory: 1
+  startedAt: "2020-06-16T01:00:14Z"
+  storedTemplates:
+    namespaced/workflow-template-submittable-2.9/start:
+
+      container:
+        args:
+        - '{{inputs.parameters.message}}'
+        command:
+        - echo
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: message
+      metadata: {}
+      name: start
+      outputs: {}
+  storedWorkflowTemplateSpec:
+    arguments:
+      parameters:
+      - name: message
+        value: hello world
+    entrypoint: start
+    templates:
+    -
+      container:
+        args:
+        - '{{inputs.parameters.message}}'
+        command:
+        - echo
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: message
+      metadata: {}
+      name: start
+      outputs: {}
+    ttlStrategy:
+      secondsAfterCompletion: 60

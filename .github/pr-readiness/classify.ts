@@ -70,13 +70,19 @@ export function diagnostics(checkRuns: CheckRun[], config: Config): { unmapped: 
 interface DecideArgs {
   signals: ReadonlyArray<{ id: string; state: string }>;
   templateVerdict: { compliant: boolean } | null;
-  hasExistingComment: boolean;
+  // The existing comment has already reported readiness issues, so the
+  // readiness section follows through to waiting / all-clear.
+  engaged: boolean;
+  // A contributor activity table is available to post.
+  hasContributorReport: boolean;
 }
 
-// The convergence rules. See README.md for the decision table. `blocking`
+// The convergence rules (see "Behavior" in README.md). `blocking`
 // drives the not-ready label: the bot owns it outright, so the label is simply
 // applied while blocking and removed once not (main.ts does the sync).
-export function decide({ signals, templateVerdict, hasExistingComment }: DecideArgs): Decision {
+// A null variant with shouldComment means "contributor table only": nothing
+// has failed yet, so there is no readiness section.
+export function decide({ signals, templateVerdict, engaged, hasContributorReport }: DecideArgs): Decision {
   const failing = signals.filter((s) => s.state === 'failure').map((s) => s.id);
   const templateBlocking = Boolean(templateVerdict && templateVerdict.compliant === false);
   const blocking = failing.length > 0 || templateBlocking;
@@ -87,9 +93,11 @@ export function decide({ signals, templateVerdict, hasExistingComment }: DecideA
   if (blocking) {
     variant = 'issues';
     shouldComment = true;
-  } else if (hasExistingComment) {
+  } else if (engaged) {
     variant = anyPending ? 'waiting' : 'allclear';
     shouldComment = true;
+  } else {
+    shouldComment = hasContributorReport;
   }
 
   return { variant, shouldComment, blocking, failing, templateBlocking };

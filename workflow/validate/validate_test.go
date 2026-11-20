@@ -3985,3 +3985,39 @@ spec:
 `)
 	require.ErrorContains(t, err, "invalid dependency false")
 }
+
+var malformedGitRepo = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: malformed-git-repo-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: repo
+      value: https://github.com/argoproj/argo-workflows.git
+  templates:
+  - name: main
+    inputs:
+      artifacts:
+      - name: src
+        path: /src
+        git:
+          repo: REPO
+    container:
+      image: alpine:3.23
+`
+
+func TestValidateGitRepoURL(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	t.Run("Malformed", func(t *testing.T) {
+		err := validate(ctx, strings.ReplaceAll(malformedGitRepo, "REPO", "git@github.com/argoproj/argo-workflows.git"))
+		require.ErrorContains(t, err, "git.repo")
+		require.ErrorContains(t, err, "not a valid SSH URL")
+	})
+	t.Run("Parameterised", func(t *testing.T) {
+		err := validate(ctx, strings.ReplaceAll(malformedGitRepo, "REPO", `"{{workflow.parameters.repo}}"`))
+		require.NoError(t, err)
+	})
+}
