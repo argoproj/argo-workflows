@@ -297,4 +297,98 @@ spec:
         args:
           - echo
           - '{{inputs.parameters.message}}'
+
 ```
+
+
+### Real-world examples: Reusing Templates across Workflows
+
+In production, you define common tasks once and reuse them to keep workflows DRY. Below are patterns teams use at scale.
+
+#### Pattern 1: Reusing via WorkflowTemplate (same namespace)
+
+Best when teams share templates within one namespace (e.g., a data team sharing a Spark ETL step).
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: shared-etl-template
+  namespace: argo
+spec:
+  templates:
+    - name: spark-etl
+      inputs:
+        parameters:
+          - name: input-path
+          - name: output-path
+      container:
+        image: spark:3.5.0
+        command: [spark-submit]
+        args: ["--input", "{{inputs.parameters.input-path}}", "--output", "{{inputs.parameters.output-path}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: data-pipeline-
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: run-etl
+            templateRef:
+              name: shared-etl-template
+              template: spark-etl
+            arguments:
+              parameters:
+                - name: input-path
+                  value: s3://raw-data/2026/
+                - name: output-path
+                  value: s3://processed-data/
+```
+
+Why this helps: Version the WorkflowTemplate once, 10+ workflows reference it. Updating ETL logic doesn't require changing each workflow. RBAC can restrict who can edit the shared template.
+
+#### Pattern 2: Reusing via ClusterWorkflowTemplate (cluster-wide)
+
+Best for platform teams providing organization-wide standards (e.g., security scanning, compliance) with `clusterScope: true`.
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: security-scan
+spec:
+  templates:
+    - name: trivy-scan
+      inputs:
+        parameters:
+          - name: image
+      container:
+        image: aquasec/trivy:latest
+        command: [trivy]
+        args: ["image", "{{inputs.parameters.image}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ci-pipeline-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: scan
+            templateRef:
+              name: security-scan
+              template: trivy-scan
+              clusterScope: true
+            arguments:
+              parameters:
+                - name: image
+                  value: my-app:v1.2.3
+```
+
+Notes: Requires ClusterWorkflowTemplate RBAC (`clusterScope: true` lets any namespace reference it). Ideal for platform-wide governance — one scan template maintained centrally.
