@@ -42,7 +42,7 @@
             # renovate: datasource=go depName=google.golang.org/grpc/cmd/protoc-gen-go-grpc
             protocGenGoGrpc = "1.5.1";
             # renovate: datasource=go depName=github.com/grpc-ecosystem/grpc-gateway/v2
-            grpcGateway = "2.30.0";
+            grpcGateway = "2.34.0";
             kubeOpenapi = "0.0.0-20220124234850-424119656bbf";
             goSwagger = "0.33.1";
             goimports = "0.35.0";
