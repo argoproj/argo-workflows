@@ -46,6 +46,7 @@ const (
 	AttribRequestCode              string = `status_code`
 	AttribRequestKind              string = `kind`
 	AttribRequestVerb              string = `verb`
+	AttribRetryTerminationReason   string = `reason`
 	AttribTaskResultCompleted      string = `completed`
 	AttribTaskResultMarksCompleted string = `marks_completed`
 	AttribTaskResultName           string = `name`
