@@ -2122,23 +2122,33 @@ spec:
 		})
 	}
 
-	s.Run("ListWithLimitAndOffset", func() {
-		j := s.e().GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
-			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
-			WithQuery("listOptions.limit", 1).
-			WithQuery("listOptions.offset", 1).
-			Expect().
-			Status(200).
-			JSON()
-		j.
-			Path("$.items").
-			Array().
-			Length().
-			IsEqual(1)
-		j.
-			Path("$.metadata.continue").
-			IsEqual("1")
+	s.Run("ListWithLimitAndContinue", func() {
+		// Page through the three archived workflows one at a time by following
+		// the continue token: each must be returned exactly once, and the last
+		// page has no continue token.
+		seen := map[string]bool{}
+		continueToken := ""
+		for page := range 3 {
+			req := s.e().GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
+				WithQuery("listOptions.limit", 1)
+			if continueToken != "" {
+				req = req.WithQuery("listOptions.continue", continueToken)
+			}
+			j := req.Expect().
+				Status(200).
+				JSON()
+			j.Path("$.items").Array().Length().IsEqual(1)
+			seen[j.Path("$.items[0].metadata.uid").String().Raw()] = true
+			metadata := j.Path("$.metadata").Object()
+			if page < 2 {
+				continueToken = metadata.Value("continue").String().NotEmpty().Raw()
+			} else {
+				metadata.NotContainsKey("continue")
+			}
+		}
+		s.Len(seen, 3)
 	})
 
 	s.Run("ListWithMinStartedAtGood", func() {
