@@ -23,6 +23,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
       --base-href string                     Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. (default "/")
   -b, --browser                              enable automatic launching of the browser [local mode]
       --configmap string                     Name of K8s configmap to retrieve workflow controller configuration (default "workflow-controller-configmap")
+      --css-file string                      Path to a CSS file that is added to the UI, e.g. to apply a custom theme.
       --event-async-dispatch                 dispatch event async
       --event-operation-queue-size int       how many events operations that can be queued at once (default 16)
       --event-worker-count int               how many event workers to run (default 4)

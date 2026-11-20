@@ -53,6 +53,7 @@ func NewServerCommand() *cobra.Command {
 		eventAsyncDispatch       bool
 		frameOptions             string
 		accessControlAllowOrigin string
+		cssFile                  string
 		apiRateLimit             uint64
 		kubeAPIQPS               float32
 		kubeAPIBurst             int
@@ -152,6 +153,14 @@ See %s`, help.ArgoServer()),
 				logger.Warn(ctx, "You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
 			}
 
+			var css []byte
+			if cssFile != "" {
+				css, err = os.ReadFile(cssFile)
+				if err != nil {
+					return fmt.Errorf("failed to read CSS file: %w", err)
+				}
+			}
+
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
 				TLSConfig:                tlsConfig,
@@ -169,6 +178,7 @@ See %s`, help.ArgoServer()),
 				EventAsyncDispatch:       eventAsyncDispatch,
 				XFrameOptions:            frameOptions,
 				AccessControlAllowOrigin: accessControlAllowOrigin,
+				CSS:                      string(css),
 				APIRateLimit:             apiRateLimit,
 				AllowedLinkProtocol:      allowedLinkProtocol,
 			}
@@ -208,6 +218,7 @@ See %s`, help.ArgoServer()),
 	command.Flags().BoolVar(&eventAsyncDispatch, "event-async-dispatch", false, "dispatch event async")
 	command.Flags().StringVar(&frameOptions, "x-frame-options", "DENY", "Set X-Frame-Options header in HTTP responses.")
 	command.Flags().StringVar(&accessControlAllowOrigin, "access-control-allow-origin", "", "Set Access-Control-Allow-Origin header in HTTP responses.")
+	command.Flags().StringVar(&cssFile, "css-file", "", "Path to a CSS file that is added to the UI, e.g. to apply a custom theme.")
 	command.Flags().Uint64Var(&apiRateLimit, "api-rate-limit", 1000, "Set limit per IP for api ratelimiter")
 	command.Flags().StringArrayVar(&allowedLinkProtocol, "allowed-link-protocol", []string{"http", "https"}, "Allowed protocols for links feature.")
 	command.Flags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")

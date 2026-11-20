@@ -104,6 +104,7 @@ type argoServer struct {
 	eventAsyncDispatch       bool
 	xframeOptions            string
 	accessControlAllowOrigin string
+	css                      string
 	apiRateLimiter           limiter.Store
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
@@ -129,6 +130,7 @@ type ArgoServerOpts struct {
 	EventAsyncDispatch       bool
 	XFrameOptions            string
 	AccessControlAllowOrigin string
+	CSS                      string
 	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
 }
@@ -200,6 +202,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		eventAsyncDispatch:       opts.EventAsyncDispatch,
 		xframeOptions:            opts.XFrameOptions,
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
+		css:                      opts.CSS,
 		apiRateLimiter:           store,
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
@@ -512,7 +515,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		promhttp.Handler().ServeHTTP(w, r)
 	})
 	// we only enable HTST if we are secure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions, as.accessControlAllowOrigin, ui.Embedded, as.css).ServerFiles)
 	return handler
 }
 

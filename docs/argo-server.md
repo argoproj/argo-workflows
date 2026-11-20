@@ -65,6 +65,34 @@ See [TLS](tls.md).
 See [SSO](argo-server-sso.md).
 See [here](argo-server-sso-argocd.md) about sharing Argo CD's Dex with Argo Workflows.
 
+### Custom CSS
+
+> v4.2 and after
+
+You can customize the UI, for example with your own colors and logo, with a CSS file.
+Set the `--css-file` flag or the `ARGO_CSS_FILE` environment variable to the path of the file, for example in a mounted `ConfigMap`.
+The Argo Server reads the file when it starts, and adds it to every page of the UI, including the login page.
+Your CSS comes after the styles of the UI, so your rules override UI rules of the same specificity.
+
+The Content Security Policy of the UI only allows images from the Argo Server and `data:` URLs, so embed your images as `data:` URLs:
+
+```css
+/* the background of the login page */
+.login {
+    background: #2c2b4e;
+}
+
+/* the logo on the login page and in the navigation bar */
+.login__logo img,
+.nav-bar__logo img {
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f60'/%3E%3C/svg%3E");
+}
+```
+
+!!! Warning "Not a stable API"
+    The class names and page structure of the UI can change in any release.
+    Check your CSS when you upgrade.
+
 ## Access the Argo Workflows UI
 
 By default, the Argo UI service is not exposed with an external IP.

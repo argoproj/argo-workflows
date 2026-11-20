@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,12 +21,13 @@ type FilesServer struct {
 	xframeOpts      string
 	corsAllowOrigin string
 	staticAssets    embed.FS
+	css             string
 }
 
 var baseHRefRegex = regexp.MustCompile(`<base href="(.*?)">`)
 
-func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string, staticAssets embed.FS) *FilesServer {
-	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin, staticAssets}
+func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrigin string, staticAssets embed.FS, css string) *FilesServer {
+	return &FilesServer{baseHRef, hsts, xframeOpts, corsAllowOrigin, staticAssets, css}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +78,9 @@ func (s *FilesServer) getIndexData() ([]byte, error) {
 	if s.baseHRef != "/" && s.baseHRef != "" {
 		data = []byte(replaceBaseHRef(string(data), fmt.Sprintf(`<base href="/%s/">`, strings.Trim(s.baseHRef, "/"))))
 	}
+	if s.css != "" {
+		data = addStyle(data, s.css)
+	}
 
 	return data, nil
 }
@@ -95,4 +100,17 @@ func (s *FilesServer) uiAssetExists(filename string) bool {
 
 func replaceBaseHRef(data string, replaceWith string) string {
 	return baseHRefRegex.ReplaceAllString(data, replaceWith)
+}
+
+// addStyle adds the CSS at the end of the body, after the UI's own styles in the head, so the CSS wins ties.
+func addStyle(data []byte, css string) []byte {
+	// Browsers remove a byte order mark from CSS files but not from a style element, where it breaks the first rule.
+	css = strings.TrimPrefix(css, "\ufeff")
+	// "</" is escaped so the CSS cannot close the style element.
+	style := []byte("<style>" + strings.ReplaceAll(css, "</", `<\/`) + "</style>")
+	i := bytes.LastIndex(data, []byte("</body>"))
+	if i < 0 {
+		return append(data, style...)
+	}
+	return slices.Concat(data[:i], style, data[i:])
 }
