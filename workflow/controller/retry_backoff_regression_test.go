@@ -100,3 +100,62 @@ func TestWithItemsRetryBackoffKeepsDAGRunning(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, dagNode.Phase, "DAG must not fail while a retry is still backing off")
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow must not fail while a retry is still backing off")
 }
+
+var unlimitedRetryBackoffWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: unlimited-retry-backoff
+spec:
+  entrypoint: fail
+  templates:
+  - name: fail
+    retryStrategy:
+      retryPolicy: Always
+      backoff:
+        duration: "10"
+    container:
+      image: alpine:3.23
+      command: [sh, -c, exit 1]
+`
+
+// TestUnlimitedRetryBackoff asserts that a retryStrategy without a limit
+// (retry indefinitely) still waits out its backoff before the next attempt,
+// instead of retrying immediately.
+func TestUnlimitedRetryBackoff(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(unlimitedRetryBackoffWorkflow)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1, "first attempt should be dispatched")
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	attempt := woc.wf.Status.Nodes.FindByDisplayName(wf.Name + "(0)")
+	require.NotNil(t, attempt)
+	attempt.Phase = wfv1.NodeFailed
+	attempt.StartedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+	attempt.FinishedAt = metav1.Time{Time: time.Now()}
+	woc.wf.Status.Nodes[attempt.ID] = *attempt
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	retryNode := woc.wf.Status.Nodes.FindByDisplayName(wf.Name)
+	require.NotNil(t, retryNode)
+	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	assert.Equal(t, "Backoff for 10 seconds", retryNode.Message)
+
+	pods, err = listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1, "no new attempt should be dispatched during the backoff window")
+}
