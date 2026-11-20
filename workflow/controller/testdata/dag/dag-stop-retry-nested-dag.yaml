@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: stop-retry-nested-dag
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: work
+        template: inner
+      - name: after
+        template: echo
+        depends: work
+      - name: after2
+        template: echo
+        depends: after
+      - name: after3
+        template: echo
+        depends: after2.Omitted
+  - name: inner
+    dag:
+      tasks:
+      - name: a
+        template: echo
+      - name: b
+        template: sleep
+        withParam: '["1", "2"]'
+      - name: c
+        template: echo
+        depends: b
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "exit 0"]
+  - name: sleep
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "sleep 600"]
