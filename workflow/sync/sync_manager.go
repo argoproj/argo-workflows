@@ -25,9 +25,12 @@ import (
 )
 
 type (
-	NextWorkflow   func(string)
-	GetSyncLimit   func(context.Context, string) (int, error)
-	WorkflowExists func(string) bool
+	NextWorkflow func(string)
+	GetSyncLimit func(context.Context, string) (int, error)
+	// WorkflowActive reports whether a Workflow may still legitimately hold a
+	// synchronization lock. A Workflow that no longer exists cannot, and neither
+	// can one that has completed — see CheckWorkflowExistence.
+	WorkflowActive func(string) bool
 )
 
 type Manager struct {
@@ -36,7 +39,7 @@ type Manager struct {
 	nextWorkflow      NextWorkflow
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
-	workflowExists    WorkflowExists
+	workflowActive    WorkflowActive
 	dbInfo            syncdb.Info
 	queries           syncdb.SyncQueries
 	log               logging.Logger
@@ -62,7 +65,7 @@ const (
 )
 
 // NewLockManager creates a new lock manager
-func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists, ensureDBConnection bool) (*Manager, error) {
+func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowActive WorkflowActive, ensureDBConnection bool) (*Manager, error) {
 	var sessionProxy *sqldb.SessionProxy
 	var err error
 	if config != nil && ensureDBConnection {
@@ -71,10 +74,10 @@ func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, nam
 			return nil, err
 		}
 	}
-	return createLockManager(ctx, sessionProxy, config, getSyncLimit, nextWorkflow, workflowExists), nil
+	return createLockManager(ctx, sessionProxy, config, getSyncLimit, nextWorkflow, workflowActive), nil
 }
 
-func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
+func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowActive WorkflowActive) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -92,7 +95,7 @@ func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, co
 		nextWorkflow:      nextWorkflow,
 		getSyncLimit:      getSyncLimit,
 		syncLimitCacheTTL: syncLimitCacheTTL,
-		workflowExists:    workflowExists,
+		workflowActive:    workflowActive,
 		dbInfo:            dbInfo,
 		queries:           syncdb.NewSyncQueries(sessionProxy, dbInfo.Config),
 		log:               log,
@@ -118,6 +121,14 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 	return fmt.Sprintf("%s/%s", items[0], items[1]), nil
 }
 
+// CheckWorkflowExistence releases locks that no live Workflow can still be holding.
+//
+// It reads holders from the lock itself — the database row, where one is backing the
+// lock — rather than from any Workflow's status. That matters: every other release path
+// (on completion in operate, on delete in releaseAllWorkflowLocks, and ReleaseAll
+// itself) is gated on wf.Status.Synchronization being non-nil, so a lock whose status
+// was never persisted is unreachable from all of them. This is the only path that can
+// recover such a row, which makes it the backstop rather than a tidy-up.
 func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
@@ -142,7 +153,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 			if err != nil {
 				continue
 			}
-			if !sm.workflowExists(wfKey) {
+			if !sm.workflowActive(wfKey) {
 				lock.release(ctx, holderKeys)
 				if err := lock.removeFromQueue(ctx, holderKeys); err != nil {
 					sm.log.WithField("holderKeys", holderKeys).WithError(err).Warn(ctx, "failed to remove from queue")
