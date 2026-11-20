@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Knetic/govaluate"
@@ -55,6 +56,7 @@ type cronWfOperationCtx struct {
 	log             logging.Logger
 	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
+	scheduledTimeMu   sync.RWMutex
 	scheduledTimeFunc ScheduledTimeFunc
 	//nolint: containedctx
 	ctx context.Context
@@ -91,7 +93,24 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 // Run handles the running of a cron workflow
 // It fits the github.com/robfig/cron.Job interface
 func (woc *cronWfOperationCtx) Run() {
-	woc.run(woc.ctx, woc.scheduledTimeFunc(woc.ctx))
+	woc.run(woc.ctx, woc.scheduledTime())
+}
+
+func (woc *cronWfOperationCtx) scheduledTime() time.Time {
+	woc.scheduledTimeMu.RLock()
+	scheduledTimeFunc := woc.scheduledTimeFunc
+	woc.scheduledTimeMu.RUnlock()
+	scheduledRuntime := scheduledTimeFunc(woc.ctx)
+	if scheduledRuntime.IsZero() {
+		return inferScheduledTime(woc.ctx)
+	}
+	return scheduledRuntime
+}
+
+func (woc *cronWfOperationCtx) setScheduledTimeFunc(scheduledTimeFunc ScheduledTimeFunc) {
+	woc.scheduledTimeMu.Lock()
+	woc.scheduledTimeFunc = scheduledTimeFunc
+	woc.scheduledTimeMu.Unlock()
 }
 
 func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Time) {

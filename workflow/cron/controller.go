@@ -211,7 +211,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 			logger.WithError(err).Error(ctx, "could not schedule CronWorkflow")
 			return true
 		}
-		cronWorkflowOperationCtx.scheduledTimeFunc = lastScheduledTimeFunc
+		cronWorkflowOperationCtx.setScheduledTimeFunc(lastScheduledTimeFunc)
 	}
 
 	logger.Info(ctx, "CronWorkflow added")
