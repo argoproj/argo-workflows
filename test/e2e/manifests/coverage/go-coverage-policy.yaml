@@ -1,0 +1,77 @@
+# Applied by Tilt with --coverage=true, for e2e coverage (argoexec built with
+# COVER=true; the cluster from `make k3d-up COVER=true`). Gives every container
+# of every pod in the argo namespace a GOCOVERDIR on a hostPath, so instrumented
+# argoexec processes (init, wait, supervisor, emissary in main, agent, artifact
+# GC) write their counters there on exit. Other processes ignore the variable.
+# Each container gets its own <pod uid>/<container> subdirectory: every process
+# rewrites the meta-data file at startup, and containers sharing a directory race
+# on it and log the error into the container's output.
+# MutatingAdmissionPolicy is GA in Kubernetes 1.36.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: go-coverage
+spec:
+  # a pod the mutation fails on still runs, just without coverage
+  failurePolicy: Ignore
+  reinvocationPolicy: Never
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: argo
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            spec: Object.spec{
+              volumes: [
+                Object.spec.volumes{
+                  name: "go-coverage",
+                  hostPath: Object.spec.volumes.hostPath{path: "/var/lib/go-coverage", type: "Directory"}
+                }
+              ],
+              containers: object.spec.containers.map(c, Object.spec.containers{
+                name: c.name,
+                env: [
+                  Object.spec.containers.env{name: "GOCOVERDIR", value: "/var/run/go-coverage"}
+                ],
+                volumeMounts: [Object.spec.containers.volumeMounts{name: "go-coverage", mountPath: "/var/run/go-coverage", subPathExpr: "$(GO_COVERAGE_POD_UID)/" + c.name}]
+              }),
+              initContainers: has(object.spec.initContainers) ? object.spec.initContainers.map(c, Object.spec.initContainers{
+                name: c.name,
+                env: [
+                  Object.spec.initContainers.env{name: "GOCOVERDIR", value: "/var/run/go-coverage"}
+                ],
+                volumeMounts: [Object.spec.initContainers.volumeMounts{name: "go-coverage", mountPath: "/var/run/go-coverage", subPathExpr: "$(GO_COVERAGE_POD_UID)/" + c.name}]
+              }) : []
+            }
+          }
+    # fieldRef is atomic, which ApplyConfiguration may not set, so the pod UID
+    # that names each container's subdirectory is appended by JSON patch; the
+    # mutation above has given every container an env list
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: >
+          object.spec.containers.map(c, JSONPatch{
+            op: "add",
+            path: "/spec/containers/" + string(object.spec.containers.indexOf(c)) + "/env/-",
+            value: Object.spec.containers.env{name: "GO_COVERAGE_POD_UID", valueFrom: Object.spec.containers.env.valueFrom{fieldRef: Object.spec.containers.env.valueFrom.fieldRef{fieldPath: "metadata.uid"}}}
+          }) +
+          (has(object.spec.initContainers) ? object.spec.initContainers.map(c, JSONPatch{
+            op: "add",
+            path: "/spec/initContainers/" + string(object.spec.initContainers.indexOf(c)) + "/env/-",
+            value: Object.spec.initContainers.env{name: "GO_COVERAGE_POD_UID", valueFrom: Object.spec.initContainers.env.valueFrom{fieldRef: Object.spec.initContainers.env.valueFrom.fieldRef{fieldPath: "metadata.uid"}}}
+          }) : [])
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: go-coverage
+spec:
+  policyName: go-coverage

@@ -87,6 +87,13 @@ GOTEST_FLAGS          ?=
 # when set, the unit `test` target writes a coverage profile to this path (CI uploads it to codecov)
 COVERAGE_PROFILE      ?=
 COVERAGE_DIR          := dist/coverage
+# when true, dist/argo and dist/argoexec are built with -cover, so they write
+# coverage counters to $GOCOVERDIR on exit, and the e2e targets point the CLI's
+# at E2E_COVERAGE_DIR (e2e coverage; see docs/running-locally.md). The controller
+# and server don't handle SIGTERM, so they would never write their counters.
+COVER                 ?= false
+GOBUILD_COVER         := $(if $(filter true,$(COVER)),-cover)
+E2E_COVERAGE_DIR      := dist/e2e-coverage
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -390,9 +397,9 @@ dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
-	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
+	go build $(GOBUILD_COVER) -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 else
-	CGO_ENABLED=0 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
+	CGO_ENABLED=0 go build $(GOBUILD_COVER) -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 endif
 
 argocli-image:
@@ -419,9 +426,9 @@ workflow-controller-image:
 
 dist/argoexec: $(ARGOEXEC_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOBUILD_COVER) -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
-	CGO_ENABLED=0 go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
+	CGO_ENABLED=0 go build $(GOBUILD_COVER) -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
 
 argoexec-image: ## Build the executor image
@@ -857,8 +864,8 @@ k3d: ## Install the pinned k3d to $(GOPATH)/bin if not already present
 	fi
 
 .PHONY: k3d-up
-k3d-up: ## Create the k3d cluster used by Tilt
-	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) ./hack/tilt/k3d-up.sh
+k3d-up: ## Create the k3d cluster used by Tilt (COVER=true also mounts E2E_COVERAGE_DIR for e2e coverage)
+	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) E2E_COVERAGE_DIR=$(if $(filter true,$(COVER)),$(CURDIR)/$(E2E_COVERAGE_DIR)) ./hack/tilt/k3d-up.sh
 
 .PHONY: k3d-down
 k3d-down: ## Delete the k3d cluster used by Tilt
@@ -871,7 +878,7 @@ start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
 	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
 	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
 		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) --base-href=$(BASE_HREF) \
-		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) \
+		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) --coverage=$(COVER) \
 		$(if $(DEBUG),--debug=$(DEBUG))
 
 .PHONY: postgres-cli
@@ -896,7 +903,17 @@ mysql-dump:
 test-cli: ./dist/argo
 
 test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(if $(filter true,$(COVER)),E2E_CLI_GOCOVERDIR=$(CURDIR)/$(E2E_COVERAGE_DIR)/cli) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
+
+# Gather the e2e coverage counters into one profile. Every container (see
+# test/e2e/manifests/coverage) and every CLI call writes to a directory of its
+# own, so concurrent processes never race on the same meta-data file; flatten
+# them, keeping one copy of each binary's meta-data file.
+.PHONY: e2e-coverage.out
+e2e-coverage.out:
+	rm -rf dist/e2e-coverage-merged && mkdir -p dist/e2e-coverage-merged
+	find $(E2E_COVERAGE_DIR) -type f \( -name 'covmeta.*' -o -name 'covcounters.*' \) -exec cp -n -t dist/e2e-coverage-merged {} +
+	go tool covdata textfmt -i=dist/e2e-coverage-merged -o $@
 
 .PHONY: test-%-sdk
 test-%-sdk:
