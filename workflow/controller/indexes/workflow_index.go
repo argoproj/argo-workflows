@@ -57,7 +57,7 @@ func WorkflowSemaphoreKeysIndexFunc(enabled bool) cache.IndexFunc {
 		}
 		wf, err := util.FromUnstructured(un)
 		if err != nil {
-			return nil, err
+			return nil, nil //nolint:nilerr // an index error panics the informer (see indexes.go)
 		}
 		return wf.GetSemaphoreKeys(), nil
 	}
