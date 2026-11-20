@@ -29,6 +29,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := wfc.Config.HotWorkers.Validate(); err != nil {
+		return err
+	}
 	logger.Info(ctx, "Configuration updated")
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.namespaceDefaults = namespacedefaults.New(func() cache.Indexer {
