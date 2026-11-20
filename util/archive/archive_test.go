@@ -3,12 +3,16 @@ package archive
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"crypto/rand"
 	"encoding/hex"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -207,4 +211,104 @@ func TestZipFile(t *testing.T) {
 		err = os.Remove(f.Name())
 		require.NoError(t, err)
 	})
+}
+
+// zipEntries archives sourcePath and returns the entries it produced, keyed by
+// the entry's base name.
+func zipEntries(t *testing.T, sourcePath string) map[string]*zip.File {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	require.NoError(t, ZipToWriter(logging.TestContext(t.Context()), sourcePath, zw))
+	require.NoError(t, zw.Close())
+
+	reader, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	require.NoError(t, err)
+
+	out := make(map[string]*zip.File, len(reader.File))
+	for _, f := range reader.File {
+		out[filepath.Base(f.Name)] = f
+	}
+	return out
+}
+
+// The tar strategy builds its headers with tar.FileInfoHeader, so a tarred
+// artifact keeps its mode and timestamps. zip.Writer.Create builds a header
+// from the name alone, so the zip strategy used to hand back every file as
+// 0666 with a zero timestamp — an archived executable arrived without its exec
+// bit, which is the user-visible half of this.
+func TestZipPreservesModeAndModTime(t *testing.T) {
+	modTime := time.Date(2020, 3, 4, 5, 6, 7, 0, time.UTC)
+
+	newSource := func(t *testing.T) (dir string, script string) {
+		t.Helper()
+		dir = t.TempDir()
+		script = filepath.Join(dir, "run.sh")
+		require.NoError(t, os.WriteFile(script, []byte("#!/bin/sh\necho hi\n"), 0o755))
+		// os.WriteFile applies the process umask, so the perm argument above is
+		// a ceiling, not the mode: under umask 077 the fixture lands at 0700
+		// rather than the 0755 this test asserts on. Chmod ignores the umask,
+		// so the fixture is the same whoever runs it.
+		require.NoError(t, os.Chmod(script, 0o755))
+		require.NoError(t, os.Chtimes(script, modTime, modTime))
+		return dir, script
+	}
+
+	assertEntry := func(t *testing.T, entry *zip.File, source string) {
+		t.Helper()
+		require.NotNil(t, entry)
+
+		// Compare against the mode the file actually has rather than the 0755
+		// it was written with. Windows has no executable bit — os.Chmod there
+		// only toggles the read-only attribute — so the source is 0666 and this
+		// compares 0666 to 0666, while the modification time below still has
+		// teeth on every platform.
+		info, err := os.Stat(source)
+		require.NoError(t, err)
+		if runtime.GOOS != "windows" {
+			require.Equal(t, os.FileMode(0o755), info.Mode().Perm(), "fixture is not 0755, so the comparison below would not cover the group and other bits")
+		}
+		require.Equal(t, info.Mode().Perm(), entry.Mode().Perm(), "the archive must carry the file's mode")
+
+		require.True(t, entry.Modified.Equal(modTime), "modification time = %v, want %v", entry.Modified, modTime)
+		// zip.FileInfoHeader leaves Method at Store; losing compression while
+		// fixing the mode would be a silent regression.
+		require.Equal(t, zip.Deflate, entry.Method, "entries must stay compressed")
+	}
+
+	t.Run("single file", func(t *testing.T) {
+		_, script := newSource(t)
+		assertEntry(t, zipEntries(t, script)["run.sh"], script)
+	})
+
+	t.Run("directory", func(t *testing.T) {
+		dir, script := newSource(t)
+		assertEntry(t, zipEntries(t, dir)["run.sh"], script)
+	})
+}
+
+// Characterization test, not a statement that this is right: zipDir writes a
+// symlink as an entry with no mode and no content, so it extracts as an empty
+// regular file. tar records the target in Linkname instead. Changing that would
+// make argo emit archives whose symlinks an external extractor restores, which
+// is a separate decision from carrying file modes — see TestUnzipMaliciousSymlink
+// in workflow/executor for how argo's own extractor treats them today.
+func TestZipLeavesSymlinksAsEmptyEntriesToday(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink on Windows needs a privilege the runner does not have")
+	}
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "target.txt"), []byte("payload"), 0o644))
+	require.NoError(t, os.Symlink("target.txt", filepath.Join(dir, "link.txt")))
+
+	entry := zipEntries(t, dir)["link.txt"]
+	require.NotNil(t, entry)
+	require.Zero(t, entry.Mode()&os.ModeSymlink, "today the entry is not marked a symlink")
+
+	rc, err := entry.Open()
+	require.NoError(t, err)
+	defer rc.Close()
+	content, err := io.ReadAll(rc)
+	require.NoError(t, err)
+	require.Empty(t, content, "today the entry carries no link target")
 }
