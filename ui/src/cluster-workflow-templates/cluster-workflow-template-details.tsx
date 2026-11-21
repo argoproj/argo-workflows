@@ -10,6 +10,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
+import {getSubmitPrefillSearchParams} from '../shared/get_workflow_params';
 import {historyUrl} from '../shared/history';
 import * as models from '../shared/models';
 import {ClusterWorkflowTemplate, Workflow} from '../shared/models';
@@ -48,19 +49,12 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     );
 
     useEffect(() => {
-        const currentParams = new URLSearchParams(location.search);
-        const extraSearchParams = new URLSearchParams();
-        currentParams.forEach((value, key) => {
-            if (key.startsWith('parameters[') || key === 'entrypoint' || key === 'labels') {
-                extraSearchParams.set(key, value);
-            }
-        });
         history.push(
             historyUrl('cluster-workflow-templates/{name}', {
                 name,
                 sidePanel,
                 tab,
-                extraSearchParams: extraSearchParams.toString() ? extraSearchParams : null
+                extraSearchParams: getSubmitPrefillSearchParams(location.search)
             })
         );
     }, [name, sidePanel, tab]);

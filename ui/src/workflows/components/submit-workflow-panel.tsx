@@ -9,7 +9,7 @@ import {getValueFromParameter, ParametersInput} from '../../shared/components/pa
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {TextInput} from '../../shared/components/text-input';
 import {Context} from '../../shared/context';
-import {getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
+import {getEntrypointFromQuery, getLabelsFromQuery, getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
 import {Artifact, Parameter, Template} from '../../shared/models';
 import {services} from '../../shared/services';
 
@@ -35,23 +35,11 @@ const defaultTemplate: Template = {
 
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const queryParams = new URLSearchParams(props.history.location.search);
-    const getInitialEntrypoint = () => {
-        const urlEntrypoint = queryParams.get('entrypoint');
-        return urlEntrypoint || props.entrypoint || workflowEntrypoint;
-    };
-    const getInitialLabels = () => {
-        const urlLabels = queryParams.get('labels');
-        if (urlLabels) {
-            return urlLabels.split(',').filter(l => l.trim());
-        }
-        return ['submit-from-ui=true'];
-    };
-
-    const [entrypoint, setEntrypoint] = useState(getInitialEntrypoint);
+    const urlEntrypoint = getEntrypointFromQuery(props.history);
+    const [entrypoint, setEntrypoint] = useState(urlEntrypoint || props.entrypoint || workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
-    const [labels, setLabels] = useState(getInitialLabels);
+    const [labels, setLabels] = useState(() => getLabelsFromQuery(props.history));
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadedArtifacts, setUploadedArtifacts] = useState<Record<string, ArtifactUploadResponse>>({});
@@ -91,11 +79,16 @@ export function SubmitWorkflowPanel(props: Props) {
         setWorkflowParameters(updatedParams);
     }, [props.history, setWorkflowParameters]);
     useEffect(() => {
-        const urlEntrypoint = queryParams.get('entrypoint');
         if (urlEntrypoint && urlEntrypoint !== workflowEntrypoint) {
             const selectedTemp = props.templates.find(t => t.name === urlEntrypoint);
             if (selectedTemp?.inputs?.parameters) {
-                setParameters(selectedTemp.inputs.parameters);
+                const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
+                setParameters(
+                    selectedTemp.inputs.parameters.map(param => ({
+                        ...param,
+                        value: templatePropertiesInQuery[param.name] || param.value
+                    }))
+                );
             }
         }
     }, [props.templates]);
