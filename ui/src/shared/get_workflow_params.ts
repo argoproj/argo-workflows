@@ -1,5 +1,7 @@
 import {History} from 'history';
 
+import {Parameter} from './models';
+
 function extractKey(inputString: string): string | null {
     // Use regular expression to match the key within square brackets
     const match = inputString.match(/^parameters\[(.*?)\]$/);
@@ -69,4 +71,21 @@ export function getLabelsFromQuery(history: History): string[] {
         .map(label => label.trim())
         .filter(label => label);
     return labels.length > 0 ? labels : defaultSubmitLabels;
+}
+
+/**
+ * Returns the input parameters of the entrypoint template, prefilled from `parameters[...]` in the query parameters.
+ * Inputs with the same name as a workflow parameter are left out: the workflow parameter already carries that value,
+ * and submitting both would let the template default override the workflow argument.
+ * An empty query value (`parameters[foo]=`) is kept rather than replaced by the template value.
+ */
+export function getEntrypointParametersFromQuery(history: History, templateParameters: Parameter[], workflowParameters: Parameter[]): Parameter[] {
+    const valuesFromQuery = getWorkflowParametersFromQuery(history);
+    const workflowParameterNames = new Set(workflowParameters.map(param => param.name));
+    return templateParameters
+        .filter(param => !workflowParameterNames.has(param.name))
+        .map(param => ({
+            ...param,
+            value: valuesFromQuery[param.name] ?? param.value
+        }));
 }

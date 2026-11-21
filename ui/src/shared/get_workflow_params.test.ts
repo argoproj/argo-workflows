@@ -1,6 +1,6 @@
 import {createBrowserHistory} from 'history';
 
-import {getEntrypointFromQuery, getLabelsFromQuery, getSubmitPrefillSearchParams, getWorkflowParametersFromQuery} from './get_workflow_params';
+import {getEntrypointFromQuery, getEntrypointParametersFromQuery, getLabelsFromQuery, getSubmitPrefillSearchParams, getWorkflowParametersFromQuery} from './get_workflow_params';
 
 describe('get_workflow_params', () => {
     it('should return an empty object when there are no query parameters', () => {
@@ -88,5 +88,33 @@ describe('getLabelsFromQuery', () => {
         expect(getLabelsFromQuery(history)).toEqual(['submit-from-ui=true']);
         history.location.search = '?labels=,';
         expect(getLabelsFromQuery(history)).toEqual(['submit-from-ui=true']);
+    });
+});
+
+describe('getEntrypointParametersFromQuery', () => {
+    const templateParameters = [
+        {name: 'who', value: 'nobody'},
+        {name: 'greeting', default: 'hi'}
+    ];
+
+    it('should prefill template inputs from the URL and keep the template values otherwise', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?parameters[who]=Mason';
+        expect(getEntrypointParametersFromQuery(history, templateParameters, [])).toEqual([
+            {name: 'who', value: 'Mason'},
+            {name: 'greeting', default: 'hi', value: undefined}
+        ]);
+    });
+
+    it('should keep an explicitly empty value from the URL', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?parameters[who]=';
+        expect(getEntrypointParametersFromQuery(history, templateParameters, [])[0]).toEqual({name: 'who', value: ''});
+    });
+
+    it('should leave out inputs that have the same name as a workflow parameter', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?parameters[who]=Mason';
+        expect(getEntrypointParametersFromQuery(history, templateParameters, [{name: 'greeting', value: 'hello'}])).toEqual([{name: 'who', value: 'Mason'}]);
     });
 });
