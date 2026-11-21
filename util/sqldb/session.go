@@ -14,11 +14,15 @@ import (
 	"time"
 
 	"github.com/upper/db/v4"
+	"golang.org/x/sync/singleflight"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
+
+// errSessionProxyClosed is returned once Close has been called.
+var errSessionProxyClosed = errors.New("session proxy is closed")
 
 // SessionProxy is a wrapper for upperdb sessions that provides automatic reconnection
 // on network failures through a With() method pattern.
@@ -35,6 +39,9 @@ type SessionProxy struct {
 	sess   db.Session
 	mu     sync.RWMutex
 	closed bool
+
+	// Callers that fail on the same session share one automatic reconnect.
+	reconnects singleflight.Group
 
 	// Retry configuration
 	maxRetries    int
@@ -117,9 +124,11 @@ func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionPr
 		proxy.retryMultiple = 1.0
 	}
 
-	if err := proxy.connect(ctx); err != nil {
+	sess, err := proxy.dial(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to create initial database session: %w", err)
 	}
+	proxy.sess = sess
 
 	return proxy, nil
 }
@@ -156,7 +165,6 @@ func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error
 				password:          sp.password,
 				dbType:            sp.dbType,
 				sess:              sess,
-				closed:            sp.closed,
 				maxRetries:        sp.maxRetries,
 				baseDelay:         sp.baseDelay,
 				maxDelay:          sp.maxDelay,
@@ -169,7 +177,8 @@ func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error
 	})
 }
 
-func (sp *SessionProxy) connect(ctx context.Context) error {
+// dial opens and pings a new session without touching the current one.
+func (sp *SessionProxy) dial(ctx context.Context) (db.Session, error) {
 	var sess db.Session
 	var err error
 
@@ -181,21 +190,19 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 		// Use direct credentials
 		sess, _, err = CreateDBSessionWithCreds(*sp.dbConfig, sp.username, sp.password)
 	default:
-		return fmt.Errorf("insufficient authentication information provided")
+		return nil, fmt.Errorf("insufficient authentication information provided")
 	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = sess.Ping()
 	if err != nil {
-		return err
+		sess.Close()
+		return nil, err
 	}
-	sp.closed = false
-
-	sp.sess = sess
-	return nil
+	return sess, nil
 }
 
 func (sp *SessionProxy) isNetworkError(err error) bool {
@@ -273,8 +280,8 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 	sp.mu.RLock()
 	if sp.closed {
 		sp.mu.RUnlock()
-		logger.Warn(ctx, "session proxy is closed")
-		return fmt.Errorf("session proxy is closed")
+		logger.Warn(ctx, errSessionProxyClosed.Error())
+		return errSessionProxyClosed
 	}
 
 	sess := sp.sess
@@ -316,39 +323,96 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 // reconnectIfStale reconnects only if the current session is still the
 // same one that produced the error. If another goroutine already
 // reconnected (sp.sess != staleSess), this is a no-op.
+//
+// The reconnect runs outside sp.mu, so other callers keep using the current
+// session meanwhile, and callers that fail on the same session share it. It is
+// not tied to any caller's ctx: each caller waits for it only as long as its
+// own ctx allows.
 func (sp *SessionProxy) reconnectIfStale(ctx context.Context, staleSess db.Session) error {
-	sp.mu.Lock()
-	defer sp.mu.Unlock()
-	if sp.sess != staleSess {
+	sp.mu.RLock()
+	closed, current := sp.closed, sp.sess
+	sp.mu.RUnlock()
+	if closed {
+		return errSessionProxyClosed
+	}
+	if current != staleSess {
 		return nil
 	}
-	return sp.reconnectLocked(ctx)
+	result := sp.reconnects.DoChan("reconnect", func() (any, error) {
+		return nil, sp.replaceSession(context.WithoutCancel(ctx), staleSess)
+	})
+	select {
+	case res := <-result:
+		return res.Err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
-// Reconnect performs reconnection with retry logic and linear backoff
-func (sp *SessionProxy) Reconnect(ctx context.Context) error {
+// replaceSession dials a replacement for staleSess and swaps it in. The old
+// session stays in place until then: its pool redials by itself, and closing
+// it first would leave callers without a session if every attempt fails.
+func (sp *SessionProxy) replaceSession(ctx context.Context, staleSess db.Session) error {
+	sp.mu.RLock()
+	current := sp.sess
+	sp.mu.RUnlock()
+	if current != staleSess {
+		// An earlier reconnect already replaced it.
+		return nil
+	}
+	sess, err := sp.dialWithRetries(ctx)
+	if err != nil {
+		return err
+	}
+
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
-	return sp.reconnectLocked(ctx)
+	if sp.closed {
+		sess.Close()
+		return errSessionProxyClosed
+	}
+	if sp.sess != staleSess {
+		sess.Close()
+		return nil
+	}
+	sp.sess = sess
+	if staleSess != nil {
+		staleSess.Close()
+	}
+	return nil
 }
 
-func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
+// Reconnect replaces the current session with a new one, reopening the proxy
+// if it was closed.
+func (sp *SessionProxy) Reconnect(ctx context.Context) error {
+	sess, err := sp.dialWithRetries(ctx)
+	if err != nil {
+		return err
+	}
+
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+	old, wasClosed := sp.sess, sp.closed
+	sp.sess, sp.closed = sess, false
+	// Close already closed the old session.
+	if old != nil && !wasClosed {
+		old.Close()
+	}
+	return nil
+}
+
+// dialWithRetries dials a new session, retrying network errors with linear backoff.
+func (sp *SessionProxy) dialWithRetries(ctx context.Context) (db.Session, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	var err error
 
 	for attempt := 0; attempt <= sp.maxRetries; attempt++ {
-		// Perform the reconnection attempt
-		// Close the bad connection if it exists
-		if sp.sess != nil {
-			sp.sess.Close()
-			sp.closed = true
-		}
-
-		err = sp.connect(ctx)
+		var sess db.Session
+		sess, err = sp.dial(ctx)
 		if err == nil {
 			logger.WithField("attempt_number", attempt).Info(ctx, "connected to database")
-			return nil
+			return sess, nil
 		}
 		logger.WithField("attempt_number", attempt).Warn(ctx, "failed to connect to database")
 
@@ -364,12 +428,12 @@ func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
 		// Wait before retrying with context cancellation support
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil, ctx.Err()
 		case <-time.After(delay):
 		}
 	}
 
-	return fmt.Errorf("reconnection failed after %d retries, last error: %w", sp.maxRetries, err)
+	return nil, fmt.Errorf("reconnection failed after %d retries, last error: %w", sp.maxRetries, err)
 }
 
 // Session returns the underlying session bound to ctx. Use With() for operations that need reconnection.
