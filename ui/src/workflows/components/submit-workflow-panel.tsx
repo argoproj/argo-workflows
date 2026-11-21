@@ -9,7 +9,7 @@ import {getValueFromParameter, ParametersInput} from '../../shared/components/pa
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {TextInput} from '../../shared/components/text-input';
 import {Context} from '../../shared/context';
-import {getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
+import {getEntrypointFromQuery, getLabelsFromQuery, getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
 import {Artifact, Parameter, Template} from '../../shared/models';
 import {services} from '../../shared/services';
 
@@ -35,10 +35,11 @@ const defaultTemplate: Template = {
 
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
+    const urlEntrypoint = getEntrypointFromQuery(props.history);
+    const [entrypoint, setEntrypoint] = useState(urlEntrypoint || props.entrypoint || workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
-    const [labels, setLabels] = useState(['submit-from-ui=true']);
+    const [labels, setLabels] = useState(() => getLabelsFromQuery(props.history));
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadedArtifacts, setUploadedArtifacts] = useState<Record<string, ArtifactUploadResponse>>({});
@@ -77,6 +78,20 @@ export function SubmitWorkflowPanel(props: Props) {
         }));
         setWorkflowParameters(updatedParams);
     }, [props.history, setWorkflowParameters]);
+    useEffect(() => {
+        if (urlEntrypoint && urlEntrypoint !== workflowEntrypoint) {
+            const selectedTemp = props.templates.find(t => t.name === urlEntrypoint);
+            if (selectedTemp?.inputs?.parameters) {
+                const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
+                setParameters(
+                    selectedTemp.inputs.parameters.map(param => ({
+                        ...param,
+                        value: templatePropertiesInQuery[param.name] || param.value
+                    }))
+                );
+            }
+        }
+    }, [props.templates]);
 
     const templates = useMemo(() => {
         return [defaultTemplate].concat(props.templates);
