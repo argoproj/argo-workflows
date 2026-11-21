@@ -6,8 +6,33 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
+
+func TestIgnoredConfigWarnings(t *testing.T) {
+	t.Run("NoWarningByDefault", func(t *testing.T) {
+		assert.Empty(t, ignoredConfigWarnings(&config.Config{}))
+	})
+	t.Run("NoWarningForMetricsConfig", func(t *testing.T) {
+		c := &config.Config{MetricsConfig: config.MetricsConfig{Path: "/metrics", Port: 9090}}
+		assert.Empty(t, ignoredConfigWarnings(c))
+	})
+	t.Run("TelemetryConfigIsIgnored", func(t *testing.T) {
+		for name, telemetryConfig := range map[string]config.MetricsConfig{
+			"Path":    {Path: "/telemetry"},
+			"Port":    {Port: 8081},
+			"Enabled": {Enabled: new(false)},
+		} {
+			t.Run(name, func(t *testing.T) {
+				warnings := ignoredConfigWarnings(&config.Config{TelemetryConfig: telemetryConfig})
+				require.Len(t, warnings, 1)
+				assert.Contains(t, warnings[0], "telemetryConfig")
+				assert.Contains(t, warnings[0], "metricsConfig")
+			})
+		}
+	})
+}
 
 func TestUpdateConfig(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
