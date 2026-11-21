@@ -10,6 +10,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
+import {getSubmitPrefillSearchParams} from '../shared/get_workflow_params';
 import {historyUrl} from '../shared/history';
 import * as models from '../shared/models';
 import {Workflow, WorkflowTemplate} from '../shared/models';
@@ -51,20 +52,13 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
             isFirstRender.current = false;
             return;
         }
-        const currentParams = new URLSearchParams(location.search);
-        const extraSearchParams = new URLSearchParams();
-        currentParams.forEach((value, key) => {
-            if (key.startsWith('parameters[') || key === 'entrypoint' || key === 'labels') {
-                extraSearchParams.set(key, value);
-            }
-        });
         history.push(
             historyUrl('workflow-templates/{namespace}/{name}', {
                 namespace,
                 name,
                 sidePanel,
                 tab,
-                extraSearchParams: extraSearchParams.toString() ? extraSearchParams : null
+                extraSearchParams: getSubmitPrefillSearchParams(location.search)
             })
         );
     }, [namespace, name, sidePanel, tab]);
