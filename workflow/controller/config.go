@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/config"
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -30,6 +32,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		return err
 	}
 	logger.Info(ctx, "Configuration updated")
+	for _, warning := range ignoredConfigWarnings(&wfc.Config) {
+		logger.Warn(ctx, warning)
+	}
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.namespaceDefaults = namespacedefaults.New(func() cache.Indexer {
 		if wfc.typedConfigMapInformer == nil {
@@ -101,6 +106,16 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		WithField("initlessPod", wfc.isInitlessPodEnabled()).
 		Info(ctx, "")
 	return nil
+}
+
+// ignoredConfigWarnings returns a warning for each setting that is present in
+// the configuration but no longer has any effect, so that it does not fail silently.
+func ignoredConfigWarnings(c *config.Config) []string {
+	var warnings []string
+	if !reflect.DeepEqual(c.TelemetryConfig, config.MetricsConfig{}) { //nolint:staticcheck // reads the deprecated field to warn about it
+		warnings = append(warnings, "telemetryConfig is set but ignored: the separate telemetry endpoint was removed in v3.6, use metricsConfig instead")
+	}
+	return warnings
 }
 
 // initDB inits argo DB tables
