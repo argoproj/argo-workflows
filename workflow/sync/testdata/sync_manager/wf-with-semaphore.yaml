@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   semaphores:
+     - configMapKeyRef:
+         name: my-config
+         key: workflow
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]

@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: outputs-result-pn6gb
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - name: a
+        template: group
+      - arguments:
+          parameters:
+          - name: x
+            value: '{{tasks.a.outputs.result}}'
+        depends: a
+        name: b
+        template: verify
+    name: main
+  - containerSet:
+      containers:
+      - args:
+        - -c
+        - |
+          print("hi")
+        image: python:alpine3.23
+        name: main
+    name: group
+  - inputs:
+      parameters:
+      - name: x
+    name: verify
+    script:
+      image: python:alpine3.23
+      source: |
+        assert "{{inputs.parameters.x}}" == "hi"
+status:
+  phase: Running
+  startedAt: "2021-06-24T18:05:35Z"
