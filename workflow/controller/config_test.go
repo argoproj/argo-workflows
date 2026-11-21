@@ -25,13 +25,22 @@ func TestIgnoredConfigWarnings(t *testing.T) {
 			"Enabled": {Enabled: new(false)},
 		} {
 			t.Run(name, func(t *testing.T) {
-				warnings := ignoredConfigWarnings(&config.Config{TelemetryConfig: telemetryConfig})
+				warnings := ignoredConfigWarnings(&config.Config{TelemetryConfig: telemetryConfig}) //nolint:staticcheck // sets the deprecated field on purpose
 				require.Len(t, warnings, 1)
 				assert.Contains(t, warnings[0], "telemetryConfig")
 				assert.Contains(t, warnings[0], "metricsConfig")
 			})
 		}
 	})
+}
+
+func TestUpdateConfigWithIgnoredTelemetryConfig(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	controller.Config.TelemetryConfig = config.MetricsConfig{Path: "/telemetry"} //nolint:staticcheck // sets the deprecated field on purpose
+	require.NoError(t, controller.updateConfig(ctx))
 }
 
 func TestUpdateConfig(t *testing.T) {

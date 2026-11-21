@@ -112,7 +112,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 // the configuration but no longer has any effect, so that it does not fail silently.
 func ignoredConfigWarnings(c *config.Config) []string {
 	var warnings []string
-	if !reflect.DeepEqual(c.TelemetryConfig, config.MetricsConfig{}) {
+	if !reflect.DeepEqual(c.TelemetryConfig, config.MetricsConfig{}) { //nolint:staticcheck // reads the deprecated field to warn about it
 		warnings = append(warnings, "telemetryConfig is set but ignored: the separate telemetry endpoint was removed in v3.6, use metricsConfig instead")
 	}
 	return warnings
