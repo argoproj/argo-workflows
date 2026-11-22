@@ -6,26 +6,26 @@ Workflows often have outputs that are expensive to compute.
 Memoization reduces cost and workflow execution time by recording the result of previously run steps:
 it stores the outputs of a template into a specified cache with a variable key.
 
-All steps can be memoized, whether or not they have outputs.
+You can memoize any step, whether or not it has outputs.
 
 ## Cache Backends
 
 Argo Workflows supports two backends for storing memoization cache entries.
-Both backends scope caches to the controller's namespace, so workflows managed by that controller can share a cache across workflow namespaces.
+Both backends scope caches to the controller's namespace, so workflows that the controller manages can share a cache across workflow namespaces.
 
 ### ConfigMap (default)
 
-By default, cached data is stored in Kubernetes ConfigMaps.
+The controller stores cached data in Kubernetes ConfigMaps by default.
 You can manipulate cache entries through `kubectl` and the Kubernetes API.
-All cache ConfigMaps must have the label `workflows.argoproj.io/configmap-type: Cache` to be used as a cache.
+The controller uses only ConfigMaps with the label `workflows.argoproj.io/configmap-type: Cache` as caches.
 This prevents accidental access to other ConfigMaps in the system.
 
 ### SQL Database
 
 > v4.2 and after
 
-Alternatively, store cache entries in PostgreSQL or MySQL to avoid the 1 MiB ConfigMap size limit.
-The workflow still specifies `memoize.cache.configMap.name`, but SQL uses it as a logical cache name and creates no ConfigMap.
+Alternatively, configure the controller to store cache entries in PostgreSQL or MySQL to avoid the 1 MiB ConfigMap size limit.
+The workflow still specifies `memoize.cache.configMap.name`, but the SQL backend uses it as a logical cache name and creates no ConfigMap.
 
 To enable SQL-backed memoization, add a `memoization` block to `workflow-controller-configmap`.
 These examples use the databases and credential Secrets from the PostgreSQL and MySQL quick-start manifests.
@@ -76,7 +76,7 @@ data:
 
 #### Initialization and configuration changes
 
-SQL entries are stored in `memoization.tableName`, which defaults to `cache_entries`.
+The SQL backend stores entries in the table you specify with `memoization.tableName`, which defaults to `cache_entries`.
 Table names must start with a lowercase letter, contain only lowercase letters, digits or underscores, and be at most 48 characters long.
 The database connection settings remain under `postgresql` or `mysql`.
 
@@ -84,13 +84,14 @@ Only the elected leader connects to and migrates the memoization database, befor
 Standby replicas do not open memoization connection pools or run migrations.
 The leader exits if it cannot initialize the configured database; it does not fall back to ConfigMaps.
 
-A change to `memoization` initializes a replacement backend before publishing it.
-Unrelated configuration edits reuse the existing backend without reconnecting or migrating.
-In-flight operations finish on the previous backend before its connection pool closes.
-Removing `memoization` restores ConfigMap-backed caching; existing entries are not copied between backends.
+When `memoization` changes, the controller initializes a replacement backend before publishing it.
+For unrelated configuration edits, the controller reuses the existing backend without reconnecting or migrating.
+It lets in-flight operations finish on the previous backend before closing the old connection pool.
+When you remove `memoization`, the controller resumes ConfigMap-backed caching.
+It does not copy existing entries between backends.
 
 To manage the schema yourself, set `memoization.skipMigration: true` and apply the SQL in [Database Migrations](database-migrations.md#memoization-database).
-The index is named `<tableName>_i1`, and the migration history table is `<tableName>_schema_history`.
+The controller names the index `<tableName>_i1` and the migration history table `<tableName>_schema_history`.
 If you later enable automatic migrations, the history table must contain the highest completed step in its `schema_version` integer primary-key column, as described on that page.
 
 #### Sharing a database
@@ -105,7 +106,7 @@ Use a separate database or a distinct `memoization.tableName` for each cluster w
 The SQL garbage collector prunes expired entries when the leader starts, then periodically.
 Configure the interval in seconds with `MEMO_CACHE_GC_PERIOD_SECONDS`, which defaults to `86400` (24 hours).
 Set it to `0` or a negative integer to disable both initial and periodic pruning; expired entries still produce cache misses.
-Malformed or overflowing values prevent controller construction, before leader election.
+The controller rejects malformed or overflowing values during construction, before leader election.
 
 ## Using Memoization
 
@@ -154,17 +155,19 @@ spec:
 
 `maxAge` is a duration such as `180s` or `24h`.
 The controller treats entries older than the requesting template's `maxAge` as cache misses.
-The resolved value is saved in node status when the template starts, so completion does not re-evaluate expressions or require the original template to remain available.
+When the template starts, the controller saves the resolved value in node status.
+At completion, it uses that value without re-evaluating expressions or requiring the original template to remain available.
 This also applies to inline templates.
 
-SQL records expiry at save time using that resolved `maxAge`.
-A later request with a shorter `maxAge` can reject an entry before its stored expiry.
-Increasing `maxAge` does not extend an existing SQL entry's stored expiry.
-If `maxAge` is omitted, no age limit applies at lookup, SQL records no expiry, and SQL garbage collection does not remove the entry.
+The SQL backend records expiry at save time using that resolved `maxAge`.
+If a later request specifies a shorter `maxAge`, the controller can reject an entry before its stored expiry.
+If you increase `maxAge`, the SQL backend does not extend an existing entry's stored expiry.
+If you omit `maxAge`, the controller applies no age limit at lookup.
+The SQL backend then records no expiry, so its garbage collector does not remove the entry.
 There is no default TTL.
 
-ConfigMap-backed memoization checks freshness at lookup without storing an expiry timestamp.
-ConfigMap caches retain their existing unused-entry garbage collection, controlled by `CACHE_GC_PERIOD` and `CACHE_GC_AFTER_NOT_HIT_DURATION`.
+The controller checks ConfigMap cache freshness at lookup without storing an expiry timestamp.
+Use `CACHE_GC_PERIOD` and `CACHE_GC_AFTER_NOT_HIT_DURATION` to control the existing unused-entry garbage collection for ConfigMap caches.
 
 [Find a simple example for memoization here](https://github.com/argoproj/argo-workflows/blob/main/examples/memoize-simple.yaml).
 
@@ -172,18 +175,19 @@ ConfigMap caches retain their existing unused-entry garbage collection, controll
     To use the ConfigMap backend, add `create` and `update` to the `configmaps` resource for the appropriate (cluster) roles.
     For a cluster install, update the `argo-cluster-role` cluster role.
     For a namespace install, update the `argo-role` role.
-    This is not required for the SQL backend.
+    The SQL backend does not require these ConfigMap permissions.
 
 ### Cache failures
 
-SQL reads and writes retry transient connection, failover and transaction errors with bounded exponential backoff.
+The SQL cache retries reads and writes after transient connection, failover and transaction errors, using bounded exponential backoff.
 Cancellation stops retries.
-Permanent errors, or transient errors that exhaust retries, are reported to the node rather than treated as cache misses or a reason to use ConfigMaps.
+The controller reports permanent errors and transient errors that exhaust retries to the node.
+It does not treat those errors as cache misses or switch to ConfigMaps.
 
 If the controller cannot save a template's result to the cache, the node ends `Error`.
 This applies to every memoized template, including DAG, Steps, HTTP and plugin templates, on both backends.
 In v4.2, HTTP and plugin nodes also end `Error` on save failure; earlier versions only logged those failures.
-For example, saving can fail if a ConfigMap exceeds 1 MiB or the controller is not allowed to update it.
+For example, saving can fail if a ConfigMap exceeds 1 MiB or the controller lacks permission to update it.
 
 When the controller serves a memoized template from the cache, it still emits the template's metrics (`metrics.prometheus`), with a duration close to zero.
 
