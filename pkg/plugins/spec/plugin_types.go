@@ -25,9 +25,12 @@ type PluginSpec struct {
 }
 
 type Sidecar struct {
-	// AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
-	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty"`
-	Container                    apiv1.Container `json:"container"`
+	// AutomountServiceAccountToken mounts the token for <plugin-name>-executor-plugin.
+	AutomountServiceAccountToken bool `json:"automountServiceAccountToken,omitempty"`
+	// AutomountWorkflowServiceAccountToken is set only by workflow spec conversion.
+	// Plugin manifests and ConfigMaps cannot enable access to the workflow's service account.
+	AutomountWorkflowServiceAccountToken bool            `json:"-"`
+	Container                            apiv1.Container `json:"container"`
 }
 
 func (s Sidecar) Validate() error {

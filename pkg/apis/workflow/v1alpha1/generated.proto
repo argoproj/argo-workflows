@@ -681,7 +681,12 @@ message ExecutorPlugin {
 message ExecutorPluginSidecar {
   // AutomountServiceAccountToken enables mounting the service account token.
   // The service account must be named <plugin-name>-executor-plugin.
+  // Mutually exclusive with automountWorkflowServiceAccountToken.
   optional bool automountServiceAccountToken = 1;
+
+  // AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account.
+  // Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.
+  optional bool automountWorkflowServiceAccountToken = 3;
 
   // Container defines the Kubernetes container specification for the sidecar.
   optional .k8s.io.api.core.v1.Container container = 2;

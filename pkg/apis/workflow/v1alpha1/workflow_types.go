@@ -555,9 +555,13 @@ func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 func (wfs WorkflowSpec) AsExecutorPluginSpec() ([]execplugin.Plugin, error) {
 	plugins := make([]execplugin.Plugin, 0, len(wfs.ExecutorPlugins))
 	for _, plugin := range wfs.ExecutorPlugins {
+		if plugin.Spec.Sidecar.AutomountServiceAccountToken && plugin.Spec.Sidecar.AutomountWorkflowServiceAccountToken {
+			return nil, fmt.Errorf("executor plugin %q: automountServiceAccountToken and automountWorkflowServiceAccountToken cannot both be true", plugin.Name)
+		}
 		sidecar := execplugin.Sidecar{
-			AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
-			Container:                    plugin.Spec.Sidecar.Container,
+			AutomountServiceAccountToken:         plugin.Spec.Sidecar.AutomountServiceAccountToken,
+			AutomountWorkflowServiceAccountToken: plugin.Spec.Sidecar.AutomountWorkflowServiceAccountToken,
+			Container:                            plugin.Spec.Sidecar.Container,
 		}
 
 		if plugin.Name == "" {
@@ -1308,7 +1312,11 @@ type ExecutorPluginSpec struct {
 type ExecutorPluginSidecar struct {
 	// AutomountServiceAccountToken enables mounting the service account token.
 	// The service account must be named <plugin-name>-executor-plugin.
+	// Mutually exclusive with automountWorkflowServiceAccountToken.
 	AutomountServiceAccountToken bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,1,opt,name=automountServiceAccountToken"`
+	// AutomountWorkflowServiceAccountToken mounts a projected token for the workflow's service account.
+	// Only applies to workflow-level plugins. Mutually exclusive with automountServiceAccountToken.
+	AutomountWorkflowServiceAccountToken bool `json:"automountWorkflowServiceAccountToken,omitempty" protobuf:"varint,3,opt,name=automountWorkflowServiceAccountToken"`
 	// Container defines the Kubernetes container specification for the sidecar.
 	Container apiv1.Container `json:"container" protobuf:"bytes,2,opt,name=container"`
 }
