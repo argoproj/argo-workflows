@@ -8,7 +8,7 @@
 
 Hot workers run container and script templates on a pool of long-lived worker pods, instead of creating a pod for each run.
 A template opts in with `pool:`.
-On this page, a task is what a pod would run for one attempt of a pooled node, whether the node is a step or a DAG task, and `{{node.taskName}}` is its name.
+On this page, a task is what a pod would run for one attempt of a pooled node, and `{{node.taskName}}` is its name.
 Each worker pod runs one task at a time, one after another.
 
 Use hot workers for many short tasks, where creating, scheduling and starting a pod takes a large share of each task's time, for example a fan-out of thousands of tasks of a few seconds each, or a frequent CronWorkflow whose tasks are quick.
@@ -141,6 +141,7 @@ These are rejected when you lint or submit the workflow, or when the task is dis
 | `podSpecPatch`, on the template or the workflow | It would patch the pool's pod template, which every task of the pool shares. |
 | A mount of one of the workflow's `volumeClaimTemplates` | The claim is deleted with its workflow, while the pool serves other workflows. |
 | `retryStrategy.affinity` | It changes the pod spec, and so the pool, on every attempt. |
+| An input artifact `path` that isn't absolute | Staging links the artifact into place at its `path`, so every task would fail. A `path` holding a variable is checked once it is substituted. |
 | An input artifact `path` that is an ancestor of a volume mount | Staging the artifact would clear the mounted volume. |
 | An input artifact `path` that is the container's `workingDir`, or holds it | The container runtime creates the `workingDir`, and a pooled task's input path must not exist (see [isolation and security](#isolation-and-security)), so every task would fail. Put the artifact beneath the `workingDir`. |
 | `ARGO_DEBUG_PAUSE_BEFORE`, `ARGO_DEBUG_PAUSE_AFTER` in the container's `env` | A pool's worker pods run every task of the pool, so they can't pause for one. |

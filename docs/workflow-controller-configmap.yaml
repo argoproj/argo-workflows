@@ -579,5 +579,5 @@ data:
     defaultRetentionSeconds: 600
     # The worker pods' termination grace period.
     terminationGracePeriodSeconds: 30
-    # How long before the end of the grace period a stopping worker hands its task back. At least 3, and less than terminationGracePeriodSeconds.
+    # How long before the end of the grace period a stopping worker stops its running task, so it can hand the task back. At least 3, and less than terminationGracePeriodSeconds.
     releaseReserveSeconds: 10
