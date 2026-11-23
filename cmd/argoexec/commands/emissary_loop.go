@@ -244,15 +244,7 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 	ctx, span := cfg.Tracer.StartRunMainContainer(withTaskTraceContext(ctx, spec.Env), taskEnv(spec.Env, common.EnvVarWorkflowName), cfg.Namespace)
 	defer span.End()
 	command, env := spec.Resolve(cfg.Environ)
-	if command, err = onTaskPath(command, env); err != nil {
-		return failed(err)
-	}
 	env = injectTraceParent(ctx, env)
-	// In the task's directory, which the worker removes after the task,
-	// rather than /tmp, where they would outlive it.
-	if command, err = maindriver.OffloadLargeArgs(ctx, command, paths.VarRunArgo); err != nil {
-		return failed(err)
-	}
 	workDir := paths.ContainerDir(common.MainContainerName)
 	if err = poolpod.MakeSharedDir(workDir); err != nil {
 		return failed(fmt.Errorf("create %s: %w", workDir, err))
@@ -275,6 +267,15 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 		}
 	}()
 	if err = isolate(iso, spec.Template, paths.InputArtifacts); err != nil {
+		return failed(err)
+	}
+	// Once the input artifacts are linked: the command can be one of them.
+	if command, err = onTaskPath(command, env); err != nil {
+		return failed(err)
+	}
+	// In the task's directory, which the worker removes after the task,
+	// rather than /tmp, where they would outlive it.
+	if command, err = maindriver.OffloadLargeArgs(ctx, command, paths.VarRunArgo); err != nil {
 		return failed(err)
 	}
 

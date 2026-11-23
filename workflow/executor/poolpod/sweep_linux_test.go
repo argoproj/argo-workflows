@@ -240,6 +240,33 @@ func TestDescendants_AZombieMainThreadWithLiveThreads(t *testing.T) {
 	assert.Equal(t, []process{{pid: 102, start: 4}}, zombies)
 }
 
+// A thread that starts another and exits while the threads are read leaves
+// a thread the first listing missed, so the process hasn't exited.
+func TestThreadsExited_AThreadStartedDuringTheRead(t *testing.T) {
+	dir := fakeProcDir(t, map[int]string{101: fakeStat(101, "threads", "Z", 100, 3)})
+	writeStat(t, filepath.Join(dir, "101", "task", "105"), fakeStat(105, "threads", "Z", 100, 3))
+	fs := procAt(t, dir)
+	listings := 0
+	exited, err := threadsExited(func() (procfs.Procs, error) {
+		threads, err := fs.AllThreads(101)
+		if listings++; listings == 1 {
+			writeStat(t, filepath.Join(dir, "101", "task", "106"), fakeStat(106, "threads", "S", 100, 3))
+		}
+		return threads, err
+	})
+	require.NoError(t, err)
+	assert.False(t, exited)
+	assert.Equal(t, 2, listings)
+}
+
+func TestThreadsExited_EveryThreadAZombie(t *testing.T) {
+	dir := fakeProcDir(t, map[int]string{101: fakeStat(101, "threads", "Z", 100, 3)})
+	writeStat(t, filepath.Join(dir, "101", "task", "105"), fakeStat(105, "threads", "Z", 100, 3))
+	exited, err := exited(procAt(t, dir), 101)
+	require.NoError(t, err)
+	assert.True(t, exited)
+}
+
 // A process that forked and then exited between /proc being listed and its
 // stat being read leaves a child the listing missed, so a pass that finds a
 // zombie it hadn't seen and nothing alive looks again before returning.

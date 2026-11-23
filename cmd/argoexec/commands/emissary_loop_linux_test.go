@@ -355,6 +355,25 @@ func TestLoop_PathInTheImageFailsTheTask(t *testing.T) {
 	}
 }
 
+// A command found on the task's PATH can be an input artifact, which is
+// linked into place before the command is looked up.
+func TestLoop_CommandIsAnInputArtifact(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	bin := filepath.Join(h.image, "bin")
+	require.NoError(t, os.MkdirAll(bin, 0o755))
+	tmpl := &wfv1.Template{Inputs: wfv1.Inputs{Artifacts: wfv1.Artifacts{{Name: "tool", Path: filepath.Join(bin, "tool")}}}}
+	h.start()
+	spec := h.spec("t", tmpl, "")
+	spec.Command, spec.Args = []string{"tool"}, nil
+	spec.Env = append(spec.Env, poolpod.EnvVar{Name: "PATH", Value: bin + string(os.PathListSeparator) + os.Getenv("PATH")})
+	poolpodtest.StageInput(t, h.paths("t").InputArtifacts, "tool", "#!/bin/sh\ntouch \"$OUT/ran\"\n")
+	require.NoError(t, os.Chmod(filepath.Join(h.paths("t").InputArtifacts, "tool"), 0o755))
+	task := h.offer("t", spec, nil)
+	require.Equal(t, exited(0), h.wait(task))
+	assert.FileExists(t, filepath.Join(h.out, "ran"))
+}
+
 // The kubelet's SIGTERM doesn't stop a running task: main finishes it, then
 // exits.
 func TestLoop_SIGTERMDoesNotStopATask(t *testing.T) {
@@ -672,7 +691,7 @@ func TestLoop_FindsTheCommandOnTheTasksPATH(t *testing.T) {
 	h.start()
 	spec := h.spec("path", nil, "")
 	spec.Command, spec.Args = []string{"greet"}, nil
-	spec.Env = append(spec.Env, poolpod.EnvVar{Name: "PATH", Value: bin + ":/usr/bin:/bin"})
+	spec.Env = append(spec.Env, poolpod.EnvVar{Name: "PATH", Value: bin + string(os.PathListSeparator) + os.Getenv("PATH")})
 	task := h.offer("path", spec, nil)
 	require.Equal(t, exited(0), h.wait(task))
 	got, err := os.ReadFile(filepath.Join(h.out, "greeted"))

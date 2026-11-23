@@ -2,6 +2,7 @@ package validate
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -64,6 +65,14 @@ func poolableExceptClaims(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error 
 	for _, art := range tmpl.Inputs.Artifacts {
 		if art.Path == "" {
 			continue
+		}
+		// Staging links each input into place at its absolute path
+		// (poolpod.Isolation), so a relative path fails every task. A path
+		// holding a variable is checked once substituted.
+		if !filepath.IsAbs(art.Path) && !strings.Contains(art.Path, "{{") {
+			return errors.Errorf(errors.CodeBadRequest,
+				"%s.inputs.artifacts.%s.path '%s' isn't absolute, which a pooled template's input path must be",
+				prefix, art.Name, art.Path)
 		}
 		// As init-less pods reject it (see addInputArtifactsVolumes), for the
 		// same reason.

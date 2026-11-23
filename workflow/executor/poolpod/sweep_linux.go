@@ -180,23 +180,40 @@ func descendants(fs procfs.FS, root int) (alive, zombies []process, err error) {
 // is a zombie, has exited. The stat is its main thread's: one that called
 // pthread_exit is a zombie while the process's other threads run on.
 func exited(fs procfs.FS, pid int) (bool, error) {
-	threads, err := fs.AllThreads(pid)
-	if err != nil {
-		return false, err
-	}
-	for _, t := range threads {
-		s, err := statOf(t)
-		if isGone(err) {
-			continue
-		}
+	return threadsExited(func() (procfs.Procs, error) { return fs.AllThreads(pid) })
+}
+
+// threadsExited reports whether every thread that threads lists has exited.
+// A listed thread can start another and exit while the list is read, so it
+// lists the threads again until a listing holds no thread it hadn't seen.
+func threadsExited(threads func() (procfs.Procs, error)) (bool, error) {
+	seen := map[int]bool{}
+	for {
+		listed, err := threads()
 		if err != nil {
 			return false, err
 		}
-		if !s.zombie {
-			return false, nil
+		fresh := false
+		for _, t := range listed {
+			if !seen[t.PID] {
+				seen[t.PID] = true
+				fresh = true
+			}
+			s, err := statOf(t)
+			if isGone(err) {
+				continue
+			}
+			if err != nil {
+				return false, err
+			}
+			if !s.zombie {
+				return false, nil
+			}
+		}
+		if !fresh {
+			return true, nil
 		}
 	}
-	return true, nil
 }
 
 // readStat reads pid's /proc/<pid>/stat.

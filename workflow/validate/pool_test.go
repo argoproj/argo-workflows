@@ -103,6 +103,10 @@ func TestPoolableRejectsUnpoolableFields(t *testing.T) {
 			mountAt("/data/shared")(wf, tmpl)
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
 		}, "templates.pooled.inputs.artifacts.in.path '/data' is an ancestor of volume mount 'data' (/data/shared), which a pooled template can't have"},
+		{"relative input path", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.WorkingDir = "/src"
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}, "templates.pooled.inputs.artifacts.in.path 'in' isn't absolute, which a pooled template's input path must be"},
 		{"input path is the workingDir", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
 			tmpl.Container.WorkingDir = "/src"
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/src", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
@@ -169,6 +173,13 @@ func TestPoolableAllows(t *testing.T) {
 		}},
 		{"input path inside a volume mount", func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
 			mountAt("/data")(wf, tmpl)
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}},
+		{"input path holding a variable", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "{{workflow.name}}/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}},
+		{"absolute input path outside the workingDir", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
+			tmpl.Container.WorkingDir = "/src"
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
 		}},
 		{"input path beneath the workingDir", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
