@@ -673,6 +673,8 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		pod.Spec = *patchedPodSpec
 	}
 
+	addReadOnlyExecutorInitTmpMount(&pod.Spec, execCfg.image)
+
 	// In init-less mode the emissary binary is mounted at /argo-bin via the
 	// argoexec-bin image volume, not copied to /var/run/argo by an init container.
 	// K8s image volumes expose the image's root filesystem as-is.

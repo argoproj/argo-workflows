@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"path"
 	"slices"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -596,6 +598,27 @@ func standardInitContainer(tmpl *wfv1.Template, execCfg execContainerConfig, log
 	ctr := buildExecContainer(common.InitContainerName, tmpl, execCfg)
 	ctr.Command = append([]string{"argoexec", "init"}, logOpts...)
 	return ctr
+}
+
+// addReadOnlyExecutorInitTmpMount runs after podSpecPatch so a workflow can
+// continue using its own /tmp mount, including workarounds for resource templates.
+func addReadOnlyExecutorInitTmpMount(spec *apiv1.PodSpec, executorImage string) {
+	for i := range spec.InitContainers {
+		ctr := &spec.InitContainers[i]
+		if ctr.Name != common.InitContainerName || ctr.Image != executorImage ||
+			ctr.SecurityContext == nil || !ptr.Deref(ctr.SecurityContext.ReadOnlyRootFilesystem, false) {
+			continue
+		}
+		if !slices.ContainsFunc(ctr.VolumeMounts, func(m apiv1.VolumeMount) bool {
+			return path.Clean(m.MountPath) == "/tmp"
+		}) {
+			ctr.VolumeMounts = append(ctr.VolumeMounts, apiv1.VolumeMount{
+				Name:      volumeTmpDir.Name,
+				MountPath: "/tmp",
+				SubPath:   common.InitContainerName,
+			})
+		}
+	}
 }
 
 // newWaitContainer builds the legacy layout's `wait` container, which

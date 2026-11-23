@@ -410,6 +410,69 @@ func TestBuild_InitlessLayout_NoAuxContainer(t *testing.T) {
 	assertInitlessNoAuxContainerShape(t, pod)
 }
 
+func TestBuild_ReadOnlyResourceInitHasWritableTmp(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		readOnly   bool
+		patch      string
+		wantMounts []apiv1.VolumeMount
+	}{
+		{
+			name:     "read-only executor",
+			readOnly: true,
+			wantMounts: []apiv1.VolumeMount{
+				{Name: volumeTmpDir.Name, MountPath: "/tmp", SubPath: common.InitContainerName},
+			},
+		},
+		{
+			name:     "existing workaround uses custom volume",
+			readOnly: true,
+			patch:    `{"initContainers":[{"name":"init","volumeMounts":[{"name":"user-tmp","mountPath":"/tmp"}]}],"volumes":[{"name":"user-tmp","emptyDir":{}}]}`,
+			wantMounts: []apiv1.VolumeMount{
+				{Name: "user-tmp", MountPath: "/tmp"},
+			},
+		},
+		{
+			name: "writable root",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			tmpl := &wfv1.Template{
+				Name: "resource",
+				Resource: &wfv1.ResourceTemplate{
+					Action:   "get",
+					Manifest: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: example\n",
+				},
+			}
+			main := apiv1.Container{
+				Name:    common.MainContainerName,
+				Image:   testStubExecutorImage,
+				Command: []string{"argoexec", "resource", "get"},
+			}
+			pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, newStubDeps())
+			pb.in.execCfg.executor.SecurityContext = &apiv1.SecurityContext{ReadOnlyRootFilesystem: new(tc.readOnly)}
+			pb.in.execWfSpec.PodSpecPatch = tc.patch
+			result, err := pb.build(ctx)
+			require.NoError(t, err)
+			pod := result.Pod
+			init := containerByName(pod.Spec.InitContainers, common.InitContainerName)
+			require.NotNil(t, init)
+			assert.Equal(t, tc.readOnly, *init.SecurityContext.ReadOnlyRootFilesystem)
+			var tmpMounts []apiv1.VolumeMount
+			for _, mount := range init.VolumeMounts {
+				if mount.MountPath == "/tmp" {
+					tmpMounts = append(tmpMounts, mount)
+					assert.True(t, slices.ContainsFunc(pod.Spec.Volumes, func(volume apiv1.Volume) bool {
+						return volume.Name == mount.Name && volume.EmptyDir != nil
+					}))
+				}
+			}
+			assert.Equal(t, tc.wantMounts, tmpMounts)
+		})
+	}
+}
+
 // manifestFromResourceTemplate is a resource template that sources its manifest
 // from an input artifact instead of an inline manifest, without log archiving.
 func manifestFromResourceTemplate() *wfv1.Template {
