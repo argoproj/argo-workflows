@@ -148,7 +148,7 @@ type Config struct {
 
 	// HotWorkers configures hot workers, which will run container and script
 	// templates that set `pool` on pools of long-lived worker pods instead of a
-	// pod for each attempt of a step or DAG task.
+	// pod for each run.
 	// EXPERIMENTAL and not yet functional: leave it off. See
 	// [#16530](https://github.com/argoproj/argo-workflows/issues/16530).
 	HotWorkers *HotWorkersConfig `json:"hotWorkers,omitempty"`
@@ -170,8 +170,8 @@ func (c *InitlessPodConfig) IsEnabled() bool {
 }
 
 // HotWorkersConfig configures pools of long-lived worker pods for templates that
-// set `pool`. A pooled task is one attempt of a step or DAG task whose template
-// sets `pool`. All durations are whole seconds. A setting outside its limits
+// set `pool`. A pooled task is one attempt of a node whose template sets
+// `pool`. All durations are whole seconds. A setting outside its limits
 // makes the workflow controller exit with an error naming it, both when the
 // controller starts and when it reads the changed configmap, so the controller
 // doesn't run until you fix the setting.
