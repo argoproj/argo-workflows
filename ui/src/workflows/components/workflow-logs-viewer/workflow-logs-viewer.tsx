@@ -15,6 +15,7 @@ import {execSpec} from '../../../shared/models';
 import {getPodName, getPooledTaskPodName, getTemplateNameFromNode} from '../../../shared/pod-name';
 import {ScopedLocalStorage} from '../../../shared/scoped-local-storage';
 import {services} from '../../../shared/services';
+import {hasArtifactLogs} from '../../../shared/services/workflows-service';
 import {useLocalStorage} from '../../../shared/use-local-storage';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 import {extractJsonValue, JsonLogsFieldSelector, SelectedJsonFields} from './json-logs-field-selector';
@@ -122,6 +123,8 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     const node = workflow.status.nodes[nodeId];
     // a pooled node has no pod of its own to link to
     const selectedPooled = !!podName && !!node?.pooledTask;
+    // a pooled node's logs are only archived ones, which can arrive after its phase changes: reload when they do
+    const pooledLogsArchived = selectedPooled && !!hasArtifactLogs(workflow, nodeId, selectedContainer);
 
     useEffect(() => {
         setError(null);
@@ -173,7 +176,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         );
         setLogsObservable(source);
         return () => subscription.unsubscribe();
-    }, [workflow.metadata.namespace, workflow.metadata.name, podName, nodeId, selectedContainer, grep, archived, selectedJsonFields, timezone]);
+    }, [workflow.metadata.namespace, workflow.metadata.name, podName, nodeId, selectedContainer, grep, archived, selectedJsonFields, timezone, pooledLogsArchived]);
 
     useEffect(() => {
         if (!node || !node.templateRef) {

@@ -94,6 +94,26 @@ describe('WorkflowLogsViewer', () => {
         expect(fromArtifact).toHaveBeenCalledTimes(1);
     });
 
+    it('reloads a pooled pod when its archived logs arrive', async () => {
+        const runningPooledNode = {...pooledNode, phase: 'Running', outputs: undefined} as NodeStatus;
+        const running = {...workflow, status: {...workflow.status, nodes: {...workflow.status.nodes, [pooledNode.id]: runningPooledNode}}} as Workflow;
+        jest.spyOn(services.workflows, 'get').mockResolvedValue(running);
+        const viewer = (wf: Workflow) => (
+            <Context.Provider value={{popup: {}} as ContextApis}>
+                <WorkflowLogsViewer workflow={wf} initialNodeId={pooledNode.id} initialPodName='my-wf-work-456' container='main' archived={false} />
+            </Context.Provider>
+        );
+        const {rerender} = render(viewer(running));
+        await screen.findByText(/its logs are archived when it finishes/);
+        expect(fromArtifact).not.toHaveBeenCalled();
+
+        // the same pod and node, now with main's logs archived
+        jest.spyOn(services.workflows, 'get').mockResolvedValue(workflow);
+        rerender(viewer(workflow));
+
+        await waitFor(() => expect(fromArtifact).toHaveBeenCalledWith(workflow, 'my-wf-456', 'main', '', false));
+    });
+
     it.each([
         ['a pod', podNode, 'my-wf-work-123', true],
         ['a pooled pod', pooledNode, 'my-wf-work-456', false]
