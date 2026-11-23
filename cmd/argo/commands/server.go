@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"reflect"
@@ -92,7 +91,7 @@ See %s`, help.ArgoServer()),
 				Kubernetes: kubernetes.NewForConfigOrDie(config),
 				Workflow:   wfclientset.NewForConfigOrDie(config),
 			}
-			ctx, cancel := context.WithCancel(ctx)
+			ctx, cancel := cmdutil.ShutdownContext(ctx)
 			defer cancel()
 
 			if !namespaced && managedNamespace != "" {

@@ -93,8 +93,8 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			// start a controller on instances of our custom resource
-			ctx, cancel := context.WithCancel(ctx)
+			// start a controller on instances of our custom resource, until SIGTERM/SIGINT
+			ctx, cancel := cmdutil.ShutdownContext(ctx)
 			defer cancel()
 
 			version := argo.GetVersion()
