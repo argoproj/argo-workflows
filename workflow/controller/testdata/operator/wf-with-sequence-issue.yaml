@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: withsequence-expr-test-
+spec:
+  entrypoint: start
+  templates:
+    - name: start
+      inputs:
+        parameters:
+          - name: someInt
+            value: "12"
+      steps:
+        - - name: create-sequence
+            template: print-argument
+            arguments:
+              parameters:
+                - name: arg
+                  value: "{{= int(item) + int(inputs.parameters.someInt) }}"
+            withSequence:
+              count: "2"
+    - name: print-argument
+      inputs:
+        parameters:
+          - name: arg
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["{{inputs.parameters.arg}}"]
+  ttlStrategy:
+    secondsAfterCompletion: 300
+  podGC:
+    strategy: OnPodCompletion

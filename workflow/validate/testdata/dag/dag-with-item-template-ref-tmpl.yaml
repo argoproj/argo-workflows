@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: 363-test-tmp
+  namespace: default
+spec:
+  templates:
+    - name: 363-test-tmp
+      nodeSelector:
+        nodegroup: arm-spot
+      inputs:
+        parameters:
+          - name: path
+          - name: service
+          - name: build_arg
+          - name: run_on
+          - name: arch
+          - name: docker_org
+      container:
+        image: alpine
+        command:
+          - sh
+          - -c
+          - |
+            echo "path: {{inputs.parameters.path}}"
+            echo "service: {{inputs.parameters.service}}"
+            echo "build_arg: {{inputs.parameters.build_arg}}"
+            echo "run_on: {{inputs.parameters.run_on}}"
+            echo "arch: {{inputs.parameters.arch}}"
+            echo "docker_org: {{inputs.parameters.docker_org}}"

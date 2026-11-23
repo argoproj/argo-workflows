@@ -314,8 +314,9 @@ type kubectlRunner func(ctx context.Context, args ...string) ([]byte, error)
 // caller of ReportOutputs.
 var kubectlRunnerFn kubectlRunner = runKubectl
 
-// SaveResourceParameters will save any resource output parameters
-func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
+// SaveResourceParameters will save any resource output parameters. final
+// says whether this is the task's last report; see ReportOutputs.
+func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string, final bool) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if len(we.capturedOutputs().Parameters) == 0 {
 		logger.Info(ctx, "No output parameters")
@@ -324,7 +325,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 	if err := we.saveResourceParameters(ctx, resourceNamespace, resourceName, kubectlRunnerFn); err != nil {
 		return err
 	}
-	return we.ReportOutputs(ctx, nil)
+	return we.ReportOutputs(ctx, nil, final)
 }
 
 // saveResourceParameters resolves the resource template's output parameters. The resource is read
