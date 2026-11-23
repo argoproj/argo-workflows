@@ -42,7 +42,7 @@
             # renovate: datasource=go depName=google.golang.org/grpc/cmd/protoc-gen-go-grpc
             protocGenGoGrpc = "1.5.1";
             # renovate: datasource=go depName=github.com/grpc-ecosystem/grpc-gateway/v2
-            grpcGateway = "2.30.0";
+            grpcGateway = "2.34.0";
             kubeOpenapi = "0.0.0-20220124234850-424119656bbf";
             goSwagger = "0.33.1";
             goimports = "0.35.0";
@@ -160,19 +160,33 @@
               inputs.rust-overlay.overlays.default
               (self: super:
                 let
-                  goPackage = if builtins.hasAttr goPackageAttr super
+                  nixpkgsGo = if builtins.hasAttr goPackageAttr super
                     then builtins.getAttr goPackageAttr super
                     else throw "go.mod requires Go ${goVersion}, but nixpkgs does not provide ${goPackageAttr}";
-                  buildGoModulePackage = if builtins.hasAttr buildGoModuleAttr super
-                    then builtins.getAttr buildGoModuleAttr super
-                    else throw "go.mod requires Go ${goVersion}, but nixpkgs does not provide ${buildGoModuleAttr}";
-                  goVersionMatches = if lib.versions.majorMinor goPackage.version == goMajorMinor && !lib.versionOlder goPackage.version goVersion
-                    then true
-                    else throw "go.mod requires Go ${goVersion}; nixpkgs ${goPackageAttr} provides ${goPackage.version}, which must be ${goMajorMinor}.x and not older than ${goVersion}";
+                  # Go patch releases reach nixpkgs via staging, so they can lag
+                  # go.mod by weeks. Until one lands, build goVersion from source
+                  # with nixpkgs' own derivation (same patches and build steps).
+                  goPackage =
+                    if lib.versions.majorMinor nixpkgsGo.version != goMajorMinor
+                    then throw "go.mod requires Go ${goVersion}; nixpkgs ${goPackageAttr} provides ${nixpkgsGo.version}, which is not ${goMajorMinor}.x"
+                    else if lib.versionOlder nixpkgsGo.version goVersion
+                    then nixpkgsGo.overrideAttrs {
+                      version = goVersion;
+                      src = super.fetchurl {
+                        url = "https://go.dev/dl/go${goVersion}.src.tar.gz";
+                        hash = argoConfig.goSrcHash;
+                      };
+                    }
+                    else nixpkgsGo;
                 in
                 {
-                  go = if goVersionMatches then goPackage else null;
-                  buildGoModule = if goVersionMatches then buildGoModulePackage else null;
+                  # buildGo<MM>Module is built against buildPackages.go_<M>_<M>,
+                  # so replacing that attribute makes it use goPackage too.
+                  ${goPackageAttr} = goPackage;
+                  go = builtins.getAttr goPackageAttr self;
+                  buildGoModule = if builtins.hasAttr buildGoModuleAttr self
+                    then builtins.getAttr buildGoModuleAttr self
+                    else throw "go.mod requires Go ${goVersion}, but nixpkgs does not provide ${buildGoModuleAttr}";
                 })
             ];
           };

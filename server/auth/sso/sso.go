@@ -393,7 +393,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		groups = filteredGroups
 	}
-
 	expiry := time.Now().Add(s.expiry)
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{

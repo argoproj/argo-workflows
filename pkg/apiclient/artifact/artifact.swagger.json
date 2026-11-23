@@ -410,7 +410,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": {}
+      "additionalProperties": true
     },
     "google.rpc.Status": {
       "type": "object",
