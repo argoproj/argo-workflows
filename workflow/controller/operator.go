@@ -2249,7 +2249,13 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	if lastChildNode == nil || len(childNodeIds) == 0 {
 		return localScope
 	}
-	localScope[varkeys.Retries.Template()] = strconv.Itoa(len(childNodeIds) - 1)
+	// The last attempt's number, as in handleRetries: a workflow saved by an
+	// older controller can skip a number, so the count can be lower.
+	retries := len(childNodeIds) - 1
+	if n, ok := retryAttemptNum(node.Name, lastChildNode.Name); ok {
+		retries = n
+	}
+	localScope[varkeys.Retries.Template()] = strconv.Itoa(retries)
 
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {

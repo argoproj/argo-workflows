@@ -7390,6 +7390,23 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
 }
 
+// An older controller counted a retried hook as an attempt, so it can have
+// saved attempts (0) and (2). retries must be 2, the last attempt's number.
+func TestBuildRetryStrategyLocalScopeLegacyGap(t *testing.T) {
+	const step = "wf[0].step"
+	nodes := wfv1.Nodes{
+		"step": {ID: "step", Name: step, Type: wfv1.NodeTypeRetry, Children: []string{"a0", "hook", "a2"}},
+		"a0":   {ID: "a0", Name: step + "(0)", Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, NodeFlag: &wfv1.NodeFlag{Retried: true}},
+		"hook": {ID: "hook", Name: step + ".hooks.running", Type: wfv1.NodeTypeRetry, Phase: wfv1.NodeFailed, NodeFlag: &wfv1.NodeFlag{Hooked: true, Retried: true}},
+		"a2":   {ID: "a2", Name: step + "(2)", Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, NodeFlag: &wfv1.NodeFlag{Retried: true}},
+	}
+	retryNode := nodes["step"]
+
+	localScope := buildRetryStrategyLocalScope(&retryNode, nodes)
+
+	assert.Equal(t, "2", localScope[varkeys.Retries.Template()])
+}
+
 const operatorRetryExpressionError = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
