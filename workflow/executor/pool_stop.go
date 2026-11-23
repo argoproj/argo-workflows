@@ -226,22 +226,39 @@ func (we *WorkflowExecutor) poolPrepareContext(ctx context.Context) (context.Con
 	return ctx, cancel
 }
 
+// poolMainTask is the task the worker offered main, as waitPoolMain waits
+// on and stops it (poolpod.Task).
+type poolMainTask interface {
+	WaitMain(ctx context.Context) (poolpod.Status, error)
+	Withdraw() (bool, error)
+	WithdrawOrStop(reason poolpod.StopReason) (withdrew bool, stood poolpod.StopReason, err error)
+}
+
+// Retrying a stop that failed: the first retry is after
+// poolStopRetryInitial, doubling each time to poolStopRetryMax.
+var (
+	poolStopRetryInitial = time.Second
+	poolStopRetryMax     = 30 * time.Second
+)
+
 // stopPoolTask records that the task must stop for stop
 // (recordPoolStop), then makes sure main never starts it, if it hasn't, or
-// else tells main to stop it.
-func (we *WorkflowExecutor) stopPoolTask(ctx context.Context, task poolpod.Task, stop poolStop) {
+// else tells main to stop it. It returns the error when it could do
+// neither, so the caller can try again.
+func (we *WorkflowExecutor) stopPoolTask(ctx context.Context, task poolMainTask, stop poolStop) error {
 	logger := logging.RequireLoggerFromContext(ctx).WithField("stop", stop.String())
 	we.recordPoolStop(ctx, stop)
 	withdrew, reason, err := task.WithdrawOrStop(stop.stopReason())
 	switch {
 	case err != nil:
-		// Main runs the task to its end.
 		logger.WithError(err).Error(ctx, "Failed to stop the task")
+		return err
 	case withdrew:
 		logger.Info(ctx, "Withdrew the task before main took it")
 	default:
 		logger.WithField("reason", reason).Info(ctx, "Stopped the task")
 	}
+	return nil
 }
 
 // recordPoolStop records that the task must stop for stop, unless it
@@ -273,8 +290,10 @@ func (we *WorkflowExecutor) deadlineMessage() string {
 // releases the task at once if main hasn't taken it, and otherwise only if
 // main is still running it once the release is due, at the end of the
 // pod's grace period less the release reserve: a task done by then is
-// collected and reported as usual.
-func (we *WorkflowExecutor) waitPoolMain(ctx context.Context, task poolpod.Task) (poolpod.Status, error) {
+// collected and reported as usual. A task main is already done with is
+// never stopped, and a stop that fails is tried again until main has it
+// or is done with the task.
+func (we *WorkflowExecutor) waitPoolMain(ctx context.Context, task poolMainTask) (poolpod.Status, error) {
 	type waited struct {
 		status poolpod.Status
 		err    error
@@ -286,29 +305,69 @@ func (we *WorkflowExecutor) waitPoolMain(ctx context.Context, task poolpod.Task)
 		status, err := task.WaitMain(waitCtx)
 		done <- waited{status, err}
 	}()
+	// finished takes main's result if it is ready. A select picks at random
+	// among the cases ready, so each reason to stop checks it first: a task
+	// main finished is reported as it ended, not stopped.
+	finished := func() (waited, bool) {
+		select {
+		case w := <-done:
+			return w, true
+		default:
+			return waited{}, false
+		}
+	}
 	deadline, stopDeadline := we.deadlineTimer()
 	defer stopDeadline()
 	stopped, terminated := we.sinkStopped(), we.terminatedChan()
 	// Started once the worker is terminated with main running the task.
 	var releaseTimer *time.Timer
+	// Started when a stop fails, to try it again.
+	var retryTimer *time.Timer
+	retryIn := poolStopRetryInitial
 	defer func() {
-		if releaseTimer != nil {
-			releaseTimer.Stop()
+		for _, t := range []*time.Timer{releaseTimer, retryTimer} {
+			if t != nil {
+				t.Stop()
+			}
 		}
 	}()
-	var release <-chan time.Time
+	var release, retry <-chan time.Time
+	stop := func(s poolStop) {
+		if err := we.stopPoolTask(ctx, task, s); err != nil {
+			if retry == nil {
+				retryTimer = time.NewTimer(retryIn)
+				retry = retryTimer.C
+				retryIn = min(2*retryIn, poolStopRetryMax)
+			}
+			return
+		}
+		if retryTimer != nil {
+			retryTimer.Stop()
+		}
+		retry = nil
+		retryIn = poolStopRetryInitial
+	}
 	for {
 		select {
 		case w := <-done:
 			return w.status, w.err
 		case <-deadline:
 			deadline = nil
-			we.stopPoolTask(ctx, task, poolDeadline)
+			if w, ok := finished(); ok {
+				return w.status, w.err
+			}
+			stop(poolDeadline)
 		case <-stopped:
 			stopped = nil
-			we.stopPoolTask(ctx, task, we.sinkStop())
+			if w, ok := finished(); ok {
+				return w.status, w.err
+			}
+			stop(we.sinkStop())
 		case <-terminated:
 			terminated = nil
+			if w, ok := finished(); ok {
+				return w.status, w.err
+			}
 			if withdrew, err := task.Withdraw(); err == nil && withdrew {
 				logging.RequireLoggerFromContext(ctx).Info(ctx, "Withdrew the task before main took it")
 				we.recordPoolStop(ctx, poolReleased)
@@ -318,7 +377,18 @@ func (we *WorkflowExecutor) waitPoolMain(ctx context.Context, task poolpod.Task)
 			release = releaseTimer.C
 		case <-release:
 			release = nil
-			we.stopPoolTask(ctx, task, poolReleased)
+			if w, ok := finished(); ok {
+				return w.status, w.err
+			}
+			stop(poolReleased)
+		case <-retry:
+			retry = nil
+			if w, ok := finished(); ok {
+				return w.status, w.err
+			}
+			// The reason that stands now, which a later reason may have
+			// overridden since the stop failed.
+			stop(we.poolTask.stop)
 		}
 	}
 }

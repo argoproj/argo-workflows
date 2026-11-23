@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -414,8 +415,13 @@ func (c *consumer) Claim(ctx context.Context, candidate Candidate) (Claimed, err
 		if gone(err) {
 			cause = ErrTaskGone
 		}
-		if delErr := c.store.deleteResult(ctx, ns, name, claim.UID); delErr != nil && !gone(delErr) {
-			return nil, fmt.Errorf("claiming %s/%s: %w; withdrawing the claim: %w", ns, name, cause, delErr)
+		// A claim left in place would hold the task until the worker
+		// restarts, so a failed delete is tried again first.
+		delErr := retry.OnError(retry.DefaultRetry, func(err error) bool { return !gone(err) }, func() error {
+			return c.store.deleteResult(ctx, ns, name, claim.UID)
+		})
+		if delErr != nil && !gone(delErr) {
+			return nil, fmt.Errorf("claiming %s/%s: %w; withdrawing the claim: %w: %w", ns, name, cause, ErrClaimUnsettled, delErr)
 		}
 		logging.RequireLoggerFromContext(ctx).
 			WithFields(logging.Fields{"namespace": ns, "result": name}).

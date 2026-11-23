@@ -326,9 +326,30 @@ var protocolTests = []struct {
 		_, err := b.consumer(testWorker("worker-a")).Claim(logging.TestContext(t.Context()), candidate)
 		b.setFault(nil)
 		require.ErrorIs(t, err, ErrTaskGone)
+		require.ErrorIs(t, err, ErrClaimUnsettled)
 		require.ErrorIs(t, err, errTransient)
 		_, ok := b.result(t, task.Key)
 		assert.True(t, ok, "the claim remains")
+	}},
+	{"ClaimRetriesAFailedWithdrawal", func(t *testing.T, b *backend) {
+		task := testTask("node-1")
+		b.enqueue(t, task)
+		candidate := b.candidate(t, task.Key)
+		b.deleteTaskSet(t, task.Key)
+		var fails atomic.Int32
+		deleteFails := failing("delete", ResourceResults, task.ResultName())
+		b.setFault(func(op Op) error {
+			if err := deleteFails(op); err != nil && fails.Add(1) <= 2 {
+				return err
+			}
+			return nil
+		})
+		_, err := b.consumer(testWorker("worker-a")).Claim(logging.TestContext(t.Context()), candidate)
+		b.setFault(nil)
+		require.ErrorIs(t, err, ErrTaskGone)
+		require.NotErrorIs(t, err, ErrClaimUnsettled)
+		_, ok := b.result(t, task.Key)
+		assert.False(t, ok, "the claim was withdrawn")
 	}},
 	// A create whose response is lost has still made the claim, and nothing
 	// else would run the task: the TaskSet has a result, so it is no

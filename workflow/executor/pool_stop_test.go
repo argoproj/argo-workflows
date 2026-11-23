@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io/fs"
 	"path/filepath"
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -294,4 +296,125 @@ func TestWaitPoolMain_TerminatedBeforeMainTakesIt(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, poolpod.Withdrawn, status.State)
 	assert.Equal(t, poolReleased, we.poolTask.stop)
+}
+
+// fakeMainTask is a task main runs until it is stopped, or that main has
+// already finished, and whose first stops fail.
+type fakeMainTask struct {
+	mu sync.Mutex
+	// finished, if set, is how main had already ended the task.
+	finished *poolpod.Status
+	// failStops is how many stops fail before one works.
+	failStops int
+	stops     []poolpod.StopReason
+	stoppedCh chan struct{}
+	stopOnce  sync.Once
+}
+
+func newFakeMainTask() *fakeMainTask {
+	return &fakeMainTask{stoppedCh: make(chan struct{})}
+}
+
+func (f *fakeMainTask) WaitMain(ctx context.Context) (poolpod.Status, error) {
+	if f.finished != nil {
+		return *f.finished, nil
+	}
+	select {
+	case <-f.stoppedCh:
+		return poolpod.Status{State: poolpod.Exited, ExitCode: 143}, nil
+	case <-ctx.Done():
+		return poolpod.Status{}, ctx.Err()
+	}
+}
+
+// Withdraw reports that main has taken the task.
+func (f *fakeMainTask) Withdraw() (bool, error) { return false, nil }
+
+func (f *fakeMainTask) WithdrawOrStop(reason poolpod.StopReason) (bool, poolpod.StopReason, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.stops = append(f.stops, reason)
+	if len(f.stops) <= f.failStops {
+		return false, "", errors.New("injected")
+	}
+	f.stopOnce.Do(func() { close(f.stoppedCh) })
+	return false, reason, nil
+}
+
+func (f *fakeMainTask) stopCalls() []poolpod.StopReason {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.stops)
+}
+
+// slowStoppingSink is a stoppingSink that waits before it says when the
+// task must stop, so that waitPoolMain's first select finds main's result
+// ready together with the reason to stop.
+type slowStoppingSink struct {
+	stoppingSink
+}
+
+func (s *slowStoppingSink) Stopped() <-chan struct{} {
+	time.Sleep(50 * time.Millisecond)
+	return s.stopped
+}
+
+// A task main has finished is reported as it ended, though a reason to
+// stop it is ready at the same time: a select would otherwise pick either.
+func TestWaitPoolMain_FinishedBeatsAStop(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		setup func(*WorkflowExecutor, *slowStoppingSink)
+	}{
+		{name: "Deadline", setup: func(we *WorkflowExecutor, _ *slowStoppingSink) { we.Deadline = time.Now().Add(-time.Second) }},
+		{name: "Interrupted", setup: func(_ *WorkflowExecutor, s *slowStoppingSink) {
+			s.reason = dispatch.StopInterrupted
+			close(s.stopped)
+		}},
+		// Released at once: the grace period, less the reserve, is over.
+		{name: "Released", setup: func(we *WorkflowExecutor, _ *slowStoppingSink) { we.Terminate() }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// Each attempt, without the check, stops the task half the time.
+			for range 10 {
+				sink := &slowStoppingSink{stoppingSink{stopped: make(chan struct{})}}
+				ctx, we := newPoolExecutor(t, t.TempDir(), "task-1", TaskConfig{NodeID: "node-1"}, sink)
+				tt.setup(we, sink)
+				task := newFakeMainTask()
+				task.finished = &poolpod.Status{State: poolpod.Exited, ExitCode: 0}
+
+				status, err := we.waitPoolMain(ctx, task)
+
+				require.NoError(t, err)
+				assert.Equal(t, *task.finished, status)
+				assert.Equal(t, poolNotStopped, we.poolTask.stop)
+				assert.Empty(t, task.stopCalls())
+				assert.Empty(t, sink.failures)
+			}
+		})
+	}
+}
+
+// A stop that fails is tried again until main has it, and the task fails
+// for its deadline once.
+func TestWaitPoolMain_RetriesAFailedStop(t *testing.T) {
+	initial := poolStopRetryInitial
+	poolStopRetryInitial = 10 * time.Millisecond
+	t.Cleanup(func() { poolStopRetryInitial = initial })
+	sink := &stoppingSink{}
+	ctx, we := newPoolExecutor(t, t.TempDir(), "task-1", TaskConfig{NodeID: "node-1"}, sink)
+	we.Deadline = time.Now().Add(-time.Second)
+	task := newFakeMainTask()
+	task.failStops = 2
+	// Without the retry, main would run the task until this ends.
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	status, err := we.waitPoolMain(ctx, task)
+
+	require.NoError(t, err)
+	assert.Equal(t, poolpod.Status{State: poolpod.Exited, ExitCode: 143}, status)
+	assert.Equal(t, []poolpod.StopReason{poolpod.StopDeadline, poolpod.StopDeadline, poolpod.StopDeadline}, task.stopCalls())
+	assert.Equal(t, poolDeadline, we.poolTask.stop)
+	assert.Equal(t, []string{common.DeadlineExceededMessage}, sink.failures)
 }

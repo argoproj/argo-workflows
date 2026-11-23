@@ -121,9 +121,9 @@ func (s *Source) isStopped() bool {
 // can't be run, such as one without spec.dispatch, is completed as Error.
 // It returns ok=false once the source is stopped, and ctx's error if ctx
 // ends first; a claim made as it is stopped is released. A claim it can
-// neither complete nor release is left incomplete under the worker, so
-// Next returns an error: only the worker's restart, which fails the claims
-// it holds, settles it.
+// neither complete, release nor withdraw is left incomplete under the
+// worker, so Next returns an error: only the worker's restart, which fails
+// the claims it holds, settles it.
 func (s *Source) Next(ctx context.Context) (executor.Task, bool, error) {
 	// Waits end on Stop; claims don't, so a claim is never cut off half made.
 	waitCtx, cancel := context.WithCancel(ctx)
@@ -170,7 +170,9 @@ func (s *Source) Next(ctx context.Context) (executor.Task, bool, error) {
 				continue
 			}
 			if err != nil {
-				if !errorsutil.IsTransientErr(ctx, err) {
+				// However transient, retrying would find the claim taken, by
+				// this worker, and skip the task (ErrClaimLost).
+				if errors.Is(err, dispatch.ErrClaimUnsettled) || !errorsutil.IsTransientErr(ctx, err) {
 					return executor.Task{}, false, err
 				}
 				// Find the candidates afresh.

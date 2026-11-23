@@ -264,7 +264,13 @@ func TestWorker_SIGTERMWhileCollecting(t *testing.T) {
 	h.enqueue(h.task("node-1", wfv1.Template{Outputs: wfv1.Outputs{Artifacts: wfv1.Artifacts{{
 		Name: "a", Path: out, ArtifactLocation: wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{URL: srv.URL + "/a"}},
 	}}}}, `echo artifact > "`+out+`"`))
-	<-uploading
+	select {
+	case <-uploading:
+	case err := <-run.done:
+		require.FailNow(t, "the worker exited before it uploaded the outputs", "%v", err)
+	case <-time.After(loopWait):
+		require.FailNow(t, "the worker never started uploading the outputs")
+	}
 
 	require.NoError(t, run.terminate())
 
