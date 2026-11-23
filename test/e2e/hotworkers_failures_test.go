@@ -337,8 +337,10 @@ func (s *HotWorkersSuite) TestOOMKilled() {
 		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			first := node(t, status, "task(0)")
 			assert.Equal(t, wfv1.NodeFailed, first.Phase, first.Message)
-			// The kubelet kills all of main's container, and the worker
-			// can't read why, so the message isn't the pod's
+			// The kubelet kills all of main's container
+			// (singleProcessOOMKill: false in the e2e kubelet
+			// configuration), and the worker can't read why, so the
+			// message isn't the pod's
 			// OOMKilled (exit code 137), and there is no exit code. What
 			// main logged before it died is archived.
 			assert.Equal(t, "main: the container exited before the task ended", first.Message)
