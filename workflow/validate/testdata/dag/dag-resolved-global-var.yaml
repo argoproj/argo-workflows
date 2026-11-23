@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-global-var-
+spec:
+  entrypoint: unresolved
+  templates:
+  - name: first
+    container:
+      image: alpine:3.23
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+        globalName: global
+  - name: second
+    container:
+      image: alpine:3.23
+      command: [echo, "{{workflow.outputs.parameters.global}}"]
+  - name: unresolved
+    dag:
+      tasks:
+      - name: A
+        template: first
+      - name: B
+        dependencies: [A]
+        template: second

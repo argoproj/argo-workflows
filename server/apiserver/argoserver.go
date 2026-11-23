@@ -14,9 +14,8 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sethvargo/go-limiter"
 	"github.com/sethvargo/go-limiter/httplimit"
@@ -50,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
+	"github.com/argoproj/argo-workflows/v4/server/auth/header"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -110,20 +110,27 @@ type argoServer struct {
 	cache                    *cache.ResourceCache
 	restConfig               *rest.Config
 	maxGRPCMessageSize       int
+	// Headers that must be excluded from WorkflowEventBinding metadata
+	// to prevent exposing trusted authentication credentials and identity claims.
+	excludedHeaders map[string]struct{}
 }
 
 type ArgoServerOpts struct {
-	BaseHRef   string
-	TLSConfig  *tls.Config
-	Namespaced bool
-	Namespace  string
-	Clients    *types.Clients
-	RestConfig *rest.Config
-	AuthModes  auth.Modes
+	BaseHRef                            string
+	TLSConfig                           *tls.Config
+	Namespaced                          bool
+	Namespace                           string
+	Clients                             *types.Clients
+	RestConfig                          *rest.Config
+	AuthModes                           auth.Modes
+	InsecureTrustUnauthenticatedHeaders bool
 	// config map name
-	ConfigName               string
-	ManagedNamespace         string
-	SSONamespace             string
+	ConfigName       string
+	ManagedNamespace string
+	SSONamespace     string
+	// HeaderNamespace is where login-level RBAC rules are looked up for
+	// trusted-header users. Currently the same value as SSONamespace.
+	HeaderNamespace          string
 	HSTS                     bool
 	EventOperationQueueSize  int
 	EventWorkerCount         int
@@ -141,16 +148,68 @@ func getResourceCacheNamespace(managedNamespace string) string {
 	return v1.NamespaceAll
 }
 
+// getExcludedHeaders returns the configured trusted authentication headers
+// that must be excluded from WorkflowEventBinding metadata.
+func getExcludedHeaders(c config.HeaderConfig) map[string]struct{} {
+	headers := []string{
+		c.Issuer.Header,
+		c.Subject.Header,
+		c.Email.Header,
+		c.PreferredUsername.Header,
+		c.Groups.Header,
+	}
+
+	if c.SharedSecret != nil {
+		headers = append(headers, c.SharedSecret.Header)
+	}
+
+	excluded := make(map[string]struct{})
+	for _, h := range headers {
+		if h != "" {
+			excluded[strings.ToLower(h)] = struct{}{}
+		}
+	}
+
+	return excluded
+}
+
+func headersToMetadata(headers http.Header) metadata.MD {
+	md := metadata.MD{}
+	for key, values := range headers {
+		md[strings.ToLower(key)] = values
+	}
+	return md
+}
+
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
+	c, err := configController.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	ssoIf := sso.NullSSO
-	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get(ctx)
+	headerIf := header.NullHeaderAuth
+	excludedHeaders := getExcludedHeaders(c.Header)
+
+	if opts.AuthModes[auth.Header] {
+		headerIf, err = header.New(
+			ctx,
+			c.Header,
+			opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace),
+			opts.InsecureTrustUnauthenticatedHeaders,
+		)
 		if err != nil {
 			return nil, err
 		}
+
+		log.Info(ctx, "Trusted Header authentication enabled")
+	} else {
+		log.Info(ctx, "Trusted Header authentication disabled")
+	}
+	if opts.AuthModes[auth.SSO] {
 		if err = logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
 			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
 		}
@@ -158,16 +217,15 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		if err != nil {
 			return nil, err
 		}
-		if ssoIf.IsRBACEnabled() {
-			// resourceCache is only used for SSO RBAC
-			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
-			resourceCache.Run(ctx.Done())
-		}
 		log.Info(ctx, "SSO enabled")
 	} else {
 		log.Info(ctx, "SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache, envutil.LookupEnvDurationOr(ctx, "ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL", time.Minute))
+	if ssoIf.IsRBACEnabled() || headerIf.IsRBACEnabled() {
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
+		resourceCache.Run(ctx.Done())
+	}
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, headerIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.HeaderNamespace, opts.Namespaced, resourceCache, envutil.LookupEnvDurationOr(ctx, "ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL", time.Minute))
 	if err != nil {
 		return nil, err
 	}
@@ -206,6 +264,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		cache:                    resourceCache,
 		restConfig:               opts.RestConfig,
 		maxGRPCMessageSize:       maxGRPCMessageSize,
+		excludedHeaders:          excludedHeaders,
 	}, nil
 }
 
@@ -296,7 +355,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
 	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
-	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
+	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch, as.excludedHeaders)
 	// The server has no ConfigMap informer, so namespace defaults are listed by label per
 	// request, then layered over the controller-level defaults exactly as the controller
 	// does it.
@@ -387,7 +446,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 		grpc.MaxRecvMsgSize(as.maxGRPCMessageSize),
 		grpc.MaxSendMsgSize(as.maxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		grpc.ChainUnaryInterceptor(
 			grpc_prometheus.UnaryServerInterceptor,
 			grpcutil.LoggerUnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
@@ -395,8 +454,8 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 			as.gatekeeper.UnaryServerInterceptor(),
 			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderUnaryServerInterceptor(argo.GetVersion()),
-		)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		),
+		grpc.ChainStreamInterceptor(
 			grpc_prometheus.StreamServerInterceptor,
 			grpcutil.LoggerStreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
@@ -404,7 +463,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 			as.gatekeeper.StreamServerInterceptor(),
 			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderStreamServerInterceptor(argo.GetVersion()),
-		)),
+		),
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
@@ -441,7 +500,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	mux := http.NewServeMux()
 	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
-	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
+	// The gateway stream forwarder (and anything else downstream) pulls the
+	// logger from the request context, so inject it at the outermost layer.
+	handler := withRequestLogger(log, rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux)))
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(as.maxGRPCMessageSize)),
 	}
@@ -458,15 +519,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
-	// NOTE: if a marshaller option is not supplied, grpc-gateway will default to the jsonpb from
-	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
-	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
-	// we use our own Marshaler
-	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler))
-	gwmux := runtime.NewServeMux(gwMuxOpts,
-		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
-		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
-	)
+	gwmux := newGatewayMux()
 	mustRegisterGWHandler(ctx, infopkg.RegisterInfoServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(ctx, eventpkg.RegisterEventServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(ctx, eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
@@ -503,15 +556,16 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle(logout.LogoutEndpoint, logoutHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
+			md := headersToMetadata(r.Header)
 			for _, c := range r.Cookies() {
 				if c.Name == authcookie.AuthorizationCookieName {
 					md.Append("cookie", c.Value)
 				}
 			}
-			ctx = metadata.NewIncomingContext(ctx, md)
-			if _, err := as.gatekeeper.Context(ctx); err != nil {
-				log.WithError(err).Error(ctx, "failed to authenticate /metrics endpoint")
+
+			requestCtx := metadata.NewIncomingContext(r.Context(), md)
+			if _, err := as.gatekeeper.Context(requestCtx); err != nil {
+				log.WithError(err).Error(requestCtx, "failed to authenticate /metrics endpoint")
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
@@ -623,6 +677,29 @@ func (as *argoServer) validateArtifactDriverImages(ctx context.Context, cfg *con
 
 	log.WithField("driverCount", len(cfg.ArtifactDrivers)).Info(ctx, "Artifact driver validation passed: All configured artifact driver images are present in the server pod")
 	return nil
+}
+
+// withRequestLogger injects the server logger into every HTTP request context.
+// Downstream handlers — in particular the gateway stream forwarder's keepalive
+// goroutine — read it from there.
+func withRequestLogger(log logging.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(logging.WithLogger(r.Context(), log)))
+	})
+}
+
+// newGatewayMux builds the grpc-gateway mux with the server's marshaler and
+// header-matching configuration. Kept as its own function so the gateway
+// round-trip test exercises exactly the production configuration.
+// NOTE: the marshaler must stay encoding/json-based: grpc-gateway's default
+// protojson marshaler ignores MarshalJSON methods, which both our API types and
+// the gateway.MessageV2Of bridge for gogo-generated messages rely on — with
+// protojson, bridged responses would serialize as {}.
+func newGatewayMux() *runtime.ServeMux {
+	return runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler)),
+		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
+	)
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error

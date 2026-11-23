@@ -154,17 +154,39 @@ for o in objs:
         # manifest reshuffle drops them (a silent no-op here would deploy a
         # server with the wrong auth/TLS mode)
         args = container.get('args', [])
-        replaced = {'--auth-mode=': False, '--secure=': False, '--base-href=': False}
-        values = {'--auth-mode=': auth_mode, '--secure=': secure, '--base-href=': base_href}
-        for i in range(len(args)):
-            for prefix in replaced.keys():
-                if args[i].startswith(prefix):
-                    args[i] = prefix + values[prefix]
+        auth_modes = auth_mode.split(',')
+        new_args = []
+        auth_mode_written = False
+        replaced = {'--secure=': False, '--base-href=': False}
+        values = {'--secure=': secure, '--base-href=': base_href}
+        for arg in args:
+            if arg.startswith('--auth-mode='):
+                # Write all requested modes once, at the position of the first --auth-mode=.
+                if not auth_mode_written:
+                    for mode in auth_modes:
+                        new_args.append('--auth-mode=' + mode)
+                    auth_mode_written = True
+                continue
+
+            matched = False
+            for prefix in values:
+                if arg.startswith(prefix):
+                    new_args.append(prefix + values[prefix])
                     replaced[prefix] = True
-        for prefix in replaced.keys():
-            if not replaced[prefix]:
-                args.append(prefix + values[prefix])
-        container['args'] = args
+                    matched = True
+                    break
+            if not matched:
+                new_args.append(arg)
+
+        if not auth_mode_written:
+            for mode in auth_modes:
+                new_args.append('--auth-mode=' + mode)
+
+        for prefix, done in replaced.items():
+            if not done:
+                new_args.append(prefix + values[prefix])
+
+        container['args'] = new_args
         if secure == 'true':
             # the e2e base probes over HTTP; a TLS server needs an HTTPS probe
             probe = container.get('readinessProbe', {})

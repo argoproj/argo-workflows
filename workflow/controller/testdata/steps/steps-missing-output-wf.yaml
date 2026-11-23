@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-missing-output
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: produce
+        continueOn:
+          failed: true
+    - - name: consumer
+        template: consume
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{steps.producer.outputs.parameters.out}}"
+      - name: sibling
+        template: run
+    - - name: last
+        template: run
+  - name: produce
+    outputs:
+      parameters:
+      - name: out
+        valueFrom:
+          path: /tmp/out
+    container:
+      image: alpine:3.23
+  - name: consume
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+  - name: run
+    container:
+      image: alpine:3.23

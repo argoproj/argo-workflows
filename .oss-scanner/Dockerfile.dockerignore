@@ -1,0 +1,3 @@
+# Used instead of the repository's .dockerignore when building .oss-scanner/Dockerfile (BuildKit picks up
+# <Dockerfile>.dockerignore). The root .dockerignore is written for release images and drops *.md, *.yaml,
+# docs/, examples/ and other files the scanner needs, so nothing is excluded here.
