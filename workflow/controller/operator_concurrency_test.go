@@ -1311,3 +1311,51 @@ func TestSynchronizationFailedFirstChildReleasesLock(t *testing.T) {
 	assert.True(t, nextHolderFound,
 		"a sibling must have picked up the lock after the holder failed")
 }
+
+// TestMutexNodeKeepsItsMessageUntilTaskResult checks that a pod node holding
+// a mutex, whose pod has failed but whose task result hasn't arrived yet,
+// keeps the message its pod gave it while it waits: re-entering the node
+// to check its lock it still holds mustn't clear how it ended.
+func TestMutexNodeKeepsItsMessageUntilTaskResult(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: mutex-message
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    synchronization:
+      mutexes:
+      - name: test
+    container:
+      image: busybox
+      command: [sh, -c, exit 1]
+`)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	require.NotNil(t, woc.wf.Status.Synchronization, "the mutex is held")
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.wf.Status.MarkTaskResultIncomplete(ctx, woc.wf.NodeID(wf.Name))
+	woc.operate(ctx)
+	node, err := woc.wf.Status.Nodes.Get(woc.wf.NodeID(wf.Name))
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeFailed, node.Phase)
+	require.False(t, node.Fulfilled(), "the node waits for its task result")
+	assert.Equal(t, "Pod failed", node.Message)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	node, err = woc.wf.Status.Nodes.Get(woc.wf.NodeID(wf.Name))
+	require.NoError(t, err)
+	assert.Equal(t, "Pod failed", node.Message, "still, on the next reconcile")
+}

@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: empty-step-group
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - []
+    - - name: hello
+        template: pause
+  - name: pause
+    suspend: {}

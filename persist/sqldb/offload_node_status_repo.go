@@ -29,6 +29,11 @@ type OffloadNodeStatusRepo interface {
 	List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error)
 	ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error)
 	Delete(ctx context.Context, uid, version string) error
+	// DeleteIfOld deletes the offload record only if its updatedat timestamp is
+	// still older than the configured TTL at the time the DELETE executes.  This
+	// prevents GC from removing a record whose timestamp was refreshed by Save()
+	// between ListOldOffloads() and the deletion.
+	DeleteIfOld(ctx context.Context, uid, version string) error
 	IsEnabled() bool
 }
 
@@ -91,13 +96,45 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 	logCtx.Debug(ctx, "Offloading nodes")
 	err = wdc.sessionProxy.With(ctx, func(s db.Session) error {
 		_, insertErr := s.Collection(wdc.tableName).Insert(record)
-		if insertErr != nil {
-			// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
-			// have already written this record
-			if !isDuplicateKeyError(insertErr) {
-				return insertErr
+		if insertErr == nil {
+			return nil
+		}
+
+		if !isDuplicateKeyError(insertErr) {
+			return insertErr
+		}
+
+		logCtx.WithField("err", insertErr).Debug(ctx, "Refreshing timestamp for duplicate offload")
+
+		rs, updateErr := s.SQL().
+			Update(wdc.tableName).
+			Set("updatedat", db.Raw("CURRENT_TIMESTAMP")).
+			Where(db.Cond{"clustername": wdc.clusterName}).
+			And(db.Cond{"uid": uid}).
+			And(db.Cond{"version": version}).
+			Exec()
+
+		if updateErr != nil {
+			return fmt.Errorf("failed to refresh timestamp for existing offload: %w", updateErr)
+		}
+		rowsAffected, updateErr := rs.RowsAffected()
+		if updateErr != nil {
+			return fmt.Errorf("failed to get rows affected after timestamp refresh: %w", updateErr)
+		}
+		if rowsAffected == 0 {
+			// In MySQL (without clientFoundRows=true), an UPDATE that writes the exact same
+			// timestamp value within the same second reports 0 changed rows even though the
+			// row matched and exists. Verify whether the row actually exists before concluding
+			// it disappeared concurrently.
+			exists, existsErr := s.Collection(wdc.tableName).
+				Find(db.Cond{"clustername": wdc.clusterName, "uid": uid, "version": version}).
+				Exists()
+			if existsErr != nil {
+				return fmt.Errorf("failed to check offload record existence: %w", existsErr)
 			}
-			logCtx.WithField("err", insertErr).Debug(ctx, "Ignoring duplicate key error")
+			if !exists {
+				return fmt.Errorf("offload record (uid=%s, version=%s) disappeared during duplicate-save: concurrent GC may have deleted it", uid, version)
+			}
 		}
 		return nil
 	})
@@ -232,6 +269,40 @@ func (wdc *nodeOffloadRepo) Delete(ctx context.Context, uid, version string) err
 			return err
 		}
 		logCtx.WithField("rowsAffected", rowsAffected).Debug(ctx, "Deleted offloaded nodes")
+		return nil
+	})
+}
+
+// DeleteIfOld deletes the offload record only when its updatedat timestamp is
+// still older than the configured TTL at the moment the DELETE executes.  If
+// Save() refreshed the timestamp between ListOldOffloads() and this call, the
+// condition will be false and zero rows will be affected – the record is left
+// intact so that live workflows can still hydrate their node status.
+func (wdc *nodeOffloadRepo) DeleteIfOld(ctx context.Context, uid, version string) error {
+	if uid == "" {
+		return fmt.Errorf("invalid uid")
+	}
+	if version == "" {
+		return fmt.Errorf("invalid version")
+	}
+	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
+	logCtx.Debug(ctx, "Conditionally deleting old offloaded nodes")
+	return wdc.sessionProxy.With(ctx, func(s db.Session) error {
+		rs, err := s.SQL().
+			DeleteFrom(wdc.tableName).
+			Where(db.Cond{"clustername": wdc.clusterName}).
+			And(db.Cond{"uid": uid}).
+			And(db.Cond{"version": version}).
+			And(wdc.oldOffload()).
+			Exec()
+		if err != nil {
+			return err
+		}
+		rowsAffected, err := rs.RowsAffected()
+		if err != nil {
+			return err
+		}
+		logCtx.WithField("rowsAffected", rowsAffected).Debug(ctx, "Conditionally deleted old offloaded nodes")
 		return nil
 	})
 }
