@@ -149,6 +149,7 @@ var poolControllerInputs = map[string]poolInput{
 	"Config.RetentionPolicy":          notPool("controller only"),
 	"Config.NavColor":                 notPool("UI"),
 	"Config.SSO":                      notPool("argo-server"),
+	"Config.Header":                   notPool("argo-server"),
 	"Config.Synchronization":          notPool("controller only"),
 	"Config.ArtifactDrivers":          {class: inputPool, why: "plugin images and timeouts in spec.pool artifactPlugins"},
 	"Config.FailedPodRestart":         notPool("recreates task pods that fail before running; a worker pod holds no task then"),
