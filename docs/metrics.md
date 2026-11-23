@@ -325,7 +325,7 @@ This is not directly controlled by the workflow controller, so it is possible fo
 #### `pool_backlog`
 
 A gauge of the number of pooled tasks waiting for a hot worker.
-A pooled task is one attempt of a step or DAG task whose template runs on a hot worker pool.
+A pooled task is one attempt of a node whose template runs on a hot worker pool.
 Reports, per hot worker pool, the tasks enqueued for the pool that no worker holds a claim on.
 A task a worker released, as when its pod is deleted during scale-down, counts again until another worker claims it.
 A task the controller has ended does not count, even while its worker is still stopping it.
@@ -341,7 +341,7 @@ A pool is reported while it has a pooled task or a Deployment, or, when the pool
 #### `pool_claimed_tasks`
 
 A gauge of the number of pooled tasks claimed by a hot worker and not yet completed.
-A pooled task is one attempt of a step or DAG task whose template runs on a hot worker pool.
+A pooled task is one attempt of a node whose template runs on a hot worker pool.
 Reports, per hot worker pool, the tasks a worker has claimed and not yet reported.
 Each worker pod runs one task at a time, so `pool_claimed_tasks / pool_ready_pods` is the pool's saturation.
 It can briefly exceed 1 while worker pods are being replaced.
