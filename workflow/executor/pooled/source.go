@@ -163,6 +163,12 @@ func (s *Source) Next(ctx context.Context) (executor.Task, bool, error) {
 				}
 			}
 			claimed, err := s.consumer.Claim(ctx, candidate)
+			// First, as it can wrap ErrTaskGone: however transient, retrying
+			// would find the claim taken, by this worker, and skip the task
+			// (ErrClaimLost).
+			if errors.Is(err, dispatch.ErrClaimUnsettled) {
+				return executor.Task{}, false, err
+			}
 			if errors.Is(err, dispatch.ErrClaimLost) || errors.Is(err, dispatch.ErrTaskGone) {
 				logger.WithFields(logging.Fields{"namespace": candidate.Namespace, "taskSet": candidate.TaskSetName()}).
 					WithError(err).Debug(ctx, "Missed a pooled task")
@@ -170,9 +176,7 @@ func (s *Source) Next(ctx context.Context) (executor.Task, bool, error) {
 				continue
 			}
 			if err != nil {
-				// However transient, retrying would find the claim taken, by
-				// this worker, and skip the task (ErrClaimLost).
-				if errors.Is(err, dispatch.ErrClaimUnsettled) || !errorsutil.IsTransientErr(ctx, err) {
+				if !errorsutil.IsTransientErr(ctx, err) {
 					return executor.Task{}, false, err
 				}
 				// Find the candidates afresh.

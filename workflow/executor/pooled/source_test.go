@@ -161,25 +161,33 @@ func TestSourceSkipsATaskGoneAfterTheClaim(t *testing.T) {
 // Next with the error: retrying would find the claim taken, by this worker,
 // and skip the task, which would then wait for the worker's restart.
 func TestSourceReturnsAClaimItCannotWithdraw(t *testing.T) {
-	f := dispatch.NewFake()
-	ts := enqueue(t, f, testTask("node-1"))
-	unavailable := apierr.NewServiceUnavailable("unavailable")
-	f.SetFault(func(op dispatch.Op) error {
-		if (op.Verb == "get" && op.Resource == dispatch.ResourceTaskSets && op.Name == ts.Name) ||
-			(op.Verb == "delete" && op.Resource == dispatch.ResourceResults) {
-			return unavailable
-		}
-		return nil
-	})
-	ctx, cancel := context.WithTimeout(logging.TestContext(t.Context()), 5*time.Second)
-	defer cancel()
+	for name, taskSetErr := range map[string]error{
+		"TaskSet unreadable": apierr.NewServiceUnavailable("unavailable"),
+		"TaskSet gone":       fmt.Errorf("WorkflowTaskSet gone: %w", dispatch.ErrNotFound),
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := dispatch.NewFake()
+			ts := enqueue(t, f, testTask("node-1"))
+			f.SetFault(func(op dispatch.Op) error {
+				switch {
+				case op.Verb == "get" && op.Resource == dispatch.ResourceTaskSets && op.Name == ts.Name:
+					return taskSetErr
+				case op.Verb == "delete" && op.Resource == dispatch.ResourceResults:
+					return apierr.NewServiceUnavailable("unavailable")
+				}
+				return nil
+			})
+			ctx, cancel := context.WithTimeout(logging.TestContext(t.Context()), 5*time.Second)
+			defer cancel()
 
-	_, ok, err := newSource(t, f, testWorker("worker-a")).Next(ctx)
+			_, ok, err := newSource(t, f, testWorker("worker-a")).Next(ctx)
 
-	require.ErrorIs(t, err, dispatch.ErrClaimUnsettled)
-	assert.False(t, ok)
-	_, claimed := result(t, f, "node-1")
-	assert.True(t, claimed, "the claim is left for the worker's restart to fail")
+			require.ErrorIs(t, err, dispatch.ErrClaimUnsettled)
+			assert.False(t, ok)
+			_, claimed := result(t, f, "node-1")
+			assert.True(t, claimed, "the claim is left for the worker's restart to fail")
+		})
+	}
 }
 
 // The claim carries the TaskSet's instance ID label only when the TaskSet
