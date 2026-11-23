@@ -8,7 +8,6 @@ The controller can now store memoization entries in a PostgreSQL or MySQL databa
 The SQL backend removes the 1 MB ConfigMap size limit.
 ConfigMaps remain the default; opt in by adding a `memoization` block to the `workflow-controller-configmap`.
 The SQL backend stores entries in the configured table, which defaults to `cache_entries`.
-Memoization still requires an explicit cache key.
 The SQL backend records an expiry only when the template specifies `memoize.maxAge`; entries without it have no default expiry.
 The leader garbage-collects expired entries at startup and periodically thereafter.
 With either backend, the controller now marks HTTP and plugin nodes `Error` if it cannot save their memoized outputs, instead of only logging the error.
