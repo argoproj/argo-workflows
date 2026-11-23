@@ -1725,6 +1725,15 @@ func TestSemaphoreStatus_LockWaiting_UnchangedHolders(t *testing.T) {
 		assert.Equal(t, []string{"default/other"}, waiting.Holders)
 	})
 
+	t.Run("a changed multi-holder set is a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/a", "default/b"}}},
+		}
+		assert.True(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/a", "default/c"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/a", "default/c"}, waiting.Holders)
+	})
+
 	t.Run("a different lock is a new waiting entry", func(t *testing.T) {
 		ss := &SemaphoreStatus{
 			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},

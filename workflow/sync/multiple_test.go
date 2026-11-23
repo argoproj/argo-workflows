@@ -187,6 +187,77 @@ func TestMultipleMutexLock(t *testing.T) {
 	})
 }
 
+const tripleSemaphoreConfigMap = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: my-config
+data:
+ workflow: "3"
+`
+
+func TestMultipleSemaphoreWaitingUpdate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewClientset()
+	var cm v1.ConfigMap
+	wfv1.MustUnmarshal([]byte(tripleSemaphoreConfigMap), &cm)
+
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
+		WorkflowExistenceFunc, false)
+	require.NoError(t, err)
+
+	const semaphoreSync = `    semaphores:
+      - configMapKeyRef:
+          key: workflow
+          name: my-config
+`
+
+	wfHold1 := templatedWorkflow("hold-one", semaphoreSync)
+	wfHold2 := templatedWorkflow("hold-two", semaphoreSync)
+	wfHold3 := templatedWorkflow("hold-three", semaphoreSync)
+	wfWaiter := templatedWorkflow("waiter", semaphoreSync)
+
+	var status bool
+	var wfUpdate bool
+	var msg, failedLockName string
+
+	for _, wf := range []*wfv1.Workflow{wfHold1, wfHold2, wfHold3} {
+		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.Empty(t, failedLockName)
+		assert.True(t, status)
+		assert.True(t, wfUpdate)
+	}
+
+	status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfWaiter, "", wfWaiter.Spec.Synchronization)
+	require.NoError(t, err)
+	assert.NotEmpty(t, msg)
+	assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
+	assert.False(t, status)
+	assert.True(t, wfUpdate)
+
+	status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfWaiter, "", wfWaiter.Spec.Synchronization)
+	require.NoError(t, err)
+	assert.NotEmpty(t, msg)
+	assert.Equal(t, "default/ConfigMap/my-config/workflow", failedLockName)
+	assert.False(t, status)
+	assert.False(t, wfUpdate)
+
+	syncManager.ReleaseAll(ctx, wfHold1)
+
+	status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wfWaiter, "", wfWaiter.Spec.Synchronization)
+	require.NoError(t, err)
+	assert.Empty(t, msg)
+	assert.Empty(t, failedLockName)
+	assert.True(t, status)
+	assert.True(t, wfUpdate)
+}
+
 const multipleConfigMap = `
 apiVersion: v1
 kind: ConfigMap
