@@ -539,12 +539,12 @@ endif
 $(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.30.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.34.0
 endif
 $(TOOL_PROTOC_GEN_OPENAPIV2): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.30.0
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.34.0
 endif
 $(TOOL_OPENAPI_GEN): Makefile
 # update this in Nix when upgrading it here

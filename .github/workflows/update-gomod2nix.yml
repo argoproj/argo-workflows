@@ -5,9 +5,10 @@ on:
     branches:
       - 'renovate/**' # Only run on Renovate branches
       - 'dependabot/**'
-    paths:
-      - 'go.mod'
-      - 'go.sum'
+    # No paths filter: when Renovate rebases, it rebuilds the branch and drops
+    # the gomod2nix.toml commit. If main didn't change go.mod or go.sum, the
+    # rebased branch's go.mod and go.sum are the same as before the rebase, so
+    # a paths filter would skip that push and leave gomod2nix.toml stale.
 
 permissions:
   contents: write
@@ -18,6 +19,9 @@ env:
 
 jobs:
   gomod2nix:
+    # Our own commit is pushed with the app token, which starts this workflow
+    # again; skip that run.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(nix): update gomod2nix.toml') }}"
     runs-on: ubuntu-26.04
     env:
       HAS_APP: ${{ secrets.GOMOD2NIX_APP_ID != '' }}
@@ -49,7 +53,7 @@ jobs:
         # The dev/nix overlay builds gomod2nix against the Go version pinned in
         # dev/nix/conf.nix (single source of truth, kept in sync with go.mod), so the
         # `go mod download` it runs uses the right toolchain. Installing upstream would
-        # pull gomod2nix's own stale nixpkgs and an older Go, failing on `go 1.27.3`.
+        # pull gomod2nix's own stale nixpkgs and an older Go, failing on `go 1.27.4`.
         run: nix profile install ./dev/nix#gomod2nix
 
       - name: Run gomod2nix

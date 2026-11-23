@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: this-is-part-1
+            template: main2
+    - name: main2
+      steps:
+        - - name: this-is-part-2
+            template: whalesay
+            arguments:
+                parameters:
+                  - name: message
+                    value: "{{node.name}}"
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{ inputs.parameters.message }}"]

@@ -176,6 +176,7 @@ data:
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `FEEDBACK_MODAL`                           | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `GRPC_MESSAGE_SIZE`                        | `string` | `104857600` | Use different GRPC Max message size for Server (supporting huge workflows).                                         |
+| `HEADER_DELEGATE_RBAC_TO_NAMESPACE`        | `bool`   | `false` | Enable [header RBAC namespace delegation](argo-server-header-auth.md#namespace-delegation). |
 | `IP_KEY_FUNC_HEADERS`                      | `string` | `""`    | List of comma separated request headers containing IPs to use for rate limiting. For example, "X-Forwarded-For,X-Real-IP". By default, uses the request's remote IP address.          |
 | `NEW_VERSION_MODAL`                        | `bool`   | `true`  | Show this modal.                                                                                                        |
 | `POD_NAMES`                                | `string` | `v2`    | Whether to have pod names contain the template name (v2) or be the node id (v1) - should be set the same for Controller |

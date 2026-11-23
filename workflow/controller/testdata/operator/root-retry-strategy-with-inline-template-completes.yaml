@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-inline-2bq8s
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 1
+    retryPolicy: OnTransientError
+  templates:
+  - name: main
+    steps:
+    - - name: hello
+        inline:
+          script:
+            command: [python]
+            image: python:alpine
+            source: |
+              print("hello")
+status:
+  nodes:
+    steps-inline-2bq8s:
+      children:
+      - steps-inline-2bq8s-319341924
+      displayName: steps-inline-2bq8s
+      id: steps-inline-2bq8s
+      name: steps-inline-2bq8s
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateName: main
+      templateScope: local/steps-inline-2bq8s
+      type: Retry
+    steps-inline-2bq8s-319341924:
+      children:
+      - steps-inline-2bq8s-552579726
+      displayName: steps-inline-2bq8s(0)
+      id: steps-inline-2bq8s-319341924
+      name: steps-inline-2bq8s(0)
+      nodeFlag:
+        retried: true
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateName: main
+      templateScope: local/steps-inline-2bq8s
+      type: Steps
+    steps-inline-2bq8s-552579726:
+      boundaryID: steps-inline-2bq8s-319341924
+      children:
+      - steps-inline-2bq8s-3183619224
+      displayName: '[0]'
+      id: steps-inline-2bq8s-552579726
+      name: steps-inline-2bq8s(0)[0]
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateScope: local/steps-inline-2bq8s
+      type: StepGroup
+    steps-inline-2bq8s-1818864107:
+      boundaryID: steps-inline-2bq8s-319341924
+      displayName: hello(0)
+      id: steps-inline-2bq8s-1818864107
+      name: steps-inline-2bq8s(0)[0].hello(0)
+      nodeFlag:
+        retried: true
+      phase: Pending
+      startedAt: "2026-02-25T04:45:34Z"
+      taskResultSynced: true
+      templateScope: local/steps-inline-2bq8s
+      type: Pod
+    steps-inline-2bq8s-3183619224:
+      boundaryID: steps-inline-2bq8s-319341924
+      children:
+      - steps-inline-2bq8s-1818864107
+      displayName: hello
+      id: steps-inline-2bq8s-3183619224
+      name: steps-inline-2bq8s(0)[0].hello
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateScope: local/steps-inline-2bq8s
+      type: Retry
+  phase: Running
+  startedAt: "2026-02-25T04:45:34Z"
