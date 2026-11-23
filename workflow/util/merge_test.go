@@ -2,6 +2,7 @@ package util
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -194,6 +195,32 @@ func TestMergeLabelsFrom(t *testing.T) {
 		assert.Equal(t, "PATCH", targetWf.Spec.WorkflowMetadata.LabelsFrom[`bar`].Expression)
 		assert.Equal(t, "BASE", targetWf.Spec.WorkflowMetadata.LabelsFrom[`baz`].Expression)
 	})
+}
+
+// MergeTo is called concurrently with the workflow defaults of the controller as the patch, so it must not write to it.
+func TestMergeToDoesNotChangeThePatch(t *testing.T) {
+	patchWf := wfv1.MustUnmarshalWorkflow("@testdata/merge/patch-hook.yaml")
+	patchWf.Spec.WorkflowMetadata = &wfv1.WorkflowMetadata{LabelsFrom: map[string]wfv1.LabelValueFrom{"foo": {Expression: "PATCH"}}}
+	wantPatch := patchWf.DeepCopy()
+
+	const workers = 32
+	targets := make([]*wfv1.Workflow, workers)
+	errs := make([]error, workers)
+	var wg sync.WaitGroup
+	for i := range workers {
+		targets[i] = wfv1.MustUnmarshalWorkflow("@testdata/merge/base-nil.yaml")
+		wg.Go(func() {
+			errs[i] = MergeTo(patchWf, targets[i])
+		})
+	}
+	wg.Wait()
+
+	assert.Equal(t, wantPatch, patchWf)
+	for i, target := range targets {
+		require.NoError(t, errs[i])
+		assert.Len(t, target.Spec.Hooks, 2)
+		assert.Contains(t, target.Spec.WorkflowMetadata.LabelsFrom, "foo")
+	}
 }
 
 // blockedUserOverrideFields is used by TestAllWorkflowSpecFieldsAccountedFor

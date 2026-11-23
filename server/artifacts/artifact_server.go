@@ -619,8 +619,14 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 			token = cookie.Value
 		}
 	}
-	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{authcookie.AuthorizationMetadataKey: []string{token}})
 
+	md := metadata.MD{}
+	for key, values := range r.Header {
+		md[strings.ToLower(key)] = values
+	}
+	md.Set(authcookie.AuthorizationMetadataKey, token)
+
+	ctx := metadata.NewIncomingContext(r.Context(), md)
 	// Ensure context has a logger for artifact operations
 	if logging.GetLoggerFromContextOrNil(ctx) == nil {
 		ctx = logging.WithLogger(ctx, a.logger)
