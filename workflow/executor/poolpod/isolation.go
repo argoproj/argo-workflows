@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
@@ -117,7 +118,7 @@ func (iso *Isolation) Cleanup() error {
 		return strings.Compare(b, a)
 	}))
 	for _, dir := range dirs {
-		errs = append(errs, removeIfEmpty(dir))
+		errs = append(errs, iso.removeIfEmpty(dir))
 	}
 	iso.paths, iso.dirs = nil, nil
 	return errors.Join(errs...)
@@ -134,14 +135,39 @@ func (iso *Isolation) remove(path string) error {
 	if err := iso.holdsVolume(path, resolved); err != nil {
 		return err
 	}
-	return os.RemoveAll(path)
+	if err := os.RemoveAll(path); err != nil && !errors.Is(err, syscall.ENOTDIR) {
+		return err
+	}
+	// ENOTDIR: the task put a file where a parent would be, so nothing is
+	// at path.
+	return nil
 }
 
-// removeIfEmpty removes dir if it is an empty directory. Anything the task
-// left in it stays, as files written outside volumes persist within a
-// worker pod, and so does dir.
-func removeIfEmpty(dir string) error {
-	err := os.Remove(dir)
+// removeIfEmpty removes dir if it is still an empty directory off a
+// volume. Anything the task left in it stays, as files written outside
+// volumes persist within a worker pod, and so does dir. So does whatever
+// the task put at dir in its place, a file or a symlink, and a dir the task
+// moved onto a volume by replacing a parent with a symlink: os.Remove would
+// unlink a file, and follow a parent symlink into the volume.
+func (iso *Isolation) removeIfEmpty(dir string) error {
+	fi, err := os.Lstat(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !fi.IsDir() {
+		return nil
+	}
+	resolved, _, err := resolve(dir)
+	if err != nil {
+		return err
+	}
+	if iso.onVolume(resolved) {
+		return nil
+	}
+	err = os.Remove(dir)
 	if err == nil || errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}

@@ -207,6 +207,43 @@ func TestCleanup_DoesNotFollowASymlinkIntoAVolume(t *testing.T) {
 
 	require.NoError(t, iso.Cleanup())
 	assert.FileExists(t, filepath.Join(s.vol, "out"))
+	_, err := os.Lstat(s.path("work"))
+	require.NoError(t, err, "the task's symlink is its own, not the directory made for the output")
+}
+
+// A parent directory made for a declared output that the task moved onto a
+// volume, by replacing its parent with a symlink, is the volume's, and
+// stays even when it isn't a directory.
+func TestCleanup_DoesNotRemoveAParentMovedOntoAVolume(t *testing.T) {
+	s := newSandbox(t)
+	iso := s.isolation()
+	require.NoError(t, iso.Reserve(s.path("work", "b", "out")))
+
+	require.NoError(t, os.WriteFile(filepath.Join(s.vol, "b"), []byte("volume"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(s.vol, "empty"), 0o755))
+	require.NoError(t, os.Symlink(s.vol, s.path("work")))
+
+	require.NoError(t, iso.Cleanup())
+	assert.FileExists(t, filepath.Join(s.vol, "b"))
+
+	iso = s.isolation()
+	require.NoError(t, os.Remove(s.path("work")))
+	require.NoError(t, iso.Reserve(s.path("work", "empty", "out")))
+	require.NoError(t, os.Symlink(s.vol, s.path("work")))
+	require.NoError(t, iso.Cleanup())
+	assert.DirExists(t, filepath.Join(s.vol, "empty"), "an empty directory on a volume is the volume's")
+}
+
+// What the task put where a parent directory made for a declared output
+// would have been is its own, and stays.
+func TestCleanup_KeepsAFileWhereAParentWouldBe(t *testing.T) {
+	s := newSandbox(t)
+	iso := s.isolation()
+	require.NoError(t, iso.Reserve(s.path("work", "out")))
+	require.NoError(t, os.WriteFile(s.path("work"), []byte("task"), 0o644))
+
+	require.NoError(t, iso.Cleanup())
+	assert.FileExists(t, s.path("work"))
 }
 
 func TestCleanup_DoesNotRemoveAPathHoldingAVolume(t *testing.T) {

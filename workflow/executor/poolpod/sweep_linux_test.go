@@ -141,18 +141,38 @@ func TestSweep_NothingToSweep(t *testing.T) {
 	require.NoError(t, Sweep(t.Context(), time.Minute))
 }
 
-// fakeProc writes a /proc-like directory with a stat file per entry.
+// fakeProc writes a /proc-like directory with a stat file per entry, each
+// process having one thread, its main thread, with the same stat.
 func fakeProc(t *testing.T, stats map[int]string) procfs.FS {
+	t.Helper()
+	return procAt(t, fakeProcDir(t, stats))
+}
+
+// fakeProcDir is fakeProc's directory.
+func fakeProcDir(t *testing.T, stats map[int]string) string {
 	t.Helper()
 	dir := t.TempDir()
 	for pid, s := range stats {
-		require.NoError(t, os.MkdirAll(filepath.Join(dir, strconv.Itoa(pid)), 0o755))
-		require.NoError(t, os.WriteFile(filepath.Join(dir, strconv.Itoa(pid), "stat"), []byte(s), 0o644))
+		writeStat(t, filepath.Join(dir, strconv.Itoa(pid)), s)
+		writeStat(t, filepath.Join(dir, strconv.Itoa(pid), "task", strconv.Itoa(pid)), s)
 	}
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "self"), 0o755))
+	return dir
+}
+
+// procAt is the /proc-like directory dir.
+func procAt(t *testing.T, dir string) procfs.FS {
+	t.Helper()
 	fs, err := procfs.NewFS(dir)
 	require.NoError(t, err)
 	return fs
+}
+
+// writeStat writes s as dir's stat file.
+func writeStat(t *testing.T, dir, s string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "stat"), []byte(s), 0o644))
 }
 
 // fakeStat is a /proc/<pid>/stat line with the given name, state, parent
@@ -199,9 +219,36 @@ func TestDescendants(t *testing.T) {
 		104: fakeStat(104, "exec'd in", "S", 0, 6),
 		105: fakeStat(105, "init's", "S", 1, 7),
 	})
-	got, err := descendants(dir, 100)
+	alive, zombies, err := descendants(dir, 100)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []process{{pid: 101, start: 3}, {pid: 102, start: 4}}, got)
+	assert.ElementsMatch(t, []process{{pid: 101, start: 3}, {pid: 102, start: 4}}, alive)
+	assert.Equal(t, []process{{pid: 103, start: 5}}, zombies)
+}
+
+// A process whose main thread called pthread_exit reads as a zombie while
+// its other threads run on: it hasn't exited.
+func TestDescendants_AZombieMainThreadWithLiveThreads(t *testing.T) {
+	dir := fakeProcDir(t, map[int]string{
+		101: fakeStat(101, "threads", "Z", 100, 3),
+		102: fakeStat(102, "exited", "Z", 100, 4),
+	})
+	writeStat(t, filepath.Join(dir, "101", "task", "105"), fakeStat(105, "threads", "S", 100, 3))
+
+	alive, zombies, err := descendants(procAt(t, dir), 100)
+	require.NoError(t, err)
+	assert.Equal(t, []process{{pid: 101, start: 3}}, alive)
+	assert.Equal(t, []process{{pid: 102, start: 4}}, zombies)
+}
+
+// A process that forked and then exited between /proc being listed and its
+// stat being read leaves a child the listing missed, so a pass that finds a
+// zombie it hadn't seen and nothing alive looks again before returning.
+func TestSweep_LooksAgainAfterANewZombie(t *testing.T) {
+	dir := fakeProc(t, map[int]string{101: fakeStat(101, "exited", "Z", 100, 3)})
+
+	start := time.Now()
+	require.NoError(t, sweep(t.Context(), dir, 100, 0))
+	assert.GreaterOrEqual(t, time.Since(start), sweepInterval)
 }
 
 func TestSweep_Cancellation(t *testing.T) {
@@ -223,6 +270,16 @@ func TestSweep_Cancellation(t *testing.T) {
 // A process whose pid now has another start time has exited and its pid
 // been reused: the process now holding the pid isn't signalled.
 func TestProcessSignal_SkipsAReusedPid(t *testing.T) {
+	t.Run("Pidfd", testProcessSignalSkipsAReusedPid)
+	// Linux before 5.3 has no pidfds.
+	t.Run("Kill", func(t *testing.T) {
+		pidfdOpen = func(int, int) (int, error) { return -1, unix.ENOSYS }
+		t.Cleanup(func() { pidfdOpen = unix.PidfdOpen })
+		testProcessSignalSkipsAReusedPid(t)
+	})
+}
+
+func testProcessSignalSkipsAReusedPid(t *testing.T) {
 	cmd := exec.CommandContext(t.Context(), "sleep", "300")
 	require.NoError(t, cmd.Start())
 	t.Cleanup(func() {

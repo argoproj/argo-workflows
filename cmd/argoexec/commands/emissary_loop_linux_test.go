@@ -40,6 +40,9 @@ const (
 	loopHelperRootEnv = "GO_EMISSARY_LOOP_ROOT"
 	// loopHelperReserveEnv is the helper's release reserve.
 	loopHelperReserveEnv = "GO_EMISSARY_LOOP_RESERVE"
+	// loopHelperSweepFailsEnv, when set, makes the helper's sweep fail, as
+	// it does when a process SIGKILL can't end outlives the timeout.
+	loopHelperSweepFailsEnv = "GO_EMISSARY_LOOP_SWEEP_FAILS"
 	// loopWait bounds every wait for main.
 	loopWait = 30 * time.Second
 )
@@ -51,10 +54,10 @@ func TestLoopHelper(t *testing.T) {
 	if root == "" {
 		t.Skip("main for the loop tests, run by them in a process of its own")
 	}
-	os.Exit(loopHelper(root, os.Getenv(loopHelperReserveEnv)))
+	os.Exit(loopHelper(root, os.Getenv(loopHelperReserveEnv), os.Getenv(loopHelperSweepFailsEnv) != ""))
 }
 
-func loopHelper(root, reserve string) int {
+func loopHelper(root, reserve string, sweepFails bool) int {
 	releaseReserve, err := time.ParseDuration(reserve)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "bad release reserve:", err)
@@ -67,11 +70,16 @@ func loopHelper(root, reserve string) int {
 		_, _ = fmt.Fprintln(os.Stderr, "tracing:", err)
 		return 2
 	}
+	sweep := poolpod.Sweep
+	if sweepFails {
+		sweep = func(context.Context, time.Duration) error { return errors.New("1 processes still alive") }
+	}
 	err = runLoop(ctx, loopConfig{
 		Base:           loopBase(root),
 		ReleaseReserve: releaseReserve,
 		Environ:        os.Environ(),
 		Driver:         maindriver.Container{},
+		Sweep:          sweep,
 		Tracer:         tracer,
 	})
 	if err != nil {
@@ -105,6 +113,8 @@ type loopHarness struct {
 	// reach, as on a volume.
 	out string
 	log string
+	// sweepFails makes main's sweep fail (loopHelperSweepFailsEnv).
+	sweepFails bool
 
 	main   *exec.Cmd
 	exited chan error
@@ -144,6 +154,9 @@ func (h *loopHarness) start() {
 	defer func() { _ = log.Close() }()
 	main := exec.CommandContext(h.t.Context(), os.Args[0], "-test.run=^TestLoopHelper$")
 	main.Env = append(os.Environ(), loopHelperRootEnv+"="+h.root, loopHelperReserveEnv+"="+h.reserve.String())
+	if h.sweepFails {
+		main.Env = append(main.Env, loopHelperSweepFailsEnv+"=1")
+	}
 	main.Stdout, main.Stderr = log, log
 	require.NoError(h.t, main.Start())
 	exited := make(chan error, 1)
@@ -422,6 +435,22 @@ func TestLoop_StopKillsTheTask(t *testing.T) {
 	})
 }
 
+// A task whose processes main couldn't all kill fails, even with no outputs
+// left unstaged, and main exits rather than run another.
+func TestLoop_FailsATaskWhoseProcessOutlivesIt(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	h.sweepFails = true
+	h.start()
+	task := h.offer("t", h.spec("t", nil, `true`), nil)
+
+	s := h.wait(task)
+	assert.Equal(t, poolpod.Exited, s.State)
+	assert.Equal(t, loopExitCodeMainFailed, s.ExitCode)
+	assert.Contains(t, s.Message, "still running")
+	require.Error(t, h.waitExit(loopWait))
+}
+
 // A task the worker stopped before main took it never starts.
 func TestLoop_StoppedBeforeItStarts(t *testing.T) {
 	t.Parallel()
@@ -442,7 +471,8 @@ func TestLoop_RestartDoesNotRerunATakenTask(t *testing.T) {
 	t.Parallel()
 	h := newLoopHarness(t)
 	h.start()
-	task := h.offer("t", h.spec("t", nil, `echo run >> "$OUT/runs"; echo $$$$ > "$OUT/pid"; exec sleep 300`), nil)
+	// Written whole, by a rename, so the test never reads it part-written.
+	task := h.offer("t", h.spec("t", nil, `echo run >> "$OUT/runs"; echo $$$$ > "$OUT/pid.tmp"; mv "$OUT/pid.tmp" "$OUT/pid"; exec sleep 300`), nil)
 	poolpodtest.WaitRunning(t, task, loopWait)
 	h.waitFile(filepath.Join(h.out, "pid"))
 	// In a pod, the container's processes die with it.
@@ -606,6 +636,21 @@ func TestOnTaskPath(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+
+	// Owned by this user, so its owner bits, which have no execute bit,
+	// apply rather than its group's.
+	t.Run("SkipsWhatThisUserCannotExecute", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("root may execute a file with any execute bit set")
+		}
+		noAccess := filepath.Join(root, "no-access")
+		require.NoError(t, os.MkdirAll(noAccess, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(noAccess, "tool"), []byte("#!/bin/sh\n"), 0o070))
+		require.NoError(t, os.Chmod(filepath.Join(noAccess, "tool"), 0o070))
+		got, err := onTaskPath([]string{"tool"}, []string{"PATH=" + noAccess + ":" + last})
+		require.NoError(t, err)
+		assert.Equal(t, []string{want}, got)
+	})
 
 	t.Run("NotFound", func(t *testing.T) {
 		path := "relative:" + notExecutable + ":" + directory

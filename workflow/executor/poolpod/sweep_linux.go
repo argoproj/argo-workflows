@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/prometheus/procfs"
@@ -13,6 +14,10 @@ import (
 
 // sweepInterval is how often Sweep looks for processes left alive.
 const sweepInterval = 50 * time.Millisecond
+
+// pidfdOpen is unix.PidfdOpen, replaced in tests to take the path for
+// kernels without pidfds.
+var pidfdOpen = unix.PidfdOpen
 
 // BecomeSubreaper makes this process the parent of every orphaned
 // descendant, so a process a task daemonises (double fork, setsid) stays a
@@ -56,8 +61,9 @@ func Reap() (int, error) {
 // is every process a task started, however it detached: SIGTERM to each, then
 // SIGKILL to any still alive once grace has passed. It returns once none is
 // left alive, or with ctx's error once ctx ends, which bounds how long a
-// process SIGKILL can't end (one in uninterruptible sleep) is waited for. A zombie counts as gone: Sweep doesn't
-// reap, so it never takes an exit status the caller is waiting for.
+// process SIGKILL can't end (one in uninterruptible sleep) is waited for. A
+// zombie counts as gone: Sweep doesn't reap, so it never takes an exit
+// status the caller is waiting for.
 //
 // main runs it when a task is stopped, with grace half the release reserve,
 // and when a task finishes, so nothing a task started outlives it.
@@ -73,12 +79,23 @@ func Sweep(ctx context.Context, grace time.Duration) error {
 func sweep(ctx context.Context, fs procfs.FS, root int, grace time.Duration) error {
 	killAt := time.Now().Add(grace)
 	termed := map[process]bool{}
+	var zombies map[process]bool
 	for {
-		alive, err := descendants(fs, root)
+		alive, seen, err := descendants(fs, root)
 		if err != nil {
 			return err
 		}
-		if len(alive) == 0 {
+		// /proc is listed before each process in it is read, so one that
+		// forks and then exits in between leaves a child the listing
+		// missed, and is itself read as a zombie. Nothing is left only
+		// once a pass finds none alive and no zombie the previous one
+		// hadn't: such a child would then have been listed.
+		newZombie := slices.ContainsFunc(seen, func(p process) bool { return !zombies[p] })
+		zombies = map[process]bool{}
+		for _, p := range seen {
+			zombies[p] = true
+		}
+		if len(alive) == 0 && !newZombie {
 			return nil
 		}
 		kill := !time.Now().Before(killAt)
@@ -119,24 +136,27 @@ type stat struct {
 	zombie bool
 }
 
-// descendants lists root's descendants that haven't exited.
-func descendants(fs procfs.FS, root int) ([]process, error) {
+// descendants lists root's descendants that haven't exited, and those that
+// have, its zombies.
+func descendants(fs procfs.FS, root int) (alive, zombies []process, err error) {
 	procs, err := fs.AllProcs()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	children := map[int][]stat{}
 	for _, p := range procs {
 		s, err := statOf(p)
+		if err == nil && s.zombie {
+			s.zombie, err = exited(fs, s.pid)
+		}
 		if isGone(err) {
 			continue // exited since the directory was read
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		children[s.ppid] = append(children[s.ppid], s)
 	}
-	var alive []process
 	queue := []int{root}
 	for len(queue) > 0 {
 		pid := queue[0]
@@ -145,13 +165,38 @@ func descendants(fs procfs.FS, root int) ([]process, error) {
 			if c.pid == root {
 				continue
 			}
-			if !c.zombie {
+			if c.zombie {
+				zombies = append(zombies, c.process)
+			} else {
 				alive = append(alive, c.process)
 			}
 			queue = append(queue, c.pid)
 		}
 	}
-	return alive, nil
+	return alive, zombies, nil
+}
+
+// exited reports whether every thread of pid, a process whose stat says it
+// is a zombie, has exited. The stat is its main thread's: one that called
+// pthread_exit is a zombie while the process's other threads run on.
+func exited(fs procfs.FS, pid int) (bool, error) {
+	threads, err := fs.AllThreads(pid)
+	if err != nil {
+		return false, err
+	}
+	for _, t := range threads {
+		s, err := statOf(t)
+		if isGone(err) {
+			continue
+		}
+		if err != nil {
+			return false, err
+		}
+		if !s.zombie {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // readStat reads pid's /proc/<pid>/stat.
@@ -178,19 +223,18 @@ func statOf(p procfs.Proc) (stat, error) {
 
 // signal sends sig to p unless p has exited. A pidfd pins the process, so
 // once its start time is confirmed the signal can't reach a process that
-// reused the pid; without pidfds (Linux before 5.3) it falls back to kill.
+// reused the pid. Without pidfds (Linux before 5.3) it falls back to kill
+// once the start time is confirmed, which a pid reused between the two
+// could still receive.
 func (p process) signal(fs procfs.FS, sig unix.Signal) error {
-	fd, err := unix.PidfdOpen(p.pid, 0)
-	if errors.Is(err, unix.ENOSYS) {
-		if killErr := ignoreGone(unix.Kill(p.pid, sig)); killErr != nil {
-			return fmt.Errorf("send %v to pid %d: %w", sig, p.pid, killErr)
-		}
-		return nil
-	}
-	if err != nil {
+	fd, err := pidfdOpen(p.pid, 0)
+	pinned := err == nil
+	switch {
+	case pinned:
+		defer func() { _ = unix.Close(fd) }()
+	case !errors.Is(err, unix.ENOSYS):
 		return ignoreGone(err)
 	}
-	defer func() { _ = unix.Close(fd) }()
 	s, err := readStat(fs, p.pid)
 	if err != nil {
 		return ignoreGone(err)
@@ -198,7 +242,12 @@ func (p process) signal(fs procfs.FS, sig unix.Signal) error {
 	if s.start != p.start {
 		return nil // p exited and its pid was reused
 	}
-	if err := ignoreGone(unix.PidfdSendSignal(fd, sig, nil, 0)); err != nil {
+	if pinned {
+		err = unix.PidfdSendSignal(fd, sig, nil, 0)
+	} else {
+		err = unix.Kill(p.pid, sig)
+	}
+	if err = ignoreGone(err); err != nil {
 		return fmt.Errorf("send %v to pid %d: %w", sig, p.pid, err)
 	}
 	return nil

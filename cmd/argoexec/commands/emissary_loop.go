@@ -60,7 +60,8 @@ type loopConfig struct {
 	Base wfexecutor.TaskPaths
 	// ReleaseReserve is the time the worker keeps back at the end of the
 	// pod's grace period to release its task. A stopped task's processes
-	// get half of it between SIGTERM and SIGKILL.
+	// get half of it between SIGTERM and SIGKILL, until its command exits:
+	// those it left are then killed at once.
 	ReleaseReserve time.Duration
 	// Environ is main's own environment. Every task's command inherits it,
 	// under the task's own env, and the task's $(VAR) references resolve
@@ -68,6 +69,8 @@ type loopConfig struct {
 	Environ []string
 	// Driver runs each task's command.
 	Driver maindriver.MainDriver
+	// Sweep kills every process a task started: poolpod.Sweep.
+	Sweep func(ctx context.Context, grace time.Duration) error
 	// Tracer starts each task's main container span.
 	Tracer *tracing.Tracing
 	// Namespace is the pool pod's namespace, an attribute of each task's
@@ -97,6 +100,7 @@ func runLoopCommand(ctx context.Context) error {
 		ReleaseReserve: reserve,
 		Environ:        os.Environ(),
 		Driver:         maindriver.Container{},
+		Sweep:          poolpod.Sweep,
 		Tracer:         tracer,
 		Namespace:      string(namespace),
 	})
@@ -291,7 +295,7 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 			stopWatch()
 			sweepCtx, cancel := context.WithTimeout(ctx, loopExitSweepTimeout)
 			defer cancel()
-			sweepErr = poolpod.Sweep(sweepCtx, 0)
+			sweepErr = cfg.Sweep(sweepCtx, 0)
 		},
 	}
 	stager := sweptStager{
@@ -307,6 +311,11 @@ func (cfg loopConfig) runTask(ctx context.Context, run *poolpod.Run) (code int, 
 			code = loopExitCodeMainFailed
 		}
 		return code, err.Error(), sweepErr
+	}
+	if sweepErr != nil && code == 0 {
+		// A task with no outputs to leave unstaged still didn't end
+		// cleanly: a process it started outlived it.
+		return loopExitCodeMainFailed, fmt.Sprintf("a process the task started is still running: %v", sweepErr), sweepErr
 	}
 	return code, "", sweepErr
 }
@@ -344,8 +353,10 @@ func onTaskPath(command, env []string) ([]string, error) {
 		if !filepath.IsAbs(dir) {
 			continue
 		}
+		// The runtime looks a container's command up as its user, as main
+		// runs the task.
 		name := filepath.Join(dir, command[0])
-		if fi, err := os.Stat(name); err == nil && fi.Mode().IsRegular() && fi.Mode().Perm()&0o111 != 0 {
+		if osspecific.IsExecutable(name) {
 			return append([]string{name}, command[1:]...), nil
 		}
 	}
@@ -440,7 +451,7 @@ func (cfg loopConfig) watchStop(ctx context.Context, run *poolpod.Run) func() {
 			return
 		}
 		logger.WithField("reason", reason).Info(ctx, "stopping the task")
-		if err := poolpod.Sweep(ctx, cfg.ReleaseReserve/2); err != nil && ctx.Err() == nil {
+		if err := cfg.Sweep(ctx, cfg.ReleaseReserve/2); err != nil && ctx.Err() == nil {
 			logger.WithError(err).Error(ctx, "failed to stop the task")
 		}
 	})
