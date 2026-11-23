@@ -10808,3 +10808,12 @@ func TestIsRetryAttemptName(t *testing.T) {
 		})
 	}
 }
+
+func TestRetryAttemptNum(t *testing.T) {
+	const step = "wf(0)[0].step"
+	num, ok := retryAttemptNum(step, step+"(12)")
+	assert.True(t, ok)
+	assert.Equal(t, 12, num)
+	_, ok = retryAttemptNum(step, step+".hooks.running(0)")
+	assert.False(t, ok)
+}

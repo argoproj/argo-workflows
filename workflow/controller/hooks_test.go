@@ -8,10 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestExecuteWfLifeCycleHook(t *testing.T) {
@@ -432,13 +434,7 @@ func TestRetriedExitHookIsNotCountedAsAttempt(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
 			cancel, controller := newController(ctx, wf)
 			defer cancel()
-			woc := newWorkflowOperationCtx(ctx, wf, controller)
-			woc.operate(ctx)
-			for range 3 {
-				makePodsPhase(ctx, woc, apiv1.PodSucceeded)
-				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-				woc.operate(ctx)
-			}
+			woc := operateUntilFulfilled(t, newWorkflowOperationCtx(ctx, wf, controller), apiv1.PodSucceeded, 4)
 			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 
 			retryNode := woc.wf.Status.Nodes.FindByName(tt.retryNode)
@@ -497,4 +493,123 @@ func TestLegacyRetriedHookFlagIsNotCountedAsAttempt(t *testing.T) {
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// An older controller counted a retried hook as an attempt, so it numbered the
+// attempt after (0) as (2). With the hook no longer counted, the next attempt
+// must not be numbered (2) again.
+func TestLegacyGapInRetryAttemptsIsNotReused(t *testing.T) {
+	const (
+		retryNode = "step-hook-retry-running-hook(0)[0].step"
+		hookNode  = retryNode + ".hooks.running"
+	)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/step-hook-retry-running-hook.yaml")
+	limit := intstr.FromInt32(5)
+	wf.Spec.RetryStrategy.Limit = &limit
+	run := wf.GetTemplateByName("run")
+	require.NotNil(t, run)
+	run.Container.Args = []string{"retries={{retries}}"}
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// Simulate what an older controller saved: the hook flagged as an attempt,
+	// and a failed attempt numbered (2), after (0) and the hook.
+	hook := woc.wf.Status.Nodes.FindByName(hookNode)
+	require.NotNil(t, hook)
+	hook.NodeFlag = &wfv1.NodeFlag{Hooked: true, Retried: true}
+	woc.wf.Status.Nodes.Set(ctx, hook.ID, *hook)
+	first := woc.wf.Status.Nodes.FindByName(retryNode + "(0)")
+	require.NotNil(t, first)
+	gapped := first.DeepCopy()
+	gapped.Name = retryNode + "(2)"
+	gapped.DisplayName = "step(2)"
+	gapped.ID = woc.wf.NodeID(gapped.Name)
+	gapped.Phase = wfv1.NodeFailed
+	gapped.FinishedAt = metav1.Now()
+	woc.wf.Status.Nodes.Set(ctx, gapped.ID, *gapped)
+	step := woc.wf.Status.Nodes.FindByName(retryNode)
+	require.NotNil(t, step)
+	require.Equal(t, []string{first.ID, hook.ID}, step.Children)
+	step.Children = append(step.Children, gapped.ID)
+	woc.wf.Status.Nodes.Set(ctx, step.ID, *step)
+
+	// (0) fails too, with retries left.
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == retryNode+"(0)" {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodRunning
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	step = woc.wf.Status.Nodes.FindByName(retryNode)
+	require.NotNil(t, step)
+	assert.Equal(t, wfv1.NodeRunning, step.Phase, step.Message)
+	assert.NotNil(t, woc.wf.Status.Nodes.FindByName(retryNode+"(3)"), "the next attempt must be (3)")
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	var args []string
+	for _, pod := range pods.Items {
+		if pod.Annotations[common.AnnotationKeyNodeName] == retryNode+"(3)" {
+			for _, c := range pod.Spec.Containers {
+				if c.Name == common.MainContainerName {
+					args = c.Args
+				}
+			}
+		}
+	}
+	assert.Contains(t, args, "retries=3", "{{retries}} must match the attempt's number")
+}
+
+// Issue #13233: with templateDefaults.retryStrategy, the workflow-level hook
+// is retried too. It must not use up the entrypoint's only retry.
+func TestTemplateDefaultsRetryWithWorkflowHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/wf-hook-template-defaults-retry.yaml")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	// The entrypoint keeps failing while the hook runs.
+	for i := range 3 {
+		setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+			if node.TemplateName == "main" {
+				return apiv1.PodFailed
+			}
+			return apiv1.PodRunning
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		require.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase, "reconcile %d", i)
+	}
+
+	root := woc.wf.Status.Nodes.FindByName(wf.Name)
+	require.NotNil(t, root)
+	assert.Equal(t, wfv1.NodeFailed, root.Phase)
+	assert.Len(t, getChildNodeIdsRetried(root, woc.wf.Status.Nodes), 2, "the entrypoint must be retried once")
+	assert.ElementsMatch(t, []string{wf.Name + "(0)", wf.Name + "(1)", wf.Name + ".hooks.running(0)"}, r4PodNodeNames(ctx, t, woc))
+}
+
+// Issue #14058: with spec.retryStrategy and a DAG entrypoint, the workflow-level
+// hook must not start a second run of the DAG.
+func TestSpecRetryDAGWithWorkflowHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/wf-hook-spec-retry-dag.yaml")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := operateUntilFulfilled(t, newWorkflowOperationCtx(ctx, wf, controller), apiv1.PodSucceeded, 8)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	root := woc.wf.Status.Nodes.FindByName(wf.Name)
+	require.NotNil(t, root)
+	assert.Len(t, getChildNodeIdsRetried(root, woc.wf.Status.Nodes), 1, "the DAG must run once")
+	assert.ElementsMatch(t, []string{wf.Name + "(0).a(0)", wf.Name + "(0).b(0)", wf.Name + ".hooks.running(0)"}, r4PodNodeNames(ctx, t, woc))
+	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "every node must finish")
 }

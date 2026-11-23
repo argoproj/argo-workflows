@@ -250,10 +250,7 @@ func (woc *wfOperationCtx) emitPassedAttemptMetrics(ctx context.Context, attempt
 // older controller can carry it too.)
 func (woc *wfOperationCtx) isRetryAttempt(node *wfv1.NodeStatus) bool {
 	open := strings.LastIndexByte(node.Name, '(')
-	if open < 0 || !strings.HasSuffix(node.Name, ")") {
-		return false
-	}
-	if _, err := strconv.Atoi(node.Name[open+1 : len(node.Name)-1]); err != nil {
+	if open < 0 || !isRetryAttemptName(node.Name[:open], node.Name) {
 		return false
 	}
 	retry, err := woc.wf.GetNodeByName(node.Name[:open])
@@ -304,13 +301,22 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		woc.handleNodeFulfilled(ctx, retryParentNode, processedTmpl)
 		return retryParentNode, nil
 	}
+	// Attempts are numbered from the last one, not by counting them: an older
+	// controller counted a retried hook as an attempt, so a saved workflow can
+	// skip a number, e.g. "step(0)", "step(2)".
+	lastAttemptNumber := len(childNodeIDs) - 1
+	if lastChildNode != nil {
+		if n, ok := retryAttemptNum(retryParentNode.Name, lastChildNode.Name); ok {
+			lastAttemptNumber = n
+		}
+	}
 	var retryNum int
 	if lastChildNode != nil && !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
 		nodeName = lastChildNode.Name
 		node = lastChildNode
-		retryNum = len(childNodeIDs) - 1
+		retryNum = lastAttemptNumber
 	} else {
-		retryNum = len(childNodeIDs)
+		retryNum = lastAttemptNumber + 1
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 		// We need to check if the node already exists in case we are re-processing
 		node, _ = woc.wf.GetNodeByName(nodeName)

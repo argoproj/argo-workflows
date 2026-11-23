@@ -4547,8 +4547,10 @@ func setWfTemplateLabel(wf *wfv1.Workflow) {
 	}
 }
 
-// getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.
-// This function aims to remove some unnecessary child nodes for `NodeType: Retry`, such as hooked nodes.
+// getChildNodeIdsAndLastRetriedNode returns the ids of the attempts of a Retry
+// node and its last attempt. Attempts are the children named "<retry node>(N)"
+// with `NodeStatus.NodeFlag.Retried=true` (or no NodeFlag, from older
+// controllers). Its other children, such as hooks, are left out.
 func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) ([]string, *wfv1.NodeStatus) {
 	childNodeIds := getChildNodeIdsRetried(node, nodes)
 
@@ -4563,7 +4565,9 @@ func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) 
 	return childNodeIds, lastChildNode
 }
 
-// getChildNodeIdsRetried returns child node ids `NodeStatus.NodeFlag.Retried` are set to true.
+// getChildNodeIdsRetried returns the ids of the attempts of a Retry node: the
+// children named "<retry node>(N)" that have NodeFlag.Retried set or no
+// NodeFlag at all.
 func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	childrenIds := []string{}
 	for i := 0; i < len(node.Children); i++ {
@@ -4588,16 +4592,19 @@ func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 // isRetryAttemptName reports whether name is that of an attempt of the Retry
 // node retryNodeName: "<retryNodeName>(N)".
 func isRetryAttemptName(retryNodeName, name string) bool {
-	rest, ok := strings.CutPrefix(name, retryNodeName+"(")
-	if !ok {
-		return false
+	_, ok := retryAttemptNum(retryNodeName, name)
+	return ok
+}
+
+// retryAttemptNum reports whether name is that of an attempt of the Retry node
+// retryNodeName, "<retryNodeName>(N)", and returns N.
+func retryAttemptNum(retryNodeName, name string) (int, bool) {
+	num, ok := strings.CutPrefix(name, retryNodeName+"(")
+	if !ok || !strings.HasSuffix(num, ")") {
+		return 0, false
 	}
-	num, ok := strings.CutSuffix(rest, ")")
-	if !ok {
-		return false
-	}
-	_, err := strconv.Atoi(num)
-	return err == nil
+	n, err := strconv.Atoi(num[:len(num)-1])
+	return n, err == nil
 }
 
 func (woc *wfOperationCtx) setNodeDisplayName(ctx context.Context, node *wfv1.NodeStatus, displayName string) {
