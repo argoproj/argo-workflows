@@ -8,8 +8,8 @@ schema = 3
     version = "v0.123.0"
     hash = "sha256-OjuvlqYrGvoUiXO/5ALbMxHvXRlrhDjLby1BN/nuhAw="
   [mod."cloud.google.com/go/auth"]
-    version = "v0.24.1-0.20261001053825-dbc26066f70a"
-    hash = "sha256-pRhLkVobgMUr7ZLoL9e7dyE7QdAbJuyOpIgGsi0Kab0="
+    version = "v0.24.1"
+    hash = "sha256-kL53gv5Tq8mUUPZh1XfoShkup9ACOnEQhxtr0PMnx2g="
   [mod."cloud.google.com/go/auth/oauth2adapt"]
     version = "v0.3.0"
     hash = "sha256-wCGutEF5sCKrrGALupeQL8QYyjgSPu+KtVmZ6+/I8PQ="
@@ -20,11 +20,11 @@ schema = 3
     version = "v1.14.0"
     hash = "sha256-hwxPmKkVbkemYhUrEArP/CLftjLI+VQUjx5MkdaJXtA="
   [mod."cloud.google.com/go/monitoring"]
-    version = "v1.29.0"
-    hash = "sha256-Hn/YZtZle8ObXy8yft4pgiNslqScuCdVnK8ztPnyEqw="
+    version = "v1.30.0"
+    hash = "sha256-AOxUKDkE75OQV1Jp43Nh8mgAu/SzvNKjzt1+R7Nb/HM="
   [mod."cloud.google.com/go/storage"]
-    version = "v1.68.0"
-    hash = "sha256-ohfDuIG0/R/wn8iWOznrhMSvrQO3qtWAhXHUqHdPMIU="
+    version = "v1.70.0"
+    hash = "sha256-U1gIDjsDJXWxM3b/y/QX+6QwNaXzhiZMLSVPavILzdY="
   [mod."dario.cat/mergo"]
     version = "v1.0.2"
     hash = "sha256-p6jdiHlLEfZES8vJnDywG4aVzIe16p0CU6iglglIweA="
