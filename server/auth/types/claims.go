@@ -11,7 +11,10 @@ import (
 
 type Claims struct {
 	jwt.Claims
-	Groups                  []string       `json:"groups,omitempty"`
+	// omitzero (not omitempty): an empty non-nil slice is kept as "groups": [],
+	// so RBAC rules that reference groups evaluate for users with no groups.
+	// A nil slice is omitted.
+	Groups                  []string       `json:"groups,omitzero"`
 	Email                   string         `json:"email,omitempty"`
 	EmailVerified           bool           `json:"-"`
 	Name                    string         `json:"name,omitempty"`

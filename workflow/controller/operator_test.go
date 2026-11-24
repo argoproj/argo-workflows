@@ -2503,7 +2503,7 @@ func TestSuspendResume(t *testing.T) {
 }
 
 func suspendedShutdownWorkflow() *wfv1.Workflow {
-	wf := wfv1.MustUnmarshalWorkflow(noPodsWhenShutdown)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/no-pods-when-shutdown.yaml")
 	wf.Spec.Shutdown = ""
 	wf.Spec.OnExit = "exit-handler"
 	wf.Spec.Templates = append(wf.Spec.Templates, wfv1.Template{
@@ -4522,83 +4522,6 @@ func TestConfigMapCacheLoadOperateNoOutputs(t *testing.T) {
 	}
 }
 
-var workflowWithMemoizedInSteps = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: memoized-bug-
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: hello-steps
-        template: memoized
-    - - name: whatever
-        template: hello
-
-  - name: memoized
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          parameter: "{{steps.hello-step.outputs.result}}"
-    steps:
-    - - name: hello-step
-        template: hello
-    memoize:
-      key: "memoized-bug-steps-0"
-      cache:
-        configMap:
-          name: my-config
-
-  - name: hello
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo Hello"]
-`
-
-var workflowWithMemoizedInDAG = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: memoized-bug-
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: hello-dag
-        template: memoized
-    - - name: whatever
-        template: hello
-
-  - name: memoized
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          parameter: "{{dag.hello-dag.outputs.result}}"
-    dag:
-      tasks:
-      - name: hello-dag
-        template: hello
-    memoize:
-      key: "memoized-bug-dag-0"
-      cache:
-        configMap:
-          name: my-config
-
-  - name: hello
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo Hello"]
-`
-
 func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 	myConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
@@ -4617,7 +4540,7 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 		},
 	}
 
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInSteps)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-memoized-in-steps.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -4664,7 +4587,7 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 		},
 	}
 
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithMemoizedInDAG)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-memoized-in-dag.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -4693,39 +4616,6 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 	assert.Equal(t, 1, hitCache)
 }
 
-var workflowCachedMaxAge = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: memoized-workflow-test
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: message
-      value: hi-there-world
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    memoize:
-      key: "{{inputs.parameters.message}}"
-      maxAge: '10s'
-      cache:
-        configMap:
-          name: whalesay-cache
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: hello
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
 func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	getEntryCreatedAtTime := func(time time.Time) apiv1.ConfigMap {
 		jsonTime, _ := time.UTC().MarshalJSON()
@@ -4746,7 +4636,7 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 			},
 		}
 	}
-	wf := wfv1.MustUnmarshalWorkflow(workflowCachedMaxAge)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-cached-max-age.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 
 	ctx := logging.TestContext(t.Context())
@@ -4786,177 +4676,8 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
-var workflowStepCachedWithRetryStrategy = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: memoized-workflow-test
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: message
-      value: hi-there-world
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    retryStrategy:
-      limit: "10"
-    memoize:
-      key: "{{inputs.parameters.message}}"
-      cache:
-        configMap:
-          name: whalesay-cache
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: hello
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
-var workflowDagCachedWithRetryStrategy = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: memoized-workflow-test
-spec:
-  entrypoint: main
-#  podGC:
-#    strategy: OnPodCompletion
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: regular-1
-        template: run
-        arguments:
-          parameters:
-          - name: id
-            value: 1
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: regular-2
-        template: run
-        depends: regular-1.Succeeded
-        arguments:
-          parameters:
-          - name: id
-            value: 2
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-retries-1
-        template: run-with-retries
-        arguments:
-          parameters:
-          - name: id
-            value: 3
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-retries-2
-        template: run-with-retries
-        depends: with-retries-1.Succeeded
-        arguments:
-          parameters:
-          - name: id
-            value: 4
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-dag-1
-        template: run-with-dag
-        arguments:
-          parameters:
-          - name: id
-            value: 5
-          - name: cache-key
-            value: '{{workflow.name}}'
-      - name: with-dag-2
-        template: run-with-dag
-        depends: with-dag-1.Succeeded
-        arguments:
-          parameters:
-          - name: id
-            value: 6
-          - name: cache-key
-            value: '{{workflow.name}}'
-
-  - name: run
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    script:
-      image: ubuntu:22.04
-      command: [bash]
-      source: |
-        sleep 30
-        echo result: {{inputs.parameters.id}}
-    memoize:
-      key: "regular-{{inputs.parameters.cache-key}}"
-      cache:
-        configMap:
-          name: memoization-test-cache
-
-  - name: run-with-retries
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    script:
-      image: ubuntu:22.04
-      command: [bash]
-      source: |
-        sleep 30
-        echo result: {{inputs.parameters.id}}
-    memoize:
-      key: "retry-{{inputs.parameters.cache-key}}"
-      cache:
-        configMap:
-          name: memoization-test-cache
-    retryStrategy:
-      limit: '1'
-      retryPolicy: Always
-
-  - name: run-raw
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    script:
-      image: ubuntu:22.04
-      command: [bash]
-      source: |
-        sleep 30
-        echo result: {{inputs.parameters.id}}
-
-  - name: run-with-dag
-    inputs:
-      parameters:
-      - name: id
-      - name: cache-key
-    dag:
-      tasks:
-      - name: run-raw-step
-        template: run-raw
-        arguments:
-          parameters:
-          - name: id
-            value: '{{inputs.parameters.id}}'
-          - name: cache-key
-            value: '{{inputs.parameters.cache-key}}'
-    memoize:
-      key: "dag-{{inputs.parameters.cache-key}}"
-      cache:
-        configMap:
-          name: memoization-test-cache`
-
 func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowStepCachedWithRetryStrategy)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-step-cached-with-retry-strategy.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -4976,7 +4697,7 @@ func TestStepConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
 }
 
 func TestDAGConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowDagCachedWithRetryStrategy)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-dag-cached-with-retry-strategy.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -5106,32 +4827,11 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	assert.Equal(t, sampleOutputs, *entry.Outputs)
 }
 
-var propagate = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-backoff
-spec:
-  entrypoint: retry-backoff
-  templates:
-  - name: retry-backoff
-    retryStrategy:
-      limit: 10
-      backoff:
-        duration: "1"
-        factor: 1
-        maxDuration: "20"
-    container:
-      image: alpine
-      command: [sh, -c]
-      args: ["sleep $(( {{retries}} * 100 )); exit 1"]
-`
-
 func TestPropagateMaxDurationProcess(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	assert.NotNil(t, controller)
-	wf := wfv1.MustUnmarshalWorkflow(propagate)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/propagate.yaml")
 	assert.NotNil(t, wf)
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
@@ -5165,53 +4865,10 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
 }
 
-var resubmitPendingWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: resubmit-pending-wf
-  namespace: argo
-spec:
-
-  entrypoint: resubmit-pending
-  templates:
-  -
-    inputs: {}
-    metadata: {}
-    name: resubmit-pending
-    outputs: {}
-    script:
-      command:
-      - bash
-      image: busybox
-      name: ""
-      resources:
-        limits:
-          cpu: "10"
-      source: |
-        sleep 5
-status:
-  finishedAt: null
-  nodes:
-    resubmit-pending-wf:
-      displayName: resubmit-pending-wf
-      finishedAt: null
-      id: resubmit-pending-wf
-      message: Pending 156.62ms
-      name: resubmit-pending-wf
-      phase: Pending
-      startedAt: "2020-07-07T19:54:18Z"
-      templateName: resubmit-pending
-      templateScope: local/resubmit-pending-wf
-      type: Pod
-  phase: Running
-  startedAt: "2020-07-07T19:54:18Z"
-`
-
 func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
-	wf := wfv1.MustUnmarshalWorkflow(resubmitPendingWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-pending-wf.yaml")
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
@@ -5231,25 +4888,7 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 }
 
 func TestResubmitMemoization(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: busybox
-status:
-  phase: Failed
-  nodes:
-    my-wf:
-      id: my-wf
-      name: my-wf
-      type: Pod
-      phase: Failed
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-memoization.yaml")
 	ctx := logging.TestContext(t.Context())
 	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, nil)
 	require.NoError(t, err)
@@ -5276,29 +4915,7 @@ status:
 }
 
 func TestResubmitParamsOverride(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: default
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: busybox
-status:
-  phase: Failed
-  nodes:
-    my-wf:
-      id: my-wf
-      name: my-wf
-      type: Pod
-      phase: Failed
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-params-override.yaml")
 	ctx := logging.TestContext(t.Context())
 	wf, err := util.FormulateResubmitWorkflow(ctx, wf, true, []string{"message=modified"})
 	require.NoError(t, err)
@@ -5312,30 +4929,7 @@ status:
 }
 
 func TestRetryParamsOverride(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-  labels:
-    workflows.argoproj.io/completed: true
-spec:
-  arguments:
-    parameters:
-    - name: message
-      value: default
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: busybox
-status:
-  phase: Failed
-  nodes:
-    my-wf:
-      id: my-wf
-      name: my-wf
-      phase: Failed
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retry-params-override.yaml")
 
 	ctx := logging.TestContext(t.Context())
 	wf, _, err := util.FormulateRetryWorkflow(ctx, wf, false, "", []string{"message=modified"})
@@ -5349,27 +4943,7 @@ status:
 }
 
 func TestWorkflowOutputs(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: step-1
-        template: child
-  - name: child
-    container:
-      image: my-image
-    outputs:
-      parameters:
-      - name: my-param
-        valueFrom:
-          path: /my-path
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-outputs.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -5387,147 +4961,9 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var globalVarsOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-6gphm-8n22g
-  namespace: default
-spec:
-  arguments:
-    parameters:
-      -
-        name: message
-        value: nononono
-  workflowTemplateRef:
-    name: hello-world-6gphm
-status:
-  nodes:
-    hello-world-6gphm-8n22g:
-      displayName: hello-world-6gphm-8n22g
-      finishedAt: "2020-07-14T20:45:28Z"
-      hostNodeName: minikube
-      id: hello-world-6gphm-8n22g
-      inputs:
-        parameters:
-          -
-            name: message
-            value: nononono
-      name: hello-world-6gphm-8n22g
-      outputs:
-        artifacts:
-          -
-            archiveLogs: true
-            name: main-logs
-            s3:
-              accessKeySecret:
-                key: accesskey
-                name: my-minio-cred
-              bucket: my-bucket
-              endpoint: "minio:9000"
-              insecure: true
-              key: hello-world-6gphm-8n22g/hello-world-6gphm-8n22g/main.log
-              secretKeySecret:
-                key: secretkey
-                name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-07-14T20:45:25Z"
-      templateRef:
-        name: hello-world-6gphm
-        template: whalesay
-      templateScope: local/hello-world-6gphm-8n22g
-      type: Pod
-  phase: Running
-  resourcesDuration:
-    cpu: 5
-    memory: 2
-  startedAt: "2020-07-14T20:45:25Z"
-  storedTemplates:
-    namespaced/hello-world-6gphm/whalesay:
-
-      container:
-        args:
-          - "hello {{inputs.parameters.message}}"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      inputs:
-        parameters:
-          -
-            name: message
-      metadata: {}
-      name: whalesay
-      outputs: {}
-  storedWorkflowTemplateSpec:
-    arguments:
-      parameters:
-        -
-          name: message
-          value: nononono
-    entrypoint: whalesay
-    onExit: exitContainer
-    templates:
-      - name: whalesay
-        container:
-          image: "docker/whalesay:latest"
-          args:
-            - "hello {{inputs.parameters.message}}"
-          command:
-            - cowsay
-        inputs:
-          parameters:
-            - name: message
-      - name: exitContainer
-        container:
-          image: docker/whalesay
-          args:
-            - "goodbye {{inputs.parameters.message}}"
-          command:
-            - cowsay
-        inputs:
-          parameters:
-            - name: message
-`
-
-var wftmplGlobalVarsOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: hello-world-6gphm
-  namespace: default
-spec:
-  entrypoint: whalesay
-  onExit: exitContainer
-  arguments:
-    parameters:
-    - name: message
-      value: "default"
-  templates:
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello {{inputs.parameters.message}}"]
-  - name: exitContainer
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye {{inputs.parameters.message}}"]
-`
-
 func TestGlobalVarsOnExit(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(globalVarsOnExit)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftmplGlobalVarsOnExit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/global-vars-on-exit.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator/wftmpl-global-vars-on-exit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -5542,79 +4978,8 @@ func TestGlobalVarsOnExit(t *testing.T) {
 	assert.Equal(t, "nononono", node.Inputs.Parameters[0].Value.String())
 }
 
-var deadlineWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-9fvnv
-  namespace: argo
-spec:
-  activeDeadlineSeconds: 3
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: approve
-        template: approve
-  - name: approve
-    suspend: {}
-  - container:
-      args:
-      - sleep 50
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      resources:
-        requests:
-          memory: 1Gi
-    name: whalesay
-status:
-  finishedAt: null
-  nodes:
-    steps-9fvnv:
-      children:
-      - steps-9fvnv-3514116232
-      displayName: steps-9fvnv
-      finishedAt: null
-      id: steps-9fvnv
-      name: steps-9fvnv
-      phase: Running
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: main
-      templateScope: local/steps-9fvnv
-      type: Steps
-
-    steps-9fvnv-3514116232:
-      boundaryID: steps-9fvnv
-      children:
-      - steps-9fvnv-3700512507
-      displayName: '[0]'
-      finishedAt: null
-      id: steps-9fvnv-3514116232
-      name: steps-9fvnv[0]
-      phase: Running
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: main
-      templateScope: local/steps-9fvnv
-      type: StepGroup
-    steps-9fvnv-3700512507:
-      boundaryID: steps-9fvnv
-      displayName: approve
-      finishedAt: null
-      id: steps-9fvnv-3700512507
-      name: steps-9fvnv[0].approve
-      phase: Running
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: approve
-      templateScope: local/steps-9fvnv
-      type: Suspend
-  phase: Running
-  startedAt: "2020-07-24T16:39:25Z"
-`
-
 func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(deadlineWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/deadline-wf.yaml")
 	wf.Status.StartedAt = metav1.Now()
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -5637,7 +5002,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 }
 
 func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(deadlineWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/deadline-wf.yaml")
 	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -5653,60 +5018,6 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 	})
 }
 
-var stepTimeoutWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-step
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: step1
-        template: whalesay
-
-  - name: whalesay
-    timeout: 5s
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var dagTimeoutWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-dag
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: dag1
-        template: whalesay
-        arguments:
-          parameters:
-          - name: deadline
-            value: 3s
-      - name: dag2
-        template: whalesay
-        arguments:
-          parameters:
-          - name: deadline
-            value: 3s
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: deadline
-    timeout: "{{inputs.parameters.deadline}}"
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
 var pendingTimeoutWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -5735,9 +5046,190 @@ spec:
       command: [sleep, "{{inputs.parameters.sleep_time}}"]
 `
 
+var retryTimeoutExpressionWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-expression-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "{{=(sprig.int(retries) + 1) * 10}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutLastRetryWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-lastretry-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "{{=lastRetry.status == 'Failed' ? '60s' : '30s'}}"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutSpacesWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-spaces-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{  retries  }}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryPendingTimeoutVarWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-pending-timeout-var-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "10s"
+    pendingTimeout: "1{{retries}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutVarWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-var-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{retries}}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryTimeoutSingleSpaceWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-timeout-space-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{ retries }}s"
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+// retryTimeoutLockWf and retryPendingTimeoutLockWf wait for a mutex held by
+// another workflow, so their Retry node stays Pending while checkConstraints
+// parses its timeouts (issue #17314 rows 3 and 7).
+var retryTimeoutLockWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-timeout-waiter
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "1{{retries}}s"
+    synchronization:
+      mutexes:
+      - name: retry-timeout-lock
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
+var retryPendingTimeoutLockWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-pending-timeout-waiter
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: stuck
+        template: never-schedules
+  - name: never-schedules
+    retryStrategy:
+      limit: "2"
+    timeout: "10s"
+    pendingTimeout: "1{{retries}}s"
+    synchronization:
+      mutexes:
+      - name: retry-timeout-lock
+    container:
+      image: argoproj/argosay:v2
+      command: [sleep, "60"]
+`
+
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -5752,7 +5244,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(dagTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-timeout-wf.yaml")
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -5769,7 +5261,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		tmpl := wf.Spec.Templates[1]
 		tmpl.Timeout = "23"
 		wf.Spec.Templates[1] = tmpl
@@ -5786,7 +5278,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 	})
 
 	t.Run("Invalid timeout in step", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		tmpl := wf.Spec.Templates[0]
 		tmpl.Timeout = "23"
 		wf.Spec.Templates[0] = tmpl
@@ -5802,7 +5294,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
 	})
 	t.Run("PendingTimeout in step", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/step-timeout-wf.yaml")
 		tmpl := wf.Spec.Templates[0]
 		tmpl.PendingTimeout = "23s"
 		wf.Spec.Templates[0] = tmpl
@@ -5842,30 +5334,125 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 	})
 }
 
-var wfWithPVC = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: storage-quota-limit
-spec:
-  entrypoint: wait
-  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
-    - metadata:
-        name: workdir1                     # name of volume claim
-      spec:
-        accessModes: [ "ReadWriteMany" ]
-        resources:
-          requests:
-            storage: 10Gi
-  templates:
-  - name: wait
-    script:
-      image: argoproj/argosay:v2
-      args: [echo, ":) Hello Argo!"]
-`
+// TestRetryTimeoutVariables covers issue #17314 rows 1, 2, 4, 5, 6 and 8: a
+// retry template whose timeout or pendingTimeout contains a retry-scoped
+// variable must run instead of failing the workflow with a parse error. The
+// check in checkConstraints resolves the timeouts with the first attempt's
+// values (retries=0), so the first pod's activeDeadlineSeconds is the resolved
+// timeout, give or take a second of truncation.
+func TestRetryTimeoutVariables(t *testing.T) {
+	tests := []struct {
+		name string
+		wf   string
+		// wantActiveDeadline is the timeout resolved with retries=0.
+		wantActiveDeadline int64
+	}{
+		{name: "RetriesVariable", wf: retryTimeoutVarWf, wantActiveDeadline: 10},
+		{name: "SingleSpace", wf: retryTimeoutSingleSpaceWf, wantActiveDeadline: 10},
+		{name: "MultipleSpaces", wf: retryTimeoutSpacesWf, wantActiveDeadline: 10},
+		{name: "Expression", wf: retryTimeoutExpressionWf, wantActiveDeadline: 10},
+		{name: "LastRetryExpression", wf: retryTimeoutLastRetryWf, wantActiveDeadline: 30},
+		{name: "PendingTimeoutVariable", wf: retryPendingTimeoutVarWf, wantActiveDeadline: 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(tt.wf)
+			cancel, controller := newController(logging.TestContext(t.Context()), wf)
+			defer cancel()
+
+			ctx := logging.TestContext(t.Context())
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			// the workflow runs instead of failing with a parse error
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+			// run again: the retry node must still be Running, not failed by
+			// the raw, unsubstituted timeout
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			retry := woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, retry)
+			assert.Equal(t, wfv1.NodeRunning, retry.Phase)
+
+			// the pod got the timeout resolved with the first attempt's values
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			require.NotNil(t, pods.Items[0].Spec.ActiveDeadlineSeconds)
+			assert.InDelta(t, tt.wantActiveDeadline, *pods.Items[0].Spec.ActiveDeadlineSeconds, 1)
+		})
+	}
+}
+
+// TestRetryTimeoutVarsWaitingForLock covers issue #17314 rows 3 and 7: while a
+// Retry node waits for a mutex held by another workflow, a retry variable in
+// timeout or pendingTimeout must be resolved with the first attempt's values
+// instead of failing the node with a parse error. The resolved timeout still
+// fires for the Pending node once it passes.
+func TestRetryTimeoutVarsWaitingForLock(t *testing.T) {
+	tests := []struct {
+		name string
+		wf   string
+	}{
+		{name: "TimeoutVar", wf: retryTimeoutLockWf},
+		{name: "PendingTimeoutVar", wf: retryPendingTimeoutLockWf},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx)
+			defer cancel()
+			controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+			}, workflowExistenceFunc, false)
+
+			// A second workflow holds the mutex for the whole test, so the
+			// Retry node really waits for the lock.
+			holder := wfv1.MustUnmarshalWorkflow(bareWfWithTmplMutex)
+			holder.Name = "retry-timeout-holder"
+			holder.Spec.Templates[0].Synchronization.Mutexes[0].Name = "retry-timeout-lock"
+			holder, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(holder.Namespace).Create(ctx, holder, metav1.CreateOptions{})
+			require.NoError(t, err)
+			wocHolder := newWorkflowOperationCtx(ctx, holder, controller)
+			wocHolder.operate(ctx)
+			require.NotNil(t, wocHolder.wf.Status.Synchronization)
+			require.Len(t, wocHolder.wf.Status.Synchronization.Mutex.Holding, 1)
+
+			wf := wfv1.MustUnmarshalWorkflow(tt.wf)
+			wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+			require.NoError(t, err)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+			// The second pass parses the Pending node's timeouts: the raw
+			// retry variables must not fail it with a parse error while it
+			// waits for the lock.
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			retry := woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, retry)
+			assert.Equal(t, wfv1.NodePending, retry.Phase)
+			assert.Contains(t, retry.Message, "Waiting for")
+
+			// Once resolved, the timeout still fires for the node waiting on
+			// the lock: 10s resolved from the first attempt's values, passed
+			// 11s ago.
+			retry.StartedAt = metav1.NewTime(time.Now().Add(-11 * time.Second))
+			woc.wf.Status.Nodes.Set(ctx, retry.ID, *retry)
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			retry = woc.wf.Status.Nodes.FindByDisplayName("stuck")
+			require.NotNil(t, retry)
+			assert.Equal(t, wfv1.NodeFailed, retry.Phase)
+			assert.Equal(t, ErrTimeout.Error(), retry.Message)
+		})
+	}
+}
 
 func TestStorageQuota(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithPVC)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-with-pvc.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -5889,52 +5476,9 @@ func TestStorageQuota(t *testing.T) {
 	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
 }
 
-var podWithFailed = `
-apiVersion: v1
-kind: Pod
-status:
-  conditions:
-  - lastProbeTime:
-    lastTransitionTime: '2020-08-27T18:14:19Z'
-    status: 'True'
-    type: PodScheduled
-  containerStatuses:
-  - containerID: docker://502dda61a8f05e08d10cffc972d2fb9226e82af7daaacff98e84727bb96f11e6
-    image: python:alpine3.23
-    imageID: docker-pullable://python@sha256:766a961bf699491995cc29e20958ef11fd63741ff41dcc70ec34355b39d52971
-    lastState:
-      waiting: {}
-    name: main
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      waiting:
-        reason: ContainerCreating
-        message: 'Container is creating'
-  - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
-    image: argoproj/argoexec:v2.9.5
-    imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
-    lastState:
-      waiting: {}
-    name: wait
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      waiting: {}
-  hostIP: 192.168.65.3
-  phase: Failed
-  podIP: 10.1.28.244
-  podIPs:
-  - ip: 10.1.28.244
-  qosClass: BestEffort
-  startTime: '2020-08-27T18:14:19Z'
-`
-
 func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podWithFailed, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-with-failed.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
@@ -5945,39 +5489,9 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 // Test that when containers are in Running state (not Terminated) on a Failed pod,
 // we correctly return Failed instead of incorrectly returning Succeeded.
 // This can happen during node eviction or other pod-level failures.
-var podFailedWithRunningContainers = `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  phase: Failed
-  reason: Evicted
-  message: "The node was low on resource: memory."
-  containerStatuses:
-  - name: main
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-  - name: wait
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-`
-
 func TestPodFailureWithRunningContainers(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podFailedWithRunningContainers, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-failed-with-running-containers.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	// Pod has a message, so it should return that
@@ -5988,37 +5502,9 @@ func TestPodFailureWithRunningContainers(t *testing.T) {
 
 // Test that when containers don't have terminated state and there's no pod message,
 // we correctly return Failed with information about which containers couldn't be confirmed.
-var podFailedWithRunningContainersNoMessage = `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-  - name: wait
-    ready: false
-    restartCount: 0
-    state:
-      running:
-        startedAt: "2021-01-22T09:50:16Z"
-`
-
 func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podFailedWithRunningContainersNoMessage, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-failed-with-running-containers-no-message.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
@@ -6027,43 +5513,9 @@ func TestPodFailureWithRunningContainersNoMessage(t *testing.T) {
 }
 
 // Test that sidecar SIGKILL still results in success when main and wait succeeded
-var podFailedWithSidecarSigkill = `
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    state:
-      terminated:
-        exitCode: 0
-        reason: Completed
-  - name: wait
-    ready: false
-    state:
-      terminated:
-        exitCode: 0
-        reason: Completed
-  - name: sidecar
-    ready: false
-    state:
-      terminated:
-        exitCode: 137
-        reason: Error
-`
-
 func TestPodFailureWithSidecarSigkill(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podFailedWithSidecarSigkill, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-failed-with-sidecar-sigkill.yaml", &pod)
 	assert.NotNil(t, pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
@@ -6072,109 +5524,15 @@ func TestPodFailureWithSidecarSigkill(t *testing.T) {
 	assert.Empty(t, msg)
 }
 
-var podWithWaitContainerOOM = `
-apiVersion: v1
-kind: Pod
-status:
-  containerStatuses:
-  - containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
-    image: docker.io/argoproj/argosay:v2
-    imageID: docker.io/argoproj/argosay@sha256:3d2d553a462cfe3288833a010c1d91454bd05a0e02937f2f82050d68ca57a580
-    lastState: {}
-    name: main
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://765e8084b1c416d412c8072dca624cab886aae3858d1196b5aaceb7a775ce372
-        exitCode: 0
-        finishedAt: "2021-01-22T09:50:17Z"
-        reason: Completed
-        startedAt: "2021-01-22T09:50:16Z"
-  - containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
-    image: docker.io/argoproj/argoexec:latest
-    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
-    lastState: {}
-    name: wait
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://12b93c7a73c7448a3034e63181ca9c8db8dbaf1d7d43dd5ad90c20814a757b51
-        exitCode: 137
-        finishedAt: "2021-01-22T09:50:17Z"
-        reason: OOMKilled
-        startedAt: "2021-01-22T09:50:16Z"
-  hostIP: 172.19.0.2
-  phase: Failed
-  podIP: 10.42.0.74
-  podIPs:
-  - ip: 10.42.0.74
-  qosClass: Burstable
-  startTime: "2021-01-22T09:50:15Z"
-`
-
-var podWithMainContainerOOM = `
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-status:
-  containerStatuses:
-  - containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
-    image: docker.io/monitoringartist/docker-killer:latest
-    imageID: docker.io/monitoringartist/docker-killer@sha256:85ba7f17a5ef691eb4a3dff7fdab406369085c6ee6e74dc4527db9fe9e448fa1
-    lastState: {}
-    name: main
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://3e8c564c13893914ec81a2c105188fa5d34748576b368e709dbc2e71cbf23c5b
-        exitCode: 137
-        finishedAt: "2021-01-22T10:28:13Z"
-        reason: OOMKilled
-        startedAt: "2021-01-22T10:28:13Z"
-  - containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
-    image: docker.io/argoproj/argoexec:latest
-    imageID: sha256:54331d70b022d9610ba40826b1cfd77cc39b5e5b8a6b6b28a9a73db445a35436
-    lastState: {}
-    name: wait
-    ready: false
-    restartCount: 0
-    started: false
-    state:
-      terminated:
-        containerID: containerd://0efb49b80c593396c5895a8bd062d9174f681d12436824246c273987c466b594
-        exitCode: 0
-        finishedAt: "2021-01-22T10:28:14Z"
-        reason: Completed
-        startedAt: "2021-01-22T10:28:12Z"
-  hostIP: 172.19.0.2
-  phase: Failed
-  podIP: 10.42.0.87
-  podIPs:
-  - ip: 10.42.0.87
-  qosClass: Burstable
-  startTime: "2021-01-22T10:28:12Z"
-`
-
 func TestPodFailureWithContainerOOM(t *testing.T) {
 	tests := []struct {
 		podDetail string
 		phase     wfv1.NodePhase
 	}{{
-		podDetail: podWithWaitContainerOOM,
+		podDetail: "@testdata/operator/pod-with-wait-container-oom.yaml",
 		phase:     wfv1.NodeError,
 	}, {
-		podDetail: podWithMainContainerOOM,
+		podDetail: "@testdata/operator/pod-with-main-container-oom.yaml",
 		phase:     wfv1.NodeFailed,
 	}}
 	var pod apiv1.Pod
@@ -6188,44 +5546,15 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	}
 }
 
-// podWithSupervisorPreMainFailure exercises the init-less mode failure path
+// TestInferFailedReason_SupervisorPreMainFailure exercises the init-less mode failure path
 // where supervisor pre-main fails: supervisor writes the failed marker and
 // exits non-zero, emissary in main observes the marker and exits with 65
 // (sysexits.h EX_DATAERR). inferFailedReason must surface the supervisor's
 // real message rather than main's placeholder exit-65; this is why
 // SupervisorContainerName sorts ahead of main in the order() helper.
-var podWithSupervisorPreMainFailure = `
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-  - name: supervisor
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    state:
-      terminated:
-        exitCode: 65
-        reason: Error
-        message: ""
-  - name: supervisor
-    ready: false
-    state:
-      terminated:
-        exitCode: 1
-        reason: Error
-        message: "failed to load input artifacts from plugin \"s3-driver\": connection refused"
-`
-
 func TestInferFailedReason_SupervisorPreMainFailure(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podWithSupervisorPreMainFailure, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-with-supervisor-pre-main-failure.yaml", &pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	// Supervisor's NodeError must win over main's exit-65 NodeFailed; the
@@ -6240,37 +5569,9 @@ func TestInferFailedReason_SupervisorPreMainFailure(t *testing.T) {
 // When the supervisor exits cleanly (post-main success) but main fails with
 // a real user error, main's failure must still surface — supervisor's order=0
 // ranking only kicks in when supervisor itself failed.
-var podWithSupervisorOKAndMainFail = `
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: main
-    env:
-    - name: ARGO_CONTAINER_NAME
-      value: main
-  - name: supervisor
-status:
-  phase: Failed
-  containerStatuses:
-  - name: main
-    ready: false
-    state:
-      terminated:
-        exitCode: 1
-        reason: Error
-        message: "user command failed"
-  - name: supervisor
-    ready: false
-    state:
-      terminated:
-        exitCode: 0
-        reason: Completed
-`
-
 func TestInferFailedReason_SupervisorSuccessMainFailure(t *testing.T) {
 	var pod apiv1.Pod
-	wfv1.MustUnmarshal(podWithSupervisorOKAndMainFail, &pod)
+	wfv1.MustUnmarshal("@testdata/operator/pod-with-supervisor-ok-and-main-fail.yaml", &pod)
 	ctx := logging.TestContext(t.Context())
 	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
 	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
@@ -6281,20 +5582,8 @@ func TestInferFailedReason_SupervisorSuccessMainFailure(t *testing.T) {
 }
 
 func TestResubmitPendingPods(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    container:
-      image: my-image
-`)
-	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(wftmplGlobalVarsOnExit)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/resubmit-pending-pods.yaml")
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator/wftmpl-global-vars-on-exit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wftmpl)
 	defer cancel()
 
@@ -6327,67 +5616,9 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var wfRetryWithParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: parameter-aggregation
-spec:
-  entrypoint: parameter-aggregation
-  templates:
-  - name: parameter-aggregation
-    steps:
-    - - name: divide-by-2
-        template: divide-by-2
-        arguments:
-          parameters:
-          - name: num
-            value: "{{item}}"
-        withItems: [1,2,3]
-    # Finally, print all numbers processed in the previous step
-    - - name: print
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item}}"
-        withParam: "{{steps.divide-by-2.outputs.result}}"
-
-  # divide-by-2 divides a number in half
-  - name: divide-by-2
-    retryStrategy:
-        limit: 2
-        backoff:
-            duration: "1"
-            factor: 2
-    inputs:
-      parameters:
-      - name: num
-    script:
-      image: alpine:3.23
-      command: [sh, -x]
-      source: |
-        #!/bin/sh
-        echo $(({{inputs.parameters.num}}/2))
-  # whalesay prints a number using whalesay
-  - name: whalesay
-    retryStrategy:
-        limit: 2
-        backoff:
-            duration: "1"
-            factor: 2
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
-
 func TestWFWithRetryAndWithParam(t *testing.T) {
 	t.Run("IncludeScriptOutputInRetryAndWithParam", func(t *testing.T) {
-		wf := wfv1.MustUnmarshalWorkflow(wfRetryWithParam)
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-retry-with-param.yaml")
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
 
@@ -6406,189 +5637,8 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 	})
 }
 
-var paramAggregation = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: parameter-aggregation-dag-h8b82
-spec:
-
-  entrypoint: parameter-aggregation
-  templates:
-  -
-    dag:
-      tasks:
-      - arguments:
-          parameters:
-          - name: num
-            value: '{{item}}'
-        name: odd-or-even
-        template: odd-or-even
-        withItems:
-        - 1
-        - 2
-      - arguments:
-          parameters:
-          - name: message
-            value: '{{tasks.odd-or-even.outputs.parameters.num}}'
-        dependencies:
-        - odd-or-even
-        name: print-nums
-        template: whalesay
-      - arguments:
-          parameters:
-          - name: message
-            value: '{{tasks.odd-or-even.outputs.parameters.evenness}}'
-        dependencies:
-        - odd-or-even
-        name: print-evenness
-        template: whalesay
-    inputs: {}
-    metadata: {}
-    name: parameter-aggregation
-    outputs: {}
-  -
-    container:
-      args:
-      - |
-        sleep 1 &&
-        echo {{inputs.parameters.num}} > /tmp/num &&
-        if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
-          echo "even" > /tmp/even;
-        else
-          echo "odd" > /tmp/even;
-        fi
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources: {}
-    inputs:
-      parameters:
-      - name: num
-    metadata: {}
-    name: odd-or-even
-    outputs:
-      parameters:
-      - name: num
-        valueFrom:
-          path: /tmp/num
-      - name: evenness
-        valueFrom:
-          path: /tmp/even
-  -
-    container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-      resources: {}
-    inputs:
-      parameters:
-      - name: message
-    metadata: {}
-    name: whalesay
-    outputs: {}
-status:
-  nodes:
-    parameter-aggregation-dag-h8b82:
-      children:
-      - parameter-aggregation-dag-h8b82-3379492521
-      displayName: parameter-aggregation-dag-h8b82
-      finishedAt: "2020-12-09T15:37:07Z"
-      id: parameter-aggregation-dag-h8b82
-      name: parameter-aggregation-dag-h8b82
-      outboundNodes:
-      - parameter-aggregation-dag-h8b82-3175470584
-      - parameter-aggregation-dag-h8b82-2243926302
-      phase: Running
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: parameter-aggregation
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: DAG
-    parameter-aggregation-dag-h8b82-1440345089:
-      boundaryID: parameter-aggregation-dag-h8b82
-      children:
-      - parameter-aggregation-dag-h8b82-2243926302
-      - parameter-aggregation-dag-h8b82-3175470584
-      displayName: odd-or-even(1:2)
-      finishedAt: "2020-12-09T15:36:54Z"
-      hostNodeName: minikube
-      id: parameter-aggregation-dag-h8b82-1440345089
-      inputs:
-        parameters:
-        - name: num
-          value: "2"
-      name: parameter-aggregation-dag-h8b82.odd-or-even(1:2)
-      outputs:
-        exitCode: "0"
-        parameters:
-        - name: num
-          value: "2"
-          valueFrom:
-            path: /tmp/num
-        - name: evenness
-          value: even
-          valueFrom:
-            path: /tmp/even
-      phase: Succeeded
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: odd-or-even
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: Pod
-    parameter-aggregation-dag-h8b82-3379492521:
-      boundaryID: parameter-aggregation-dag-h8b82
-      children:
-      - parameter-aggregation-dag-h8b82-3572919299
-      - parameter-aggregation-dag-h8b82-1440345089
-      displayName: odd-or-even
-      finishedAt: "2020-12-09T15:36:55Z"
-      id: parameter-aggregation-dag-h8b82-3379492521
-      name: parameter-aggregation-dag-h8b82.odd-or-even
-      phase: Succeeded
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: odd-or-even
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: TaskGroup
-    parameter-aggregation-dag-h8b82-3572919299:
-      boundaryID: parameter-aggregation-dag-h8b82
-      children:
-      - parameter-aggregation-dag-h8b82-2243926302
-      - parameter-aggregation-dag-h8b82-3175470584
-      displayName: odd-or-even(0:1)
-      finishedAt: "2020-12-09T15:36:53Z"
-      hostNodeName: minikube
-      id: parameter-aggregation-dag-h8b82-3572919299
-      inputs:
-        parameters:
-        - name: num
-          value: "1"
-      name: parameter-aggregation-dag-h8b82.odd-or-even(0:1)
-      outputs:
-        exitCode: "0"
-        parameters:
-        - name: num
-          value: "1"
-          valueFrom:
-            path: /tmp/num
-        - name: evenness
-          value: odd
-          valueFrom:
-            path: /tmp/even
-      phase: Succeeded
-      startedAt: "2020-12-09T15:36:46Z"
-      templateName: odd-or-even
-      templateScope: local/parameter-aggregation-dag-h8b82
-      type: Pod
-  phase: Succeeded
-  startedAt: "2020-12-09T15:36:46Z"
-`
-
 func TestParamAggregation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(paramAggregation)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/param-aggregation.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -6836,29 +5886,8 @@ func TestRetryOnDiffHost(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
-var nodeAntiAffinityWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-fail
-spec:
-  entrypoint: retry-fail
-  templates:
-  - name: retry-fail
-    retryStrategy:
-      limit: 2
-      retryPolicy: "Always"
-      affinity:
-        nodeAntiAffinity: {}
-    script:
-      image: python:alpine3.23
-      command: [python]
-      source: |
-        exit(1)
-`
-
 func TestRetryOnNodeAntiAffinity(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/node-anti-affinity-workflow.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -6935,31 +5964,8 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
-var nodeAntiAffinityStepsWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-fail
-spec:
-  entrypoint: retry-fail
-  templates:
-    - name: retry-fail
-      steps:
-      - - name: fail
-          template: fail
-    - name: fail
-      retryStrategy:
-        limit: "1"
-        affinity:
-          nodeAntiAffinity: {}
-      container:
-        image: alpine:latest
-        command: [ sh, -c ]
-        args: [ "exit 1" ]
-`
-
 func TestRetryOnNodeAntiAffinitySteps(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityStepsWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/node-anti-affinity-steps-workflow.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7004,24 +6010,8 @@ func TestRetryOnNodeAntiAffinitySteps(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
-var noPodsWhenShutdown = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  shutdown: "Stop"
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
 func TestNoPodsWhenShutdown(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(noPodsWhenShutdown)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/no-pods-when-shutdown.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7035,26 +6025,8 @@ func TestNoPodsWhenShutdown(t *testing.T) {
 	assert.Contains(t, node.Message, "workflow shutdown with strategy: Stop")
 }
 
-var wfscheVariable = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-  annotations:
-    workflows.argoproj.io/scheduled-time: 2006-01-02T15:04:05-07:00
-spec:
-  entrypoint: whalesay
-  shutdown: "Stop"
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{workflow.scheduledTime}}"]
-`
-
 func TestWorkflowScheduledTimeVariable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfscheVariable)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wfsche-variable.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7064,24 +6036,8 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams()[varkeys.WorkflowScheduledTime.Template()])
 }
 
-var wfMainEntrypointVariable = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: whalesay
-  shutdown: "Stop"
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{workflow.mainEntrypoint}}"]
-`
-
 func TestWorkflowMainEntrypointVariable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfMainEntrypointVariable)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-main-entrypoint-variable.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7091,39 +6047,8 @@ func TestWorkflowMainEntrypointVariable(t *testing.T) {
 	assert.Equal(t, "whalesay", woc.globalParams()[varkeys.WorkflowMainEntrypoint.Template()])
 }
 
-var wfNodeNameField = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: this-is-part-1
-            template: main2
-    - name: main2
-      steps:
-        - - name: this-is-part-2
-            template: whalesay
-            arguments:
-                parameters:
-                  - name: message
-                    value: "{{node.name}}"
-    - name: whalesay
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["{{ inputs.parameters.message }}"]
-`
-
 func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfNodeNameField)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-node-name-field.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7143,20 +6068,7 @@ func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
 }
 
 func TestWorkflowShutdownStrategy(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: whalesay
-  namespace: default
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hellow"]`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-shutdown-strategy.yaml")
 
 	wf1 := wf.DeepCopy()
 	wf1.Name = "whalesay-1"
@@ -7207,51 +6119,8 @@ spec:
 	})
 }
 
-const resultVarRefWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: scripts-bash-
-spec:
-  entrypoint: bash-script-example
-  templates:
-  - name: bash-script-example
-    steps:
-    - - name: generate-random
-        template: gen-random-int
-    - - name: generate-random-1
-        template: gen-random-int
-    - - name: from
-        template: print-message
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.generate-random.outputs.result}}"
-    outputs:
-      parameters:
-        - name: stepresult
-          valueFrom:
-            expression: "steps['generate-random-1'].outputs.result"
-
-  - name: gen-random-int
-    script:
-      image: debian:9.4
-      command: [bash]
-      source: |
-        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
-
-  - name: print-message
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo result was: {{inputs.parameters.message}}"]
-`
-
 func TestHasOutputResultRef(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(resultVarRefWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/result-var-ref-wf.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -7261,185 +6130,8 @@ func TestHasOutputResultRef(t *testing.T) {
 	assert.True(t, woc.hasOutputResultRef(ctx, "generate-random-1", &wf.Spec.Templates[0]))
 }
 
-const stepsFailFast = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  creationTimestamp: "2021-03-12T15:28:29Z"
-  name: seq-loop-pz4hh
-spec:
-  activeDeadlineSeconds: 300
-  arguments:
-    parameters:
-    - name: items
-      value: |
-        ["a", "b", "c"]
-  entrypoint: seq-loop
-  templates:
-  - failFast: true
-    inputs:
-      parameters:
-      - name: items
-    name: seq-loop
-    parallelism: 1
-    steps:
-    - - name: iteration
-        template: iteration
-        withParam: '{{inputs.parameters.items}}'
-  - name: iteration
-    steps:
-    - - name: step1
-        template: succeed-step
-    - - name: step2
-        template: failed-step
-  - container:
-      args:
-      - exit 0
-      command:
-      - /bin/sh
-      - -c
-      image: alpine
-    name: succeed-step
-  - container:
-      args:
-      - exit 1
-      command:
-      - /bin/sh
-      - -c
-      image: alpine
-    name: failed-step
-    retryStrategy:
-      limit: 1
-  ttlStrategy:
-    secondsAfterCompletion: 600
-status:
-  nodes:
-    seq-loop-pz4hh:
-      children:
-      - seq-loop-pz4hh-3652003332
-      displayName: seq-loop-pz4hh
-      id: seq-loop-pz4hh
-      inputs:
-        parameters:
-        - name: items
-          value: |
-            ["a", "b", "c"]
-      name: seq-loop-pz4hh
-      outboundNodes:
-      - seq-loop-pz4hh-4172612902
-      phase: Running
-      startedAt: "2021-03-12T15:28:29Z"
-      templateName: seq-loop
-      templateScope: local/seq-loop-pz4hh
-      type: Steps
-    seq-loop-pz4hh-347271843:
-      boundaryID: seq-loop-pz4hh-1269516111
-      displayName: step2(0)
-      finishedAt: "2021-03-12T15:28:39Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: seq-loop-pz4hh-347271843
-      message: Error (exit code 1)
-      name: seq-loop-pz4hh[0].iteration(0:a)[1].step2(0)
-      phase: Failed
-      startedAt: "2021-03-12T15:28:33Z"
-      templateName: failed-step
-      templateScope: local/seq-loop-pz4hh
-      type: Pod
-    seq-loop-pz4hh-1269516111:
-      boundaryID: seq-loop-pz4hh
-      children:
-      - seq-loop-pz4hh-3596771579
-      displayName: iteration(0:a)
-      id: seq-loop-pz4hh-1269516111
-      name: seq-loop-pz4hh[0].iteration(0:a)
-      outboundNodes:
-      - seq-loop-pz4hh-4172612902
-      phase: Running
-      startedAt: "2021-03-12T15:28:29Z"
-      templateName: iteration
-      templateScope: local/seq-loop-pz4hh
-      type: Steps
-    seq-loop-pz4hh-1287186880:
-      boundaryID: seq-loop-pz4hh-1269516111
-      children:
-      - seq-loop-pz4hh-347271843
-      - seq-loop-pz4hh-4172612902
-      displayName: step2
-      id: seq-loop-pz4hh-1287186880
-      name: seq-loop-pz4hh[0].iteration(0:a)[1].step2
-      phase: Failed
-      startedAt: "2021-03-12T15:28:33Z"
-      templateName: failed-step
-      templateScope: local/seq-loop-pz4hh
-      type: Retry
-    seq-loop-pz4hh-3596771579:
-      boundaryID: seq-loop-pz4hh-1269516111
-      children:
-      - seq-loop-pz4hh-4031713604
-      displayName: '[0]'
-      finishedAt: "2021-03-12T15:28:33Z"
-      id: seq-loop-pz4hh-3596771579
-      name: seq-loop-pz4hh[0].iteration(0:a)[0]
-      phase: Succeeded
-      startedAt: "2021-03-12T15:28:29Z"
-      templateScope: local/seq-loop-pz4hh
-      type: StepGroup
-    seq-loop-pz4hh-3652003332:
-      boundaryID: seq-loop-pz4hh
-      children:
-      - seq-loop-pz4hh-1269516111
-      displayName: '[0]'
-      id: seq-loop-pz4hh-3652003332
-      name: seq-loop-pz4hh[0]
-      phase: Running
-      startedAt: "2021-03-12T15:28:29Z"
-      templateScope: local/seq-loop-pz4hh
-      type: StepGroup
-    seq-loop-pz4hh-3664029150:
-      boundaryID: seq-loop-pz4hh-1269516111
-      children:
-      - seq-loop-pz4hh-1287186880
-      displayName: '[1]'
-      id: seq-loop-pz4hh-3664029150
-      name: seq-loop-pz4hh[0].iteration(0:a)[1]
-      phase: Running
-      startedAt: "2021-03-12T15:28:33Z"
-      templateScope: local/seq-loop-pz4hh
-      type: StepGroup
-    seq-loop-pz4hh-4031713604:
-      boundaryID: seq-loop-pz4hh-1269516111
-      children:
-      - seq-loop-pz4hh-3664029150
-      displayName: step1
-      finishedAt: "2021-03-12T15:28:32Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: seq-loop-pz4hh-4031713604
-      name: seq-loop-pz4hh[0].iteration(0:a)[0].step1
-      phase: Succeeded
-      startedAt: "2021-03-12T15:28:29Z"
-      templateName: succeed-step
-      templateScope: local/seq-loop-pz4hh
-      type: Pod
-    seq-loop-pz4hh-4172612902:
-      boundaryID: seq-loop-pz4hh-1269516111
-      displayName: step2(1)
-      finishedAt: "2021-03-12T15:28:47Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: seq-loop-pz4hh-4172612902
-      message: Error (exit code 1)
-      name: seq-loop-pz4hh[0].iteration(0:a)[1].step2(1)
-      phase: Failed
-      startedAt: "2021-03-12T15:28:41Z"
-      templateName: failed-step
-      templateScope: local/seq-loop-pz4hh
-      type: Pod
-  phase: Running
-  startedAt: "2021-03-12T15:28:29Z"
-
-`
-
 func TestStepsFailFast(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(stepsFailFast)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/steps-fail-fast.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7462,26 +6154,7 @@ func TestStepsFailFast(t *testing.T) {
 // leaving the TaskGroup node between the DAG task and its items Running
 // forever: the failFast branch never assesses it. This fails at base too.
 func TestDAGFailFastItems(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-failfast-items
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    parallelism: 2
-    failFast: true
-    dag:
-      tasks:
-      - name: s
-        template: work
-        withItems: [p1, p2, p3, p4, p5]
-  - name: work
-    container: {image: alpine, command: [echo]}
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-fail-fast-items.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -7528,56 +6201,8 @@ func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "fanout1", getStepOrDAGTaskName("bug-rqq5f[0].fanout[0].fanout1(0:1)(0)[0]"))
 }
 
-const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-5bd7v
-spec:
-  activeDeadlineSeconds: 300
-  entrypoint: whalesay
-  retryStrategy:
-    limit: 1
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-    name: whalesay
-  ttlStrategy:
-    secondsAfterCompletion: 600
-status:
-  nodes:
-    hello-world-5bd7v:
-      children:
-      - hello-world-5bd7v-643409622
-      displayName: hello-world-5bd7v
-      finishedAt: "2021-03-23T14:53:45Z"
-      id: hello-world-5bd7v
-      name: hello-world-5bd7v
-      phase: Succeeded
-      startedAt: "2021-03-23T14:53:39Z"
-      templateName: whalesay
-      templateScope: local/hello-world-5bd7v
-      type: Retry
-    hello-world-5bd7v-643409622:
-      displayName: hello-world-5bd7v(0)
-      finishedAt: "2021-03-23T14:53:44Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-5bd7v-643409622
-      name: hello-world-5bd7v(0)
-      phase: Succeeded
-      startedAt: "2021-03-23T14:53:39Z"
-      templateName: whalesay
-      templateScope: local/hello-world-5bd7v
-      type: Pod
-  phase: Running
-  startedAt: "2021-03-23T14:53:39Z"
-`
-
 func TestRootRetryStrategyCompletes(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(rootRetryStrategyCompletes)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/root-retry-strategy-completes.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7588,92 +6213,8 @@ func TestRootRetryStrategyCompletes(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-const rootRetryStrategyWithInlineTemplateCompletes = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-inline-2bq8s
-spec:
-  entrypoint: main
-  retryStrategy:
-    limit: 1
-    retryPolicy: OnTransientError
-  templates:
-  - name: main
-    steps:
-    - - name: hello
-        inline:
-          script:
-            command: [python]
-            image: python:alpine
-            source: |
-              print("hello")
-status:
-  nodes:
-    steps-inline-2bq8s:
-      children:
-      - steps-inline-2bq8s-319341924
-      displayName: steps-inline-2bq8s
-      id: steps-inline-2bq8s
-      name: steps-inline-2bq8s
-      phase: Running
-      startedAt: "2026-02-25T04:45:34Z"
-      templateName: main
-      templateScope: local/steps-inline-2bq8s
-      type: Retry
-    steps-inline-2bq8s-319341924:
-      children:
-      - steps-inline-2bq8s-552579726
-      displayName: steps-inline-2bq8s(0)
-      id: steps-inline-2bq8s-319341924
-      name: steps-inline-2bq8s(0)
-      nodeFlag:
-        retried: true
-      phase: Running
-      startedAt: "2026-02-25T04:45:34Z"
-      templateName: main
-      templateScope: local/steps-inline-2bq8s
-      type: Steps
-    steps-inline-2bq8s-552579726:
-      boundaryID: steps-inline-2bq8s-319341924
-      children:
-      - steps-inline-2bq8s-3183619224
-      displayName: '[0]'
-      id: steps-inline-2bq8s-552579726
-      name: steps-inline-2bq8s(0)[0]
-      phase: Running
-      startedAt: "2026-02-25T04:45:34Z"
-      templateScope: local/steps-inline-2bq8s
-      type: StepGroup
-    steps-inline-2bq8s-1818864107:
-      boundaryID: steps-inline-2bq8s-319341924
-      displayName: hello(0)
-      id: steps-inline-2bq8s-1818864107
-      name: steps-inline-2bq8s(0)[0].hello(0)
-      nodeFlag:
-        retried: true
-      phase: Pending
-      startedAt: "2026-02-25T04:45:34Z"
-      taskResultSynced: true
-      templateScope: local/steps-inline-2bq8s
-      type: Pod
-    steps-inline-2bq8s-3183619224:
-      boundaryID: steps-inline-2bq8s-319341924
-      children:
-      - steps-inline-2bq8s-1818864107
-      displayName: hello
-      id: steps-inline-2bq8s-3183619224
-      name: steps-inline-2bq8s(0)[0].hello
-      phase: Running
-      startedAt: "2026-02-25T04:45:34Z"
-      templateScope: local/steps-inline-2bq8s
-      type: Retry
-  phase: Running
-  startedAt: "2026-02-25T04:45:34Z"
-`
-
 func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(rootRetryStrategyWithInlineTemplateCompletes)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/root-retry-strategy-with-inline-template-completes.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7685,30 +6226,8 @@ func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello(0)").Phase)
 }
 
-var inlineTemplateReferenceOuterTemplateWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: inline-composite-retry-
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-      - - name: step1
-          inline:
-            steps:
-            - - name: fail
-                template: fail
-    - name: fail
-      container:
-        image: alpine:latest
-        command: [sh, -c]
-        args: ["exit 1"]
-`
-
 func TestInlineTemplateReferenceOuterTemplateWorkflow(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(inlineTemplateReferenceOuterTemplateWorkflow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/inline-template-reference-outer-template-workflow.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7721,34 +6240,8 @@ func TestInlineTemplateReferenceOuterTemplateWorkflow(t *testing.T) {
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("fail").Phase)
 }
 
-const testGlobalParamSubstitute = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: dag-diamond-8xw8l
-spec:
-  entrypoint: "whalesay1"
-  arguments:
-    parameters:
-    - name: entrypoint
-      value: test
-    - name: mutex
-      value: mutex1
-    - name: message
-      value: mutex1
-  synchronization:
-    mutexes:
-      - name:  "{{workflow.parameters.mutex}}"
-  templates:
-  - name: whalesay1
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{workflow.parameters.message}}"]
-`
-
 func TestSubstituteGlobalVariables(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testGlobalParamSubstitute)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/global-param-substitute.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7848,52 +6341,8 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 	}
 }
 
-var wfPending = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  creationTimestamp: "2021-04-05T21:50:18Z"
-  name: hello-world-4srt7
-  namespace: argo
-spec:
-  entrypoint: whalesay
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-      name: ""
-    name: whalesay
-
-status:
-  artifactRepositoryRef:
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  finishedAt: null
-  nodes:
-    hello-world-4srt7:
-      displayName: hello-world-4srt7
-      finishedAt: null
-      id: hello-world-4srt7
-      name: hello-world-4srt7
-      phase: Pending
-      progress: 0/1
-      startedAt: "2021-04-05T21:50:18Z"
-      templateName: whalesay
-      templateScope: local/hello-world-4srt7
-      type: Pod
-  phase: Running
-  progress: 0/1
-  startedAt: "2021-04-05T21:50:18Z"
-`
-
 func TestWfPendingWithNoPod(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfPending)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-pending.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -7906,57 +6355,8 @@ func TestWfPendingWithNoPod(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 }
 
-var wfPendingWithSync = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world-mpdht
-  namespace: argo
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: derived-mutex-name
-      value: welcome
-  templates:
-  - container:
-      args:
-      - hello world
-      command:
-      - cowsay
-      image: docker/whalesay:latest
-    name: whalesay
-    synchronization:
-      mutexes:
-        - name: "{{ workflow.parameters.derived-mutex-name }}"
-  ttlStrategy:
-    secondsAfterCompletion: 600
-status:
-  nodes:
-    hello-world-mpdht:
-      displayName: hello-world-mpdht
-      finishedAt: null
-      id: hello-world-mpdht
-      name: hello-world-mpdht
-      phase: Pending
-      progress: 0/1
-      startedAt: "2021-04-05T22:11:21Z"
-      synchronizationStatus:
-        waiting: argo/Mutex/welcome
-      templateName: whalesay
-      templateScope: local/hello-world-mpdht
-      type: Pod
-  phase: Running
-  progress: 0/1
-  startedAt: "2021-04-05T22:11:21Z"
-  synchronization:
-    mutex:
-      waiting:
-      - holder: argo/hello-world-tmph8/hello-world-tmph8
-        mutex: argo/Mutex/welcome
-`
-
 func TestMutexWfPendingWithNoPod(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfPendingWithSync)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-pending-with-sync.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -7978,77 +6378,8 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	assert.Empty(t, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
 }
 
-var wfGlobalArtifactNil = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: global-outputs-ttsfq
-  namespace: default
-spec:
-  entrypoint: generate-globals
-  onExit: consume-globals
-  templates:
-  - name: generate-globals
-    steps:
-    - - name: generate
-        template: global-output
-    - - name: consume-globals
-        template: consume-globals
-  - container:
-      args:
-      - sleep 1; exit 1
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-    name: global-output
-    outputs:
-      artifacts:
-      - globalName: my-global-art
-        name: hello-art
-        path: /tmp/hello_world.txt
-      parameters:
-      - globalName: my-global-param
-        name: hello-param
-        valueFrom:
-          path: /tmp/hello_world.txt
-  - name: consume-globals
-    steps:
-    - - name: consume-global-param
-        template: consume-global-param
-      - arguments:
-          artifacts:
-          - from: '{{workflow.outputs.artifacts.my-global-art}}'
-            name: art
-        name: consume-global-art
-        template: consume-global-art
-  - container:
-      args:
-      - echo {{inputs.parameters.param}}
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-    inputs:
-      parameters:
-      - name: param
-        value: '{{workflow.outputs.parameters.my-global-param}}'
-    name: consume-global-param
-  - container:
-      args:
-      - cat /art
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-    inputs:
-      artifacts:
-      - name: art
-        path: /art
-    name: consume-global-art
-`
-
 func TestWFGlobalArtifactNil(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfGlobalArtifactNil)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-global-artifact-nil.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8074,100 +6405,8 @@ func TestWFGlobalArtifactNil(t *testing.T) {
 	assert.NotPanics(t, func() { woc.operate(ctx) })
 }
 
-const testDagTwoChildrenWithNonExpectedNodeType = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: ingest-pipeline-cdw-m2fnc
-spec:
-  arguments:
-    parameters:
-    - name: job_name
-      value: all_the_data
-  entrypoint: ingest-task
-  templates:
-  - dag:
-      tasks:
-      - dependencies:
-        - sent
-        name: ing
-        template: ingest-collections
-      - dependencies:
-        - sent
-        name: mat
-        template: materializations
-      - arguments:
-          parameters:
-          - name: job_name
-            value: all_the_data
-        name: sent
-        template: sentinel
-    name: ingest-task
-  - container:
-      args:
-      - sleep 30; date; echo got sentinel for {{inputs.parameters.job_name}}
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-    inputs:
-      parameters:
-      - name: job_name
-    name: sentinel
-  - name: ingest-collections
-    steps:
-    - - name: get-ingest-collections
-        template: get-ingest-collections
-  - name: get-ingest-collections
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        import json
-  - name: materializations
-    steps:
-    - - name: get-materializations
-        template: get-materializations
-  - name: get-materializations
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      name: ""
-      resources: {}
-      source: |
-        import json
-status:
-  nodes:
-    ingest-pipeline-cdw-m2fnc:
-      children:
-      - ingest-pipeline-cdw-m2fnc-141178578
-      displayName: ingest-pipeline-cdw-m2fnc
-      id: ingest-pipeline-cdw-m2fnc
-      name: ingest-pipeline-cdw-m2fnc
-      phase: Running
-      startedAt: "2021-06-22T18:51:02Z"
-      templateName: ingest-task
-      templateScope: local/ingest-pipeline-cdw-m2fnc
-      type: DAG
-    ingest-pipeline-cdw-m2fnc-141178578:
-      boundaryID: ingest-pipeline-cdw-m2fnc
-      displayName: sent
-      finishedAt: "2021-06-22T18:51:34Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: ingest-pipeline-cdw-m2fnc-141178578
-      name: ingest-pipeline-cdw-m2fnc.sent
-      phase: Succeeded
-      startedAt: "2021-06-22T18:51:02Z"
-      templateName: sentinel
-      templateScope: local/ingest-pipeline-cdw-m2fnc
-      type: Pod
-  phase: Running
-  startedAt: "2021-06-22T18:51:02Z"
-`
-
 func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testDagTwoChildrenWithNonExpectedNodeType)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-two-children-with-non-expected-node-type.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8182,51 +6421,10 @@ func TestDagTwoChildrenWithNonExpectedNodeType(t *testing.T) {
 	assert.Len(t, sentNode.Children, 2)
 }
 
-const testDagTwoChildrenContainerSet = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: outputs-result-pn6gb
-spec:
-  entrypoint: main
-  templates:
-  - dag:
-      tasks:
-      - name: a
-        template: group
-      - arguments:
-          parameters:
-          - name: x
-            value: '{{tasks.a.outputs.result}}'
-        depends: a
-        name: b
-        template: verify
-    name: main
-  - containerSet:
-      containers:
-      - args:
-        - -c
-        - |
-          print("hi")
-        image: python:alpine3.23
-        name: main
-    name: group
-  - inputs:
-      parameters:
-      - name: x
-    name: verify
-    script:
-      image: python:alpine3.23
-      source: |
-        assert "{{inputs.parameters.x}}" == "hi"
-status:
-  phase: Running
-  startedAt: "2021-06-24T18:05:35Z"
-`
-
 // In this test, a pod originating from a container set should not be its own outbound node. "a" should only have one child
 // and "main" should be the outbound node.
 func TestDagTwoChildrenContainerSet(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(testDagTwoChildrenContainerSet)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-two-children-container-set.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8241,168 +6439,11 @@ func TestDagTwoChildrenContainerSet(t *testing.T) {
 	assert.Len(t, sentNode.Children, 1)
 }
 
-const operatorRetryExpression = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-script-9z9pv
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: safe-to-retry
-        template: safe-to-retry
-    - - arguments:
-          parameters:
-          - name: safe-to-retry
-            value: '{{steps.safe-to-retry.outputs.result}}'
-        name: retry
-        template: retry-script
-  - name: safe-to-retry
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        print("true")
-  - inputs:
-      parameters:
-      - name: safe-to-retry
-    name: retry-script
-    retryStrategy:
-      expression: asInt(lastRetry.exitCode) > 1 && {{inputs.parameters.safe-to-retry}}
-        == true
-      limit: "3"
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([1, 2]);
-        sys.exit(exit_code)
-status:
-  nodes:
-    retry-script-9z9pv:
-      children:
-      - retry-script-9z9pv-1740877928
-      displayName: retry-script-9z9pv
-      id: retry-script-9z9pv
-      name: retry-script-9z9pv
-      outboundNodes:
-      - retry-script-9z9pv-2327053777
-      phase: Running
-      startedAt: "2021-06-10T22:28:49Z"
-      templateName: main
-      templateScope: local/retry-script-9z9pv
-      type: Steps
-    retry-script-9z9pv-734073693:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-2346402485
-      displayName: '[1]'
-      id: retry-script-9z9pv-734073693
-      name: retry-script-9z9pv[1]
-      phase: Running
-      startedAt: "2021-06-10T22:28:56Z"
-      templateScope: local/retry-script-9z9pv
-      type: StepGroup
-    retry-script-9z9pv-1740877928:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-3940097040
-      displayName: '[0]'
-      finishedAt: "2021-06-10T22:28:56Z"
-      id: retry-script-9z9pv-1740877928
-      name: retry-script-9z9pv[0]
-      phase: Succeeded
-      startedAt: "2021-06-10T22:28:49Z"
-      templateScope: local/retry-script-9z9pv
-      type: StepGroup
-    retry-script-9z9pv-2327053777:
-      boundaryID: retry-script-9z9pv
-      displayName: retry(1)
-      finishedAt: "2021-06-10T22:29:10Z"
-      id: retry-script-9z9pv-2327053777
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      message: Error (exit code 1)
-      name: retry-script-9z9pv[1].retry(1)
-      outputs:
-        exitCode: "1"
-      phase: Failed
-      startedAt: "2021-06-10T22:29:04Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-script-9z9pv-2346402485:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-2931195156
-      - retry-script-9z9pv-2327053777
-      displayName: retry
-      id: retry-script-9z9pv-2346402485
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      name: retry-script-9z9pv[1].retry
-      phase: Running
-      startedAt: "2021-06-10T22:28:56Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Retry
-    retry-script-9z9pv-2931195156:
-      boundaryID: retry-script-9z9pv
-      displayName: retry(0)
-      finishedAt: "2021-06-10T22:29:02Z"
-      id: retry-script-9z9pv-2931195156
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      message: Error (exit code 2)
-      name: retry-script-9z9pv[1].retry(0)
-      outputs:
-        exitCode: "2"
-      phase: Failed
-      startedAt: "2021-06-10T22:28:56Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-script-9z9pv-3940097040:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-734073693
-      displayName: safe-to-retry
-      finishedAt: "2021-06-10T22:28:55Z"
-      id: retry-script-9z9pv-3940097040
-      name: retry-script-9z9pv[0].safe-to-retry
-      outputs:
-        exitCode: "0"
-        result: "true"
-      phase: Succeeded
-      startedAt: "2021-06-10T22:28:49Z"
-      templateName: safe-to-retry
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-  phase: Running
-  startedAt: "2021-06-10T22:28:49Z"
-`
-
 // TestOperatorRetryExpression tests that retryStrategy.expression works correctly. In this test, the latest child node has
 // just failed with exit code 2. The retryStrategy's when condition specifies that retries must only be done when the
 // last exit code is NOT 2. We expect the retryStrategy to fail (even though it has 8 tries remainng).
 func TestOperatorRetryExpression(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/operator-retry-expression.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8420,7 +6461,7 @@ func TestOperatorRetryExpression(t *testing.T) {
 }
 
 func TestBuildRetryStrategyLocalScope(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/operator-retry-expression.yaml")
 	retryNode, err := wf.GetNodeByName("retry-script-9z9pv[1].retry")
 	require.NoError(t, err)
 
@@ -8434,167 +6475,11 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
 }
 
-const operatorRetryExpressionError = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-script-9z9pv
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: safe-to-retry
-        template: safe-to-retry
-    - - arguments:
-          parameters:
-          - name: safe-to-retry
-            value: '{{steps.safe-to-retry.outputs.result}}'
-        name: retry
-        template: retry-script
-  - name: safe-to-retry
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        print("true")
-  - inputs:
-      parameters:
-      - name: safe-to-retry
-    name: retry-script
-    retryStrategy:
-      expression: "true"
-      limit: "3"
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([1, 2]);
-        sys.exit(exit_code)
-status:
-  nodes:
-    retry-script-9z9pv:
-      children:
-      - retry-script-9z9pv-1740877928
-      displayName: retry-script-9z9pv
-      id: retry-script-9z9pv
-      name: retry-script-9z9pv
-      outboundNodes:
-      - retry-script-9z9pv-2327053777
-      phase: Running
-      startedAt: "2021-06-10T22:28:49Z"
-      templateName: main
-      templateScope: local/retry-script-9z9pv
-      type: Steps
-    retry-script-9z9pv-734073693:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-2346402485
-      displayName: '[1]'
-      id: retry-script-9z9pv-734073693
-      name: retry-script-9z9pv[1]
-      phase: Running
-      startedAt: "2021-06-10T22:28:56Z"
-      templateScope: local/retry-script-9z9pv
-      type: StepGroup
-    retry-script-9z9pv-1740877928:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-3940097040
-      displayName: '[0]'
-      finishedAt: "2021-06-10T22:28:56Z"
-      id: retry-script-9z9pv-1740877928
-      name: retry-script-9z9pv[0]
-      phase: Succeeded
-      startedAt: "2021-06-10T22:28:49Z"
-      templateScope: local/retry-script-9z9pv
-      type: StepGroup
-    retry-script-9z9pv-2327053777:
-      boundaryID: retry-script-9z9pv
-      displayName: retry(1)
-      finishedAt: "2021-06-10T22:29:10Z"
-      id: retry-script-9z9pv-2327053777
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      message: Error (exit code 1)
-      name: retry-script-9z9pv[1].retry(1)
-      outputs:
-        exitCode: "1"
-      phase: Error
-      startedAt: "2021-06-10T22:29:04Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-script-9z9pv-2346402485:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-2931195156
-      - retry-script-9z9pv-2327053777
-      displayName: retry
-      id: retry-script-9z9pv-2346402485
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      name: retry-script-9z9pv[1].retry
-      phase: Running
-      startedAt: "2021-06-10T22:28:56Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Retry
-    retry-script-9z9pv-2931195156:
-      boundaryID: retry-script-9z9pv
-      displayName: retry(0)
-      finishedAt: "2021-06-10T22:29:02Z"
-      id: retry-script-9z9pv-2931195156
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      message: Error (exit code 2)
-      name: retry-script-9z9pv[1].retry(0)
-      outputs:
-        exitCode: "1"
-      phase: Error
-      startedAt: "2021-06-10T22:28:56Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-script-9z9pv-3940097040:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-734073693
-      displayName: safe-to-retry
-      finishedAt: "2021-06-10T22:28:55Z"
-      id: retry-script-9z9pv-3940097040
-      name: retry-script-9z9pv[0].safe-to-retry
-      outputs:
-        exitCode: "0"
-        result: "true"
-      phase: Succeeded
-      startedAt: "2021-06-10T22:28:49Z"
-      templateName: safe-to-retry
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-  phase: Running
-  startedAt: "2021-06-10T22:28:49Z"
-`
-
 // TestOperatorRetryExpressionError tests that retryStrategy.expression works when the last node Errored.
 // The expression says retry "true" and as the policy is not specified
 // we are proving that the policy applied was Always not OnFailure
 func TestOperatorRetryExpressionError(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionError)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/operator-retry-expression-error.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -8609,165 +6494,10 @@ func TestOperatorRetryExpressionError(t *testing.T) {
 	assert.Len(t, retryNode.Children, 3)
 }
 
-const operatorRetryExpressionErrorNoExpr = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: retry-script-9z9pv
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: safe-to-retry
-        template: safe-to-retry
-    - - arguments:
-          parameters:
-          - name: safe-to-retry
-            value: '{{steps.safe-to-retry.outputs.result}}'
-        name: retry
-        template: retry-script
-  - name: safe-to-retry
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        print("true")
-  - inputs:
-      parameters:
-      - name: safe-to-retry
-    name: retry-script
-    retryStrategy:
-      limit: "3"
-    script:
-      command:
-      - python
-      image: python:alpine3.23
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([1, 2]);
-        sys.exit(exit_code)
-status:
-  nodes:
-    retry-script-9z9pv:
-      children:
-      - retry-script-9z9pv-1740877928
-      displayName: retry-script-9z9pv
-      id: retry-script-9z9pv
-      name: retry-script-9z9pv
-      outboundNodes:
-      - retry-script-9z9pv-2327053777
-      phase: Running
-      startedAt: "2021-06-10T22:28:49Z"
-      templateName: main
-      templateScope: local/retry-script-9z9pv
-      type: Steps
-    retry-script-9z9pv-734073693:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-2346402485
-      displayName: '[1]'
-      id: retry-script-9z9pv-734073693
-      name: retry-script-9z9pv[1]
-      phase: Running
-      startedAt: "2021-06-10T22:28:56Z"
-      templateScope: local/retry-script-9z9pv
-      type: StepGroup
-    retry-script-9z9pv-1740877928:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-3940097040
-      displayName: '[0]'
-      finishedAt: "2021-06-10T22:28:56Z"
-      id: retry-script-9z9pv-1740877928
-      name: retry-script-9z9pv[0]
-      phase: Succeeded
-      startedAt: "2021-06-10T22:28:49Z"
-      templateScope: local/retry-script-9z9pv
-      type: StepGroup
-    retry-script-9z9pv-2327053777:
-      boundaryID: retry-script-9z9pv
-      displayName: retry(1)
-      finishedAt: "2021-06-10T22:29:10Z"
-      id: retry-script-9z9pv-2327053777
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      message: Error (exit code 1)
-      name: retry-script-9z9pv[1].retry(1)
-      outputs:
-        exitCode: "1"
-      phase: Error
-      startedAt: "2021-06-10T22:29:04Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-script-9z9pv-2346402485:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-2931195156
-      - retry-script-9z9pv-2327053777
-      displayName: retry
-      id: retry-script-9z9pv-2346402485
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      name: retry-script-9z9pv[1].retry
-      phase: Running
-      startedAt: "2021-06-10T22:28:56Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Retry
-    retry-script-9z9pv-2931195156:
-      boundaryID: retry-script-9z9pv
-      displayName: retry(0)
-      finishedAt: "2021-06-10T22:29:02Z"
-      id: retry-script-9z9pv-2931195156
-      inputs:
-        parameters:
-        - name: safe-to-retry
-          value: "true"
-      message: Error (exit code 2)
-      name: retry-script-9z9pv[1].retry(0)
-      outputs:
-        exitCode: "1"
-      phase: Error
-      startedAt: "2021-06-10T22:28:56Z"
-      templateName: retry-script
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-      nodeFlag:
-        retried: true
-    retry-script-9z9pv-3940097040:
-      boundaryID: retry-script-9z9pv
-      children:
-      - retry-script-9z9pv-734073693
-      displayName: safe-to-retry
-      finishedAt: "2021-06-10T22:28:55Z"
-      id: retry-script-9z9pv-3940097040
-      name: retry-script-9z9pv[0].safe-to-retry
-      outputs:
-        exitCode: "0"
-        result: "true"
-      phase: Succeeded
-      startedAt: "2021-06-10T22:28:49Z"
-      templateName: safe-to-retry
-      templateScope: local/retry-script-9z9pv
-      type: Pod
-  phase: Running
-  startedAt: "2021-06-10T22:28:49Z"
-`
-
 // TestOperatorRetryExpressionErrorNoExpr tests that the default policy becomes
 // OnFailure by having no expression and no explicit retryPolicy
 func TestOperatorRetryExpressionErrorNoExpr(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpressionErrorNoExpr)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/operator-retry-expression-error-no-expr.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
@@ -8784,169 +6514,8 @@ func TestOperatorRetryExpressionErrorNoExpr(t *testing.T) {
 	assert.Equal(t, "Error (exit code 1)", retryNode.Message)
 }
 
-var exitHandlerWithRetryNodeParam = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: exit-handler-with-param-xbh52
-  namespace: argo
-spec:
-  arguments: {}
-  entrypoint: main
-  templates:
-  - inputs: {}
-    metadata: {}
-    name: main
-    outputs: {}
-    steps:
-    - - arguments: {}
-        hooks:
-          exit:
-            arguments:
-              parameters:
-              - name: message
-                value: '{{steps.step-1.outputs.parameters.result}}'
-            template: exit
-        name: step-1
-        template: output
-  - container:
-      args:
-      - echo -n hello world > /tmp/hello_world.txt; exit 1
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: output
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          default: Foobar
-          path: /tmp/hello_world.txt
-    retryStrategy:
-      backoff:
-        duration: 1s
-      limit: "1"
-      retryPolicy: Always
-  - inputs:
-      parameters:
-      - name: message
-        value: GoodValue
-    metadata: {}
-    name: exit
-    outputs: {}
-    script:
-      args:
-      - echo {{inputs.parameters.message}}
-      command:
-      - sh
-      - -c
-      image: alpine:3.23
-      name: ""
-      resources: {}
-      source: ""
-status:
-  nodes:
-    exit-handler-with-param-xbh52:
-      children:
-      - exit-handler-with-param-xbh52-3621967439
-      displayName: exit-handler-with-param-xbh52
-      finishedAt: "2021-10-18T03:28:14Z"
-      id: exit-handler-with-param-xbh52
-      name: exit-handler-with-param-xbh52
-      startedAt: "2021-10-18T03:27:44Z"
-      templateName: main
-      templateScope: local/exit-handler-with-param-xbh52
-      type: Steps
-    exit-handler-with-param-xbh52-1429999455:
-      boundaryID: exit-handler-with-param-xbh52
-      displayName: step-1(1)
-      finishedAt: "2021-10-18T03:27:58Z"
-      hostNodeName: smile
-      id: exit-handler-with-param-xbh52-1429999455
-      message: Error (exit code 1)
-      name: exit-handler-with-param-xbh52[0].step-1(1)
-      outputs:
-        exitCode: "1"
-        parameters:
-        - name: result
-          value: hello world
-          valueFrom:
-            default: Foobar
-            path: /tmp/hello_world.txt
-      phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 5
-        memory: 5
-      startedAt: "2021-10-18T03:27:54Z"
-      templateName: output
-      templateScope: local/exit-handler-with-param-xbh52
-      type: Pod
-      nodeFlag:
-        retried: true
-    exit-handler-with-param-xbh52-2034140834:
-      boundaryID: exit-handler-with-param-xbh52
-      displayName: step-1(0)
-      finishedAt: "2021-10-18T03:27:48Z"
-      hostNodeName: smile
-      id: exit-handler-with-param-xbh52-2034140834
-      message: Error (exit code 1)
-      name: exit-handler-with-param-xbh52[0].step-1(0)
-      outputs:
-        exitCode: "1"
-        parameters:
-        - name: result
-          value: hello world
-          valueFrom:
-            default: Foobar
-            path: /tmp/hello_world.txt
-      phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 5
-        memory: 5
-      startedAt: "2021-10-18T03:27:44Z"
-      templateName: output
-      templateScope: local/exit-handler-with-param-xbh52
-      type: Pod
-      nodeFlag:
-        retried: true
-    exit-handler-with-param-xbh52-3203867295:
-      boundaryID: exit-handler-with-param-xbh52
-      children:
-      - exit-handler-with-param-xbh52-2034140834
-      - exit-handler-with-param-xbh52-1429999455
-      displayName: step-1
-      finishedAt: "2021-10-18T03:28:04Z"
-      id: exit-handler-with-param-xbh52-3203867295
-      message: No more retries left
-      name: exit-handler-with-param-xbh52[0].step-1
-      startedAt: "2021-10-18T03:27:44Z"
-      templateName: output
-      templateScope: local/exit-handler-with-param-xbh52
-      type: Retry
-    exit-handler-with-param-xbh52-3621967439:
-      boundaryID: exit-handler-with-param-xbh52
-      children:
-      - exit-handler-with-param-xbh52-3203867295
-      displayName: '[0]'
-      finishedAt: "2021-10-18T03:28:14Z"
-      id: exit-handler-with-param-xbh52-3621967439
-      message: child 'exit-handler-with-param-xbh52-3203867295' failed
-      name: exit-handler-with-param-xbh52[0]
-      startedAt: "2021-10-18T03:27:44Z"
-      templateScope: local/exit-handler-with-param-xbh52
-      type: StepGroup
-  startedAt: "2021-10-18T03:27:44Z"
-`
-
 func TestExitHandlerWithRetryNodeParam(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/exit-handler-with-retry-node-param.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -8964,22 +6533,7 @@ func TestExitHandlerWithRetryNodeParam(t *testing.T) {
 }
 
 func TestReOperateCompletedWf(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     container:
-       image: my-image
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/re-operate-completed-wf.yaml")
 	wf.Status.Phase = wfv1.WorkflowError
 	wf.Status.FinishedAt = metav1.Now()
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
@@ -9002,7 +6556,7 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 		t.Run(tt.podNameVersion, func(t *testing.T) {
 			t.Setenv("POD_NAMES", tt.podNameVersion)
 
-			wf := wfv1.MustUnmarshalWorkflow(exitHandlerWithRetryNodeParam)
+			wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/exit-handler-with-retry-node-param.yaml")
 			cancel, controller := newController(logging.TestContext(t.Context()), wf)
 			defer cancel()
 
@@ -9016,441 +6570,8 @@ func TestSetWFPodNamesAnnotation(t *testing.T) {
 	}
 }
 
-var RetryLoopWithOutputParam = `
-metadata:
-  name: hr-retry-replication
-  namespace: argo
-  uid: a0edb47a-3e6d-4568-b828-bf0cfcd8e5d5
-  resourceVersion: '258409'
-  generation: 21
-  creationTimestamp: '2022-01-06T00:09:56Z'
-  labels:
-    app.kubernetes.io/managed-by: Helm
-    workflows.argoproj.io/completed: 'true'
-    workflows.argoproj.io/phase: Succeeded
-  annotations:
-    meta.helm.sh/release-name: hr-retry-replication
-    meta.helm.sh/release-namespace: argo
-    workflows.argoproj.io/pod-name-format: v1
-  managedFields:
-    - manager: Go-http-client
-      operation: Update
-      apiVersion: argoproj.io/v1alpha1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:spec':
-          'f:entrypoint': {}
-          'f:templates': {}
-    - manager: argo
-      operation: Update
-      apiVersion: argoproj.io/v1alpha1
-      time: '2022-01-06T00:09:56Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            .: {}
-            'f:meta.helm.sh/release-name': {}
-            'f:meta.helm.sh/release-namespace': {}
-          'f:labels':
-            .: {}
-            'f:app.kubernetes.io/managed-by': {}
-    - manager: workflow-controller
-      operation: Update
-      apiVersion: argoproj.io/v1alpha1
-      time: '2022-01-06T00:10:17Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:workflows.argoproj.io/pod-name-format': {}
-          'f:labels':
-            'f:workflows.argoproj.io/completed': {}
-            'f:workflows.argoproj.io/phase': {}
-        'f:spec': {}
-        'f:status': {}
-spec:
-  templates:
-    - name: hr-retry-replication
-      inputs: {}
-      outputs: {}
-      metadata: {}
-      dag:
-        tasks:
-          - name: Create-Json-List
-            template: createJsonList
-            arguments: {}
-          - name: Retry-And-Loop
-            template: retryAndLoop
-            arguments:
-              parameters:
-                - name: itemId
-                  value: '{{item.Id}}'
-            withParam: '{{tasks.Create-Json-List.outputs.parameters.jsonList}}'
-            depends: Create-Json-List
-          - name: Check-Output
-            template: checkOutput
-            arguments:
-              parameters:
-                - name: someInput
-                  value: '{{tasks.Retry-And-Loop.outputs.parameters.outputParam}}'
-            depends: Retry-And-Loop
-    - name: checkOutput
-      inputs:
-        parameters:
-          - name: someInput
-      outputs: {}
-      metadata: {}
-      script:
-        name: ''
-        image: 'alpine:3.23'
-        command:
-          - /bin/sh
-        resources: {}
-        source: |
-          echo "The Output is: {{inputs.parameters.someInput}}"
-    - name: retryAndLoop
-      inputs:
-        parameters:
-          - name: itemId
-      outputs:
-        parameters:
-          - name: outputParam
-            valueFrom:
-              path: /outputParam.txt
-      metadata: {}
-      script:
-        name: ''
-        image: 'alpine:3.23'
-        command:
-          - /bin/sh
-        resources: {}
-        source: |
-          echo ItemId: {{inputs.parameters.itemId}}
-          if [[ {{ retries }} == 0 ]]; then
-            exit 1 # Exit as failed on zeroth retry
-          fi
-          echo "Successful" > /outputParam.txt
-          exit 0 # Else exit successfully
-      retryStrategy:
-        limit: '2'
-    - name: createJsonList
-      inputs: {}
-      outputs:
-        parameters:
-          - name: jsonList
-            valueFrom:
-              path: /jsonList.json
-      metadata: {}
-      script:
-        name: ''
-        image: 'alpine:3.23'
-        command:
-          - /bin/sh
-        resources: {}
-        source: |
-          echo [{\"Id\": \"1\"}, {\"Id\": \"2\"}] > /jsonList.json
-  entrypoint: hr-retry-replication
-  arguments: {}
-  ttlStrategy:
-    secondsAfterCompletion: 600
-  activeDeadlineSeconds: 300
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
-status:
-  phase: Succeeded
-  startedAt: '2022-01-06T00:09:56Z'
-  finishedAt: '2022-01-06T00:10:17Z'
-  progress: 6/6
-  nodes:
-    hr-retry-replication:
-      id: hr-retry-replication
-      name: hr-retry-replication
-      displayName: hr-retry-replication
-      type: DAG
-      templateName: hr-retry-replication
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      startedAt: '2022-01-06T00:09:56Z'
-      finishedAt: '2022-01-06T00:10:17Z'
-      progress: 6/6
-      resourcesDuration:
-        cpu: 18
-        memory: 8
-      children:
-        - hr-retry-replication-2229970335
-      outboundNodes:
-        - hr-retry-replication-2709022465
-    hr-retry-replication-1172938528:
-      id: hr-retry-replication-1172938528
-      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)(0)'
-      displayName: 'Retry-And-Loop(0:Id:1)(0)'
-      type: Pod
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Failed
-      boundaryID: hr-retry-replication
-      message: Error (exit code 1)
-      startedAt: '2022-01-06T00:10:00Z'
-      finishedAt: '2022-01-06T00:10:05Z'
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      inputs:
-        parameters:
-          - name: itemId
-            value: '1'
-      outputs:
-        parameters:
-          - name: outputParam
-            valueFrom:
-              path: /outputParam.txt
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-1172938528/main.log
-        exitCode: '1'
-      hostNodeName: k3d-k3s-default-server-0
-    hr-retry-replication-1480423937:
-      id: hr-retry-replication-1480423937
-      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)(1)'
-      displayName: 'Retry-And-Loop(1:Id:2)(1)'
-      type: Pod
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:10:05Z'
-      finishedAt: '2022-01-06T00:10:12Z'
-      progress: 1/1
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      inputs:
-        parameters:
-          - name: itemId
-            value: '2'
-      outputs:
-        parameters:
-          - name: outputParam
-            value: Successful
-            valueFrom:
-              path: /outputParam.txt
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-1480423937/main.log
-        exitCode: '0'
-      children:
-        - hr-retry-replication-2709022465
-      hostNodeName: k3d-k3s-default-server-0
-    hr-retry-replication-1488413861:
-      id: hr-retry-replication-1488413861
-      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)'
-      displayName: 'Retry-And-Loop(1:Id:2)'
-      type: Retry
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:10:00Z'
-      finishedAt: '2022-01-06T00:10:12Z'
-      progress: 3/3
-      resourcesDuration:
-        cpu: 9
-        memory: 4
-      inputs:
-        parameters:
-          - name: itemId
-            value: '2'
-      outputs:
-        parameters:
-          - name: outputParam
-            value: Successful
-            valueFrom:
-              path: /outputParam.txt
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-1480423937/main.log
-        exitCode: '0'
-      children:
-        - hr-retry-replication-3158332932
-        - hr-retry-replication-1480423937
-    hr-retry-replication-2229970335:
-      id: hr-retry-replication-2229970335
-      name: hr-retry-replication.Create-Json-List
-      displayName: Create-Json-List
-      type: Pod
-      templateName: createJsonList
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:09:56Z'
-      finishedAt: '2022-01-06T00:10:00Z'
-      progress: 1/1
-      resourcesDuration:
-        cpu: 3
-        memory: 1
-      outputs:
-        parameters:
-          - name: jsonList
-            value: '[{"Id": "1"}, {"Id": "2"}]'
-            valueFrom:
-              path: /jsonList.json
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-2229970335/main.log
-        exitCode: '0'
-      children:
-        - hr-retry-replication-3704116740
-      hostNodeName: k3d-k3s-default-server-0
-    hr-retry-replication-2709022465:
-      id: hr-retry-replication-2709022465
-      name: hr-retry-replication.Check-Output
-      displayName: Check-Output
-      type: Pod
-      templateName: checkOutput
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:10:12Z'
-      finishedAt: '2022-01-06T00:10:17Z'
-      progress: 1/1
-      resourcesDuration:
-        cpu: 3
-        memory: 1
-      inputs:
-        parameters:
-          - name: someInput
-            value: '["Successful","Successful"]'
-      outputs:
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-2709022465/main.log
-        exitCode: '0'
-      hostNodeName: k3d-k3s-default-server-0
-    hr-retry-replication-302978553:
-      id: hr-retry-replication-302978553
-      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)'
-      displayName: 'Retry-And-Loop(0:Id:1)'
-      type: Retry
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:10:00Z'
-      finishedAt: '2022-01-06T00:10:12Z'
-      progress: 3/3
-      resourcesDuration:
-        cpu: 9
-        memory: 4
-      inputs:
-        parameters:
-          - name: itemId
-            value: '1'
-      outputs:
-        parameters:
-          - name: outputParam
-            value: Successful
-            valueFrom:
-              path: /outputParam.txt
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-4058438733/main.log
-        exitCode: '0'
-      children:
-        - hr-retry-replication-1172938528
-        - hr-retry-replication-4058438733
-    hr-retry-replication-3158332932:
-      id: hr-retry-replication-3158332932
-      name: 'hr-retry-replication.Retry-And-Loop(1:Id:2)(0)'
-      displayName: 'Retry-And-Loop(1:Id:2)(0)'
-      type: Pod
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Failed
-      boundaryID: hr-retry-replication
-      message: Error (exit code 1)
-      startedAt: '2022-01-06T00:10:00Z'
-      finishedAt: '2022-01-06T00:10:05Z'
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      inputs:
-        parameters:
-          - name: itemId
-            value: '2'
-      outputs:
-        parameters:
-          - name: outputParam
-            valueFrom:
-              path: /outputParam.txt
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-3158332932/main.log
-        exitCode: '1'
-      hostNodeName: k3d-k3s-default-server-0
-    hr-retry-replication-3704116740:
-      id: hr-retry-replication-3704116740
-      name: hr-retry-replication.Retry-And-Loop
-      displayName: Retry-And-Loop
-      type: TaskGroup
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:10:00Z'
-      finishedAt: '2022-01-06T00:10:12Z'
-      progress: 5/5
-      resourcesDuration:
-        cpu: 15
-        memory: 7
-      children:
-        - hr-retry-replication-302978553
-        - hr-retry-replication-1488413861
-    hr-retry-replication-4058438733:
-      id: hr-retry-replication-4058438733
-      name: 'hr-retry-replication.Retry-And-Loop(0:Id:1)(1)'
-      displayName: 'Retry-And-Loop(0:Id:1)(1)'
-      type: Pod
-      templateName: retryAndLoop
-      templateScope: local/hr-retry-replication
-      phase: Succeeded
-      boundaryID: hr-retry-replication
-      startedAt: '2022-01-06T00:10:05Z'
-      finishedAt: '2022-01-06T00:10:12Z'
-      progress: 1/1
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      inputs:
-        parameters:
-          - name: itemId
-            value: '1'
-      outputs:
-        parameters:
-          - name: outputParam
-            value: Successful
-            valueFrom:
-              path: /outputParam.txt
-        artifacts:
-          - name: main-logs
-            s3:
-              key: hr-retry-replication/hr-retry-replication-4058438733/main.log
-        exitCode: '0'
-      children:
-        - hr-retry-replication-2709022465
-      hostNodeName: k3d-k3s-default-server-0`
-
 func TestRetryLoopWithOutputParam(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(RetryLoopWithOutputParam)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retry-loop-with-output-param.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -9461,109 +6582,12 @@ func TestRetryLoopWithOutputParam(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var workflowShuttingDownWithNodesInPendingAfterReconciliation = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v1
-  generateName: container-set-termination-demo
-  generation: 10
-  labels:
-    workflows.argoproj.io/phase: Running
-    workflows.argoproj.io/resubmitted-from-workflow: container-set-termination-demob7c6c
-  name: container-set-termination-demopw5vv
-  namespace: argo
-  resourceVersion: "88102"
-  uid: 2a5a4c10-3a5c-4fb4-8931-20ac78cabfee
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-        - name: using-container-set-template
-          template: problematic-container-set
-  - name: problematic-container-set
-    containerSet:
-      containers:
-      - command:
-        - sh
-        - -c
-        - sleep 10
-        image: alpine
-        name: step-1
-      - command:
-        - sh
-        - -c
-        - sleep 10
-        image: alpine
-        name: step-2
-status:
-  phase: Running
-  conditions:
-  - status: "True"
-    type: PodRunning
-  finishedAt: null
-  nodes:
-    container-set-termination-demopw5vv:
-      children:
-      - container-set-termination-demopw5vv-2652912851
-      displayName: container-set-termination-demopw5vv
-      finishedAt: null
-      id: container-set-termination-demopw5vv
-      name: container-set-termination-demopw5vv
-      phase: Running
-      progress: 2/2
-      startedAt: "2022-01-27T17:45:59Z"
-      templateName: main
-      templateScope: local/container-set-termination-demopw5vv
-      type: DAG
-    container-set-termination-demopw5vv-842041608:
-      boundaryID: container-set-termination-demopw5vv
-      children:
-      - container-set-termination-demopw5vv-893664226
-      - container-set-termination-demopw5vv-876886607
-      displayName: using-container-set-template
-      finishedAt: "2022-01-27T17:46:16Z"
-      hostNodeName: k3d-argo-workflow-server-0
-      id: container-set-termination-demopw5vv-842041608
-      name: container-set-termination-demopw5vv.using-container-set-template
-      phase: Failed
-      progress: 1/1
-      startedAt: "2022-01-27T17:46:14Z"
-      templateName: problematic-container-set
-      templateScope: local/container-set-termination-demopw5vv
-      type: Pod
-    container-set-termination-demopw5vv-876886607:
-      boundaryID: container-set-termination-demopw5vv-842041608
-      displayName: step-2
-      finishedAt: null
-      id: container-set-termination-demopw5vv-876886607
-      name: container-set-termination-demopw5vv.using-container-set-template.step-2
-      phase: Pending
-      startedAt: "2022-01-27T17:46:14Z"
-      templateName: problematic-container-set
-      templateScope: local/container-set-termination-demopw5vv
-      type: Container
-    container-set-termination-demopw5vv-893664226:
-      boundaryID: container-set-termination-demopw5vv-842041608
-      displayName: step-1
-      finishedAt: null
-      id: container-set-termination-demopw5vv-893664226
-      name: container-set-termination-demopw5vv.using-container-set-template.step-1
-      phase: Pending
-      startedAt: "2022-01-27T17:46:14Z"
-      templateName: problematic-container-set
-      templateScope: local/container-set-termination-demopw5vv
-      type: Container
-`
-
 func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	t.Run("Shutdown", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		workflow := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-shutting-down-with-nodes-in-pending-after-reconciliation.yaml")
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 		woc.execWf.Spec.Shutdown = "Terminate"
@@ -9598,7 +6622,7 @@ func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 	})
 
 	t.Run("RetryNodeMarkedFailedOnTerminate", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		workflow := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-shutting-down-with-nodes-in-pending-after-reconciliation.yaml")
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 		woc.execWf.Spec.Shutdown = "Terminate"
@@ -9634,7 +6658,7 @@ func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 	})
 
 	t.Run("RetryNodeStaysRunningWhenChildStillRunning", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		workflow := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-shutting-down-with-nodes-in-pending-after-reconciliation.yaml")
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 		woc.execWf.Spec.Shutdown = "Terminate"
@@ -9667,7 +6691,7 @@ func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 	})
 
 	t.Run("RetryNodeMarkedFailedOnStop", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		workflow := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-shutting-down-with-nodes-in-pending-after-reconciliation.yaml")
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 		woc.execWf.Spec.Shutdown = "Stop"
@@ -9703,7 +6727,7 @@ func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 	})
 
 	t.Run("Deadline", func(t *testing.T) {
-		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		workflow := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-shutting-down-with-nodes-in-pending-after-reconciliation.yaml")
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
 
 		woc.execWf.Spec.Shutdown = ""
@@ -9739,16 +6763,7 @@ func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 }
 
 func TestWorkflowTemplateOnExitValidation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-invalid-onexit-
-  namespace: argo
-spec:
-  workflowTemplateRef:
-    name: workflow-template-invalid-onexit
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-template-on-exit-validation.yaml")
 	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-onexit.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wft)
 	defer cancel()
@@ -9762,16 +6777,7 @@ spec:
 }
 
 func TestWorkflowTemplateEntryPointValidation(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: workflow-template-invalid-entrypoint-
-  namespace: argo
-spec:
-  workflowTemplateRef:
-    name: workflow-template-invalid-entrypoint
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-template-entry-point-validation.yaml")
 	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-invalid-entrypoint.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wft)
 	defer cancel()
@@ -9784,49 +6790,12 @@ spec:
 	assert.Contains(t, woc.wf.Status.Message, "invalid spec")
 }
 
-var workflowWithTemplateLevelMemoizationAndChildStep = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  namespace: default
-  generateName: memoized-entrypoint-
-spec:
-  entrypoint: entrypoint
-  templates:
-  - name: entrypoint
-    memoize:
-      key: "entrypoint-key-1"
-      cache:
-        configMap:
-          name: cache-top-entrypoint
-    outputs:
-        parameters:
-          - name: url
-            valueFrom:
-              expression: |
-                'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
-    steps:
-      - - name: whalesay
-          template: whalesay
-
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello_world $(date) > /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: hello
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
 func nodeWithTemplateName(name string) func(n wfv1.NodeStatus) bool {
 	return func(n wfv1.NodeStatus) bool { return n.TemplateName == name }
 }
 
 func TestMemoizationTemplateLevelCacheWithStepWithoutCache(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-template-level-memoization-and-child-step.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -9853,7 +6822,7 @@ func TestMemoizationTemplateLevelCacheWithStepWithoutCache(t *testing.T) {
 }
 
 func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-template-level-memoization-and-child-step.yaml")
 
 	// Assume cache is already set
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
@@ -9899,7 +6868,7 @@ func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
 // TestMemoizationTemplateLevelCacheStepSavesOutputs ensures that the outputs of a memoized
 // steps template are written to the cache, so that a later cache hit can replay them.
 func TestMemoizationTemplateLevelCacheStepSavesOutputs(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-template-level-memoization-and-child-step.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -9930,46 +6899,8 @@ func TestMemoizationTemplateLevelCacheStepSavesOutputs(t *testing.T) {
 	assert.Contains(t, entry.Outputs.Parameters[0].Value.String(), "https://argo-workflows.company.com/workflows/namepace/")
 }
 
-var workflowWithTemplateLevelMemoizationAndChildDag = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  namespace: default
-  generateName: memoized-entrypoint-
-spec:
-  entrypoint: entrypoint
-  templates:
-  - name: entrypoint
-    dag:
-      tasks:
-      - name: whalesay-task
-        template: whalesay
-    memoize:
-      key: "entrypoint-key-1"
-      cache:
-        configMap:
-          name: cache-top-entrypoint
-    outputs:
-      parameters:
-      - name: url
-        valueFrom:
-          expression: |
-            'https://argo-workflows.company.com/workflows/namepace/' + '{{workflow.name}}' + '?tab=workflow'
-
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello_world $(date) > /tmp/hello_world.txt"]
-    outputs:
-      parameters:
-      - name: hello
-        valueFrom:
-          path: /tmp/hello_world.txt
-`
-
 func TestMemoizationTemplateLevelCacheWithDagWithoutCache(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-template-level-memoization-and-child-dag.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -9993,7 +6924,7 @@ func TestMemoizationTemplateLevelCacheWithDagWithoutCache(t *testing.T) {
 }
 
 func TestMemoizationTemplateLevelCacheWithDagWithCache(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildDag)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-with-template-level-memoization-and-child-dag.yaml")
 
 	// Assume cache is already set
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
@@ -10036,49 +6967,8 @@ func TestMemoizationTemplateLevelCacheWithDagWithCache(t *testing.T) {
 	require.Nil(t, node, "Whalesay dag should not have been executed")
 }
 
-var maxDepth = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-spec:
-  entrypoint: diamond
-  templates:
-  - name: diamond
-    dag:
-      tasks:
-      - name: A
-        template: echo
-        arguments:
-          parameters: [{name: message, value: A}]
-      - name: B
-        dependencies: [A]
-        template: echo
-        arguments:
-          parameters: [{name: message, value: B}]
-      - name: C
-        dependencies: [A]
-        template: echo
-        arguments:
-          parameters: [{name: message, value: C}]
-      - name: D
-        dependencies: [B, C]
-        template: echo
-        arguments:
-          parameters: [{name: message, value: D}]
-
-  - name: echo
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: alpine:3.23
-      command: [echo, "{{inputs.parameters.message}}"]
-
-`
-
 func TestMaxDepth(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(maxDepth)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/max-depth.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -10116,7 +7006,7 @@ func TestMaxDepth(t *testing.T) {
 }
 
 func TestMaxDepthEnvVariable(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(maxDepth)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/max-depth.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -10231,104 +7121,7 @@ func TestGetChildNodeIdsAndLastRetriedNode(t *testing.T) {
 }
 
 func TestRetryWhenEncounterExceededQuota(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-kind: Workflow
-apiVersion: argoproj.io/v1alpha1
-metadata:
-  name: exceeded-quota
-  creationTimestamp:
-  labels:
-    workflows.argoproj.io/phase: Running
-  annotations:
-    workflows.argoproj.io/pod-name-format: v2
-spec:
-  templates:
-  - name: entrypoint
-    inputs: {}
-    outputs: {}
-    metadata: {}
-    container:
-      name: 'main'
-      image: centos:7
-      command:
-      - python
-      - "-c"
-      - echo
-      args:
-      - "{{retries}}"
-      - "{{pod.name}}"
-      resources: {}
-    retryStrategy:
-      limit: 10
-      retryPolicy: Always
-      backoff:
-        duration: 5s
-  entrypoint: entrypoint
-  arguments: {}
-status:
-  phase: Runningg
-  startedAt: '2023-09-05T12:02:20Z'
-  finishedAt:
-  estimatedDuration: 1
-  progress: 0/1
-  nodes:
-    exceeded-quota:
-      id: exceeded-quota
-      name: exceeded-quota
-      displayName: exceeded-quota
-      type: Retry
-      templateName: main
-      templateScope: local/exceeded-quota
-      phase: Running
-      startedAt: '2023-09-05T12:02:20Z'
-      finishedAt:
-      estimatedDuration: 1
-      progress: 0/1
-      children:
-      - exceeded-quota-3674300323
-      - exceeded-quota-hook-8574637190
-      - exceeded-quota-8574637190
-    exceeded-quota-3674300323:
-      id: exceeded-quota-3674300323
-      name: exceeded-quota(0)
-      displayName: exceeded-quota(0)
-      type: Pod
-      nodeFlag:
-        retried: true
-      templateName: main
-      templateScope: local/exceeded-quota
-      phase: Failed
-      message: 'test1.test "test" is forbidden: exceeded quota'
-      startedAt: '2023-09-05T12:02:20Z'
-      finishedAt:
-      estimatedDuration: 1
-      progress: 0/1
-    exceeded-quota-hook-8574637190:
-      id: exceeded-quota-hook-8574637190
-      name: exceeded-quota-hook
-      displayName: exceeded-quota-hook
-      type: Pod
-      nodeFlag:
-        hooked: true
-    exceeded-quota-8574637190:
-      id: exceeded-quota-8574637190
-      name: exceeded-quota(1)
-      displayName: exceeded-quota(1)
-      type: Pod
-      nodeFlag:
-        retried: true
-      templateName: main
-      templateScope: local/exceeded-quota
-      phase: Pending
-      message: 'test1.test "test" is forbidden: exceeded quota'
-      startedAt: '2023-09-05T12:02:20Z'
-      finishedAt:
-      estimatedDuration: 1
-      progress: 0/1
-  artifactRepositoryRef: {}
-  artifactGCStatus:
-    notSpecified: true
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/retry-when-encounter-exceeded-quota.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -10357,68 +7150,13 @@ status:
 	woc.operate(ctx)
 }
 
-var needReconcileWorklfow = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-need-reconcile
-spec:
-  entrypoint: hello-hello-hello
-  arguments:
-    parameters:
-    - name: message1
-      value: hello world
-    - name: message2
-      value: foobar
-  # This spec contains two templates: hello-hello-hello and whalesay
-  templates:
-  - name: hello-hello-hello
-    # Instead of just running a container
-    # This template has a sequence of steps
-    steps:
-    - - name: hello1            # hello1 is run before the following steps
-        continueOn: {}
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello1"
-          - name: workflow_artifact_key
-            value: "{{ workflow.parameters.message2}}"
-    - - name: hello2a           # double dash => run after previous step
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{=steps['hello1'].outputs.parameters['workflow_artifact_key']}}"
-
-  # This is the same template as from the previous example
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    outputs:
-      parameters:
-      - name: workflow_artifact_key
-        value: '{{workflow.name}}'
-    script:
-      image: python:alpine3.23
-      command: [python]
-      env:
-      - name: message
-        value: "{{inputs.parameters.message}}"
-      source: |
-        import random
-        i = random.randint(1, 100)
-        print(i)`
-
 // TestWorkflowNeedReconcile test whether a workflow need reconcile taskresults.
 func TestWorkflowNeedReconcile(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := wfv1.MustUnmarshalWorkflow(needReconcileWorklfow)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/need-reconcile-workflow.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -10474,206 +7212,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 }
 
 func TestWorkflowRunningButLabelCompleted(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v2
-  creationTimestamp: "2024-02-04T08:43:42Z"
-  generateName: wf-retry-stopped-
-  generation: 11
-  labels:
-    workflows.argoproj.io/completed: "true"
-    workflows.argoproj.io/phase: Running
-    workflows.argoproj.io/test: "true"
-    workflows.argoproj.io/workflow: wf-retry-stopped
-    workflows.argoproj.io/workflow-archiving-status: Archived
-  name: wf-retry-stopped-pn6mm
-  namespace: argo
-  resourceVersion: "307888"
-  uid: 6c14e28b-1c31-4bd5-a10b-f4799971448f
-spec:
-  activeDeadlineSeconds: 300
-  arguments: {}
-  entrypoint: wf-retry-stopped-main
-  executor:
-    serviceAccountName: default
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
-  serviceAccountName: default
-  templates:
-  - inputs: {}
-    metadata: {}
-    name: wf-retry-stopped-main
-    outputs: {}
-    steps:
-    - - arguments: {}
-        name: create
-        template: create
-      - arguments: {}
-        name: sleep
-        template: sleep
-      - arguments: {}
-        name: stop
-        template: stop
-  - container:
-      command:
-      - sleep
-      - "10"
-      image: alpine:3.23
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: sleep
-    outputs: {}
-  - container:
-      args:
-      - stop
-      - -l
-      - workflows.argoproj.io/workflow=wf-retry-stopped
-      - --namespace=argo
-      - --loglevel=debug
-      image: argoproj/argocli:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: stop
-    outputs: {}
-  - container:
-      args:
-      - |
-        echo "hello world" > /tmp/message
-        sleep 999
-      command:
-      - sh
-      - -c
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: create
-    outputs:
-      artifacts:
-      - archive:
-          none: {}
-        name: my-artifact
-        path: /tmp/message
-        s3:
-          accessKeySecret:
-            key: accesskey
-            name: my-minio-cred
-          bucket: my-bucket
-          endpoint: minio:9000
-          insecure: true
-          key: my-artifact
-          secretKeySecret:
-            key: secretkey
-            name: my-minio-cred
-  workflowMetadata:
-    labels:
-      workflows.argoproj.io/test: "true"
-      workflows.argoproj.io/workflow: wf-retry-stopped
-status:
-  artifactGCStatus:
-    notSpecified: true
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  - status: "True"
-    type: Completed
-  finishedAt: "2024-02-04T08:44:20Z"
-  message: Stopped with strategy 'Stop'
-  nodes:
-    wf-retry-stopped-pn6mm:
-      children:
-      - wf-retry-stopped-pn6mm-4109534602
-      displayName: wf-retry-stopped-pn6mm
-      finishedAt: null
-      id: wf-retry-stopped-pn6mm
-      name: wf-retry-stopped-pn6mm
-      phase: Running
-      progress: 0/3
-      startedAt: "2024-02-04T08:44:03Z"
-      templateName: wf-retry-stopped-main
-      templateScope: local/wf-retry-stopped-pn6mm
-      type: Steps
-    wf-retry-stopped-pn6mm-1672493720:
-      finishedAt: null
-      id: ""
-      name: ""
-      outputs:
-        artifacts:
-        - archive:
-            none: {}
-          name: my-artifact
-          path: /tmp/message
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: my-artifact
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        - name: main-logs
-          s3:
-            key: wf-retry-stopped-pn6mm/wf-retry-stopped-pn6mm-create-1672493720/main.log
-      startedAt: null
-      type: ""
-    wf-retry-stopped-pn6mm-4109534602:
-      boundaryID: wf-retry-stopped-pn6mm
-      displayName: '[0]'
-      finishedAt: null
-      id: wf-retry-stopped-pn6mm-4109534602
-      name: wf-retry-stopped-pn6mm[0]
-      nodeFlag: {}
-      phase: Running
-      progress: 0/3
-      startedAt: "2024-02-04T08:44:03Z"
-      templateScope: local/wf-retry-stopped-pn6mm
-      type: StepGroup
-    wf-retry-stopped-pn6mm-4140492335:
-      finishedAt: null
-      id: ""
-      name: ""
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: wf-retry-stopped-pn6mm/wf-retry-stopped-pn6mm-sleep-4140492335/main.log
-      startedAt: null
-      type: ""
-  phase: Running
-  progress: 0/3
-  startedAt: "2024-02-04T08:44:03Z"
-  taskResultsCompletionStatus:
-    wf-retry-stopped-pn6mm-1672493720: true
-    wf-retry-stopped-pn6mm-2766965604: true
-    wf-retry-stopped-pn6mm-4140492335: true
-`)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/workflow-running-but-label-completed.yaml")
 
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
@@ -10720,37 +7259,6 @@ status:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var wfHasContainerSet = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: wf-has-containerSet
-spec:
-  entrypoint: init
-  templates:
-    - name: init
-      dag:
-        tasks:
-          - name: A
-            template: run
-    - name: run
-      containerSet:
-        containers:
-          - name: main
-            image: alpine:3.23
-            command:
-              - /bin/sh
-            args:
-              - '-c'
-              - sleep 9000
-          - name: main2
-            image: alpine:3.23
-            command:
-              - /bin/sh
-            args:
-              - '-c'
-              - sleep 9000`
-
 // TestContainerSetWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet is used.
 func TestContainerSetWhenPodDeleted(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
@@ -10758,7 +7266,7 @@ func TestContainerSetWhenPodDeleted(t *testing.T) {
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSet)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-has-container-set.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -10799,39 +7307,6 @@ func TestContainerSetWhenPodDeleted(t *testing.T) {
 		}
 	}
 }
-
-var wfHasContainerSetWithDependencies = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: wf-has-containerSet-with-dependencies
-spec:
-  entrypoint: init
-  templates:
-    - name: init
-      dag:
-        tasks:
-          - name: A
-            template: run
-    - name: run
-      containerSet:
-        containers:
-          - name: main
-            image: alpine:3.23
-            command:
-              - /bin/sh
-            args:
-              - '-c'
-              - sleep 9000
-          - name: main2
-            image: alpine:3.23
-            command:
-              - /bin/sh
-            args:
-              - '-c'
-              - sleep 9000
-            dependencies:
-              - main`
 
 // TestContainerSetWithDependenciesWhenPodDeleted tests whether all its children(container) deleted when pod deleted if containerSet with dependencies is used.
 func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
@@ -10840,7 +7315,7 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := wfv1.MustUnmarshalWorkflow(wfHasContainerSetWithDependencies)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-has-container-set-with-dependencies.yaml")
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
@@ -10882,135 +7357,159 @@ func TestContainerSetWithDependenciesWhenPodDeleted(t *testing.T) {
 	}
 }
 
-var dagContainersetWf = `
+// withRejection makes a pod look like kubelet rejected it at admission: the pod is Failed
+// and has no container statuses, because no container was ever created.
+func withRejection(pod *apiv1.Pod, _ *wfOperationCtx) {
+	pod.Status.Reason = "OutOfmemory"
+	pod.Status.Message = "Pod was rejected: Node didn't have enough resource: memory, requested: 1, used: 2, capacity: 2"
+	pod.Status.ContainerStatuses = nil
+}
+
+// TestContainerSetWhenPodRejected tests that the container nodes of a containerSet pod that
+// kubelet rejected (no container statuses) are failed instead of staying Pending.
+func TestContainerSetWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-has-container-set-with-dependencies.yaml")
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	containers := 0
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeContainer {
+			containers++
+			assert.Equal(t, wfv1.NodeFailed, node.Phase, node.Name)
+			assert.Contains(t, node.Message, "Pod was rejected", node.Name)
+		}
+	}
+	assert.Equal(t, 2, containers)
+}
+
+var wfContainerSetParameterizedNameRejected = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v2
-  name: dag-containerset-qlmzl
-  namespace: argo
-  labels:
-    workflows.argoproj.io/completed: "false"
-    workflows.argoproj.io/phase: Running
+  name: wf-containerset-parameterized-rejected
 spec:
-  entrypoint: pipeline
+  entrypoint: init
+  arguments:
+    parameters:
+      - name: ctr
+        value: main
   templates:
-  - containerSet:
-      containers:
-      - args:
-        - echo
-        - hello
-        command:
-        - /argosay
-        image: argoproj/argosay:v2
-        name: main
-    name: argosay-container-set
-  - dag:
-      tasks:
-      - name: A
-        template: argosay-container-set
-      - depends: A.Succeeded
-        name: B
-        template: argosay-container-set
-      - depends: A.Succeeded
-        name: C
-        template: argosay-container-set
-    name: pipeline
-status:
-  conditions:
-  - status: "False"
-    type: PodRunning
-  finishedAt: null
-  nodes:
-    dag-containerset-qlmzl:
-      children:
-      - dag-containerset-qlmzl-1127450597
-      displayName: dag-containerset-qlmzl
-      finishedAt: null
-      id: dag-containerset-qlmzl
-      name: dag-containerset-qlmzl
-      phase: Running
-      progress: 2/6
-      startedAt: "2024-05-14T02:24:54Z"
-      templateName: pipeline
-      templateScope: local/dag-containerset-qlmzl
-      type: DAG
-    dag-containerset-qlmzl-70023156:
-      boundaryID: dag-containerset-qlmzl-1127450597
-      children:
-      - dag-containerset-qlmzl-1077117740
-      displayName: main
-      finishedAt: "2024-05-14T02:25:28Z"
-      id: dag-containerset-qlmzl-70023156
-      name: dag-containerset-qlmzl.A.main
-      phase: Succeeded
-      progress: 1/1
-      startedAt: "2024-05-14T02:24:54Z"
-      templateName: argosay-container-set
-      templateScope: local/dag-containerset-qlmzl
-      type: Container
-    dag-containerset-qlmzl-1077117740:
-      boundaryID: dag-containerset-qlmzl
-      children:
-      - dag-containerset-qlmzl-3500746831
-      displayName: B
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-containerset-qlmzl-1077117740
-      message: PodInitializing
-      name: dag-containerset-qlmzl.B
-      phase: Pending
-      progress: 0/1
-      startedAt: "2024-05-14T02:25:30Z"
-      templateName: argosay-container-set
-      templateScope: local/dag-containerset-qlmzl
-      type: Pod
-    dag-containerset-qlmzl-1127450597:
-      boundaryID: dag-containerset-qlmzl
-      children:
-      - dag-containerset-qlmzl-70023156
-      displayName: A
-      finishedAt: "2024-05-14T02:25:27Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: dag-containerset-qlmzl-1127450597
-      name: dag-containerset-qlmzl.A
-      outputs:
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 6
-        memory: 49
-      startedAt: "2024-05-14T02:24:54Z"
-      templateName: argosay-container-set
-      templateScope: local/dag-containerset-qlmzl
-      type: Pod
-    dag-containerset-qlmzl-3500746831:
-      boundaryID: dag-containerset-qlmzl-1077117740
-      displayName: main
-      finishedAt: null
-      id: dag-containerset-qlmzl-3500746831
-      name: dag-containerset-qlmzl.B.main
-      phase: Pending
-      progress: 0/1
-      startedAt: "2024-05-14T02:25:30Z"
-      templateName: argosay-container-set
-      templateScope: local/dag-containerset-qlmzl
-      type: Container
-  phase: Running
-  progress: 2/4
-  resourcesDuration:
-    cpu: 6
-    memory: 49
-  startedAt: "2024-05-14T02:24:54Z"
-  taskResultsCompletionStatus:
-    dag-containerset-qlmzl-1077117740: false
-    dag-containerset-qlmzl-1127450597: true
-`
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      containerSet:
+        containers:
+          - name: "{{workflow.parameters.ctr}}"
+            image: alpine:3.23
+            command: [echo]`
+
+// TestContainerSetParameterizedNameWhenPodRejected tests that container nodes are failed
+// when their names come from parameters resolved at runtime.
+func TestContainerSetParameterizedNameWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfContainerSetParameterizedNameRejected)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	node, err := woc.wf.GetNodeByName("wf-containerset-parameterized-rejected.A.main")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Contains(t, node.Message, "Pod was rejected")
+}
+
+var wfContainerSetRetryRejected = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-containerset-retry-rejected
+spec:
+  entrypoint: init
+  templates:
+    - name: init
+      dag:
+        tasks:
+          - name: A
+            template: run
+    - name: run
+      retryStrategy:
+        limit: 2
+        retryPolicy: Always
+      containerSet:
+        containers:
+          - name: main
+            image: alpine:3.23
+            command: [echo]
+          - name: main2
+            image: alpine:3.23
+            command: [echo]
+            dependencies:
+              - main`
+
+// TestContainerSetRetryWhenPodRejected tests that a containerSet whose first pod kubelet rejected
+// is retried and that the workflow completes once the retry succeeds.
+func TestContainerSetRetryWhenPodRejected(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(wfContainerSetRetryRejected)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	makePodsPhase(ctx, woc, apiv1.PodFailed, withRejection)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 2)
+
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Phase == wfv1.NodeFailed {
+			return ""
+		}
+		return apiv1.PodSucceeded
+	}, withExitCode(0))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.True(t, node.Fulfilled(), "%s is %s", node.Name, node.Phase)
+	}
+	retryNode, err := woc.wf.GetNodeByName("wf-containerset-retry-rejected.A")
+	require.NoError(t, err)
+	assert.Len(t, retryNode.Children, 2)
+}
 
 func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagContainersetWf)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/dag-containerset-wf.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -11028,52 +7527,8 @@ func TestGetOutboundNodesFromDAGContainerset(t *testing.T) {
 	assert.True(t, found)
 }
 
-const withItemsOptionalArtStepsWF = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: fail-optional-artifact-with-items
-spec:
-  entrypoint: artifact-example
-  templates:
-    - name: artifact-example
-      steps:
-        - - name: generate-artifact
-            template: whalesay
-        - - name: consume-artifact
-            template: print-message
-            arguments:
-              artifacts:
-                - name: message
-                  optional: true
-                  from: "{{steps.generate-artifact.outputs.artifacts.message}}"
-            withItems:
-              - hello world
-
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["sleep 1;"]
-      outputs:
-        artifacts:
-          - name: message
-            optional: true
-            path: /tmp/hello_world
-
-
-    - name: print-message
-      inputs:
-        artifacts:
-          - name: message
-            optional: true
-            path: /tmp/message
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
-
 func TestWithItemsOptionalArtStepsWF(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtStepsWF)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/with-items-optional-art-steps-wf.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -11086,55 +7541,9 @@ func TestWithItemsOptionalArtStepsWF(t *testing.T) {
 	require.NotNil(t, node)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 }
-
-const withItemsOptionalArtDAGWF = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: fail-optional-artifact-with-items-dag
-spec:
-  entrypoint: artifact-example
-  templates:
-    - name: artifact-example
-      dag:
-        tasks:
-          - name: generate-artifact
-            template: whalesay
-          - name: consume-artifact
-            template: print-message
-            dependencies: [generate-artifact]
-            arguments:
-              artifacts:
-                - name: message
-                  optional: true
-                  from: "{{tasks.generate-artifact.outputs.artifacts.message}}"
-            withItems:
-              - hello world
-
-    - name: whalesay
-      container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["sleep 1;"]
-      outputs:
-        artifacts:
-          - name: message
-            optional: true
-            path: /tmp/hello_world
-
-
-    - name: print-message
-      inputs:
-        artifacts:
-          - name: message
-            optional: true
-            path: /tmp/message
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["test -e /tmp/message && ls /tmp/message || echo 0"]`
 
 func TestWithItemsOptionalArtDAGWF(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(withItemsOptionalArtDAGWF)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/with-items-optional-art-dag-wf.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -11147,33 +7556,10 @@ func TestWithItemsOptionalArtDAGWF(t *testing.T) {
 	require.NotNil(t, node)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 }
-
-var wfWithValueOverriding = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: parameter-valuefrom-value-
-spec:
-  entrypoint: echo
-  arguments: &args
-    parameters:
-      - name: message
-        value: "configmap argument overwrite with argument"
-        valueFrom:
-          configMapKeyRef:
-            name: config-properties
-            key: message
-  templates:
-    - name: echo
-      inputs: *args
-      container:
-        image: busybox
-        args: ["printf", "WORKFLOW: %s\nINPUT: %s", "{{workflow.parameters.message}}", "{{inputs.parameters.message}}"]
-`
 
 // https://github.com/argoproj/argo-workflows/issues/14426#issuecomment-2870224091
 func TestSetGlobalParametersOverriding(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithValueOverriding)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-with-value-overriding.yaml")
 	t.Run("CheckArgumentFromWF", func(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
@@ -11184,409 +7570,8 @@ func TestSetGlobalParametersOverriding(t *testing.T) {
 	})
 }
 
-const marksWFSucceeded = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  annotations:
-    workflows.argoproj.io/pod-name-format: v2
-  creationTimestamp: "2025-06-05T02:55:32Z"
-  generateName: archive-strategies-
-  generation: 12
-  labels:
-    default-label: thisLabelIsFromWorkflowDefaults
-    workflows.argoproj.io/completed: "false"
-    workflows.argoproj.io/phase: Running
-  name: archive-strategies-4br4g
-  namespace: argo
-  resourceVersion: "1185"
-  uid: 18f952fc-65ad-4415-908f-4e23b22633f0
-spec:
-  activeDeadlineSeconds: 300
-  arguments: {}
-  entrypoint: main
-  podSpecPatch: |
-    terminationGracePeriodSeconds: 3
-  templates:
-  - dag:
-      tasks:
-      - arguments: {}
-        name: generate-default
-        template: generate-default
-      - arguments:
-          artifacts:
-          - from: '{{tasks.generate-default.outputs.artifacts.file-default}}'
-            name: file-default
-        dependencies:
-        - generate-default
-        name: consume-default
-        template: consume-default
-      - arguments: {}
-        name: generate-tar
-        template: generate-tar
-      - arguments:
-          artifacts:
-          - from: '{{tasks.generate-tar.outputs.artifacts.file-tar}}'
-            name: file-tar
-        dependencies:
-        - generate-tar
-        name: consume-tar
-        template: consume-tar
-      - arguments: {}
-        name: generate-none
-        template: generate-none
-      - arguments:
-          artifacts:
-          - from: '{{tasks.generate-none.outputs.artifacts.file-none}}'
-            name: file-none
-        dependencies:
-        - generate-none
-        name: consume-none
-        template: consume-none
-    inputs: {}
-    metadata: {}
-    name: main
-    outputs: {}
-  - container:
-      args:
-      - echo
-      - hello
-      - /tmp/file-default
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: generate-default
-    outputs:
-      artifacts:
-      - name: file-default
-        path: /tmp/file-default
-  - container:
-      args:
-      - assert_contains
-      - /tmp/file-default
-      - hello
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs:
-      artifacts:
-      - name: file-default
-        path: /tmp/file-default
-    metadata: {}
-    name: consume-default
-    outputs: {}
-  - container:
-      args:
-      - echo
-      - hello
-      - /tmp/file-tar
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: generate-tar
-    outputs:
-      artifacts:
-      - archive:
-          tar: {}
-        name: file-tar
-        path: /tmp/file-tar
-  - container:
-      args:
-      - assert_contains
-      - /tmp/file-tar
-      - hello
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs:
-      artifacts:
-      - archive:
-          tar: {}
-        name: file-tar
-        path: /tmp/file-tar
-    metadata: {}
-    name: consume-tar
-    outputs: {}
-  - container:
-      args:
-      - echo
-      - hello
-      - /tmp/file-none
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: generate-none
-    outputs:
-      artifacts:
-      - archive:
-          none: {}
-        name: file-none
-        path: /tmp/file-none
-  - container:
-      args:
-      - assert_contains
-      - /tmp/file-none
-      - hello
-      image: argoproj/argosay:v2
-      name: ""
-      resources: {}
-    inputs:
-      artifacts:
-      - archive:
-          none: {}
-        name: file-none
-        path: /tmp/file-none
-    metadata: {}
-    name: consume-none
-    outputs: {}
-  workflowMetadata:
-    labels:
-      default-label: thisLabelIsFromWorkflowDefaults
-status:
-  artifactGCStatus:
-    notSpecified: true
-  artifactRepositoryRef:
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        accessKeySecret:
-          key: accesskey
-          name: my-minio-cred
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        secretKeySecret:
-          key: secretkey
-          name: my-minio-cred
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  nodes:
-    archive-strategies-4br4g:
-      children:
-      - archive-strategies-4br4g-281020786
-      - archive-strategies-4br4g-867259351
-      - archive-strategies-4br4g-2183706504
-      displayName: archive-strategies-4br4g
-      id: archive-strategies-4br4g
-      name: archive-strategies-4br4g
-      outboundNodes:
-      - archive-strategies-4br4g-375797365
-      - archive-strategies-4br4g-1330961402
-      - archive-strategies-4br4g-491290487
-      phase: Succeeded
-      progress: 6/6
-      startedAt: "2025-06-05T02:55:32Z"
-      taskResultSynced: true
-      templateName: main
-      templateScope: local/archive-strategies-4br4g
-      type: DAG
-    archive-strategies-4br4g-281020786:
-      boundaryID: archive-strategies-4br4g
-      children:
-      - archive-strategies-4br4g-375797365
-      displayName: generate-default
-      finishedAt: "2025-06-05T02:56:38Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: archive-strategies-4br4g-281020786
-      name: archive-strategies-4br4g.generate-default
-      outputs:
-        artifacts:
-        - name: file-default
-          path: /tmp/file-default
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/file-default.tgz
-        - name: main-logs
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 17
-      startedAt: "2025-06-05T02:55:32Z"
-      taskResultSynced: true
-      templateName: generate-default
-      templateScope: local/archive-strategies-4br4g
-      type: Pod
-    archive-strategies-4br4g-375797365:
-      boundaryID: archive-strategies-4br4g
-      displayName: consume-default
-      finishedAt: "2025-06-05T02:56:45Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: archive-strategies-4br4g-375797365
-      inputs:
-        artifacts:
-        - name: file-default
-          path: /tmp/file-default
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-default-281020786/file-default.tgz
-      name: archive-strategies-4br4g.consume-default
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-default-375797365/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 0
-        memory: 2
-      startedAt: "2025-06-05T02:56:41Z"
-      taskResultSynced: true
-      templateName: consume-default
-      templateScope: local/archive-strategies-4br4g
-      type: Pod
-    archive-strategies-4br4g-491290487:
-      boundaryID: archive-strategies-4br4g
-      displayName: consume-tar
-      finishedAt: "2025-06-05T02:56:45Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: archive-strategies-4br4g-491290487
-      inputs:
-        artifacts:
-        - archive:
-            tar: {}
-          name: file-tar
-          path: /tmp/file-tar
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/file-tar.tgz
-      name: archive-strategies-4br4g.consume-tar
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-tar-491290487/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 0
-        memory: 2
-      startedAt: "2025-06-05T02:56:41Z"
-      taskResultSynced: true
-      templateName: consume-tar
-      templateScope: local/archive-strategies-4br4g
-      type: Pod
-    archive-strategies-4br4g-867259351:
-      boundaryID: archive-strategies-4br4g
-      children:
-      - archive-strategies-4br4g-1330961402
-      displayName: generate-none
-      finishedAt: "2025-06-05T02:56:38Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: archive-strategies-4br4g-867259351
-      name: archive-strategies-4br4g.generate-none
-      outputs:
-        artifacts:
-        - archive:
-            none: {}
-          name: file-none
-          path: /tmp/file-none
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/file-none
-        - name: main-logs
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 17
-      startedAt: "2025-06-05T02:55:35Z"
-      taskResultSynced: true
-      templateName: generate-none
-      templateScope: local/archive-strategies-4br4g
-      type: Pod
-    archive-strategies-4br4g-1330961402:
-      boundaryID: archive-strategies-4br4g
-      displayName: consume-none
-      finishedAt: "2025-06-05T02:56:45Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: archive-strategies-4br4g-1330961402
-      inputs:
-        artifacts:
-        - archive:
-            none: {}
-          name: file-none
-          path: /tmp/file-none
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-none-867259351/file-none
-      name: archive-strategies-4br4g.consume-none
-      outputs:
-        artifacts:
-        - name: main-logs
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-consume-none-1330961402/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 0
-        memory: 2
-      startedAt: "2025-06-05T02:56:41Z"
-      taskResultSynced: true
-      templateName: consume-none
-      templateScope: local/archive-strategies-4br4g
-      type: Pod
-    archive-strategies-4br4g-2183706504:
-      boundaryID: archive-strategies-4br4g
-      children:
-      - archive-strategies-4br4g-491290487
-      displayName: generate-tar
-      finishedAt: "2025-06-05T02:56:38Z"
-      hostNodeName: k3d-k3s-default-server-0
-      id: archive-strategies-4br4g-2183706504
-      name: archive-strategies-4br4g.generate-tar
-      outputs:
-        artifacts:
-        - archive:
-            tar: {}
-          name: file-tar
-          path: /tmp/file-tar
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/file-tar.tgz
-        - name: main-logs
-          s3:
-            key: archive-strategies-4br4g/archive-strategies-4br4g-generate-tar-2183706504/main.log
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 17
-      startedAt: "2025-06-05T02:55:35Z"
-      taskResultSynced: true
-      templateName: generate-tar
-      templateScope: local/archive-strategies-4br4g
-      type: Pod
-  phase: Running
-  progress: 6/6
-  resourcesDuration:
-    cpu: 6
-    memory: 57
-  startedAt: "2025-06-05T02:55:32Z"
-  taskResultsCompletionStatus:
-    archive-strategies-4br4g-281020786: true
-    archive-strategies-4br4g-375797365: true
-    archive-strategies-4br4g-491290487: true
-    archive-strategies-4br4g-867259351: true
-    archive-strategies-4br4g-1330961402: true
-    archive-strategies-4br4g-2183706504: true`
-
 func TestMarksWFSucceeded(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(marksWFSucceeded)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/marks-wf-succeeded.yaml")
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 
@@ -11597,44 +7582,8 @@ func TestMarksWFSucceeded(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
-var wfWithSequenceIssue = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: withsequence-expr-test-
-spec:
-  entrypoint: start
-  templates:
-    - name: start
-      inputs:
-        parameters:
-          - name: someInt
-            value: "12"
-      steps:
-        - - name: create-sequence
-            template: print-argument
-            arguments:
-              parameters:
-                - name: arg
-                  value: "{{= int(item) + int(inputs.parameters.someInt) }}"
-            withSequence:
-              count: "2"
-    - name: print-argument
-      inputs:
-        parameters:
-          - name: arg
-      container:
-        image: alpine:3.23
-        command: [echo]
-        args: ["{{inputs.parameters.arg}}"]
-  ttlStrategy:
-    secondsAfterCompletion: 300
-  podGC:
-    strategy: OnPodCompletion
-`
-
 func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(wfWithSequenceIssue)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/wf-with-sequence-issue.yaml")
 	t.Run("CheckExpressionWithItemAndInputs", func(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
@@ -11681,6 +7630,41 @@ func TestPendingTimeoutFailsNode(t *testing.T) {
 	node, err := woc.wf.GetNodeByName("hello-world-dag.dag1")
 	require.NoError(t, err)
 	node.StartedAt = metav1.NewTime(time.Now().Add(-3 * time.Second))
+	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	node, err = woc.wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, ErrTimeout.Error(), node.Message)
+}
+
+// TestTimeoutFailsPendingNodeBeforePendingTimeout is the mirror of
+// TestPendingTimeoutFailsNode: a template that sets both timeout and
+// pendingTimeout must fail a Pending node at the timeout, even when the
+// pendingTimeout is far beyond it. A regression skipped the timeout check for
+// every template with a pendingTimeout, leaving such a node Pending until the
+// pendingTimeout instead.
+func TestTimeoutFailsPendingNodeBeforePendingTimeout(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
+	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+	// a pendingTimeout far beyond the 4s timeout, so only the timeout can fail the node
+	wf.Spec.Templates[1].PendingTimeout = "1h"
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+
+	// timeout is 4s: start the node 5s ago rather than sleeping
+	node, err := woc.wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	node.StartedAt = metav1.NewTime(time.Now().Add(-5 * time.Second))
 	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
