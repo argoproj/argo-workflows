@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,7 +19,9 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/packer"
 )
 
@@ -182,4 +186,165 @@ func TestPersistUpdatesMarksReapplyFailedOnNonConflictError(t *testing.T) {
 	woc.persistUpdates(ctx)
 
 	assert.True(t, woc.reapplyFailed, "non-conflict persist error should mark reapply-failed to keep the throttler slot")
+}
+
+func TestPhaseChangeMetricsOnlyRecordedOnPersistSuccess(t *testing.T) {
+	t.Run("non-conflict Update failure does not double-count phase on retry", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx)
+		defer cancel()
+
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
+		wf.Namespace = "default"
+		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		failNextUpdate := true
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+			if failNextUpdate {
+				failNextUpdate = false
+				return true, nil, apierr.NewInternalError(fmt.Errorf("transient error"))
+			}
+			return false, nil, nil
+		})
+
+		runningAttribs := attribute.NewSet(
+			attribute.String(telemetry.AttribWorkflowPhase, string(metrics.WorkflowRunning)),
+			attribute.String(telemetry.AttribWorkflowNamespace, "default"),
+		)
+
+		// First reconcile: in-memory phase transitions to Running, but Update fails.
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		require.True(t, woc.reapplyFailed)
+
+		_, err = testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentTotalCount.Name(), &runningAttribs)
+		require.Error(t, err, "phase transition must not be counted when workflow Update fails")
+
+		// Second reconcile reads the unchanged workflow and persists Running once.
+		wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		require.False(t, woc.reapplyFailed)
+
+		val, err := testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentTotalCount.Name(), &runningAttribs)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), val)
+	})
+
+	t.Run("conflict where reapplyUpdate fails does not double-count phase on retry", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx)
+		defer cancel()
+
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
+		wf.Namespace = "default"
+		wf.UID = "uid-conflict-fail"
+		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		blockUpdates := true
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+			if blockUpdates {
+				return true, nil, apierr.NewConflict(wfv1.Resource("workflows"), wf.Name, fmt.Errorf("conflict"))
+			}
+			return false, nil, nil
+		})
+
+		runningAttribs := attribute.NewSet(
+			attribute.String(telemetry.AttribWorkflowPhase, string(metrics.WorkflowRunning)),
+			attribute.String(telemetry.AttribWorkflowNamespace, "default"),
+		)
+
+		// Initial Update and all reapplyUpdate attempts fail with conflict.
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		require.True(t, woc.reapplyFailed)
+
+		_, err = testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentTotalCount.Name(), &runningAttribs)
+		require.Error(t, err, "phase transition must not be counted when reapplyUpdate fails")
+
+		// Next reconcile persists cleanly and counts the transition exactly once.
+		blockUpdates = false
+		wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		require.False(t, woc.reapplyFailed)
+
+		val, err := testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentTotalCount.Name(), &runningAttribs)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), val)
+	})
+
+	t.Run("conflict where reapplyUpdate succeeds records phase and template counters once", func(t *testing.T) {
+		wftmpl := &wfv1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "tmpl-persist",
+				Namespace: "default",
+			},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "whalesay",
+				Templates: []wfv1.Template{
+					{
+						Name: "whalesay",
+						Container: &apiv1.Container{
+							Image: "docker/whalesay:latest",
+						},
+					},
+				},
+			},
+		}
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wf-tmpl-conflict",
+				Namespace: "default",
+				UID:       "uid-tmpl-conflict",
+			},
+			Spec: wfv1.WorkflowSpec{
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{
+					Name: wftmpl.Name,
+				},
+			},
+		}
+
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wftmpl, wf)
+		defer cancel()
+
+		conflictFirstUpdate := true
+		controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+			if conflictFirstUpdate {
+				conflictFirstUpdate = false
+				return true, nil, apierr.NewConflict(wfv1.Resource("workflows"), wf.Name, fmt.Errorf("conflict"))
+			}
+			return false, nil, nil
+		})
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		require.False(t, woc.reapplyFailed)
+		require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+		totalAttribs := attribute.NewSet(
+			attribute.String(telemetry.AttribWorkflowPhase, string(metrics.WorkflowRunning)),
+			attribute.String(telemetry.AttribWorkflowNamespace, "default"),
+		)
+		val, err := testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentTotalCount.Name(), &totalAttribs)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), val)
+
+		tmplAttribs := attribute.NewSet(
+			attribute.String(telemetry.AttribTemplateName, wftmpl.Name),
+			attribute.String(telemetry.AttribTemplateNamespace, "default"),
+			attribute.Bool(telemetry.AttribTemplateCluster, false),
+			attribute.String(telemetry.AttribWorkflowPhase, string(metrics.WorkflowRunning)),
+		)
+		tmplVal, err := testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentWorkflowtemplateTriggeredTotal.Name(), &tmplAttribs)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), tmplVal)
+	})
 }

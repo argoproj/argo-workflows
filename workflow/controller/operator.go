@@ -881,6 +881,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	// Create WorkflowNode* events for nodes that have changed phase
 	woc.recordNodePhaseChangeEvents(ctx, woc.orig.Status.Nodes, woc.wf.Status.Nodes)
 
+	// Record phase change metrics only once the new phase has been persisted so
+	// failed or retried reconciliations do not double-count transitions.
+	if woc.orig.Status.Phase != woc.wf.Status.Phase {
+		woc.recordWorkflowPhaseChange(ctx)
+	}
+
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
 	}
@@ -936,8 +942,11 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 	if err != nil {
 		woc.markInMemoryReapplyFailed()
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
-	} else {
-		woc.controller.recordWorkflowWrite(wf)
+		return
+	}
+	woc.controller.recordWorkflowWrite(wf)
+	if woc.orig.Status.Phase != woc.wf.Status.Phase {
+		woc.recordWorkflowPhaseChange(ctx)
 	}
 }
 
@@ -2677,7 +2686,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		woc.updated = true
 		woc.wf.Status.Phase = phase
 		woc.traceWorkflowPhaseChange(ctx)
-		woc.recordWorkflowPhaseChange(ctx)
 		if woc.wf.Labels == nil {
 			woc.wf.Labels = make(map[string]string)
 		}
