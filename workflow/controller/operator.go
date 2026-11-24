@@ -84,6 +84,10 @@ type wfOperationCtx struct {
 	// It is transient, in-memory only, and never persisted; the throttler uses it to
 	// keep the parallelism slot until a later successful reconciliation.
 	reapplyFailed bool
+	// pendingPhaseChanges holds the workflow phase transitions made in memory that no
+	// update has persisted yet. Their metrics are recorded only once the update carrying
+	// them succeeds, so a failed update cannot be counted twice by a later reconcile.
+	pendingPhaseChanges []wfv1.WorkflowPhase
 	// log is a logging interfacg to correlate logs with a workflow
 	log logging.Logger
 	// controller reference to workflow controller
@@ -873,6 +877,11 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	// The update carrying these phase transitions is now persisted, so it is safe to
+	// count them. Failure paths above return without counting: the next reconcile
+	// re-derives the transition and counts it exactly once.
+	woc.recordPendingPhaseChanges(ctx)
+
 	woc.controller.recordWorkflowWrite(woc.wf)
 	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
 	// with it, so copy from the original workflow.
@@ -930,6 +939,11 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 // See https://github.com/argoproj/argo-workflows/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
+	// The update carrying the queued transitions failed and woc.wf has been reset to the
+	// persisted original, so those transitions never reached the API server: drop them
+	// rather than count them. Only the Error transition below is persisted, so only that
+	// one is counted.
+	woc.pendingPhaseChanges = nil
 	ctx = woc.markWorkflowError(ctx, err)
 
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
@@ -937,6 +951,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 		woc.markInMemoryReapplyFailed()
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
 	} else {
+		woc.recordPendingPhaseChanges(ctx)
 		woc.controller.recordWorkflowWrite(wf)
 	}
 }
@@ -2633,17 +2648,28 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 	return &tmplDeadline, nil
 }
 
-// recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing
-func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
-	phase := metrics.ConvertWorkflowPhase(woc.wf.Status.Phase)
-	woc.controller.metrics.ChangeWorkflowPhase(ctx, phase, woc.wf.Namespace)
+// recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing.
+// It is only called once the update carrying the transition has been persisted, so a failed
+// update is not counted (it will be re-derived and counted by the reconcile that persists it).
+func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context, phase wfv1.WorkflowPhase) {
+	metricPhase := metrics.ConvertWorkflowPhase(phase)
+	woc.controller.metrics.ChangeWorkflowPhase(ctx, metricPhase, woc.wf.Namespace)
 	if woc.wf.Spec.WorkflowTemplateRef != nil { //nolint:forbidigo // not-woc-misuse
-		woc.controller.metrics.CountWorkflowTemplate(ctx, phase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
-		if woc.wf.Status.Phase.Completed() {
+		woc.controller.metrics.CountWorkflowTemplate(ctx, metricPhase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
+		if phase.Completed() {
 			duration := time.Since(woc.wf.Status.StartedAt.Time)
 			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
 		}
 	}
+}
+
+// recordPendingPhaseChanges emits the metrics for every phase transition markWorkflowPhase
+// queued, once the update carrying them has been persisted.
+func (woc *wfOperationCtx) recordPendingPhaseChanges(ctx context.Context) {
+	for _, phase := range woc.pendingPhaseChanges {
+		woc.recordWorkflowPhaseChange(ctx, phase)
+	}
+	woc.pendingPhaseChanges = nil
 }
 
 // traceWorkflowPhaseChange records workflow phase transitions as tracing spans.
@@ -2677,7 +2703,10 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		woc.updated = true
 		woc.wf.Status.Phase = phase
 		woc.traceWorkflowPhaseChange(ctx)
-		woc.recordWorkflowPhaseChange(ctx)
+		// Queue the metrics rather than emitting them: if this update fails to persist,
+		// the next reconcile re-derives the same transition and would double count it.
+		// persistUpdates emits them once the update has succeeded.
+		woc.pendingPhaseChanges = append(woc.pendingPhaseChanges, phase)
 		if woc.wf.Labels == nil {
 			woc.wf.Labels = make(map[string]string)
 		}

@@ -7,9 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -182,4 +184,80 @@ func TestPersistUpdatesMarksReapplyFailedOnNonConflictError(t *testing.T) {
 	woc.persistUpdates(ctx)
 
 	assert.True(t, woc.reapplyFailed, "non-conflict persist error should mark reapply-failed to keep the throttler slot")
+}
+
+// TestPhaseCounterNotDoubleCountedOnFailedUpdate verifies that total_count only counts a
+// workflow phase transition once the update carrying it has been persisted: an Update that
+// fails must not count the transition, and the later reconcile that persists the same
+// transition must count it exactly once.
+// https://github.com/argoproj/argo-workflows/issues/17571
+func TestPhaseCounterNotDoubleCountedOnFailedUpdate(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		failWith func() error
+	}{
+		{
+			name: "non-conflict error",
+			failWith: func() error {
+				return apierr.NewInternalError(fmt.Errorf("connection reset by peer"))
+			},
+		},
+		{
+			name: "conflict",
+			failWith: func() error {
+				return apierr.NewConflict(schema.GroupResource{Group: "argoproj.io", Resource: "workflows"}, "hello-world", fmt.Errorf("the object has been modified"))
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cancel, controller := newController(logging.TestContext(t.Context()))
+			defer cancel()
+
+			ctx := logging.TestContext(t.Context())
+			wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
+			wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, false)
+
+			// Fail workflow Updates until the retry below, then let them through.
+			failing := true
+			controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+				if failing {
+					return true, nil, tt.failWith()
+				}
+				return false, nil, nil
+			})
+
+			runningCount := func() int64 {
+				t.Helper()
+				attribs := attribute.NewSet(attribute.String("phase", "Running"), attribute.String("namespace", wf.Namespace))
+				val, metricErr := testExporter.GetInt64CounterValue(ctx, "total_count", &attribs)
+				if metricErr != nil {
+					return 0
+				}
+				return val
+			}
+
+			// First reconcile: the workflow enters Running but the update fails, so the
+			// transition never reaches the API server and must not be counted.
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+			require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			assert.Equal(t, int64(0), runningCount(), "a phase transition whose update failed must not be counted")
+
+			// Second reconcile starts from the stored phase, makes the same transition
+			// again and this time persists it: it must be counted exactly once.
+			failing = false
+			stored, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			require.Equal(t, wfv1.WorkflowUnknown, stored.Status.Phase)
+
+			woc = newWorkflowOperationCtx(ctx, stored, controller)
+			woc.operate(ctx)
+			require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			assert.Equal(t, int64(1), runningCount(), "the persisted phase transition must be counted exactly once")
+		})
+	}
 }
