@@ -16,9 +16,9 @@ inputs:
     default: "false"
   kubeconfig:
     description: >-
-      Path k3d-up merges the cluster kubeconfig into. Defaults to $KUBECONFIG,
-      else ~/.kube/config (the home directory differs between GitHub-hosted and
-      CNCF runners).
+      Path k3d-up merges the cluster kubeconfig into. Defaults to
+      ~/.kube/config (the home directory differs between GitHub-hosted and CNCF
+      runners). Must be a single file: an inherited $KUBECONFIG is ignored.
     default: ""
 
 runs:
@@ -61,7 +61,7 @@ runs:
         K8S_VERSION: ${{ inputs.k8s-version }}
         CLI_AUTH_KUBECONFIG: ${{ inputs.cli-auth-kubeconfig }}
       run: |
-        export KUBECONFIG="${INPUT_KUBECONFIG:-${KUBECONFIG:-$HOME/.kube/config}}"
+        export KUBECONFIG="${INPUT_KUBECONFIG:-$HOME/.kube/config}"
         # k3d and Tilt come from the e2e-tools artifact (installed above).
         # k3d runs k3s with its embedded containerd (2.x in these k3s
         # versions), which supports the Kubernetes image volumes the

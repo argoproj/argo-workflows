@@ -149,9 +149,11 @@ jobs:
     # (https://github.com/cncf/automation/tree/main/ci), built from GitHub's
     # own runner-images, so the toolset matches ubuntu-26.04. Any argoproj
     # repository gets them, including private ones, where the GitHub-hosted
-    # ubuntu-26.04 runner is half the size it is in a public repository. Forks
-    # fall back to GitHub-hosted runners. The home directory differs between
-    # the two (/home/ubuntu vs /home/runner), so don't hard-code it.
+    # ubuntu-26.04 runner is half the size it is in a public repository. CI in
+    # a forked repository falls back to GitHub-hosted runners; pull requests
+    # from forks into argoproj still run here, each job on a fresh ephemeral
+    # VM. The home directory differs between the two (/home/ubuntu vs
+    # /home/runner), so don't hard-code it.
     runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
     steps:
