@@ -83,11 +83,11 @@ var (
 	WorkflowOutputsParameterByName = v.Define(v.Spec{
 		Template: "workflow.outputs.parameters.<name>", Kind: v.KindNodeRef, ValueType: "string",
 		AppliesTo: []v.TemplateKind{v.TmplAll}, Phases: []v.LifecyclePhase{v.PhDuringExecute, v.PhExitHandler},
-		Description: "Global output parameter (lifted via outputs.parameters[*].globalName)",
+		Description: "Global output parameter (lifted via outputs.parameters[*].globalName). Exported when the producing node finishes; the node that finished last wins. When two nodes finish in the same second, which one wins is not defined. DAG and Steps template outputs can refer to it",
 	})
 	WorkflowOutputsArtifactByName = v.Define(v.Spec{
 		Template: "workflow.outputs.artifacts.<name>", Kind: v.KindNodeRef, ValueType: "wfv1.Artifact",
 		AppliesTo: []v.TemplateKind{v.TmplAll}, Phases: []v.LifecyclePhase{v.PhDuringExecute, v.PhExitHandler},
-		Description: "Global output artifact (lifted via outputs.artifacts[*].globalName)",
+		Description: "Global output artifact (lifted via outputs.artifacts[*].globalName). Exported when the producing node finishes; the node that finished last wins. When two nodes finish in the same second, which one wins is not defined. DAG and Steps template outputs can refer to it",
 	})
 )

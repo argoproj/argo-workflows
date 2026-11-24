@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-19T17:37:05Z"
+  generateName: hello-world-
+  generation: 4
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: hello-world-prtl9
+  namespace: default
+  resourceVersion: "844854"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-prtl9
+  uid: 790f5c47-211f-4a3b-8949-514ae916633b
+spec:
+  entrypoint: whalesay
+  synchronization:
+    semaphores:
+      - configMapKeyRef:
+          key: workflow
+          name: my-config
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  finishedAt: null
+  nodes:
+    hello-world-prtl9:
+      displayName: hello-world-prtl9
+      finishedAt: null
+      hostNodeName: docker-desktop
+      id: hello-world-prtl9
+      message: ContainerCreating
+      name: hello-world-prtl9
+      phase: Pending
+      startedAt: "2020-06-19T17:37:05Z"
+      templateName: whalesay
+      templateScope: local/hello-world-prtl9
+      type: Pod
+  phase: Running
+  startedAt: "2020-06-19T17:37:05Z"
+  synchronization:
+    semaphore:
+      holding:
+      - holders:
+        - hello-world-prtl9
+        semaphore: default/ConfigMap/my-config/workflow
