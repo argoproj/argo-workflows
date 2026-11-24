@@ -51,10 +51,8 @@ runs:
       # The CNCF runner image ships with empty apt lists, so update them first.
       shell: bash
       run: |
-        if ! command -v socat >/dev/null; then
-          sudo apt-get update -qq
-          sudo apt-get -y install socat
-        fi
+        sudo apt-get update -qq
+        sudo apt-get -y install socat
     - name: Create k3d cluster
       shell: bash
       env:
