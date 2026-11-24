@@ -31,6 +31,9 @@ type semaphore interface {
 	getCurrentHolders(ctx context.Context) ([]string, error)
 	getCurrentPending(ctx context.Context) ([]string, error)
 	getLimit(ctx context.Context) int // Testing only
+	// notifyWaiters requeues the workflows of the waiters that the lock now
+	// has room for.
+	notifyWaiters(ctx context.Context)
 	probeWaiting(ctx context.Context)
 	lock(ctx context.Context) bool
 	unlock(ctx context.Context)

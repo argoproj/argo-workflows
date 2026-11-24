@@ -77,6 +77,8 @@ func (p *poisonedLock) getCurrentPending(_ context.Context) ([]string, error) { 
 
 func (p *poisonedLock) getLimit(_ context.Context) int { return 0 }
 
+func (p *poisonedLock) notifyWaiters(_ context.Context) {}
+
 func (p *poisonedLock) probeWaiting(_ context.Context) {}
 
 // lock returns true so that tryAcquireImpl proceeds to checkAcquire, which

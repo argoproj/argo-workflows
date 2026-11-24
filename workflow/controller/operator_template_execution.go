@@ -31,6 +31,10 @@ func (woc *wfOperationCtx) prepareNode(ctx context.Context, nodeName string, tmp
 
 	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
 		if !displayNameRegex.MatchString(displayName) {
+			// The node may already wait for its locks, which it now never takes.
+			if processedTmpl.Synchronization != nil {
+				woc.controller.syncManager.Dequeue(ctx, woc.wf, node.ID)
+			}
 			return woc.initializeNodeOrMarkError(ctx, node, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, boundaryID, nodeFlag, fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())), fmt.Errorf("displayName must match the regex %s", displayNameRegex.String())
 		}
 
@@ -143,6 +147,9 @@ func (woc *wfOperationCtx) handleSynchronization(ctx context.Context, nodeName s
 			}
 			return false, node, nil
 		}
+		// TryAcquire may have queued the node for some of its locks before it
+		// failed, and the node now never takes them.
+		woc.controller.syncManager.Dequeue(ctx, woc.wf, lockNodeID)
 		return false, woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, boundaryID, opts.nodeFlag, err), err
 	}
 	woc.updated = woc.updated || wfUpdated

@@ -74,6 +74,8 @@ type SyncQueries interface {
 	GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]StateRecord, error)
 	AddToQueue(ctx context.Context, record *StateRecord) error
 	RemoveFromQueue(ctx context.Context, semaphoreName, holderKey, controllerName string) error
+	RemoveWorkflowFromQueues(ctx context.Context, workflowKey, controllerName string) error
+	RemoveHolderFromQueues(ctx context.Context, holderKey, controllerName string) error
 	CheckQueueExists(ctx context.Context, semaphoreName, holderKey, controllerName string) ([]StateRecord, error)
 	UpdateStateToHeld(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName, holderKey, controllerName string) error
 	InsertHeldState(ctx context.Context, sessionProxy *sqldb.SessionProxy, record *StateRecord) error
@@ -246,6 +248,41 @@ func (q *syncQueries) RemoveFromQueue(ctx context.Context, semaphoreName, holder
 			DeleteFrom(q.config.StateTable).
 			Where(db.Cond{StateNameField: semaphoreName}).
 			And(db.Cond{StateKeyField: holderKey}).
+			And(db.Cond{StateControllerField: controllerName}).
+			And(db.Cond{StateHeldField: false}).
+			Exec()
+		return err
+	})
+}
+
+// RemoveWorkflowFromQueues deletes the pending rows, in the queue of any semaphore, of the
+// workflow workflowKey ("<namespace>/<name>") and of its nodes ("<namespace>/<name>/<node ID>").
+// Kubernetes names contain neither LIKE wildcard, so the prefix matches only that workflow's
+// nodes. As in RemoveFromQueue, only the caller's own rows are deleted, and held rows are kept.
+func (q *syncQueries) RemoveWorkflowFromQueues(ctx context.Context, workflowKey, controllerName string) error {
+	return q.sessionProxy.With(ctx, func(session db.Session) error {
+		_, err := session.SQL().
+			DeleteFrom(q.config.StateTable).
+			Where(db.Or(
+				db.Cond{StateKeyField: workflowKey},
+				db.Cond{StateKeyField + " LIKE": workflowKey + "/%"},
+			)).
+			And(db.Cond{StateControllerField: controllerName}).
+			And(db.Cond{StateHeldField: false}).
+			Exec()
+		return err
+	})
+}
+
+// RemoveHolderFromQueues deletes the pending rows of holderKey in the queue of any semaphore.
+// Unlike RemoveWorkflowFromQueues, it matches the key exactly: the rows of the holder's workflow
+// and of its other nodes are kept. As in RemoveFromQueue, only the caller's own rows are deleted,
+// and held rows are kept.
+func (q *syncQueries) RemoveHolderFromQueues(ctx context.Context, holderKey, controllerName string) error {
+	return q.sessionProxy.With(ctx, func(session db.Session) error {
+		_, err := session.SQL().
+			DeleteFrom(q.config.StateTable).
+			Where(db.Cond{StateKeyField: holderKey}).
 			And(db.Cond{StateControllerField: controllerName}).
 			And(db.Cond{StateHeldField: false}).
 			Exec()

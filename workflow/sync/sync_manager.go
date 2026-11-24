@@ -41,6 +41,12 @@ type Manager struct {
 	queries           syncdb.SyncQueries
 	log               logging.Logger
 	metrics           syncMetrics
+	// queued records, by workflow key, the locks each holder key of that
+	// workflow joined the queue of in prepAcquire and has not since acquired
+	// or left. A holder waits in the queue of every lock it asks for, but its
+	// status records at most one of them, so this is how a holder that will
+	// never acquire its locks finds all of those queues again.
+	queued map[string]map[string][]string
 }
 
 func (sm *Manager) WithMetrics(ctx context.Context, m *wfmetrics.Metrics) *Manager {
@@ -88,6 +94,7 @@ func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, co
 	}
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
+		queued:            make(map[string]map[string][]string),
 		lock:              &sync.RWMutex{},
 		nextWorkflow:      nextWorkflow,
 		getSyncLimit:      getSyncLimit,
@@ -148,6 +155,11 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 					sm.log.WithField("holderKeys", holderKeys).WithError(err).Warn(ctx, "failed to remove from queue")
 				}
 			}
+		}
+	}
+	for wfKey := range sm.queued {
+		if !sm.workflowExists(wfKey) {
+			delete(sm.queued, wfKey)
 		}
 	}
 }
@@ -525,11 +537,18 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 			return false, false, "", failedLockName, err
 		}
 		sm.recordAcquisitions(ctx, wf, newly)
+		if already {
+			// Acquiring took the holder out of every queue.
+			sm.forgetQueued(holderKey)
+		}
 		return already, updated, msg, failedLockName, nil
 	}
 	already, updated, msg, failedLockName, newly, err := sm.tryAcquireImpl(ctx, wf, nil, holderKey, failedLockName, syncItems, lockKeys)
 	if err == nil {
 		sm.recordAcquisitions(ctx, wf, newly)
+		if already {
+			sm.forgetQueued(holderKey)
+		}
 	}
 	return already, updated, msg, failedLockName, err
 }
@@ -597,8 +616,81 @@ func (sm *Manager) prepAcquire(ctx context.Context, wf *wfv1.Workflow, holderKey
 		if err := lock.addToQueue(ctx, holderKey, priority, creationTime.Time); err != nil {
 			return false, fmt.Sprintf("Failed to add to queue: %v", err), lockKey, err
 		}
+		sm.recordQueued(holderKey, lockKey)
 	}
 	return true, "", "", nil
+}
+
+// recordQueued records that holderKey has joined the queue of lockKey.
+func (sm *Manager) recordQueued(holderKey, lockKey string) {
+	wfKey, err := sm.getWorkflowKey(holderKey)
+	if err != nil {
+		return
+	}
+	holders, ok := sm.queued[wfKey]
+	if !ok {
+		holders = make(map[string][]string)
+		sm.queued[wfKey] = holders
+	}
+	if !slices.Contains(holders[holderKey], lockKey) {
+		holders[holderKey] = append(holders[holderKey], lockKey)
+	}
+}
+
+// forgetQueued forgets the queues holderKey has joined.
+func (sm *Manager) forgetQueued(holderKey string) {
+	wfKey, err := sm.getWorkflowKey(holderKey)
+	if err != nil {
+		return
+	}
+	delete(sm.queued[wfKey], holderKey)
+	if len(sm.queued[wfKey]) == 0 {
+		delete(sm.queued, wfKey)
+	}
+}
+
+// dequeue removes holderKey from the queue of every lock it has joined, and
+// notifies the waiters of those locks, which it may have been keeping from
+// the front. It releases no lock holderKey holds. The queues it could not be
+// removed from are kept, so that a later dequeue tries them again.
+func (sm *Manager) dequeue(ctx context.Context, holderKey string) {
+	wfKey, err := sm.getWorkflowKey(holderKey)
+	if err != nil {
+		return
+	}
+	var failed, leftDB []string
+	for _, lockKey := range sm.queued[wfKey][holderKey] {
+		lock, ok := sm.syncLockMap[lockKey]
+		if !ok {
+			continue
+		}
+		if _, ok := lock.(*databaseSemaphore); ok {
+			leftDB = append(leftDB, lockKey)
+			continue
+		}
+		if err := lock.removeFromQueue(ctx, holderKey); err != nil {
+			sm.log.WithFields(logging.Fields{"holderKey": holderKey, "lock": lockKey}).WithError(err).Warn(ctx, "Error removing from queue")
+			failed = append(failed, lockKey)
+			continue
+		}
+		lock.notifyWaiters(ctx)
+	}
+	// The database queues outlive the controller, and one that has restarted
+	// does not know which of them holderKey joined: leave all of them with one
+	// query. The waiters of those it does not know are notified when the
+	// background notifier next probes their locks.
+	if sm.removeHolderFromDatabaseQueues(ctx, holderKey) {
+		for _, lockKey := range leftDB {
+			sm.syncLockMap[lockKey].notifyWaiters(ctx)
+		}
+	} else {
+		failed = append(failed, leftDB...)
+	}
+	if len(failed) > 0 {
+		sm.queued[wfKey][holderKey] = failed
+		return
+	}
+	sm.forgetQueued(holderKey)
 }
 
 type acquiredLock struct {
@@ -732,6 +824,69 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 			}
 		}
 	}
+	sm.forgetQueued(holderKey)
+}
+
+// Dequeue removes the node nodeName of wf (or wf itself, for "") from the
+// queue of every lock it has joined, without releasing any lock it holds. It
+// is for a node that errored while it may still be waiting for its locks and
+// so will never acquire them: left in a queue, it would keep every later
+// waiter from the front of that queue, even of a free lock.
+func (sm *Manager) Dequeue(ctx context.Context, wf *wfv1.Workflow, nodeName string) {
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
+
+	sm.dequeue(ctx, getHolderKey(wf, nodeName))
+}
+
+// removeFromDatabaseQueues removes wf and its nodes from the queues of every
+// database-backed lock, with one query. Those queues outlive the controller,
+// and one that has restarted no longer knows which of them wf or its nodes
+// joined. It reports whether the queues were left.
+func (sm *Manager) removeFromDatabaseQueues(ctx context.Context, wf *wfv1.Workflow) bool {
+	if sm.dbInfo.SessionProxy == nil {
+		return true
+	}
+	wfKey := getHolderKey(wf, "")
+	if err := sm.queries.RemoveWorkflowFromQueues(ctx, wfKey, sm.dbInfo.Config.ControllerName); err != nil {
+		sm.log.WithField("key", wfKey).WithError(err).Warn(ctx, "Error removing from database queues")
+		return false
+	}
+	return true
+}
+
+// removeHolderFromDatabaseQueues removes holderKey alone from the queues of
+// every database-backed lock, with one query. It reports whether the queues
+// were left.
+func (sm *Manager) removeHolderFromDatabaseQueues(ctx context.Context, holderKey string) bool {
+	if sm.dbInfo.SessionProxy == nil {
+		return true
+	}
+	if err := sm.queries.RemoveHolderFromQueues(ctx, holderKey, sm.dbInfo.Config.ControllerName); err != nil {
+		sm.log.WithField("holderKey", holderKey).WithError(err).Warn(ctx, "Error removing from database queues")
+		return false
+	}
+	return true
+}
+
+// leaveQueue removes holderKey from the queue of the in-memory lock lockKey
+// for ReleaseAll, and adds the lock to left, whose waiters ReleaseAll notifies
+// once the workflow has left all its queues. A database-backed lock is only
+// added to leftDB: ReleaseAll leaves all of those queues with one query.
+func (sm *Manager) leaveQueue(ctx context.Context, lockKey, holderKey string, left, leftDB map[string]semaphore) {
+	lock, ok := sm.syncLockMap[lockKey]
+	if !ok {
+		return
+	}
+	if _, ok := lock.(*databaseSemaphore); ok {
+		leftDB[lockKey] = lock
+		return
+	}
+	if err := lock.removeFromQueue(ctx, holderKey); err != nil {
+		sm.log.WithFields(logging.Fields{"holderKey": holderKey, "lock": lockKey}).WithError(err).Warn(ctx, "Error removing from queue")
+		return
+	}
+	left[lockKey] = lock
 }
 
 func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
@@ -741,6 +896,10 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 	if wf.Status.Synchronization == nil {
 		return true
 	}
+
+	// The locks whose queues the workflow leaves, in memory and in the database.
+	left := make(map[string]semaphore)
+	leftDB := make(map[string]semaphore)
 
 	if wf.Status.Synchronization.Semaphore != nil {
 		for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
@@ -765,14 +924,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 
 		// Remove the pending Workflow level semaphore keys
 		for _, waiting := range wf.Status.Synchronization.Semaphore.Waiting {
-			syncLockHolder := sm.syncLockMap[waiting.Semaphore]
-			if syncLockHolder == nil {
-				continue
-			}
-			key := getHolderKey(wf, "")
-			if err := syncLockHolder.removeFromQueue(ctx, key); err != nil {
-				sm.log.WithField("key", key).WithError(err).Warn(ctx, "Error removing from queue")
-			}
+			sm.leaveQueue(ctx, waiting.Semaphore, getHolderKey(wf, ""), left, leftDB)
 		}
 		wf.Status.Synchronization.Semaphore = nil
 	}
@@ -793,29 +945,43 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 
 		// Remove the pending Workflow level mutex keys
 		for _, waiting := range wf.Status.Synchronization.Mutex.Waiting {
-			syncLockHolder := sm.syncLockMap[waiting.Mutex]
-			if syncLockHolder == nil {
-				continue
-			}
-			key := getHolderKey(wf, "")
-			if err := syncLockHolder.removeFromQueue(ctx, key); err != nil {
-				sm.log.WithField("key", key).WithError(err).Warn(ctx, "Error removing from queue")
-			}
+			sm.leaveQueue(ctx, waiting.Mutex, getHolderKey(wf, ""), left, leftDB)
 		}
 		wf.Status.Synchronization.Mutex = nil
 	}
 
 	for _, node := range wf.Status.Nodes {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
-			lock, ok := sm.syncLockMap[node.SynchronizationStatus.Waiting]
-			if ok {
-				if err := lock.removeFromQueue(ctx, getHolderKey(wf, node.ID)); err != nil {
-					sm.log.WithField("key", getHolderKey(wf, node.ID)).WithError(err).Warn(ctx, "Error removing from queue")
-				}
-			}
+			sm.leaveQueue(ctx, node.SynchronizationStatus.Waiting, getHolderKey(wf, node.ID), left, leftDB)
 			node.SynchronizationStatus = nil
 			wf.Status.Nodes.Set(ctx, node.ID, node)
 		}
+	}
+
+	// The Waiting entries above name at most one lock per waiter (and none
+	// for a free mutex), while a waiter is in the queue of every lock it asked
+	// for: leave all of them.
+	wfKey := getHolderKey(wf, "")
+	for holderKey, lockKeys := range sm.queued[wfKey] {
+		for _, lockKey := range lockKeys {
+			sm.leaveQueue(ctx, lockKey, holderKey, left, leftDB)
+		}
+	}
+	delete(sm.queued, wfKey)
+	// Nothing retries a failed removal: the workflow's database queue entries
+	// then stay until the workflow is deleted, when CheckWorkflowExistence
+	// removes them from the locks this controller has loaded.
+	if !sm.removeFromDatabaseQueues(ctx, wf) {
+		// Nothing changed for the waiters of those locks.
+		clear(leftDB)
+	}
+	// Notify each lock's waiters once, now that the workflow has left its
+	// queue: before that, the front waiters may still be its own.
+	for _, lock := range left {
+		lock.notifyWaiters(ctx)
+	}
+	for _, lock := range leftDB {
+		lock.notifyWaiters(ctx)
 	}
 
 	wf.Status.Synchronization = nil
