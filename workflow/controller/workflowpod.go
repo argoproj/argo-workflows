@@ -57,7 +57,7 @@ var (
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
 func (woc *wfOperationCtx) scheduleOnDifferentHost(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template, pod *apiv1.Pod) error {
 	if node != nil && pod != nil {
-		if retryNode := FindRetryNode(woc.wf.Status.Nodes, node.ID); retryNode != nil {
+		if retryNode := FindRetryNodeByName(woc.wf, node.ID); retryNode != nil {
 			// recover template for the retry node
 			retryTmpl := tmpl
 			if retryNode.TemplateName != "" || retryNode.TemplateRef != nil {
