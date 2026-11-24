@@ -33,7 +33,7 @@ Every worker pod has two containers:
 
 With the default pod layout, the pool's pods also have an `init` init container that runs `argoexec install`, which only copies `argoexec` into the pod for `main`.
 With the [init-less pod layout](initless-pod.md), `main` gets `argoexec` from an image volume instead.
-Artifact plugins run as sidecars of the pool's pods and are shared by its tasks.
+Artifact plugins run as sidecars of the pool's pods, and the pool's tasks share them.
 
 ## Enabling hot workers
 
@@ -77,12 +77,17 @@ A setting outside its limits makes the workflow controller exit with an error na
 Before you turn hot workers off, let every workflow that uses pooled templates finish.
 Turning the flag off while pooled tasks are queued or running isn't supported.
 Once no pooled work remains, set `enabled: false`, restart the controller, which runs hot workers until it restarts, and delete any of its pools that are left.
-Select its pools by its instance ID, so that other controllers' pools stay:
+Select its pools by its instance ID, so that other controllers' pools stay, and run only the command for your controller.
+For a controller with an instance ID, set `instance_id` to it:
 
 ```bash
-# A controller with an instance ID
-kubectl delete deployments --all-namespaces -l 'workflows.argoproj.io/pool-hash,workflows.argoproj.io/controller-instanceid=<instance ID>'
-# A controller without one
+instance_id=my-instance-id
+kubectl delete deployments --all-namespaces -l "workflows.argoproj.io/pool-hash,workflows.argoproj.io/controller-instanceid=${instance_id}"
+```
+
+For a controller without an instance ID:
+
+```bash
 kubectl delete deployments --all-namespaces -l 'workflows.argoproj.io/pool-hash,!workflows.argoproj.io/controller-instanceid'
 ```
 
@@ -210,7 +215,11 @@ The pool controller sets a pool's replicas only when it creates the Deployment, 
 Scale a pool by scaling its Deployment, with `kubectl scale` or with an autoscaler you configure for it, such as a HorizontalPodAutoscaler:
 
 ```bash
-kubectl scale deployment python-squares-<hash> --replicas=5
+# List the pool's Deployments: one for each hash, named after the pool and the first 10 characters of its hash
+kubectl get deployments -l workflows.argoproj.io/pool-name=python-squares
+# Scale the one you want
+deployment=python-squares-0123456789
+kubectl scale deployment "${deployment}" --replicas=5
 ```
 
 The Deployment's name changes with the pool's hash, so an autoscaler you create covers one pool, and a pool created afresh starts again from `initialReplicas`.
@@ -330,7 +339,7 @@ The pool, not the task, is the isolation boundary:
 
 * Files a task writes outside volumes, other than its declared outputs, stay in the worker pod and are visible to later tasks on it.
   Use an `emptyDir` volume for scratch space: the worker empties the template's and workflow's `emptyDir` volumes before and after each task.
-  PVC and `hostPath` volumes keep their contents, as for pods, and are mounted by every worker pod of the pool.
+  PVC and `hostPath` volumes keep their contents, as for pods, and every worker pod of the pool mounts them.
 * Every process a task starts is killed when the task ends, however it detached, so no process outlives its task.
   `main` gives up 30 seconds after the task's command exits on a process even `SIGKILL` can't end, such as one stuck on a hung volume: it saves none of the task's outputs, and its container restarts before the pod runs another task.
 * Without `executor.serviceAccountName`, the task's code can use the worker's account, and so has the worker's rights over every pooled task in the namespace: it can read other tasks' templates, delete their claims, which kills those tasks and makes them run again, and claim other workflows' tasks.
@@ -357,7 +366,7 @@ A plain `PATH` is the task's: `main` finds the task's command on it, as the cont
 `valueFrom` and `envFrom` variables are part of the pool: they are read when the worker pod starts, so a rotated Secret or ConfigMap behind them isn't seen until the pool's pods are replaced, where a pod reads them every time it starts.
 `fieldRef` variables, such as `metadata.name`, describe the worker pod.
 
-`$(VAR)` references in a task's command, args and environment variables are expanded by `main`, not the kubelet, against `main`'s whole environment.
+`main`, not the kubelet, expands `$(VAR)` references in a task's command, args and environment variables, against `main`'s whole environment.
 That includes the image's own `ENV` (so `$(PATH)` expands) and `valueFrom` variables listed later in the template.
 As with the kubelet, unknown references are kept as they are and `$$` becomes `$`.
 
@@ -420,7 +429,7 @@ Their archived logs work: enable [`archiveLogs`](configure-archive-logs.md) to k
 * The UI shows a pooled node's task name and worker pod as separate rows, and links to its archived logs.
 * `argo logs <workflow>`, also with `--selector`, prints a note for each pooled task saying where its archived logs are, with the `argo cp` command that fetches them once they exist.
   `argo cp` downloads through the Argo Server, so it fails when the CLI talks to Kubernetes directly, without one.
-  `argo logs <workflow> <name>`, where `<name>` names only pooled tasks by task name or worker pod, prints the notes and exits non-zero without streaming, also with `--follow`.
+  `argo logs <workflow> <name>`, where `<name>` names only pooled tasks by task name or worker pod, prints the notes and exits non-zero without streaming, also with `--follow`, once it has got the workflow; if it can't, it streams as for any other name.
 * The Argo Server's log API, and the UI's view of all of a workflow's logs, show nothing for pooled tasks.
 
 `argo get` shows a pooled node's worker pod while a worker holds it, or once it has ended on one, and otherwise its task name, marked `(queued)` while it waits, `(unclaimed)` if it ended without a worker claiming it, or `(released)` if it ended after a worker handed it back.

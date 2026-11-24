@@ -29,7 +29,8 @@ func NewLogsCommand() *cobra.Command {
 A pooled task, an attempt of a node that runs on hot workers, has no live logs, so its logs are neither printed nor followed.
 The command prints a note to stderr for each pooled task of the workflow, or only for those POD names, saying where its archived logs are, with the argo cp command that fetches them once they exist.
 With --follow, it prints the notes once the stream ends.
-If POD names only pooled tasks, by task name or by worker pod, the command prints their notes and exits non-zero without streaming, also with --follow.`,
+If POD names only pooled tasks, by task name or by worker pod, the command prints their notes and exits non-zero without streaming, also with --follow.
+The notes need the workflow itself: if the command can't get it, it prints no notes and streams POD as usual, so with --follow it waits for the stream to end.`,
 		Example: `# Print the logs of a workflow:
 
   argo logs my-wf
