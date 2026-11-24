@@ -31,7 +31,6 @@ import (
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/help"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
 	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
@@ -74,7 +73,6 @@ See %s`, help.ArgoServer()),
 			}
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-			pprofutil.Init(ctx)
 
 			config, err := client.GetConfig().ClientConfig()
 			if err != nil {

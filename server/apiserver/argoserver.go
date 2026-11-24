@@ -74,6 +74,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/json"
 	k8sutil "github.com/argoproj/argo-workflows/v4/util/k8s"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
 	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
@@ -376,27 +377,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, wfDefaults, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
-	// Start listener
-	var conn net.Listener
-	var listerErr error
 	address := fmt.Sprintf(":%d", port)
-	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		lc := &net.ListenConfig{}
-		conn, listerErr = lc.Listen(ctx, "tcp", address)
-		if listerErr != nil {
-			log.WithError(err).Warn(ctx, "failed to listen")
-			//nolint: nilerr
-			return false, nil // continue retrying
-		}
-		return true, nil
-	})
+	conn, profiler, err := as.listen(ctx, address, 6060)
 	if err != nil {
 		log.Error(ctx, err.Error())
 		return
 	}
-
-	if as.tlsConfig != nil {
-		conn = tls.NewListener(conn, as.tlsConfig)
+	if profiler != nil {
+		defer profiler.Close()
 	}
 
 	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
@@ -431,6 +419,45 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	browserOpenFunc(url)
 
 	<-as.stopCh
+}
+
+// listen binds the API first, then starts the optional profiling server.
+func (as *argoServer) listen(ctx context.Context, apiAddr string, profilePort int) (net.Listener, *http.Server, error) {
+	log := logging.RequireLoggerFromContext(ctx)
+	lc := &net.ListenConfig{}
+	var conn net.Listener
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		var listenErr error
+		conn, listenErr = lc.Listen(ctx, "tcp", apiAddr)
+		if listenErr != nil {
+			log.WithError(listenErr).Warn(ctx, "failed to listen")
+			return false, nil // continue retrying
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if as.tlsConfig != nil {
+		conn = tls.NewListener(conn, as.tlsConfig)
+	}
+
+	mux := pprofutil.Init(ctx)
+	if mux == nil {
+		return conn, nil, nil
+	}
+	profileListener, err := lc.Listen(ctx, "tcp", fmt.Sprintf("127.0.0.1:%d", profilePort))
+	if err != nil {
+		log.WithError(err).Warn(ctx, "failed to serve pprof debug endpoints")
+		return conn, nil, nil
+	}
+	profiler := &http.Server{Addr: profileListener.Addr().String(), Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	go func() {
+		if err := profiler.Serve(profileListener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.WithError(err).Warn(ctx, "failed to serve pprof debug endpoints")
+		}
+	}()
+	return conn, profiler, nil
 }
 
 func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wftmplStore types.WorkflowTemplateStore, cwftmplStore types.ClusterWorkflowTemplateStore, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, syncServer syncpkg.SyncServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string, wfDefaults namespacedefaults.Func, controllerDefaults *v1alpha1.Workflow) *grpc.Server {
