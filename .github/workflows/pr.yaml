@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   title-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       type: ${{ steps.semantic-pr-check.outputs.type }}
     steps:
@@ -25,7 +25,7 @@ jobs:
 
   feature-pr-handling:
     needs: title-check
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: needs.title-check.outputs.type == 'feat'
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
