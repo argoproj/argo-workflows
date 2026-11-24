@@ -1028,8 +1028,8 @@ schema = 3
     version = "v0.35.4"
     hash = "sha256-qQ+d6Be34puAk4cYSltBU5Dz4azZ4dzYXGAw/HYsj/c="
   [mod."k8s.io/utils"]
-    version = "v0.0.0-20260707023825-cf1189d6abe3"
-    hash = "sha256-DBYXOtMHB8jsC8CcjH+iLEkzgYQwAOYtIlTsqQtpHMw="
+    version = "v0.0.0-20261023123148-ca04ba58ecab"
+    hash = "sha256-qIrvwpCcBNxhw0VNpuU+HvlKg0bBHSZJWgeQBj4Swhw="
   [mod."modernc.org/libc"]
     version = "v1.73.4"
     hash = "sha256-YN3m9MDZ2GRZznT5ErWZJdap+E5xOwOyKlZ/ixyGT+0="
