@@ -25,6 +25,9 @@ runs:
   using: composite
   steps:
     - name: Free up unused disk space
+      # GitHub-hosted runners are short of disk; the CNCF VMs have ~230 GB free,
+      # and deleting these directories there takes several minutes.
+      if: runner.environment == 'github-hosted'
       shell: bash
       run: |
         printf "==> Available space before cleanup\n"
@@ -45,8 +48,13 @@ runs:
     - name: Install socat
       # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
       # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
+      # The CNCF runner image ships with empty apt lists, so update them first.
       shell: bash
-      run: sudo apt-get -y install socat
+      run: |
+        if ! command -v socat >/dev/null; then
+          sudo apt-get update -qq
+          sudo apt-get -y install socat
+        fi
     - name: Create k3d cluster
       shell: bash
       env:
