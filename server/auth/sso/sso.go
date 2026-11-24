@@ -369,7 +369,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 		groups = filteredGroups
 	}
-
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,

@@ -954,7 +954,7 @@ func TestReportOutputs(t *testing.T) {
 		}
 		we.sink = we.NewTaskResultSink(TaskConfig{}, false)
 
-		err = we.ReportOutputs(ctx, artifacts)
+		err = we.ReportOutputs(ctx, artifacts, true)
 
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)
@@ -1011,7 +1011,7 @@ func TestTaskResultRetries(t *testing.T) {
 		we, _ := newFlakyTaskResultExecutor(t, -1, 100*time.Millisecond)
 
 		start := time.Now()
-		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		err := we.sink.Send(ctx, wfv1.NodeResult{Progress: "1/2"})
 		require.Error(t, err)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
 		require.ErrorContains(t, err, "gave up writing task result after 100ms: ")
@@ -1041,7 +1041,7 @@ func TestTaskResultRetries(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		we, clientset := newFlakyTaskResultExecutor(t, 200*time.Millisecond, time.Minute)
 
-		require.NoError(t, we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"}))
+		require.NoError(t, we.sink.Send(ctx, wfv1.NodeResult{Progress: "1/2"}))
 		result, err := clientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace).Get(ctx, fakeNodeID, metav1.GetOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, wfv1.Progress("1/2"), result.Progress)
@@ -1052,7 +1052,7 @@ func TestTaskResultRetries(t *testing.T) {
 		time.AfterFunc(50*time.Millisecond, cancel)
 
 		start := time.Now()
-		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		err := we.sink.Send(ctx, wfv1.NodeResult{Progress: "1/2"})
 		assert.Less(t, time.Since(start), 10*time.Second)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last API error, got %v", err)
 		assert.NotContains(t, err.Error(), "gave up", "the limit didn't run out")
@@ -1077,10 +1077,13 @@ func TestTaskResultRetries(t *testing.T) {
 	})
 	t.Run("AttemptInFlightIsCutOffAfterTransientError", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
-		we, _ := newFlakyTaskResultExecutor(t, 0, 50*time.Millisecond)
+		// The second attempt has to start before the limit runs out. A slow
+		// runner (Windows timers tick every ~15ms) can take well over 50ms
+		// to get there, so allow a second.
+		we, _ := newFlakyTaskResultExecutor(t, 0, time.Second)
 
 		attempts := 0
-		err := we.sink.(*taskResultSink).retry(ctx, 50*time.Millisecond, func(ctx context.Context) error {
+		err := we.sink.(*taskResultSink).retry(ctx, time.Second, func(ctx context.Context) error {
 			attempts++
 			if attempts == 1 {
 				return apierr.NewServiceUnavailable("API server unavailable")
@@ -1093,7 +1096,7 @@ func TestTaskResultRetries(t *testing.T) {
 		})
 		assert.Equal(t, 2, attempts)
 		assert.True(t, apierr.IsServiceUnavailable(err), "returns the last transient error, got %v", err)
-		assert.ErrorContains(t, err, "gave up writing task result after 50ms: ")
+		assert.ErrorContains(t, err, "gave up writing task result after 1s: ")
 	})
 	t.Run("NonTransientContextErrorIsNotReplaced", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
@@ -1122,7 +1125,7 @@ func TestTaskResultRetries(t *testing.T) {
 			return true, nil, apierr.NewForbidden(wfv1.Resource("workflowtaskresults"), fakeNodeID, nil)
 		})
 
-		err := we.reportResult(ctx, wfv1.NodeResult{Progress: "1/2"})
+		err := we.sink.Send(ctx, wfv1.NodeResult{Progress: "1/2"})
 		assert.True(t, apierr.IsForbidden(err), "got %v", err)
 		assert.Equal(t, 1, attempts)
 	})

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"sync/atomic"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,18 +22,18 @@ import (
 // WaitWorkflows waits for the given workflowNames.
 func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
-	wfSuccessStatus := true
+	var anyFailed atomic.Bool
 
 	for _, name := range workflowNames {
 		wg.Go(func() {
 			if ok, _ := waitOnOne(ctx, serviceClient, name, namespace, ignoreNotFound, quiet); !ok {
-				wfSuccessStatus = false
+				anyFailed.Store(true)
 			}
 		})
 	}
 	wg.Wait()
 
-	if !wfSuccessStatus {
+	if anyFailed.Load() {
 		os.Exit(1)
 	}
 }
