@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-cycle-
+spec:
+  entrypoint: cycle
+  templates:
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [echo, hello]
+  - name: cycle
+    dag:
+      tasks:
+      - name: A
+        dependencies: [C]
+        template: echo
+      - name: B
+        dependencies: [A]
+        template: echo
+      - name: C
+        dependencies: [A]
+        template: echo

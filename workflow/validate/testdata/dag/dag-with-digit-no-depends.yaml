@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: 5A
+            template: pass
+          - name: B
+            template: pass
+    - name: pass
+      container:
+        image: alpine:3.23
+        command:
+          - sh
+          - -c
+          - exit 0
