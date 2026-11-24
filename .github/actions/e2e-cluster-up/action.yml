@@ -15,8 +15,11 @@ inputs:
       tests (TestTokenArg). Only the Go e2e suite needs this.
     default: "false"
   kubeconfig:
-    description: Path k3d-up merges the cluster kubeconfig into.
-    default: /home/runner/.kube/config
+    description: >-
+      Path k3d-up merges the cluster kubeconfig into. Defaults to $KUBECONFIG,
+      else ~/.kube/config (the home directory differs between GitHub-hosted and
+      CNCF runners).
+    default: ""
 
 runs:
   using: composite
@@ -47,11 +50,12 @@ runs:
     - name: Create k3d cluster
       shell: bash
       env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
+        INPUT_KUBECONFIG: ${{ inputs.kubeconfig }}
         # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
         K8S_VERSION: ${{ inputs.k8s-version }}
         CLI_AUTH_KUBECONFIG: ${{ inputs.cli-auth-kubeconfig }}
       run: |
+        export KUBECONFIG="${INPUT_KUBECONFIG:-${KUBECONFIG:-$HOME/.kube/config}}"
         # k3d and Tilt come from the e2e-tools artifact (installed above).
         # k3d runs k3s with its embedded containerd (2.x in these k3s
         # versions), which supports the Kubernetes image volumes the

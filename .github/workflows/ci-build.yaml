@@ -145,7 +145,14 @@ jobs:
     name: Unit Tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
-    runs-on: ubuntu-26.04
+    # The heavy Linux jobs run on CNCF-donated VM runners
+    # (https://github.com/cncf/automation/tree/main/ci), built from GitHub's
+    # own runner-images, so the toolset matches ubuntu-26.04. Any argoproj
+    # repository gets them, including private ones, where the GitHub-hosted
+    # ubuntu-26.04 runner is half the size it is in a public repository. Forks
+    # fall back to GitHub-hosted runners. The home directory differs between
+    # the two (/home/ubuntu vs /home/runner), so don't hard-code it.
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -253,12 +260,11 @@ jobs:
     name: E2E Tests
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
     # contention on the runner, which we have no control over.
     timeout-minutes: 60
     env:
-      KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
@@ -495,10 +501,8 @@ jobs:
     name: Codegen
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
-    env:
-      GOPATH: /home/runner/go
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -527,8 +531,8 @@ jobs:
           docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create symlinks
         run: |
-          mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
+          mkdir -p "$(go env GOPATH)/src/github.com/argoproj"
+          ln -s "$PWD" "$(go env GOPATH)/src/github.com/argoproj/argo-workflows"
       - run: make codegen -B STATIC_FILES=false
       # if codegen makes changes that are not in the PR, fail the build
       - name: Check if codegen made changes not present in the PR
@@ -538,10 +542,8 @@ jobs:
     name: Lint
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
-    env:
-      GOPATH: /home/runner/go
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -568,7 +570,7 @@ jobs:
     name: UI build and unit tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -598,7 +600,7 @@ jobs:
     name: E2E UI (${{ matrix.name }})
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.ui == 'true' || needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -616,7 +618,6 @@ jobs:
           - name: base-href
             base-href: /argo/
     env:
-      KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
