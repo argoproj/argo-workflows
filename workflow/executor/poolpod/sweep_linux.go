@@ -81,7 +81,7 @@ func sweep(ctx context.Context, fs procfs.FS, root int, grace time.Duration) err
 	termed := map[process]bool{}
 	var zombies map[process]bool
 	for {
-		alive, seen, err := descendants(fs, root)
+		alive, seen, err := descendants(ctx, fs, root)
 		if err != nil {
 			return err
 		}
@@ -137,8 +137,8 @@ type stat struct {
 }
 
 // descendants lists root's descendants that haven't exited, and those that
-// have, its zombies.
-func descendants(fs procfs.FS, root int) (alive, zombies []process, err error) {
+// have, its zombies. It returns ctx's error once ctx ends.
+func descendants(ctx context.Context, fs procfs.FS, root int) (alive, zombies []process, err error) {
 	procs, err := fs.AllProcs()
 	if err != nil {
 		return nil, nil, err
@@ -147,7 +147,7 @@ func descendants(fs procfs.FS, root int) (alive, zombies []process, err error) {
 	for _, p := range procs {
 		s, err := statOf(p)
 		if err == nil && s.zombie {
-			s.zombie, err = exited(fs, s.pid)
+			s.zombie, err = exited(ctx, fs, s.pid)
 		}
 		if isGone(err) {
 			continue // exited since the directory was read
@@ -179,16 +179,22 @@ func descendants(fs procfs.FS, root int) (alive, zombies []process, err error) {
 // exited reports whether every thread of pid, a process whose stat says it
 // is a zombie, has exited. The stat is its main thread's: one that called
 // pthread_exit is a zombie while the process's other threads run on.
-func exited(fs procfs.FS, pid int) (bool, error) {
-	return threadsExited(func() (procfs.Procs, error) { return fs.AllThreads(pid) })
+func exited(ctx context.Context, fs procfs.FS, pid int) (bool, error) {
+	return threadsExited(ctx, func() (procfs.Procs, error) { return fs.AllThreads(pid) })
 }
 
 // threadsExited reports whether every thread that threads lists has exited.
 // A listed thread can start another and exit while the list is read, so it
-// lists the threads again until a listing holds no thread it hadn't seen.
-func threadsExited(threads func() (procfs.Procs, error)) (bool, error) {
+// lists the threads again until a listing holds no thread it hadn't seen,
+// or until ctx ends, when it returns ctx's error.
+func threadsExited(ctx context.Context, threads func() (procfs.Procs, error)) (bool, error) {
 	seen := map[int]bool{}
 	for {
+		// Threads that keep starting others and exiting would keep it
+		// listing them past the sweep's deadline.
+		if err := ctx.Err(); err != nil {
+			return false, fmt.Errorf("list the threads of a zombie main thread's process: %w", err)
+		}
 		listed, err := threads()
 		if err != nil {
 			return false, err

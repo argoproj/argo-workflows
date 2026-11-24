@@ -440,22 +440,32 @@ func isolate(iso *poolpod.Isolation, tmpl *wfv1.Template, inputsDir string) erro
 // watchStop stops the task when the worker writes stop: SIGTERM to every
 // process the task started, then SIGKILL to any left after half the
 // release reserve. The returned function ends the watch, and any stopping
-// in progress, and waits for it.
+// in progress, and waits for it. If main can't watch for stop, or can't
+// carry it out, it exits (exitStopFailed) rather than let the task run on
+// as if it hadn't been stopped.
 func (cfg loopConfig) watchStop(ctx context.Context, run *poolpod.Run) func() {
 	logger := logging.RequireLoggerFromContext(ctx)
 	return goUntilStopped(ctx, func(ctx context.Context) {
 		reason, err := run.WaitStop(ctx)
 		if err != nil {
 			if ctx.Err() == nil {
-				logger.WithError(err).Error(ctx, "failed to watch for the task being stopped")
+				exitStopFailed(ctx, fmt.Errorf("watch for the task being stopped: %w", err))
 			}
 			return
 		}
 		logger.WithField("reason", reason).Info(ctx, "stopping the task")
 		if err := cfg.Sweep(ctx, cfg.ReleaseReserve/2); err != nil && ctx.Err() == nil {
-			logger.WithError(err).Error(ctx, "failed to stop the task")
+			exitStopFailed(ctx, fmt.Errorf("stop the task: %w", err))
 		}
 	})
+}
+
+// exitStopFailed makes main exit, without finishing the task, when it can't
+// be stopped: the worker sees main die in the task, as when a sweep after a
+// task fails, and the container's restart ends what the task started.
+func exitStopFailed(ctx context.Context, err error) {
+	logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "exiting, as main can't stop the task")
+	os.Exit(1)
 }
 
 // reaper reaps the zombies a task's orphans leave, between tasks. While a

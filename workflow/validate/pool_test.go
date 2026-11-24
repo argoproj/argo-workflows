@@ -182,6 +182,11 @@ func TestPoolableAllows(t *testing.T) {
 			tmpl.Container.WorkingDir = "/src"
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
 		}},
+		{"input path on a volume is the workingDir", func(wf *wfv1.Workflow, tmpl *wfv1.Template) {
+			mountAt("/data")(wf, tmpl)
+			tmpl.Container.WorkingDir = "/data/work"
+			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/data/work", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}
+		}},
 		{"input path beneath the workingDir", func(_ *wfv1.Workflow, tmpl *wfv1.Template) {
 			tmpl.Container.WorkingDir = "/src"
 			tmpl.Inputs.Artifacts = []wfv1.Artifact{{Name: "in", Path: "/src/in", ArtifactLocation: wfv1.ArtifactLocation{Raw: &wfv1.RawArtifact{Data: "x"}}}}

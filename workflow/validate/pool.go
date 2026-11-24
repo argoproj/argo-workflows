@@ -83,8 +83,9 @@ func poolableExceptClaims(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error 
 		}
 		// The container runtime creates the workingDir, and a pooled task's
 		// input path must not exist (poolpod.ErrPathExists), so every task
-		// would fail.
-		if _, ok := common.RelWithin(art.Path, ctr.WorkingDir); ctr.WorkingDir != "" && ok {
+		// would fail. An input on a volume may exist: the worker stages it
+		// there in place.
+		if _, ok := common.RelWithin(art.Path, ctr.WorkingDir); ctr.WorkingDir != "" && ok && common.FindOverlappingVolume(tmpl, art.Path) == nil {
 			return errors.Errorf(errors.CodeBadRequest,
 				"%s.inputs.artifacts.%s.path '%s' is or holds the workingDir '%s', which a pooled template can't have: the container runtime creates the workingDir, and a pooled task's input path must not exist",
 				prefix, art.Name, art.Path, ctr.WorkingDir)

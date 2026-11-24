@@ -219,7 +219,7 @@ func TestDescendants(t *testing.T) {
 		104: fakeStat(104, "exec'd in", "S", 0, 6),
 		105: fakeStat(105, "init's", "S", 1, 7),
 	})
-	alive, zombies, err := descendants(dir, 100)
+	alive, zombies, err := descendants(t.Context(), dir, 100)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []process{{pid: 101, start: 3}, {pid: 102, start: 4}}, alive)
 	assert.Equal(t, []process{{pid: 103, start: 5}}, zombies)
@@ -234,7 +234,7 @@ func TestDescendants_AZombieMainThreadWithLiveThreads(t *testing.T) {
 	})
 	writeStat(t, filepath.Join(dir, "101", "task", "105"), fakeStat(105, "threads", "S", 100, 3))
 
-	alive, zombies, err := descendants(procAt(t, dir), 100)
+	alive, zombies, err := descendants(t.Context(), procAt(t, dir), 100)
 	require.NoError(t, err)
 	assert.Equal(t, []process{{pid: 101, start: 3}}, alive)
 	assert.Equal(t, []process{{pid: 102, start: 4}}, zombies)
@@ -247,7 +247,7 @@ func TestThreadsExited_AThreadStartedDuringTheRead(t *testing.T) {
 	writeStat(t, filepath.Join(dir, "101", "task", "105"), fakeStat(105, "threads", "Z", 100, 3))
 	fs := procAt(t, dir)
 	listings := 0
-	exited, err := threadsExited(func() (procfs.Procs, error) {
+	exited, err := threadsExited(t.Context(), func() (procfs.Procs, error) {
 		threads, err := fs.AllThreads(101)
 		if listings++; listings == 1 {
 			writeStat(t, filepath.Join(dir, "101", "task", "106"), fakeStat(106, "threads", "S", 100, 3))
@@ -259,10 +259,35 @@ func TestThreadsExited_AThreadStartedDuringTheRead(t *testing.T) {
 	assert.Equal(t, 2, listings)
 }
 
+// Threads that keep starting others and exiting don't keep the sweep past
+// its deadline.
+func TestThreadsExited_StopsWhenCtxEnds(t *testing.T) {
+	dir := fakeProcDir(t, map[int]string{101: fakeStat(101, "threads", "Z", 100, 3)})
+	fs := procAt(t, dir)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	listings := 0
+	_, err := threadsExited(ctx, func() (procfs.Procs, error) {
+		// Each listing holds a thread that has gone by the time its stat
+		// is read.
+		listings++
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, "101", "task", strconv.Itoa(1000+listings)), 0o755))
+		if listings == 3 {
+			cancel()
+		}
+		if listings > 100 {
+			return nil, errors.New("still listing after ctx ended")
+		}
+		return fs.AllThreads(101)
+	})
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, 3, listings)
+}
+
 func TestThreadsExited_EveryThreadAZombie(t *testing.T) {
 	dir := fakeProcDir(t, map[int]string{101: fakeStat(101, "threads", "Z", 100, 3)})
 	writeStat(t, filepath.Join(dir, "101", "task", "105"), fakeStat(105, "threads", "Z", 100, 3))
-	exited, err := exited(procAt(t, dir), 101)
+	exited, err := exited(t.Context(), procAt(t, dir), 101)
 	require.NoError(t, err)
 	assert.True(t, exited)
 }

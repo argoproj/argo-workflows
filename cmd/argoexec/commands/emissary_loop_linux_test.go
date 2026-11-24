@@ -454,6 +454,27 @@ func TestLoop_StopKillsTheTask(t *testing.T) {
 	})
 }
 
+// A stop main can't carry out makes it exit rather than let the task run on:
+// the worker sees main die in the task.
+func TestLoop_ExitsWhenItCannotStopATask(t *testing.T) {
+	t.Parallel()
+	h := newLoopHarness(t)
+	h.sweepFails = true
+	h.start()
+	pidFile := filepath.Join(h.out, "pid")
+	task := h.offer("t", h.spec("t", nil, `echo $$$$ > "$OUT/pid.tmp"; mv "$OUT/pid.tmp" "$OUT/pid"; exec sleep 300`), nil)
+	h.waitFile(pidFile)
+	// In a pod, the container's processes die with main.
+	command := readPid(t, pidFile)
+	t.Cleanup(func() { _ = syscall.Kill(command, syscall.SIGKILL) })
+
+	_, err := task.Stop(poolpod.StopInterrupt)
+	require.NoError(t, err)
+	require.Error(t, h.waitExit(loopWait), "main exits")
+	assert.Equal(t, poolpod.Status{State: poolpod.Died}, h.wait(task))
+	h.waitLog("main can't stop the task")
+}
+
 // A task whose processes main couldn't all kill fails, even with no outputs
 // left unstaged, and main exits rather than run another.
 func TestLoop_FailsATaskWhoseProcessOutlivesIt(t *testing.T) {
@@ -526,11 +547,19 @@ func TestLoop_DaemonDoesNotOutliveItsTask(t *testing.T) {
 	h := newLoopHarness(t)
 	h.start()
 	daemonPid := filepath.Join(h.out, "daemon")
-	task := h.offer("daemon", h.spec("daemon", nil, `setsid sh -c 'echo $$$$ > "$OUT/daemon"; exec sleep 300' > /dev/null 2>&1 &
+	// Before the task starts the daemon, so a failure below doesn't leave
+	// it running: killing main doesn't reach a process in its own session.
+	t.Cleanup(func() {
+		if data, err := os.ReadFile(daemonPid); err == nil {
+			if pid, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil {
+				_ = syscall.Kill(pid, syscall.SIGKILL)
+			}
+		}
+	})
+	task := h.offer("daemon", h.spec("daemon", nil, `setsid sh -c 'echo $$$$ > "$OUT/daemon.tmp"; mv "$OUT/daemon.tmp" "$OUT/daemon"; exec sleep 300' > /dev/null 2>&1 &
 while [ ! -s "$OUT/daemon" ]; do sleep 0.05; done`), nil)
 	require.Equal(t, exited(0), h.wait(task))
 	daemon := readPid(t, daemonPid)
-	t.Cleanup(func() { _ = syscall.Kill(daemon, syscall.SIGKILL) })
 
 	next := h.offer("next", h.spec("next", nil, `! kill -0 "$(cat "$OUT/daemon")" 2>/dev/null`), nil)
 	assert.Equal(t, exited(0), h.wait(next), "the daemon was still running when the next task started")
