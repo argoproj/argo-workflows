@@ -2189,9 +2189,9 @@
     "@types/react" "*"
 
 "@types/react@*", "@types/react@^16", "@types/react@^16.8.5":
-  version "16.14.70"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.70.tgz#c97b717a6263e18e546c54b3b870482d867c6a93"
-  integrity sha512-DM5Q7rSx9G6QYcVvMgxvEurL5P06OxcDNUXrLxlpBzG4ccUewcBCmsztYbxJBobzO8RIwwmjoaD5OsKqdHDuYQ==
+  version "16.14.71"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.71.tgz#180c9a8fb5e3ecb9424b08e33e47740deebedac2"
+  integrity sha512-tpYq35PvQDrmJGPZf27F3W15lRWU13STwgy8Px+j5BNNymOY3svuqK8wsYnLW3d66NfRMk79pO3WeoNuWAxJxg==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "^0.16"
@@ -3626,9 +3626,9 @@ cssstyle@^2.3.0:
     cssom "~0.3.6"
 
 csstype@^3.2.2:
-  version "3.2.3"
-  resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.2.3.tgz#ec48c0f3e993e50648c86da559e2610995cf989a"
-  integrity sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.2.4.tgz#e3c565add00793c36f089cc14b70d04d784daa19"
+  integrity sha512-PoKaoPzQapnEoqUSnHx1u6W6ku8CVEgKsnpmmzU3m1nwkidpPBQ8V/Zq2+bWNrsOKoKLwTGdbx6xF7BXP1zLVQ==
 
 data-urls@^2.0.0:
   version "2.0.0"
