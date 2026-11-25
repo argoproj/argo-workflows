@@ -92,11 +92,11 @@ func TestExpirationTime(t *testing.T) {
 	art := &wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{
 			S3Bucket: wfv1.S3Bucket{
-				Endpoint:                 "endpoint",
-				Bucket:                   "bucket",
-				Region:                   "us-east-1",
-				RoleARN:                  "role-arn-test",
-				TokenExpirationInMinutes: new(int32(60)), // One hour
+				Endpoint:               "endpoint",
+				Bucket:                 "bucket",
+				Region:                 "us-east-1",
+				RoleARN:                "role-arn-test",
+				TokenExpirationSeconds: new(int32(3600)), // One hour
 			},
 			Key: "art",
 		}},

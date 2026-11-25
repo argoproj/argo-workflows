@@ -2885,8 +2885,8 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.TokenExpirationInMinutes != nil {
-		in, out := &in.TokenExpirationInMinutes, &out.TokenExpirationInMinutes
+	if in.TokenExpirationSeconds != nil {
+		in, out := &in.TokenExpirationSeconds, &out.TokenExpirationSeconds
 		*out = new(int32)
 		**out = **in
 	}

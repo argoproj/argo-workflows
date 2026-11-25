@@ -542,8 +542,6 @@ func GetCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credenti
 	log := logging.RequireLoggerFromContext(ctx)
 	switch {
 	case opts.AccessKey != "" && opts.SecretKey != "":
-		// TokenExpiration is not configurable for static/ephemeral key credentials;
-		// the token lifetime is fixed at creation time by the issuer.
 		if opts.SessionToken != "" {
 			log.WithField("endpoint", opts.Endpoint).Info(ctx, "Creating minio client using ephemeral credentials")
 			return credentials.NewStaticV4(opts.AccessKey, opts.SecretKey, opts.SessionToken), nil

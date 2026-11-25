@@ -6155,8 +6155,8 @@ func (m *S3Bucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.TokenExpirationInMinutes != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.TokenExpirationInMinutes))
+	if m.TokenExpirationSeconds != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.TokenExpirationSeconds))
 		i--
 		dAtA[i] = 0x70
 	}
@@ -11928,8 +11928,8 @@ func (m *S3Bucket) Size() (n int) {
 	}
 	l = len(m.AddressingStyle)
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.TokenExpirationInMinutes != nil {
-		n += 1 + sovGenerated(uint64(*m.TokenExpirationInMinutes))
+	if m.TokenExpirationSeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.TokenExpirationSeconds))
 	}
 	return n
 }
@@ -14725,7 +14725,7 @@ func (this *S3Bucket) String() string {
 		`CASecret:` + strings.Replace(fmt.Sprintf("%v", this.CASecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`SessionTokenSecret:` + strings.Replace(fmt.Sprintf("%v", this.SessionTokenSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`AddressingStyle:` + fmt.Sprintf("%v", this.AddressingStyle) + `,`,
-		`TokenExpirationInMinutes:` + valueToStringGenerated(this.TokenExpirationInMinutes) + `,`,
+		`TokenExpirationSeconds:` + valueToStringGenerated(this.TokenExpirationSeconds) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -34176,7 +34176,7 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 14:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokenExpirationInMinutes", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TokenExpirationSeconds", wireType)
 			}
 			var v int32
 			for shift := uint(0); ; shift += 7 {
@@ -34193,7 +34193,7 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.TokenExpirationInMinutes = &v
+			m.TokenExpirationSeconds = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

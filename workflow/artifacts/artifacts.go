@@ -94,9 +94,9 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			caKey = caBytes
 		}
 
-		if art.S3.TokenExpirationInMinutes != nil {
-			d := *art.S3.TokenExpirationInMinutes
-			tokenExpiration = new(time.Duration(d) * time.Minute)
+		if art.S3.TokenExpirationSeconds != nil {
+			d := *art.S3.TokenExpirationSeconds
+			tokenExpiration = new(time.Duration(d) * time.Second)
 		}
 
 		driver := s3.ArtifactDriver{
