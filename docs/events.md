@@ -43,7 +43,7 @@ In both modes, when dispatching fails for a WorkflowEventBinding, Argo records a
 To see these events, run:
 
 ```bash
-kubectl get events --field-selector reason=WorkflowEventBindingError -n <namespace>
+kubectl get events --field-selector reason=WorkflowEventBindingError -n argo
 ```
 
 !!! Warning "Processing Order"
