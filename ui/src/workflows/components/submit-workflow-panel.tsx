@@ -9,7 +9,7 @@ import {getValueFromParameter, ParametersInput} from '../../shared/components/pa
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {TextInput} from '../../shared/components/text-input';
 import {Context} from '../../shared/context';
-import {getEntrypointFromQuery, getEntrypointParametersFromQuery, getLabelsFromQuery, getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
+import {getInitialEntrypoint, getInitialEntrypointParameters, getLabelsFromQuery, getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
 import {Artifact, Parameter, Template} from '../../shared/models';
 import {services} from '../../shared/services';
 
@@ -35,13 +35,9 @@ const defaultTemplate: Template = {
 
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const urlEntrypoint = getEntrypointFromQuery(props.history);
-    const [entrypoint, setEntrypoint] = useState(urlEntrypoint || props.entrypoint || workflowEntrypoint);
+    const [entrypoint, setEntrypoint] = useState(() => getInitialEntrypoint(props.history, props.templates, props.entrypoint, workflowEntrypoint));
     // Prefill the URL entrypoint's inputs once, when the panel opens. Later template changes must not replace values the user has set.
-    const [parameters, setParameters] = useState<Parameter[]>(() => {
-        const selectedTemp = urlEntrypoint ? props.templates.find(t => t.name === urlEntrypoint) : undefined;
-        return selectedTemp?.inputs?.parameters ? getEntrypointParametersFromQuery(props.history, selectedTemp.inputs.parameters, props.workflowParameters) : [];
-    });
+    const [parameters, setParameters] = useState<Parameter[]>(() => getInitialEntrypointParameters(props.history, props.templates, props.workflowParameters));
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [labels, setLabels] = useState(() => getLabelsFromQuery(props.history));
     const [error, setError] = useState<Error>();

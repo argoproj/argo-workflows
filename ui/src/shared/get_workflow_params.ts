@@ -1,6 +1,6 @@
 import {History} from 'history';
 
-import {Parameter} from './models';
+import {Parameter, Template} from './models';
 
 function extractKey(inputString: string): string | null {
     // Use regular expression to match the key within square brackets
@@ -89,4 +89,29 @@ export function getEntrypointParametersFromQuery(history: History, templateParam
             ...param,
             value: Object.prototype.hasOwnProperty.call(valuesFromQuery, param.name) ? valuesFromQuery[param.name] : param.value
         }));
+}
+
+/**
+ * Returns the entrypoint the submit panel starts with: the URL entrypoint if the workflow has a template with that name,
+ * otherwise the workflow's own entrypoint, otherwise the fallback.
+ */
+export function getInitialEntrypoint(history: History, templates: Template[], workflowEntrypoint: string | undefined, fallback: string): string {
+    const urlEntrypoint = getEntrypointFromQuery(history);
+    if (urlEntrypoint && templates.some(t => t.name === urlEntrypoint)) {
+        return urlEntrypoint;
+    }
+    return workflowEntrypoint || fallback;
+}
+
+/**
+ * Returns the input parameters the submit panel starts with: the URL entrypoint's inputs, prefilled from the query,
+ * or an empty list if the URL sets no known entrypoint or that template has no inputs.
+ */
+export function getInitialEntrypointParameters(history: History, templates: Template[], workflowParameters: Parameter[]): Parameter[] {
+    const urlEntrypoint = getEntrypointFromQuery(history);
+    const selectedTemp = templates.find(t => t.name === urlEntrypoint);
+    if (!selectedTemp?.inputs?.parameters) {
+        return [];
+    }
+    return getEntrypointParametersFromQuery(history, selectedTemp.inputs.parameters, workflowParameters);
 }

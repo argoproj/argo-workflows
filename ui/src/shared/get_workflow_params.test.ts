@@ -1,6 +1,14 @@
 import {createBrowserHistory} from 'history';
 
-import {getEntrypointFromQuery, getEntrypointParametersFromQuery, getLabelsFromQuery, getSubmitPrefillSearchParams, getWorkflowParametersFromQuery} from './get_workflow_params';
+import {
+    getEntrypointFromQuery,
+    getEntrypointParametersFromQuery,
+    getInitialEntrypoint,
+    getInitialEntrypointParameters,
+    getLabelsFromQuery,
+    getSubmitPrefillSearchParams,
+    getWorkflowParametersFromQuery
+} from './get_workflow_params';
 
 describe('get_workflow_params', () => {
     it('should return an empty object when there are no query parameters', () => {
@@ -129,5 +137,46 @@ describe('getEntrypointParametersFromQuery', () => {
             {name: 'constructor', value: 'c'},
             {name: 'toString', value: ''}
         ]);
+    });
+});
+
+describe('getInitialEntrypoint', () => {
+    const templates = [{name: 'main'}, {name: 'greet'}];
+
+    it('should use the URL entrypoint when the workflow has that template', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?entrypoint=greet';
+        expect(getInitialEntrypoint(history, templates, 'main', '<default>')).toEqual('greet');
+    });
+
+    it('should ignore a URL entrypoint that is not a template of the workflow', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?entrypoint=typo';
+        expect(getInitialEntrypoint(history, templates, 'main', '<default>')).toEqual('main');
+    });
+
+    it('should use the workflow entrypoint, then the fallback, when the URL sets none', () => {
+        const history = createBrowserHistory();
+        history.location.search = '';
+        expect(getInitialEntrypoint(history, templates, 'main', '<default>')).toEqual('main');
+        expect(getInitialEntrypoint(history, templates, undefined, '<default>')).toEqual('<default>');
+    });
+});
+
+describe('getInitialEntrypointParameters', () => {
+    const templates = [{name: 'main'}, {name: 'greet', inputs: {parameters: [{name: 'who', value: 'nobody'}]}}];
+
+    it('should prefill the inputs of the URL entrypoint', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?entrypoint=greet&parameters[who]=Mason';
+        expect(getInitialEntrypointParameters(history, templates, [])).toEqual([{name: 'who', value: 'Mason'}]);
+    });
+
+    it('should return no inputs when the URL sets no entrypoint, an unknown one, or one without inputs', () => {
+        const history = createBrowserHistory();
+        for (const search of ['?parameters[who]=Mason', '?entrypoint=typo', '?entrypoint=main']) {
+            history.location.search = search;
+            expect(getInitialEntrypointParameters(history, templates, [])).toEqual([]);
+        }
     });
 });
