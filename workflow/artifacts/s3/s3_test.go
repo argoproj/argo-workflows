@@ -740,3 +740,21 @@ func TestDisallowedComboOptions(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestNewClientInvalidTrustedCA(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	driver := &ArtifactDriver{
+		Endpoint:  "foo.com",
+		Region:    "us-south-3",
+		Secure:    true,
+		AccessKey: "key",
+		SecretKey: "secret",
+		TrustedCA: "not a certificate",
+	}
+	_, err := driver.newS3Client(ctx)
+	require.EqualError(t, err, "no valid PEM certificate found in the S3 caSecret")
+
+	driver.TrustedCA = ""
+	_, err = driver.newS3Client(ctx)
+	require.NoError(t, err)
+}
