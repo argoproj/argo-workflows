@@ -902,16 +902,16 @@
     minimist "^1.2.0"
 
 "@dagrejs/dagre@^3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@dagrejs/dagre/-/dagre-3.1.1.tgz#06de3070d584886b8820aaceeefc45a553cf2b97"
-  integrity sha512-zroZB1dFOFiGgv4Xcrn1DckB1o4aOikPqD2NDQPV0WM//CXGcS6xiD0rNkqHmw6FEg4tabt4nxPLwgCWT+Vb2A==
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/@dagrejs/dagre/-/dagre-3.1.4.tgz#cc06b45c18ec0872851e35c66bd3202001275736"
+  integrity sha512-tW3fsvXxSteGpBHgT/hqPxBxTibPw409mH97S6LzXe+ddak2/RtPtYkYPo5gfvzBtnjxrZnoh8ft62zA3LDAZQ==
   dependencies:
-    "@dagrejs/graphlib" "4.0.5"
+    "@dagrejs/graphlib" "4.0.8"
 
-"@dagrejs/graphlib@4.0.5":
-  version "4.0.5"
-  resolved "https://registry.yarnpkg.com/@dagrejs/graphlib/-/graphlib-4.0.5.tgz#1ae7a93a4640a9e50117439d23327e27d6b698d3"
-  integrity sha512-7xrBTqIts3o+PMUZX97wSc+7TUbW+/rULzGNCTP6yooNVDXbzw4Wutg/H/xOutTB/c/k0YqOAavgPh4/Zk9PFA==
+"@dagrejs/graphlib@4.0.8":
+  version "4.0.8"
+  resolved "https://registry.yarnpkg.com/@dagrejs/graphlib/-/graphlib-4.0.8.tgz#47fb755d9230981730765bf67e8cbec2aad5e2e2"
+  integrity sha512-B3G85dH8UebW+r2leKKmYp+YwzJnjCqT1eqDq04BtAbRa5ULgCQuVfsqEQsw+s4dvC01QEw9PE2QX1g7KWDATQ==
 
 "@discoveryjs/json-ext@^0.5.0":
   version "0.5.7"
