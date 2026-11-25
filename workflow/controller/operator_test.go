@@ -4205,6 +4205,49 @@ func TestControllerReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
+// The workflow and the stored spec each have their own suspend pointer, so
+// whether they differ is a question about the values.
+func TestNeedsStoredWfSpecUpdateComparesSuspendByValue(t *testing.T) {
+	woc := &wfOperationCtx{wf: &wfv1.Workflow{
+		Spec:   wfv1.WorkflowSpec{Entrypoint: "main", Suspend: new(false)},
+		Status: wfv1.WorkflowStatus{StoredWorkflowSpec: &wfv1.WorkflowSpec{Entrypoint: "main", Suspend: new(false)}},
+	}}
+	assert.False(t, woc.needsStoredWfSpecUpdate(), "the same value")
+
+	woc.wf.Spec.Suspend = new(true)
+	assert.True(t, woc.needsStoredWfSpecUpdate(), "a different value")
+
+	woc.wf.Spec.Suspend = nil
+	assert.True(t, woc.needsStoredWfSpecUpdate(), "unset on one side")
+
+	woc.wf.Status.StoredWorkflowSpec.Suspend = nil
+	assert.False(t, woc.needsStoredWfSpecUpdate(), "unset on both sides")
+}
+
+// With suspend set, the stored spec is still only merged again when it has to
+// be, so `templateReferencing: Secure` still checks it against the template.
+func TestValidReferenceModeWithSuspendSet(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflow-template-ref.yaml")
+	wf.Spec.Suspend = new(false)
+	wfTmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-submittable.yaml")
+	cancel, controller := newController(logging.TestContext(t.Context()), wf, wfTmpl)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{TemplateReferencing: config.TemplateReferencingSecure}
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// as it is read back from the API: the two suspend fields are separate pointers
+	woc.wf.Status.StoredWorkflowSpec.Suspend = new(false)
+	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, "WorkflowSpec may not change during execution when the controller is set `templateReferencing: Secure`", woc.wf.Status.Message)
+}
+
 func TestValidReferenceMode(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflow-template-ref.yaml")
 	wfTmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-submittable.yaml")
