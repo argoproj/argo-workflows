@@ -2769,6 +2769,16 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
 		err := woc.deletePDBResource(ctx)
 		if err != nil {
+			// The cleanup failure makes Error the effective terminal phase, overriding
+			// the phase queued above (e.g. Succeeded): record Error instead, so the
+			// counter matches the phase that is actually persisted.
+			if woc.wf.Status.Phase != wfv1.WorkflowError {
+				if n := len(woc.pendingPhaseChanges); n > 0 && woc.pendingPhaseChanges[n-1] == phase {
+					woc.pendingPhaseChanges[n-1] = wfv1.WorkflowError
+				} else {
+					woc.pendingPhaseChanges = append(woc.pendingPhaseChanges, wfv1.WorkflowError)
+				}
+			}
 			woc.wf.Status.Phase = wfv1.WorkflowError
 			woc.wf.Labels[common.LabelKeyPhase] = string(wfv1.NodeError)
 			woc.updated = true

@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -260,4 +261,145 @@ func TestPhaseCounterNotDoubleCountedOnFailedUpdate(t *testing.T) {
 			assert.Equal(t, int64(1), runningCount(), "the persisted phase transition must be counted exactly once")
 		})
 	}
+}
+
+// TestPhaseCounterOnSizeLimitErr verifies the oversized-Update path: the transitions
+// queued by the failed Update are dropped (woc.wf is reset to the persisted original,
+// so they never reached the API server) and only the Error transition persisted by the
+// follow-up Update is counted — exactly once.
+// https://github.com/argoproj/argo-workflows/issues/17571
+func TestPhaseCounterOnSizeLimitErr(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, false)
+
+	// Reject the first Update (the one carrying the Running transition) as too large;
+	// the follow-up error Update inside persistWorkflowSizeLimitErr must go through.
+	first := true
+	controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+		if first {
+			first = false
+			return true, nil, apierr.NewRequestEntityTooLargeError("limit is 3145728")
+		}
+		return false, nil, nil
+	})
+
+	phaseCount := func(phase string) int64 {
+		t.Helper()
+		attribs := attribute.NewSet(attribute.String("phase", phase), attribute.String("namespace", wf.Namespace))
+		val, metricErr := testExporter.GetInt64CounterValue(ctx, "total_count", &attribs)
+		if metricErr != nil {
+			return 0
+		}
+		return val
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.Equal(t, int64(0), phaseCount("Running"), "transitions queued by the oversized Update must be dropped, not counted")
+	assert.Equal(t, int64(1), phaseCount("Error"), "the persisted Error transition must be counted exactly once")
+}
+
+// TestPhaseCounterOnPDBCleanupFailure verifies that when PDB cleanup fails at completion
+// and flips the workflow to Error, the Error transition — the one that is persisted — is
+// counted, and the Succeeded transition that was queued just before it is not.
+// https://github.com/argoproj/argo-workflows/issues/17571
+func TestPhaseCounterOnPDBCleanupFailure(t *testing.T) {
+	// failPDBDelete makes every poddisruptionbudgets Delete fail with a non-transient
+	// error, so deletePDBResource returns an error and completion flips to Error.
+	failPDBDelete := func(controller *WorkflowController) {
+		controller.kubeclientset.(*fake.Clientset).PrependReactor("delete", "poddisruptionbudgets", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInternalError(fmt.Errorf("pdb delete failed"))
+		})
+	}
+
+	t.Run("queued terminal phase is replaced", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/pdbwf.yaml")
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+
+		failPDBDelete(controller)
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+		// Completing queues Succeeded, but cleanup fails, so Error is what persists.
+		woc.markWorkflowSuccess(ctx)
+		require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+
+		woc.persistUpdates(ctx)
+
+		stored, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		require.Equal(t, wfv1.WorkflowError, stored.Status.Phase)
+
+		phaseCount := func(phase string) int64 {
+			t.Helper()
+			attribs := attribute.NewSet(attribute.String("phase", phase), attribute.String("namespace", wf.Namespace))
+			val, metricErr := testExporter.GetInt64CounterValue(ctx, "total_count", &attribs)
+			if metricErr != nil {
+				return 0
+			}
+			return val
+		}
+		assert.Equal(t, int64(0), phaseCount("Succeeded"), "the overwritten Succeeded transition must not be counted")
+		assert.Equal(t, int64(1), phaseCount("Error"), "the persisted Error transition must be counted exactly once")
+	})
+
+	t.Run("cleanup failure after an unchanged terminal phase", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/pdbwf.yaml")
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+		// First completion succeeds and is counted normally.
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		woc.markWorkflowSuccess(ctx)
+		require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+		woc.persistUpdates(ctx)
+
+		// A later reconcile re-marks the already-Succeeded workflow while cleanup
+		// fails: the phase itself does not change, but the persisted phase becomes
+		// Error, which must be counted.
+		failPDBDelete(controller)
+
+		stored, err := wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		require.Equal(t, wfv1.WorkflowSucceeded, stored.Status.Phase)
+
+		woc = newWorkflowOperationCtx(ctx, stored, controller)
+		woc.markWorkflowSuccess(ctx)
+		require.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		woc.persistUpdates(ctx)
+
+		stored, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		require.Equal(t, wfv1.WorkflowError, stored.Status.Phase)
+
+		phaseCount := func(phase string) int64 {
+			t.Helper()
+			attribs := attribute.NewSet(attribute.String("phase", phase), attribute.String("namespace", wf.Namespace))
+			val, metricErr := testExporter.GetInt64CounterValue(ctx, "total_count", &attribs)
+			if metricErr != nil {
+				return 0
+			}
+			return val
+		}
+		assert.Equal(t, int64(1), phaseCount("Succeeded"), "the first, persisted Succeeded transition must stay counted once")
+		assert.Equal(t, int64(1), phaseCount("Error"), "the persisted Error transition must be counted exactly once")
+	})
 }
