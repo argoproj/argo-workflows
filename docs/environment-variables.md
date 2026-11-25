@@ -127,7 +127,8 @@ env:
 
 This is a completion scheduling delay, not a minimum interval between all reconciliations: other events may enqueue a workflow sooner.
 The [per-workflow duty cycle](#completed_requeue_duty_cycle_percent) increases the delay for workflows with expensive reconciliations.
-Gains may vary under load: if the workflow informer is behind the controller's last write, the controller rejects the reconcile as outdated and waits the full `DEFAULT_REQUEUE_TIME` before retrying.
+If the workflow informer has not yet seen the controller's last write, the controller skips the completion reconcile as outdated and runs it again after the minimum delay once the informer catches up.
+Other events skipped this way still wait the full `DEFAULT_REQUEUE_TIME`.
 
 ### COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT
 

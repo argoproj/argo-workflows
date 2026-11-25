@@ -9,4 +9,4 @@ Set `COMPLETED_REQUEUE_TIME_MS` on the controller to a positive integer number o
 `DEFAULT_REQUEUE_TIME` caps the completion delay.
 For HTTP and executor-plugin nodes, the agent still batches results on its own ticker, so lower `ARGO_AGENT_PATCH_RATE` too to see much benefit.
 The controller increases completion delays for expensive workflows using `COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT`, which defaults to `20` percent of one worker's time per workflow.
-Gains may vary under load: if the workflow informer is behind the controller's last write, the reconcile is rejected as outdated and waits the full `DEFAULT_REQUEUE_TIME` before retrying.
+If the workflow informer is behind the controller's last write, the completion reconcile is skipped as outdated and runs again after the minimum delay once the informer catches up.
