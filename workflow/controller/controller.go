@@ -209,8 +209,9 @@ type WorkflowController struct {
 	// Protected by lastWrittenVersions.mutex so completion/deletion cannot race
 	// with a finishing operation and resurrect its timing record.
 	reconcileTimings map[types.UID]workflowReconcileTiming
-	// outdatedCompletionRetries retries reconciles enqueued by a node completion
-	// and skipped as outdated, once the workflow informer catches up.
+	// outdatedCompletionRetries remembers completion-triggered reconciles that were
+	// skipped because the workflow informer had not yet seen the controller's last
+	// write, so they run again as soon as it catches up.
 	outdatedCompletionRetries outdatedCompletionRetries
 }
 
@@ -990,9 +991,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 
-	// Without COMPLETED_REQUEUE_TIME_MS nothing is recorded, so don't take
-	// outdatedCompletionRetries.mutex.
-	completionWaiting := wfc.minCompletionRequeueDelay != nil && wfc.outdatedCompletionRetries.startReconcile(key)
+	completionWaiting := false
+	if wfc.minCompletionRequeueDelay != nil {
+		completionWaiting = wfc.outdatedCompletionRetries.startReconcile(key)
+	}
 	obj, ok := wfc.getWorkflowByKey(ctx, key)
 	if !ok {
 		return true

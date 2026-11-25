@@ -81,8 +81,8 @@ func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Ti
 }
 
 // minCompletionDelay is the shortest wait after a node completion:
-// COMPLETED_REQUEUE_TIME_MS, capped at DEFAULT_REQUEUE_TIME, or
-// DEFAULT_REQUEUE_TIME when it is unset.
+// COMPLETED_REQUEUE_TIME_MS, capped at DEFAULT_REQUEUE_TIME. If
+// COMPLETED_REQUEUE_TIME_MS is not set, it is DEFAULT_REQUEUE_TIME.
 func (wfc *WorkflowController) minCompletionDelay() time.Duration {
 	if wfc.minCompletionRequeueDelay == nil {
 		return wfc.requeueTime

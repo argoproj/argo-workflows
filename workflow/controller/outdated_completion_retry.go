@@ -9,24 +9,25 @@ import (
 
 // outdatedCompletionRetries re-enqueues a completion-triggered reconcile that was
 // skipped as outdated as soon as the workflow informer catches up, instead of
-// after DEFAULT_REQUEUE_TIME. Both maps are sets of workflow keys.
+// after DEFAULT_REQUEUE_TIME. Both maps are keyed by wfQueue key
+// ("namespace/name").
 type outdatedCompletionRetries struct {
 	mutex gosync.Mutex
 	// enqueuedByCompletion holds keys enqueued by a node completion and not yet
 	// picked up by a worker.
-	enqueuedByCompletion map[string]struct{}
+	enqueuedByCompletion map[string]bool
 	// skippedAsOutdated holds keys whose completion-triggered reconcile was skipped
 	// as outdated and not yet retried.
-	skippedAsOutdated map[string]struct{}
+	skippedAsOutdated map[string]bool
 }
 
 func (c *outdatedCompletionRetries) markEnqueuedByCompletion(key string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.enqueuedByCompletion == nil {
-		c.enqueuedByCompletion = make(map[string]struct{})
+		c.enqueuedByCompletion = map[string]bool{}
 	}
-	c.enqueuedByCompletion[key] = struct{}{}
+	c.enqueuedByCompletion[key] = true
 }
 
 // startReconcile is called when a worker picks up a key. It reports whether a
@@ -37,20 +38,19 @@ func (c *outdatedCompletionRetries) markEnqueuedByCompletion(key string) {
 func (c *outdatedCompletionRetries) startReconcile(key string) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	_, enqueued := c.enqueuedByCompletion[key]
-	_, skipped := c.skippedAsOutdated[key]
+	waiting := c.enqueuedByCompletion[key] || c.skippedAsOutdated[key]
 	delete(c.enqueuedByCompletion, key)
 	delete(c.skippedAsOutdated, key)
-	return enqueued || skipped
+	return waiting
 }
 
 func (c *outdatedCompletionRetries) markSkippedAsOutdated(key string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.skippedAsOutdated == nil {
-		c.skippedAsOutdated = make(map[string]struct{})
+		c.skippedAsOutdated = map[string]bool{}
 	}
-	c.skippedAsOutdated[key] = struct{}{}
+	c.skippedAsOutdated[key] = true
 }
 
 // clearSkippedAsOutdated unmarks a key and reports whether it was marked, so
@@ -58,7 +58,7 @@ func (c *outdatedCompletionRetries) markSkippedAsOutdated(key string) {
 func (c *outdatedCompletionRetries) clearSkippedAsOutdated(key string) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	_, marked := c.skippedAsOutdated[key]
+	marked := c.skippedAsOutdated[key]
 	delete(c.skippedAsOutdated, key)
 	return marked
 }
