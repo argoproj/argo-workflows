@@ -37,7 +37,11 @@ export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
     const urlEntrypoint = getEntrypointFromQuery(props.history);
     const [entrypoint, setEntrypoint] = useState(urlEntrypoint || props.entrypoint || workflowEntrypoint);
-    const [parameters, setParameters] = useState<Parameter[]>([]);
+    // Prefill the URL entrypoint's inputs once, when the panel opens. Later template changes must not replace values the user has set.
+    const [parameters, setParameters] = useState<Parameter[]>(() => {
+        const selectedTemp = urlEntrypoint ? props.templates.find(t => t.name === urlEntrypoint) : undefined;
+        return selectedTemp?.inputs?.parameters ? getEntrypointParametersFromQuery(props.history, selectedTemp.inputs.parameters, props.workflowParameters) : [];
+    });
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
     const [labels, setLabels] = useState(() => getLabelsFromQuery(props.history));
     const [error, setError] = useState<Error>();
@@ -78,14 +82,6 @@ export function SubmitWorkflowPanel(props: Props) {
         }));
         setWorkflowParameters(updatedParams);
     }, [props.history, setWorkflowParameters]);
-    useEffect(() => {
-        if (urlEntrypoint && urlEntrypoint !== workflowEntrypoint) {
-            const selectedTemp = props.templates.find(t => t.name === urlEntrypoint);
-            if (selectedTemp?.inputs?.parameters) {
-                setParameters(getEntrypointParametersFromQuery(props.history, selectedTemp.inputs.parameters, props.workflowParameters));
-            }
-        }
-    }, [props.templates]);
 
     const templates = useMemo(() => {
         return [defaultTemplate].concat(props.templates);

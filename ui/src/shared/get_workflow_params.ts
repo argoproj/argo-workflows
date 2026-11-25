@@ -78,6 +78,7 @@ export function getLabelsFromQuery(history: History): string[] {
  * Inputs with the same name as a workflow parameter are left out: the workflow parameter already carries that value,
  * and submitting both would let the template default override the workflow argument.
  * An empty query value (`parameters[foo]=`) is kept rather than replaced by the template value.
+ * Only the query's own keys count, so an input named like an Object.prototype member (e.g. `constructor`) keeps its template value.
  */
 export function getEntrypointParametersFromQuery(history: History, templateParameters: Parameter[], workflowParameters: Parameter[]): Parameter[] {
     const valuesFromQuery = getWorkflowParametersFromQuery(history);
@@ -86,6 +87,6 @@ export function getEntrypointParametersFromQuery(history: History, templateParam
         .filter(param => !workflowParameterNames.has(param.name))
         .map(param => ({
             ...param,
-            value: valuesFromQuery[param.name] ?? param.value
+            value: Object.prototype.hasOwnProperty.call(valuesFromQuery, param.name) ? valuesFromQuery[param.name] : param.value
         }));
 }

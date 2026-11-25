@@ -117,4 +117,17 @@ describe('getEntrypointParametersFromQuery', () => {
         history.location.search = '?parameters[who]=Mason';
         expect(getEntrypointParametersFromQuery(history, templateParameters, [{name: 'greeting', value: 'hello'}])).toEqual([{name: 'who', value: 'Mason'}]);
     });
+
+    it('should not read inherited properties for inputs named like Object.prototype members', () => {
+        const history = createBrowserHistory();
+        history.location.search = '?parameters[toString]=';
+        const inputs = [
+            {name: 'constructor', value: 'c'},
+            {name: 'toString', value: 't'}
+        ];
+        expect(getEntrypointParametersFromQuery(history, inputs, [])).toEqual([
+            {name: 'constructor', value: 'c'},
+            {name: 'toString', value: ''}
+        ]);
+    });
 });
