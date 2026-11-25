@@ -1183,18 +1183,18 @@ func reconciliationNeeded(wf metav1.Object) bool {
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
 // enqueue workflow for processing. A pod that finishes its node uses the
 // completion delay; oldPod is nil for adds and deletes.
-func (wfc *WorkflowController) enqueueWfFromPodLabel(ctx context.Context, oldPod, pod *apiv1.Pod) error {
-	if pod.Labels == nil {
+func (wfc *WorkflowController) enqueueWfFromPodLabel(ctx context.Context, oldPod, newPod *apiv1.Pod) error {
+	if newPod.Labels == nil {
 		return fmt.Errorf("pod did not have labels")
 	}
-	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
+	workflowName, ok := newPod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("watch returned pod unrelated to any workflow")
 	}
-	key := pod.Namespace + "/" + workflowName
-	if wfc.podFinishedAfterTaskResult(oldPod, pod) {
-		wfc.enqueueNodeCompletion(ctx, key, pod.OwnerReferences)
+	key := newPod.Namespace + "/" + workflowName
+	if wfc.podFinishedAfterTaskResult(oldPod, newPod) {
+		wfc.enqueueNodeCompletion(ctx, key, newPod.OwnerReferences)
 		return nil
 	}
 	wfc.wfQueue.AddRateLimited(key)

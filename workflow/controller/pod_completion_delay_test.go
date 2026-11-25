@@ -24,8 +24,11 @@ import (
 
 const (
 	podCompletionNodeID = "workflow-1234"
-	// With 1s smoothed cost, last reconcile 1s ago and a 20% duty cycle, the
-	// completion delay is 4s gap - 1s elapsed = 3s; routine events wait 10s.
+	// Duty-cycle inputs seeded by newPodCompletionController.
+	podReconcileCost    = time.Second
+	podReconcileElapsed = time.Second
+	podDutyCyclePercent = 20
+	// A 1s reconcile at 20% needs a 4s idle gap; 1s of it has elapsed, so 3s remain.
 	podCompletionDelay = 3 * time.Second
 	podRoutineDelay    = 10 * time.Second
 )
@@ -37,8 +40,9 @@ var podCompletionOwners = []metav1.OwnerReference{{APIVersion: workflow.APIVersi
 func newPodCompletionController(t *testing.T, floor *time.Duration) (*WorkflowController, *telemetry.TestMetricsExporter) {
 	t.Helper()
 	controller, exporter := newCompletionDelayController(t, podRoutineDelay, floor)
+	controller.completionDutyCyclePercent = podDutyCyclePercent
 	controller.reconcileTimings = map[types.UID]workflowReconcileTiming{
-		"uid": {duration: time.Second, lastEnd: time.Now().Add(-time.Second)},
+		"uid": {duration: podReconcileCost, lastEnd: time.Now().Add(-podReconcileElapsed)},
 	}
 	controller.taskResultInformer = cache.NewSharedIndexInformer(&cache.ListWatch{}, &wfv1.WorkflowTaskResult{}, 0, cache.Indexers{})
 	controller.PodController = pod.TestingNewController(cache.NewSharedIndexInformer(&cache.ListWatch{}, &apiv1.Pod{}, 0,
