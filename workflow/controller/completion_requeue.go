@@ -63,7 +63,7 @@ func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Ti
 	last := wfc.reconcileTimings[uid]
 	wfc.lastWrittenVersions.mutex.RUnlock()
 
-	floor := min(*wfc.minCompletionRequeueDelay, wfc.requeueTime)
+	floor := wfc.minCompletionDelay()
 	if last.lastEnd.IsZero() {
 		return floor
 	}
@@ -78,6 +78,16 @@ func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Ti
 		return floor
 	}
 	return time.Duration(delay)
+}
+
+// minCompletionDelay is the shortest wait after a node completion:
+// COMPLETED_REQUEUE_TIME_MS, capped at DEFAULT_REQUEUE_TIME, or
+// DEFAULT_REQUEUE_TIME when it is unset.
+func (wfc *WorkflowController) minCompletionDelay() time.Duration {
+	if wfc.minCompletionRequeueDelay == nil {
+		return wfc.requeueTime
+	}
+	return min(*wfc.minCompletionRequeueDelay, wfc.requeueTime)
 }
 
 // workflowOwnerUID returns the UID of the owning Workflow. Argo always sets this
@@ -104,5 +114,6 @@ func (wfc *WorkflowController) enqueueNodeCompletion(ctx context.Context, key st
 	}
 	delay := wfc.completionRequeueDelay(workflowOwnerUID(owners), time.Now())
 	wfc.metrics.RecordWorkflowCompletionRequeueDelay(ctx, delay.Seconds())
+	wfc.outdatedCompletionRetries.markEnqueuedByCompletion(key)
 	wfc.wfQueue.AddAfter(key, delay)
 }

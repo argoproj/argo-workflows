@@ -209,6 +209,9 @@ type WorkflowController struct {
 	// Protected by lastWrittenVersions.mutex so completion/deletion cannot race
 	// with a finishing operation and resurrect its timing record.
 	reconcileTimings map[types.UID]workflowReconcileTiming
+	// outdatedCompletionRetries retries reconciles enqueued by a node completion
+	// and skipped as outdated, once the workflow informer catches up.
+	outdatedCompletionRetries outdatedCompletionRetries
 }
 
 const (
@@ -987,6 +990,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 
+	// Without COMPLETED_REQUEUE_TIME_MS nothing is recorded, so don't take
+	// outdatedCompletionRetries.mutex.
+	completionWaiting := wfc.minCompletionRequeueDelay != nil && wfc.outdatedCompletionRetries.startReconcile(key)
 	obj, ok := wfc.getWorkflowByKey(ctx, key)
 	if !ok {
 		return true
@@ -1008,7 +1014,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 			return true
 		}
 		logger.WithField("key", key).Debug(ctx, "Skipping outdated workflow event")
+		// The rate-limited retry is the fallback if the informer never delivers the update.
 		wfc.wfQueue.AddRateLimited(key)
+		if completionWaiting {
+			wfc.skipOutdatedCompletion(ctx, key)
+		}
 		return true
 	}
 
@@ -1357,7 +1367,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					}
 					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
-						wfc.wfQueue.AddRateLimited(key)
+						wfc.enqueueWorkflowUpdate(ctx, key, newWf)
 						priority, creation := getWfPriority(newObj)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -1387,6 +1397,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						wfc.releaseAllWorkflowLocks(ctx, obj)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
+						if wfc.minCompletionRequeueDelay != nil {
+							wfc.outdatedCompletionRetries.forget(key)
+						}
 					}
 					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
 				},
