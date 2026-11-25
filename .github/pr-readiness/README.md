@@ -61,7 +61,7 @@ A deterministic check ([`template.ts`](template.ts)) compares the description ag
 - `workflow_run` workflows execute the **default branch's** definition with the base-repo token — a fork PR cannot alter what runs here. `pull_request_target` likewise runs the base branch's definition, never the fork's.
 - The job **never checks out or executes PR-head code**; the checkout step pins `ref` to the default branch (without it, `pull_request_target` would check out the PR's base branch). Keep it that way.
 - The author's login is checked against GitHub's login format before it is put into a search string.
-- `permissions: {}` at the top; the job grants only `pull-requests: write`, `contents: read`, `actions: read`. No secrets beyond `GITHUB_TOKEN`.
+- `permissions: {}` at the top; the job grants only `pull-requests: write`, `contents: read`, `actions: read`, `issues: read`. The last is needed by the contributor table: without it, GitHub search cannot see issues, so the `is:issue` searches silently return the author's PRs instead. No secrets beyond `GITHUB_TOKEN`.
 - `workflow_run.pull_requests` is empty for fork PRs, so the PR is found by matching `head_sha` against open PRs; no match → exit (a newer push superseded the run).
 - PR title/body/branch are attacker-controlled: they are only ever handled as data, never interpolated into shell or scripts. The comment never echoes contributor-supplied text — only the bot's own guidance, check titles/URLs, and template section names.
 - All actions are pinned to full commit SHAs (enforced by repo lint).
