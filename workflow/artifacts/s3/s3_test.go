@@ -751,10 +751,10 @@ func TestNewClientInvalidTrustedCA(t *testing.T) {
 		SecretKey: "secret",
 		TrustedCA: "not a certificate",
 	}
-	_, err := driver.newClient(ctx)
+	_, err := driver.newS3Client(ctx)
 	require.EqualError(t, err, "no valid PEM certificate found in the S3 caSecret")
 
 	driver.TrustedCA = ""
-	_, err = driver.newClient(ctx)
+	_, err = driver.newS3Client(ctx)
 	require.NoError(t, err)
 }
