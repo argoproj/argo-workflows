@@ -5546,6 +5546,55 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	}
 }
 
+// A resource template pod has no wait container: argoexec runs as main and
+// writes the task result itself. If main is OOM-killed before that write, the
+// task result must still be marked complete or the workflow stays Running.
+func TestResourcePodMainOOMCompletesTaskResult(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-main-oom
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: create
+        template: create
+  - name: create
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          generateName: cm-
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	injectPlaceholderTaskResult(ctx, t, woc, woc.wf.NodeID("resource-main-oom[0].create"))
+	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		require.Len(t, pod.Spec.Containers, 1)
+		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{{
+			Name:  common.MainContainerName,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "OOMKilled", FinishedAt: metav1.Now()}},
+		}}
+	})
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes.FindByDisplayName("create")
+	require.NotNil(t, node)
+	assert.False(t, woc.wf.Status.IsTaskResultIncomplete(node.ID))
+	assert.False(t, node.FinishedAt.IsZero())
+}
+
 // TestInferFailedReason_SupervisorPreMainFailure exercises the init-less mode failure path
 // where supervisor pre-main fails: supervisor writes the failed marker and
 // exits non-zero, emissary in main observes the marker and exits with 65

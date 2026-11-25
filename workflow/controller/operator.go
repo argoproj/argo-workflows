@@ -1744,6 +1744,22 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			}
 		}
 	}
+	if exitCode := getExitCode(pod); auxContainerCleanedUp && exitCode != nil && *exitCode != 0 {
+		// Without an aux container (resource and data templates), argoexec runs as main and reports
+		// the taskResult itself. Mark it completed directly since main did not exit normally, and it
+		// may have died (e.g. OOMKilled) before it had a chance to report taskResult.
+		nodeID := woc.nodeID(pod)
+		if woc.wf.Status.IsTaskResultIncomplete(nodeID) {
+			woc.log.WithFields(logging.Fields{"nodeID": nodeID, "exitCode": *exitCode}).
+				Warn(ctx, "marking its taskResult as completed since main container did not exit normally and there is no aux container")
+			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+			// updated is written back over the node, so mark it too, or the node is not fulfilled
+			// (and gets no FinishedAt) until the next reconciliation.
+			if updated.TaskResultSynced != nil {
+				updated.TaskResultSynced = new(true)
+			}
+		}
+	}
 	if pod.Status.Phase == apiv1.PodFailed && pod.Status.Reason == "Evicted" && auxContainerCleanedUp {
 		// Mark its taskResult as completed directly since the aux container has been cleaned up because of pod evicted,
 		// and it will never have a chance to report taskResult correctly.
