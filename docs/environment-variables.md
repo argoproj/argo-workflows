@@ -28,7 +28,7 @@ This document outlines environment variables that can be used to customize behav
 | `CACHE_GC_PERIOD`                        | `time.Duration`     | `0s`                                                                                        | How often to perform memoization cache GC, which is disabled by default and can be enabled by providing a non-zero duration.                                                                                                                                             |
 | `CACHE_GC_AFTER_NOT_HIT_DURATION`        | `time.Duration`     | `30s`                                                                                       | When a memoization cache has not been hit after this duration, it will be deleted.                                                                                                                                                                                       |
 | `COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT`   | `int`               | `20`                                                                                        | Target percentage of one worker's time for each workflow when completion-triggered scheduling is enabled; an integer from 1 to 100 ([details](#completed_requeue_duty_cycle_percent)).                                                                                   |
-| `COMPLETED_REQUEUE_TIME_MS`              | `int`               | `DEFAULT_REQUEUE_TIME`                                                                      | Prototype minimum delay in milliseconds before reconciling after a completion, only for HTTP and executor-plugin nodes in a WorkflowTaskSet ([details](#completed_requeue_time_ms)).                                                                                     |
+| `COMPLETED_REQUEUE_TIME_MS`              | `int`               | `DEFAULT_REQUEUE_TIME`                                                                      | Prototype minimum delay in milliseconds before reconciling after a pod, HTTP or executor-plugin node completes ([details](#completed_requeue_time_ms)).                                                                                     |
 | `CRON_SYNC_PERIOD`                       | `time.Duration`     | `10s`                                                                                       | How often to sync cron workflows.                                                                                                                                                                                                                                        |
 | `DEFAULT_REQUEUE_TIME`                   | `time.Duration`     | `10s`                                                                                       | The re-queue time for the rate limiter of the workflow queue.                                                                                                                                                                                                            |
 | `DISABLE_MAX_RECURSION`                  | `bool`              | `false`                                                                                     | Set to true to disable the recursion preventer, which will stop a workflow running which has called into a child template 100 times                                                                                                                                      |
@@ -102,14 +102,18 @@ spec:
 
 ### COMPLETED_REQUEUE_TIME_MS
 
-This opt-in prototype sets the minimum delay before reconciling a workflow after a completion, applying only to HTTP and executor-plugin nodes whose results arrive through a [WorkflowTaskSet](http-template.md#argo-agent-rbac).
+This opt-in prototype sets the minimum delay before reconciling a workflow after a node completes.
+It applies to pod nodes, and to HTTP and executor-plugin nodes whose results arrive through a [WorkflowTaskSet](http-template.md#argo-agent-rbac).
+A pod node completes when its pod reaches `Succeeded` or `Failed` and its WorkflowTaskResult reports its outputs as complete.
+These arrive as separate events, so only the second one uses the completion delay.
+If the pod disappears before finishing, for example because it was deleted, the event keeps the normal delay.
 Use it for short nodes that spend longer waiting for reconciliation than running.
 Specify a positive integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.
-`DEFAULT_REQUEUE_TIME` caps the completion delay and remains the delay for all other updates, including pod and WorkflowTaskResult completions.
+`DEFAULT_REQUEUE_TIME` caps the completion delay and remains the delay for all other updates, such as pods starting or progress reported before outputs are complete.
 Leave the setting unset or empty to keep normal rate limiting.
 The controller fails to start if the value is zero, negative, not an integer, or too large to represent as an internal duration.
 
-The agent batches results on its own ticker at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
+For HTTP and executor-plugin nodes, the agent batches results on its own ticker at `ARGO_AGENT_PATCH_RATE`, which defaults to `DEFAULT_REQUEUE_TIME`.
 Results can wait up to that patch interval before reaching the controller; this setting does not change agent batching.
 To see much benefit, lower `ARGO_AGENT_PATCH_RATE` alongside this setting, for example:
 

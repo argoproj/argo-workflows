@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
@@ -63,12 +64,84 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
 			},
 			UpdateFunc: func(old, newObj any) {
-				result := newObj.(*wfv1.WorkflowTaskResult)
-				workflow := result.Labels[common.LabelKeyWorkflow]
-				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
+				wfc.onWorkflowTaskResultUpdate(ctx, old.(*wfv1.WorkflowTaskResult), newObj.(*wfv1.WorkflowTaskResult))
 			},
 		})
 	return informer
+}
+
+// onWorkflowTaskResultUpdate enqueues the result's workflow. If this update marks
+// the outputs complete and the node's pod has already finished, it uses the
+// completion delay; otherwise the normal rate-limited delay.
+func (wfc *WorkflowController) onWorkflowTaskResultUpdate(ctx context.Context, old, result *wfv1.WorkflowTaskResult) {
+	key := result.Namespace + "/" + result.Labels[common.LabelKeyWorkflow]
+	if wfc.taskResultCompletedAfterPod(old, result) {
+		wfc.enqueueNodeCompletion(ctx, key, result.OwnerReferences)
+		return
+	}
+	wfc.wfQueue.AddRateLimited(key)
+}
+
+// podFinishedAfterTaskResult reports whether this pod update just finished the
+// pod while its TaskResult is already complete, or absent for templates without one.
+// Adds and deletes, including the relist after a restart, have no oldPod and never count.
+func (wfc *WorkflowController) podFinishedAfterTaskResult(oldPod, newPod *apiv1.Pod) bool {
+	if wfc.minCompletionRequeueDelay == nil || oldPod == nil {
+		return false
+	}
+	justFinished := !podFinished(oldPod) && podFinished(newPod)
+	if !justFinished {
+		return false
+	}
+	// Without a node ID the TaskResult lookup below would find nothing and wrongly count as complete.
+	nodeID := newPod.Annotations[common.AnnotationKeyNodeID]
+	if nodeID == "" {
+		return false
+	}
+	if wfc.taskResultInformer == nil {
+		return true
+	}
+	// The TaskResult is named after the node ID.
+	obj, exists, err := wfc.taskResultInformer.GetIndexer().GetByKey(newPod.Namespace + "/" + nodeID)
+	if err != nil {
+		return false
+	}
+	return !exists || outputsReported(obj.(*wfv1.WorkflowTaskResult))
+}
+
+// taskResultCompletedAfterPod reports whether this TaskResult update just marked
+// the outputs complete while the node's pod has already finished. If the pod is
+// gone (evicted, or deleted outside Argo) it returns false.
+func (wfc *WorkflowController) taskResultCompletedAfterPod(old, result *wfv1.WorkflowTaskResult) bool {
+	if wfc.minCompletionRequeueDelay == nil || wfc.PodController == nil {
+		return false
+	}
+	justReported := !outputsReported(old) && outputsReported(result)
+	if !justReported {
+		return false
+	}
+	// The TaskResult is named after the node ID.
+	objs, err := wfc.PodController.GetPodsByIndex(indexes.NodeIDIndex, result.Namespace+"/"+result.Name)
+	if err != nil {
+		return false
+	}
+	for _, obj := range objs {
+		if pod, ok := obj.(*apiv1.Pod); ok && podFinished(pod) {
+			return true
+		}
+	}
+	return false
+}
+
+// podFinished reports whether a pod reached Succeeded or Failed. A pod deleted
+// before finishing does not count.
+func podFinished(pod *apiv1.Pod) bool {
+	return pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed
+}
+
+// outputsReported reports whether the executor has marked the TaskResult's outputs complete.
+func outputsReported(result *wfv1.WorkflowTaskResult) bool {
+	return result.Labels[common.LabelKeyReportOutputsCompleted] == "true"
 }
 
 func recentlyDeleted(ctx context.Context, node *wfv1.NodeStatus) bool {

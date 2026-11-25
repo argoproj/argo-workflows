@@ -33,7 +33,7 @@ func newCompletionDelayController(t *testing.T, requeueTime time.Duration, delay
 	m, exporter, err := metrics.CreateDefaultTestMetrics(ctx)
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, m.Shutdown(context.WithoutCancel(ctx))) })
-	return &WorkflowController{wfQueue: queue, requeueTime: requeueTime, taskSetCompletionDelay: delay, completionDutyCyclePercent: 20, metrics: m}, exporter
+	return &WorkflowController{wfQueue: queue, requeueTime: requeueTime, minCompletionRequeueDelay: delay, completionDutyCyclePercent: 20, metrics: m}, exporter
 }
 
 // completionDelayTaskSet builds a taskset fixture with stable node IDs so tests

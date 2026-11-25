@@ -72,7 +72,7 @@ func TestCompletionRequeueControllerConfiguration(t *testing.T) {
 			defer controller.wfArchiveQueue.ShutDown()
 			defer func() { assert.NoError(t, controller.ShutdownMetrics(ctx)) }()
 			defer func() { assert.NoError(t, controller.ShutdownTracing(ctx)) }()
-			assert.Equal(t, tt.wantFloor, controller.taskSetCompletionDelay)
+			assert.Equal(t, tt.wantFloor, controller.minCompletionRequeueDelay)
 			assert.Equal(t, tt.wantPercent, controller.completionDutyCyclePercent)
 			warnings := 0
 			for _, entry := range hook.AllEntries() {
@@ -116,7 +116,7 @@ func TestCompletionRequeueDelay(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			controller := &WorkflowController{
-				taskSetCompletionDelay:     &tt.floor,
+				minCompletionRequeueDelay:  &tt.floor,
 				requeueTime:                tt.ceiling,
 				completionDutyCyclePercent: tt.percent,
 				reconcileTimings: map[types.UID]workflowReconcileTiming{
@@ -309,7 +309,7 @@ status:
 			time.Sleep(2 * time.Second)
 		}).Return(wfv1.Nodes{}, nil).Once()
 		cancel, controller := newController(ctx, wf, func(controller *WorkflowController) {
-			controller.taskSetCompletionDelay = new(time.Millisecond)
+			controller.minCompletionRequeueDelay = new(time.Millisecond)
 			controller.hydrator = hydrator.New(repo)
 		})
 		defer cancel()

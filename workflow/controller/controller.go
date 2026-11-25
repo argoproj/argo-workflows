@@ -155,9 +155,10 @@ type WorkflowController struct {
 	maxOperationTime time.Duration
 	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
 	requeueTime time.Duration
-	// taskSetCompletionDelay sets a positive minimum delay for taskset completions,
-	// capped at requeueTime. Nil preserves the normal rate-limited path.
-	taskSetCompletionDelay     *time.Duration
+	// minCompletionRequeueDelay is the shortest wait before reconciling a workflow
+	// after one of its nodes completes (COMPLETED_REQUEUE_TIME_MS), capped at
+	// requeueTime. Nil disables it: completions use the normal rate-limited path.
+	minCompletionRequeueDelay  *time.Duration
 	completionDutyCyclePercent int
 
 	// datastructures to support the processing of workflows and workflow pods
@@ -220,11 +221,11 @@ const (
 )
 
 // NewWorkflowController initializes a controller from its clients and startup configuration.
-// COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
-// WorkflowTaskSet results; unset or empty keeps normal rate limiting.
+// COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay before reconciling a
+// workflow after one of its nodes completes; unset or empty keeps normal rate limiting.
 // A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
-	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
+	minCompletionRequeueDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +274,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
-		taskSetCompletionDelay:     taskSetCompletionDelay,
+		minCompletionRequeueDelay:  minCompletionRequeueDelay,
 		completionDutyCyclePercent: completionDutyCyclePercent,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
@@ -281,8 +282,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		},
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
-	if taskSetCompletionDelay != nil && *taskSetCompletionDelay > wfc.requeueTime {
-		logger.WithFields(logging.Fields{"completionFloor": *taskSetCompletionDelay, "requeueTime": wfc.requeueTime}).
+	if minCompletionRequeueDelay != nil && *minCompletionRequeueDelay > wfc.requeueTime {
+		logger.WithFields(logging.Fields{"minCompletionRequeueDelay": *minCompletionRequeueDelay, "requeueTime": wfc.requeueTime}).
 			Warn(ctx, "COMPLETED_REQUEUE_TIME_MS exceeds DEFAULT_REQUEUE_TIME; the completion delay is capped at DEFAULT_REQUEUE_TIME")
 	}
 	logger.WithField("indexWorkflowSemaphoreKeys", wfc.indexWorkflowSemaphoreKeys).Info(ctx, "index config")
@@ -445,7 +446,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		logger.WithError(err).Error(ctx, "Failed to add workflow informer handlers")
 		os.Exit(1)
 	}
-	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
+	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics,
+		wfc.enqueueWfFromPodLabel)
 
 	wfc.updateEstimatorFactory(ctx)
 
@@ -1179,8 +1181,9 @@ func reconciliationNeeded(wf metav1.Object) bool {
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
-// enqueue workflow for processing
-func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
+// enqueue workflow for processing. A pod that finishes its node uses the
+// completion delay; oldPod is nil for adds and deletes.
+func (wfc *WorkflowController) enqueueWfFromPodLabel(ctx context.Context, oldPod, pod *apiv1.Pod) error {
 	if pod.Labels == nil {
 		return fmt.Errorf("pod did not have labels")
 	}
@@ -1189,7 +1192,12 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return fmt.Errorf("watch returned pod unrelated to any workflow")
 	}
-	wfc.wfQueue.AddRateLimited(pod.Namespace + "/" + workflowName)
+	key := pod.Namespace + "/" + workflowName
+	if wfc.podFinishedAfterTaskResult(oldPod, pod) {
+		wfc.enqueueNodeCompletion(ctx, key, pod.OwnerReferences)
+		return nil
+	}
+	wfc.wfQueue.AddRateLimited(key)
 	return nil
 }
 

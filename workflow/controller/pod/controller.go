@@ -43,7 +43,8 @@ var (
 	keyFunc          = cache.DeletionHandlingMetaNamespaceKeyFunc
 )
 
-type podEventCallback func(pod *apiv1.Pod) error
+// podEventCallback is called for every pod event. oldPod is nil for adds and deletes.
+type podEventCallback func(ctx context.Context, oldPod, newPod *apiv1.Pod) error
 
 // Controller is a controller for pods
 type Controller struct {
@@ -238,7 +239,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 }
 
 func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
-	err := c.callBack(pod)
+	err := c.callBack(ctx, nil, pod)
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod add failed")
 	}
@@ -246,9 +247,9 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, _ *apiv1.Pod, newPod *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, oldPod *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
-	err := c.callBack(newPod)
+	err := c.callBack(ctx, oldPod, newPod)
 	if err != nil {
 		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
 	}
@@ -271,7 +272,7 @@ func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 		}
 	}
 	// enqueue the workflow for the deleted pod
-	err = c.callBack(pod)
+	err = c.callBack(ctx, nil, pod)
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod delete failed")
 	}

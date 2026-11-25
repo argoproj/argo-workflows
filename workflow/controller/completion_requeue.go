@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
@@ -22,7 +24,7 @@ type workflowReconcileTiming struct {
 // cached workflow, before conversion, copying, hydration and operate(). Sharing the
 // lifecycle lock prevents finished or deleted workflows from regaining timing state.
 func (wfc *WorkflowController) recordWorkflowReconcile(ctx context.Context, wf *wfv1.Workflow, start, end time.Time) {
-	if wfc.taskSetCompletionDelay == nil {
+	if wfc.minCompletionRequeueDelay == nil {
 		return
 	}
 	wfc.lastWrittenVersions.mutex.Lock()
@@ -61,7 +63,7 @@ func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Ti
 	last := wfc.reconcileTimings[uid]
 	wfc.lastWrittenVersions.mutex.RUnlock()
 
-	floor := min(*wfc.taskSetCompletionDelay, wfc.requeueTime)
+	floor := min(*wfc.minCompletionRequeueDelay, wfc.requeueTime)
 	if last.lastEnd.IsZero() {
 		return floor
 	}
@@ -76,4 +78,31 @@ func (wfc *WorkflowController) completionRequeueDelay(uid types.UID, now time.Ti
 		return floor
 	}
 	return time.Duration(delay)
+}
+
+// workflowOwnerUID returns the UID of the owning Workflow. Argo always sets this
+// owner reference; objects without one (tests, or created outside Argo) return "",
+// which has no reconcile timing, so completionRequeueDelay uses the floor.
+func workflowOwnerUID(refs []metav1.OwnerReference) types.UID {
+	for _, owner := range refs {
+		if owner.Kind == workflow.WorkflowKind {
+			return owner.UID
+		}
+	}
+	return ""
+}
+
+// enqueueNodeCompletion enqueues a workflow whose node has just completed. With
+// COMPLETED_REQUEUE_TIME_MS unset it behaves like any other event (AddRateLimited);
+// otherwise it waits the duty-cycled completion delay for the owning workflow.
+// The workqueue coalesces pending keys and serializes work per key, and
+// processNextItem still rejects stale workflow versions with a rate-limited retry.
+func (wfc *WorkflowController) enqueueNodeCompletion(ctx context.Context, key string, owners []metav1.OwnerReference) {
+	if wfc.minCompletionRequeueDelay == nil {
+		wfc.wfQueue.AddRateLimited(key)
+		return
+	}
+	delay := wfc.completionRequeueDelay(workflowOwnerUID(owners), time.Now())
+	wfc.metrics.RecordWorkflowCompletionRequeueDelay(ctx, delay.Seconds())
+	wfc.wfQueue.AddAfter(key, delay)
 }
