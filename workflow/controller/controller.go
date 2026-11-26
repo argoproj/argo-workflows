@@ -1193,7 +1193,7 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(ctx context.Context, oldPod
 		return fmt.Errorf("watch returned pod unrelated to any workflow")
 	}
 	key := newPod.Namespace + "/" + workflowName
-	if wfc.podFinishedAfterTaskResult(oldPod, newPod) {
+	if wfc.nodeCompletedByPodUpdate(oldPod, newPod) {
 		wfc.enqueueNodeCompletion(ctx, key, newPod.OwnerReferences)
 		return nil
 	}

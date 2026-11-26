@@ -101,28 +101,38 @@ func assertEnqueuedAfter(t *testing.T, controller *WorkflowController, exporter 
 	require.Equal(t, 1, controller.wfQueue.Len())
 }
 
-// TestPodCompletionDelay checks that a pod reaching Succeeded or Failed takes the
-// completion delay only when its TaskResult has already completed or is absent.
+// TestPodCompletionDelay checks that a pod reaching Failed takes the completion
+// delay at once, and a pod reaching Succeeded only when its TaskResult is cached
+// with its final outputs, matching when the operator completes the node.
 func TestPodCompletionDelay(t *testing.T) {
 	for _, tt := range []struct {
-		name       string
-		disabled   bool
-		oldPhase   *apiv1.PodPhase // nil is an add or delete event
-		newPhase   apiv1.PodPhase
-		taskResult *wfv1.WorkflowTaskResult
-		noNodeID   bool
-		completion bool
+		name                 string
+		disabled             bool
+		oldPhase             *apiv1.PodPhase // nil is an add or delete event
+		newPhase             apiv1.PodPhase
+		taskResult           *wfv1.WorkflowTaskResult
+		noNodeID             bool
+		noTaskResultInformer bool
+		completion           bool
 	}{
 		{name: "succeeded, result complete", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true"), completion: true},
-		{name: "failed, result complete", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodFailed, taskResult: podCompletionTaskResult("true"), completion: true},
-		{name: "succeeded, no result", oldPhase: new(apiv1.PodPending), newPhase: apiv1.PodSucceeded, completion: true},
+		{name: "succeeded from pending, result complete", oldPhase: new(apiv1.PodPending), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true"), completion: true},
 		{name: "succeeded, result incomplete", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("false")},
-		{name: "already finished", oldPhase: new(apiv1.PodSucceeded), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true")},
+		{name: "succeeded, result not cached yet", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded},
+		{name: "succeeded, missing node ID", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true"), noNodeID: true},
+		{name: "succeeded, no TaskResult informer", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, noTaskResultInformer: true},
+		{name: "failed, result complete", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodFailed, taskResult: podCompletionTaskResult("true"), completion: true},
+		{name: "failed, result incomplete", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodFailed, taskResult: podCompletionTaskResult("false"), completion: true},
+		{name: "failed, result not cached", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodFailed, completion: true},
+		{name: "failed, missing node ID", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodFailed, noNodeID: true, completion: true},
+		{name: "already succeeded", oldPhase: new(apiv1.PodSucceeded), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true")},
+		{name: "already failed", oldPhase: new(apiv1.PodFailed), newPhase: apiv1.PodFailed},
 		{name: "not finished", oldPhase: new(apiv1.PodPending), newPhase: apiv1.PodRunning},
 		{name: "add or delete of finished pod", newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true")},
+		{name: "add or delete of failed pod", newPhase: apiv1.PodFailed},
 		{name: "delete of unfinished pod", newPhase: apiv1.PodRunning, taskResult: podCompletionTaskResult("true")},
-		{name: "missing node ID", oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, noNodeID: true},
-		{name: "disabled", disabled: true, oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true")},
+		{name: "disabled, succeeded", disabled: true, oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodSucceeded, taskResult: podCompletionTaskResult("true")},
+		{name: "disabled, failed", disabled: true, oldPhase: new(apiv1.PodRunning), newPhase: apiv1.PodFailed},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -133,6 +143,9 @@ func TestPodCompletionDelay(t *testing.T) {
 				controller, exporter := newPodCompletionController(t, floor)
 				if tt.taskResult != nil {
 					require.NoError(t, controller.taskResultInformer.GetIndexer().Add(tt.taskResult))
+				}
+				if tt.noTaskResultInformer {
+					controller.taskResultInformer = nil
 				}
 				var oldPod *apiv1.Pod
 				if tt.oldPhase != nil {
@@ -153,25 +166,61 @@ func TestPodCompletionDelay(t *testing.T) {
 	}
 }
 
-// TestTaskResultCompletionDelay checks that a TaskResult becoming complete takes
-// the completion delay only when its pod, found by node ID, has already finished.
+// TestEnqueueWfFromPodLabelRejectsUnrelatedPods checks that pods without the
+// workflow label return an error and enqueue nothing.
+func TestEnqueueWfFromPodLabelRejectsUnrelatedPods(t *testing.T) {
+	for name, labels := range map[string]map[string]string{
+		"no labels":         nil,
+		"no workflow label": {"other": "label"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			controller, _ := newPodCompletionController(t, new(time.Millisecond))
+			pod := podCompletionPod(apiv1.PodSucceeded)
+			pod.Labels = labels
+			require.Error(t, controller.enqueueWfFromPodLabel(logging.TestContext(t.Context()), podCompletionPod(apiv1.PodRunning), pod))
+			assert.Zero(t, controller.wfQueue.Len())
+		})
+	}
+}
+
+// TestEnqueueNodeCompletionDisabled checks that with COMPLETED_REQUEUE_TIME_MS
+// unset a node completion keeps the normal delay and records no metric.
+func TestEnqueueNodeCompletionDisabled(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		controller, exporter := newPodCompletionController(t, nil)
+		controller.enqueueNodeCompletion(logging.TestContext(t.Context()), "default/workflow", podCompletionOwners)
+		assertEnqueuedAfter(t, controller, exporter, podRoutineDelay, false)
+	})
+}
+
+// TestTaskResultCompletionDelay drives the handlers the TaskResult informer
+// registers, so it also checks they pass the old and new results in order. A
+// TaskResult getting its final outputs takes the completion delay only when its pod,
+// found by node ID, has already finished.
 func TestTaskResultCompletionDelay(t *testing.T) {
 	for _, tt := range []struct {
-		name       string
-		disabled   bool
-		oldLabel   string
-		newLabel   string
-		podPhase   *apiv1.PodPhase // nil means no pod in the informer
-		completion bool
+		name            string
+		disabled        bool
+		add             bool
+		oldLabel        string
+		newLabel        string
+		podPhase        *apiv1.PodPhase // nil means no pod in the informer
+		noPodController bool
+		noNodeIDIndex   bool
+		completion      bool
 	}{
 		{name: "pod succeeded", oldLabel: "false", newLabel: "true", podPhase: new(apiv1.PodSucceeded), completion: true},
 		{name: "pod failed", oldLabel: "false", newLabel: "true", podPhase: new(apiv1.PodFailed), completion: true},
 		{name: "pod running", oldLabel: "false", newLabel: "true", podPhase: new(apiv1.PodRunning)},
 		{name: "pod missing", oldLabel: "false", newLabel: "true"},
+		{name: "no pod controller", oldLabel: "false", newLabel: "true", noPodController: true},
+		{name: "pod lookup fails", oldLabel: "false", newLabel: "true", noNodeIDIndex: true},
 		{name: "label added as true", oldLabel: "", newLabel: "true", podPhase: new(apiv1.PodSucceeded), completion: true},
 		{name: "label still absent", oldLabel: "", newLabel: "", podPhase: new(apiv1.PodSucceeded)},
 		{name: "already complete", oldLabel: "true", newLabel: "true", podPhase: new(apiv1.PodSucceeded)},
 		{name: "not complete", oldLabel: "false", newLabel: "false", podPhase: new(apiv1.PodSucceeded)},
+		{name: "reverted to incomplete", oldLabel: "true", newLabel: "false", podPhase: new(apiv1.PodSucceeded)},
+		{name: "add, complete", add: true, newLabel: "true", podPhase: new(apiv1.PodSucceeded)},
 		{name: "disabled", disabled: true, oldLabel: "false", newLabel: "true", podPhase: new(apiv1.PodSucceeded)},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -184,7 +233,18 @@ func TestTaskResultCompletionDelay(t *testing.T) {
 				if tt.podPhase != nil {
 					require.NoError(t, controller.PodController.TestingPodInformer().GetIndexer().Add(podCompletionPod(*tt.podPhase)))
 				}
-				controller.onWorkflowTaskResultUpdate(logging.TestContext(t.Context()), podCompletionTaskResult(tt.oldLabel), podCompletionTaskResult(tt.newLabel))
+				if tt.noPodController {
+					controller.PodController = nil
+				}
+				if tt.noNodeIDIndex {
+					controller.PodController = pod.TestingNewController(cache.NewSharedIndexInformer(&cache.ListWatch{}, &apiv1.Pod{}, 0, cache.Indexers{}))
+				}
+				handlers := controller.taskResultEventHandlers(logging.TestContext(t.Context()))
+				if tt.add {
+					handlers.OnAdd(podCompletionTaskResult(tt.newLabel), false)
+				} else {
+					handlers.OnUpdate(podCompletionTaskResult(tt.oldLabel), podCompletionTaskResult(tt.newLabel))
+				}
 				want := podRoutineDelay
 				if tt.completion {
 					want = podCompletionDelay

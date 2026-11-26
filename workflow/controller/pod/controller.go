@@ -72,38 +72,42 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		restConfig:    restConfig,
 	}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
-	podController.podInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-				pod, err := podFromObj(obj)
-				if err != nil {
-					log.WithError(err).Error(ctx, "object from informer wasn't a pod")
-					return
-				}
-				podController.addPodEvent(ctx, pod)
-			},
-			UpdateFunc: func(old, newVal any) {
-				key, err := keyFunc(newVal)
-				if err != nil {
-					return
-				}
-				oldPod, newPod := old.(*apiv1.Pod), newVal.(*apiv1.Pod)
-				if oldPod.ResourceVersion == newPod.ResourceVersion {
-					return
-				}
-				if !significantPodChange(oldPod, newPod) {
-					log.WithField("key", key).Debug(ctx, "insignificant pod change")
-					diff.LogChanges(ctx, oldPod, newPod)
-					return
-				}
-				podController.updatePodEvent(ctx, oldPod, newPod)
-			},
-			DeleteFunc: func(obj any) {
-				podController.deletePodEvent(ctx, obj)
-			},
-		},
-	)
+	podController.podInformer.AddEventHandler(podController.eventHandlers(ctx))
 	return podController
+}
+
+// eventHandlers passes informer events to the callback: adds and deletes with a
+// nil oldPod, and significant updates with the previous and current pod.
+func (c *Controller) eventHandlers(ctx context.Context) cache.ResourceEventHandlerFuncs {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			pod, err := podFromObj(obj)
+			if err != nil {
+				c.log.WithError(err).Error(ctx, "object from informer wasn't a pod")
+				return
+			}
+			c.addPodEvent(ctx, pod)
+		},
+		UpdateFunc: func(old, newVal any) {
+			key, err := keyFunc(newVal)
+			if err != nil {
+				return
+			}
+			oldPod, newPod := old.(*apiv1.Pod), newVal.(*apiv1.Pod)
+			if oldPod.ResourceVersion == newPod.ResourceVersion {
+				return
+			}
+			if !significantPodChange(oldPod, newPod) {
+				c.log.WithField("key", key).Debug(ctx, "insignificant pod change")
+				diff.LogChanges(ctx, oldPod, newPod)
+				return
+			}
+			c.updatePodEvent(ctx, oldPod, newPod)
+		},
+		DeleteFunc: func(obj any) {
+			c.deletePodEvent(ctx, obj)
+		},
+	}
 }
 
 func (c *Controller) HasSynced() func() bool {

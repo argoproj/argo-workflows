@@ -104,8 +104,9 @@ spec:
 
 This opt-in prototype sets the minimum delay before reconciling a workflow after a node completes.
 It applies to pod nodes, and to HTTP and executor-plugin nodes whose results arrive through a [WorkflowTaskSet](http-template.md#argo-agent-rbac).
-A pod node completes when its pod reaches `Succeeded` or `Failed` and its WorkflowTaskResult reports its outputs as complete.
-These arrive as separate events, so only the second one uses the completion delay.
+A pod node completes when its pod reaches `Failed`, or when its pod reaches `Succeeded` and its WorkflowTaskResult reports its outputs as complete.
+For a `Succeeded` pod these arrive as separate events, so only the second one uses the completion delay.
+If the WorkflowTaskResult has not reached the controller yet, the `Succeeded` event keeps the normal delay, so the controller doesn't complete the node without its outputs.
 If the pod disappears before finishing, for example because it was deleted, the event keeps the normal delay.
 Use it for short nodes that spend longer waiting for reconciliation than running.
 Specify a positive integer number of milliseconds: for example, `250` for 250 milliseconds or `1000` for one second.

@@ -56,68 +56,80 @@ func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context
 	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
 	informer.SetTransform(informerutil.StripManagedFields)
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
-	informer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(newObj any) {
-				result := newObj.(*wfv1.WorkflowTaskResult)
-				workflow := result.Labels[common.LabelKeyWorkflow]
-				wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
-			},
-			UpdateFunc: func(old, newObj any) {
-				wfc.onWorkflowTaskResultUpdate(ctx, old.(*wfv1.WorkflowTaskResult), newObj.(*wfv1.WorkflowTaskResult))
-			},
-		})
+	informer.AddEventHandler(wfc.taskResultEventHandlers(ctx))
 	return informer
 }
 
-// onWorkflowTaskResultUpdate enqueues the result's workflow. If this update marks
-// the outputs complete and the node's pod has already finished, it uses the
+// taskResultEventHandlers enqueues the result's workflow for every add and update.
+func (wfc *WorkflowController) taskResultEventHandlers(ctx context.Context) cache.ResourceEventHandlerFuncs {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc: func(newObj any) {
+			result := newObj.(*wfv1.WorkflowTaskResult)
+			workflow := result.Labels[common.LabelKeyWorkflow]
+			wfc.wfQueue.AddRateLimited(result.Namespace + "/" + workflow)
+		},
+		UpdateFunc: func(old, newObj any) {
+			wfc.onWorkflowTaskResultUpdate(ctx, old.(*wfv1.WorkflowTaskResult), newObj.(*wfv1.WorkflowTaskResult))
+		},
+	}
+}
+
+// onWorkflowTaskResultUpdate enqueues the result's workflow. If this update
+// finalizes the outputs and the node's pod has already finished, it uses the
 // completion delay; otherwise the normal rate-limited delay.
 func (wfc *WorkflowController) onWorkflowTaskResultUpdate(ctx context.Context, old, result *wfv1.WorkflowTaskResult) {
 	key := result.Namespace + "/" + result.Labels[common.LabelKeyWorkflow]
-	if wfc.taskResultCompletedAfterPod(old, result) {
+	if wfc.nodeCompletedByTaskResultUpdate(old, result) {
 		wfc.enqueueNodeCompletion(ctx, key, result.OwnerReferences)
 		return
 	}
 	wfc.wfQueue.AddRateLimited(key)
 }
 
-// podFinishedAfterTaskResult reports whether this pod update just finished the
-// pod while its TaskResult is already complete, or absent for templates without one.
+// nodeCompletedByPodUpdate reports whether this pod update just finished the pod and
+// so completes its node, matching when the operator stops waiting: a Failed pod
+// completes the node at once, and a Succeeded pod only once its TaskResult has
+// its final outputs. Every pod writes a placeholder TaskResult before main runs, so
+// a missing one means the TaskResult informer is behind, and the normal delay keeps
+// the operator from completing the node without its outputs.
 // Adds and deletes, including the relist after a restart, have no oldPod and never count.
-func (wfc *WorkflowController) podFinishedAfterTaskResult(oldPod, newPod *apiv1.Pod) bool {
-	if wfc.minCompletionRequeueDelay == nil || oldPod == nil {
+func (wfc *WorkflowController) nodeCompletedByPodUpdate(oldPod, newPod *apiv1.Pod) bool {
+	if wfc.minCompletionRequeueDelay == nil || oldPod == nil || podFinished(oldPod) {
 		return false
 	}
-	justFinished := !podFinished(oldPod) && podFinished(newPod)
-	if !justFinished {
-		return false
-	}
-	// Without a node ID the TaskResult lookup below would find nothing and wrongly count as complete.
-	nodeID := newPod.Annotations[common.AnnotationKeyNodeID]
-	if nodeID == "" {
-		return false
-	}
-	if wfc.taskResultInformer == nil {
+	switch newPod.Status.Phase {
+	case apiv1.PodFailed:
 		return true
-	}
-	// The TaskResult is named after the node ID.
-	obj, exists, err := wfc.taskResultInformer.GetIndexer().GetByKey(newPod.Namespace + "/" + nodeID)
-	if err != nil {
+	case apiv1.PodSucceeded:
+		return wfc.podOutputsFinalized(newPod)
+	default:
 		return false
 	}
-	return !exists || outputsReported(obj.(*wfv1.WorkflowTaskResult))
 }
 
-// taskResultCompletedAfterPod reports whether this TaskResult update just marked
-// the outputs complete while the node's pod has already finished. If the pod is
+// podOutputsFinalized reports whether the pod's TaskResult, named after its node ID,
+// is in the informer cache with its final outputs.
+func (wfc *WorkflowController) podOutputsFinalized(pod *apiv1.Pod) bool {
+	nodeID := pod.Annotations[common.AnnotationKeyNodeID]
+	if nodeID == "" || wfc.taskResultInformer == nil {
+		return false
+	}
+	obj, exists, err := wfc.taskResultInformer.GetIndexer().GetByKey(pod.Namespace + "/" + nodeID)
+	if err != nil || !exists {
+		return false
+	}
+	return outputsFinalized(obj.(*wfv1.WorkflowTaskResult))
+}
+
+// nodeCompletedByTaskResultUpdate reports whether this TaskResult update just
+// finalized the outputs while the node's pod has already finished. If the pod is
 // gone (evicted, or deleted outside Argo) it returns false.
-func (wfc *WorkflowController) taskResultCompletedAfterPod(old, result *wfv1.WorkflowTaskResult) bool {
+func (wfc *WorkflowController) nodeCompletedByTaskResultUpdate(old, result *wfv1.WorkflowTaskResult) bool {
 	if wfc.minCompletionRequeueDelay == nil || wfc.PodController == nil {
 		return false
 	}
-	justReported := !outputsReported(old) && outputsReported(result)
-	if !justReported {
+	justFinalized := !outputsFinalized(old) && outputsFinalized(result)
+	if !justFinalized {
 		return false
 	}
 	// The TaskResult is named after the node ID.
@@ -139,8 +151,9 @@ func podFinished(pod *apiv1.Pod) bool {
 	return pod.Status.Phase == apiv1.PodSucceeded || pod.Status.Phase == apiv1.PodFailed
 }
 
-// outputsReported reports whether the executor has marked the TaskResult's outputs complete.
-func outputsReported(result *wfv1.WorkflowTaskResult) bool {
+// outputsFinalized reports whether the executor has written the TaskResult's final
+// outputs, after main exits, by setting report-outputs-completed to "true".
+func outputsFinalized(result *wfv1.WorkflowTaskResult) bool {
 	return result.Labels[common.LabelKeyReportOutputsCompleted] == "true"
 }
 
