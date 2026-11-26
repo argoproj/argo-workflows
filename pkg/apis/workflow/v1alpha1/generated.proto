@@ -1577,13 +1577,11 @@ message S3Bucket {
   // obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
   // set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
   // environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
-  // DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed
+  // DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
   // range, otherwise the request is rejected. It has no effect on static credentials or
   // other SDK-resolved credential providers.
   // +kubebuilder:validation:Minimum=900
   // +kubebuilder:validation:Maximum=43200
-  // minimum: 900
-  // maximum: 43200
   optional int32 tokenExpirationSeconds = 14;
 }
 

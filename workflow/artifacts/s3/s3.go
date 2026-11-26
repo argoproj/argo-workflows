@@ -431,65 +431,20 @@ func (s3Driver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.
 	return s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
 }
 
-// Environment variable names used by the AWS SDK for web identity token authentication
-// (e.g. EKS IAM Roles for Service Accounts / IRSA).
-const (
-	envWebIdentityRoleARN     = "AWS_ROLE_ARN"
-	envWebIdentityTokenFile   = "AWS_WEB_IDENTITY_TOKEN_FILE"
-	envWebIdentitySessionName = "AWS_ROLE_SESSION_NAME"
-)
-
-// isWebIdentityConfigured returns true when the environment contains the two variables
-// required for STS AssumeRoleWithWebIdentity: a role ARN and a token file path.
-func isWebIdentityConfigured() bool {
-	return os.Getenv(envWebIdentityRoleARN) != "" && os.Getenv(envWebIdentityTokenFile) != ""
-}
-
-// getWebIdentityCredentials obtains credentials via STS AssumeRoleWithWebIdentity using
-// the standard AWS_ROLE_ARN and AWS_WEB_IDENTITY_TOKEN_FILE environment variables.
-// When opts.TokenExpiration is set it is forwarded as DurationSeconds (must be pre-validated
-// to be within [minTokenExpiration, maxTokenExpiration]).
-// Session name precedence: opts.RoleSessionName > AWS_ROLE_SESSION_NAME env var > SDK default.
-func getWebIdentityCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credentials, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
-	if err != nil {
-		return nil, err
-	}
-
-	// Add OpenTelemetry tracing middleware
-	otelaws.AppendMiddlewares(&cfg.APIOptions)
-
-	client := sts.NewFromConfig(cfg)
-
-	roleARN := os.Getenv(envWebIdentityRoleARN)
-	tokenFile := os.Getenv(envWebIdentityTokenFile)
-
-	// Determine session name: explicit opt > env var > SDK default ("s").
-	sessionName := opts.RoleSessionName
-	if sessionName == "" {
-		sessionName = os.Getenv(envWebIdentitySessionName)
-	}
-
-	providerOptFn := func(o *stscreds.WebIdentityRoleOptions) {
-		if opts.TokenExpiration != nil {
-			o.Duration = *opts.TokenExpiration
-		}
-		if sessionName != "" {
-			o.RoleSessionName = sessionName
-		}
-	}
-
-	provider := stscreds.NewWebIdentityRoleProvider(client, roleARN, stscreds.IdentityTokenFile(tokenFile), providerOptFn)
-	value, err := provider.Retrieve(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return credentials.NewStaticV4(value.AccessKeyID, value.SecretAccessKey, value.SessionToken), nil
-}
-
 // Get AWS credentials based on default order from aws SDK
 func getAWSCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credentials, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
+	loadOpts := []func(*config.LoadOptions) error{config.WithRegion(opts.Region)}
+	if opts.TokenExpiration != nil || opts.RoleSessionName != "" {
+		loadOpts = append(loadOpts, config.WithWebIdentityRoleCredentialOptions(func(o *stscreds.WebIdentityRoleOptions) {
+			if opts.TokenExpiration != nil {
+				o.Duration = *opts.TokenExpiration
+			}
+			if opts.RoleSessionName != "" {
+				o.RoleSessionName = opts.RoleSessionName
+			}
+		}))
+	}
+	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -539,6 +494,11 @@ func getAssumeRoleCredentials(ctx context.Context, opts ClientOpts) (*credential
 }
 
 func GetCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credentials, error) {
+	if opts.TokenExpiration != nil {
+		if *opts.TokenExpiration < minTokenExpiration || *opts.TokenExpiration > maxTokenExpiration {
+			return nil, fmt.Errorf("tokenExpiration %v is outside the AWS STS allowed range [%v, %v]", *opts.TokenExpiration, minTokenExpiration, maxTokenExpiration)
+		}
+	}
 	log := logging.RequireLoggerFromContext(ctx)
 	switch {
 	case opts.AccessKey != "" && opts.SecretKey != "":
@@ -549,45 +509,12 @@ func GetCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credenti
 		log.WithField("endpoint", opts.Endpoint).Info(ctx, "Creating minio client using static credentials")
 		return credentials.NewStaticV4(opts.AccessKey, opts.SecretKey, ""), nil
 	case opts.RoleARN != "":
-		// TokenExpiration is forwarded to STS AssumeRole as DurationSeconds.
-		// AWS enforces a range of [15 minutes, 12 hours]; reject out-of-range values early.
-		if opts.TokenExpiration != nil {
-			d := *opts.TokenExpiration
-			if d < minTokenExpiration || d > maxTokenExpiration {
-				return nil, fmt.Errorf("tokenExpiration %v is outside the AWS STS allowed range [%v, %v]", d, minTokenExpiration, maxTokenExpiration)
-			}
-		}
-		tokenExpStr := "default"
-		if opts.TokenExpiration != nil {
-			tokenExpStr = opts.TokenExpiration.String()
-		}
-		log.WithField("roleArn", opts.RoleARN).WithField("tokenExpiration", tokenExpStr).Info(ctx, "Creating minio client using assumed-role credentials")
+		log.WithField("roleArn", opts.RoleARN).Info(ctx, "Creating minio client using assumed-role credentials")
 		return getAssumeRoleCredentials(ctx, opts)
 	case opts.UseSDKCreds:
-		if isWebIdentityConfigured() {
-			// When web identity env vars are present (EKS IRSA), TokenExpiration is forwarded
-			// to STS AssumeRoleWithWebIdentity as DurationSeconds.
-			// AWS enforces a range of [15 minutes, 12 hours]; reject out-of-range values early.
-			if opts.TokenExpiration != nil {
-				d := *opts.TokenExpiration
-				if d < minTokenExpiration || d > maxTokenExpiration {
-					return nil, fmt.Errorf("tokenExpiration %v is outside the AWS STS allowed range [%v, %v]", d, minTokenExpiration, maxTokenExpiration)
-				}
-			}
-			tokenExpStr := "default"
-			if opts.TokenExpiration != nil {
-				tokenExpStr = opts.TokenExpiration.String()
-			}
-			log.WithField("tokenExpiration", tokenExpStr).Info(ctx, "Creating minio client using web identity credentials")
-			return getWebIdentityCredentials(ctx, opts)
-		}
-		// TokenExpiration is not configurable for other SDK credential chain providers
-		// (e.g. SSO, instance profile); each manages its own credential lifetime.
 		log.Info(ctx, "Creating minio client using AWS SDK credentials")
 		return getAWSCredentials(ctx, opts)
 	default:
-		// TokenExpiration is not configurable for IAM metadata credentials;
-		// the EC2/ECS metadata service controls the credential lifetime automatically.
 		log.Info(ctx, "Creating minio client using IAM role")
 		return credentials.NewIAM(nullIAMEndpoint), nil
 	}
