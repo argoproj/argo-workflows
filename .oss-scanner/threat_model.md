@@ -113,7 +113,10 @@ Operator security notes: `docs/security.md`, `docs/workflow-restrictions.md`, `d
 - `test/`, `hack/`, `docs/`, `examples/`, `dev/` and `sdks/`.
 - **Load a workflow author can already cause.** Controller CPU, memory, API calls or queue depth that grow
   with a workflow's own size, an expression, a regex, a loop or a `withParam` list are by design.
-  Operators bound them with `namespaceParallelism`, resource limits and RBAC.
+  Operators bound them with `namespaceParallelism`, resource limits and RBAC. This covers a slow or
+  quadratic code path that only the author's own workflow reaches, memory that grows until the kernel
+  or Go runtime kills the process, and one namespace's heavy workflows slowing others through the
+  shared worker queue. None of these is a panic.
 
 ## Known weak areas
 
@@ -128,7 +131,7 @@ Many past advisories were incomplete fixes, so look for siblings of these:
   `workflow/executor` and `workflow/artifacts`.
 - Artifact repository credentials written to controller or executor logs.
 - XSS in artifact listings and artifact contents served by argo-server.
-- Controller crashes or stalls caused by malformed pod annotations, task results or workflow specs, and
+- Controller panics caused by malformed pod annotations, task results or workflow specs, and
   argo-server reading unbounded request bodies before authentication.
 
 ## How to exercise it
@@ -163,8 +166,8 @@ We use CVSS 4.0 and publish advisories through GitHub Security Advisories. As gu
     - A workflow author reaching another namespace, the controller's or argo-server's credentials, or
       another tenant's artifacts, caches or locks.
     - Any workflow restriction bypass.
-    - A namespace tenant crash-looping or stalling the shared controller, or an unauthenticated client
-      taking down argo-server.
+    - A namespace tenant crash-looping the shared controller with a panic or fatal error, or an
+      unauthenticated client taking down argo-server.
     - Code execution or file writes outside the workspace in argoexec from artifact contents or keys the
       workflow author does not control.
     - Credentials written to logs, events or workflow status.
@@ -180,5 +183,6 @@ We use CVSS 4.0 and publish advisories through GitHub Security Advisories. As gu
 Keep reports short. Please include the affected component, the attacker's required access (none,
 invalid token, read-only user, namespace user, workflow author, template-only user under workflow
 restrictions), the auth mode, and a reproducer, ideally as a Go unit test. Please validate impact
-before reporting, and don't report theoretical issues without a concrete path from attacker input to
+before reporting. For a controller crash, show the panic or fatal error in a test; measured CPU or
+memory growth is load, not a crash. Don't report theoretical issues without a concrete path from attacker input to
 impact.
