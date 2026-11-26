@@ -46,7 +46,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0
 	github.com/itchyny/gojq v0.12.19
 	github.com/jcmturner/gokrb5/v8 v8.4.4
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.5
 	github.com/klauspost/pgzip v1.3.0
 	github.com/lib/pq v1.12.3
 	github.com/minio/minio-go/v7 v7.4.1
