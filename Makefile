@@ -530,7 +530,7 @@ endif
 $(TOOL_PROTOC_GEN_GO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
 endif
 $(TOOL_PROTOC_GEN_GO_GRPC): Makefile
 # update this in Nix when upgrading it here

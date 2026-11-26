@@ -38,7 +38,7 @@
             # renovate: datasource=go depName=k8s.io/code-generator
             codeGenerator = "0.35.4";
             # renovate: datasource=go depName=google.golang.org/protobuf
-            protocGenGo = "1.36.6";
+            protocGenGo = "1.36.12";
             # renovate: datasource=go depName=google.golang.org/grpc/cmd/protoc-gen-go-grpc
             protocGenGoGrpc = "1.5.1";
             # renovate: datasource=go depName=github.com/grpc-ecosystem/grpc-gateway/v2
