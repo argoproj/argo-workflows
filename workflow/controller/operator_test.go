@@ -2389,6 +2389,30 @@ spec:
 	assert.Equal(t, "say-hello", tmpl.Name)
 }
 
+func TestGetNodeTemplateUsesInheritedScope(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	local := wfv1.Template{Name: "main", Daemon: new(true)}
+	stored := wfv1.Template{Name: "main", Daemon: new(false)}
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "inherited-scope", Namespace: "default"},
+		Spec:       wfv1.WorkflowSpec{Templates: []wfv1.Template{local}},
+		Status:     wfv1.WorkflowStatus{StoredTemplates: map[string]wfv1.Template{"namespaced/source/main": stored}},
+	}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	node := &wfv1.NodeStatus{TemplateName: "main", TemplateScope: "namespaced/source"}
+
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err)
+	require.Equal(t, &stored, tmpl)
+
+	delete(woc.wf.Status.StoredTemplates, "namespaced/source/main")
+	tmpl, err = woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err)
+	require.Nil(t, tmpl)
+}
+
 // TestAssessNodeStatusWithTemplateRefUsesStoredTemplates verifies that assessNodeStatus
 // correctly resolves the phase from the pod when a cross-CWT templateRef node's template
 // has been removed from the CWT after pod creation. The node must not be marked Error.

@@ -146,8 +146,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 		return nil
 	}
 
-	// cache the templates by name so we can find them easily
-	templatesByName := make(map[string]*wfv1.Template)
+	// Cache templates by their complete identity so same-named templates stay separate.
+	templatesByKey := make(map[string]*wfv1.Template)
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// We need to create a separate Pod for each set of Artifacts that require special permissions
@@ -182,32 +182,27 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			woc.log.WithField("nodeID", artifactSearchResult.NodeID).Error(ctx, "Was unable to obtain node")
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status", strategy, artifactSearchResult.NodeID)
 		}
-		templateName := util.GetTemplateFromNode(*node)
-		if templateName == "" {
-			return fmt.Errorf("can't process Artifact GC Strategy %s: node %+v has an unnamed template", strategy, node)
+		templateKey := woc.wf.GetNodeTemplateKey(node)
+		if templateKey == "" {
+			return fmt.Errorf("can't process Artifact GC Strategy %s: node %q has an unnamed template", strategy, node.ID)
 		}
-		template, found := templatesByName[templateName]
-		if !found {
-			template = woc.wf.GetTemplateByName(templateName)
+		if _, found := templatesByKey[templateKey]; !found {
+			template := woc.wf.GetTemplateFromSnapshot(templateKey)
 			if template == nil {
-				return fmt.Errorf("can't process Artifact GC Strategy %s: template name %q belonging to node %+v not found", strategy, templateName, node)
+				return fmt.Errorf("can't process Artifact GC Strategy %s: template %q for node %q not found", strategy, templateKey, node.ID)
 			}
-			templatesByName[templateName] = template
+			templatesByKey[templateKey] = template
 		}
 
-		if _, found := groupedByPod[podName][template.Name]; !found {
-			groupedByPod[podName][template.Name] = make(wfv1.ArtifactSearchResults, 0)
-		}
-
-		groupedByPod[podName][template.Name] = append(groupedByPod[podName][template.Name], artifactSearchResult)
+		groupedByPod[podName][templateKey] = append(groupedByPod[podName][templateKey], artifactSearchResult)
 	}
 
 	// start up a separate Pod with a separate set of ArtifactGCTasks for it to use for each unique Service Account/metadata
 	for podName, templatesToArtList := range groupedByPod {
 		tasks := make([]*wfv1.WorkflowArtifactGCTask, 0)
 
-		for templateName, artifacts := range templatesToArtList {
-			template := templatesByName[templateName]
+		for templateKey, artifacts := range templatesToArtList {
+			template := templatesByKey[templateKey]
 			woc.addTemplateArtifactsToTasks(ctx, podName, &tasks, template, artifacts)
 		}
 
@@ -225,7 +220,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 				return fmt.Errorf("can't find podInfo for podName %q", podName)
 			}
 
-			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName, templatesToArtList, templatesByName)
+			_, err := woc.createArtifactGCPod(ctx, strategy, tasks, podAccessInfo, podName, templatesToArtList, templatesByKey)
 			if err != nil {
 				return err
 			}
@@ -468,7 +463,7 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 
 // create the Pod which will do the deletions
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask,
-	podInfo podInfo, podName string, templatesToArtList templatesToArtifacts, templatesByName map[string]*wfv1.Template) (*corev1.Pod, error) {
+	podInfo podInfo, podName string, templatesToArtList templatesToArtifacts, templatesByKey map[string]*wfv1.Template) (*corev1.Pod, error) {
 
 	woc.log.WithFields(logging.Fields{"strategy": strategy, "podName": podName}).Info(ctx, "creating pod to delete artifacts")
 
@@ -481,10 +476,10 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 
 	artifactLocations := make([]*wfv1.ArtifactLocation, 0)
 
-	for templateName, artifacts := range templatesToArtList {
-		template, found := templatesByName[templateName]
+	for templateKey, artifacts := range templatesToArtList {
+		template, found := templatesByKey[templateKey]
 		if !found {
-			return nil, fmt.Errorf("can't find template with name %q", templateName)
+			return nil, fmt.Errorf("can't find template %q", templateKey)
 		}
 
 		if template.ArchiveLocation.HasLocation() {
