@@ -113,10 +113,10 @@ Operator security notes: `docs/security.md`, `docs/workflow-restrictions.md`, `d
 - `test/`, `hack/`, `docs/`, `examples/`, `dev/` and `sdks/`.
 - **Load a workflow author can already cause.** Controller CPU, memory, API calls or queue depth that grow
   with a workflow's own size, an expression, a regex, a loop or a `withParam` list are by design.
-  Operators bound them with `namespaceParallelism`, resource limits and RBAC. This covers a slow or
-  quadratic code path that only the author's own workflow reaches, memory that grows until the kernel
-  or Go runtime kills the process, and one namespace's heavy workflows slowing others through the
-  shared worker queue. None of these is a panic.
+  Operators limit concurrent workflows with `namespaceParallelism`, cap controller resources, and decide
+  who may submit workflows with RBAC. This covers a slow or quadratic code path that only the author's
+  own workflow reaches, memory that grows until the kernel or Go runtime kills the process, and one
+  namespace's heavy workflows slowing others through the shared worker queue. None of these is a panic.
 
 ## Known weak areas
 
