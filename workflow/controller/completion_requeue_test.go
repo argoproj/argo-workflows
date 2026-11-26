@@ -34,6 +34,13 @@ import (
 // TestCompletionRequeueControllerConfiguration checks startup settings and warns
 // only when the completion floor exceeds the normal requeue ceiling.
 func TestCompletionRequeueControllerConfiguration(t *testing.T) {
+	t.Run("invalid floor", func(t *testing.T) {
+		t.Setenv("COMPLETED_REQUEUE_TIME_MS", "0")
+		t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", "")
+		controller, err := NewWorkflowController(logging.TestContext(t.Context()), nil, nil, nil, "", "", "", "", "", "", false, false)
+		require.ErrorContains(t, err, "COMPLETED_REQUEUE_TIME_MS")
+		assert.Nil(t, controller)
+	})
 	t.Run("invalid target with scheduling disabled", func(t *testing.T) {
 		t.Setenv("COMPLETED_REQUEUE_TIME_MS", "")
 		t.Setenv("COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT", "101")
