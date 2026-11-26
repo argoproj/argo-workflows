@@ -15,13 +15,19 @@ inputs:
       tests (TestTokenArg). Only the Go e2e suite needs this.
     default: "false"
   kubeconfig:
-    description: Path k3d-up merges the cluster kubeconfig into.
-    default: /home/runner/.kube/config
+    description: >-
+      Path k3d-up merges the cluster kubeconfig into. Defaults to
+      ~/.kube/config (the home directory differs between GitHub-hosted and CNCF
+      runners). Must be a single file: an inherited $KUBECONFIG is ignored.
+    default: ""
 
 runs:
   using: composite
   steps:
     - name: Free up unused disk space
+      # GitHub-hosted runners are short of disk; the CNCF VMs have ~230 GB free,
+      # and deleting these directories there takes several minutes.
+      if: runner.environment == 'github-hosted'
       shell: bash
       run: |
         printf "==> Available space before cleanup\n"
@@ -42,16 +48,20 @@ runs:
     - name: Install socat
       # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
       # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
+      # The CNCF runner image ships with empty apt lists, so update them first.
       shell: bash
-      run: sudo apt-get -y install socat
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -y install socat
     - name: Create k3d cluster
       shell: bash
       env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
+        INPUT_KUBECONFIG: ${{ inputs.kubeconfig }}
         # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
         K8S_VERSION: ${{ inputs.k8s-version }}
         CLI_AUTH_KUBECONFIG: ${{ inputs.cli-auth-kubeconfig }}
       run: |
+        export KUBECONFIG="${INPUT_KUBECONFIG:-$HOME/.kube/config}"
         # k3d and Tilt come from the e2e-tools artifact (installed above).
         # k3d runs k3s with its embedded containerd (2.x in these k3s
         # versions), which supports the Kubernetes image volumes the
