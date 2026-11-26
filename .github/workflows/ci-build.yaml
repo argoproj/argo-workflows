@@ -114,7 +114,16 @@ jobs:
     name: Unit Tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
-    runs-on: ubuntu-26.04
+    # The heavy Linux jobs run on CNCF-donated VM runners
+    # (https://github.com/cncf/automation/tree/main/ci), built from GitHub's
+    # own runner-images, so the toolset matches ubuntu-26.04. Any argoproj
+    # repository gets them, including private ones, where the GitHub-hosted
+    # ubuntu-26.04 runner is half the size it is in a public repository. CI in
+    # a forked repository falls back to GitHub-hosted runners; pull requests
+    # from forks into argoproj still run here, each job on a fresh ephemeral
+    # VM. The home directory differs between the two (/home/ubuntu vs
+    # /home/runner), so don't hard-code it.
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -218,12 +227,11 @@ jobs:
     name: E2E Tests
     needs: [ changed-files, argo-images, build-binaries ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
     # contention on the runner, which we have no control over.
     timeout-minutes: 60
     env:
-      KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
@@ -301,6 +309,9 @@ jobs:
             use-api: false
     steps:
       - name: Free up unused disk space
+        # GitHub-hosted runners are short of disk; the CNCF VMs have ~230 GB free,
+        # and deleting these directories there takes several minutes.
+        if: runner.environment == 'github-hosted'
         run: |
           printf "==> Available space before cleanup\n"
           df -h
@@ -325,7 +336,11 @@ jobs:
         # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
         # Running "make kit" isn't strictly necessary, since it would be installed automatically by "make start",
         # but it's noisy and makes the logs for "Start controller/API" hard to follow.
-        run: sudo apt-get -y install socat && make kit
+        # The CNCF runner image ships with empty apt lists, so update them first.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get -y install socat
+          make kit
       - name: Install and start K3S
         env:
           K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
@@ -339,8 +354,11 @@ jobs:
             K3S_KUBECONFIG_MODE=644 \
             sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
-          mkdir -p .kube
-          cp /etc/rancher/k3s/k3s.yaml /home/runner/.kube/config
+          # the home directory differs between GitHub-hosted and CNCF runners
+          export KUBECONFIG="$HOME/.kube/config"
+          echo "KUBECONFIG=$KUBECONFIG" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.kube"
+          cp /etc/rancher/k3s/k3s.yaml "$KUBECONFIG"
           echo "- name: fake_token_user" >> $KUBECONFIG
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
@@ -452,10 +470,8 @@ jobs:
     name: Codegen
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
-    env:
-      GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
@@ -478,8 +494,8 @@ jobs:
           docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create symlinks
         run: |
-          mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
+          mkdir -p "$(go env GOPATH)/src/github.com/argoproj"
+          ln -s "$PWD" "$(go env GOPATH)/src/github.com/argoproj/argo-workflows"
       - run: make codegen -B STATIC_FILES=false
       # if codegen makes changes that are not in the PR, fail the build
       - name: Check if codegen made changes not present in the PR
@@ -489,10 +505,8 @@ jobs:
     name: Lint
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
-    env:
-      GOPATH: /home/runner/go
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
@@ -511,7 +525,7 @@ jobs:
     name: UI
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096
