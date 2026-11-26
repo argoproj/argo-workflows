@@ -1,9 +1,12 @@
 package validate
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -140,4 +143,32 @@ func TestDagWithItemTemplateRefTmpl(t *testing.T) {
 	require.NoError(t, err)
 
 	_ = deleteWorkflowTemplate(ctx, wftmpl.Name)
+}
+
+func BenchmarkValidateDAGChain(b *testing.B) {
+	for _, n := range []int{100, 1000} {
+		b.Run(fmt.Sprintf("tasks-%d", n), func(b *testing.B) {
+			ctx := logging.TestContext(b.Context())
+			tasks := make([]wfv1.DAGTask, n)
+			for i := range tasks {
+				tasks[i] = wfv1.DAGTask{Name: fmt.Sprintf("task%d", i), Template: "echo"}
+				if i > 0 {
+					tasks[i].Depends = fmt.Sprintf("task%d", i-1)
+				}
+			}
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Name: "dag-chain"},
+				Spec: wfv1.WorkflowSpec{
+					Entrypoint: "main",
+					Templates: []wfv1.Template{
+						{Name: "main", DAG: &wfv1.DAGTemplate{Tasks: tasks}},
+						{Name: "echo", Container: &corev1.Container{Image: "alpine"}},
+					},
+				},
+			}
+			for b.Loop() {
+				require.NoError(b, Workflow(ctx, wftmplGetter, cwftmplGetter, wf.DeepCopy(), nil, Opts{}))
+			}
+		})
+	}
 }

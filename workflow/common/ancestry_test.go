@@ -2,6 +2,10 @@ package common
 
 import (
 	"context"
+	"fmt"
+	"math/rand/v2"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -294,4 +298,134 @@ func TestParseDepends(t *testing.T) {
 		ExpandDependency("dep", &wfv1.ContinueOn{Failed: true}, func(name string) string { return name }))
 	assert.Equal(t, "(X.Succeeded || X.Skipped || X.Daemoned)",
 		ExpandDependency("dep", nil, func(string) string { return "X" }))
+}
+
+// mapDagContext is a DagContext over a map, so lookups stay cheap for large DAGs.
+type mapDagContext struct {
+	tasks      map[string]*wfv1.DAGTask
+	finishedAt map[string]time.Time
+}
+
+func (d *mapDagContext) GetTask(_ context.Context, taskName string) *wfv1.DAGTask {
+	return d.tasks[taskName]
+}
+
+func (d *mapDagContext) GetTaskDependencies(_ context.Context, taskName string) []string {
+	return d.tasks[taskName].Dependencies
+}
+
+func (d *mapDagContext) GetTaskFinishedAtTime(_ context.Context, taskName string) time.Time {
+	return d.finishedAt[taskName]
+}
+
+// chainDagContext returns a DAG of n tasks where each task depends on the one before it.
+func chainDagContext(n int) *mapDagContext {
+	now := time.Now()
+	d := &mapDagContext{tasks: make(map[string]*wfv1.DAGTask, n), finishedAt: make(map[string]time.Time, n)}
+	for i := range n {
+		task := &wfv1.DAGTask{Name: fmt.Sprintf("task%d", i)}
+		if i > 0 {
+			task.Dependencies = []string{fmt.Sprintf("task%d", i-1)}
+		}
+		d.tasks[task.Name] = task
+		d.finishedAt[task.Name] = now.Add(time.Duration(i) * time.Second)
+	}
+	return d
+}
+
+func TestGetTaskAncestryLongChain(t *testing.T) {
+	const n = 30000
+	ctx := logging.TestContext(t.Context())
+	res := GetTaskAncestry(ctx, chainDagContext(n), fmt.Sprintf("task%d", n-1))
+	require.Len(t, res, n-1)
+	for i, name := range res {
+		assert.Equal(t, fmt.Sprintf("task%d", i), name)
+	}
+}
+
+// insertionTaskAncestry is the previous GetTaskAncestry, which kept the
+// ancestry ordered by inserting each task into place.
+func insertionTaskAncestry(ctx context.Context, dctx DagContext, taskName string) []string {
+	visited := make(map[string]time.Time)
+	var getAncestry func(currTask string)
+	getAncestry = func(currTask string) {
+		if _, seen := visited[currTask]; seen {
+			return
+		}
+		for _, depTask := range dctx.GetTaskDependencies(ctx, currTask) {
+			getAncestry(depTask)
+		}
+		if currTask != taskName {
+			if _, ok := visited[currTask]; !ok {
+				visited[currTask] = dctx.GetTaskFinishedAtTime(ctx, currTask)
+			}
+		}
+	}
+	getAncestry(taskName)
+	ancestry := make([]string, len(visited))
+	for newTaskName, finishedAt := range visited {
+		for i, name := range ancestry {
+			if name == "" {
+				ancestry[i] = newTaskName
+				break
+			}
+			if finishedAt.Before(visited[name]) {
+				copy(ancestry[i+1:], ancestry[i:])
+				ancestry[i] = newTaskName
+				break
+			}
+		}
+	}
+	return ancestry
+}
+
+func TestGetTaskAncestryMatchesInsertion(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	rng := rand.New(rand.NewPCG(1, 2))
+	now := time.Now()
+	for range 200 {
+		n := 1 + rng.IntN(40)
+		// A small range of finish times gives ties, which both versions break by map iteration order.
+		spread := 1 + rng.IntN(2*n)
+		d := &mapDagContext{tasks: make(map[string]*wfv1.DAGTask, n), finishedAt: make(map[string]time.Time, n)}
+		for i := range n {
+			task := &wfv1.DAGTask{Name: fmt.Sprintf("task%d", i)}
+			for j := range i {
+				if rng.IntN(4) == 0 {
+					task.Dependencies = append(task.Dependencies, fmt.Sprintf("task%d", j))
+				}
+			}
+			d.tasks[task.Name] = task
+			d.finishedAt[task.Name] = now.Add(time.Duration(rng.IntN(spread)) * time.Second)
+		}
+		byTime := func(a, b string) int { return d.finishedAt[a].Compare(d.finishedAt[b]) }
+		byTimeThenName := func(a, b string) int {
+			if c := byTime(a, b); c != 0 {
+				return c
+			}
+			return strings.Compare(a, b)
+		}
+		for name := range d.tasks {
+			got := GetTaskAncestry(ctx, d, name)
+			want := insertionTaskAncestry(ctx, d, name)
+			assert.True(t, slices.IsSortedFunc(got, byTime), "ancestry of %s not ordered by finish time: %v", name, got)
+			assert.True(t, slices.IsSortedFunc(want, byTime))
+			slices.SortFunc(got, byTimeThenName)
+			slices.SortFunc(want, byTimeThenName)
+			assert.Equal(t, want, got, "ancestry of %s", name)
+		}
+	}
+}
+
+func BenchmarkGetTaskAncestry(b *testing.B) {
+	for _, n := range []int{100, 1000} {
+		b.Run(fmt.Sprintf("chain-%d", n), func(b *testing.B) {
+			ctx := logging.TestContext(b.Context())
+			d := chainDagContext(n)
+			last := fmt.Sprintf("task%d", n-1)
+			for b.Loop() {
+				GetTaskAncestry(ctx, d, last)
+			}
+		})
+	}
 }

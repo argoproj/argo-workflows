@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -187,26 +188,10 @@ func GetTaskAncestry(ctx context.Context, dctx DagContext, taskName string) []st
 
 	getAncestry(taskName)
 
-	ancestry := make([]string, len(visited))
-	for newTask, newFinishedAt := range visited {
-		insertTask(visited, ancestry, newTask, newFinishedAt)
-	}
+	ancestry := slices.AppendSeq(make([]string, 0, len(visited)), maps.Keys(visited))
+	slices.SortStableFunc(ancestry, func(a, b string) int {
+		return visited[a].Compare(visited[b])
+	})
 
 	return ancestry
-}
-
-// insertTask inserts the newTaskName at the right position ordered by time into the ancestry list.
-func insertTask(visited map[string]time.Time, ancestry []string, newTaskName string, finishedAt time.Time) {
-	for i, taskName := range ancestry {
-		if taskName == "" {
-			ancestry[i] = newTaskName
-			return
-		}
-		if finishedAt.Before(visited[taskName]) {
-			// insert at position i and shift others
-			copy(ancestry[i+1:], ancestry[i:])
-			ancestry[i] = newTaskName
-			return
-		}
-	}
 }
