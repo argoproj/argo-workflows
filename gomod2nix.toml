@@ -128,8 +128,8 @@ schema = 3
     version = "v2.0.3+incompatible"
     hash = "sha256-NLQtom5/csYWGUq3IMds0OI69S+/VDalAYccExFJ7Qc="
   [mod."github.com/aws/aws-sdk-go-v2"]
-    version = "v1.47.5"
-    hash = "sha256-S++MkgMj3zjHVLoEzuw9zl5xMRkBzCZKDStzG9mJZk0="
+    version = "v1.48.1"
+    hash = "sha256-iG4FO62EN7SMutAjkFANz1BbyI2iXxzIBYX5FSQXrCw="
   [mod."github.com/aws/aws-sdk-go-v2/config"]
     version = "v1.33.13"
     hash = "sha256-4QueglnBQNPZ9DdVavr4TDt6yeHgE2dsVliL50iZSng="
@@ -140,8 +140,8 @@ schema = 3
     version = "v1.20.5"
     hash = "sha256-QFI9XqMejZT7Dxz6dbsYXAmV9pBUQUxnB2GrPlAYmJQ="
   [mod."github.com/aws/aws-sdk-go-v2/feature/rds/auth"]
-    version = "v1.7.6"
-    hash = "sha256-yfFlZqCjd9Or9jKXWj7snr0kB1RKNxmHb39HBbthHgM="
+    version = "v1.7.13"
+    hash = "sha256-18zuYW6KqNQN6FS5IMaFZ+m00ufflZwmZCzcZr0CI4s="
   [mod."github.com/aws/aws-sdk-go-v2/internal/configsources"]
     version = "v1.5.8"
     hash = "sha256-77NbDXPpn1ZlZF/mL/rAsYXnVaEtdlC/0BvpA/3fWLQ="
@@ -188,8 +188,8 @@ schema = 3
     version = "v1.51.6"
     hash = "sha256-7D+qbpCJH4MTY8X7MvbytFsaI9WcYFdMf+FxbtIDQEg="
   [mod."github.com/aws/smithy-go"]
-    version = "v1.28.7"
-    hash = "sha256-uLWQqpKrfDlRxeK0En2zhuvtgmZKmUDlpNuU72obY8A="
+    version = "v1.28.10"
+    hash = "sha256-LErmtMc/imbs/uAyYAmVZ1MrDrfY0qoP3QFANo7D2Ag="
   [mod."github.com/awslabs/amazon-ecr-credential-helper/ecr-login"]
     version = "v0.12.0"
     hash = "sha256-PHoHWGX9RVkAQNQF2fz5Hv4JEaGBvLhcuUwlu5IQjU0="
