@@ -1,4 +1,4 @@
-#syntax=docker/dockerfile:1.28
+#syntax=docker/dockerfile:1.29
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
