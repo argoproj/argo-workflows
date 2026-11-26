@@ -228,10 +228,7 @@ func (tplCtx *TemplateContext) resolveTemplateImpl(ctx context.Context, tmplHold
 			inlineScope := scope
 			inlineResourceName := resourceName
 			if tmplRef := tmplHolder.GetTemplateRef(); tmplRef != nil {
-				inlineScope = wfv1.ResourceScopeNamespaced
-				if tmplRef.ClusterScope {
-					inlineScope = wfv1.ResourceScopeCluster
-				}
+				inlineScope = tmplRef.GetResourceScope()
 				inlineResourceName = tmplRef.Name
 			}
 			err = tplCtx.workflow.SetStoredInlineTemplate(inlineScope, inlineResourceName, newTmpl)

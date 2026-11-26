@@ -1516,8 +1516,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		return nil
 	}
 	if tmpl == nil {
-		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
-			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
+		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName, "templateScope": old.TemplateScope}).
+			Debug(ctx, "could not resolve node template; skipping daemon teardown detection")
 	}
 	// The only way a daemon node becomes Succeeded while its pod is still alive is
 	// killDaemonedChildren, which marks the node and then requests pod termination.
@@ -3005,26 +3005,24 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
-	if node.TemplateRef != nil {
-		// Check storedTemplates first so that modifications to the CWT after the workflow
-		// started do not cause assessNodeStatus to spuriously mark the node as Error.
-		scope, name := node.GetTemplateScope()
-		if tmpl := woc.wf.GetStoredTemplate(scope, name, node); tmpl != nil {
-			return tmpl, nil
-		}
-		tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
-		if err != nil {
-			woc.markNodeError(ctx, node.Name, err)
-			return nil, err
-		}
-		tmpl, err := tmplCtx.GetTemplateFromRef(ctx, node.TemplateRef)
-		if err != nil {
-			woc.markNodeError(ctx, node.Name, err)
-			return tmpl, err
-		}
+	if tmpl := woc.wf.GetTemplateFromSnapshot(woc.wf.GetNodeTemplateKey(node)); tmpl != nil {
 		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(node.TemplateName), nil
+	if node.TemplateRef == nil {
+		return nil, nil
+	}
+	// Keep the live lookup for explicit references that have no stored snapshot.
+	scope, name := node.GetTemplateScope()
+	tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
+	if err != nil {
+		woc.markNodeError(ctx, node.Name, err)
+		return nil, err
+	}
+	tmpl, err := tmplCtx.GetTemplateFromRef(ctx, node.TemplateRef)
+	if err != nil {
+		woc.markNodeError(ctx, node.Name, err)
+	}
+	return tmpl, err
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) context.Context {
