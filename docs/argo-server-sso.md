@@ -136,7 +136,8 @@ metadata:
 ```
 
 !!! Note
-    All users MUST map to a cluster service account (such as the one above) before a namespace service account can apply.
+    The highest-precedence matching namespace service account applies when either no rule matches in the installation namespace, or its `rbac-rule-precedence` is higher than the matched service account in the installation namespace.
+    Without a matching service account in the installation namespace, Argo Server denies the user every request that isn't in a namespace, such as ClusterWorkflowTemplates, and every request to a namespace where no service account matches.
 
 Now, for the namespace that you own, configure a service account that allows members of your team to perform operations in your namespace.
 Make sure that the precedence of the namespace service account is higher than the precedence of the login service account. Create an appropriate role for this service account and bind it with a role-binding.
