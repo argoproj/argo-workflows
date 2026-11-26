@@ -249,11 +249,11 @@
                 owner = "protocolbuffers";
                 repo = "protobuf-go";
                 rev = "v${version}";
-                sha256 = "sha256-6Wx1XoHZS1RM0hpgVE85U7huVS4IK+AroTE2zpZR4VI=";
+                sha256 = "sha256-1jaQXOwy5x2Yqzkkb5l/kbOhFVUgZ0N1yemDhgq32VE=";
               };
               subPackages = [ "cmd/protoc-gen-go" ];
               doCheck = false;
-              vendorHash = "sha256-nGI/Bd6eMEoY0sBwWEtyhFowHVvwLKjbT4yfzFz6Z3E=";
+              vendorHash = "sha256-EAkrbx9pTBhZ0y0ub14PnMINrk1M6yEgnGapzpgXqBU=";
             };
             protoc-gen-go-grpc = pkgs.buildGoModule rec {
               pname = "protoc-gen-go-grpc";
@@ -277,11 +277,11 @@
                 owner = "grpc-ecosystem";
                 repo = "grpc-gateway";
                 rev = "v${version}";
-                sha256 = "sha256-LoSfWF+bJ6p+XVdqauIcgESfse+F57aoADi3mYUf3lo=";
+                sha256 = "sha256-ell+E75F5KC5OAwuP/tjdeyIouLLAGmcXqeWsJG/HC0=";
               };
               subPackages = [ "protoc-gen-grpc-gateway" "protoc-gen-openapiv2" ];
               doCheck = false;
-              vendorHash = "sha256-e0CajogxQoHPanjek6nWebV2yHFja0QHHD57SNlLQDI=";
+              vendorHash = "sha256-0EiubUU7p0HsHWnTLITzpBVB8D1JQSwCe3LmXp52/4A=";
             };
 
             go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {
