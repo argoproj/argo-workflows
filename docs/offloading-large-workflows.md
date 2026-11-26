@@ -137,5 +137,5 @@ Options:
 
 - ConfigMap offloading triggers at 128KB total args (131,072 bytes, JSON marshaled)
 - Individual arg file offloading triggers at 128KB per argument (131,072 bytes)
-- Check controller logs for "Offloaded container args to ConfigMap" message
-- Check emissary logs for "Offloaded large argument to file" message
+- Check controller logs for the `Offloaded container args to configmap` message
+- Check emissary logs for the `Offloaded large argument to file` message
