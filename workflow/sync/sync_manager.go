@@ -125,7 +125,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	defer sm.lock.Unlock()
 
 	sm.log.Debug(ctx, "Check the workflow existence")
-	for _, lock := range sm.syncLockMap {
+	for lockName, lock := range sm.syncLockMap {
 		holders, err := lock.getCurrentHolders(ctx)
 		if err != nil {
 			sm.log.WithError(err).Error(ctx, "failed to get current lock holders")
@@ -149,7 +149,32 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 				}
 			}
 		}
+		sm.dropIfUnused(ctx, lockName)
 	}
+}
+
+// dropIfUnused removes lockName from syncLockMap once nothing holds it or waits
+// for it, so the map does not keep an entry for every lock name ever used. The
+// next TryAcquire for the name builds the lock again. Poisoned locks are kept
+// until restart, and a lock whose state cannot be read is kept. The caller must
+// hold sm.lock.
+func (sm *Manager) dropIfUnused(ctx context.Context, lockName string) {
+	lock, ok := sm.syncLockMap[lockName]
+	if !ok {
+		return
+	}
+	if _, poisoned := lock.(*poisonedLock); poisoned {
+		return
+	}
+	holders, err := lock.getCurrentHolders(ctx)
+	if err != nil || len(holders) > 0 {
+		return
+	}
+	pending, err := lock.getCurrentPending(ctx)
+	if err != nil || len(pending) > 0 {
+		return
+	}
+	delete(sm.syncLockMap, lockName)
 }
 
 func getUpgradedKey(wf *wfv1.Workflow, key string, level LevelType) string {
@@ -730,6 +755,7 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 					s.LockReleased(holderKey, lockKey.String(ctx))
 				}
 			}
+			sm.dropIfUnused(ctx, lockName.String(ctx))
 		}
 	}
 }
@@ -742,12 +768,14 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 		return true
 	}
 
+	var touched []string
 	if wf.Status.Synchronization.Semaphore != nil {
 		for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
 			syncLockHolder := sm.syncLockMap[holding.Semaphore]
 			if syncLockHolder == nil {
 				continue
 			}
+			touched = append(touched, holding.Semaphore)
 
 			// LockReleased rewrites holding.Holders in place (slices.DeleteFunc
 			// compacts the shared backing array), so iterate over a copy:
@@ -769,6 +797,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
+			touched = append(touched, waiting.Semaphore)
 			key := getHolderKey(wf, "")
 			if err := syncLockHolder.removeFromQueue(ctx, key); err != nil {
 				sm.log.WithField("key", key).WithError(err).Warn(ctx, "Error removing from queue")
@@ -785,6 +814,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
+			touched = append(touched, holding.Mutex)
 
 			syncLockHolder.release(ctx, holding.Holder)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
@@ -797,6 +827,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
+			touched = append(touched, waiting.Mutex)
 			key := getHolderKey(wf, "")
 			if err := syncLockHolder.removeFromQueue(ctx, key); err != nil {
 				sm.log.WithField("key", key).WithError(err).Warn(ctx, "Error removing from queue")
@@ -809,6 +840,7 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
 			lock, ok := sm.syncLockMap[node.SynchronizationStatus.Waiting]
 			if ok {
+				touched = append(touched, node.SynchronizationStatus.Waiting)
 				if err := lock.removeFromQueue(ctx, getHolderKey(wf, node.ID)); err != nil {
 					sm.log.WithField("key", getHolderKey(wf, node.ID)).WithError(err).Warn(ctx, "Error removing from queue")
 				}
@@ -816,6 +848,10 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 			node.SynchronizationStatus = nil
 			wf.Status.Nodes.Set(ctx, node.ID, node)
 		}
+	}
+
+	for _, lockName := range touched {
+		sm.dropIfUnused(ctx, lockName)
 	}
 
 	wf.Status.Synchronization = nil
