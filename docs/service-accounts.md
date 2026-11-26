@@ -16,7 +16,7 @@ You set the `ServiceAccount` that Workflow pods use with the `spec.serviceAccoun
 argo submit --serviceaccount <name>
 ```
 
-If neither the Workflow nor the [workflow defaults](default-workflow-specs.md) set `serviceAccountName`, Workflow pods use the `default` `ServiceAccount` from the namespace the Workflow runs in, which almost always has insufficient privileges by default.
+If none of the template, the Workflow or the [workflow defaults](default-workflow-specs.md) set `serviceAccountName`, Workflow pods use the `default` `ServiceAccount` from the namespace the Workflow runs in, which almost always has insufficient privileges by default.
 
 For more information about granting Argo the necessary permissions for your use case, see [Workflow RBAC](workflow-rbac.md).
 
