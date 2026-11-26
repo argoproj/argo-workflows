@@ -48,8 +48,9 @@ func missingVarsInEnv(expression string, env map[string]any) ([]string, error) {
 		return nil, err
 	}
 	var missing []string
+	maxParts := maxKeyParts(env)
 	for _, id := range identifiers {
-		if !hasVarInEnv(env, id) {
+		if !hasVarInEnv(env, id, maxParts) {
 			missing = append(missing, id)
 		}
 	}
@@ -178,10 +179,11 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 		if !ok {
 			return "", false
 		}
-		parts = append([]string{prop.Value}, parts...)
+		parts = append(parts, prop.Value)
 
 		if id, isIdent := curr.Node.(*ast.IdentifierNode); isIdent {
-			parts = append([]string{id.Value}, parts...)
+			parts = append(parts, id.Value)
+			slices.Reverse(parts)
 			return strings.Join(parts, "."), true
 		}
 
@@ -326,8 +328,18 @@ func EnvMap(replaceMap map[string]string) map[string]any {
 	return envMap
 }
 
-// hasVarInEnv checks if a parameter is in env or not
-func hasVarInEnv(env map[string]any, parameter string) bool {
+// maxKeyParts returns the largest number of dot-separated parts in a key of env.
+func maxKeyParts(env map[string]any) int {
+	maxParts := 0
+	for key := range env {
+		maxParts = max(maxParts, strings.Count(key, ".")+1)
+	}
+	return maxParts
+}
+
+// hasVarInEnv checks if a parameter is in env or not. maxParts is
+// maxKeyParts(env): no longer prefix of parameter can be a key of env.
+func hasVarInEnv(env map[string]any, parameter string, maxParts int) bool {
 	if _, ok := env[parameter]; ok {
 		return true
 	}
@@ -338,7 +350,7 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 	remainingParts := parts
 
 	// Try to find the longest matching prefix in env
-	for i := len(parts); i > 0; i-- {
+	for i := min(len(parts), maxParts); i > 0; i-- {
 		prefix := strings.Join(parts[:i], ".")
 		if val, ok := env[prefix]; ok {
 			current = val
