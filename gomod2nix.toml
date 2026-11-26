@@ -44,8 +44,8 @@ schema = 3
     version = "v1.13.0"
     hash = "sha256-LLNsMKACy5SK5tZ+CC+jgN4eN0cGWNI/fD4bV3wkGJM="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"]
-    version = "v1.8.2"
-    hash = "sha256-hrv1mdT6gsBVxln57d8JD5wAvuRSllq6LpMeQorCedA="
+    version = "v1.8.3"
+    hash = "sha256-zljLRv3lrHq5X++d5FPke4ozJh4bxoap+iTXuD4cPXw="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/storage/internal"]
     version = "v0.1.0"
     hash = "sha256-7+CxuCxeHdtixlWB+CfY1lFA5eBpS5iFuqJEfx9b5WY="
