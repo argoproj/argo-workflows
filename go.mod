@@ -37,7 +37,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/jsonreference v1.0.3
 	github.com/go-playground/webhooks/v6 v6.4.0
-	github.com/go-sql-driver/mysql v1.10.1
+	github.com/go-sql-driver/mysql v1.10.2
 	github.com/google/go-containerregistry v0.22.1
 	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20260416183851-f80cb9a75083
 	github.com/google/uuid v1.6.0
