@@ -1923,6 +1923,14 @@ type TemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
+// GetResourceScope returns the scope of the referenced WorkflowTemplate.
+func (ref *TemplateRef) GetResourceScope() ResourceScope {
+	if ref.ClusterScope {
+		return ResourceScopeCluster
+	}
+	return ResourceScopeNamespaced
+}
+
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
 	// Semaphores holds the list of Semaphores configuration
@@ -3939,14 +3947,53 @@ func (w *Workflow) NodeID64(name string) string {
 	return fmt.Sprintf("%s-%v", w.Name, h.Sum64())
 }
 
-// GetStoredTemplate retrieves a template from stored templates of the workflow.
-func (w *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
-	tmplID, storageNeeded := resolveTemplateReference(scope, resourceName, caller)
-	if !storageNeeded {
-		// Local templates aren't stored
+// GetNodeTemplateKey returns the scoped key for a node's template, or an empty
+// string if the template is unnamed.
+func (w *Workflow) GetNodeTemplateKey(node *NodeStatus) string {
+	scope, resourceName := node.GetTemplateScope()
+	key, stored := resolveTemplateReference(scope, resourceName, node)
+	if !stored {
+		key = w.localTemplateKeyPrefix() + node.TemplateName
+	}
+	if strings.HasSuffix(key, "/") {
+		return ""
+	}
+	return key
+}
+
+func (w *Workflow) localTemplateKeyPrefix() string {
+	return string(ResourceScopeLocal) + "/" + w.Name + "/"
+}
+
+// GetTemplateFromSnapshot looks up a key from GetNodeTemplateKey in the execution
+// spec or stored templates, without fetching any live references.
+func (w *Workflow) GetTemplateFromSnapshot(key string) *Template {
+	if key == "" {
 		return nil
 	}
-	if tmpl, ok := w.Status.StoredTemplates[tmplID]; ok {
+	name, local := strings.CutPrefix(key, w.localTemplateKeyPrefix())
+	if !local {
+		return w.getStoredTemplate(key)
+	}
+	for _, tmpl := range w.GetExecSpec().Templates {
+		if tmpl.Name == name {
+			return &tmpl
+		}
+	}
+	return nil
+}
+
+// GetStoredTemplate retrieves a template from stored templates of the workflow.
+func (w *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
+	key, stored := resolveTemplateReference(scope, resourceName, caller)
+	if !stored {
+		return nil
+	}
+	return w.getStoredTemplate(key)
+}
+
+func (w *Workflow) getStoredTemplate(key string) *Template {
+	if tmpl, ok := w.Status.StoredTemplates[key]; ok {
 		return tmpl.DeepCopy()
 	}
 	return nil
@@ -3997,30 +4044,19 @@ func (w *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName str
 	return nil
 }
 
-// resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
-// if it should be stored
-func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
-	tmplRef := caller.GetTemplateRef()
-	switch {
-	case tmplRef != nil:
-		// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate. Template storage is needed
-		// We need to determine if we're calling a WorkflowTemplate or a ClusterWorkflowTemplate
-		referenceScope := ResourceScopeNamespaced
-		if tmplRef.ClusterScope {
-			referenceScope = ResourceScopeCluster
-		}
-		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
-	case callerScope != ResourceScopeLocal:
-		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
-		if caller.GetTemplate() != nil {
-			// If we have an inlined template here, use the inlined name
-			return fmt.Sprintf("%s/%s/inline/%s", callerScope, resourceName, caller.GetName()), true
-		}
-		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
-	default:
-		// A Workflow is calling a template inside itself. Template storage is not needed
+// resolveTemplateReference returns the key used in Status.StoredTemplates.
+// A local template does not need a stored copy.
+func resolveTemplateReference(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
+	if ref := caller.GetTemplateRef(); ref != nil {
+		return fmt.Sprintf("%s/%s/%s", ref.GetResourceScope(), ref.Name, ref.Template), true
+	}
+	if scope == ResourceScopeLocal {
 		return "", false
 	}
+	if caller.GetTemplate() != nil {
+		return fmt.Sprintf("%s/%s/inline/%s", scope, resourceName, caller.GetName()), true
+	}
+	return fmt.Sprintf("%s/%s/%s", scope, resourceName, caller.GetTemplateName()), true
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
