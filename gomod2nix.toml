@@ -800,14 +800,14 @@ schema = 3
     version = "v0.44.0"
     hash = "sha256-pZUp39zq84LtXXKipA2NLq6Q6K0eQJpXJt/h7jpnGGg="
   [mod."github.com/tidwall/gjson"]
-    version = "v1.20.0"
-    hash = "sha256-B20b7SJSlIAKB0m8F9VQaXyNnJuJ+F5l10nxyofNWrg="
+    version = "v1.20.7"
+    hash = "sha256-3cnNAZt3AJyGW7IDo/qwciRe1oH+kgLrCu5Sx1spUqM="
   [mod."github.com/tidwall/match"]
     version = "v1.1.1"
     hash = "sha256-M2klhPId3Q3T3VGkSbOkYl/2nLHnsG+yMbXkPkyrRdg="
   [mod."github.com/tidwall/pretty"]
-    version = "v1.2.1"
-    hash = "sha256-S0uTDDGD8qr415Ut7QinyXljCp0TkL4zOIrlJ+9OMl8="
+    version = "v1.3.0"
+    hash = "sha256-Z4vtn2M/5nPGWLnEGrnhKmxfj1CnqsszPLanijZ/X0M="
   [mod."github.com/tinylib/msgp"]
     version = "v1.6.4"
     hash = "sha256-obRMzgNod1WvJCEquhze0v3Yu9L+6uSnXA5ogTCw3gc="
