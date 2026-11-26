@@ -488,11 +488,11 @@ schema = 3
     version = "v1.1.0"
     hash = "sha256-XWlYH0c8IcxAwQTnIi6WYqq44nOKUylSWxWO/vi+8pE="
   [mod."github.com/itchyny/gojq"]
-    version = "v0.12.19"
-    hash = "sha256-egaBNHKKzwDwaUN4GT+Xvt11Nz6ojNMSIrXbcEisyI4="
+    version = "v0.12.20"
+    hash = "sha256-Hg1q7xfzRzscehGkm4+N8j6ssaCrGuG9GbB2SlOhXg8="
   [mod."github.com/itchyny/timefmt-go"]
-    version = "v0.1.8"
-    hash = "sha256-6h57JsmWju1QAx+mI9HZ+XceAeRnfLcA5HMWCHdymYE="
+    version = "v0.1.9"
+    hash = "sha256-ZD5qV48zyE3KbTj0OzzvBzLo+FVw6omO/8/cPUDNI/o="
   [mod."github.com/jackc/pgio"]
     version = "v1.0.0"
     hash = "sha256-4W0PGZlkbBZcSJmPyXi9v1gAJIK9ujVLlcbxEOx9J1A="
@@ -581,8 +581,8 @@ schema = 3
     version = "v0.0.24"
     hash = "sha256-pmq8KKIb2+qMF3E1cR2B7NAj5joF2tZduyXjIfIlkTk="
   [mod."github.com/mattn/go-runewidth"]
-    version = "v0.0.30"
-    hash = "sha256-2idyB8BVjqiwBOmBteKMTM9uBfr96g29k8hqJWjlndE="
+    version = "v0.0.31"
+    hash = "sha256-0R1i3gS3Ya0JYUfNdpJ7B1ynWGqRaP0Mxvv6mEz0qSI="
   [mod."github.com/minio/crc64nvme"]
     version = "v1.1.1"
     hash = "sha256-RVVi/gWPBEQqcW4n+KIKxlA3uY5+77e2rhkVk8fFNUo="
