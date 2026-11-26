@@ -166,7 +166,7 @@ jobs:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -174,8 +174,11 @@ jobs:
           go-version-file: go.mod
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
-      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
+      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p $env:GO_TEST_PARALLELISM -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
         env:
+          # windows-2022 has 16 GB in a public repository but 8 GB in a private
+          # one, where 20 parallel test binaries run out of memory.
+          GO_TEST_PARALLELISM: ${{ github.event.repository.private && '4' || '20' }}
           KUBECONFIG: /dev/null
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
