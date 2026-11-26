@@ -170,7 +170,7 @@ jobs:
     name: Build Binaries
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -196,7 +196,7 @@ jobs:
   argo-images:
     name: argo-images
     # needs: [ lint ]
-    runs-on: ubuntu-26.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -453,14 +453,17 @@ jobs:
   # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
   e2e-tests-composite-result:
     name: E2E Tests - Composite result
-    needs: [ e2e-tests ]
+    needs: [ changed-files, e2e-tests ]
     if: ${{ always() }}
     runs-on: ubuntu-26.04
     steps:
       - run: |
+          files="${{ needs.changed-files.result }}"
+          wanted="${{ needs.changed-files.outputs.e2e-tests }}"
           result="${{ needs.e2e-tests.result }}"
-          # mark as successful even if skipped
-          if [[ $result == "success" || $result == "skipped" ]]; then
+          # e2e-tests is also skipped when argo-images or build-binaries fail or
+          # time out, so a skip only passes when the PR didn't need e2e at all
+          if [[ $files == "success" ]] && [[ $result == "success" || ( $result == "skipped" && $wanted != "true" ) ]]; then
             exit 0
           else
             exit 1
