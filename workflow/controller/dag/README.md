@@ -32,7 +32,8 @@ A new evaluator is created every reconcile cycle, so nothing here is long-lived.
 ### 2. Dependency resolution
 
 A user-written `depends` expression is tokenized with `common.ParseDepends` — the same grammar workflow validation uses, so an expression cannot pass validation and be read differently here.
-Legacy `dependencies` lists (and the synthetic dependencies of Steps tasks, whose names are `[<group index>].<step name>`, for example `[0].build`) are structured data and are expanded directly with `common.ExpandDependency`; they are never re-parsed as an expression.
+Legacy `dependencies` lists (and the synthetic dependencies of Steps tasks, whose names are `[<group index>].<step name>`, for example `[0].build`) are structured data and are never made into an expression: `dependencyMet` checks each entry against the condition `common.ExpandDependency` writes for a bare task reference.
+Consecutive tasks that declare the same dependencies, as all the steps of a group do, share one resolved list.
 
 Task names are rewritten to hex-encoded identifiers (`my-task` → `t6d792d7461736b`) so they are valid, collision-free identifiers in the evaluated expression.
 
@@ -42,6 +43,7 @@ A task **waits** while any dependency is still pending: not started, running, a 
 A running daemon counts as finished.
 Once every dependency has finished, `evaluateDependsReadiness` builds a scope of dependency states — a `taskResult` per dependency with the fields `Succeeded`, `Failed`, `Errored`, `Skipped`, `Omitted`, `Daemoned`, `AnySucceeded`, `AllFailed` (the same vocabulary as `common.TaskResult*`) — and evaluates the normalized expression with a cached, compiled `expr` program.
 The task is **ready** if the expression is true and is **omitted** if it is false.
+A task with a legacy `dependencies` list is ready if every dependency is met (`dependencyMet`) and is omitted otherwise.
 
 `Evaluate` evaluates one task this way against the nodes as they are now.
 The engine calls it for each task in dependency order, immediately before acting on the task, so the task sees what the engine has just done to its dependencies.

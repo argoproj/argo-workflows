@@ -16,7 +16,8 @@ type dagTopology struct {
 	// dependencies maps each task name to its dependency task names.
 	dependencies map[string][]string
 	// dependsLogic maps each task name to its normalized depends expression
-	// (with task names hex-encoded for safe expression evaluation).
+	// (with task names hex-encoded for safe expression evaluation). It is
+	// empty for a task with a legacy "dependencies" list.
 	dependsLogic map[string]string
 	// dependsErrors maps task names to errors encountered while parsing their depends expressions.
 	dependsErrors map[string]error
@@ -41,9 +42,19 @@ func newWorkflowTasks(tasks []Task) *WorkflowTasks {
 
 	taskProvider := func(name string) Task { return taskMap[name] }
 
-	for _, task := range tasks {
+	// Every step of a Steps group depends on all the steps of the group
+	// before it, so consecutive tasks with the same dependencies share one
+	// resolution instead of each holding its own copy.
+	var (
+		deps  []string
+		logic string
+		err   error
+	)
+	for i, task := range tasks {
 		name := task.GetName()
-		deps, logic, err := resolveTaskDepends(task, taskProvider)
+		if i == 0 || !sameDepends(task, tasks[i-1]) {
+			deps, logic, err = resolveTaskDepends(task, taskProvider)
+		}
 		if err != nil {
 			dependsErrors[name] = err
 		}
@@ -131,10 +142,10 @@ func (w *WorkflowTasks) LeafTaskNames() []string {
 // its normalized depends expression.
 //
 // A legacy "dependencies" list (DAG tasks, and every Steps task, whose
-// synthetic dependencies are named "[i].step") is structured data: each entry
-// is expanded directly and never re-parsed as an expression. A user-written
-// "depends" (DAG tasks only) goes through common.ParseDepends, so an
-// expression cannot pass validation and be read differently here.
+// synthetic dependencies are named "[i].step") is structured data: it gets no
+// expression, and the evaluator checks each entry directly (dependencyMet). A
+// user-written "depends" (DAG tasks only) goes through common.ParseDepends, so
+// an expression cannot pass validation and be read differently here.
 func resolveTaskDepends(task Task, taskProvider func(string) Task) ([]string, string, error) {
 	continueOnFor := func(name string) *wfv1.ContinueOn {
 		if dep := taskProvider(name); dep != nil {
@@ -144,20 +155,14 @@ func resolveTaskDepends(task Task, taskProvider func(string) Task) ([]string, st
 	}
 
 	if task.GetDepends() == "" {
-		// Legacy dependencies, expanded here rather than through common's
-		// getTaskDependsLogic: that builds a depends expression from the raw
-		// names and parses it again, and the depends grammar cannot parse a
-		// Steps task's synthetic "[i].step" name. Here each name is expanded
-		// directly and rewritten to a safe identifier (normalizeTaskName).
+		// Legacy dependencies are not made into an expression: a step depends
+		// on every step of the group before it, and an expression over all of
+		// them grows with the group and soon exceeds what expr-lang compiles.
 		deps := task.GetDependencies()
 		if len(deps) == 0 {
 			return nil, "", nil
 		}
-		terms := make([]string, len(deps))
-		for i, dep := range deps {
-			terms[i] = common.ExpandDependency(dep, continueOnFor(dep), normalizeTaskName)
-		}
-		return slices.Compact(slices.Sorted(slices.Values(deps))), strings.Join(terms, " && "), nil
+		return slices.Compact(slices.Sorted(slices.Values(deps))), "", nil
 	}
 
 	depends := task.GetDepends()
@@ -173,6 +178,12 @@ func resolveTaskDepends(task Task, taskProvider func(string) Task) ([]string, st
 		return common.ExpandDependency(ref.Task, continueOnFor(ref.Task), normalizeTaskName)
 	})
 	return slices.Sorted(maps.Keys(dependencySet)), logic, err
+}
+
+// sameDepends reports whether two tasks declare the same dependencies, which
+// resolveTaskDepends resolves to the same result.
+func sameDepends(a, b Task) bool {
+	return a.GetDepends() == b.GetDepends() && slices.Equal(a.GetDependencies(), b.GetDependencies())
 }
 
 // normalizeTaskName converts a task name to a safe expression identifier.
