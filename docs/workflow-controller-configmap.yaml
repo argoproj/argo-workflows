@@ -520,6 +520,12 @@ data:
     # Custom PEM encoded CA certificate file contents. >= v4.0
     # Note: If CA certificates are mounted to the system certificate directory (/etc/ssl/certs on Linux), this config is not needed.
     rootCA: ""
+    # Accept JWTs issued by the OIDC provider as `Authorization: Bearer <token>`, without the browser login. >= v4.2
+    # See https://argo-workflows.readthedocs.io/en/latest/argo-server-sso/#bearer-tokens-from-the-oidc-provider
+    bearerToken:
+      enabled: false
+      # Accepted values of the `aud` claim. If omitted, the client ID.
+      allowedAudiences: []
 
   # Trusted Header configuration for the Argo server.
   # You must also start argo server with `--auth-mode header`.

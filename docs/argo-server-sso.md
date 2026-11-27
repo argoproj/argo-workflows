@@ -245,6 +245,69 @@ sso:
     - ".*argo-workflow.*"
 ```
 
+## Bearer tokens from the OIDC provider
+
+> v4.2 and after
+
+By default, the Argo Server only accepts the session token it issues after the browser login.
+You can also let clients call the API with a token issued by your OIDC provider, for example a token a service obtains with the OAuth2 client credentials grant.
+The client doesn't need a browser or access to the Kubernetes API.
+The token must be a signed JWT: opaque access tokens aren't supported.
+
+```yaml
+sso:
+  # ...
+  bearerToken:
+    enabled: true
+    # Accepted values of the `aud` claim. (optional)
+    # If omitted, only tokens whose audience includes the SSO client ID are accepted.
+    allowedAudiences:
+      - api://argo-workflows
+  rbac:
+    enabled: true
+```
+
+The client sends the token as `Authorization: Bearer <token>`:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://argo-server/api/v1/workflows/argo
+```
+
+The Argo Server handles a bearer token this way when it is a signed JWT whose `iss` claim is `issuer`.
+If you set `issuerAlias`, the `iss` claim must be `issuerAlias` instead.
+For example, with Microsoft Entra ID, the application must issue v2.0 access tokens, whose issuer is `https://login.microsoftonline.com/<tenant-id>/v2.0`.
+The match is exact: a JWT whose `iss` differs, even by a trailing slash, isn't handled this way, and neither is an Entra ID v1.0 token, whose issuer is `https://sts.windows.net/<tenant-id>/`.
+If a token is rejected with `token not valid`, compare its `iss` claim with `issuer`: at debug level, the Argo Server logs the issuer of JWTs that don't match.
+The Argo Server logs why it rejected a token from the issuer at info level.
+
+The Argo Server verifies the signature against the provider's published keys, and checks the issuer, audience, expiry and not-before time.
+It fails to start if the provider's discovery document doesn't publish a `jwks_uri`.
+It fetches the keys again when a token uses an unknown key ID, at most once per minute, or on the first request after they are an hour old.
+If the provider is unreachable, it keeps using the cached keys and logs a warning.
+
+If verification fails, the Argo Server rejects the request: it doesn't try the `client` or `server` [auth modes](argo-server-auth-mode.md) with that token.
+Other bearer tokens, such as Kubernetes service account tokens, use the `client` auth mode if you enable it.
+The Argo Server only accepts these tokens in the `Authorization` header, not in the `authorization` cookie.
+
+!!! Note
+    If your Kubernetes API server also trusts tokens from this issuer, and users call the Argo Server with them in `client` mode, enabling bearer tokens changes how those requests are authorized.
+    The Argo Server applies SSO RBAC to them instead of sending them to the Kubernetes API.
+
+The Argo Server applies [SSO RBAC](#sso-rbac) and [namespace delegation](#sso-rbac-namespace-delegation) to the token's claims, as it does for users who log in with the browser.
+`customGroupClaimName` and `filterGroupsRegex` apply, but `userInfoPath` doesn't: the Argo Server only reads groups from the token.
+A token without groups has an empty `groups` list, so a rule such as `'admin' in groups` evaluates to false for it.
+To grant access to a client without groups, match its subject, for example `sub == '00000000-0000-0000-0000-000000000000'`, or set `customGroupClaimName` to a claim that your provider fills for clients, such as `roles`.
+In RBAC rules, `iss` is the provider's issuer for these tokens, not `argo-server`.
+
+The Argo Server doesn't issue a session for these tokens: each request carries the provider's token, which stays valid until it expires.
+To revoke access, disable the client in your provider and wait for its tokens to expire.
+An ID token from a browser login is also accepted until it expires, if its audience is allowed: logging out doesn't revoke it, and `sessionExpiry` doesn't apply to it.
+
+!!! Warning
+    Any application that can obtain a token for an allowed audience from your provider can call the Argo Server.
+    Restrict which applications can get such tokens in your provider, for example by requiring an assignment to the Argo Workflows application.
+    Enable SSO RBAC, and don't use a default service account whose rule is `"true"`: every such application would get that access.
+
 ## Custom TLS Configuration
 
 > v4.0 and after

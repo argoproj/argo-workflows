@@ -340,6 +340,7 @@ SSOConfig contains single sign-on configuration settings
 | `InsecureSkipVerify`   | `bool`                                                                                                                      | InsecureSkipVerify skips TLS certificate verification                                                                                       |
 | `FilterGroupsRegex`    | `Array<string>`                                                                                                             | FilterGroupsRegex filters groups using regular expressions                                                                                  |
 | `RootCA`               | `string`                                                                                                                    | custom PEM encoded CA certificate file contents                                                                                             |
+| `BearerToken`          | [`SSOBearerTokenConfig`](#ssobearertokenconfig)                                                                             | BearerToken configures accepting OIDC provider tokens as bearer tokens                                                                      |
 
 ## RBACConfig
 
@@ -350,6 +351,17 @@ RBACConfig contains role-based access control configuration
 | Field Name | Field Type |               Description                |
 |------------|------------|------------------------------------------|
 | `Enabled`  | `bool`     | Enabled controls whether RBAC is enabled |
+
+## SSOBearerTokenConfig
+
+SSOBearerTokenConfig configures accepting OIDC provider tokens as bearer tokens
+
+### Fields
+
+|     Field Name     |   Field Type    |                                     Description                                     |
+|--------------------|-----------------|-------------------------------------------------------------------------------------|
+| `Enabled`          | `bool`          | Enabled accepts signed JWTs from the issuer as `Authorization: Bearer <token>`      |
+| `AllowedAudiences` | `Array<string>` | AllowedAudiences lists the accepted `aud` values, and defaults to the SSO client ID |
 
 ## HeaderConfig
 

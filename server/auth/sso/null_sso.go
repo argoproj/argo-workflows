@@ -1,6 +1,7 @@
 package sso
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -29,6 +30,10 @@ func (n nullService) IsRBACEnabled() bool {
 
 func (n nullService) Authorize(string) (*types.Claims, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (n nullService) AuthorizeBearer(context.Context, string) (*types.Claims, bool, error) {
+	return nil, false, nil
 }
 
 func (n nullService) HandleRedirect(w http.ResponseWriter, _ *http.Request) {

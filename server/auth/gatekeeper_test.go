@@ -25,6 +25,7 @@ import (
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	headerauth "github.com/argoproj/argo-workflows/v4/server/auth/header"
 	headermocks "github.com/argoproj/argo-workflows/v4/server/auth/header/mocks"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	ssomocks "github.com/argoproj/argo-workflows/v4/server/auth/sso/mocks"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -98,6 +99,22 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
 		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "machine-sa", Namespace: "machine-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "sub == 'machine-id' || 'my-group' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "1",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "machine-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "my-ns"},
 			Data: map[string][]byte{
@@ -141,7 +158,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		require.Error(t, err)
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, nil, nil, clientForAuthorization, "", "", "", true, resourceCache, time.Minute)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, nil, sso.NullSSO, nil, clientForAuthorization, "", "", "", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer "))
 		require.Error(t, err)
@@ -379,6 +396,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		headerIf := &headermocks.Interface{}
 		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "header-user"}}, nil)
 		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("AuthorizeBearer", mock.Anything, "Bearer k8s-token").Return(nil, false, nil)
 		g, err := NewGatekeeper(Modes{SSO: true, Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("authorization", "Bearer k8s-token", "x-forwarded-user", "header-user"))
@@ -498,6 +516,7 @@ func TestServer_GetWFClient(t *testing.T) {
 
 	t.Run("Client+SSO+Server, plain Bearer goes to client not SSO", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("AuthorizeBearer", mock.Anything, "Bearer k8s-token").Return(nil, false, nil)
 		g, err := NewGatekeeper(Modes{Client: true, SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
 		require.NoError(t, err)
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer k8s-token"))
@@ -506,6 +525,74 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.AssertNotCalled(t, "Authorize", mock.Anything, mock.Anything)
 	})
 
+	t.Run("Client+SSO+Server, SSO bearer token goes to SSO not client", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("AuthorizeBearer", mock.Anything, "Bearer idp-jwt").Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "machine"}, Groups: []string{}}, true, nil)
+		ssoIf.On("IsRBACEnabled").Return(false)
+		clientCalled := false
+		spying := func(string, *rest.Config) (*rest.Config, *servertypes.Clients, error) {
+			clientCalled = true
+			return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
+		}
+		g, err := NewGatekeeper(Modes{Client: true, SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, spying, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer idp-jwt"))
+		require.NoError(t, err)
+		assert.Equal(t, "machine", GetClaims(ctx).Subject)
+		assert.False(t, clientCalled, "an SSO bearer token must not reach the Kubernetes API")
+	})
+
+	t.Run("Client+SSO+Server, invalid SSO bearer token does not fall back to client or server", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("AuthorizeBearer", mock.Anything, "Bearer idp-jwt").Return(nil, true, errors.New("audience not allowed"))
+		clientCalled := false
+		spying := func(string, *rest.Config) (*rest.Config, *servertypes.Clients, error) {
+			clientCalled = true
+			return &rest.Config{}, &servertypes.Clients{Workflow: &fakewfclientset.Clientset{}, Kubernetes: &kubefake.Clientset{}}, nil
+		}
+		g, err := NewGatekeeper(Modes{Client: true, SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, spying, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer idp-jwt"))
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		assert.NotContains(t, err.Error(), "audience", "verification details are logged, not returned")
+		assert.False(t, clientCalled)
+	})
+
+	t.Run("SSO+Server, invalid SSO bearer token does not run as server", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("AuthorizeBearer", mock.Anything, "Bearer idp-jwt").Return(nil, true, errors.New("expired"))
+		g, err := NewGatekeeper(Modes{SSO: true, Server: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		_, err = g.Context(x(logging.TestContext(t.Context()), "Bearer idp-jwt"))
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+	})
+
+	t.Run("SSO bearer token in a cookie is not accepted", func(t *testing.T) {
+		ssoIf := &ssomocks.Interface{}
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", true, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("cookie", "authorization=Bearer idp-jwt"))
+		_, err = g.Context(ctx)
+		require.Error(t, err)
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
+		ssoIf.AssertNotCalled(t, "AuthorizeBearer", mock.Anything, mock.Anything)
+	})
+
+	t.Run("SSO bearer token, RBAC rule on subject, namespace delegation", func(t *testing.T) {
+		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("AuthorizeBearer", mock.Anything, "Bearer idp-jwt").Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "machine-id"}, Groups: []string{}}, true, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, nil, clientForAuthorization, "my-ns", "my-ns", "my-ns", false, resourceCache, time.Minute)
+		require.NoError(t, err)
+		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer idp-jwt"), servertypes.NamespaceHolder("machine-ns"))
+		require.NoError(t, err)
+		claims := GetClaims(ctx)
+		assert.Equal(t, "machine-sa", claims.ServiceAccountName)
+		assert.Equal(t, "machine-ns", claims.ServiceAccountNamespace)
+	})
 	t.Run("Header+Server, header error does not fall back to Server", func(t *testing.T) {
 		headerIf := &headermocks.Interface{}
 		headerIf.On("Authorize", mock.Anything).Return(nil, errors.New("invalid header credentials"))

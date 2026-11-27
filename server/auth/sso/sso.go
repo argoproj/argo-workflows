@@ -1,6 +1,7 @@
 package sso
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -43,6 +45,8 @@ var invalidRedirectRegex = regexp.MustCompile(`[/\\](?:[\s\v]*|\.{1,2})[/\\]`)
 
 type Interface interface {
 	Authorize(authorization string) (*types.Claims, error)
+	// AuthorizeBearer verifies authorization if it is a JWT from the configured issuer
+	AuthorizeBearer(ctx context.Context, authorization string) (claims *types.Claims, handled bool, err error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
@@ -72,6 +76,9 @@ type sso struct {
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
 	logger            logging.Logger
+	bearerVerifier    *oidc.IDTokenVerifier
+	bearerIssuer      string
+	bearerAudiences   []string
 }
 
 // LogoutURL returns the OIDC end-session endpoint discovered from the provider.
@@ -161,9 +168,11 @@ func newSso(
 	// metadata, including the optional end_session_endpoint.
 	var providerMetadata struct {
 		EndSessionEndpoint string `json:"end_session_endpoint"`
+		JWKSURI            string `json:"jwks_uri"`
 	}
 	var logoutURL string
-	if claimsErr := provider.Claims(&providerMetadata); claimsErr == nil {
+	claimsErr := provider.Claims(&providerMetadata)
+	if claimsErr == nil {
 		logoutURL = providerMetadata.EndSessionEndpoint
 	} else {
 		logging.RequireLoggerFromContext(ctx).WithError(claimsErr).Warn(ctx, "Failed to read OIDC provider metadata; provider logout disabled")
@@ -248,9 +257,36 @@ func newSso(
 		}
 	}
 
+	var bearerVerifier *oidc.IDTokenVerifier
+	var bearerIssuer string
+	var bearerAudiences []string
+	if c.IsBearerTokenEnabled() {
+		if claimsErr != nil {
+			return nil, fmt.Errorf("sso.bearerToken requires the provider's metadata: %w", claimsErr)
+		}
+		if providerMetadata.JWKSURI == "" {
+			return nil, fmt.Errorf("sso.bearerToken requires the provider's jwks_uri")
+		}
+		// id_token_signing_alg_values_supported describes ID tokens, not access tokens; the key type binds the algorithm
+		algs := make([]string, len(asymmetricSigningAlgs))
+		for i, alg := range asymmetricSigningAlgs {
+			algs[i] = string(alg)
+		}
+		bearerIssuer = cmp.Or(c.IssuerAlias, c.Issuer)
+		// the audience is checked against allowedAudiences in verifyBearer
+		bearerVerifier = oidc.NewVerifier(bearerIssuer, newJWKSKeySet(providerMetadata.JWKSURI, httpClient), &oidc.Config{SkipClientIDCheck: true, SupportedSigningAlgs: algs})
+		bearerAudiences = c.BearerToken.AllowedAudiences
+		if len(bearerAudiences) == 0 {
+			bearerAudiences = []string{config.ClientID}
+		}
+	}
+
 	lf := logging.Fields{"redirectUrl": config.RedirectURL, "logoutRedirectUrl": c.LogoutRedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
+	}
+	if bearerVerifier != nil {
+		lf["bearerTokenAudiences"] = bearerAudiences
 	}
 	logger := logging.RequireLoggerFromContext(ctx).WithFields(lf)
 	logger.Info(ctx, "SSO configuration")
@@ -272,6 +308,9 @@ func newSso(
 		issuer:            c.Issuer,
 		filterGroupsRegex: filterGroupsRegex,
 		logger:            logger,
+		bearerVerifier:    bearerVerifier,
+		bearerIssuer:      bearerIssuer,
+		bearerAudiences:   bearerAudiences,
 	}, nil
 }
 
@@ -336,14 +375,9 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	// Default to groups claim but if customClaimName is set
-	// extract groups based on that claim key
-	groups := c.Groups
-	if s.customClaimName != "" {
-		groups, err = c.GetCustomGroup(s.customClaimName)
-		if err != nil {
-			s.logger.Warn(r.Context(), err.Error())
-		}
+	groups, err := s.groupsFromClaims(c)
+	if err != nil {
+		s.logger.Warn(ctx, err.Error())
 	}
 	// Some SSO implementations (Okta) require a call to
 	// the OIDC user info path to get attributes like groups
@@ -356,19 +390,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// only return groups that match at least one of the regexes
-	if len(s.filterGroupsRegex) > 0 {
-		var filteredGroups []string
-		for _, group := range groups {
-			for _, regex := range s.filterGroupsRegex {
-				if regex.MatchString(group) {
-					filteredGroups = append(filteredGroups, group)
-					break
-				}
-			}
-		}
-		groups = filteredGroups
-	}
+	groups = s.filterGroups(groups)
 	argoClaims := &types.Claims{
 		Claims: jwt.Claims{
 			Issuer:  issuer,
@@ -437,6 +459,97 @@ func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 		return nil, fmt.Errorf("failed to validate claims: %w", err)
 	}
 	return c, nil
+}
+
+func (s *sso) groupsFromClaims(c *types.Claims) ([]string, error) {
+	if s.customClaimName == "" {
+		return c.Groups, nil
+	}
+	return c.GetCustomGroup(s.customClaimName)
+}
+
+func (s *sso) filterGroups(groups []string) []string {
+	if len(s.filterGroupsRegex) == 0 {
+		return groups
+	}
+	var filteredGroups []string
+	for _, group := range groups {
+		for _, regex := range s.filterGroupsRegex {
+			if regex.MatchString(group) {
+				filteredGroups = append(filteredGroups, group)
+				break
+			}
+		}
+	}
+	return filteredGroups
+}
+
+// unverifiedIssuer returns the iss claim of a JWT without verifying it, for routing only.
+func unverifiedIssuer(raw string) string {
+	tok, err := jwt.ParseSigned(raw, routingSigningAlgs)
+	if err != nil {
+		return ""
+	}
+	var c jwt.Claims
+	if err := tok.UnsafeClaimsWithoutVerification(&c); err != nil {
+		return ""
+	}
+	return c.Issuer
+}
+
+func (s *sso) AuthorizeBearer(ctx context.Context, authorization string) (*types.Claims, bool, error) {
+	if s.bearerVerifier == nil || strings.HasPrefix(authorization, Prefix) {
+		return nil, false, nil
+	}
+	raw, ok := strings.CutPrefix(authorization, "Bearer ")
+	if !ok {
+		return nil, false, nil
+	}
+	if iss := unverifiedIssuer(raw); iss != s.bearerIssuer {
+		if iss != "" {
+			s.logger.WithFields(logging.Fields{"iss": iss, "expectedIss": s.bearerIssuer}).Debug(ctx, "JWT issuer doesn't match the SSO issuer, not handled as an SSO bearer token")
+		}
+		return nil, false, nil
+	}
+	claims, err := s.verifyBearer(ctx, raw)
+	return claims, true, err
+}
+
+func (s *sso) verifyBearer(ctx context.Context, raw string) (*types.Claims, error) {
+	idToken, err := s.bearerVerifier.Verify(ctx, raw)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify bearer token: %w", err)
+	}
+	if !slices.ContainsFunc(idToken.Audience, func(aud string) bool { return slices.Contains(s.bearerAudiences, aud) }) {
+		return nil, fmt.Errorf("bearer token audience %q is not allowed", idToken.Audience)
+	}
+	c := &types.Claims{}
+	if err = idToken.Claims(c); err != nil {
+		return nil, fmt.Errorf("failed to get claims from the bearer token: %w", err)
+	}
+	groups, err := s.groupsFromClaims(c)
+	if err != nil {
+		// expected for clients without that claim, e.g. client credentials
+		s.logger.Debug(ctx, err.Error())
+	}
+	groups = s.filterGroups(groups)
+	if groups == nil {
+		// so that `'x' in groups` evaluates to false rather than failing
+		groups = []string{}
+	}
+	return &types.Claims{
+		Claims: jwt.Claims{
+			Issuer:   idToken.Issuer,
+			Subject:  idToken.Subject,
+			Audience: idToken.Audience,
+			Expiry:   jwt.NewNumericDate(idToken.Expiry),
+		},
+		Groups:            groups,
+		Email:             c.Email,
+		EmailVerified:     c.EmailVerified,
+		Name:              c.Name,
+		PreferredUsername: c.PreferredUsername,
+	}, nil
 }
 
 func (s *sso) getRedirectURL(r *http.Request) string {
