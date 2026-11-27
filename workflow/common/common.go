@@ -73,6 +73,8 @@ const (
 	AnnotationKeyTraceID = workflow.WorkflowFullName + "/trace-id"
 	// AnnotationKeySpanID is added as an annotation to workflows and pods for their span-id
 	AnnotationKeySpanID = workflow.WorkflowFullName + "/span-id"
+	// AnnotationKeyPoolControllerVersion is on a pooled WorkflowTaskSet: the version of the controller that wrote its spec.pool, which its metadata alone can then tell.
+	AnnotationKeyPoolControllerVersion = workflow.WorkflowFullName + "/pool-controller-version"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -120,6 +122,18 @@ const (
 	LabelKeyArtifactGCPodHash = workflow.WorkflowFullName + "/artifact-gc-pod"
 	// LabelKeyReportOutputsCompleted is a label applied to WorkflowTaskResults indicating whether all the outputs have been reported.
 	LabelKeyReportOutputsCompleted = workflow.WorkflowFullName + "/report-outputs-completed"
+	// LabelKeyPoolName is a label applied to pooled WorkflowTaskSets, their WorkflowTaskResults, and pool Deployments and their pods, naming the pool.
+	LabelKeyPoolName = workflow.WorkflowFullName + "/pool-name"
+	// LabelKeyPoolHash is a label applied alongside LabelKeyPoolName, holding the pool's full hash.
+	LabelKeyPoolHash = workflow.WorkflowFullName + "/pool-hash"
+	// LabelKeyWorkerPod is a label applied to a pooled WorkflowTaskResult, naming the worker pod that claimed it.
+	LabelKeyWorkerPod = workflow.WorkflowFullName + "/worker-pod"
+	// LabelKeyWorkerPodUID is a label applied to a pooled WorkflowTaskResult, holding the UID of the worker pod that claimed it.
+	LabelKeyWorkerPodUID = workflow.WorkflowFullName + "/worker-pod-uid"
+	// LabelKeyTaskSetUID is a label applied to a pooled WorkflowTaskResult, holding the UID of the WorkflowTaskSet it claims.
+	LabelKeyTaskSetUID = workflow.WorkflowFullName + "/task-set-uid"
+	// LabelKeyInterrupt is a label the controller applies to a pooled WorkflowTaskResult to tell its worker to stop the task.
+	LabelKeyInterrupt = workflow.WorkflowFullName + "/interrupt"
 
 	// LabelKeyCronWorkflowCompleted is a label applied to the cron workflow when the configured stopping condition is achieved
 	LabelKeyCronWorkflowCompleted = workflow.CronWorkflowFullName + "/completed"

@@ -595,21 +595,6 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
-// resourceVersionUnchanged reports whether an informer update event carries the same
-// resource version on both sides, i.e. it is a store replay (relist or resync) rather
-// than a real change. Objects without accessible metadata are treated as changed.
-func resourceVersionUnchanged(oldObj, newObj any) bool {
-	oldMeta, err := meta.Accessor(oldObj)
-	if err != nil {
-		return false
-	}
-	newMeta, err := meta.Accessor(newObj)
-	if err != nil {
-		return false
-	}
-	return oldMeta.GetResourceVersion() == newMeta.GetResourceVersion()
-}
-
 // newControllerConfigMapInformer returns an informer for the controller's own configmap,
 // which reloads the controller configuration whenever it changes, along with the handler's
 // HasSynced, which reports true once the initial sync events have been delivered.
@@ -639,7 +624,7 @@ func (wfc *WorkflowController) newControllerConfigMapInformer(ctx context.Contex
 			wfc.updateConfigFromConfigMap(ctx, cm)
 		},
 		UpdateFunc: func(oldObj, newObj any) {
-			if resourceVersionUnchanged(oldObj, newObj) {
+			if informerutil.ResourceVersionUnchanged(oldObj, newObj) {
 				return
 			}
 			newCM := newObj.(*apiv1.ConfigMap)
@@ -723,7 +708,7 @@ func (wfc *WorkflowController) newSemaphoreConfigMapInformer(ctx context.Context
 			wfc.notifySemaphoreConfigUpdate(ctx, cm.Namespace, cm.Name)
 		},
 		UpdateFunc: func(oldObj, newObj any) {
-			if resourceVersionUnchanged(oldObj, newObj) {
+			if informerutil.ResourceVersionUnchanged(oldObj, newObj) {
 				return
 			}
 			newCM := newObj.(*metav1.PartialObjectMetadata)
