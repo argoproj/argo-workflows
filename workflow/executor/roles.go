@@ -134,4 +134,18 @@ var (
 		// marked complete: nothing is reported after that.
 		Finally: []Stage{removeTaskRoot, finalizeOutput},
 	}
+
+	// AgentRole runs one HTTP or plugin task in the agent: call the
+	// endpoint or plugin and report the result. The agent runs one harness
+	// per task worker, all sharing the task set's source.
+	AgentRole = Role{
+		Name:   "agent",
+		Layout: LayoutAgent,
+		StartSpan: func(we *WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+			return we.Tracing.StartRunAgentTask(ctx, we.WorkflowName(), we.Namespace)
+		},
+		Run: func(ctx, _ context.Context, we *WorkflowExecutor) error {
+			return we.runAgentTask(ctx)
+		},
+	}
 )

@@ -1,4 +1,6 @@
 codecov:
+  # GitHub's default branch (Codecov had kept the pre-rename master)
+  branch: main
   notify:
     # both unit-test jobs run under the same condition, so coverage always
     # arrives as two uploads; do not evaluate statuses until both are in, or
@@ -12,19 +14,55 @@ ignore:
 - "**/*generated.go"
 - "**/*generated.deepcopy.go"
 - "**/*_test.go"
+# mockery output
+- "**/mocks/**"
 - "pkg/apis/client/.*"
 - "pkg/client/.*"
 - "vendor/.*"
+# codegen and test tooling, not shipped code
+- "hack/.*"
+- "test/.*"
+- "util/telemetry/builder/.*"
+# One flag per kind of test run, so each can be read on its own
+# (e.g. /api/v2/github/argoproj/repos/argo-workflows/flags/) and a new kind
+# doesn't shift the others. e2e and ui are declared ahead of their first upload.
 flags:
   unit-tests:
     carryforward: true
   unit-tests-windows:
     carryforward: true
+  e2e:
+    carryforward: true
+  ui:
+    carryforward: true
+# Split by language across all flags, so UI TypeScript never mixes into the Go figures.
+component_management:
+  individual_components:
+  - component_id: go
+    name: Go
+    paths:
+    - "*.go"
+    - "**/*.go"
+  - component_id: ui
+    name: UI
+    paths:
+    - "ui/**"
 coverage:
   status:
     # we've found this not to be useful
     patch: off
     project:
+      # keeps the codecov/project check name; unit tests only, so e2e uploads
+      # (main only, for now) never change what a PR is compared on
       default:
+        flags:
+        - unit-tests
+        - unit-tests-windows
         # allow test coverage to drop by 2%, assume that it's typically due to CI problems
         threshold: 2
+      # reports but never fails, until e2e coverage runs on PRs and we know
+      # how much it varies between runs
+      e2e:
+        flags:
+        - e2e
+        informational: true

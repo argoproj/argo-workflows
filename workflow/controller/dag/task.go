@@ -10,8 +10,9 @@ import (
 type Substitutor interface {
 	// Substitute substitutes variables in the given template string. A tag
 	// whose name starts with one of strictPrefixes (as a dot-separated
-	// segment) must resolve; any other unresolved tag is left in place for a
-	// later substitution pass.
+	// segment) must resolve, except {{tasks.name}} and {{steps.name}}, which
+	// name the current node and are set when it is executed; any other
+	// unresolved tag is left in place for a later substitution pass.
 	Substitute(template string, scope map[string]string, strictPrefixes []string) (string, error)
 }
 

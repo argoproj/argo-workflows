@@ -4,17 +4,19 @@
 
 ### Roles, Role-Bindings, and Service Accounts
 
-To support features such as artifacts, outputs, and access to secrets, Argo needs to communicate with Kubernetes resources using the Kubernetes API.
-To communicate with the Kubernetes API, Argo uses a `ServiceAccount` to authenticate itself to the Kubernetes API.
+Workflow pods use a `ServiceAccount` to authenticate to the Kubernetes API.
+The executor in each pod uses it to report outputs, so at minimum the `ServiceAccount` needs `create` and `patch` on `workflowtaskresults`.
+The executor reads artifact repository credentials from secrets mounted into the pod, so it does not need API access to those secrets.
+Your own containers may need further permissions, for example to create Kubernetes resources.
 You give a `ServiceAccount` its permissions by binding a `Role` to it with a `RoleBinding`.
 
-Then, when submitting Workflows, you can specify which `ServiceAccount` Workflow pods use:
+You set the `ServiceAccount` that Workflow pods use with the `spec.serviceAccountName` field, or with the `--serviceaccount` flag when submitting:
 
 ```bash
 argo submit --serviceaccount <name>
 ```
 
-If you don't specify a `ServiceAccount`, Workflow pods use the `default` `ServiceAccount` from the namespace the workflow runs in, which almost always has insufficient privileges by default.
+If none of the template, the Workflow or the [workflow defaults](default-workflow-specs.md) set `serviceAccountName`, Workflow pods use the `default` `ServiceAccount` from the namespace the Workflow runs in, which almost always has insufficient privileges by default.
 
 For more information about granting Argo the necessary permissions for your use case, see [Workflow RBAC](workflow-rbac.md).
 

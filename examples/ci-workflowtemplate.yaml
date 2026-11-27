@@ -71,7 +71,7 @@ spec:
           - mountPath: /root/.cache/go-build
             name: work
             subPath: GOCACHE
-        image: golang:1.27.3
+        image: golang:1.27.4
         workingDir: /go/src/github.com/golang/example
         command: [ sh, -euxc ]
         args:
@@ -88,7 +88,7 @@ spec:
           - mountPath: /root/.cache/go-build
             name: work
             subPath: GOCACHE
-        image: golang:1.27.3
+        image: golang:1.27.4
         command: [ sh, -euxc ]
         args:
           - |
@@ -121,7 +121,7 @@ spec:
           - mountPath: /root/.cache/go-build
             name: work
             subPath: GOCACHE
-        image: golang:1.27.3
+        image: golang:1.27.4
         workingDir: /go/src/github.com/golang/example
         command: [ sh, -euxc ]
         args:
@@ -130,7 +130,7 @@ spec:
 
     - name: deps
       container:
-        image: golang:1.27.3
+        image: golang:1.27.4
         volumeMounts:
           - mountPath: /go/src/github.com/golang/example
             name: work
@@ -149,7 +149,7 @@ spec:
 
     - name: build
       container:
-        image: golang:1.27.3
+        image: golang:1.27.4
         volumeMounts:
           - mountPath: /go/src/github.com/golang/example
             name: work
@@ -168,7 +168,7 @@ spec:
 
     - name: test
       container:
-        image: golang:1.27.3
+        image: golang:1.27.4
         volumeMounts:
           - mountPath: /go/src/github.com/golang/example
             name: work

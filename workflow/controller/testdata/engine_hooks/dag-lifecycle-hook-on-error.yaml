@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-lifecycle-error
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: task-a
+        hooks:
+          failed:
+            expression: tasks['task-a'].status == "Failed"
+            template: hook-handler
+        template: whalesay
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+  - name: hook-handler
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["task failed"]

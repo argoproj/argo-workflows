@@ -1,26 +1,30 @@
 package template
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func Test_hasVarInEnv(t *testing.T) {
 	t.Run("direct key present", func(t *testing.T) {
 		env := map[string]any{"foo": "bar"}
-		assert.True(t, hasVarInEnv(env, "foo"))
+		assert.True(t, hasVarInEnv(env, "foo", maxKeyParts(env)))
 	})
 
 	t.Run("direct key absent", func(t *testing.T) {
 		env := map[string]any{"foo": "bar"}
-		assert.False(t, hasVarInEnv(env, "baz"))
+		assert.False(t, hasVarInEnv(env, "baz", maxKeyParts(env)))
 	})
 
 	t.Run("dotted key present as flat entry", func(t *testing.T) {
 		env := map[string]any{"workflow.status": "Succeeded"}
-		assert.True(t, hasVarInEnv(env, "workflow.status"))
+		assert.True(t, hasVarInEnv(env, "workflow.status", maxKeyParts(env)))
 	})
 
 	t.Run("nested map traversal", func(t *testing.T) {
@@ -29,7 +33,7 @@ func Test_hasVarInEnv(t *testing.T) {
 				"status": "Succeeded",
 			},
 		}
-		assert.True(t, hasVarInEnv(env, "workflow.status"))
+		assert.True(t, hasVarInEnv(env, "workflow.status", maxKeyParts(env)))
 	})
 
 	t.Run("nested map key absent", func(t *testing.T) {
@@ -38,7 +42,7 @@ func Test_hasVarInEnv(t *testing.T) {
 				"status": "Succeeded",
 			},
 		}
-		assert.False(t, hasVarInEnv(env, "workflow.name"))
+		assert.False(t, hasVarInEnv(env, "workflow.name", maxKeyParts(env)))
 	})
 
 	t.Run("deeply nested map traversal", func(t *testing.T) {
@@ -49,8 +53,8 @@ func Test_hasVarInEnv(t *testing.T) {
 				},
 			},
 		}
-		assert.True(t, hasVarInEnv(env, "a.b.c"))
-		assert.False(t, hasVarInEnv(env, "a.b.d"))
+		assert.True(t, hasVarInEnv(env, "a.b.c", maxKeyParts(env)))
+		assert.False(t, hasVarInEnv(env, "a.b.d", maxKeyParts(env)))
 	})
 
 	t.Run("struct field traversal", func(t *testing.T) {
@@ -60,8 +64,8 @@ func Test_hasVarInEnv(t *testing.T) {
 		env := map[string]any{
 			"obj": Inner{Value: "hello"},
 		}
-		assert.True(t, hasVarInEnv(env, "obj.Value"))
-		assert.False(t, hasVarInEnv(env, "obj.Missing"))
+		assert.True(t, hasVarInEnv(env, "obj.Value", maxKeyParts(env)))
+		assert.False(t, hasVarInEnv(env, "obj.Missing", maxKeyParts(env)))
 	})
 
 	t.Run("pointer to struct field traversal", func(t *testing.T) {
@@ -72,7 +76,7 @@ func Test_hasVarInEnv(t *testing.T) {
 		env := map[string]any{
 			"obj": inner,
 		}
-		assert.True(t, hasVarInEnv(env, "obj.Value"))
+		assert.True(t, hasVarInEnv(env, "obj.Value", maxKeyParts(env)))
 	})
 
 	t.Run("nil pointer in env value", func(t *testing.T) {
@@ -83,19 +87,19 @@ func Test_hasVarInEnv(t *testing.T) {
 		env := map[string]any{
 			"obj": inner,
 		}
-		assert.False(t, hasVarInEnv(env, "obj.Value"))
+		assert.False(t, hasVarInEnv(env, "obj.Value", maxKeyParts(env)))
 	})
 
 	t.Run("empty env", func(t *testing.T) {
 		env := map[string]any{}
-		assert.False(t, hasVarInEnv(env, "foo"))
-		assert.False(t, hasVarInEnv(env, "foo.bar"))
+		assert.False(t, hasVarInEnv(env, "foo", maxKeyParts(env)))
+		assert.False(t, hasVarInEnv(env, "foo.bar", maxKeyParts(env)))
 	})
 
 	t.Run("non-traversable leaf value", func(t *testing.T) {
 		// "foo" resolves to a string, can't traverse further
 		env := map[string]any{"foo": "bar"}
-		assert.False(t, hasVarInEnv(env, "foo.bar"))
+		assert.False(t, hasVarInEnv(env, "foo.bar", maxKeyParts(env)))
 	})
 }
 
@@ -203,4 +207,40 @@ func Test_missingVarsInEnv(t *testing.T) {
 		_, err := missingVarsInEnv("foo +", map[string]any{})
 		require.Error(t, err)
 	})
+	t.Run("each prefix of a member path is checked against dotted keys", func(t *testing.T) {
+		env := map[string]any{"a.b": map[string]any{"b": "x"}}
+		missing, err := missingVarsInEnv("a.b.b.b", env)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"a", "a.b.b.b"}, missing)
+	})
+	t.Run("deep member path", func(t *testing.T) {
+		expression := "a" + strings.Repeat(".b", 500)
+		want := []string{"a"}
+		for i := 1; i <= 500; i++ {
+			want = append(want, "a"+strings.Repeat(".b", i))
+		}
+		got, err := getIdentifiers(expression)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+		missing, err := missingVarsInEnv(expression, map[string]any{"a.b.b": map[string]any{"b": map[string]any{}}})
+		require.NoError(t, err)
+		assert.Equal(t, append([]string{"a", "a.b"}, want[4:]...), missing)
+	})
+}
+
+func BenchmarkReplaceStrictDeepMemberPath(b *testing.B) {
+	replaceMap := map[string]any{
+		"workflow.name":          "wf",
+		"tasks.a.outputs.result": "x",
+	}
+	for _, depth := range []int{1, 100, 1000, 4000} {
+		b.Run(strconv.Itoa(depth), func(b *testing.B) {
+			ctx := logging.TestContext(b.Context())
+			tmpl, err := NewTemplate("{{=tasks" + strings.Repeat(".a", depth) + "}}")
+			require.NoError(b, err)
+			for b.Loop() {
+				_, _ = tmpl.ReplaceStrict(ctx, replaceMap, []string{"tasks"})
+			}
+		})
+	}
 }

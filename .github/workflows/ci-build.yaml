@@ -31,7 +31,7 @@ jobs:
       codegen: ${{ steps.changed-files.outputs.codegen_any_modified == 'true' }}
       lint: ${{ steps.changed-files.outputs.lint_any_modified == 'true' }}
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -54,6 +54,7 @@ jobs:
               - Tiltfile
               - Dockerfile
               - hack/tilt/**
+              - hack/retry-download.sh
             tests: &tests
               - *common
               - cmd/**
@@ -144,7 +145,16 @@ jobs:
     name: Unit Tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
-    runs-on: ubuntu-24.04
+    # The heavy Linux jobs run on CNCF-donated VM runners
+    # (https://github.com/cncf/automation/tree/main/ci), built from GitHub's
+    # own runner-images, so the toolset matches ubuntu-26.04. Any argoproj
+    # repository gets them, including private ones, where the GitHub-hosted
+    # ubuntu-26.04 runner is half the size it is in a public repository. CI in
+    # a forked repository falls back to GitHub-hosted runners; pull requests
+    # from forks into argoproj still run here, each job on a fresh ephemeral
+    # VM. The home directory differs between the two (/home/ubuntu vs
+    # /home/runner), so don't hard-code it.
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -154,7 +164,7 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
@@ -184,17 +194,24 @@ jobs:
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.tests == 'true' }}
     runs-on: windows-2022
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
-      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
+      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p $env:GO_TEST_PARALLELISM -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
         env:
+          # windows-2022 has 16 GB in a public repository but 8 GB in a private
+          # one, where 20 parallel test binaries run out of memory.
+          GO_TEST_PARALLELISM: ${{ github.event.repository.private && '4' || '20' }}
           KUBECONFIG: /dev/null
+          # This job runs go test directly (not through make), so it must set the
+          # tag the Makefile normally exports: without it, Kubernetes v0.35 types
+          # lack ProtoMessage() and pkg/apiclient's startup probe fails.
+          GOFLAGS: -tags=kubernetes_protomessage_one_more_release
       - name: Upload coverage report
         # runs on PRs as well as main so codecov can comment a coverage report on the PR
         if: github.repository == 'argoproj/argo-workflows'
@@ -214,7 +231,7 @@ jobs:
     # superset of e2e-ui's, else a skipped dependency cascades and e2e-ui is
     # silently skipped on ui-only PRs
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' || needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -224,7 +241,7 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
@@ -248,12 +265,11 @@ jobs:
     name: E2E Tests
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
     # contention on the runner, which we have no control over.
     timeout-minutes: 60
     env:
-      KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
@@ -290,9 +306,11 @@ jobs:
           - test: test-api
             profile: mysql
             use-api: true
+            auth-mode: client,header
           - test: test-api
             profile: postgres
             use-api: true
+            auth-mode: client,header
           - test: test-metrics
             profile: mysql
             use-api: true
@@ -369,13 +387,13 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           java-version: '8'
           distribution: temurin
@@ -395,7 +413,7 @@ jobs:
           tilt up --stream -- --mode=ci --profile=${{matrix.profile}} \
             --api=${{matrix.use-api}} \
             --secure=${{matrix.secure || 'false'}} \
-            --auth-mode=client \
+            --auth-mode=${{matrix.auth-mode || 'client'}} \
             --initless=${{matrix.initless || 'false'}} \
             --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
           # resources only register once the Tiltfile finishes evaluating; wait
@@ -461,7 +479,7 @@ jobs:
     name: E2E Tests - Composite result
     needs: [ e2e-tools, e2e-tests, e2e-ui ]
     if: ${{ always() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -488,10 +506,8 @@ jobs:
     name: Codegen
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.codegen == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 20
-    env:
-      GOPATH: /home/runner/go
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -500,7 +516,7 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
@@ -520,8 +536,8 @@ jobs:
           docker pull openapitools/openapi-generator-cli:v5.2.1 &
       - name: Create symlinks
         run: |
-          mkdir -p /home/runner/go/src/github.com/argoproj
-          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo-workflows
+          mkdir -p "$(go env GOPATH)/src/github.com/argoproj"
+          ln -s "$PWD" "$(go env GOPATH)/src/github.com/argoproj/argo-workflows"
       - run: make codegen -B STATIC_FILES=false
       # if codegen makes changes that are not in the PR, fail the build
       - name: Check if codegen made changes not present in the PR
@@ -531,10 +547,8 @@ jobs:
     name: Lint
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.lint == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 15 # must be strictly greater than the timeout in .golangci.yml
-    env:
-      GOPATH: /home/runner/go
     steps:
       - name: Harden the runner (Audit all outbound calls)
         if: ${{ vars.disable_harden_runner != 'true' }}
@@ -543,7 +557,7 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
@@ -561,7 +575,7 @@ jobs:
     name: UI build and unit tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 6
     env:
       NODE_OPTIONS: --max-old-space-size=4096
@@ -578,9 +592,23 @@ jobs:
           node-version: "24" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
-      - run: yarn --cwd ui install
+      - run: sh hack/retry-download.sh yarn --cwd ui install
       - run: yarn --cwd ui build
-      - run: yarn --cwd ui test
+      - run: yarn --cwd ui test --coverage --coverageReporters=lcovonly
+      - name: Make coverage paths relative to the repo root
+        # jest writes them relative to ui/
+        run: sed -i 's|^SF:src/|SF:ui/src/|' ui/coverage/lcov.info
+      - name: Upload coverage report
+        # runs on PRs as well as main so codecov can comment a coverage report on the PR
+        if: github.repository == 'argoproj/argo-workflows'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: ui/coverage/lcov.info
+          disable_search: true
+          flags: ui
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - run: yarn --cwd ui lint
       - run: yarn --cwd ui deduplicate
       # if lint or deduplicate make changes that are not in the PR, fail the build
@@ -591,7 +619,7 @@ jobs:
     name: E2E UI (${{ matrix.name }})
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.ui == 'true' || needs.changed-files.outputs.e2e-tests == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-4-16-x86' || 'ubuntu-26.04' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -609,7 +637,6 @@ jobs:
           - name: base-href
             base-href: /argo/
     env:
-      KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
@@ -620,7 +647,7 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
           cache: true
@@ -633,7 +660,7 @@ jobs:
         uses: ./.github/actions/e2e-cluster-up
       - name: Install UI dependencies and Playwright browser
         run: |
-          yarn --cwd ui install
+          sh hack/retry-download.sh yarn --cwd ui install
           yarn --cwd ui playwright install --with-deps chromium
       - name: Build images and start Argo in-cluster
         # tilt builds the production images (UI baked in), deploys them, and keeps

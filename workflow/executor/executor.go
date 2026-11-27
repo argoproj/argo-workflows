@@ -35,6 +35,7 @@ import (
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v4/util"
 	"github.com/argoproj/argo-workflows/v4/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
@@ -108,6 +109,7 @@ type Process struct {
 	retryBackoff                 wait.Backoff
 	environ                      []string
 	mainDriver                   maindriver.MainDriver
+	executorPlugins              []executorplugins.TemplateExecutor
 	resourceStateCheckInterval   time.Duration
 	// taskResultRetryTimeout limits the retries of the final task result
 	// writes and interimResultRetryTimeout those of the writes before
@@ -207,6 +209,9 @@ type ProcessConfig struct {
 	// MainDriver runs main in-process for the worker layout. Nil in a pod,
 	// where main runs in its own container.
 	MainDriver maindriver.MainDriver
+	// ExecutorPlugins are the agent's executor plugins, offered each plugin
+	// template in turn. Nil outside the agent.
+	ExecutorPlugins []executorplugins.TemplateExecutor
 }
 
 // TaskConfig carries the per-task values a WorkflowExecutor is constructed
@@ -311,6 +316,7 @@ func NewProcess(
 		retryBackoff:                 cfg.RetryBackoff,
 		environ:                      cfg.Environ,
 		mainDriver:                   cfg.MainDriver,
+		executorPlugins:              cfg.ExecutorPlugins,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
 		taskResultRetryTimeout:       cmp.Or(cfg.TaskResultRetryTimeout, retry.DefaultExecutorTaskResultRetryTimeout),
 		interimResultRetryTimeout:    defaultInterimResultRetryTimeout,

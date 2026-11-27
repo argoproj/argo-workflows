@@ -108,7 +108,7 @@ func (c *argoKubeWorkflowServiceClient) logs(ctx context.Context, req *workflowp
 
 func (c *argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
 	return c.logs(ctx, req, func(req *workflowpkg.WorkflowLogRequest, i *logsIntermediary) error {
-		return c.delegate.PodLogs(req, i)
+		return c.delegate.PodLogs(req, i) //nolint:staticcheck // pass-through of the deprecated RPC
 	})
 }
 

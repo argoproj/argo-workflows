@@ -1032,7 +1032,8 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 }
 
 // Substitute replaces parameters in a string. Tags under strictPrefixes must
-// resolve; other unresolved tags are left for a later pass (see dag.Substitutor).
+// resolve, except {{tasks.name}} and {{steps.name}}; other unresolved tags are
+// left for a later pass (see dag.Substitutor).
 func (woc *wfOperationCtx) Substitute(text string, scope map[string]string, strictPrefixes []string) (string, error) {
 	t, err := template.NewTemplate(text)
 	if err != nil {
@@ -1413,6 +1414,40 @@ func (woc *wfOperationCtx) markAllContainersDeleted(ctx context.Context, nodeID 
 	}
 }
 
+// failContainersWithoutStatus fails the container nodes of a failed containerSet pod
+// that have no container status, e.g. because kubelet rejected the pod at admission.
+// Otherwise they would stay Pending forever.
+func (woc *wfOperationCtx) failContainersWithoutStatus(ctx context.Context, pod *apiv1.Pod, podNode *wfv1.NodeStatus, message string) {
+	reported := make(map[string]bool, len(pod.Status.ContainerStatuses))
+	for _, c := range pod.Status.ContainerStatuses {
+		reported[fmt.Sprintf("%s.%s", podNode.Name, c.Name)] = true
+	}
+	// Walk only the pod's container graph. Leaf containers link to the pod's dependents,
+	// which are outside the pod's boundary.
+	var pending []string
+	visited := make(map[string]bool)
+	queue := append([]string(nil), podNode.Children...)
+	for len(queue) > 0 {
+		id := queue[0]
+		queue = queue[1:]
+		if visited[id] {
+			continue
+		}
+		visited[id] = true
+		node, err := woc.wf.Status.Nodes.Get(id)
+		if err != nil || node.Type != wfv1.NodeTypeContainer || node.BoundaryID != podNode.ID {
+			continue
+		}
+		if !reported[node.Name] && !node.Fulfilled() {
+			pending = append(pending, node.Name)
+		}
+		queue = append(queue, node.Children...)
+	}
+	for _, name := range pending {
+		woc.markNodePhase(ctx, name, wfv1.NodeFailed, message)
+	}
+}
+
 // shouldPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) shouldPrintPodSpec(node *wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
@@ -1509,8 +1544,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		return nil
 	}
 	if tmpl == nil {
-		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
-			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
+		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName, "templateScope": old.TemplateScope}).
+			Debug(ctx, "could not resolve node template; skipping daemon teardown detection")
 	}
 	// The only way a daemon node becomes Succeeded while its pod is still alive is
 	// killDaemonedChildren, which marks the node and then requests pod termination.
@@ -1658,6 +1693,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		case c.State.Running != nil:
 			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeRunning)
 		}
+	}
+	if pod.Status.Phase == apiv1.PodFailed && !stoppedDaemon && updated.Phase != wfv1.NodePending {
+		woc.failContainersWithoutStatus(ctx, pod, old, updated.Message)
 	}
 
 	// only update Pod IP for daemoned nodes to reduce number of updates
@@ -2782,26 +2820,24 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
-	if node.TemplateRef != nil {
-		// Check storedTemplates first so that modifications to the CWT after the workflow
-		// started do not cause assessNodeStatus to spuriously mark the node as Error.
-		scope, name := node.GetTemplateScope()
-		if tmpl := woc.wf.GetStoredTemplate(scope, name, node); tmpl != nil {
-			return tmpl, nil
-		}
-		tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
-		if err != nil {
-			woc.markNodeError(ctx, node.Name, err)
-			return nil, err
-		}
-		tmpl, err := tmplCtx.GetTemplateFromRef(ctx, node.TemplateRef)
-		if err != nil {
-			woc.markNodeError(ctx, node.Name, err)
-			return tmpl, err
-		}
+	if tmpl := woc.wf.GetTemplateFromSnapshot(woc.wf.GetNodeTemplateKey(node)); tmpl != nil {
 		return tmpl, nil
 	}
-	return woc.wf.GetTemplateByName(node.TemplateName), nil
+	if node.TemplateRef == nil {
+		return nil, nil
+	}
+	// Keep the live lookup for explicit references that have no stored snapshot.
+	scope, name := node.GetTemplateScope()
+	tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
+	if err != nil {
+		woc.markNodeError(ctx, node.Name, err)
+		return nil, err
+	}
+	tmpl, err := tmplCtx.GetTemplateFromRef(ctx, node.TemplateRef)
+	if err != nil {
+		woc.markNodeError(ctx, node.Name, err)
+	}
+	return tmpl, err
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning(ctx context.Context) context.Context {

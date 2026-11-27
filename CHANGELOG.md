@@ -1,5 +1,64 @@
 # Changelog
 
+## v4.1.7 (2026-11-25)
+
+Full Changelog: [v4.1.6...v4.1.7](https://github.com/argoproj/argo-workflows/compare/v4.1.6...v4.1.7)
+
+### Selected Changes
+
+* [21748f1a8](https://github.com/argoproj/argo-workflows/commit/21748f1a8b8df09c8f8b1d8d3c8d701d93991f29) fix: added base href for artifact upload (cherry-pick #17111 for 4.1) (#17592)
+* [057af0633](https://github.com/argoproj/argo-workflows/commit/057af06333810bcf2e3bebf543f5631b0b08d8ee) fix(build): detect lint build tags on macOS (cherry-pick #17296 for 4.1) (#17587)
+* [9746374d4](https://github.com/argoproj/argo-workflows/commit/9746374d43fca144639885bbd931a3bf96376ac1) fix: don't requeue forever on {{tasks.name}} or {{steps.name}} in arguments. (cherry-pick #17416 for 4.1) (#17565)
+* [41ad1178f](https://github.com/argoproj/argo-workflows/commit/41ad1178f641b1acd49ff9d624619c7f00407932) fix(artifacts): clear error for malformed SSH git repo URLs (#12152) (cherry-pick #17488 for 4.1) (#17567)
+* [b6989849b](https://github.com/argoproj/argo-workflows/commit/b6989849b40ec307c88405adf4edcae65feef542) fix(controller): find a pod's retry node by name, not by scanning every node (cherry-pick #17447 for 4.1) (#17553)
+* [a2a1be980](https://github.com/argoproj/argo-workflows/commit/a2a1be9802a165f4fb7c380a8c90cfcdd20201db) fix(resource): ignore unspecified container timestamps (cherry-pick #17523 for 4.1) (#17549)
+* [a800c4c78](https://github.com/argoproj/argo-workflows/commit/a800c4c78cff45e7482aef74dcecaf0aa38f7f96) fix(controller): do not change the workflow defaults in MergeTo. Fixes #17384 (cherry-pick #17396 for 4.1) (#17544)
+* [b3afb4307](https://github.com/argoproj/argo-workflows/commit/b3afb430749d4dbe331ff802dc630ce09a66759e) chore(deps): update module golang.org/x/crypto to v0.59.0 [security] (release-4.1) (#17519)
+* [2fa95f7fd](https://github.com/argoproj/argo-workflows/commit/2fa95f7fde05ca735c943509a8c7b1d212637487) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.47.0 [security] (release-4.1) (#17517)
+* [37db6e2ae](https://github.com/argoproj/argo-workflows/commit/37db6e2aeccde73ac296306a49a9b8a2fea90f2f) fix(controller): fail containerSet nodes of a pod rejected by kubelet (cherry-pick #17475 for 4.1) (#17498)
+* [141756da0](https://github.com/argoproj/argo-workflows/commit/141756da0336f89e8c123263c84b6782f51ae10b) fix(examples): make the ci WorkflowTemplate example work (cherry-pick #17437 for 4.1) (#17484)
+* [891679469](https://github.com/argoproj/argo-workflows/commit/891679469f15dc2f69c3d9f3f8a80e840d6e390b) fix(controller): read the deletion timestamp directly in podOrphaned (cherry-pick #17448 for 4.1) (#17467)
+* [45123e658](https://github.com/argoproj/argo-workflows/commit/45123e658344efd7ead10e99d7ec7dbcf297349b) fix: skip the LogChanges diff unless the patch is logged at debug (cherry-pick #17449 for 4.1) (#17459)
+* [86a35a7d6](https://github.com/argoproj/argo-workflows/commit/86a35a7d65c82ee7f2f7aa35e2a694ddef586b79) chore(deps): update module github.com/klauspost/compress to v1.20.2 [security] (release-4.1) (#17457)
+* [98185bfe3](https://github.com/argoproj/argo-workflows/commit/98185bfe35a26d2f1aaaf941e296742844085d68) chore(deps): update module github.com/andybalholm/brotli to v1.2.7 [security] (release-4.1) (#17456)
+* [f3cbb37a8](https://github.com/argoproj/argo-workflows/commit/f3cbb37a8274d3293607fa007d11447993ad8850) fix: add ssh.bitbucket.org to executor SSH known hosts (cherry-pick #17440 for 4.1) (#17444)
+* [68e87dffa](https://github.com/argoproj/argo-workflows/commit/68e87dffa1e1047305143d3f7cd4d6fb0af932d0) fix(artifacts): reject S3 caSecret without a valid PEM certificate (cherry-pick #17373 for 4.1) (#17411)
+* [c5e3ef073](https://github.com/argoproj/argo-workflows/commit/c5e3ef0737e29a163598dc0e77761488e176b936) fix(executor): allow archive root dir entry in untar path-traversal check (cherry-pick #17064 for 4.1) (#17363)
+* [02ab41cb0](https://github.com/argoproj/argo-workflows/commit/02ab41cb097bb6a0d049087bcb80b4c050a91cd4) chore(deps): update module golang.org/x/net to v0.62.0 [security] (release-4.1) (#17328)
+* [e8d62df83](https://github.com/argoproj/argo-workflows/commit/e8d62df83eea69f98a5493480c8a1da33bb9a6c0) chore(deps): update module github.com/go-jose/go-jose/v4 to v4.1.6 [security] (release-4.1) (#17327)
+* [160ea4af0](https://github.com/argoproj/argo-workflows/commit/160ea4af01c653f81c33b5ed0c0b86fcdb783c54) fix(nix): bump nixpkgs so the dev flake provides Go 1.26.10 (release-4.1) (#17339)
+* [b951ab412](https://github.com/argoproj/argo-workflows/commit/b951ab41297e86fe3618a7b42d9454ce531cf280) chore(deps): update dependency qs to v6.16.1 [security] (release-4.1) (#17326)
+* [010c3ada5](https://github.com/argoproj/argo-workflows/commit/010c3ada5991310e3c6afdf1acbe9686882a5606) fix(sync): release every semaphore holder in ReleaseAll (cherry-pick #17302 for 4.1) (#17303)
+* [1c226772e](https://github.com/argoproj/argo-workflows/commit/1c226772eede9f0b364a22f742442840b08a4930) chore(deps): update module golang.org/x/net to v0.60.0 [security] (release-4.1) (#17181)
+* [1c50ec48b](https://github.com/argoproj/argo-workflows/commit/1c50ec48b7cf1cf6cec599cd9f5244f1c1d7460d) fix(build): install Go 1.26 in the Windows builder, not an exact patch (release-4.1) (#17273)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Bhavishya Jain
+* Claude Opus 5.5
+* Claude Opus 5.5 (1M context)
+* Claude Sonnet 5
+* gaurang_mishra
+* Gaurang Mishra
+* Girish Mallya
+* Girish P Mallya
+* IanW
+* Luca Marsella
+* Manjog Singh
+* Nagy Vilmos
+* Riccardo Capraro
+* sarankumar
+* Shubham Singh
+* Srinivas Chippagiri
+* Tianchu Zhao
+* Tim Collins
+* usimd
+* Yohan Senadheera
+* Youngju KIM
+
+</details>
+
 ## v4.1.6 (2026-10-22)
 
 Full Changelog: [v4.1.5...v4.1.6](https://github.com/argoproj/argo-workflows/compare/v4.1.5...v4.1.6)
@@ -240,7 +299,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.15...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.15...v4.1.0-rc1)
+Full Changelog: [v4.0.16...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.16...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -860,6 +919,55 @@ Full Changelog: [v4.0.15...v4.1.0-rc1](https://github.com/argoproj/argo-workflow
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.16 (2026-11-25)
+
+Full Changelog: [v4.0.15...v4.0.16](https://github.com/argoproj/argo-workflows/compare/v4.0.15...v4.0.16)
+
+### Selected Changes
+
+* [c70610714](https://github.com/argoproj/argo-workflows/commit/c706107148b90e8dc35a76e30f0e1179df7c4583) fix(controller): fail containerSet nodes of a pod rejected by kubelet (cherry-pick #17475 for 4.0) (#17591)
+* [2ab62fad3](https://github.com/argoproj/argo-workflows/commit/2ab62fad3b275965cf8576f726321e8a788279ad) fix(artifacts): reject S3 caSecret without a valid PEM certificate (cherry-pick #17373 for 4.0) (#17593)
+* [6ab90f699](https://github.com/argoproj/argo-workflows/commit/6ab90f699334ba03fd9435d9171017e7274cb2ef) fix: don't requeue forever on {{tasks.name}} or {{steps.name}} in arguments. (cherry-pick #17416 for 4.0) (#17563)
+* [d1e5942e9](https://github.com/argoproj/argo-workflows/commit/d1e5942e91a5280499fcde8afe4ccf97858752a4) fix(controller): find a pod's retry node by name, not by scanning every node (cherry-pick #17447 for 4.0) (#17564)
+* [1878806a7](https://github.com/argoproj/argo-workflows/commit/1878806a7bb846a68290181fbcc715ce1ec72266) fix(resource): ignore unspecified container timestamps (cherry-pick #17523 for 4.0) (#17570)
+* [dc5e9d0d2](https://github.com/argoproj/argo-workflows/commit/dc5e9d0d25ebae5d6783501e23824579f98a92c1) fix(controller): do not change the workflow defaults in MergeTo. Fixes #17384 (cherry-pick #17396 for 4.0) (#17545)
+* [bb703019e](https://github.com/argoproj/argo-workflows/commit/bb703019e00a6444c292d6169d178c66f6979414) fix(examples): make the ci WorkflowTemplate example work (cherry-pick #17437 for 4.0) (#17485)
+* [69e6c6d14](https://github.com/argoproj/argo-workflows/commit/69e6c6d1465fcfee1c7c1dfab08b9f9b1dcccd87) chore(deps): update module golang.org/x/crypto to v0.59.0 [security] (release-4.0) (#17516)
+* [f8f54d02d](https://github.com/argoproj/argo-workflows/commit/f8f54d02d7b45a816658ba91993292aad20f4646) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.47.0 [security] (release-4.0) (#17514)
+* [9bd781882](https://github.com/argoproj/argo-workflows/commit/9bd7818826deda94b4140ba889837f36e6c6638a) fix(executor): allow archive root dir entry in untar path-traversal check (cherry-pick #17064 for 4.0) (#17365)
+* [788136784](https://github.com/argoproj/argo-workflows/commit/78813678430686606584bd1e611a0d3b1be49340) fix(controller): read the deletion timestamp directly in podOrphaned (cherry-pick #17448 for 4.0) (#17468)
+* [93df0eff0](https://github.com/argoproj/argo-workflows/commit/93df0eff0ae6142a3d313f497164b80bf0692e9b) fix: skip the LogChanges diff unless the patch is logged at debug (cherry-pick #17449 for 4.0) (#17458)
+* [911a00b28](https://github.com/argoproj/argo-workflows/commit/911a00b28e6ae873bfbb254df4f2501e67c107c6) chore(deps): update module github.com/klauspost/compress to v1.20.2 [security] (release-4.0) (#17455)
+* [8cfb6779f](https://github.com/argoproj/argo-workflows/commit/8cfb6779fd9e631c9f4df99a9737ec1f6207f53b) chore(deps): update module github.com/andybalholm/brotli to v1.2.7 [security] (release-4.0) (#17454)
+* [822579c3d](https://github.com/argoproj/argo-workflows/commit/822579c3d6640abe4618702e469f37c742b9438f) fix: add ssh.bitbucket.org to executor SSH known hosts (cherry-pick #17440 for 4.0) (#17443)
+* [1124384a9](https://github.com/argoproj/argo-workflows/commit/1124384a964ac3be1cf28e4e92d28c385586ebd0) chore(deps): update module github.com/go-jose/go-jose/v3 to v4 [security] (release-4.0) (#17325)
+* [fac5aa69b](https://github.com/argoproj/argo-workflows/commit/fac5aa69bb5656cb99c32c24754e8d65a1d6a8ba) chore(deps): update module golang.org/x/net to v0.62.0 [security] (release-4.0) (#17324)
+* [4d74ac25e](https://github.com/argoproj/argo-workflows/commit/4d74ac25e7d41b98fdf6190178dd3762c5dc8269) chore(deps): update module github.com/go-jose/go-jose/v4 to v4.1.6 [security] (release-4.0) (#17323)
+* [b221b2838](https://github.com/argoproj/argo-workflows/commit/b221b283867c630f435380cc8d0f09e2a5b13a3f) chore(deps): update dependency qs to v6.16.1 [security] (release-4.0) (#17322)
+* [07f43957a](https://github.com/argoproj/argo-workflows/commit/07f43957a184e2421433f5fbdc991874515a2d4e) fix(sync): release every semaphore holder in ReleaseAll (cherry-pick #17302 for 4.0) (#17304)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Bhavishya Jain
+* Claude Fable 5.2
+* Claude Opus 5.5
+* Claude Opus 5.5 (1M context)
+* Girish Mallya
+* Girish P Mallya
+* IanW
+* Manjog Singh
+* Nagy Vilmos
+* sarankumar
+* Shubham Singh
+* Srinivas Chippagiri
+* Tianchu Zhao
+* usimd
+* Yohan Senadheera
+* Youngju KIM
 
 </details>
 
@@ -1625,7 +1733,6 @@ Full Changelog: [v3.7.18...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * Matt McLane
 * Milas Bowman
 * Miltiadis Alexis
-* 민선 (minnie)
 * Nitin Bhojwani
 * okzw999
 * oninowang
@@ -1640,6 +1747,7 @@ Full Changelog: [v3.7.18...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+* 민선 (minnie)
 
 </details>
 

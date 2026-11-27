@@ -42,7 +42,7 @@ func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMa
 		// Exception: Artifacts (containing ".outputs.artifacts.") are handled later by artifact resolution logic
 		// and support "optional: true", so we allow them to remain unresolved here.
 		trimmedTag := strings.TrimSpace(tag)
-		isStrict := strictRegex != nil && strictRegex.MatchString(trimmedTag)
+		isStrict := isStrictTag(strictRegex, trimmedTag)
 
 		if isStrict && (!allowUnresolvedArtifacts || !strings.Contains(trimmedTag, ".outputs.artifacts.")) {
 			return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)

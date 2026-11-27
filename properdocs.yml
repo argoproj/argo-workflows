@@ -134,6 +134,7 @@ nav:
           - memoization.md
           - template-defaults.md
           - enhanced-depends-logic.md
+          - dag-and-steps-execution.md
           - node-field-selector.md
           - pod-restarts.md
       - Status:
@@ -285,6 +286,7 @@ nav:
           - tls.md
           - argo-server-sso.md
           - argo-server-sso-argocd.md
+          - argo-server-header-auth.md
       - Best Practices:
           - high-availability.md
           - disaster-recovery.md

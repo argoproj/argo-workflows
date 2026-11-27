@@ -33,10 +33,18 @@ curl https://localhost:2746/api/v1/events/argo/my-discriminator \
   -d '{"message": "hello"}'
 ```
 
-By default, the Event endpoint processes the Event before it returns, and can report failures to you.
+By default, the Event endpoint processes the Event before it returns.
+If dispatching the Event fails, the endpoint returns HTTP 500.
 If you enable `--event-async-dispatch`, the endpoint queues the Event and returns without waiting for Argo to process it.
 This means that Argo does not notify you of failures synchronously.
 With async dispatch, the endpoint returns a failure (503) if the Event processing queue is full.
+
+In both modes, when dispatching fails for a WorkflowEventBinding, Argo records a `WorkflowEventBindingError` Warning event on that WorkflowEventBinding and logs an error in the Argo Server log.
+To see these events, run:
+
+```bash
+kubectl get events --field-selector reason=WorkflowEventBindingError -n argo
+```
 
 !!! Warning "Processing Order"
     Argo does not always process Events in the order it receives them.

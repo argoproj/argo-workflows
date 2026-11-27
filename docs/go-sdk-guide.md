@@ -15,6 +15,20 @@ go get github.com/argoproj/argo-workflows/v4@latest
 - Go 1.24 or later
 - Kubernetes 1.28+ (if using Kubernetes client)
 - Argo Workflows v4.0+ installed in your cluster
+- If you use the Argo Server client (`pkg/apiclient`) from v4.2 or later: Kubernetes client libraries (`k8s.io/*`) v0.35, and the `kubernetes_protomessage_one_more_release` build tag, as described in [Building programs that use the Argo Server client](#building-programs-that-use-the-argo-server-client)
+
+### Building programs that use the Argo Server client
+
+From v4.2, the Argo Server client (`github.com/argoproj/argo-workflows/v4/pkg/apiclient`) needs two things from your build:
+
+- Keep the Kubernetes client libraries (`k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/client-go` and the other `k8s.io/*` modules) at v0.35.
+  `pkg/apiclient` does not compile against `k8s.io/client-go` v0.36.
+- Build with the `kubernetes_protomessage_one_more_release` build tag, for example `go build -tags=kubernetes_protomessage_one_more_release ./...`.
+  Pass the same tag to `go test` and `go run`, and add it to the build flags of your editor or `gopls`.
+
+The API messages embed Kubernetes types, and the protobuf runtime needs those types' `ProtoMessage()` methods to marshal them.
+The `k8s.io/*` v0.35 modules only include these methods when the build tag is set, and v0.36 removes them, so the tag only works with v0.35.
+Without the tag, your program panics at startup with `pkg/apiclient cannot marshal Kubernetes types`.
 
 ## Quick Start
 

@@ -1,12 +1,12 @@
 package http1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 )
 
 type eventWatchClient struct{ serverSentEventsClient }
 
-func (f eventWatchClient) Recv() (*corev1.Event, error) {
-	v := &corev1.Event{}
+func (f eventWatchClient) Recv() (*workflowpkg.EventWatchEvent, error) {
+	v := &workflowpkg.EventWatchEvent{}
 	return v, f.RecvEvent(v)
 }

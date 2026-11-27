@@ -14,6 +14,8 @@ Per-directory guidance lives in nested AGENTS.md files: `workflow/controller/AGE
 - Local dev stack (k3d + Tilt, everything in-cluster with hot reload), ports, profiles, debugging: see docs/running-locally.md.
 - Lint: `make lint` (golangci-lint `--fix` + UI lint — commit what `--fix` changes; CI runs `git diff --exit-code`).
 - Codegen: `make codegen -B`. Pre-PR: `make pre-commit -B` (= codegen, lint, docs).
+- Vendoring: use `make vendor`, never plain `go mod vendor` — the make target also runs `hack/vendor-patches.sh`, which patches vendored `google.golang.org/protobuf` so messages embedding Kubernetes types keep marshalling once Kubernetes v1.36 removes `ProtoMessage()`.
+  Builds driven through make are also covered by the `kubernetes_protomessage_one_more_release` build tag the Makefile exports, but plain `go build`/`go test`/gopls get no tag and rely on the patched vendor tree — plain `go mod vendor` silently reverts the patch, and the only runtime safety net is the startup probe in `pkg/apiclient/protocompat.go`.
 
 ## Conventions
 

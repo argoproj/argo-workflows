@@ -259,7 +259,7 @@ func TestLockMetricsDatabase(t *testing.T) {
 
 			creationTime := metav1.NewTime(time.Now())
 			newWF := func(name string) *wfv1.Workflow {
-				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+				wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 				wf.Name = name
 				wf.CreationTimestamp = creationTime
 				return wf

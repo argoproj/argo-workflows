@@ -20,6 +20,14 @@ data:
       limits:
         cpu: 0.5
         memory: 256Mi
+  header: |
+    sub:
+      header: X-Forwarded-User
+    sharedSecret:
+      header: X-Proxy-Auth
+      requiredValue:
+        name: argo-server-header-auth
+        key: proxy-auth
   retentionPolicy: |
     completed: 10
     failed: 2

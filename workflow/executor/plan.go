@@ -19,6 +19,9 @@ const (
 	LayoutInitless
 	// LayoutWorker runs the whole flow in one process, main included.
 	LayoutWorker
+	// LayoutAgent runs HTTP and plugin templates in the agent, which calls
+	// the endpoint or plugin itself: no files, no containers and no plan.
+	LayoutAgent
 )
 
 // linksInputArtifacts reports whether main sees its input artifacts as
@@ -37,6 +40,8 @@ func (l Layout) String() string {
 		return "initless"
 	case LayoutWorker:
 		return "worker"
+	case LayoutAgent:
+		return "agent"
 	}
 	return fmt.Sprintf("Layout(%d)", int(l))
 }
