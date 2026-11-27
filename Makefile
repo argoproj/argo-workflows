@@ -535,7 +535,7 @@ endif
 $(TOOL_PROTOC_GEN_GO_GRPC): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+	GOTOOLCHAIN=$(GOMOD_TOOLCHAIN) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
 endif
 $(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
