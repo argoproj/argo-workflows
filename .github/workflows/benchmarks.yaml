@@ -1,0 +1,118 @@
+name: Benchmarks
+# Compares the Go benchmarks of each push to main with the commit before it
+# (hack/bench-compare.sh), and opens an issue when one regresses. main is
+# squash-merged, so each comparison covers one pull request.
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "hack/bench-compare.sh"
+      - ".github/workflows/benchmarks.yaml"
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Commit to compare against"
+        required: true
+      head:
+        description: "Commit to compare (default: the branch the workflow runs on)"
+        required: false
+
+# No concurrency group: each run gets its own VM, and a group would drop
+# queued runs, leaving some pushes uncompared.
+
+permissions:
+  contents: read
+
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
+jobs:
+  compare:
+    name: Compare with the previous commit
+    # See ci-build.yaml for the runners.
+    runs-on: ${{ github.repository_owner == 'argoproj' && 'cncf-ubuntu-26.04-8-32-x86' || 'ubuntu-26.04' }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+    env:
+      BASE: ${{ inputs.base || github.event.before }}
+      HEAD_REF: ${{ inputs.head || github.sha }}
+      # Tuning, read by hack/bench-compare.sh (which has the same defaults for
+      # local runs). Each round runs every benchmark for BENCH_TIME, on each
+      # side, so the run time is roughly benchmarks x BENCH_TIME x BENCH_COUNT x 2.
+      # allocs/op and B/op are deterministic, so they don't need long runs;
+      # sec/op is noisy, so it is only reported until we know the runners' noise.
+      BENCH_COUNT: "6"
+      BENCH_TIME: "0.5s"
+      BENCH_FAIL_THRESHOLDS: "allocs/op=5 B/op=10"
+      BENCH_REPORT_THRESHOLDS: "sec/op=20"
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.HEAD_REF }}
+      - name: Fetch the base commit
+        run: git fetch --no-tags --depth=1 origin "$BASE"
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Compare benchmarks
+        id: compare
+        run: |
+          make bench-compare BENCH_BASE="$BASE"
+          cat dist/bench/summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo "status=$(cat dist/bench/status)" >> "$GITHUB_OUTPUT"
+      - name: Upload results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmarks
+          path: |
+            dist/bench/*.txt
+            dist/bench/*.csv
+            dist/bench/*.md
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Open an issue for the regression
+        if: steps.compare.outputs.status == 'regressed' && github.event_name == 'push' && github.repository == 'argoproj/argo-workflows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          short=${HEAD_REF:0:12}
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_REF/pulls" --jq '.[0].number // empty')
+          {
+            echo "The Go benchmarks regressed in $HEAD_REF${pr:+ (#$pr)}, compared with $BASE."
+            echo
+            echo "| Package | Benchmark | Unit | Change | Significance |"
+            echo "|---|---|---|---|---|"
+            cat dist/bench/regressions.md
+            echo
+            echo "The full comparison is in the [workflow run]($RUN_URL); its \`benchmarks\` artifact holds the raw results."
+            echo "To reproduce locally: \`git checkout $HEAD_REF && make bench-compare BENCH_BASE=$BASE\`."
+          } > issue.md
+          existing=$(gh issue list --state open --label type/regression --search "$short in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file issue.md
+          else
+            gh issue create --title "Benchmark regression in $short${pr:+ (#$pr)}" --label type/regression --body-file issue.md
+          fi
+      - name: Fail on regression
+        if: steps.compare.outputs.status == 'regressed'
+        run: |
+          echo "::error::Benchmarks regressed, see the job summary"
+          exit 1
