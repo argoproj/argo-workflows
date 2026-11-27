@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -10,7 +13,10 @@ import (
 )
 
 func main() {
-	if err := commands.NewCommand().Execute(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	err := commands.NewCommand().ExecuteContext(ctx)
+	stop()
+	if err != nil {
 		os.Exit(1)
 	}
 }
