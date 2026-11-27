@@ -320,8 +320,8 @@ schema = 3
     version = "v1.10.1"
     hash = "sha256-6LBLgsh4nKkMpgRKVsYFEaGDSU1fncBcWVSjKBdfgjU="
   [mod."github.com/fxamacker/cbor/v2"]
-    version = "v2.9.0"
-    hash = "sha256-/IZK76MRCrz9XCiilieH5tKaLnIWyPJhwxDoVKB8dFc="
+    version = "v2.9.1"
+    hash = "sha256-lwx/RvW1pEXTezGAZRjAXEtDymE+pfBn7HOTpDdkF9o="
   [mod."github.com/gaganhr94/docker-credential-acr"]
     version = "v1.0.2"
     hash = "sha256-tn1WA/K0Yyzb7ABP9tF6p59euljQunFSmu9PPT7znxs="
@@ -743,8 +743,8 @@ schema = 3
     version = "v1.0.3"
     hash = "sha256-Bm1sq6fFfoySkE6W7qib1drLBDQlOHMKJx8WyXzcNHM="
   [mod."github.com/sergi/go-diff"]
-    version = "v1.3.2-0.20230802210424-5b0b94c5c0d3"
-    hash = "sha256-UcLU83CPMbSoKI8RLvLJ7nvGaE2xRSL1RjoHCVkMzUM="
+    version = "v1.4.0"
+    hash = "sha256-rs9NKpv/qcQEMRg7CmxGdP4HGuFdBxlpWf9LbA9wS4k="
   [mod."github.com/sethvargo/go-limiter"]
     version = "v1.2.0"
     hash = "sha256-/km0GECCqwhXRCJRzbQGLzeJai6Mk9+92U7HHSccyY0="
@@ -986,23 +986,23 @@ schema = 3
     version = "v0.1.2"
     hash = "sha256-ATVL9yEmgYbkJ1DkltDGRn/auGAjqGOfjQyBYyUo8s8="
   [mod."k8s.io/api"]
-    version = "v0.35.4"
-    hash = "sha256-QiykPDGY9yD/uwEXd3P56VHgImHudLiE9Sag4+GY8f4="
+    version = "v0.37.3"
+    hash = "sha256-gzWe9t3hZ/geJk9/FQ3ejcLGzCmHr7VsN6F7WudFnE4="
   [mod."k8s.io/apiextensions-apiserver"]
     version = "v0.35.4"
     hash = "sha256-F0jPg+DzBHE1FyqGDGgmHRfS7hIx9JWb0iypA0PPVnI="
   [mod."k8s.io/apimachinery"]
-    version = "v0.35.4"
-    hash = "sha256-2THXGj+IHegAUB6l+4FVW1apliSNgrfgz6M4saX66yY="
+    version = "v0.37.3"
+    hash = "sha256-yQSo4cXMLoQpyApQqbZOyvp905KEYwJbQ62ARlKjj0U="
   [mod."k8s.io/apiserver"]
     version = "v0.35.4"
     hash = "sha256-WzXOOT5A+2861nr/jZAQ2/PiTFHhy97Q+V/lROSCDeU="
   [mod."k8s.io/cli-runtime"]
-    version = "v0.35.4"
-    hash = "sha256-+FB9XGPssOXSTVPf65lbQCYEkI3LIQJL8Eg/9ar9tcg="
+    version = "v0.37.3"
+    hash = "sha256-C4rA12AiF/SXgO7IysYnHdkTG3W0a+0ug+NtHWNIxt4="
   [mod."k8s.io/client-go"]
-    version = "v0.35.4"
-    hash = "sha256-gnzJG0M89eu2LpgAXiFQak91eX/1byIfoOI8nk6huNo="
+    version = "v0.37.3"
+    hash = "sha256-V1L9m7nOWQBbsz0HTTGOWdo7GWIPMq1lOZAxmtsPJJ8="
   [mod."k8s.io/component-base"]
     version = "v0.35.4"
     hash = "sha256-EfWkrAxyQZApPUGS+R2gptCnLgDCerRk23hWbhaHndA="
@@ -1046,20 +1046,20 @@ schema = 3
     version = "v0.0.0-20260909141634-11ed52e25bc5"
     hash = "sha256-Dj5Vcvq3ETZtUpMO1ALu93zwG5ltne7LjMS7lzBL9KY="
   [mod."sigs.k8s.io/kustomize/api"]
-    version = "v0.20.1"
-    hash = "sha256-kcZREdlFsFC7xaMRzvwkE+93lQJBTanImDJjgYMyzRU="
+    version = "v0.21.1"
+    hash = "sha256-g5DO6rs//ITGA+pleWYO0N03SZGpyqRsiDR+toKILtM="
   [mod."sigs.k8s.io/kustomize/kustomize/v5"]
     version = "v5.7.1"
     hash = "sha256-dlDQdlEtG2gJ22oASeHnwebuTjJmR2VZyK60OEvdvyU="
   [mod."sigs.k8s.io/kustomize/kyaml"]
-    version = "v0.20.1"
-    hash = "sha256-k87zgSRMFVcph06vqMd4KG9kE1GzllxKu36mWKdSisY="
+    version = "v0.21.1"
+    hash = "sha256-9CoO6DK0x1+l9ILmkyrvCIstubJY17dWe2nvM7IqKnY="
   [mod."sigs.k8s.io/randfill"]
     version = "v1.0.0"
     hash = "sha256-xldQxDwW84hmlihdSOFfjXyauhxEWV9KmIDLZMTcYNo="
   [mod."sigs.k8s.io/structured-merge-diff/v6"]
-    version = "v6.4.1"
-    hash = "sha256-9ZoaaRvTiiv4GpROcm1oa6NPlmEtUGuH+O5XBiaWq7k="
+    version = "v6.4.2"
+    hash = "sha256-Q4GT7pinbkhNOae9Q3WuTKAVOLqNvrP9EfrEDEM1S3I="
   [mod."sigs.k8s.io/yaml"]
     version = "v1.6.0"
     hash = "sha256-49hg7IVPzwxeovp+HTMiWa/10NMMTSTjAdCmIv6p9dw="
