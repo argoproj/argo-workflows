@@ -107,8 +107,8 @@ schema = 3
     version = "v1.4.14"
     hash = "sha256-n+7kR268ah8TwDs/lrxGwWjEkfGd78udIYl+vl6cs8g="
   [mod."github.com/andybalholm/brotli"]
-    version = "v1.2.7"
-    hash = "sha256-yJ71dxEFVNc8q5AoOFp1QV5YV4FJhjQgoaXyIYEnDC8="
+    version = "v1.3.0"
+    hash = "sha256-nOM6tzHZYnMSNxcKOGUa3nspb75OX+OSfGx8szQY6w0="
   [mod."github.com/antlr4-go/antlr/v4"]
     version = "v4.13.1"
     hash = "sha256-beAuxHNRUuhzcSJUh/8ztVf1zCUiaT72fg2Jvx0AuNQ="
