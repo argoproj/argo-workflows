@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
@@ -105,6 +106,80 @@ func (_c *Interface_Authorize_Call) Return(claims *types.Claims, err error) *Int
 }
 
 func (_c *Interface_Authorize_Call) RunAndReturn(run func(authorization string) (*types.Claims, error)) *Interface_Authorize_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// AuthorizeBearer provides a mock function for the type Interface
+func (_mock *Interface) AuthorizeBearer(ctx context.Context, authorization string) (*types.Claims, bool, error) {
+	ret := _mock.Called(ctx, authorization)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AuthorizeBearer")
+	}
+
+	var r0 *types.Claims
+	var r1 bool
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*types.Claims, bool, error)); ok {
+		return returnFunc(ctx, authorization)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *types.Claims); ok {
+		r0 = returnFunc(ctx, authorization)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Claims)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) bool); ok {
+		r1 = returnFunc(ctx, authorization)
+	} else {
+		r1 = ret.Get(1).(bool)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = returnFunc(ctx, authorization)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// Interface_AuthorizeBearer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AuthorizeBearer'
+type Interface_AuthorizeBearer_Call struct {
+	*mock.Call
+}
+
+// AuthorizeBearer is a helper method to define mock.On call
+//   - ctx context.Context
+//   - authorization string
+func (_e *Interface_Expecter) AuthorizeBearer(ctx any, authorization any) *Interface_AuthorizeBearer_Call {
+	return &Interface_AuthorizeBearer_Call{Call: _e.mock.On("AuthorizeBearer", ctx, authorization)}
+}
+
+func (_c *Interface_AuthorizeBearer_Call) Run(run func(ctx context.Context, authorization string)) *Interface_AuthorizeBearer_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *Interface_AuthorizeBearer_Call) Return(claims *types.Claims, handled bool, err error) *Interface_AuthorizeBearer_Call {
+	_c.Call.Return(claims, handled, err)
+	return _c
+}
+
+func (_c *Interface_AuthorizeBearer_Call) RunAndReturn(run func(ctx context.Context, authorization string) (*types.Claims, bool, error)) *Interface_AuthorizeBearer_Call {
 	_c.Call.Return(run)
 	return _c
 }

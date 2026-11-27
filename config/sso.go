@@ -37,6 +37,21 @@ type SSOConfig struct {
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
 	// custom PEM encoded CA certificate file contents
 	RootCA string `json:"rootCA,omitempty"`
+	// BearerToken configures accepting OIDC provider tokens as bearer tokens
+	BearerToken *SSOBearerTokenConfig `json:"bearerToken,omitempty"`
+}
+
+// SSOBearerTokenConfig configures accepting OIDC provider tokens as bearer tokens
+type SSOBearerTokenConfig struct {
+	// Enabled accepts signed JWTs from the issuer as `Authorization: Bearer <token>`
+	Enabled bool `json:"enabled,omitempty"`
+	// AllowedAudiences lists the accepted `aud` values, and defaults to the SSO client ID
+	AllowedAudiences []string `json:"allowedAudiences,omitempty"`
+}
+
+// IsBearerTokenEnabled reports whether OIDC provider tokens are accepted as bearer tokens
+func (c SSOConfig) IsBearerTokenEnabled() bool {
+	return c.BearerToken != nil && c.BearerToken.Enabled
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {

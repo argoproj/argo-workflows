@@ -14,6 +14,13 @@ func Test_nullSSO_Authorize(t *testing.T) {
 	require.Error(t, err)
 }
 
+func Test_nullSSO_AuthorizeBearer(t *testing.T) {
+	claims, handled, err := NullSSO.AuthorizeBearer(t.Context(), "Bearer a.b.c")
+	assert.Nil(t, claims)
+	assert.False(t, handled)
+	require.NoError(t, err)
+}
+
 func Test_nullSSO_HandleCallback(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	NullSSO.HandleCallback(recorder, &http.Request{})

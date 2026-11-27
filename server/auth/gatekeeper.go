@@ -256,6 +256,16 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			return s.authenticateSSO(ctx, authorizationCredential.value, req)
 		}
 
+		if s.Modes[SSO] {
+			if claims, handled, err := s.ssoIf.AuthorizeBearer(ctx, authorizationCredential.value); handled {
+				if err != nil {
+					logging.RequireLoggerFromContext(ctx).WithError(err).Info(ctx, "SSO bearer token rejected")
+					return nil, nil, status.Error(codes.Unauthenticated, errTokenNotValid)
+				}
+				return s.authenticateClaims(ctx, s.rbacSourceFor(rbacSourceSSO), claims, req, s.ssoIf.IsRBACEnabled())
+			}
+		}
+
 		if s.Modes[Client] &&
 			(strings.HasPrefix(authorizationCredential.value, "Bearer ") ||
 				strings.HasPrefix(authorizationCredential.value, "Basic ")) {
