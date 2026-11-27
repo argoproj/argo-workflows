@@ -33,37 +33,3 @@ func TestModes_Add(t *testing.T) {
 		assert.Contains(t, m, SSO)
 	})
 }
-
-func TestModes_GetMode(t *testing.T) {
-	m := Modes{
-		Client: true,
-		SSO:    true,
-		Server: true,
-	}
-	t.Run("Client", func(t *testing.T) {
-		mode, valid := m.GetMode("Bearer ")
-		require.True(t, valid)
-		assert.Equal(t, Client, mode)
-	})
-	t.Run("Server", func(t *testing.T) {
-		mode, valid := m.GetMode("")
-		require.True(t, valid)
-		assert.Equal(t, Server, mode)
-	})
-	t.Run("SSO", func(t *testing.T) {
-		mode, valid := m.GetMode("Bearer v2:")
-		require.True(t, valid)
-		assert.Equal(t, SSO, mode)
-	})
-
-	m = Modes{
-		Client: false,
-		SSO:    false,
-		Server: true,
-	}
-	t.Run("Server and Auth", func(t *testing.T) {
-		mode, valid := m.GetMode("Bearer ")
-		require.True(t, valid)
-		assert.Equal(t, Server, mode)
-	})
-}

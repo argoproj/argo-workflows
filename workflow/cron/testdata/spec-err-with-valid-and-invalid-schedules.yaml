@@ -1,0 +1,32 @@
+  apiVersion: argoproj.io/v1alpha1
+  kind: CronWorkflow
+  metadata:
+    creationTimestamp: "2020-02-28T18:31:32Z"
+    generation: 69
+    name: hello-world
+    namespace: argo
+    resourceVersion: "53389"
+    selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/hello-world
+    uid: f230ee83-2ddc-435e-b27c-f0ca63293100
+  spec:
+    schedules:
+    - "* * * * *"
+    - "10 * * 12737123 *"
+    startingDeadlineSeconds: 30
+    workflowSpec:
+      entrypoint: whalesay
+      templates:
+      - container:
+          args:
+          - "\U0001F553 hello world"
+          command:
+          - cowsay
+          image: docker/whalesay:latest
+          name: ""
+          resources: {}
+        inputs: {}
+        metadata: {}
+        name: whalesay
+        outputs: {}
+  status:
+    lastScheduledTime: "2020-02-28T19:05:00Z"

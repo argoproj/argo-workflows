@@ -1,0 +1,123 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-05-05T15:18:40Z"
+  generateName: retry-backoff-
+  generation: 21
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: retry-backoff-s69z6
+  namespace: argo
+  resourceVersion: "348670"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/retry-backoff-s69z6
+  uid: 110dbef4-c54b-4963-9739-03e9878810d9
+spec:
+
+  entrypoint: retry-backoff
+  templates:
+  -
+    container:
+      args:
+      - import random; import sys; exit_code = random.choice([1, 1]); sys.exit(exit_code)
+      command:
+      - python
+      - -c
+      image: python:alpine3.23
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: retry-backoff
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: "2"
+        factor: 2
+        maxDuration: 1m
+      limit: 10
+status:
+  nodes:
+    retry-backoff-s69z6:
+      children:
+      - retry-backoff-s69z6-1807967148
+      - retry-backoff-s69z6-130058153
+      displayName: retry-backoff-s69z6
+      id: retry-backoff-s69z6
+      name: retry-backoff-s69z6
+      phase: Running
+      startedAt: "2020-05-05T15:18:40Z"
+      templateName: retry-backoff
+      templateScope: local/retry-backoff-s69z6
+      type: Retry
+    retry-backoff-s69z6-130058153:
+      displayName: retry-backoff-s69z6(1)
+      finishedAt: "2020-05-05T15:18:43Z"
+      hostNodeName: minikube
+      id: retry-backoff-s69z6-130058153
+      message: failed with exit code 1
+      name: retry-backoff-s69z6(1)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: retry-backoff-s69z6/retry-backoff-s69z6-130058153/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-05T15:18:45Z"
+      templateName: retry-backoff
+      templateScope: local/retry-backoff-s69z6
+      type: Pod
+      nodeFlag:
+        retried: true
+    retry-backoff-s69z6-1807967148:
+      displayName: retry-backoff-s69z6(0)
+      finishedAt: "2020-05-05T15:18:43Z"
+      hostNodeName: minikube
+      id: retry-backoff-s69z6-1807967148
+      message: failed with exit code 1
+      name: retry-backoff-s69z6(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: retry-backoff-s69z6/retry-backoff-s69z6-1807967148/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2020-05-05T15:18:40Z"
+      templateName: retry-backoff
+      templateScope: local/retry-backoff-s69z6
+      type: Pod
+      nodeFlag:
+        retried: true
+  phase: Running
+  resourcesDuration:
+    cpu: 5
+    memory: 0
+  startedAt: "2020-05-05T15:18:40Z"

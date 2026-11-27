@@ -1,18 +1,12 @@
 # Step Level Memoization
 
-> v2.10 and after
-
 ## Introduction
 
 Workflows often have outputs that are expensive to compute.
 Memoization reduces cost and workflow execution time by recording the result of previously run steps:
 it stores the outputs of a template into a specified cache with a variable key.
 
-Prior to version 3.5 memoization only works for steps which have outputs, if you attempt to use it on steps which do not it should not work (there are some cases where it does, but they shouldn't). It was designed for 'pure' steps, where the purpose of running the step is to calculate some outputs based upon the step's inputs, and only the inputs. Pure steps should not interact with the outside world, but workflows won't enforce this on you.
-
-If you are using workflows prior to version 3.5 you should look at the [work avoidance](work-avoidance.md) technique instead of memoization if your steps don't have outputs.
-
-In version 3.5 or later all steps can be memoized, whether or not they have outputs.
+All steps can be memoized, whether or not they have outputs.
 
 ## Cache Method
 
@@ -48,6 +42,12 @@ spec:
 !!! Note
     In order to use memoization it is necessary to add the verbs `create` and `update` to the `configmaps` resource for the appropriate (cluster) roles. In the case of a cluster install the `argo-cluster-role` cluster role should be updated, whilst for a namespace install the `argo-role` role should be updated.
 
+If the controller cannot save a template's result to the cache, the template's node ends `Error`.
+This applies to every memoized template, including DAG and Steps templates.
+For example, this happens when the cache ConfigMap would be larger than the 1 MiB limit, or when the controller is not allowed to update the ConfigMap.
+
+When the controller serves a memoized template from the cache, it still emits the template's metrics (`metrics.prometheus`), with a duration close to zero.
+
 ## FAQ
 
 1. If you see errors like `error creating cache entry: ConfigMap \"reuse-task\" is invalid: []: Too long: must have at most 1048576 characters`,
@@ -56,5 +56,3 @@ spec:
     * Delete the existing `ConfigMap` cache or switch to use a different cache.
     * Reduce the size of the output parameters for the nodes that are being memoized.
     * Split your cache into different memoization keys and cache names so that each cache entry is small.
-1. My step isn't getting memoized, why not?
-   If you are running workflows <3.5 ensure that you have specified at least one output on the step.

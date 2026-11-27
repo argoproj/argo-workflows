@@ -2,6 +2,7 @@ package git
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -203,4 +204,47 @@ func TestGetUser(t *testing.T) {
 			assert.Equal(t, sshUser, tt.user)
 		})
 	}
+}
+
+func TestValidateRepoURL(t *testing.T) {
+	for _, tt := range []struct {
+		repo       string
+		wantErr    bool
+		suggestion string
+	}{
+		{repo: "git@github.com/argoproj/argo-workflows.git", wantErr: true, suggestion: `"git@github.com:argoproj/argo-workflows.git"`},
+		{repo: "gitaly@host.example/a/b", wantErr: true, suggestion: `"gitaly@host.example:a/b"`},
+		{repo: "git@github.com:argoproj/argo-workflows.git"},
+		{repo: "ssh://git@github.com/argoproj/argo-workflows.git"},
+		{repo: "https://github.com/argoproj/argo-workflows.git"},
+		{repo: "https://user@github.com/argoproj/argo-workflows.git"},
+		{repo: "/tmp/local-repo"},
+		{repo: "./repo"},
+		{repo: "file:///srv/repo"},
+	} {
+		t.Run(tt.repo, func(t *testing.T) {
+			err := ValidateRepoURL(tt.repo)
+			if !tt.wantErr {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, "not a valid SSH URL")
+			require.ErrorContains(t, err, tt.suggestion)
+		})
+	}
+}
+
+func TestGitArtifactDriver_Load_MalformedSSHURL(t *testing.T) {
+	driver := &ArtifactDriver{}
+	err := load(t, driver, &wfv1.GitArtifact{Repo: "git@github.com/argoproj/argo-workflows.git"})
+	require.ErrorContains(t, err, "not a valid SSH URL")
+}
+
+func TestGitArtifactDriver_Load_LocalRepoWithoutGitBinary(t *testing.T) {
+	// go-git clones local and file:// repos by running the git binary.
+	t.Setenv("PATH", "")
+	driver := &ArtifactDriver{}
+	err := load(t, driver, &wfv1.GitArtifact{Repo: "file:///srv/repo"})
+	require.ErrorContains(t, err, "file:// or local-path URL detected, an executor image with the git binary must be used")
+	require.ErrorIs(t, err, exec.ErrNotFound)
 }

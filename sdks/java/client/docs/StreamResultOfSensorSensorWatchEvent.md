@@ -7,7 +7,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**error** | [**GrpcGatewayRuntimeStreamError**](GrpcGatewayRuntimeStreamError.md) |  |  [optional]
+**error** | [**GoogleRpcStatus**](GoogleRpcStatus.md) |  |  [optional]
 **result** | [**SensorSensorWatchEvent**](SensorSensorWatchEvent.md) |  |  [optional]
 
 

@@ -2,6 +2,9 @@ dir: '{{.InterfaceDir}}/mocks'
 structname: '{{.InterfaceName}}'
 filename: "{{.InterfaceName}}.go"
 pkgname: mocks
+# WorkflowServiceClient and WorkflowTemplateServiceClient live in generated .pb.go files,
+# which mockery >= v3.6 skips by default.
+include-auto-generated: true
 
 template-data:
   unroll-variadic: true
@@ -20,6 +23,9 @@ packages:
     interfaces:
       Gatekeeper: {}
   github.com/argoproj/argo-workflows/v4/server/auth/sso:
+    interfaces:
+      Interface: {}
+  github.com/argoproj/argo-workflows/v4/server/auth/header:
     interfaces:
       Interface: {}
   github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories:

@@ -1681,6 +1681,68 @@ func TestInlineStore(t *testing.T) {
 	}
 }
 
+func TestSemaphoreStatus_LockWaiting_UnchangedHolders(t *testing.T) {
+	const lockKey = "default/ConfigMap/semaphore-config/workflow"
+
+	t.Run("creates the waiting entry", func(t *testing.T) {
+		ss := &SemaphoreStatus{}
+		assert.True(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/holder"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/holder"}, waiting.Holders)
+	})
+
+	t.Run("unchanged holders are not a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},
+		}
+		assert.False(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/holder"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/holder"}, waiting.Holders)
+	})
+
+	t.Run("holder order is not a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/b", "default/a"}}},
+		}
+		assert.False(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/a", "default/b"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/b", "default/a"}, waiting.Holders)
+	})
+
+	t.Run("nil and empty holders are the same", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey}},
+		}
+		assert.False(t, ss.LockWaiting("default/waiter", lockKey, []string{}))
+	})
+
+	t.Run("a changed holder set is a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},
+		}
+		assert.True(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/other"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/other"}, waiting.Holders)
+	})
+
+	t.Run("a changed multi-holder set is a status change", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/a", "default/b"}}},
+		}
+		assert.True(t, ss.LockWaiting("default/waiter", lockKey, []string{"default/a", "default/c"}))
+		_, waiting := ss.GetWaiting(lockKey)
+		assert.Equal(t, []string{"default/a", "default/c"}, waiting.Holders)
+	})
+
+	t.Run("a different lock is a new waiting entry", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: lockKey, Holders: []string{"default/holder"}}},
+		}
+		assert.True(t, ss.LockWaiting("default/waiter", "other-lock", []string{"default/holder"}))
+		assert.Len(t, ss.Waiting, 2)
+	})
+}
+
 func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
 	t.Run("Remove holder from waiting when acquiring lock", func(t *testing.T) {
 		ss := &SemaphoreStatus{
@@ -1769,5 +1831,51 @@ func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
 		assert.Contains(t, waiting.Holders, "workflow-1/node-1")
 		assert.Contains(t, waiting.Holders, "workflow-3/node-3")
 		assert.Len(t, waiting.Holders, 2)
+	})
+}
+
+func TestSynchronizationStatus_GetStatus(t *testing.T) {
+	t.Run("nil pointers yield a nil interface", func(t *testing.T) {
+		ss := &SynchronizationStatus{}
+		// A typed nil (*SemaphoreStatus)(nil) inside the interface would be != nil,
+		// so callers guarding with `if s != nil` would then panic in LockReleased.
+		assert.Nil(t, ss.GetStatus(SynchronizationTypeSemaphore))
+		assert.Nil(t, ss.GetStatus(SynchronizationTypeMutex))
+	})
+	t.Run("set pointers are returned", func(t *testing.T) {
+		ss := &SynchronizationStatus{Semaphore: &SemaphoreStatus{}, Mutex: &MutexStatus{}}
+		assert.Same(t, ss.Semaphore, ss.GetStatus(SynchronizationTypeSemaphore))
+		assert.Same(t, ss.Mutex, ss.GetStatus(SynchronizationTypeMutex))
+	})
+	t.Run("unknown type panics", func(t *testing.T) {
+		ss := &SynchronizationStatus{}
+		assert.Panics(t, func() { ss.GetStatus(SynchronizationTypeUnknown) })
+	})
+}
+
+func TestArtGCStatusPods(t *testing.T) {
+	t.Run("nothing recorded counts as all recouped", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		assert.True(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+	t.Run("recorded pod awaits recoup", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.RecordArtifactGCPod("pod-a")
+		assert.False(t, gcStatus.IsArtifactGCPodRecouped("pod-a"))
+		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		assert.True(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+	t.Run("recording again does not reset a recouped pod", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		gcStatus.RecordArtifactGCPod("pod-a")
+		assert.True(t, gcStatus.IsArtifactGCPodRecouped("pod-a"))
+	})
+	t.Run("one outstanding pod blocks", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		gcStatus.RecordArtifactGCPod("pod-b")
+		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
 	})
 }

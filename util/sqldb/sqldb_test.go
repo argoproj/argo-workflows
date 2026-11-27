@@ -73,3 +73,37 @@ func TestMySQLSessionConnect(t *testing.T) {
 		})
 	}
 }
+
+// Regression test for https://github.com/argoproj/argo-workflows/issues/16707:
+// driver-level entries in persistence.mysql.options (e.g. tls) must be applied
+// as DSN options, not sent to the server verbatim as SET statements.
+func TestBuildMySQLConfigDriverOptions(t *testing.T) {
+	cfg := &config.MySQLConfig{
+		DatabaseConfig: config.DatabaseConfig{
+			Host:     "localhost",
+			Port:     3306,
+			Database: "argo",
+		},
+		Options: map[string]string{
+			"tls":         "skip-verify",
+			"readTimeout": "5s",
+			// a genuine server system variable, which must remain a param
+			"transaction_isolation": "'READ-COMMITTED'",
+		},
+	}
+	mysqlCfg, err := buildMySQLConfig(cfg, "user", "pass", 7*time.Second)
+	require.NoError(t, err)
+	require.Equal(t, "skip-verify", mysqlCfg.TLSConfig)
+	require.Equal(t, 5*time.Second, mysqlCfg.ReadTimeout)
+	require.NotContains(t, mysqlCfg.Params, "tls")
+	require.NotContains(t, mysqlCfg.Params, "readTimeout")
+	require.Equal(t, "'READ-COMMITTED'", mysqlCfg.Params["transaction_isolation"])
+	// fields set directly must survive
+	require.Equal(t, "user", mysqlCfg.User)
+	require.Equal(t, "pass", mysqlCfg.Passwd)
+	require.Equal(t, "localhost:3306", mysqlCfg.Addr)
+	require.Equal(t, "argo", mysqlCfg.DBName)
+	require.True(t, mysqlCfg.ParseTime)
+	require.True(t, mysqlCfg.AllowNativePasswords)
+	require.Equal(t, 7*time.Second, mysqlCfg.Timeout)
+}

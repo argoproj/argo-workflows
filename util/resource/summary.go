@@ -14,8 +14,14 @@ type Summary struct {
 }
 
 func (s Summary) age() time.Duration {
-	if s.ContainerState.Terminated != nil {
-		return s.ContainerState.Terminated.FinishedAt.Sub(s.ContainerState.Terminated.StartedAt.Time)
+	if terminated := s.ContainerState.Terminated; terminated != nil {
+		startedAt, finishedAt := terminated.StartedAt.Time, terminated.FinishedAt.Time
+		// Kubelet converts unspecified CRI timestamps to the Unix epoch.
+		epoch := time.Unix(0, 0)
+		if startedAt.IsZero() || finishedAt.IsZero() || startedAt.Equal(epoch) || finishedAt.Equal(epoch) || finishedAt.Before(startedAt) {
+			return 0
+		}
+		return finishedAt.Sub(startedAt)
 	}
 	return 0
 }

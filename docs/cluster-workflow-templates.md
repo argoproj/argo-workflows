@@ -1,7 +1,5 @@
 # Cluster Workflow Templates
 
-> v2.8 and after
-
 ## Introduction
 
 `ClusterWorkflowTemplates` are cluster scoped `WorkflowTemplates`. `ClusterWorkflowTemplate`
@@ -57,8 +55,6 @@ spec:
 ```
 
 ### Create `Workflow` from `ClusterWorkflowTemplate` Spec
-
-> v2.9 and after
 
 You can create `Workflow` from `ClusterWorkflowTemplate` spec using `workflowTemplateRef` with `clusterScope: true`. If you pass the arguments to created `Workflow`, it will be merged with cluster workflow template arguments
 
@@ -134,8 +130,6 @@ Then submit a `Workflow` using one of those templates:
 ```bash
 argo submit https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 ```
-
-> v2.7 and after
 
 Then submit a `ClusterWorkflowTemplate` as a `Workflow`:
 

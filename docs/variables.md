@@ -49,8 +49,6 @@ args: [ "{{ inputs.parameters.message }}" ]
 
 ### Expression
 
-> v3.1 and after
-
 The tag is substituted with the result of evaluating the tag as an expression.
 
 Note that any hyphenated parameter names or step names will cause a parsing error. You can reference them by
@@ -148,7 +146,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
-| `steps.<STEPNAME>.hostNodeName` | Host node where step ran (available from version 3.5) |
+| `steps.<STEPNAME>.hostNodeName` | Host node where step ran |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container, script, or HTTP step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -167,7 +165,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
-| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
+| `tasks.<TASKNAME>.hostNodeName` | Host node where task ran |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container, script, or HTTP task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
@@ -177,7 +175,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 
 ### Outputs of Skipped and Omitted Nodes
 
-> v3.7.16, v4.0.7, and after
+> v4.0.7 and after
 
 A step or task that was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied) never ran, so it produced no outputs.
 References to its declared output parameters and `outputs.result` resolve as follows:
@@ -200,8 +198,6 @@ See the [skipped output defaults examples](https://github.com/argoproj/argo-work
 
 ### HTTP Templates
 
-> v3.3 and after
-
 Only available for `successCondition`
 
 | Variable | Description|
@@ -215,8 +211,6 @@ Only available for `successCondition`
 | `response.headers` | Response headers (`map[string][]string`) |
 
 ### CronWorkflows
-
-> v3.6 and after
 
 | Variable | Description|
 |----------|------------|
@@ -239,7 +233,7 @@ When using the `expression` field within `retryStrategy`, special variables are 
 | `lastRetry.exitCode` | Exit code of the last retry |
 | `lastRetry.status` | Status of the last retry |
 | `lastRetry.duration` | Duration in seconds of the last retry |
-| `lastRetry.message` | Message output from the last retry (available from version 3.5) |
+| `lastRetry.message` | Message output from the last retry. For a failed DAG template, this is `child '<node ID>' failed`, where the node ID is the ID of the first failed task in the `tasks` list, whatever order the tasks failed in. |
 
 Note: These variables evaluate to a string type. If using advanced expressions, either cast them to int values (`expression: "{{=asInt(lastRetry.exitCode) >= 2}}"`) or compare them to string values (`expression: "{{=lastRetry.exitCode != '2'}}"`).
 
@@ -248,6 +242,7 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
+| `node.taskName` | v4.2 and after: Name of this attempt of the container/script, the same as `pod.name`; the default artifact repository key format uses it |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
 | `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
@@ -276,6 +271,7 @@ step.
 | `outputs.result`                 | Output result of the metric-emitting template                                                                                                                                                |
 | `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc. |
 | `retries`                        | Retried count by retry strategy                                                                                                                                                              |
+| `pod.name`                       | Pod name of the metric-emitting template, for a template that runs a pod. With a `retryStrategy`, each attempt is counted with its own pod name.                                             |
 
 ### Real-Time Metrics
 
@@ -316,12 +312,23 @@ For `Template`-level metrics:
 | `workflow.duration` | Workflow duration estimate in seconds, may differ from actual duration by a couple of seconds |
 | `workflow.scheduledTime` | Scheduled runtime formatted in RFC 3339 (only available for `CronWorkflow`) |
 
+An output with a `globalName` sets `workflow.outputs.parameters.<NAME>` or `workflow.outputs.artifacts.<NAME>`.
+The controller exports a `globalName` output when the node that produces it finishes.
+When more than one node sets the same global output, the value is from the node that finished last.
+When two of those nodes finish in the same second, which one wins is not defined.
+These nodes also export their `globalName` outputs when they finish: memoized steps and tasks served from the cache, HTTP and plugin steps and tasks, and suspend steps and tasks resumed with `argo resume`.
+
+The entrypoint template exports its own `globalName` outputs to `workflow.status.outputs`, for both DAG and Steps templates.
+When a task in an entrypoint DAG sets a global output with the same name, the DAG's own output overwrites it when the DAG finishes.
+
+The outputs of a DAG or Steps template can refer to `workflow.outputs`, for example `valueFrom.expression: workflow.outputs.parameters.g` or `from: "{{workflow.outputs.artifacts.a}}"`.
+
 ### Exit Handler
 
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
-| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
+| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. The list does not include `TaskGroup` nodes. It includes the failed items of an expanded step or task. |
 
 ### Knowing where you are
 

@@ -31,3 +31,5 @@ vendor
 !dist/workflow-controller
 !dist/argo
 !dist/argoexec
+# Re-include the full CRDs bundled into the argo-workflows-crdinstaller image
+!manifests/base/crds/full/argoproj.io_*.yaml

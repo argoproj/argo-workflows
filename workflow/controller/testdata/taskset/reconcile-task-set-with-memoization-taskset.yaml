@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTaskSet
+metadata:
+  name: http-template-1
+  namespace: default
+spec:
+  tasks:
+    http-template-fqgsf-2338098285:
+      http:
+        url: http://localhost
+      name: http
+status:
+  nodes:
+    http-template-fqgsf-2338098285:
+      outputs:
+        parameters:
+        - name: result
+          value: |
+            { demo }
+      phase: Succeeded
+    

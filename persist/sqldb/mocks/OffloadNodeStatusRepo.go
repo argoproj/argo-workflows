@@ -30,6 +30,20 @@ func (_m *OffloadNodeStatusRepo) Delete(_ context.Context, uid string, version s
 	return r0
 }
 
+// DeleteIfOld provides a mock function with given fields: uid, version
+func (_m *OffloadNodeStatusRepo) DeleteIfOld(_ context.Context, uid string, version string) error {
+	ret := _m.Called(uid, version)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(uid, version)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Get provides a mock function with given fields: uid, version
 func (_m *OffloadNodeStatusRepo) Get(ctx context.Context, uid string, version string) (v1alpha1.Nodes, error) {
 	ret := _m.Called(uid, version)

@@ -1,9 +1,9 @@
-#syntax=docker/dockerfile:1.25
+#syntax=docker/dockerfile:1.29
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.26.1-alpine3.23 AS builder
+FROM golang:1.27.4-alpine3.23 AS builder
 
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
@@ -20,7 +20,8 @@ RUN apk update && apk add --no-cache \
 WORKDIR /go/src/github.com/argoproj/argo-workflows
 COPY go.mod .
 COPY go.sum .
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY hack/retry-download.sh /usr/local/bin/retry-download.sh
+RUN --mount=type=cache,target=/go/pkg/mod sh /usr/local/bin/retry-download.sh go mod download
 
 COPY . .
 
@@ -41,10 +42,11 @@ FROM node:20-alpine AS argo-ui
 RUN apk update && apk add --no-cache git
 
 COPY ui/package.json ui/yarn.lock ui/
+COPY hack/retry-download.sh /usr/local/bin/retry-download.sh
 
 RUN --mount=type=cache,target=/root/.yarn \
   YARN_CACHE_FOLDER=/root/.yarn JOBS=max \
-  yarn --cwd ui install --network-timeout 1000000
+  sh /usr/local/bin/retry-download.sh yarn --cwd ui install --network-timeout 1000000
 
 COPY ui ui
 COPY api api
@@ -90,7 +92,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:9197324ba51d9cd071af8505989365c006adf9d6d2067eada25aef00abbb5278 AS argoexec-base
+FROM gcr.io/distroless/static-debian13:latest@sha256:4c2cd1dee442c9a99924a378c7c126fac8fef14771579ef567c3f2bdd7a5122a AS argoexec-base
 
 COPY --from=argoexec-build /etc/mime.types /etc/mime.types
 COPY hack/ssh_known_hosts /etc/ssh/
@@ -115,7 +117,7 @@ ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:9197324ba51d9cd071af8505989365c006adf9d6d2067eada25aef00abbb5278 AS workflow-controller
+FROM gcr.io/distroless/static-debian13:latest@sha256:4c2cd1dee442c9a99924a378c7c126fac8fef14771579ef567c3f2bdd7a5122a AS workflow-controller
 
 USER 8737
 
@@ -127,7 +129,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM gcr.io/distroless/static-debian13:latest@sha256:9197324ba51d9cd071af8505989365c006adf9d6d2067eada25aef00abbb5278 AS argocli
+FROM gcr.io/distroless/static-debian13:latest@sha256:4c2cd1dee442c9a99924a378c7c126fac8fef14771579ef567c3f2bdd7a5122a AS argocli
 
 USER 8737
 
@@ -138,6 +140,20 @@ COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]
+
+####################################################################################################
+
+FROM registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789 AS argo-workflows-crdinstaller
+
+USER 8737
+
+# The base image sets no HOME, so kubectl would put its discovery cache in
+# /.kube/cache, which UID 8737 cannot write. /tmp is world-writable (1777).
+ENV HOME=/tmp
+
+COPY manifests/base/crds/full/argoproj.io_*.yaml /crds/full/
+
+CMD [ "apply", "--server-side", "--force-conflicts", "-v=6", "-f", "/crds/full/" ]
 
 ####################################################################################################
 # Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The

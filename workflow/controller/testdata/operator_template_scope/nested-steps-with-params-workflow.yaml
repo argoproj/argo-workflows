@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-template-scope-nested-steps-with-params
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: step
+            templateRef:
+              name: test-template-scope-nested-steps-with-params-1
+              template: main

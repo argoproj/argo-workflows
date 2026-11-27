@@ -38,27 +38,28 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes                []string
-		configMap                string
-		port                     int
-		baseHRef                 string
-		secure                   bool
-		tlsCertificateSecretName string
-		hsts                     bool
-		namespaced               bool   // --namespaced
-		managedNamespace         string // --managed-namespace
-		enableOpenBrowser        bool
-		eventOperationQueueSize  int
-		eventWorkerCount         int
-		eventAsyncDispatch       bool
-		frameOptions             string
-		accessControlAllowOrigin string
-		apiRateLimit             uint64
-		kubeAPIQPS               float32
-		kubeAPIBurst             int
-		allowedLinkProtocol      []string
-		logFormat                string // --log-format
-		logLevel                 string // --loglevel
+		authModes                           []string
+		insecureTrustUnauthenticatedHeaders bool
+		configMap                           string
+		port                                int
+		baseHRef                            string
+		secure                              bool
+		tlsCertificateSecretName            string
+		hsts                                bool
+		namespaced                          bool   // --namespaced
+		managedNamespace                    string // --managed-namespace
+		enableOpenBrowser                   bool
+		eventOperationQueueSize             int
+		eventWorkerCount                    int
+		eventAsyncDispatch                  bool
+		frameOptions                        string
+		accessControlAllowOrigin            string
+		apiRateLimit                        uint64
+		kubeAPIQPS                          float32
+		kubeAPIBurst                        int
+		allowedLinkProtocol                 []string
+		logFormat                           string // --log-format
+		logLevel                            string // --loglevel
 	)
 
 	command := cobra.Command{
@@ -152,25 +153,35 @@ See %s`, help.ArgoServer()),
 				logger.Warn(ctx, "You are running without client authentication. Learn how to enable client authentication: https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/")
 			}
 
+			if insecureTrustUnauthenticatedHeaders {
+				if modes[auth.Header] {
+					logger.Warn(ctx, "You are running with --insecure-trust-unauthenticated-headers. Anyone who can reach Argo Server can impersonate any user by sending identity headers. Make sure only your authenticating proxy can reach the server's port. Learn how to secure the proxy connection: https://argo-workflows.readthedocs.io/en/latest/argo-server-header-auth/")
+				} else {
+					logger.Warn(ctx, "--insecure-trust-unauthenticated-headers has no effect because the header auth mode is not enabled")
+				}
+			}
+
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:                 baseHRef,
-				TLSConfig:                tlsConfig,
-				HSTS:                     hsts,
-				Namespaced:               namespaced,
-				Namespace:                namespace,
-				Clients:                  clients,
-				RestConfig:               config,
-				AuthModes:                modes,
-				ManagedNamespace:         managedNamespace,
-				SSONamespace:             ssoNamespace,
-				ConfigName:               configMap,
-				EventOperationQueueSize:  eventOperationQueueSize,
-				EventWorkerCount:         eventWorkerCount,
-				EventAsyncDispatch:       eventAsyncDispatch,
-				XFrameOptions:            frameOptions,
-				AccessControlAllowOrigin: accessControlAllowOrigin,
-				APIRateLimit:             apiRateLimit,
-				AllowedLinkProtocol:      allowedLinkProtocol,
+				BaseHRef:                            baseHRef,
+				TLSConfig:                           tlsConfig,
+				HSTS:                                hsts,
+				Namespaced:                          namespaced,
+				Namespace:                           namespace,
+				Clients:                             clients,
+				RestConfig:                          config,
+				AuthModes:                           modes,
+				InsecureTrustUnauthenticatedHeaders: insecureTrustUnauthenticatedHeaders,
+				ManagedNamespace:                    managedNamespace,
+				SSONamespace:                        ssoNamespace,
+				HeaderNamespace:                     ssoNamespace,
+				ConfigName:                          configMap,
+				EventOperationQueueSize:             eventOperationQueueSize,
+				EventWorkerCount:                    eventWorkerCount,
+				EventAsyncDispatch:                  eventAsyncDispatch,
+				XFrameOptions:                       frameOptions,
+				AccessControlAllowOrigin:            accessControlAllowOrigin,
+				APIRateLimit:                        apiRateLimit,
+				AllowedLinkProtocol:                 allowedLinkProtocol,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -198,7 +209,8 @@ See %s`, help.ArgoServer()),
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
 	command.Flags().BoolVar(&hsts, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
-	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso")
+	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso,header")
+	command.Flags().BoolVar(&insecureTrustUnauthenticatedHeaders, "insecure-trust-unauthenticated-headers", false, "Trust identity headers without authenticating the reverse proxy. Anyone who can reach the server can impersonate any user. Only use this when nothing except the proxy can reach the server's port, for example a proxy sidecar combined with a NetworkPolicy. Requires --auth-mode=header.")
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
@@ -222,10 +234,10 @@ See %s`, help.ArgoServer()),
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	ctx, logger, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create server logger")
+		cmdutil.FatalBootstrap(logFormat, err, "Failed to create server logger")
 	}
 	if err := viper.BindPFlags(command.Flags()); err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to bind flags to env vars")
+		logger.WithError(err).Error(ctx, "Failed to bind flags to env vars")
 		os.Exit(1)
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
@@ -233,7 +245,7 @@ See %s`, help.ArgoServer()),
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				logger.WithError(err).WithFatal().Error(ctx, "Failed to set flag")
+				logger.WithError(err).Error(ctx, "Failed to set flag")
 				os.Exit(1)
 			}
 		}

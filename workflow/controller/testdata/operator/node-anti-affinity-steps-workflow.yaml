@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-fail
+spec:
+  entrypoint: retry-fail
+  templates:
+    - name: retry-fail
+      steps:
+      - - name: fail
+          template: fail
+    - name: fail
+      retryStrategy:
+        limit: "1"
+        affinity:
+          nodeAntiAffinity: {}
+      container:
+        image: alpine:latest
+        command: [ sh, -c ]
+        args: [ "exit 1" ]

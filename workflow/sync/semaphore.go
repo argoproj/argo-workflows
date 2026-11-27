@@ -38,12 +38,18 @@ func newInternalSemaphore(ctx context.Context, name string, nextWorkflow NextWor
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 	}
-	var err error
-	limit := sem.getLimit(ctx)
-	if limit == 0 {
-		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	// Resolve the limit directly through limitGetter rather than getLimit(), since
+	// getLimit() falls back to the cache's zero-value on a fetch error, which would
+	// make a genuine error indistinguishable from a semaphore that legitimately
+	// starts at limit 0 (e.g. an "approval gate" held closed until raised).
+	limit, changed, err := sem.limitGetter.get(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize semaphore %s: %w", name, err)
 	}
-	return sem, err
+	if changed && !sem.resize(ctx, limit) {
+		return nil, fmt.Errorf("failed to size semaphore %s to limit %d", name, limit)
+	}
+	return sem, nil
 }
 
 func (s *prioritySemaphore) getLimit(ctx context.Context) int {
@@ -266,7 +272,7 @@ func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 	}
 	acquired, _ := s.acquire(ctx, holderKey, tx)
 	if acquired {
-		s.pending.pop()
+		s.pending.remove(holderKey)
 		limit := s.getLimit(ctx)
 		logger.WithFields(logging.Fields{
 			"name":      s.name,

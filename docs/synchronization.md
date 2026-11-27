@@ -154,6 +154,9 @@ You can limit parallel execution of Templates by using the same synchronization 
 In this example the synchronization key `template` is configured as limit `"2"`, so a maximum of two instances of the `acquire-lock` Template will execute at a time.
 This applies even when multiple steps or tasks within a Workflow or different Workflows refer to the same Template.
 
+A step or task releases its lock when it finishes, whether or not it was retried.
+It releases the lock even if its lifecycle hooks or exit hook are still running, so a hook can use the same lock.
+
 Using a semaphore configured by a ConfigMap:
 
 ```yaml title="examples/synchronization-tmpl-level.yaml"
@@ -226,8 +229,6 @@ Workflows can only acquire a lock if they are at the front of the queue for that
 This applies to both local and multiple controller locks.
 
 ## Multiple locks
-
-> v3.6 and after
 
 You can specify multiple locks in a single Workflow or Template.
 

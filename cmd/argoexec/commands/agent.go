@@ -17,6 +17,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4"
 	argoexecex "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
@@ -68,7 +69,7 @@ func tokenFilename(name string) string {
 func getPluginNames(ctx context.Context) []string {
 	var names []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginNames)), &names); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin names")
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to unmarshal plugin names")
 		os.Exit(1)
 	}
 	return names
@@ -77,7 +78,7 @@ func getPluginNames(ctx context.Context) []string {
 func getPluginAddresses(ctx context.Context) []string {
 	var addresses []string
 	if err := json.Unmarshal([]byte(os.Getenv(common.EnvVarPluginAddresses)), &addresses); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to unmarshal plugin addresses")
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to unmarshal plugin addresses")
 		os.Exit(1)
 	}
 	return addresses
@@ -88,12 +89,18 @@ func NewAgentMainCommand() *cobra.Command {
 		Use: "main",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			return initAgentExecutor(ctx).Agent(ctx)
+			ae, process := initAgentExecutor(ctx)
+			defer func() {
+				if err := process.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+					logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+				}
+			}()
+			return ae.Agent(ctx)
 		},
 	}
 }
 
-func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
+func initAgentExecutor(ctx context.Context) (*executor.AgentExecutor, *executor.Process) {
 	version := argo.GetVersion()
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"version": version.Version}).Info(ctx, "Starting Workflow Executor")
@@ -115,12 +122,12 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 
 	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
+		logger.Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
 		os.Exit(1)
 	}
 	workflowUID, ok := os.LookupEnv(common.EnvVarWorkflowUID)
 	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
+		logger.Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
 		os.Exit(1)
 	}
 
@@ -133,9 +140,9 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 		logger.WithField("plugin", name).
 			WithField("filename", filename).
 			Info(ctx, "loading token file for plugin")
-		data, err := os.ReadFile(filename)
-		if err != nil {
-			logger.WithError(err).WithFatal().Error(ctx, "Failed to read token file")
+		data, readErr := os.ReadFile(filename)
+		if readErr != nil {
+			logger.WithError(readErr).Error(ctx, "Failed to read token file")
 			os.Exit(1)
 		}
 		plugins = append(plugins, rpc.New(address, string(data)))
@@ -144,5 +151,19 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
 	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
 
-	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins, taskWorkers, requeueTime)
+	process, err := executor.NewProcess(
+		ctx,
+		clientSet,
+		nil, // agent results go to the task set, not to task results
+		restClient,
+		// agent tasks run no containers
+		func(executor.TaskPaths) executor.ContainerRuntimeExecutor { return nil },
+		executor.ProcessConfig{
+			Namespace:       namespace,
+			ExecutorPlugins: plugins,
+		},
+	)
+	argoexecex.CheckErr(err)
+
+	return executor.NewAgentExecutor(process, versioned.NewForConfigOrDie(config), workflowName, workflowUID, taskWorkers, requeueTime), process
 }

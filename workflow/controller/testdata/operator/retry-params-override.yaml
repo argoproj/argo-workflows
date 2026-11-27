@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  labels:
+    workflows.argoproj.io/completed: true
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: default
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf:
+      id: my-wf
+      name: my-wf
+      phase: Failed

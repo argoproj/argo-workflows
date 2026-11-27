@@ -355,15 +355,23 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
 
-// CheckAllHooksFullfilled checks whether child hooked nodes are fulfilled.
-func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
-	childs := node.Children
-	for _, id := range childs {
-		n, ok := nodes[id]
-		if !ok {
-			continue
+// HookNodes returns node's hook nodes: its children flagged Hooked, the
+// lifecycle and exit hooks run for it. A child missing from nodes is left out.
+func HookNodes(node *wfv1.NodeStatus, nodes wfv1.Nodes) []*wfv1.NodeStatus {
+	var hooks []*wfv1.NodeStatus
+	for _, id := range node.Children {
+		if n, err := nodes.Get(id); err == nil && n.NodeFlag != nil && n.NodeFlag.Hooked {
+			hooks = append(hooks, n)
 		}
-		if n.NodeFlag != nil && n.NodeFlag.Hooked && !n.Fulfilled() {
+	}
+	return hooks
+}
+
+// CheckAllHooksFullfilled checks whether node's hook nodes (HookNodes) are all
+// fulfilled.
+func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
+	for _, hook := range HookNodes(node, nodes) {
+		if !hook.Fulfilled() {
 			return false
 		}
 	}

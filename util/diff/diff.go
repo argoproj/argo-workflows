@@ -11,8 +11,11 @@ import (
 
 func LogChanges(ctx context.Context, old, newObj any) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	// Note: We don't have a direct equivalent to log.IsLevelEnabled(log.DebugLevel)
-	// The logger will handle level filtering internally
+	// Marshalling both objects and diffing them costs time and memory in
+	// proportion to the workflow's size, so only do it when the patch is logged.
+	if logger.Level() != logging.Debug {
+		return
+	}
 	a, _ := json.Marshal(old)
 	b, _ := json.Marshal(newObj)
 	patch, _ := jsonpatch.CreateMergePatch(a, b)

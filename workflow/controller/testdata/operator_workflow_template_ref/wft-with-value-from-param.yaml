@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: wf-template-echo
+  namespace: argo
+spec:
+  entrypoint: echo
+  arguments:
+    parameters:
+      - name: message
+        valueFrom:
+          configMapKeyRef:
+            name: config-properties
+            key: message
+  templates:
+    - name: echo
+      container:
+        image: busybox
+        command: [echo]
+        args: ["{{workflow.parameters.message}}"]

@@ -58,6 +58,6 @@ var (
 		"Elapsed seconds as float string; final at exit handler",
 		v.PhPreDispatch, v.PhDuringExecute, v.PhExitHandler)
 	WorkflowFailures = runtime("workflow.failures", "json",
-		"Failed-node descriptors. Wire format: a strconv.Quote-wrapped JSON string — consumers must JSON-decode twice. When no nodes have failed, the value is the literal 6-character string \"null\" (with quotes), not an empty array.",
+		"Failed-node descriptors. TaskGroup nodes are not listed; the failed items of an expanded step or task are. Wire format: a strconv.Quote-wrapped JSON string — consumers must JSON-decode twice. When no nodes have failed, the value is the literal 6-character string \"null\" (with quotes), not an empty array.",
 		v.PhExitHandler)
 )

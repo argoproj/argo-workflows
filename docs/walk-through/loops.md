@@ -10,6 +10,11 @@ There are three basic ways of running a template multiple times.
     - a JSON object where each element in the object can be addressed by it's key as '{{item.key}}'
 - `withParam` takes a JSON array of items, and iterates over it - again the items can be objects like with `withItems`. This is very powerful, as you can generate the JSON in another step in your workflow, so creating a dynamic workflow.
 
+A step or task that loops is called an expanded step or task, and it has a `TaskGroup` node.
+Each item has its own node, under the `TaskGroup` node.
+If the loop has no items, the step or task has a `Skipped` node instead.
+[How DAG and Steps Templates Run](../dag-and-steps-execution.md) describes how the phases of the items combine.
+
 ## `withSequence` example
 
 This runs a template multiple times using `withSequence`.
@@ -36,6 +41,8 @@ spec:
       command: [echo]
       args: ["hello world!"]
 ```
+
+A `withSequence` with a negative `count` produces no items.
 
 ## `withItems` basic example
 
@@ -70,6 +77,9 @@ spec:
       command: [echo]
       args: ["{{inputs.parameters.message}}"]
 ```
+
+`{{index}}` is not a variable.
+If an item contains the text `{{index}}`, the controller does not replace it, and the text stays as it is.
 
 ## `withItems` more complex example
 

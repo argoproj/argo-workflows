@@ -487,6 +487,16 @@ type WorkflowSpec struct {
 	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
 	// +optional
 	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely.
+	// Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates.
+	// A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 type LabelValueFrom struct {
@@ -857,6 +867,16 @@ type Template struct {
 	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
 	// +optional
 	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,46,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// Replaces the workflow-level resourceClaims as a whole rather than merging with it.
+	// Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
+	// A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 // SetType will set the template object based on template type.
@@ -1555,7 +1575,7 @@ type ArtifactRepositoryRefStatus struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 	// If this ref represents the default artifact repository, rather than a config map.
 	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
-	// The repository the workflow will use. This maybe empty before v3.1.
+	// The repository the workflow will use.
 	ArtifactRepository *ArtifactRepository `json:"artifactRepository,omitempty" protobuf:"bytes,4,opt,name=artifactRepository"`
 }
 
@@ -1621,10 +1641,20 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	return false
 }
 
-func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
+// RecordArtifactGCPod records that a GC Pod has been created and is awaiting recoup. A Pod that has already been
+// recouped is left as is, so it is safe to call again when a strategy is retried.
+func (gcStatus *ArtGCStatus) RecordArtifactGCPod(podName string) {
 	if gcStatus.PodsRecouped == nil {
-		return false
+		gcStatus.PodsRecouped = make(map[string]bool)
 	}
+	if _, found := gcStatus.PodsRecouped[podName]; !found {
+		gcStatus.PodsRecouped[podName] = false
+	}
+}
+
+// AllArtifactGCPodsRecouped is true when no recorded GC Pod is still awaiting recoup. Pods are recorded when they
+// are created, so an empty map means there is nothing outstanding.
+func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 	for _, recouped := range gcStatus.PodsRecouped {
 		if !recouped {
 			return false
@@ -1893,11 +1923,19 @@ type TemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
+// GetResourceScope returns the scope of the referenced WorkflowTemplate.
+func (ref *TemplateRef) GetResourceScope() ResourceScope {
+	if ref.ClusterScope {
+		return ResourceScopeCluster
+	}
+	return ResourceScopeNamespaced
+}
+
 // Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// v3.6 and after: Semaphores holds the list of Semaphores configuration
+	// Semaphores holds the list of Semaphores configuration
 	Semaphores []*SemaphoreRef `json:"semaphores,omitempty" protobuf:"bytes,3,opt,name=semaphores"`
-	// v3.6 and after: Mutexes holds the list of Mutex lock details
+	// Mutexes holds the list of Mutex lock details
 	Mutexes []*Mutex `json:"mutexes,omitempty" protobuf:"bytes,4,opt,name=mutexes"`
 }
 
@@ -3827,8 +3865,48 @@ func (w *Workflow) GetTemplateByName(name string) *Template {
 }
 
 func (w *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
-	nodeID := w.NodeID(nodeName)
-	return w.Status.Nodes.Get(nodeID)
+	node, _ := w.ResolveNode(nodeName)
+	if node == nil {
+		return nil, fmt.Errorf("key was not found for %s", nodeName)
+	}
+	return node, nil
+}
+
+// ResolveNode finds the node for a spec-derived node name, tolerating node
+// ID collisions. It returns the existing node and its ID if there is one.
+// Otherwise it returns nil and the ID a node with this name must be created
+// with.
+//
+// Distinct names can hash to the same 32-bit ID. A node whose name loses
+// that race is stored under the widened NodeID64(name) instead, so lookups
+// try the 32-bit slot and fall back to the 64-bit slot, comparing the stored
+// Name. The 64-bit slot is also tried when the 32-bit slot is empty, because
+// a retry can delete the node that held it while the widened node survives.
+// There is no third level: a 64-bit collision between names that also
+// collide at 32 bits is not resolved, and initializeNode refuses to create
+// the node.
+func (w *Workflow) ResolveNode(name string) (*NodeStatus, string) {
+	id32 := w.NodeID(name)
+	n32, ok32 := w.Status.Nodes[id32]
+	if ok32 && n32.Name == name {
+		return &n32, id32
+	}
+	id64 := w.NodeID64(name)
+	if n64, ok := w.Status.Nodes[id64]; ok && n64.Name == name {
+		return &n64, id64
+	}
+	if ok32 {
+		// the 32-bit slot is held by a different name: widen
+		return nil, id64
+	}
+	return nil, id32
+}
+
+// ResolveNodeID returns the ID of the node with this spec-derived name, or
+// the ID it will be created with if it does not exist yet.
+func (w *Workflow) ResolveNodeID(name string) string {
+	_, id := w.ResolveNode(name)
+	return id
 }
 
 // GetResourceScope returns the template scope of workflow.
@@ -3856,14 +3934,66 @@ func (w *Workflow) NodeID(name string) string {
 	return fmt.Sprintf("%s-%v", w.Name, h.Sum32())
 }
 
-// GetStoredTemplate retrieves a template from stored templates of the workflow.
-func (w *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
-	tmplID, storageNeeded := resolveTemplateReference(scope, resourceName, caller)
-	if !storageNeeded {
-		// Local templates aren't stored
+// NodeID64 creates the widened node ID a node is stored under when its name
+// collides with a different name under NodeID. FNV-1a has no finalisation
+// step, so a 32-bit collision carries over to every common extension of the
+// two names, but their 64-bit hashes are independent of it.
+func (w *Workflow) NodeID64(name string) string {
+	if name == w.Name {
+		return w.Name
+	}
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(name))
+	return fmt.Sprintf("%s-%v", w.Name, h.Sum64())
+}
+
+// GetNodeTemplateKey returns the scoped key for a node's template, or an empty
+// string if the template is unnamed.
+func (w *Workflow) GetNodeTemplateKey(node *NodeStatus) string {
+	scope, resourceName := node.GetTemplateScope()
+	key, stored := resolveTemplateReference(scope, resourceName, node)
+	if !stored {
+		key = w.localTemplateKeyPrefix() + node.TemplateName
+	}
+	if strings.HasSuffix(key, "/") {
+		return ""
+	}
+	return key
+}
+
+func (w *Workflow) localTemplateKeyPrefix() string {
+	return string(ResourceScopeLocal) + "/" + w.Name + "/"
+}
+
+// GetTemplateFromSnapshot looks up a key from GetNodeTemplateKey in the execution
+// spec or stored templates, without fetching any live references.
+func (w *Workflow) GetTemplateFromSnapshot(key string) *Template {
+	if key == "" {
 		return nil
 	}
-	if tmpl, ok := w.Status.StoredTemplates[tmplID]; ok {
+	name, local := strings.CutPrefix(key, w.localTemplateKeyPrefix())
+	if !local {
+		return w.getStoredTemplate(key)
+	}
+	for _, tmpl := range w.GetExecSpec().Templates {
+		if tmpl.Name == name {
+			return &tmpl
+		}
+	}
+	return nil
+}
+
+// GetStoredTemplate retrieves a template from stored templates of the workflow.
+func (w *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
+	key, stored := resolveTemplateReference(scope, resourceName, caller)
+	if !stored {
+		return nil
+	}
+	return w.getStoredTemplate(key)
+}
+
+func (w *Workflow) getStoredTemplate(key string) *Template {
+	if tmpl, ok := w.Status.StoredTemplates[key]; ok {
 		return tmpl.DeepCopy()
 	}
 	return nil
@@ -3914,30 +4044,19 @@ func (w *Workflow) SetStoredInlineTemplate(scope ResourceScope, resourceName str
 	return nil
 }
 
-// resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
-// if it should be stored
-func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
-	tmplRef := caller.GetTemplateRef()
-	switch {
-	case tmplRef != nil:
-		// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate. Template storage is needed
-		// We need to determine if we're calling a WorkflowTemplate or a ClusterWorkflowTemplate
-		referenceScope := ResourceScopeNamespaced
-		if tmplRef.ClusterScope {
-			referenceScope = ResourceScopeCluster
-		}
-		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
-	case callerScope != ResourceScopeLocal:
-		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
-		if caller.GetTemplate() != nil {
-			// If we have an inlined template here, use the inlined name
-			return fmt.Sprintf("%s/%s/inline/%s", callerScope, resourceName, caller.GetName()), true
-		}
-		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
-	default:
-		// A Workflow is calling a template inside itself. Template storage is not needed
+// resolveTemplateReference returns the key used in Status.StoredTemplates.
+// A local template does not need a stored copy.
+func resolveTemplateReference(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
+	if ref := caller.GetTemplateRef(); ref != nil {
+		return fmt.Sprintf("%s/%s/%s", ref.GetResourceScope(), ref.Name, ref.Template), true
+	}
+	if scope == ResourceScopeLocal {
 		return "", false
 	}
+	if caller.GetTemplate() != nil {
+		return fmt.Sprintf("%s/%s/inline/%s", scope, resourceName, caller.GetName()), true
+	}
+	return fmt.Sprintf("%s/%s/%s", scope, resourceName, caller.GetTemplateName()), true
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
@@ -4216,11 +4335,31 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 	i, semaphoreWaiting := ss.GetWaiting(lockKey)
 	if i < 0 {
 		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: currentHolders})
-	} else {
-		semaphoreWaiting.Holders = currentHolders
-		ss.Waiting[i] = semaphoreWaiting
+		return true
 	}
+	// Holders is a set of workflow keys. Lock backends do not return holders in a
+	// stable order; only a change in membership should be treated as a
+	// synchronization status change, or the controller persists and requeues the
+	// workflow while it keeps waiting.
+	if sameHolders(semaphoreWaiting.Holders, currentHolders) {
+		return false
+	}
+	semaphoreWaiting.Holders = currentHolders
+	ss.Waiting[i] = semaphoreWaiting
 	return true
+}
+
+// sameHolders reports whether a and b contain the same holder keys.
+// Order does not matter. A nil slice and an empty slice are the same.
+func sameHolders(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	left := slices.Clone(a)
+	right := slices.Clone(b)
+	slices.Sort(left)
+	slices.Sort(right)
+	return slices.Equal(left, right)
 }
 
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
@@ -4376,11 +4515,19 @@ const (
 	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
 )
 
+// GetStatus returns the status for the given lock type, or a nil interface
+// (not a typed nil pointer) when that status has not been initialised.
 func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
 	switch syncType {
 	case SynchronizationTypeSemaphore:
+		if ss.Semaphore == nil {
+			return nil
+		}
 		return ss.Semaphore
 	case SynchronizationTypeMutex:
+		if ss.Mutex == nil {
+			return nil
+		}
 		return ss.Mutex
 	default:
 		panic("invalid syncType in GetStatus")

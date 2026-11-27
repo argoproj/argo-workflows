@@ -73,7 +73,7 @@ func parseUserOverrideAllowlist(env string) ([]string, error) {
 	goName := map[string]string{}
 	t := reflect.TypeFor[wfv1.WorkflowSpec]()
 	for field := range t.Fields() {
-		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if name == "" || name == "-" {
 			name = field.Name // ponytail: fall back to Go name for any untagged field
 		}
@@ -194,20 +194,21 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 		return nil
 	}
 
-	// Temporarily remove hooks and labelsFrom as they don't merge
+	// Hooks and labelsFrom don't merge, so they are left out of the patch that is marshalled and added to the result
+	// afterwards. The patch can be shared between goroutines, e.g. the workflow defaults of the controller, so work on
+	// a shallow copy and never write to the patch itself.
 	patchHooks := patch.Spec.Hooks
-	patch.Spec.Hooks = nil
 	var patchLabelsFrom map[string]wfv1.LabelValueFrom
+	patchWithoutUnmergeable := *patch
+	patchWithoutUnmergeable.Spec.Hooks = nil
 	if patch.Spec.WorkflowMetadata != nil {
 		patchLabelsFrom = patch.Spec.WorkflowMetadata.LabelsFrom
-		patch.Spec.WorkflowMetadata.LabelsFrom = nil
+		workflowMetadata := *patch.Spec.WorkflowMetadata
+		workflowMetadata.LabelsFrom = nil
+		patchWithoutUnmergeable.Spec.WorkflowMetadata = &workflowMetadata
 	}
 
-	patchWfBytes, err := json.Marshal(patch)
-	patch.Spec.Hooks = patchHooks
-	if len(patchLabelsFrom) != 0 {
-		patch.Spec.WorkflowMetadata.LabelsFrom = patchLabelsFrom
-	}
+	patchWfBytes, err := json.Marshal(&patchWithoutUnmergeable)
 	if err != nil {
 		return err
 	}

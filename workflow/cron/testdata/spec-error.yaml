@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world
+spec:
+  concurrencyPolicy: Replace
+  failedJobsHistoryLimit: 4
+  schedules:
+    - 10 * * 12737123 *
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  timezone: America/Los_Angeles
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+    -
+      container:
+        args:
+        - "\U0001F553 hello world"
+        command:
+        - cowsay
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: whalesay
+      outputs: {}

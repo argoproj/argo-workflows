@@ -1,7 +1,5 @@
 # Inline Templates
 
-> v3.2 and after
-
 You can inline other templates within DAG and steps.
 
 Examples:

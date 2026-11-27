@@ -29,10 +29,8 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      mutexes: # v3.6 and after
+      mutexes:
         - name: welcome
-      # mutex: # deprecated: v3.5 and before
-      #   name: welcome
     container:
       image: alpine:3.23
       command: [sh, -c]
@@ -40,10 +38,8 @@ spec:
 
   - name: acquire-lock-1
     synchronization:
-      mutexes: # v3.6 and after
+      mutexes:
         - name: test
-      # mutex: # deprecated: v3.5 and before
-      #   name: test
     container:
       image: alpine:3.23
       command: [sh, -c]

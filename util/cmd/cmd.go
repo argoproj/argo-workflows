@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -116,4 +117,21 @@ func ContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Co
 
 	cmd.SetContext(ctx)
 	return ctx, logger, nil
+}
+
+// FatalBootstrap reports an error that occurred before the main logger could be
+// constructed, then exits non-zero. It honours the requested log format when
+// that format is parseable and falls back to JSON when it is not (the format
+// flag itself may be the invalid input).
+func FatalBootstrap(logFormat string, err error, msg string) {
+	format, ferr := logging.TypeFromStringOr(logFormat, logging.JSON)
+	if ferr != nil {
+		format = logging.JSON
+	}
+	logging.NewSlogLoggerCustom(logging.Error, format, os.Stderr).WithError(err).Error(context.Background(), msg)
+	if exit := logging.GetExitFunc(); exit != nil {
+		exit(1)
+		return
+	}
+	os.Exit(1)
 }

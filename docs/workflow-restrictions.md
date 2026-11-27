@@ -1,7 +1,5 @@
 # Workflow Restrictions
 
-> v2.9 and after
-
 ## Introduction
 
 As the administrator of the controller, you may want to limit which types of Workflows your users can run.

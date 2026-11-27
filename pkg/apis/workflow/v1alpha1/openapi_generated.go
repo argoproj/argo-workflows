@@ -996,7 +996,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.Re
 					},
 					"artifactRepository": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The repository the workflow will use. This maybe empty before v3.1.",
+							Description: "The repository the workflow will use.",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
 						},
 					},
@@ -2341,13 +2341,13 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"stopStrategy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
+							Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopStrategy"),
 						},
 					},
 					"schedules": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format",
+							Description: "Schedules is a list of schedules to run the Workflow in Cron format",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2362,7 +2362,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"when": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: When is an expression that determines if a run should be scheduled.",
+							Description: "When is an expression that determines if a run should be scheduled.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2419,7 +2419,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"succeeded": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Succeeded counts how many times child workflows succeeded",
+							Description: "Succeeded counts how many times child workflows succeeded",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2427,7 +2427,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"failed": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Failed counts how many times child workflows failed",
+							Description: "Failed counts how many times child workflows failed",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int64",
@@ -2435,7 +2435,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
+							Description: "Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -6275,12 +6275,12 @@ func schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after",
+				Description: "StopStrategy defines if the CronWorkflow should stop scheduling based on an expression.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
+							Description: "Expression is an expression that stops scheduling workflows when true. Use the variables `cronworkflow`.`failed` or `cronworkflow`.`succeeded` to access the number of failed or successful child workflows.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -6509,7 +6509,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"semaphores": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",
+							Description: "Semaphores holds the list of Semaphores configuration",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6522,7 +6522,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 					},
 					"mutexes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Mutexes holds the list of Mutex lock details",
+							Description: "Mutexes holds the list of Mutex lock details",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6987,11 +6987,30 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
+					"resourceClaims": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. Replaces the workflow-level resourceClaims as a whole rather than merging with it. Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod. A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -8345,11 +8364,30 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
+					"resourceClaims": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely. Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates. A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorPlugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorPlugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
 	}
 }
 

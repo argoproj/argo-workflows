@@ -2,18 +2,21 @@
 
 ## Introduction
 
-If triggering an external job (e.g. an Amazon EMR job) from Argo that does not run to completion in a container, there are two options:
+To trigger an external job (for example, an Amazon EMR job) from Argo that does not run to completion in a container, you have two options:
 
 - create a container that polls the external job completion status
-- combine a trigger step that starts the job with a [`suspend`](walk-through/suspending.md) step that is resumed by an API call to Argo when the external job is complete.
+- combine a trigger step that starts the job with a [`suspend`](walk-through/suspending.md) step that an API call to Argo resumes when the external job is complete.
 
 This document describes the second option in more detail.
 
 ## The pattern
 
-The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (e.g. an HTTP submission), and the second step is a `suspend` step that suspends workflow execution and is ultimately either resumed or stopped (i.e. failed) via a call to the Argo API when the job outside Argo succeeds or fails.
+The pattern involves two steps.
+The first step is a short-running step that triggers a long-running job outside Argo (for example, an HTTP submission).
+The second step is a `suspend` step that suspends workflow execution.
+When the job outside Argo succeeds or fails, a call to the Argo API either resumes or stops (that is, fails) the `suspend` step.
 
-When implemented as a `WorkflowTemplate` it can look something like this:
+A WorkflowTemplate that implements this pattern can look like this:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -61,15 +64,14 @@ spec:
       suspend: { }
 ```
 
-In this case the ```job-cmd``` parameter can be a command that makes an HTTP call via curl to an endpoint that returns a job UUID. More sophisticated submission and parsing of submission output could be done with something like a Python script step.
+In this case, the `job-cmd` parameter can be a command that uses `curl` to make an HTTP call to an endpoint that returns a job UUID.
+For more sophisticated submission and parsing of submission output, you can use a Python script step.
 
-On job completion the external job would need to call either resume if successful:
-
-You may need  an [access token](access-token.md).
+When the job completes, the external job must call either `resume` if successful:
 
 ```bash
 curl --request PUT \
-  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
+  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume \
   --header 'content-type: application/json' \
   --header "Authorization: $ARGO_TOKEN" \
   --data '{
@@ -79,11 +81,11 @@ curl --request PUT \
     }'
 ```
 
-or stop if unsuccessful:
+or `stop` if unsuccessful:
 
 ```bash
 curl --request PUT \
-  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
+  --url https://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop \
   --header 'content-type: application/json' \
   --header "Authorization: $ARGO_TOKEN" \
   --data '{
@@ -94,12 +96,15 @@ curl --request PUT \
     }'
 ```
 
+To perform the API call you may need an [access token](access-token.md).
+
 ## Retrying failed jobs
 
-Using `argo retry` on failed jobs that follow this pattern will cause Argo to re-attempt the `suspend` step without re-triggering the job.
+If you use `argo retry` on failed workflows that follow this pattern, Argo re-attempts the `suspend` step without re-triggering the job.
 
-Instead you need to use the `--restart-successful` option, e.g. if using the template from above:
+Instead, use the `--restart-successful` option.
+For example, with the template above:
 
 ```bash
-argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
+argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateName=run-external-job,phase=Failed
 ```

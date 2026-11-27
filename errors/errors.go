@@ -92,8 +92,7 @@ func Wrap(err error, code string, message string) error {
 // be returned. If the error is nil, nil will be returned without further
 // investigation.
 func Cause(err error) error {
-	var argoErr argoerr
-	if errors.As(err, &argoErr) {
+	if argoErr, ok := errors.AsType[argoerr](err); ok {
 		return unwrapCauseArgoErr(argoErr.err)
 	}
 	return unwrapCause(err)
@@ -160,8 +159,7 @@ func (e argoerr) HTTPCode() int {
 
 // IsCode is a helper to determine if the error is of a specific code
 func IsCode(code string, err error) bool {
-	var argoErr argoerr
-	if errors.As(err, &argoErr) {
+	if argoErr, ok := errors.AsType[argoerr](err); ok {
 		return argoErr.code == code
 	}
 	return false

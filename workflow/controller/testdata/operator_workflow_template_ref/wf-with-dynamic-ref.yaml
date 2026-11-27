@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-wf-global-arg-
+  namespace: default
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: global-parameter
+        value: hello
+  templates:
+    - name: whalesay
+      steps:
+        - - name: hello-world
+            templateRef:
+              name: '{{item.workflow-template}}'
+              template: '{{item.template-name}}'
+            withItems:
+                - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}
+          - name: hello-world-dag
+            template: diamond
+
+    - name: diamond
+      dag:
+        tasks:
+        - name: A
+          templateRef:
+            name: '{{item.workflow-template}}'
+            template: '{{item.template-name}}'
+          withItems:
+              - { workflow-template: 'hello-world-template-global-arg', template-name: 'hello-world'}

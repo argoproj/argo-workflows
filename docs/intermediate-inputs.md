@@ -1,7 +1,5 @@
 # Intermediate Parameters
 
-> v3.4 and after
-
 Traditionally, Argo workflows has supported input parameters from UI only when the workflow starts,
 and after that, it's pretty much on autopilot. But, there are a lot of use cases where human interaction is required.
 

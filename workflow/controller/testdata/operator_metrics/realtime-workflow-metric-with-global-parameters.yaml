@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-foobar
+  labels:
+    testLabel: foobar
+spec:
+  arguments:
+    parameters:
+      - name: testParam
+        value: foo
+  entrypoint: whalesay
+  metrics:
+    prometheus:
+      - name: intuit_data_persistplat_dppselfservice_workflow_test_duration
+        help: Duration of workflow
+        labels:
+          - key: workflowName
+            value: "{{workflow.name}}"
+          - key: label
+            value: "{{workflow.labels.testLabel}}"
+        gauge:
+          realtime: true
+          value: "{{workflow.duration}}"
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay
+        command: [ cowsay ]
+        args: [ "hello world" ]

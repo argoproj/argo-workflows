@@ -91,6 +91,22 @@ describe('ArtifactsInput', () => {
         expect(screen.getByText(/uploaded successfully/i)).toBeTruthy();
     });
 
+    it('POSTs to the upload endpoint prefixed with the configured base href', async () => {
+        const base = document.createElement('base');
+        base.setAttribute('href', '/argo/');
+        document.head.appendChild(base);
+
+        const xhr = installMockXHR();
+        render(<ArtifactsInput {...defaultProps} />);
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        fireEvent.change(fileInput, {target: {files: [makeFile()]}});
+
+        expect(xhr.open).toHaveBeenCalledWith('POST', '/argo/upload-artifacts/argo/my-template/input-artifact');
+
+        document.head.removeChild(base);
+    });
+
     it('updates progress from upload progress events', async () => {
         const xhr = installMockXHR();
         render(<ArtifactsInput {...defaultProps} />);

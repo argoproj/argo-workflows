@@ -11,6 +11,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/wfcontext"
 )
 
 func workflowID(name, namespace string) string {
@@ -97,8 +98,10 @@ func (trc *Tracing) RecordStartWorkflow(ctx context.Context, name, namespace str
 		logger.WithError(err).Error(ctx, "tracing StartWorkflow failed")
 		return ctx
 	}
+	traceID := telemetry.DeterministicTraceID(wfcontext.UIDList(ctx)...)
+	spanID := telemetry.DeterministicSpanID(wfcontext.UIDList(ctx)...)
 	ctx = trace.ContextWithRemoteSpanContext(ctx, trace.SpanContext{}.WithTraceState(ts))
-	ctx, span := trc.StartWorkflow(ctx, name, namespace)
+	ctx, span := trc.StartWorkflow(ctx, traceID, spanID, name, namespace)
 
 	spans.workflow = &span
 	trc.updateWorkflow(id, spans)
@@ -116,7 +119,8 @@ func (trc *Tracing) ChangeWorkflowPhase(ctx context.Context, name, namespace str
 	if wf.phase != nil {
 		(*wf.phase).End()
 	}
-	_, newSpan := trc.StartWorkflowPhase(ctx, string(phase))
+	spanID := telemetry.DeterministicSpanID(name, namespace, string(phase))
+	_, newSpan := trc.StartWorkflowPhase(ctx, spanID, string(phase))
 	wf.phase = &newSpan
 	trc.updateWorkflow(id, wf)
 }
@@ -175,6 +179,29 @@ func (trc *Tracing) RecoverWorkflowContext(ctx context.Context, id string) conte
 	return ctx
 }
 
+// ContextWithNode returns ctx with the node's span installed as the active span.
+// Child spans started afterwards (e.g. createWorkflowPod) then parent under the
+// node span even when the node was first initialized in an earlier operate cycle
+// (or earlier converge pass) and its span context is no longer carried in ctx —
+// the case that otherwise produces "incorrect trace parentage". If the node span
+// is unknown (tracing disabled, or node not yet started), ctx is returned unchanged.
+func (trc *Tracing) ContextWithNode(ctx context.Context, name, namespace, nodeID string) context.Context {
+	wfID := workflowID(name, namespace)
+	trc.mutex.RLock()
+	wfs, ok := trc.workflows[wfID]
+	trc.mutex.RUnlock()
+	if !ok {
+		return ctx
+	}
+	wfs.mutex.RLock()
+	node, ok := wfs.nodes[nodeID]
+	wfs.mutex.RUnlock()
+	if !ok || node.node == nil {
+		return ctx
+	}
+	return trace.ContextWithSpan(ctx, *node.node)
+}
+
 func (trc *Tracing) RecordStartNode(ctx context.Context, name, namespace string, nodeID string, nodeType string, phase wfv1.NodePhase, message string) context.Context {
 	logger := logging.RequireLoggerFromContext(ctx)
 	wfID := namespace + "/" + name
@@ -188,7 +215,8 @@ func (trc *Tracing) RecordStartNode(ctx context.Context, name, namespace string,
 		logger.WithError(err).Error(ctx, "tracing create node failed")
 		return ctx
 	}
-	nodeCtx, span := trc.StartNode(ctx, nodeID, name, namespace, nodeType)
+	spanID := telemetry.DeterministicSpanID(nodeID)
+	nodeCtx, span := trc.StartNode(ctx, spanID, nodeID, name, namespace, nodeType)
 	node.node = &span
 	wf.updateNode(nodeID, &node)
 	trc.ChangeNodePhase(nodeCtx, wfID, nodeID, phase, message)
@@ -232,7 +260,8 @@ func (trc *Tracing) ChangeNodePhase(ctx context.Context, wfID string, nodeID str
 	if phase.Fulfilled(nil) {
 		trc.EndNode(ctx, wfID, nodeID, phase)
 	} else {
-		_, span := trc.StartNodePhase(ctx, nodeID, string(phase), spanOpts...)
+		spanID := telemetry.DeterministicSpanID(nodeID, string(phase))
+		_, span := trc.StartNodePhase(ctx, spanID, nodeID, string(phase), spanOpts...)
 		node.phase = &span
 		wfs.updateNode(nodeID, node)
 	}

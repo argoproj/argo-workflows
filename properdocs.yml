@@ -58,6 +58,7 @@ exclude_docs: |
   /proposals/
   /requirements.txt
   /tested-kubernetes-versions.md
+  /AGENTS.md
 
 nav:
   - Home: README.md
@@ -133,6 +134,7 @@ nav:
           - memoization.md
           - template-defaults.md
           - enhanced-depends-logic.md
+          - dag-and-steps-execution.md
           - node-field-selector.md
           - pod-restarts.md
       - Status:
@@ -253,6 +255,7 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - crd-installer.md
       - releases.md
       - upgrading.md
       - new-features.md
@@ -283,6 +286,7 @@ nav:
           - tls.md
           - argo-server-sso.md
           - argo-server-sso-argocd.md
+          - argo-server-header-auth.md
       - Best Practices:
           - high-availability.md
           - disaster-recovery.md
@@ -296,6 +300,7 @@ nav:
       - tracing.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - pull-requests.md
       - running-nix.md
       - architecture.md
       - running-locally.md

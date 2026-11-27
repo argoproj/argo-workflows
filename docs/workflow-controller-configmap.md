@@ -35,8 +35,9 @@ data:
 
 ```
 
-In version 2.7+, the `config: |` key is optional. However, if the `config: |` key is not used, all nested maps under top level
-keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize.
+The `config: |` key is optional.
+However, if the `config: |` key is not used, all nested maps under top level keys should be strings.
+This makes it easier to generate the map with some configuration management tools like Kustomize.
 
 ```yaml
 # This file describes the config settings available in the workflow controller configmap
@@ -44,7 +45,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
-data:                      # "config: |" key is optional in 2.7+!
+data:                      # "config: |" key is optional!
   instanceID: my-ci-controller
   artifactRepository: |    # However, all nested maps must be strings
    archiveLogs: true
@@ -95,6 +96,7 @@ Config contains the root of the configuration settings for the workflow controll
 | `RetentionPolicy`          | [`RetentionPolicy`](#retentionpolicy)                                                                       | Workflow retention by number of workflows                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `NavColor`                 | `string`                                                                                                    | NavColor is an ui navigation bar background color                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `SSO`                      | [`SSOConfig`](#ssoconfig)                                                                                   | SSO in settings for single-sign on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `Header`                   | [`HeaderConfig`](#headerconfig)                                                                             | Header in settings for trusted header authentication                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `Synchronization`          | [`SyncConfig`](#syncconfig)                                                                                 | Synchronization via databases config                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `ArtifactDrivers`          | `Array<`[`ArtifactDriver`](#artifactdriver)`>`                                                              | ArtifactDrivers lists artifact driver plugins we can use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `FailedPodRestart`         | [`FailedPodRestartConfig`](#failedpodrestartconfig)                                                         | FailedPodRestart configures automatic restart of pods that fail before entering Running state (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient infrastructure issues without requiring a retryStrategy on templates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -322,21 +324,22 @@ SSOConfig contains single sign-on configuration settings
 
 ### Fields
 
-|       Field Name       |                                                         Field Type                                                          |                            Description                             |
-|------------------------|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `Issuer`               | `string`                                                                                                                    | Issuer is the OIDC issuer URL                                      |
-| `IssuerAlias`          | `string`                                                                                                                    | IssuerAlias is an optional alias for the issuer                    |
-| `ClientID`             | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | ClientID references a secret containing the OIDC client ID         |
-| `ClientSecret`         | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | ClientSecret references a secret containing the OIDC client secret |
-| `RedirectURL`          | `string`                                                                                                                    | RedirectURL is the OIDC redirect URL                               |
-| `RBAC`                 | [`RBACConfig`](#rbacconfig)                                                                                                 | RBAC contains role-based access control settings                   |
-| `Scopes`               | `Array<string>`                                                                                                             | additional scopes (on top of "openid")                             |
-| `SessionExpiry`        | [`metav1.Duration`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta)                  | SessionExpiry specifies how long user sessions last                |
-| `CustomGroupClaimName` | `string`                                                                                                                    | CustomGroupClaimName will override the groups claim name           |
-| `UserInfoPath`         | `string`                                                                                                                    | UserInfoPath specifies the path to user info endpoint              |
-| `InsecureSkipVerify`   | `bool`                                                                                                                      | InsecureSkipVerify skips TLS certificate verification              |
-| `FilterGroupsRegex`    | `Array<string>`                                                                                                             | FilterGroupsRegex filters groups using regular expressions         |
-| `RootCA`               | `string`                                                                                                                    | custom PEM encoded CA certificate file contents                    |
+|       Field Name       |                                                         Field Type                                                          |                                                                 Description                                                                 |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `Issuer`               | `string`                                                                                                                    | Issuer is the OIDC issuer URL                                                                                                               |
+| `IssuerAlias`          | `string`                                                                                                                    | IssuerAlias is an optional alias for the issuer                                                                                             |
+| `ClientID`             | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | ClientID references a secret containing the OIDC client ID                                                                                  |
+| `ClientSecret`         | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | ClientSecret references a secret containing the OIDC client secret                                                                          |
+| `RedirectURL`          | `string`                                                                                                                    | RedirectURL is the OIDC redirect URL                                                                                                        |
+| `LogoutRedirectURL`    | `string`                                                                                                                    | LogoutRedirectURL is the absolute URL to redirect to after logout; it is also used as the post-logout redirect URI for OIDC provider logout |
+| `RBAC`                 | [`RBACConfig`](#rbacconfig)                                                                                                 | RBAC contains role-based access control settings                                                                                            |
+| `Scopes`               | `Array<string>`                                                                                                             | additional scopes (on top of "openid")                                                                                                      |
+| `SessionExpiry`        | [`metav1.Duration`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta)                  | SessionExpiry specifies how long user sessions last                                                                                         |
+| `CustomGroupClaimName` | `string`                                                                                                                    | CustomGroupClaimName will override the groups claim name                                                                                    |
+| `UserInfoPath`         | `string`                                                                                                                    | UserInfoPath specifies the path to user info endpoint                                                                                       |
+| `InsecureSkipVerify`   | `bool`                                                                                                                      | InsecureSkipVerify skips TLS certificate verification                                                                                       |
+| `FilterGroupsRegex`    | `Array<string>`                                                                                                             | FilterGroupsRegex filters groups using regular expressions                                                                                  |
+| `RootCA`               | `string`                                                                                                                    | custom PEM encoded CA certificate file contents                                                                                             |
 
 ## RBACConfig
 
@@ -347,6 +350,55 @@ RBACConfig contains role-based access control configuration
 | Field Name | Field Type |               Description                |
 |------------|------------|------------------------------------------|
 | `Enabled`  | `bool`     | Enabled controls whether RBAC is enabled |
+
+## HeaderConfig
+
+HeaderConfig contains trusted header authentication configuration settings.
+
+### Fields
+
+|     Field Name      |                 Field Type                  |                         Description                          |
+|---------------------|---------------------------------------------|--------------------------------------------------------------|
+| `Issuer`            | [`ClaimSource`](#claimsource)               | Issuer configures the issuer claim.                          |
+| `Subject`           | [`ClaimSource`](#claimsource)               | Subject configures the subject claim.                        |
+| `Email`             | [`ClaimSource`](#claimsource)               | Email configures the email claim.                            |
+| `PreferredUsername` | [`ClaimSource`](#claimsource)               | PreferredUsername configures the preferred_username claim.   |
+| `Groups`            | [`GroupClaimSource`](#groupclaimsource)     | Groups configures the groups claim.                          |
+| `SharedSecret`      | [`SharedSecretHeader`](#sharedsecretheader) | SharedSecret configures authentication of the trusted proxy. |
+| `RBAC`              | [`RBACConfig`](#rbacconfig)                 | RBAC configures role-based access controls                   |
+
+## ClaimSource
+
+ClaimSource specifies how to populate a claim.
+
+### Fields
+
+| Field Name | Field Type |                         Description                          |
+|------------|------------|--------------------------------------------------------------|
+| `Header`   | `string`   | Header specifies the HTTP header containing the claim value. |
+| `Value`    | `string`   | Value specifies a static value for the claim.                |
+
+## GroupClaimSource
+
+GroupClaimSource specifies how to populate the groups claim.
+
+### Fields
+
+| Field Name | Field Type |                         Description                          |
+|------------|------------|--------------------------------------------------------------|
+| `Header`   | `string`   | Header specifies the HTTP header containing the claim value. |
+| `Value`    | `string`   | Value specifies a static value for the claim.                |
+
+## SharedSecretHeader
+
+SharedSecretHeader configures a shared secret used to authenticate the trusted authentication proxy.
+
+### Fields
+
+|   Field Name    |                                                         Field Type                                                          |                                         Description                                         |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `Header`        | `string`                                                                                                                    | Header specifies the HTTP header containing the shared secret.                              |
+| `RequiredValue` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | RequiredValue references the Kubernetes Secret containing the expected shared secret value. |
 
 ## SyncConfig
 

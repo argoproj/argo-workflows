@@ -1,4 +1,4 @@
-# New features in v4.1.0 (2026-07-22)
+# New features in v4.1 (2026-08-11)
 
 This is a concise list of new features.
 
@@ -50,8 +50,24 @@ This is a concise list of new features.
   Decompression auto-detects the algorithm.
   See [node status compression](offloading-large-workflows.md#node-status-compression).
 
+- New `argo-workflows-crdinstaller` image for installing the full CRDs by [Alan Clucas](https://github.com/Joibel) ([#16621](https://github.com/argoproj/argo-workflows/issues/16621))
+  A new image, `quay.io/argoproj/argo-workflows-crdinstaller`, is published with each release.
+  It bundles `kubectl` and the [full CRDs](https://argo-workflows.readthedocs.io/en/latest/installation/#full-crds) matching the release, and by default applies them using server-side apply.
+  It is intended to run as a Kubernetes Job by installation tooling that cannot server-side apply the full CRDs itself, such as the community Helm chart, and works without network access to GitHub — including in air-gapped clusters.
+  See [the CRD installer documentation](https://argo-workflows.readthedocs.io/en/latest/crd-installer/) for usage and the required RBAC.
+
 - Disable agent pod creation for plugins by [Gaurang Mishra](https://github.com/gaurang9991) ([#7891](https://github.com/argoproj/argo-workflows/issues/7891))
   Allow users to disable agent pod creation for plugins. Workflow Controller watches the task sets updated by external controllers or agents. Users should be careful when using this: when enabled, it stops creating default agent pods for HTTP templates.
+
+- Dynamic Resource Allocation resource claims for workflow pods by [Tsai Hsiu-Chi](https://github.com/thc1006) ([#16576](https://github.com/argoproj/argo-workflows/issues/16576))
+  Workflow pods can now request devices through [Dynamic Resource Allocation](https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/) via the new `resourceClaims` field, available at the workflow spec level and the template level.
+  Template-level `resourceClaims` replaces the workflow-level list as a whole rather than merging with it, and `podSpecPatch` still applies afterwards, merging over the entries by claim name.
+  A patch that moves a claim from one source to the other has to set the old source to `null`, otherwise the merge leaves both set and the API server rejects the pod.
+  Each entry names either an existing `ResourceClaim` or a `ResourceClaimTemplate` in the workflow's namespace, and a container asks for one by name through `resources.claims`.
+  Declaring `resourceClaims` on a template that creates no pod is rejected at submission: Steps, DAG and Suspend orchestrate other templates, and HTTP and Plugin run on the shared agent pod. The rest of a claim's shape, and whether a container's `resources.claims` names one the pod has, is left to the API server when the pod is created.
+  Previously the only way to attach a claim to a workflow pod was to hand-write the whole list in `podSpecPatch`.
+  Requires the `DynamicResourceAllocation` feature gate to be enabled on the cluster and a DRA driver to be installed.
+  Argo forwards the references and neither allocates devices nor manages claims: an existing `ResourceClaim` is created and deleted by whoever owns it, while one generated from a `ResourceClaimTemplate` is created for the pod and deleted with it.
 
 - Reconnect and retry queries by [Isitha Subasinghe](https://github.com/isubasinghe) ([#15011](https://github.com/argoproj/argo-workflows/issues/15011))
   Queries against the database are now retried where a network connection issue was the cause of failure, this
@@ -93,6 +109,11 @@ This is a concise list of new features.
   S3 artifact storage now supports configuring the bucket addressing style via the `addressingStyle` field.
   Valid values are `""` (auto-detect, default), `"path"` (force path-style), and `"virtual-hosted"` (force virtual-hosted-style).
   This fixes broken log streaming and artifact browsing for S3-compatible providers that only support virtual-hosted-style addressing.
+
+- Strip managedFields from controller informer caches to reduce memory usage by [Alan Clucas](https://github.com/Joibel) ([#16564](https://github.com/argoproj/argo-workflows/issues/16564))
+  The workflow-controller now removes `metadata.managedFields` from objects before storing them in its informer caches.
+  `managedFields` can be 20% or more of a cached object and nothing reads it, so this reduces controller memory usage at scale with no functional change.
+  Objects stored in the cluster are unaffected.
 
 - Workflow Tracing by [Alan Clucas](https://github.com/Joibel) ([#12077](https://github.com/argoproj/argo-workflows/issues/12077))
   Argo Workflows can now emit OpenTelemetry traces, letting you see exactly what's happening inside a workflow run -- from controller reconciliation down to individual artifact uploads and log saves. Traces follow execution across the controller and executor processes, so you get a single span tree covering DAG node scheduling, pod creation, synchronization locks, script capture, and everything in between. If your workloads also emit OTel traces, they'll show up nested in the right place. Configure the tracing section in your workflow-controller-configmap with a collector URL and point your Jaeger or Tempo instance at it.

@@ -7023,6 +7023,22 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ResourceClaims) > 0 {
+		for iNdEx := len(m.ResourceClaims) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ResourceClaims[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0xfa
+		}
+	}
 	if m.PodResources != nil {
 		{
 			size, err := m.PodResources.MarshalToSizedBuffer(dAtA[:i])
@@ -8332,6 +8348,22 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ResourceClaims) > 0 {
+		for iNdEx := len(m.ResourceClaims) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ResourceClaims[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0xfa
+		}
+	}
 	if m.PodResources != nil {
 		{
 			size, err := m.PodResources.MarshalToSizedBuffer(dAtA[:i])
@@ -12342,6 +12374,12 @@ func (m *Template) Size() (n int) {
 		l = m.PodResources.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
+	if len(m.ResourceClaims) > 0 {
+		for _, e := range m.ResourceClaims {
+			l = e.Size()
+			n += 2 + l + sovGenerated(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -12787,6 +12825,12 @@ func (m *WorkflowSpec) Size() (n int) {
 	if m.PodResources != nil {
 		l = m.PodResources.Size()
 		n += 2 + l + sovGenerated(uint64(l))
+	}
+	if len(m.ResourceClaims) > 0 {
+		for _, e := range m.ResourceClaims {
+			l = e.Size()
+			n += 2 + l + sovGenerated(uint64(l))
+		}
 	}
 	return n
 }
@@ -14919,6 +14963,11 @@ func (this *Template) String() string {
 		repeatedStringForHostAliases += fmt.Sprintf("%v", f) + ","
 	}
 	repeatedStringForHostAliases += "}"
+	repeatedStringForResourceClaims := "[]PodResourceClaim{"
+	for _, f := range this.ResourceClaims {
+		repeatedStringForResourceClaims += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForResourceClaims += "}"
 	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
 	for k := range this.NodeSelector {
 		keysForNodeSelector = append(keysForNodeSelector, k)
@@ -14981,6 +15030,7 @@ func (this *Template) String() string {
 		`Annotations:` + mapStringForAnnotations + `,`,
 		`PendingTimeout:` + fmt.Sprintf("%v", this.PendingTimeout) + `,`,
 		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
+		`ResourceClaims:` + repeatedStringForResourceClaims + `,`,
 		`}`,
 	}, "")
 	return s
@@ -15250,6 +15300,11 @@ func (this *WorkflowSpec) String() string {
 		repeatedStringForExecutorPlugins += strings.Replace(strings.Replace(f.String(), "ExecutorPlugin", "ExecutorPlugin", 1), `&`, ``, 1) + ","
 	}
 	repeatedStringForExecutorPlugins += "}"
+	repeatedStringForResourceClaims := "[]PodResourceClaim{"
+	for _, f := range this.ResourceClaims {
+		repeatedStringForResourceClaims += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForResourceClaims += "}"
 	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
 	for k := range this.NodeSelector {
 		keysForNodeSelector = append(keysForNodeSelector, k)
@@ -15314,6 +15369,7 @@ func (this *WorkflowSpec) String() string {
 		`ArtifactGC:` + strings.Replace(this.ArtifactGC.String(), "WorkflowLevelArtifactGC", "WorkflowLevelArtifactGC", 1) + `,`,
 		`ExecutorPlugins:` + repeatedStringForExecutorPlugins + `,`,
 		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
+		`ResourceClaims:` + repeatedStringForResourceClaims + `,`,
 		`}`,
 	}, "")
 	return s
@@ -37870,6 +37926,40 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 47:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceClaims", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ResourceClaims = append(m.ResourceClaims, v1.PodResourceClaim{})
+			if err := m.ResourceClaims[len(m.ResourceClaims)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -42000,6 +42090,40 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 				m.PodResources = &v1.ResourceRequirements{}
 			}
 			if err := m.PodResources.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 47:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceClaims", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ResourceClaims = append(m.ResourceClaims, v1.PodResourceClaim{})
+			if err := m.ResourceClaims[len(m.ResourceClaims)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

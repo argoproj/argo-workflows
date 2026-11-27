@@ -157,6 +157,28 @@ func TestGetTemplateHolderString(t *testing.T) {
 	}}))
 }
 
+// A node's hooks are its children flagged Hooked; they are fulfilled once
+// every one of them is, whatever its other children.
+func TestHookNodes(t *testing.T) {
+	nodes := wfv1.Nodes{
+		"exit":  {ID: "exit", Name: "n.onExit", Phase: wfv1.NodeSucceeded, NodeFlag: &wfv1.NodeFlag{Hooked: true}},
+		"hook":  {ID: "hook", Name: "n.hooks.running", Phase: wfv1.NodeRunning, NodeFlag: &wfv1.NodeFlag{Hooked: true}},
+		"retry": {ID: "retry", Name: "n(0)", Phase: wfv1.NodeRunning, NodeFlag: &wfv1.NodeFlag{Retried: true}},
+		"next":  {ID: "next", Name: "next", Phase: wfv1.NodeRunning},
+	}
+	node := &wfv1.NodeStatus{Children: []string{"exit", "retry", "missing", "hook", "next"}}
+
+	hooks := HookNodes(node, nodes)
+	require.Len(t, hooks, 2)
+	assert.Equal(t, "n.onExit", hooks[0].Name)
+	assert.Equal(t, "n.hooks.running", hooks[1].Name)
+	assert.False(t, CheckAllHooksFullfilled(node, nodes))
+
+	node.Children = []string{"exit", "retry", "next"}
+	assert.True(t, CheckAllHooksFullfilled(node, nodes))
+	assert.Empty(t, HookNodes(&wfv1.NodeStatus{}, nodes))
+}
+
 func TestIsDone(t *testing.T) {
 	assert.False(t, IsDone(&unstructured.Unstructured{}))
 	assert.True(t, IsDone(&unstructured.Unstructured{Object: map[string]any{

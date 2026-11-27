@@ -55,28 +55,32 @@ export interface TemplateVerdict {
   issues: TemplateIssue[];
 }
 
-export interface State {
-  v: number;
-  failing: string[];
-  draftedSha?: string | null;
-}
-
-export interface PrRef {
-  draft: boolean;
-  headSha: string;
-}
-
 export type CommentVariant = 'issues' | 'waiting' | 'allclear';
 
 export interface Decision {
   variant: CommentVariant | null;
   shouldComment: boolean;
-  shouldDraft: boolean;
+  blocking: boolean;
   failing: string[];
   templateBlocking: boolean;
+}
+
+export interface ContributorStats {
+  createdAt: string;
+  association: string;
+  prs: { merged: number; open: number; closed: number };
+  issues: { opened: number; commented: number };
+  othersPrsCommented: number;
 }
 
 export interface GitHubUser {
   login: string;
   type: string;
+}
+
+// The subset of a pull request needed to follow a stack of PRs to its base.
+export interface StackablePr {
+  number: number;
+  base: { ref: string; repo: { full_name: string } | null };
+  head: { ref: string; repo: { full_name: string } | null };
 }

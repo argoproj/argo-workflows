@@ -10,195 +10,15 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-var wfDefaults = `
-  metadata: 
-    annotations: 
-      testAnnotation: test
-    labels: 
-      testLabel: test
-  spec: 
-    entrypoint: whalesay
-    activeDeadlineSeconds: 7200
-    arguments:
-      parameters: 
-        - 
-          name: message
-          value: "hello world"
-    onExit: whalesay-exit
-    serviceAccountName: default
-    templates: 
-      - 
-        container: 
-          args: 
-            - "hello from the default exit handler"
-          command: 
-            - cowsay
-          image: docker/whalesay
-        name: whalesay-exit
-    ttlStrategy: 
-      secondsAfterCompletion: 60
-    volumes: 
-      - 
-        name: test
-        secret: 
-          secretName: test
-`
-
-var simpleWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-  labels:
-    workflows.argoproj.io/archive-strategy: "false"
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-
-var wfDefaultResult = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata: 
-  annotations: 
-    testAnnotation: test
-  generateName: hello-world-
-  labels: 
-    testLabel: test
-    workflows.argoproj.io/archive-strategy: "false"
-spec: 
-  activeDeadlineSeconds: 7200
-  arguments:
-    parameters: 
-      - 
-        name: message
-        value: "hello world"
-  entrypoint: whalesay
-  onExit: whalesay-exit
-  serviceAccountName: default
-  templates: 
-    - 
-      container: 
-        args: 
-          - "hello world"
-        command: 
-          - cowsay
-        image: "docker/whalesay:latest"
-      name: whalesay
-    - 
-      container: 
-        args: 
-          - "hello from the default exit handler"
-        command: 
-          - cowsay
-        image: docker/whalesay
-      name: whalesay-exit
-  ttlStrategy: 
-    secondsAfterCompletion: 60
-  volumes: 
-    - 
-      name: test
-      secret: 
-        secretName: test
-`
-
-var simpleWFT = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-submittable
-  namespace: default
-spec:
-  entrypoint: whalesay-template
-  arguments:
-    parameters:
-      - name: message
-        value: hello world
-  templates:
-    - name: whalesay-template
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: docker/whalesay
-        command: [cowsay]
-        args: ["{{inputs.parameters.message}}"]
-`
-
-var storedSpecResult = `
-{
-   "activeDeadlineSeconds": 7200,
-   "arguments": {
-      "parameters": [
-         {
-            "name": "message",
-            "value": "hello world"
-         }
-      ]
-   },
-   "entrypoint": "whalesay-template",
-   "onExit": "whalesay-exit",
-   "serviceAccountName": "default",
-   "templates": [
-      {
-         "container": {
-            "args": [
-               "{{inputs.parameters.message}}"
-            ],
-            "command": [
-               "cowsay"
-            ],
-            "image": "docker/whalesay"
-            
-         },
-		"inputs": {
-				"parameters": [
-				   {
-					  "name": "message"
-				   }
-				]
-			},
-         "name": "whalesay-template"
-      },
-      {
-         "container": {
-            "args": [
-               "hello from the default exit handler"
-            ],
-            "command": [
-               "cowsay"
-            ],
-            "image": "docker/whalesay"
-         },
-         "name": "whalesay-exit"
-      }
-   ],
-   "ttlStrategy": {
-      "secondsAfterCompletion": 60
-   },
-   "volumes": [
-      {
-         "name": "test",
-         "secret": {
-            "secretName": "test"
-         }
-      }
-   ]
-}
-`
-
+// TestWFDefaultsWithWorkflow checks that the configured workflow defaults are merged into a
+// submitted Workflow, both when it sets its own entrypoint and when it leaves it to the default.
 func TestWFDefaultsWithWorkflow(t *testing.T) {
 	assert := assert.New(t)
 
-	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
-	wf := wfv1.MustUnmarshalWorkflow(simpleWf)
+	wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/operator_wfdefault/workflow-defaults.yaml")
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_wfdefault/simple-workflow.yaml")
 	wf1 := wf.DeepCopy()
-	wfResult := wfv1.MustUnmarshalWorkflow(wfDefaultResult)
+	wfResult := wfv1.MustUnmarshalWorkflow("@testdata/operator_wfdefault/simple-workflow-with-defaults.yaml")
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newControllerWithDefaults(ctx)
 	defer cancel()
@@ -218,12 +38,15 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 	assert.Contains(woc.wf.Annotations, "testAnnotation")
 }
 
+// TestWFDefaultWithWFTAndWf checks that the workflow defaults are merged into the spec stored for
+// a Workflow that only references a WorkflowTemplate, and that fields the Workflow sets itself
+// still win over the defaults.
 func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	assert := assert.New(t)
-	wfDefault := wfv1.MustUnmarshalWorkflow(wfDefaults)
-	wft := wfv1.MustUnmarshalWorkflowTemplate(simpleWFT)
+	wfDefault := wfv1.MustUnmarshalWorkflow("@testdata/operator_wfdefault/workflow-defaults.yaml")
+	wft := wfv1.MustUnmarshalWorkflowTemplate("@testdata/operator_wfdefault/simple-workflow-template.yaml")
 	var resultSpec wfv1.WorkflowSpec
-	wfv1.MustUnmarshal([]byte(storedSpecResult), &resultSpec)
+	wfv1.MustUnmarshal("@testdata/operator_wfdefault/stored-workflow-spec.yaml", &resultSpec)
 
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())

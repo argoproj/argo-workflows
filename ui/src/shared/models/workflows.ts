@@ -214,6 +214,24 @@ export interface Parameter {
 }
 
 /**
+ * PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod
+ */
+export interface PodResourceClaim {
+    /**
+     * Name uniquely identifies this resource claim inside the pod
+     */
+    name: string;
+    /**
+     * ResourceClaimName is the name of a ResourceClaim object in the same namespace as this pod
+     */
+    resourceClaimName?: string;
+    /**
+     * ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod
+     */
+    resourceClaimTemplateName?: string;
+}
+
+/**
  * ResourceTemplate is a template subtype to manipulate kubernetes resources
  */
 export interface ResourceTemplate {
@@ -453,6 +471,10 @@ export interface Template {
      * Resource template subtype which can run k8s resources
      */
     resource?: ResourceTemplate;
+    /**
+     * ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Overrides the workflow-level resourceClaims.
+     */
+    resourceClaims?: PodResourceClaim[];
     /**
      * RetryStrategy describes how to retry a template when it fails
      */
@@ -837,6 +859,10 @@ export interface WorkflowSpec {
      * PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set.
      */
     podResources?: kubernetes.ResourceRequirements;
+    /**
+     * ResourceClaims defines the ResourceClaims that must be allocated and reserved before all workflow pods are allowed to start. Will be overridden if a template's resourceClaims is set.
+     */
+    resourceClaims?: PodResourceClaim[];
     /**
      * SecurityContext holds pod-level security attributes and common container settings.
      */

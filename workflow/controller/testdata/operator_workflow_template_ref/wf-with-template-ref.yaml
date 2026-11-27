@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-workflow
+  namespace: argo-workflows-system
+spec:
+  podMetadata:
+    labels:
+      caller-label: hello
+  entrypoint: start
+  templates:
+    - name: start
+      steps:
+        - - name: hello
+            templateRef:
+              name: workflow-template
+              template: whalesay-template
+              clusterScope: true
+            arguments:
+              parameters:
+                - name: message
+                  value: Hello Bug

@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: {name: t, namespace: argo}
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        hooks:
+          exit: {template: does-not-exist}
+      - name: B
+        template: echo
+        hooks:
+          exit: {template: exit-handler}
+      - name: C
+        template: echo
+  - name: echo
+    container: {image: alpine, command: [echo, hi]}
+  - name: exit-handler
+    container: {image: alpine, command: [echo, bye]}

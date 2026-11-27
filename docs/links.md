@@ -1,7 +1,5 @@
 # Links
 
-> v2.7 and after
-
 You can configure Argo Server to show custom links:
 
 * A "Get Help" button in the bottom right of the window linking to you organization help pages or chat room.
@@ -19,18 +17,13 @@ These are the commonly used variables:
 
 See [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) for a complete example
 
-> v3.1 and after
-
-Epoch time-stamps are available now. These are useful if we want to add links to logging facilities like [Grafana](https://grafana.com/)
-or [DataDog](https://datadoghq.com/), as they support Unix epoch time-stamp formats as URL
-parameters:
+Epoch time-stamps are available.
+These are useful if we want to add links to logging facilities like [Grafana](https://grafana.com/) or [DataDog](https://datadoghq.com/), as they support Unix epoch time-stamp formats as URL parameters:
 
 * `${status.startedAtEpoch}`: Start time-stamp of the workflow/pod, in the Unix epoch time format in **milliseconds**, e.g. `1609497000000`.
 * `${status.finishedAtEpoch}`: End time-stamp of the workflow/pod, in the Unix epoch time format in  **milliseconds**, e.g. `1609497000000`. If the workflow/pod is still running, this variable will represent the current time.
 
-> v3.1 and after
-
-In addition to the above variables, we can now access all [workflow fields](fields.md#workflow) under `${workflow}`.
+In addition to the above variables, we can access all [workflow fields](fields.md#workflow) under `${workflow}`.
 
 For example, one may find it useful to define a custom label in the workflow and access it by `${workflow.metadata.labels.custom_label_name}`
 

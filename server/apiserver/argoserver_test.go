@@ -3,16 +3,64 @@ package apiserver
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"net/http"
+
 	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
+
+func TestNewArgoServerIgnoresLogoutRedirectOutsideSSO(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		authModes auth.Modes
+	}{
+		{name: "client", authModes: auth.Modes{auth.Client: true}},
+		{name: "server", authModes: auth.Modes{auth.Server: true}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			const namespace = "argo"
+			kube := fake.NewClientset(&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+				Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
+			})
+			server, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+				Namespace:  namespace,
+				ConfigName: common.ConfigMapName,
+				Clients:    &types.Clients{Kubernetes: kube},
+				AuthModes:  tt.authModes,
+			})
+			require.NoError(t, err)
+			as := server.(*argoServer)
+			assert.Empty(t, as.oAuth2Service.LogoutURL())
+			assert.Empty(t, as.oAuth2Service.LogoutRedirectURL())
+			assert.Empty(t, as.oAuth2Service.ClientID())
+		})
+	}
+}
+
+func TestNewArgoServerRejectsInvalidSSOLogoutRedirect(t *testing.T) {
+	const namespace = "argo"
+	kube := fake.NewClientset(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
+	})
+	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+		Namespace:  namespace,
+		ConfigName: common.ConfigMapName,
+		Clients:    &types.Clients{Kubernetes: kube},
+		AuthModes:  auth.Modes{auth.SSO: true},
+	})
+	require.ErrorContains(t, err, "logout redirect URL must be an absolute HTTP(S) URL")
+}
 
 func TestValidateArtifactDriverImages(t *testing.T) {
 	tests := []struct {
@@ -230,4 +278,82 @@ func TestValidateArtifactDriverImages(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetExcludedHeaders(t *testing.T) {
+	t.Run("IncludesConfiguredHeadersAndNormalizesCase", func(t *testing.T) {
+		c := config.HeaderConfig{
+			Issuer: config.ClaimSource{
+				Header: "X-Forwarded-Issuer",
+			},
+			Subject: config.ClaimSource{
+				Header: "X-Forwarded-User",
+			},
+			Email: config.ClaimSource{
+				Header: "X-Forwarded-Email",
+			},
+			PreferredUsername: config.ClaimSource{
+				Header: "X-Forwarded-Preferred-Username",
+			},
+			Groups: config.GroupClaimSource{
+				ClaimSource: config.ClaimSource{
+					Header: "X-Forwarded-Groups",
+				},
+			},
+			SharedSecret: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+			},
+		}
+
+		got := getExcludedHeaders(c)
+
+		expected := map[string]struct{}{
+			"x-forwarded-issuer":             {},
+			"x-forwarded-user":               {},
+			"x-forwarded-email":              {},
+			"x-forwarded-preferred-username": {},
+			"x-forwarded-groups":             {},
+			"x-proxy-auth":                   {},
+		}
+
+		assert.Equal(t, expected, got)
+	})
+
+	t.Run("IgnoresEmptyHeadersAndNilSharedSecret", func(t *testing.T) {
+		c := config.HeaderConfig{
+			Issuer: config.ClaimSource{
+				Header: "X-Forwarded-Issuer",
+			},
+			// Other claim headers are empty.
+			SharedSecret: nil,
+		}
+
+		got := getExcludedHeaders(c)
+
+		expected := map[string]struct{}{
+			"x-forwarded-issuer": {},
+		}
+
+		assert.Equal(t, expected, got)
+	})
+
+	t.Run("EmptyConfigReturnsEmptyMap", func(t *testing.T) {
+		got := getExcludedHeaders(config.HeaderConfig{})
+
+		assert.Empty(t, got)
+	})
+}
+
+func TestHeadersToMetadata(t *testing.T) {
+	headers := http.Header{}
+	headers.Set("X-Forwarded-User", "pradeep")
+	headers.Set("X-Forwarded-Groups", "admin")
+	headers.Add("X-Proxy-Auth", "secret-one")
+	headers.Add("X-Proxy-Auth", "secret-two")
+
+	md := headersToMetadata(headers)
+
+	assert.Equal(t, []string{"pradeep"}, md.Get("x-forwarded-user"))
+	assert.Equal(t, []string{"admin"}, md.Get("x-forwarded-groups"))
+	assert.Equal(t, []string{"secret-one", "secret-two"}, md.Get("x-proxy-auth"))
 }

@@ -2,7 +2,7 @@ import {fireEvent, render} from '@testing-library/react';
 import {createMemoryHistory, History} from 'history';
 import React from 'react';
 
-import {deleteCookie, setCookie} from '../shared/cookie';
+import {setCookie} from '../shared/cookie';
 import {Login} from './login';
 
 jest.mock('../shared/cookie');
@@ -71,10 +71,15 @@ describe('Login', () => {
     });
 
     describe('logout', () => {
-        it('responds to button click', () => {
+        it('links to the logout endpoint', () => {
             const {getByText} = render(LoginWithHistory(createMemoryHistory()));
-            fireEvent.click(getByText('Logout'));
-            expect(deleteCookie).toHaveBeenCalledWith('authorization');
+            expect(getByText('Logout').getAttribute('href')).toBe('/auth/logout');
+        });
+
+        it('uses the base href for the logout endpoint', () => {
+            document.querySelector('base').setAttribute('href', '/test/');
+            const {getByText} = render(LoginWithHistory(createMemoryHistory()));
+            expect(getByText('Logout').getAttribute('href')).toBe('/test/auth/logout');
         });
     });
 });

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: params-test-1-grx2n
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: f
+      value: f
+    - name: g-g
+      value: 2
+    - name: h
+      value: h
+    - name: i-i
+      value: '{}'
+    - name: things
+      value: '[{"a":"1","nested":{"B":"3"}},{"a":"2"}]'
+    - name: a-a
+      value: 5
+  workflowTemplateRef:
+    name: params-test-1

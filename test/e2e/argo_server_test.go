@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -64,6 +65,77 @@ func (s *ArgoServerSuite) e() *httpexpect.Expect {
 			}
 		})
 }
+func (s *ArgoServerSuite) headerAuthE(proxySecret, username string) *httpexpect.Expect {
+	return httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  baseURL,
+			Reporter: httpexpect.NewRequireReporter(s.T()),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(s.T(), true),
+			},
+			Client: httpClient,
+		}).
+		Builder(func(req *httpexpect.Request) {
+			if proxySecret != "" {
+				req.WithHeader("X-Proxy-Auth", proxySecret)
+			}
+			req.WithHeader("X-Forwarded-User", username)
+		})
+}
+
+type userInfo struct {
+	Subject string `json:"subject"`
+}
+
+// getUserInfo calls /api/v1/userinfo with the given proxy secret and identity
+// and returns the HTTP status and decoded subject (empty if not a 200).
+func (s *ArgoServerSuite) getUserInfo(proxySecret, username string) (int, string) {
+	resp := s.headerAuthE(proxySecret, username).
+		GET("/api/v1/userinfo").
+		Expect()
+	status := resp.Raw().StatusCode //nolint:bodyclose
+	if status != http.StatusOK {
+		return status, ""
+	}
+	var info userInfo
+	s.Require().NoError(json.Unmarshal([]byte(resp.Body().Raw()), &info))
+	return status, info.Subject
+}
+
+// requireHeaderAuth skips the test unless the server resolves identity from headers.
+func (s *ArgoServerSuite) requireHeaderAuth() {
+	status, subject := s.getUserInfo("e2e-secret", "header-auth-probe")
+	if status != http.StatusOK || subject != "header-auth-probe" {
+		s.T().Skip("header auth mode not enabled; start with make start AUTH_MODE=client,header")
+	}
+}
+
+func (s *ArgoServerSuite) TestHeaderAuthentication() {
+	s.requireHeaderAuth()
+	status, subject := s.getUserInfo("e2e-secret", "pradeep")
+	s.Equal(http.StatusOK, status)
+	s.Equal("pradeep", subject)
+}
+
+func (s *ArgoServerSuite) TestHeaderAuthenticationRejected() {
+	s.requireHeaderAuth()
+	status, _ := s.getUserInfo("wrong-secret", "pradeep")
+	s.Equal(http.StatusUnauthorized, status)
+}
+
+// Without the proxy secret the identity header must be ignored.
+// Depending on the enabled modes the result is a 401 or the server identity,
+// but the caller must never become the claimed user.
+func (s *ArgoServerSuite) TestHeaderAuthenticationSpoofRejected() {
+	s.requireHeaderAuth()
+	status, subject := s.getUserInfo("", "admin")
+	if status == http.StatusOK {
+		s.NotEqual("admin", subject)
+	} else {
+		s.Equal(http.StatusUnauthorized, status)
+	}
+}
+
 func (s *ArgoServerSuite) expectB(b *testing.B) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{

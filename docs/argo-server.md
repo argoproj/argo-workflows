@@ -50,6 +50,12 @@ If the server is running behind reverse proxy with a sub-path different from `/`
 `/argo`), you can set an alternative sub-path with the `--base-href` flag or the `ARGO_BASE_HREF`
 environment variable.
 
+### Logout Redirect URL
+
+> v4.2 and after
+
+See [Logout Redirect URL](argo-server-sso.md#logout-redirect-url).
+
 ### Transport Layer Security
 
 See [TLS](tls.md).
@@ -174,8 +180,6 @@ Argo Server does not log the IP addresses of API requests.
 We recommend you put the Argo Server behind a load balancer, and that load balancer is configured to log the IP addresses of requests that return authentication or authorization errors.
 
 ### Rate Limiting
-
-> v3.4 and after
 
 Argo Server by default rate limits to 1000 per IP per second, you can configure it through `--api-rate-limit`.
 You can access additional information through the following headers.

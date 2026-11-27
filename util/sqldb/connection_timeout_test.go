@@ -115,7 +115,8 @@ func TestBuildMySQLConfigTimeout(t *testing.T) {
 			Database: "argo",
 		},
 	}
-	mysqlCfg := buildMySQLConfig(cfg, "user", "pass", 7*time.Second)
+	mysqlCfg, err := buildMySQLConfig(cfg, "user", "pass", 7*time.Second)
+	require.NoError(t, err)
 	assert.Equal(t, 7*time.Second, mysqlCfg.Timeout)
 	// ReadTimeout is intentionally left unset: it would apply to every query read,
 	// not just the handshake. The half-open case is instead handled by wrapping the

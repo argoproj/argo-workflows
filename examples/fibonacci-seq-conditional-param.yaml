@@ -7,7 +7,6 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This example demonstrates fibonacci sequence problem using conditional parameter feature.
-    workflows.argoproj.io/veriiony: ">= 3.1.0"
 spec:
   entrypoint: main
   arguments:

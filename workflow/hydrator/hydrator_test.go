@@ -127,3 +127,11 @@ func TestHydrator(t *testing.T) {
 		})
 	})
 }
+
+func TestNewReadsAlwaysOffloadNodeStatus(t *testing.T) {
+	t.Setenv("ALWAYS_OFFLOAD_NODE_STATUS", "true")
+	assert.True(t, New(nil).(*hydrator).alwaysOffloadNodeStatus)
+
+	t.Setenv("ALWAYS_OFFLOAD_NODE_STATUS", "false")
+	assert.False(t, New(nil).(*hydrator).alwaysOffloadNodeStatus)
+}

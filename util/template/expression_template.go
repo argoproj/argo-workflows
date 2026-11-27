@@ -48,8 +48,9 @@ func missingVarsInEnv(expression string, env map[string]any) ([]string, error) {
 		return nil, err
 	}
 	var missing []string
+	maxParts := maxKeyParts(env)
 	for _, id := range identifiers {
-		if !hasVarInEnv(env, id) {
+		if !hasVarInEnv(env, id, maxParts) {
 			missing = append(missing, id)
 		}
 	}
@@ -87,8 +88,14 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 		return expressionReplaceCore(ctx, w, expression, env, false)
 	}
 
+	// An expression naming the current task or step, guarded or not, waits for
+	// the pass at execution, where that name is set (#17415).
+	if strictRegex != nil && strictRegex != matchAllRegex && referencesCurrentNodeName(unmarshalledExpression) {
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
+	}
+
 	for _, id := range missingIdentifiers {
-		if strictRegex != nil && strictRegex.MatchString(id) {
+		if isStrictTag(strictRegex, id) {
 			return 0, fmt.Errorf("failed to evaluate expression: %s is missing", id)
 		}
 	}
@@ -99,6 +106,39 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 	// failures are tolerated and the expression is left unresolved for later evaluation.
 	allowUnresolved := len(missingIdentifiers) > 0 || strictRegex == nil
 	return expressionReplaceCore(ctx, w, expression, env, allowUnresolved)
+}
+
+// referencesCurrentNodeName reports whether expression accesses tasks.name or
+// steps.name, including under ?? where getIdentifiers does not report it.
+func referencesCurrentNodeName(expression string) bool {
+	tree, err := parser.Parse(expression)
+	if err != nil {
+		return false
+	}
+	v := &memberPathVisitor{}
+	ast.Walk(&tree.Node, v)
+	// tasks.name.outputs.result also visits its inner tasks.name: that is a
+	// task called name, not the current one.
+	for _, path := range v.paths {
+		if isCurrentNodeName(path) && !slices.ContainsFunc(v.paths, func(other string) bool {
+			return strings.HasPrefix(other, path+".")
+		}) {
+			return true
+		}
+	}
+	return false
+}
+
+type memberPathVisitor struct {
+	paths []string
+}
+
+func (v *memberPathVisitor) Visit(node *ast.Node) {
+	if n, ok := (*node).(*ast.MemberNode); ok {
+		if path, ok := getMemberPath(n); ok {
+			v.paths = append(v.paths, path)
+		}
+	}
 }
 
 type identifierVisitor struct {
@@ -139,10 +179,11 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 		if !ok {
 			return "", false
 		}
-		parts = append([]string{prop.Value}, parts...)
+		parts = append(parts, prop.Value)
 
 		if id, isIdent := curr.Node.(*ast.IdentifierNode); isIdent {
-			parts = append([]string{id.Value}, parts...)
+			parts = append(parts, id.Value)
+			slices.Reverse(parts)
 			return strings.Join(parts, "."), true
 		}
 
@@ -287,8 +328,18 @@ func EnvMap(replaceMap map[string]string) map[string]any {
 	return envMap
 }
 
-// hasVarInEnv checks if a parameter is in env or not
-func hasVarInEnv(env map[string]any, parameter string) bool {
+// maxKeyParts returns the largest number of dot-separated parts in a key of env.
+func maxKeyParts(env map[string]any) int {
+	maxParts := 0
+	for key := range env {
+		maxParts = max(maxParts, strings.Count(key, ".")+1)
+	}
+	return maxParts
+}
+
+// hasVarInEnv checks if a parameter is in env or not. maxParts is
+// maxKeyParts(env): no longer prefix of parameter can be a key of env.
+func hasVarInEnv(env map[string]any, parameter string, maxParts int) bool {
 	if _, ok := env[parameter]; ok {
 		return true
 	}
@@ -299,7 +350,7 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 	remainingParts := parts
 
 	// Try to find the longest matching prefix in env
-	for i := len(parts); i > 0; i-- {
+	for i := min(len(parts), maxParts); i > 0; i-- {
 		prefix := strings.Join(parts[:i], ".")
 		if val, ok := env[prefix]; ok {
 			current = val
@@ -324,7 +375,7 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 		}
 
 		rVal := reflect.ValueOf(current)
-		for rVal.Kind() == reflect.Ptr {
+		for rVal.Kind() == reflect.Pointer {
 			if rVal.IsNil() {
 				return false
 			}
@@ -347,7 +398,7 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 					if fType.Anonymous {
 						embeddedValue := rVal.Field(j)
 						// Handle pointer to embedded struct
-						for embeddedValue.Kind() == reflect.Ptr {
+						for embeddedValue.Kind() == reflect.Pointer {
 							if embeddedValue.IsNil() {
 								break
 							}

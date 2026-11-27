@@ -252,14 +252,14 @@ func TestLockMetricsDatabase(t *testing.T) {
 			require.NoError(t, err)
 			defer cleanup()
 
-			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
+			_, err = info.SessionProxy.Session(ctx).SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
 			require.NoError(t, err)
 
 			mgr := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
 
 			creationTime := metav1.NewTime(time.Now())
 			newWF := func(name string) *wfv1.Workflow {
-				wf := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+				wf := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-db-semaphore.yaml")
 				wf.Name = name
 				wf.CreationTimestamp = creationTime
 				return wf

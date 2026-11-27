@@ -17,10 +17,19 @@ func NewGatekeeper(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *Gatekeeper {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &Gatekeeper{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -73,7 +82,7 @@ type Gatekeeper_Context_Call struct {
 
 // Context is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *Gatekeeper_Expecter) Context(ctx interface{}) *Gatekeeper_Context_Call {
+func (_e *Gatekeeper_Expecter) Context(ctx any) *Gatekeeper_Context_Call {
 	return &Gatekeeper_Context_Call{Call: _e.mock.On("Context", ctx)}
 }
 
@@ -136,7 +145,7 @@ type Gatekeeper_ContextWithRequest_Call struct {
 // ContextWithRequest is a helper method to define mock.On call
 //   - ctx context.Context
 //   - req any
-func (_e *Gatekeeper_Expecter) ContextWithRequest(ctx interface{}, req interface{}) *Gatekeeper_ContextWithRequest_Call {
+func (_e *Gatekeeper_Expecter) ContextWithRequest(ctx any, req any) *Gatekeeper_ContextWithRequest_Call {
 	return &Gatekeeper_ContextWithRequest_Call{Call: _e.mock.On("ContextWithRequest", ctx, req)}
 }
 

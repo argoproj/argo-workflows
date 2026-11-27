@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sorting"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/git"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -129,9 +130,9 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 	}
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement
-	for old, new := range substitutions {
-		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
-		manifest = rmatch.ReplaceAllString(manifest, new)
+	for expr, placeholder := range substitutions {
+		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(expr) + `\s*}}`)
+		manifest = rmatch.ReplaceAllString(manifest, placeholder)
 	}
 
 	return manifest
@@ -516,6 +517,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	if tmpl.IsPodType() {
 		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.NodeTaskName.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.RetryStrategy != nil {
 		localParams[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()
@@ -545,6 +548,18 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	newTmpl, err := common.ProcessArgs(ctx, tmpl, args, tctx.globalParams, localParams, true, "", nil)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
+	}
+
+	// Claims are attached to the pod a template runs, so a template that never
+	// creates one has nowhere to put them: Steps, DAG and Suspend orchestrate
+	// other templates, and HTTP and Plugin run on the shared agent pod.
+	//
+	// Which kind a template is can itself be written as a parameter, so this is
+	// asked of the substituted template rather than the one as written.
+	if len(tmpl.ResourceClaims) > 0 && !newTmpl.IsPodType() {
+		return errors.Errorf(errors.CodeBadRequest,
+			"templates.%s.resourceClaims is not supported for %s templates, which do not create a pod",
+			tmpl.Name, newTmpl.GetType())
 	}
 
 	if newTmpl.Timeout != "" {
@@ -642,6 +657,10 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 		}
 		if err := VerifyResolvedVariables(tmplRef); err != nil {
 			logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "template reference needs resolution")
+			return nil, nil
+		}
+		if strings.Contains(tmplRef.Name, template.PlaceholderPrefix) {
+			// internal placeholder indicates the referenced template is dynamic, it cannot be resolved until runtime
 			return nil, nil
 		}
 	} else if tmplName != "" {
@@ -769,6 +788,12 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	if art.Git != nil {
 		if art.Git.Repo == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s.git.repo is required", errPrefix)
+		}
+		// Skip {{...}} placeholders: the git driver validates the resolved URL while loading the artifact.
+		if !strings.Contains(art.Git.Repo, "{{") {
+			if err := git.ValidateRepoURL(art.Git.Repo); err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "%s.git.repo: %s", errPrefix, err.Error())
+			}
 		}
 	}
 	if art.HDFS != nil {
@@ -1409,7 +1434,7 @@ func (d *dagValidationContext) GetTaskDependenciesWithDependencyTypes(ctx contex
 		return dependencies
 	}
 	task := d.GetTask(ctx, taskName)
-	dependencies, _ := common.GetTaskDependencies(ctx, task, d)
+	dependencies := common.GetTaskDependencies(ctx, task, d)
 	d.dependencies[taskName] = dependencies
 	return d.dependencies[taskName]
 }
@@ -1652,7 +1677,7 @@ func sortDAGTasks(ctx context.Context, tmpl *wfv1.Template, tctx *dagValidationC
 	for index := range tmpl.DAG.Tasks {
 		task := tmpl.DAG.Tasks[index]
 		taskMap[task.Name] = &task
-		dependenciesMap, _ := common.GetTaskDependencies(ctx, &task, tctx)
+		dependenciesMap := common.GetTaskDependencies(ctx, &task, tctx)
 		var dependencies []string
 		for taskName := range dependenciesMap {
 			dependencies = append(dependencies, taskName)

@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expand-with-items
+spec:
+  entrypoint: expand-with-items
+  arguments:
+    parameters:
+    - name: input
+      value: '[[1,2],[3,4],[4,5],[106,7]]'
+  templates:
+  - name: expand-with-items
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{workflow.parameters.input}}"
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    script:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]

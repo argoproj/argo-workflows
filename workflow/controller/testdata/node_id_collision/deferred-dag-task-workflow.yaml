@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: collide
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: filler
+        template: leaf
+      - name: t2335786
+        template: leaf
+        depends: filler
+      - name: t3074240
+        template: leaf
+  - name: leaf
+    container:
+      image: argoproj/argosay:v2

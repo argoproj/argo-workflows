@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hook-failures
+  namespace: argo
+spec:
+  entrypoint: intentional-fail
+  hooks:
+    failure:
+      expression: workflow.status == "Failed"
+      template: message
+      arguments:
+        parameters:
+          - name: message
+            value: |
+              Workflow {{ workflow.name }} {{ workflow.status }} {{ workflow.failures }}
+  templates:
+    - name: intentional-fail
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]
+    - name: message
+      inputs:
+        parameters:
+          - name: message
+      script:
+        image: alpine:3.23
+        command: [sh]
+        source: |
+          echo {{ inputs.parameters.message }}

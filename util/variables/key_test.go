@@ -59,6 +59,25 @@ func TestKeySet_AndSnapshot(t *testing.T) {
 	}
 }
 
+func TestScopeMerge(t *testing.T) {
+	k := v.Define(v.Spec{Template: "test.merge.<n>", Kind: v.KindGlobal})
+	dst, src := v.NewScope(), v.NewScope()
+	k.Set(dst, "old", "a")
+	k.Set(dst, "kept", "b")
+	k.Set(src, "new", "a")
+	k.SetSkipped(src, nil, "c")
+
+	dst.Merge(src)
+
+	got := dst.AsAnyMap()
+	if got["test.merge.a"] != "new" || got["test.merge.b"] != "kept" || got["test.merge.c"] != nil {
+		t.Errorf("wrong merge: %v", got)
+	}
+	if !dst.IsSkipped("test.merge.c") || dst.IsSkipped("test.merge.a") {
+		t.Errorf("skipped marks not carried over")
+	}
+}
+
 func TestCatalog_ContainsRegisteredKeys(t *testing.T) {
 	names := make([]string, 0)
 	for _, k := range v.All() {

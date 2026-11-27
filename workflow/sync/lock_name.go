@@ -7,7 +7,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type lockKind string
@@ -93,8 +92,6 @@ func (i *syncItem) lockName(wfNamespace string) (*lockName, error) {
 }
 
 func DecodeLockName(ctx context.Context, name string) (LockName, error) {
-	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("name", name).Info(ctx, "DecodeLockName")
 	items := strings.SplitN(name, "/", 3)
 	if len(items) < 3 {
 		return nil, errors.New(errors.CodeBadRequest, "Invalid lock key: unknown format")

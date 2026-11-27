@@ -17,6 +17,9 @@ CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
+	# $(HOME)/.m2 must exist before docker bind mounts it, otherwise docker
+	# creates it owned by root and maven cannot write to it
+	mkdir -p $(HOME)/.m2
 	$(MVN) deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows
 
 generate:

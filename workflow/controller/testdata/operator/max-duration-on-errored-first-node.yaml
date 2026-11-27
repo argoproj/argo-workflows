@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-05-07T17:40:57Z"
+  generateName: echo-
+  generation: 4
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: echo-wngc4
+  namespace: argo
+  resourceVersion: "6339"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/echo-wngc4
+  uid: bed2749b-2971-4172-a61e-455ef02c4379
+spec:
+
+  entrypoint: echo
+  templates:
+  -
+    container:
+      args:
+      - sleep 10 && exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.23
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      retryPolicy: "Always"
+      backoff:
+        duration: "10"
+        factor: 1
+        maxDuration: 20m
+      limit: 4
+status:
+  finishedAt: null
+  nodes:
+    echo-wngc4:
+      children:
+      - echo-wngc4-1641470511
+      displayName: echo-wngc4
+      finishedAt: null
+      id: echo-wngc4
+      name: echo-wngc4
+      phase: Running
+      startedAt: "2020-05-07T17:40:57Z"
+      templateName: echo
+      templateScope: local/echo-wngc4
+      type: Retry
+    echo-wngc4-1641470511:
+      displayName: echo-wngc4(0)
+      finishedAt: null
+      hostNodeName: minikube
+      id: echo-wngc4-1641470511
+      name: echo-wngc4(0)
+      phase: Error
+      startedAt: "2020-05-07T17:40:57Z"
+      templateName: echo
+      templateScope: local/echo-wngc4
+      type: Pod
+      nodeFlag:
+        retried: true
+  phase: Running
+  startedAt: "2020-05-07T17:40:57Z"

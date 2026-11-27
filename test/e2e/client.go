@@ -2,10 +2,7 @@ package e2e
 
 import (
 	"crypto/tls"
-	"net"
 	"net/http"
-
-	"golang.org/x/net/http2"
 )
 
 var httpClient = &http.Client{
@@ -15,13 +12,14 @@ var httpClient = &http.Client{
 	},
 }
 
+// http2Client speaks HTTP/2 over cleartext (h2c, prior knowledge) to the plain-HTTP argo-server.
 var http2Client = &http.Client{
-	Transport: &http2.Transport{
-		AllowHTTP: true,
-		// Skip TLS dial
-		DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
-			return net.Dial(netw, addr)
-		},
-	},
+	Transport:     &http.Transport{Protocols: unencryptedHTTP2Only()},
 	CheckRedirect: httpClient.CheckRedirect,
+}
+
+func unencryptedHTTP2Only() *http.Protocols {
+	p := &http.Protocols{}
+	p.SetUnencryptedHTTP2(true)
+	return p
 }

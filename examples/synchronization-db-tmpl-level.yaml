@@ -24,7 +24,7 @@ spec:
   - name: acquire-lock
     synchronization:
       semaphores:
-        - database: # v3.7 and after
+        - database:
             key: template
     container:
       image: alpine:3.23

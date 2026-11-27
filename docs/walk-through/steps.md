@@ -61,3 +61,5 @@ STEP            TEMPLATE           PODNAME                 DURATION  MESSAGE
  └─┬─✔ hello2a  print-message      steps-z2zdn-2006760091  3s
    └─✔ hello2b  print-message      steps-z2zdn-2023537710  3s
 ```
+
+[How DAG and Steps Templates Run](../dag-and-steps-execution.md) describes how step groups run, and what happens when a step fails or errors.

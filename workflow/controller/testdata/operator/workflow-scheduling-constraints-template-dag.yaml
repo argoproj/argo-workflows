@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: benchmarks-dag
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        name: benchmark1
+        template: benchmark
+      - arguments:
+          parameters:
+          - name: msg
+            value: 'hello'
+        name: benchmark2
+        template: benchmark
+    name: main
+    nodeSelector:
+      pool: workflows
+    tolerations:
+    - key: pool
+      operator: Equal
+      value: workflows
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node_group
+                  operator: In
+                  values:
+                    - argo-workflow
+  - inputs:
+      parameters:
+      - name: msg
+    name: benchmark
+    script:
+      command:
+      - python
+      image: python:latest
+      source: |
+        print("{{inputs.parameters.msg}}")

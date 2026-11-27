@@ -1,16 +1,18 @@
 // Orchestration for the PR Readiness Helper workflow. A single entry point,
 // run(), called from one actions/github-script step in pr-readiness.yaml:
 // resolve the PR, gate the author, classify checks, check the description
-// against the template, convert to draft if blocking, and render the sticky
-// comment (or the dry-run summary). All decision logic lives in the
+// against the template, fetch the author's contributor activity, sync the
+// not-ready label, and render the sticky comment (or the dry-run summary). All decision logic lives in the
 // unit-tested modules this file imports.
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance } from './classify.ts';
-import { MARKER, renderComment, parseState } from './comment.ts';
+import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance, targetsDefaultBranch } from './classify.ts';
+import { MARKER, NOT_READY_LABEL, isEngaged, renderComment } from './comment.ts';
+import { fetchContributorStats, renderContributorTable } from './contributor.ts';
+import type { GraphQL } from './contributor.ts';
 import { checkTemplate } from './template.ts';
 import type { Config, JobStep } from './types.ts';
 
@@ -32,16 +34,27 @@ interface Core {
 }
 interface RepoContext {
   repo: { owner: string; repo: string };
-  payload: { workflow_run: { head_sha: string } };
+  // workflow_run on CI completion; pull_request on pull_request_target
+  // (opened / reopened / ready_for_review).
+  payload: {
+    workflow_run?: { head_sha: string };
+    pull_request?: { head: { sha: string } };
+    repository: { default_branch: string };
+  };
 }
 interface Octokit {
+  graphql: GraphQL;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   paginate(route: unknown, params: Record<string, unknown>): Promise<any[]>;
   rest: {
     actions: { getJobForWorkflowRun(params: Record<string, unknown>): Promise<{ data: { steps?: JobStep[] } }> };
     pulls: { list: unknown };
     checks: { listForRef: unknown };
-    issues: { listComments: unknown };
+    issues: {
+      listComments: unknown;
+      addLabels(params: Record<string, unknown>): Promise<unknown>;
+      removeLabel(params: Record<string, unknown>): Promise<unknown>;
+    };
   };
 }
 
@@ -60,7 +73,11 @@ function errMessage(e: unknown): string {
 
 export async function run({ github, context, core }: { github: Octokit; context: RepoContext; core: Core }): Promise<void> {
   const { owner, repo } = context.repo;
-  const headSha = context.payload.workflow_run.head_sha;
+  const headSha = context.payload.workflow_run?.head_sha ?? context.payload.pull_request?.head.sha;
+  if (!headSha) {
+    throw new Error('event payload has neither workflow_run nor pull_request');
+  }
+  const defaultBranch = context.payload.repository.default_branch;
   const dryRun = process.env.DRY_RUN === 'true';
   const stop = (reason: string): void => {
     core.info(`Skipping: ${reason}`);
@@ -69,11 +86,18 @@ export async function run({ github, context, core }: { github: Octokit; context:
   };
 
   // Resolve the PR by head SHA — workflow_run.pull_requests is empty for
-  // fork PRs, so list open PRs and match instead.
+  // fork PRs, so list open PRs and match instead. pull_request_target runs
+  // resolve the same way, which also gives the stack walk below its input.
   const openPrs = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
   const pr = findPullRequest(openPrs, headSha);
   if (!pr) {
     return stop(`no open PR with head ${headSha} (superseded by a newer push, or closed)`);
+  }
+
+  // Only PRs bound for the default branch, directly or via a stack of open
+  // PRs. Backports to release branches follow their own process.
+  if (!targetsDefaultBranch(pr, openPrs, defaultBranch)) {
+    return stop(`PR #${pr.number} targets ${pr.base.ref}, which does not lead to ${defaultBranch}`);
   }
 
   // Maintainers and bots help themselves. OWNERS is read from the default
@@ -104,72 +128,60 @@ export async function run({ github, context, core }: { github: Octokit; context:
     }
   }
 
-  // Find our existing sticky comment (if any) and recover its state blob.
-  // Author check matters: anyone can paste our marker into a comment, but
-  // only the actions bot's comment may be trusted as state.
+  // Find our existing sticky comment (if any). Author check matters: anyone
+  // can paste our marker into a comment, but only the actions bot's comment
+  // may be trusted as ours.
   const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: pr.number, per_page: 100 });
   const existing = comments.find(
     (c) => c.user && c.user.login === 'github-actions[bot]' && typeof c.body === 'string' && c.body.includes(MARKER)
   );
-  const existingState = existing ? parseState(existing.body) : null;
 
   // Deterministic PR-description / template check (no model required).
   const template = fs.readFileSync('.github/pull_request_template.md', 'utf8');
   const templateVerdict = checkTemplate(pr.body || '', template);
 
+  // Contributor activity for maintainers. Best-effort: on failure the table
+  // is left out and an existing comment is left as it is unless readiness
+  // has something new to say.
+  let contributorTable: string | null = null;
+  try {
+    const stats = await fetchContributorStats(github.graphql, `${owner}/${repo}`, pr.user.login, pr.author_association ?? 'NONE');
+    contributorTable = renderContributorTable(`${owner}/${repo}`, stats, new Date());
+  } catch (e) {
+    core.warning(`could not fetch contributor activity for ${pr.user.login}: ${errMessage(e)}`);
+  }
+
   const decision = decide({
     signals,
     templateVerdict,
-    existingState,
-    hasExistingComment: Boolean(existing),
-    pr: { draft: pr.draft, headSha },
+    engaged: Boolean(existing) && isEngaged(existing.body),
+    hasContributorReport: contributorTable !== null,
   });
 
-  // Draft conversion: at most once per head SHA; undrafting is human-only.
-  // The default Actions token cannot toggle draft state ("Resource not
-  // accessible by integration"), so this requires the app token minted by
-  // the workflow. Best-effort: failure never blocks the comment.
-  let draftedNow = false;
-  if (decision.shouldDraft && !dryRun) {
-    const token = process.env.DRAFT_TOKEN;
-    if (!token) {
-      core.warning(
-        `PR #${pr.number} should be drafted, but no draft token is available ` +
-          '(PR_READINESS_APP_ID / PR_READINESS_APP_PRIVATE_KEY secrets not configured?)'
-      );
-    } else {
-      try {
-        const res = await fetch('https://api.github.com/graphql', {
-          method: 'POST',
-          headers: { authorization: `bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify({
-            query: 'mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { pullRequest { isDraft } } }',
-            variables: { id: pr.node_id },
-          }),
-        });
-        const result = (await res.json()) as { errors?: Array<{ message: string }> };
-        if (!res.ok || result.errors) {
-          throw new Error(result.errors ? result.errors.map((e) => e.message).join('; ') : `HTTP ${res.status}`);
-        }
-        draftedNow = true;
-      } catch (e) {
-        core.warning(`could not convert PR #${pr.number} to draft: ${errMessage(e)}`);
+  // Sync the not-ready label to the verdict: the bot owns the label, so it is
+  // applied while blocking and removed once not. Best-effort: a label API
+  // failure never blocks the comment.
+  const hadLabel = Array.isArray(pr.labels) && pr.labels.some((l: { name?: string }) => l.name === NOT_READY_LABEL);
+  let labeled = dryRun ? decision.blocking : hadLabel; // dry run previews the would-be state
+  if (!dryRun && decision.blocking !== hadLabel) {
+    try {
+      if (decision.blocking) {
+        await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [NOT_READY_LABEL] });
+      } else {
+        await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name: NOT_READY_LABEL });
       }
+      labeled = decision.blocking;
+    } catch (e) {
+      core.warning(`could not ${decision.blocking ? 'add' : 'remove'} label '${NOT_READY_LABEL}' on PR #${pr.number}: ${errMessage(e)}`);
     }
   }
-
-  const state = {
-    v: 1,
-    failing: decision.failing,
-    draftedSha: draftedNow ? headSha : (existingState && existingState.draftedSha) || null,
-  };
 
   const commentBody = renderComment({
     variant: decision.variant,
     failures: signals.filter((s) => decision.failing.includes(s.id)),
     templateIssues: decision.templateBlocking ? templateVerdict.issues : null,
-    drafted: draftedNow,
-    state,
+    labeled,
+    contributorTable,
   });
 
   for (const name of unmapped) {
@@ -179,8 +191,8 @@ export async function run({ github, context, core }: { github: Octokit; context:
   core.info(
     `PR #${pr.number} by ${pr.user.login} head=${headSha} | signals: ` +
       signals.map((s) => `${s.id}=${s.state}`).join(' ') +
-      ` | template=${templateVerdict.compliant ? 'ok' : 'issues'}` +
-      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} draft=${decision.shouldDraft} draftedNow=${draftedNow}`
+      ` | template=${templateVerdict.compliant ? 'ok' : 'issues'} contributor=${contributorTable !== null}` +
+      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} blocking=${decision.blocking} label: ${hadLabel} -> ${labeled}`
   );
   if (decision.shouldComment) {
     core.startGroup('rendered comment');
@@ -192,7 +204,7 @@ export async function run({ github, context, core }: { github: Octokit; context:
     core.summary
       .addHeading('PR Readiness Helper — dry run', 3)
       .addRaw(`PR: #${pr.number} · head: \`${headSha}\` · would comment: **${decision.shouldComment}**` +
-        ` (variant: ${decision.variant || 'n/a'}) · would draft: **${decision.shouldDraft}**\n\n`)
+        ` (variant: ${decision.variant || 'n/a'}) · label \`${NOT_READY_LABEL}\`: ${hadLabel} → would be ${decision.blocking}\n\n`)
       .addRaw(decision.shouldComment ? '#### Rendered comment\n\n' + commentBody + '\n' : '')
       .addTable([
         [{ data: 'signal', header: true }, { data: 'state', header: true }],

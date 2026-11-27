@@ -1,0 +1,47 @@
+# This example demonstrates template-level resource claims overriding the
+# workflow-level default, so one step can ask for a different device from the
+# rest of the workflow.
+# The template-level list replaces the workflow-level list outright rather than
+# merging with it, so a template that needs both has to name both.
+# Requires the DynamicResourceAllocation feature gate, a DRA driver installed on
+# the cluster, and the ResourceClaimTemplates named below to already exist in the
+# workflow's namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-template-override-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: accelerator
+    resourceClaimTemplateName: example-device-claim-template
+  templates:
+  - name: main
+    steps:
+    - - name: default-device
+        template: default-device
+    - - name: other-device
+        template: other-device
+  # Uses the workflow-level claim.
+  - name: default-device
+    container:
+      image: busybox
+      command: [echo]
+      args: ["using the workflow default device"]
+      resources:
+        claims:
+        - name: accelerator
+  # Overrides the workflow-level claim with its own.
+  - name: other-device
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: example-large-device-claim-template
+    container:
+      image: busybox
+      command: [echo]
+      args: ["using a different device"]
+      resources:
+        claims:
+        - name: accelerator

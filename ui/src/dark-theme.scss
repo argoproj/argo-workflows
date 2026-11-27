@@ -1,0 +1,113 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.theme-dark {
+    color: $argo-color-gray-3;
+    background-color: $dark-theme-background-1;
+
+    .wf-summary-container,
+    .wf-filters-container,
+    .workflows-list__filters-container,
+    .graph-options-panel {
+        background-color: $dark-theme-background-2;
+        box-shadow: none;
+    }
+
+    .login__box {
+        background-color: $dark-theme-background-1;
+    }
+
+    .workflows-list__row-container a,
+    .wf-summary-container__title {
+        color: $argo-color-gray-4;
+    }
+
+    .workflow-details__topbar-buttons a {
+        color: $argo-color-gray-5;
+
+        &.active {
+            color: $argo-color-gray-8;
+        }
+    }
+
+    .graph-options-panel .active {
+        background-color: $argo-color-gray-7;
+        border-color: $argo-color-gray-6;
+    }
+
+    .graph text.node-label,
+    .graph .edge text {
+        fill: $argo-color-gray-4;
+    }
+
+    .row.header {
+        color: $argo-color-gray-3;
+        background-color: $dark-theme-background-2;
+    }
+
+    .artifact-row,
+    .workflow-details__attribute-grid {
+        color: $argo-color-gray-3;
+    }
+
+    .workflow-details__attribute-grid > * {
+        border-color: $argo-color-gray-7;
+    }
+
+    .artifact-row:hover {
+        background-color: $argo-color-gray-7;
+    }
+
+    .workflow-timeline {
+        background-color: $dark-theme-background-1;
+    }
+
+    .workflow-timeline__row {
+        border-bottom-color: $argo-color-gray-7;
+    }
+
+    .workflow-timeline__row--header {
+        background-color: $dark-theme-background-2;
+    }
+
+    .workflow-timeline__start-line {
+        border-right-color: $argo-color-gray-7;
+    }
+
+    .log-box {
+        color: $argo-color-gray-3;
+        background-color: $dark-theme-background-1;
+    }
+
+    .workflow-dag-render-options-panel,
+    .workflows-toolbar,
+    .workflow-drawer,
+    .modal-content,
+    .help-box {
+        background-color: $dark-theme-background-2;
+    }
+
+    textarea {
+        color: $argo-color-gray-3;
+        background-color: $dark-theme-background-1;
+    }
+}
+
+.theme-toggle {
+    display: block;
+    margin: 4px auto 0;
+    padding: 0;
+    font-size: 20px;
+    color: $white-color;
+    background: none;
+    border: 0;
+    cursor: pointer;
+
+    &:hover {
+        color: $argo-color-gray-4;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $argo-color-teal-5;
+        outline-offset: 2px;
+    }
+}

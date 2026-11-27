@@ -1,0 +1,255 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation-one-will-fail2-jt776
+spec:
+
+  entrypoint: parameter-aggregation-one-will-fail2
+  templates:
+  -
+    dag:
+      tasks:
+      -
+        continueOn:
+          failed: true
+        name: generate
+        template: gen-number-list
+      - arguments:
+          parameters:
+          - name: num
+            value: '{{item}}'
+        continueOn:
+          failed: true
+        dependencies:
+        - generate
+        name: one-will-fail
+        template: one-will-fail
+        withParam: '{{tasks.generate.outputs.result}}'
+      -
+        continueOn:
+          failed: true
+        dependencies:
+        - one-will-fail
+        name: whalesay
+        template: whalesay
+    inputs: {}
+    metadata: {}
+    name: parameter-aggregation-one-will-fail2
+    outputs: {}
+  -
+    container:
+      args:
+      - |
+        if [ $(({{inputs.parameters.num}})) == 1 ]; then
+          exit 1;
+        else
+          echo {{inputs.parameters.num}}
+        fi
+      command:
+      - sh
+      - -xc
+      image: alpine:3.23
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: num
+    metadata: {}
+    name: one-will-fail
+    outputs: {}
+  -
+    container:
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+  -
+    inputs: {}
+    metadata: {}
+    name: gen-number-list
+    outputs: {}
+    script:
+      command:
+      - python
+      image: python:alpine3.23
+      name: ""
+      resources: {}
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(0, 2)], sys.stdout)
+status:
+  nodes:
+    parameter-aggregation-one-will-fail2-jt776:
+      children:
+      - parameter-aggregation-one-will-fail2-jt776-1457662774
+      displayName: parameter-aggregation-one-will-fail2-jt776
+      id: parameter-aggregation-one-will-fail2-jt776
+      name: parameter-aggregation-one-will-fail2-jt776
+      outboundNodes:
+      - parameter-aggregation-one-will-fail2-jt776-3936077093
+      phase: Running
+      startedAt: "2020-04-20T16:39:00Z"
+      templateName: parameter-aggregation-one-will-fail2
+      templateScope: local/parameter-aggregation-one-will-fail2-jt776
+      type: DAG
+    parameter-aggregation-one-will-fail2-jt776-6921149:
+      boundaryID: parameter-aggregation-one-will-fail2-jt776
+      children:
+      - parameter-aggregation-one-will-fail2-jt776-1842114754
+      - parameter-aggregation-one-will-fail2-jt776-4113411742
+      displayName: one-will-fail
+      finishedAt: "2020-04-20T16:39:09Z"
+      id: parameter-aggregation-one-will-fail2-jt776-6921149
+      name: parameter-aggregation-one-will-fail2-jt776.one-will-fail
+      phase: Failed
+      startedAt: "2020-04-20T16:39:03Z"
+      templateName: one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail2-jt776
+      type: TaskGroup
+    parameter-aggregation-one-will-fail2-jt776-1457662774:
+      boundaryID: parameter-aggregation-one-will-fail2-jt776
+      children:
+      - parameter-aggregation-one-will-fail2-jt776-6921149
+      displayName: generate
+      finishedAt: "2020-04-20T16:39:02Z"
+      id: parameter-aggregation-one-will-fail2-jt776-1457662774
+      name: parameter-aggregation-one-will-fail2-jt776.generate
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail2-jt776/parameter-aggregation-one-will-fail2-jt776-1457662774/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+        result: '[0, 1]'
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2020-04-20T16:39:00Z"
+      templateName: gen-number-list
+      templateScope: local/parameter-aggregation-one-will-fail2-jt776
+      type: Pod
+    parameter-aggregation-one-will-fail2-jt776-1842114754:
+      boundaryID: parameter-aggregation-one-will-fail2-jt776
+      children:
+      - parameter-aggregation-one-will-fail2-jt776-3936077093
+      displayName: one-will-fail(0:0)
+      finishedAt: "2020-04-20T16:39:06Z"
+      id: parameter-aggregation-one-will-fail2-jt776-1842114754
+      inputs:
+        parameters:
+        - name: num
+          value: "0"
+      name: parameter-aggregation-one-will-fail2-jt776.one-will-fail(0:0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail2-jt776/parameter-aggregation-one-will-fail2-jt776-1842114754/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2020-04-20T16:39:03Z"
+      templateName: one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail2-jt776
+      type: Pod
+    parameter-aggregation-one-will-fail2-jt776-3936077093:
+      boundaryID: parameter-aggregation-one-will-fail2-jt776
+      displayName: whalesay
+      finishedAt: "2020-04-20T16:39:14Z"
+      id: parameter-aggregation-one-will-fail2-jt776-3936077093
+      name: parameter-aggregation-one-will-fail2-jt776.whalesay
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail2-jt776/parameter-aggregation-one-will-fail2-jt776-3936077093/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2020-04-20T16:39:10Z"
+      templateName: whalesay
+      templateScope: local/parameter-aggregation-one-will-fail2-jt776
+      type: Pod
+    parameter-aggregation-one-will-fail2-jt776-4113411742:
+      boundaryID: parameter-aggregation-one-will-fail2-jt776
+      children:
+      - parameter-aggregation-one-will-fail2-jt776-3936077093
+      displayName: one-will-fail(1:1)
+      finishedAt: "2020-04-20T16:39:07Z"
+      id: parameter-aggregation-one-will-fail2-jt776-4113411742
+      inputs:
+        parameters:
+        - name: num
+          value: "1"
+      message: failed with exit code 1
+      name: parameter-aggregation-one-will-fail2-jt776.one-will-fail(1:1)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: parameter-aggregation-one-will-fail2-jt776/parameter-aggregation-one-will-fail2-jt776-4113411742/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2020-04-20T16:39:03Z"
+      templateName: one-will-fail
+      templateScope: local/parameter-aggregation-one-will-fail2-jt776
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 10
+    memory: 0
+  startedAt: "2020-04-20T16:39:00Z"

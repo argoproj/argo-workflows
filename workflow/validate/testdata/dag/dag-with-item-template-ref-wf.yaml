@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: 363-test-
+  namespace: default
+spec:
+  activeDeadlineSeconds: 10800
+  entrypoint: main
+  serviceAccountName: ci
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: withitems
+            templateRef:
+              name: 363-test-tmp
+              template: 363-test-tmp
+            arguments:
+              parameters:
+                - name: path
+                  value: "{{item.path}}"
+                - name: service
+                  value: "{{item.service}}"
+                - name: build_arg
+                  value: "{{item.arg}}"
+                - name: run_on
+                  value: "{{item.run_on}}"
+                - name: arch
+                  value: "{{item.arch}}"
+                - name: docker_org
+                  value: "{{item.docker_org}}"
+            withItems:
+              - {
+                  path: "services",
+                  service: "id",
+                  arg: "",
+                  run_on: "arm-spot",
+                  arch: "arm64",
+                  docker_org: "pipekit13",
+                }
+              - {
+                  path: "services",
+                  service: "events-handler",
+                  arg: "",
+                  run_on: "arm-spot",
+                  arch: "arm64",
+                  docker_org: "pipekit13",
+                }

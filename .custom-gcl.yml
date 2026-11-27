@@ -1,0 +1,10 @@
+# Builds a custom golangci-lint binary with module plugins compiled in.
+# Built by `make lint` (target $(TOOL_CUSTOM_GCL) in the Makefile), which
+# overrides name and destination. Keep `version` in step with the Makefile.
+version: v2.15.0
+name: custom-gcl
+destination: ./dist
+plugins:
+  - module: github.com/kojah/gohawk
+    import: github.com/kojah/gohawk/plugin/golangci
+    version: v0.7.2

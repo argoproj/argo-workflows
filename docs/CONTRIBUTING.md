@@ -64,40 +64,9 @@ Please check out the following resources if you are interested in contributing:
 
 To run Argo Workflows locally for development: [running locally](running-locally.md).
 
-#### Committing
+#### Raising a PR
 
-See the [Committing Guidelines](running-locally.md#committing).
-
-#### Dependencies
-
-Dependencies increase the risk of security issues and have on-going maintenance costs.
-
-The dependency must pass these test:
-
-* A strong use case.
-* It has an acceptable license (e.g. MIT).
-* It is actively maintained.
-* It has no security issues.
-
-Example, should we add `fasttemplate`, [view the Snyk report](https://snyk.io/advisor/golang/github.com/valyala/fasttemplate):
-
-| Test                                    | Outcome                             |
-|-----------------------------------------|-------------------------------------|
-| A strong use case.                      | ❌ Fail. We can use `text/template`. |
-| It has an acceptable license (e.g. MIT) | ✅ Pass. MIT license.               |
-| It is actively maintained.              | ❌ Fail. Project is inactive.        |
-| It has no security issues.              | ✅ Pass. No known security issues.  |
-
-No, we should not add that dependency.
-
-#### Test Policy
-
-Changes without either unit or e2e tests are unlikely to be accepted.
-See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
-
-#### Use of Generative AI
-
-Contributors using generative AI tools (for example ChatGPT) to help prepare contributions must follow the [Argo project Generative AI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md) and declare such use in the `AI` section of the pull request template.
+Follow the [pull request checklist](pull-requests.md).
 
 ### Other Contributions
 

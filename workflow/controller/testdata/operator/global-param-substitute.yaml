@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8xw8l
+spec:
+  entrypoint: "whalesay1"
+  arguments:
+    parameters:
+    - name: entrypoint
+      value: test
+    - name: mutex
+      value: mutex1
+    - name: message
+      value: mutex1
+  synchronization:
+    mutexes:
+      - name:  "{{workflow.parameters.mutex}}"
+  templates:
+  - name: whalesay1
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.parameters.message}}"]

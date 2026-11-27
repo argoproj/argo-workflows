@@ -5,7 +5,6 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       This workflow demonstrates running parallel containers within a single pod.
-    workflows.argoproj.io/version: ">= 3.1.0"
 spec:
   entrypoint: main
   templates:

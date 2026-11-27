@@ -19,10 +19,19 @@ func NewWorkflowTemplateServiceClient(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *WorkflowTemplateServiceClient {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &WorkflowTemplateServiceClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -43,11 +52,11 @@ func (_m *WorkflowTemplateServiceClient) EXPECT() *WorkflowTemplateServiceClient
 // CreateWorkflowTemplate provides a mock function for the type WorkflowTemplateServiceClient
 func (_mock *WorkflowTemplateServiceClient) CreateWorkflowTemplate(ctx context.Context, in *workflowtemplate.WorkflowTemplateCreateRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -85,9 +94,9 @@ type WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call struct {
 //   - ctx context.Context
 //   - in *workflowtemplate.WorkflowTemplateCreateRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowTemplateServiceClient_Expecter) CreateWorkflowTemplate(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call {
+func (_e *WorkflowTemplateServiceClient_Expecter) CreateWorkflowTemplate(ctx any, in any, opts ...any) *WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call {
 	return &WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call{Call: _e.mock.On("CreateWorkflowTemplate",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call) Run(run func(ctx context.Context, in *workflowtemplate.WorkflowTemplateCreateRequest, opts ...grpc.CallOption)) *WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call {
@@ -130,11 +139,11 @@ func (_c *WorkflowTemplateServiceClient_CreateWorkflowTemplate_Call) RunAndRetur
 // DeleteWorkflowTemplate provides a mock function for the type WorkflowTemplateServiceClient
 func (_mock *WorkflowTemplateServiceClient) DeleteWorkflowTemplate(ctx context.Context, in *workflowtemplate.WorkflowTemplateDeleteRequest, opts ...grpc.CallOption) (*workflowtemplate.WorkflowTemplateDeleteResponse, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -172,9 +181,9 @@ type WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call struct {
 //   - ctx context.Context
 //   - in *workflowtemplate.WorkflowTemplateDeleteRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowTemplateServiceClient_Expecter) DeleteWorkflowTemplate(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call {
+func (_e *WorkflowTemplateServiceClient_Expecter) DeleteWorkflowTemplate(ctx any, in any, opts ...any) *WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call {
 	return &WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call{Call: _e.mock.On("DeleteWorkflowTemplate",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call) Run(run func(ctx context.Context, in *workflowtemplate.WorkflowTemplateDeleteRequest, opts ...grpc.CallOption)) *WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call {
@@ -217,11 +226,11 @@ func (_c *WorkflowTemplateServiceClient_DeleteWorkflowTemplate_Call) RunAndRetur
 // GetWorkflowTemplate provides a mock function for the type WorkflowTemplateServiceClient
 func (_mock *WorkflowTemplateServiceClient) GetWorkflowTemplate(ctx context.Context, in *workflowtemplate.WorkflowTemplateGetRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -259,9 +268,9 @@ type WorkflowTemplateServiceClient_GetWorkflowTemplate_Call struct {
 //   - ctx context.Context
 //   - in *workflowtemplate.WorkflowTemplateGetRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowTemplateServiceClient_Expecter) GetWorkflowTemplate(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowTemplateServiceClient_GetWorkflowTemplate_Call {
+func (_e *WorkflowTemplateServiceClient_Expecter) GetWorkflowTemplate(ctx any, in any, opts ...any) *WorkflowTemplateServiceClient_GetWorkflowTemplate_Call {
 	return &WorkflowTemplateServiceClient_GetWorkflowTemplate_Call{Call: _e.mock.On("GetWorkflowTemplate",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowTemplateServiceClient_GetWorkflowTemplate_Call) Run(run func(ctx context.Context, in *workflowtemplate.WorkflowTemplateGetRequest, opts ...grpc.CallOption)) *WorkflowTemplateServiceClient_GetWorkflowTemplate_Call {
@@ -304,11 +313,11 @@ func (_c *WorkflowTemplateServiceClient_GetWorkflowTemplate_Call) RunAndReturn(r
 // LintWorkflowTemplate provides a mock function for the type WorkflowTemplateServiceClient
 func (_mock *WorkflowTemplateServiceClient) LintWorkflowTemplate(ctx context.Context, in *workflowtemplate.WorkflowTemplateLintRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -346,9 +355,9 @@ type WorkflowTemplateServiceClient_LintWorkflowTemplate_Call struct {
 //   - ctx context.Context
 //   - in *workflowtemplate.WorkflowTemplateLintRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowTemplateServiceClient_Expecter) LintWorkflowTemplate(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowTemplateServiceClient_LintWorkflowTemplate_Call {
+func (_e *WorkflowTemplateServiceClient_Expecter) LintWorkflowTemplate(ctx any, in any, opts ...any) *WorkflowTemplateServiceClient_LintWorkflowTemplate_Call {
 	return &WorkflowTemplateServiceClient_LintWorkflowTemplate_Call{Call: _e.mock.On("LintWorkflowTemplate",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowTemplateServiceClient_LintWorkflowTemplate_Call) Run(run func(ctx context.Context, in *workflowtemplate.WorkflowTemplateLintRequest, opts ...grpc.CallOption)) *WorkflowTemplateServiceClient_LintWorkflowTemplate_Call {
@@ -391,11 +400,11 @@ func (_c *WorkflowTemplateServiceClient_LintWorkflowTemplate_Call) RunAndReturn(
 // ListWorkflowTemplates provides a mock function for the type WorkflowTemplateServiceClient
 func (_mock *WorkflowTemplateServiceClient) ListWorkflowTemplates(ctx context.Context, in *workflowtemplate.WorkflowTemplateListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowTemplateList, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -433,9 +442,9 @@ type WorkflowTemplateServiceClient_ListWorkflowTemplates_Call struct {
 //   - ctx context.Context
 //   - in *workflowtemplate.WorkflowTemplateListRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowTemplateServiceClient_Expecter) ListWorkflowTemplates(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowTemplateServiceClient_ListWorkflowTemplates_Call {
+func (_e *WorkflowTemplateServiceClient_Expecter) ListWorkflowTemplates(ctx any, in any, opts ...any) *WorkflowTemplateServiceClient_ListWorkflowTemplates_Call {
 	return &WorkflowTemplateServiceClient_ListWorkflowTemplates_Call{Call: _e.mock.On("ListWorkflowTemplates",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowTemplateServiceClient_ListWorkflowTemplates_Call) Run(run func(ctx context.Context, in *workflowtemplate.WorkflowTemplateListRequest, opts ...grpc.CallOption)) *WorkflowTemplateServiceClient_ListWorkflowTemplates_Call {
@@ -478,11 +487,11 @@ func (_c *WorkflowTemplateServiceClient_ListWorkflowTemplates_Call) RunAndReturn
 // UpdateWorkflowTemplate provides a mock function for the type WorkflowTemplateServiceClient
 func (_mock *WorkflowTemplateServiceClient) UpdateWorkflowTemplate(ctx context.Context, in *workflowtemplate.WorkflowTemplateUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -520,9 +529,9 @@ type WorkflowTemplateServiceClient_UpdateWorkflowTemplate_Call struct {
 //   - ctx context.Context
 //   - in *workflowtemplate.WorkflowTemplateUpdateRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowTemplateServiceClient_Expecter) UpdateWorkflowTemplate(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowTemplateServiceClient_UpdateWorkflowTemplate_Call {
+func (_e *WorkflowTemplateServiceClient_Expecter) UpdateWorkflowTemplate(ctx any, in any, opts ...any) *WorkflowTemplateServiceClient_UpdateWorkflowTemplate_Call {
 	return &WorkflowTemplateServiceClient_UpdateWorkflowTemplate_Call{Call: _e.mock.On("UpdateWorkflowTemplate",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowTemplateServiceClient_UpdateWorkflowTemplate_Call) Run(run func(ctx context.Context, in *workflowtemplate.WorkflowTemplateUpdateRequest, opts ...grpc.CallOption)) *WorkflowTemplateServiceClient_UpdateWorkflowTemplate_Call {

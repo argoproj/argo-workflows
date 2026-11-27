@@ -215,6 +215,14 @@ yarn --cwd ui playwright install --with-deps chromium   # first run only
 make test-ui-e2e                            # or: yarn --cwd ui e2e
 ```
 
+Run them under a sub-path when the `E2E UI (base-href)` check fails, or when you change anything that builds URLs (links, routing, API paths or cookies).
+To do that, start the stack with `BASE_HREF=/argo/` (argo-server and the webpack dev server both pick it up) and point the suite at it:
+
+```bash
+make start AUTH_MODE=client BASE_HREF=/argo/
+ARGO_UI_BASE_URL=http://localhost:8080/argo/ make test-ui-e2e
+```
+
 Useful extras:
 
 * `yarn --cwd ui e2e:ui` — interactive/headed runner for debugging.
@@ -295,65 +303,7 @@ Two things to know:
 
 ## Committing
 
-Before you commit code and raise a PR, always run:
-
-```bash
-make pre-commit -B
-```
-
-Please do the following when creating your PR:
-
-* [Sign-off](https://probot.github.io/apps/dco) your commits.
-* Use [Conventional Commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
-* Suffix the issue number.
-
-Examples:
-
-```bash
-git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
-```
-
-```bash
-git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
-```
-
-### Creating Feature Descriptions
-
-When adding a new feature, you must create a feature description file that will be used to generate new feature information when we do a feature release:
-
-```bash
-make feature-new
-```
-
-This will create a new feature description file in the `.features` directory which you must then edit to describe your feature.
-By default, it uses your current branch name as the file name.
-The name of the file doesn't get used by the tooling, it just needs to be unique to your feature so as not to collide on merge.
-You can also specify a custom file name:
-
-```bash
-make feature-new FEATURE_FILENAME=my-awesome-feature
-```
-
-You must have an issue number to associate with your PR for features, and that must be placed in this file.
-It seems reasonable that all new features are discussed in an issue before being developed.
-There is a `Component` field which must match one of the fields in `hack/featuregen/components.go`
-
-The feature file should be included in your PR to document your changes.
-Before submitting, you can validate your feature file:
-
-```bash
-make features-validate
-```
-
-The `pre-commit` target will also do that.
-
-You can also preview how your feature will appear in the release notes:
-
-```bash
-make features-preview
-```
-
-This command runs a dry-run of the release notes generation process, showing you how your feature will appear in the markdown file that will be used to generate the release notes.
+See the [pull request checklist](pull-requests.md).
 
 ## Troubleshooting
 

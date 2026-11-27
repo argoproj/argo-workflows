@@ -10,12 +10,15 @@ func TestProgress(t *testing.T) {
 	t.Run("ParseProgress", func(t *testing.T) {
 		_, ok := ParseProgress("")
 		assert.False(t, ok)
+		_, ok = ParseProgress("5")
+		assert.False(t, ok)
 		progress, ok := ParseProgress("0/1")
 		assert.True(t, ok)
 		assert.Equal(t, Progress("0/1"), progress)
 	})
 	t.Run("IsValid", func(t *testing.T) {
 		assert.False(t, Progress("").IsValid())
+		assert.False(t, Progress("5").IsValid())
 		assert.False(t, Progress("/0").IsValid())
 		assert.False(t, Progress("0/").IsValid())
 		assert.False(t, Progress("0/0").IsValid())

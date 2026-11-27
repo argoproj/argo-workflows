@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: output-value-global-variables-wf
+  namespace: testNamespace
+spec:
+  serviceAccountName: testServiceAccountName
+  entrypoint: tell-workflow-global-variables
+  templates:
+  - name: tell-workflow-global-variables
+    outputs:
+      parameters:
+      - name: namespace
+        value: "{{workflow.namespace}}"
+      - name: serviceAccountName
+        value: "{{workflow.serviceAccountName}}"
+    container:
+      image: busybox

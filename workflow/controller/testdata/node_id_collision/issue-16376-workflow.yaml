@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: custom-job-thbh7
+  namespace: default
+spec:
+  arguments:
+    parameters:
+      - name: MESSAGE
+        value: hello
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: custom-job
+        templateRef:
+          name: workflow-template-debug
+          template: custom-job
+        arguments:
+          parameters:
+          - name: message
+            value: "{{workflow.parameters.MESSAGE}}"
