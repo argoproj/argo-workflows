@@ -19,6 +19,11 @@ test('resubmits a workflow from the details page', async ({api, workflowDetailsP
 });
 
 test('deletes a workflow from the list', async ({api, confirmDialog, workflowListPage}) => {
+    // With the archive, the list serves a completed workflow from the archive,
+    // labelled as if it were no longer in the cluster, so Delete never removes
+    // it from the cluster.
+    test.fixme(await api.archiveEnabled(), 'deleting an archived workflow from the list leaves it in the cluster: https://github.com/argoproj/argo-workflows/issues/17651');
+
     const name = await api.submitWorkflow(echoWorkflow());
     await api.waitForPhase(name, 'Succeeded');
 

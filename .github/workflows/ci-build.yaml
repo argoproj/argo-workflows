@@ -631,11 +631,18 @@ jobs:
         # /api/ whatever its --base-href, so a sub-path deployment needs a
         # prefix-stripping proxy in front, which is what the dev server's
         # pathRewrite is.
+        #
+        # The root entry also enables the workflow archive (the mysql profile),
+        # which changes what the workflow list shows and adds the archive's
+        # own journeys; the sub-path entry keeps it off, so both the archive-on
+        # and archive-off UI stay covered.
         include:
           - name: root
             base-href: /
+            profile: mysql
           - name: base-href
             base-href: /argo/
+            profile: minimal
     env:
       E2E_ENV_FACTOR: 2
       NODE_OPTIONS: --max-old-space-size=4096
@@ -666,7 +673,7 @@ jobs:
         # tilt builds the production images (UI baked in), deploys them, and keeps
         # its argo-server port-forward (:2746) serving through the test steps.
         run: |
-          tilt up --stream -- --mode=ci --profile=minimal \
+          tilt up --stream -- --mode=ci --profile=${{ matrix.profile }} \
             --api=true \
             --auth-mode=client \
             --base-href=${{ matrix.base-href }} \

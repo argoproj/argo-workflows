@@ -34,6 +34,14 @@ export class WorkflowListPage {
             .locator('i');
     }
 
+    /** A given row's ARCHIVED cell: `true` for a workflow served from the archive. */
+    rowArchived(name: string): Locator {
+        return this.page
+            .locator('.workflows-list__row-container')
+            .filter({has: this.row(name)})
+            .getByTestId('workflow-archived');
+    }
+
     async filterByName(name: string): Promise<void> {
         // InputFilter only commits the filter (a list refetch) on Enter, and its
         // Enter handler reads React state rather than the input's live value. Wait

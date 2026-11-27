@@ -97,3 +97,8 @@ export function echoWorkflowTemplate(clusterScoped = false, generateName = 'e2e-
 export function cronWorkflow(schedule = '0 0 1 1 *', generateName = 'e2e-cron-'): TestResource {
     return {...base(generateName), spec: {schedules: [schedule], workflowSpec: oneStepSpec(['echo', 'hello e2e'])}};
 }
+
+/** `resource` with `labels` added to its own (a test's private label, say). */
+export function withLabels(resource: TestResource, labels: Record<string, string>): TestResource {
+    return {...resource, metadata: {...resource.metadata, labels: {...resource.metadata.labels, ...labels}}};
+}
