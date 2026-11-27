@@ -143,7 +143,7 @@ ENTRYPOINT [ "argo" ]
 
 ####################################################################################################
 
-FROM registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789 AS argo-workflows-crdinstaller
+FROM registry.k8s.io/kubectl:v1.37.3@sha256:82f06779a0dcd86225ffdb96c005418b9716093a39907a5ecf686d7a22e6b788 AS argo-workflows-crdinstaller
 
 USER 8737
 
