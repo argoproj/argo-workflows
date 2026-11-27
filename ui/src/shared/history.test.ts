@@ -28,4 +28,20 @@ describe('history URL', () => {
         expect(historyUrl('foo', {bar: false})).toBe('/foo?');
         expect(historyUrl('foo', {bar: null})).toBe('/foo?');
     });
+
+    test('repeated extra search parameters', () => {
+        const params = new URLSearchParams();
+        params.append('label', 'a');
+        params.append('label', 'b');
+        expect(historyUrl('foo', {extraSearchParams: params})).toBe('/foo?label=a&label=b');
+    });
+
+    test('named param takes precedence over same key in extraSearchParams, regardless of object key order', () => {
+        const params = new URLSearchParams();
+        params.append('namespace', 'stale');
+        params.append('label', 'a');
+        expect(historyUrl('foo', {namespace: 'argo', extraSearchParams: params})).toBe('/foo?namespace=argo&label=a');
+        // Reversed order: extraSearchParams before namespace — result must be identical.
+        expect(historyUrl('foo', {extraSearchParams: params, namespace: 'argo'})).toBe('/foo?namespace=argo&label=a');
+    });
 });
