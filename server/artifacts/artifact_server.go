@@ -34,7 +34,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type ArtifactServer struct {
@@ -708,16 +707,20 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 		logger.WithError(err).WithField("nodeID", nodeID).Error(ctx, "was unable to retrieve node")
 		return nil, nil, fmt.Errorf("unable to get artifact and driver; could not get node for %s: %w", nodeID, err)
 	}
-	templateName := util.GetTemplateFromNode(*templateNode)
-	if templateName != "" {
-		template := wf.GetTemplateByName(templateName)
+	// An artifact with its own location (case 1) needs neither its template nor the repository.
+	needsLocation := !art.HasLocation()
+	// Resolve the template by its scoped identity: a bare name can match another
+	// template, e.g. a local template and a referenced WorkflowTemplate's template.
+	templateKey := wf.GetNodeTemplateKey(templateNode)
+	if needsLocation && templateKey != "" {
+		template := wf.GetTemplateFromSnapshot(templateKey)
 		if template == nil {
-			return nil, nil, fmt.Errorf("no template found for name %q associated with nodeID %q", templateName, nodeID)
+			return nil, nil, fmt.Errorf("no template found for %q associated with nodeID %q", templateKey, nodeID)
 		}
 		archiveLocation = template.ArchiveLocation // this is case 4
 	}
 
-	if templateName == "" || !archiveLocation.HasLocation() {
+	if needsLocation && (templateKey == "" || !archiveLocation.HasLocation()) {
 		ar, arErr := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
 		if arErr != nil {
 			return art, nil, arErr

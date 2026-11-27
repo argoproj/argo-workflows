@@ -1273,3 +1273,422 @@ func TestArtifactServer_GateKeepingForwardsHeaders(t *testing.T) {
 	assert.Equal(t, []string{"secret"}, md.Get("x-proxy-auth"))
 	assert.Equal(t, []string{"admin"}, md.Get("x-forwarded-groups"))
 }
+
+// templateIdentityLocation is an S3 location whose bucket, endpoint and credential
+// selectors all name id, so an assertion shows which template it was taken from.
+func templateIdentityLocation(id string) *wfv1.ArtifactLocation {
+	return &wfv1.ArtifactLocation{
+		S3: &wfv1.S3Artifact{
+			Key: "archive-key-" + id,
+			S3Bucket: wfv1.S3Bucket{
+				Bucket:   "bucket-" + id,
+				Endpoint: id + ".example.com:9000",
+				AccessKeySecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "secret-" + id},
+					Key:                  "accessKey",
+				},
+				SecretKeySecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "secret-" + id},
+					Key:                  "secretKey",
+				},
+			},
+		},
+	}
+}
+
+// templateIdentityNode is a node with one input and one output artifact that only
+// carry an object key, so their location must come from the node's template.
+func templateIdentityNode(id string) wfv1.NodeStatus {
+	return wfv1.NodeStatus{
+		ID: id,
+		Inputs: &wfv1.Inputs{Artifacts: wfv1.Artifacts{{
+			Name:             "in",
+			ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "my-wf/" + id + "/in.tgz"}},
+		}}},
+		Outputs: &wfv1.Outputs{Artifacts: wfv1.Artifacts{{
+			Name:             "out",
+			ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "my-wf/" + id + "/out.tgz"}},
+		}}},
+	}
+}
+
+// templateIdentityS3 is the S3 location expected for an artifact with the given
+// object key that is served from templateIdentityLocation(id).
+func templateIdentityS3(id, key string) *wfv1.S3Artifact {
+	s3 := templateIdentityLocation(id).S3
+	s3.Key = key
+	return s3
+}
+
+func templateIdentityMainTemplate(archiveLocation *wfv1.ArtifactLocation) wfv1.Template {
+	return wfv1.Template{Name: "main", ArchiveLocation: archiveLocation}
+}
+
+func newTemplateIdentityServer(t *testing.T) (context.Context, *ArtifactServer, *int) {
+	t.Helper()
+	repository := &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{S3Bucket: templateIdentityLocation("repository").S3.S3Bucket}}
+	return newTemplateIdentityServerWithRepositories(t, armocks.DummyArtifactRepositories(repository))
+}
+
+// unavailableArtifactRepositories fails every lookup, for artifacts that must not
+// need the artifact repository.
+func unavailableArtifactRepositories() *armocks.Interface {
+	repositories := &armocks.Interface{}
+	repositories.On("Get", mock.Anything, mock.Anything).Return(nil, errors.New("artifact repository unavailable"))
+	return repositories
+}
+
+func newTemplateIdentityServerWithRepositories(t *testing.T, repositories *armocks.Interface) (context.Context, *ArtifactServer, *int) {
+	t.Helper()
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kubefake.NewClientset())
+	driversCreated := 0
+	driverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		driversCreated++
+		return &fakeArtifactDriver{data: []byte("my-data")}, nil
+	}
+	s := newArtifactServer(&authmocks.Gatekeeper{}, hydratorfake.Noop, &sqldbmocks.WorkflowArchive{}, instanceid.NewService(""),
+		driverFactory, repositories, logging.RequireLoggerFromContext(ctx))
+	return ctx, s, &driversCreated
+}
+
+// TestArtifactServer_GetArtifactAndDriverTemplateIdentity checks that an artifact
+// without its own location is served from the archive location of the template
+// that actually ran the node, identified by scope, resource and template name,
+// and never from another template that merely shares its name.
+//
+// Cases marked mapOrder differ only in which entry of Status.StoredTemplates
+// matches. A lookup by bare template name would pick one of them in map
+// iteration order, which Go leaves unspecified, so those cases are repeated to
+// make it very unlikely that such a lookup passes by chance.
+func TestArtifactServer_GetArtifactAndDriverTemplateIdentity(t *testing.T) {
+	const mapOrderAttempts = 256
+
+	referencedNode := func(id string, ref *wfv1.TemplateRef) wfv1.NodeStatus {
+		n := templateIdentityNode(id)
+		n.TemplateRef = ref
+		return n
+	}
+	localNode := func(id, templateName string) wfv1.NodeStatus {
+		n := templateIdentityNode(id)
+		n.TemplateName = templateName
+		return n
+	}
+	scopedNode := func(id, scope, templateName string) wfv1.NodeStatus {
+		n := localNode(id, templateName)
+		n.TemplateScope = scope
+		return n
+	}
+
+	tests := []struct {
+		name            string
+		localTemplates  []wfv1.Template
+		storedTemplates map[string]wfv1.Template
+		node            wfv1.NodeStatus
+		isInput         bool
+		// wantLocation is the id passed to templateIdentityLocation for the expected location.
+		wantLocation string
+		// mapOrder marks cases whose same-named candidates are all Status.StoredTemplates entries.
+		mapOrder bool
+	}{
+		{
+			name: "first of two WorkflowTemplates with the same template name",
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+				"namespaced/wft-b/main": templateIdentityMainTemplate(templateIdentityLocation("wft-b")),
+			},
+			node:         referencedNode("node-a", &wfv1.TemplateRef{Name: "wft-a", Template: "main"}),
+			wantLocation: "wft-a",
+			mapOrder:     true,
+		},
+		{
+			name: "second of two WorkflowTemplates with the same template name",
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+				"namespaced/wft-b/main": templateIdentityMainTemplate(templateIdentityLocation("wft-b")),
+			},
+			node:         referencedNode("node-b", &wfv1.TemplateRef{Name: "wft-b", Template: "main"}),
+			wantLocation: "wft-b",
+			mapOrder:     true,
+		},
+		{
+			name:           "referenced main is not shadowed by local main",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+			},
+			node:         referencedNode("node-ref", &wfv1.TemplateRef{Name: "wft-a", Template: "main"}),
+			wantLocation: "wft-a",
+		},
+		{
+			name:           "input artifact of referenced main is not shadowed by local main",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+			},
+			node:         referencedNode("node-ref", &wfv1.TemplateRef{Name: "wft-a", Template: "main"}),
+			isInput:      true,
+			wantLocation: "wft-a",
+		},
+		{
+			name:           "local main keeps its own location next to a referenced main",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+			},
+			node:         localNode("node-local", "main"),
+			wantLocation: "local",
+		},
+		{
+			name:           "referenced main without archive location uses the repository, not local main",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(nil),
+			},
+			node:         referencedNode("node-ref", &wfv1.TemplateRef{Name: "wft-a", Template: "main"}),
+			wantLocation: "repository",
+		},
+		{
+			name: "namespaced template with the same name as a cluster template",
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/shared/main": templateIdentityMainTemplate(templateIdentityLocation("namespaced")),
+				"cluster/shared/main":    templateIdentityMainTemplate(templateIdentityLocation("cluster")),
+			},
+			node:         referencedNode("node-namespaced", &wfv1.TemplateRef{Name: "shared", Template: "main"}),
+			wantLocation: "namespaced",
+			mapOrder:     true,
+		},
+		{
+			name: "cluster template with the same name as a namespaced template",
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/shared/main": templateIdentityMainTemplate(templateIdentityLocation("namespaced")),
+				"cluster/shared/main":    templateIdentityMainTemplate(templateIdentityLocation("cluster")),
+			},
+			node:         referencedNode("node-cluster", &wfv1.TemplateRef{Name: "shared", Template: "main", ClusterScope: true}),
+			wantLocation: "cluster",
+			mapOrder:     true,
+		},
+		{
+			name:           "namespaced template scope without template ref",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+			},
+			node:         scopedNode("node-scoped", "namespaced/wft-a", "main"),
+			wantLocation: "wft-a",
+		},
+		{
+			name:           "cluster template scope without template ref",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"cluster/cwft-a/main": templateIdentityMainTemplate(templateIdentityLocation("cwft-a")),
+			},
+			node:         scopedNode("node-scoped", "cluster/cwft-a", "main"),
+			wantLocation: "cwft-a",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, s, _ := newTemplateIdentityServer(t)
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf"},
+				Spec:       wfv1.WorkflowSpec{Templates: tt.localTemplates},
+				Status: wfv1.WorkflowStatus{
+					Nodes:           wfv1.Nodes{tt.node.ID: tt.node},
+					StoredTemplates: tt.storedTemplates,
+				},
+			}
+			artifactName := "out"
+			if tt.isInput {
+				artifactName = "in"
+			}
+			want := templateIdentityS3(tt.wantLocation, "my-wf/"+tt.node.ID+"/"+artifactName+".tgz")
+
+			attempts := 1
+			if tt.mapOrder {
+				attempts = mapOrderAttempts
+			}
+			for attempt := range attempts {
+				art, driver, err := s.getArtifactAndDriver(ctx, tt.node.ID, artifactName, tt.isInput, wf, nil)
+				require.NoError(t, err, "attempt %d", attempt)
+				require.NotNil(t, driver, "attempt %d", attempt)
+				require.Equal(t, want, art.S3, "attempt %d", attempt)
+			}
+		})
+	}
+}
+
+// An artifact that records its own complete location is served from it, without
+// consulting its template or the artifact repository, so it stays downloadable
+// when its template's stored snapshot is missing.
+func TestArtifactServer_GetArtifactAndDriverExplicitLocation(t *testing.T) {
+	tests := []struct {
+		name            string
+		localTemplates  []wfv1.Template
+		storedTemplates map[string]wfv1.Template
+	}{
+		{
+			name:           "stored template with its own archive location",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+			storedTemplates: map[string]wfv1.Template{
+				"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+			},
+		},
+		{name: "stored template missing"},
+		{
+			name:           "stored template missing, local template with the same name",
+			localTemplates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, s, _ := newTemplateIdentityServerWithRepositories(t, unavailableArtifactRepositories())
+			explicit := templateIdentityS3("explicit", "my-wf/node-ref/explicit.tgz")
+			node := wfv1.NodeStatus{
+				ID:          "node-ref",
+				TemplateRef: &wfv1.TemplateRef{Name: "wft-a", Template: "main"},
+				Outputs:     &wfv1.Outputs{Artifacts: wfv1.Artifacts{{Name: "out", ArtifactLocation: wfv1.ArtifactLocation{S3: explicit.DeepCopy()}}}},
+			}
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf"},
+				Spec:       wfv1.WorkflowSpec{Templates: tt.localTemplates},
+				Status: wfv1.WorkflowStatus{
+					Nodes:           wfv1.Nodes{node.ID: node},
+					StoredTemplates: tt.storedTemplates,
+				},
+			}
+
+			art, driver, err := s.getArtifactAndDriver(ctx, node.ID, "out", false, wf, nil)
+
+			require.NoError(t, err)
+			require.NotNil(t, driver)
+			assert.Equal(t, explicit, art.S3)
+		})
+	}
+}
+
+// A node whose non-local template is missing from the stored snapshot is an
+// error when its artifacts need the template's location, rather than being
+// served from a same-named local template's location.
+func TestArtifactServer_GetArtifactAndDriverMissingStoredTemplate(t *testing.T) {
+	referencedNode := templateIdentityNode("node-missing")
+	referencedNode.TemplateRef = &wfv1.TemplateRef{Name: "wft-missing", Template: "main"}
+	namespacedScopeNode := templateIdentityNode("node-missing")
+	namespacedScopeNode.TemplateScope, namespacedScopeNode.TemplateName = "namespaced/wft-missing", "main"
+	clusterScopeNode := templateIdentityNode("node-missing")
+	clusterScopeNode.TemplateScope, clusterScopeNode.TemplateName = "cluster/cwft-missing", "main"
+	localMain := []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))}
+
+	tests := []struct {
+		name           string
+		node           wfv1.NodeStatus
+		localTemplates []wfv1.Template
+		isInput        bool
+		// wantTemplateKey is the scoped identity of the missing template, named in the error.
+		wantTemplateKey string
+	}{
+		{name: "template ref, no template with that name", node: referencedNode, wantTemplateKey: "namespaced/wft-missing/main"},
+		{name: "template ref, local template with the same name", node: referencedNode, localTemplates: localMain, wantTemplateKey: "namespaced/wft-missing/main"},
+		{name: "input artifact, template ref, local template with the same name", node: referencedNode, localTemplates: localMain, isInput: true, wantTemplateKey: "namespaced/wft-missing/main"},
+		{name: "namespaced template scope, local template with the same name", node: namespacedScopeNode, localTemplates: localMain, wantTemplateKey: "namespaced/wft-missing/main"},
+		{name: "cluster template scope, local template with the same name", node: clusterScopeNode, localTemplates: localMain, wantTemplateKey: "cluster/cwft-missing/main"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, s, driversCreated := newTemplateIdentityServer(t)
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf"},
+				Spec:       wfv1.WorkflowSpec{Templates: tt.localTemplates},
+				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{tt.node.ID: tt.node}},
+			}
+			artifactName := "out"
+			if tt.isInput {
+				artifactName = "in"
+			}
+
+			_, driver, err := s.getArtifactAndDriver(ctx, tt.node.ID, artifactName, tt.isInput, wf, nil)
+
+			require.ErrorContains(t, err, fmt.Sprintf("no template found for %q", tt.wantTemplateKey))
+			assert.Nil(t, driver)
+			assert.Zero(t, *driversCreated, "no artifact driver may be created for an unresolved template")
+		})
+	}
+}
+
+// A local template is resolved from the spec the controller executed, which is
+// Status.StoredWorkflowSpec for a workflowTemplateRef workflow, not from the
+// submitted Spec.
+func TestArtifactServer_GetArtifactAndDriverStoredWorkflowSpec(t *testing.T) {
+	tests := []struct {
+		name      string
+		specTmpls []wfv1.Template
+	}{
+		{name: "template only in the stored workflow spec"},
+		{
+			name:      "submitted spec has a same-named template",
+			specTmpls: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("submitted"))},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, s, _ := newTemplateIdentityServer(t)
+			node := templateIdentityNode("node-local")
+			node.TemplateName = "main"
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf"},
+				Spec: wfv1.WorkflowSpec{
+					WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "wft-a"},
+					Templates:           tt.specTmpls,
+				},
+				Status: wfv1.WorkflowStatus{
+					Nodes:              wfv1.Nodes{node.ID: node},
+					StoredWorkflowSpec: &wfv1.WorkflowSpec{Templates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("stored"))}},
+				},
+			}
+
+			art, driver, err := s.getArtifactAndDriver(ctx, node.ID, "out", false, wf, nil)
+
+			require.NoError(t, err)
+			require.NotNil(t, driver)
+			assert.Equal(t, templateIdentityS3("stored", "my-wf/node-local/out.tgz"), art.S3)
+		})
+	}
+}
+
+// A node without a template name, such as one running an inline template, has
+// no template identity, so its artifacts use the artifact repository.
+func TestArtifactServer_GetArtifactAndDriverUnnamedTemplate(t *testing.T) {
+	tests := []struct {
+		name          string
+		templateScope string
+	}{
+		{name: "no template scope"},
+		{name: "local template scope", templateScope: "local/my-wf"},
+		{name: "namespaced template scope", templateScope: "namespaced/wft-a"},
+		{name: "cluster template scope", templateScope: "cluster/cwft-a"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, s, _ := newTemplateIdentityServer(t)
+			node := templateIdentityNode("node-inline")
+			node.TemplateScope = tt.templateScope
+			wf := &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf"},
+				Spec:       wfv1.WorkflowSpec{Templates: []wfv1.Template{templateIdentityMainTemplate(templateIdentityLocation("local"))}},
+				Status: wfv1.WorkflowStatus{
+					Nodes: wfv1.Nodes{node.ID: node},
+					StoredTemplates: map[string]wfv1.Template{
+						"namespaced/wft-a/main": templateIdentityMainTemplate(templateIdentityLocation("wft-a")),
+						"cluster/cwft-a/main":   templateIdentityMainTemplate(templateIdentityLocation("cwft-a")),
+					},
+				},
+			}
+
+			art, driver, err := s.getArtifactAndDriver(ctx, node.ID, "out", false, wf, nil)
+
+			require.NoError(t, err)
+			require.NotNil(t, driver)
+			assert.Equal(t, templateIdentityS3("repository", "my-wf/node-inline/out.tgz"), art.S3)
+		})
+	}
+}
