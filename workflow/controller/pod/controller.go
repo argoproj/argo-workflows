@@ -44,7 +44,8 @@ var (
 	keyFunc          = cache.DeletionHandlingMetaNamespaceKeyFunc
 )
 
-type podEventCallback func(pod *apiv1.Pod) error
+// podEventCallback is called for every pod event. oldPod is nil for adds and deletes.
+type podEventCallback func(ctx context.Context, oldPod, newPod *apiv1.Pod) error
 
 // Controller is a controller for pods
 type Controller struct {
@@ -77,38 +78,42 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		restConfig:    restConfig,
 	}
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
-	podController.podInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj any) {
-				pod, err := podFromObj(obj)
-				if err != nil {
-					log.WithError(err).Error(ctx, "object from informer wasn't a pod")
-					return
-				}
-				podController.addPodEvent(ctx, pod)
-			},
-			UpdateFunc: func(old, newVal any) {
-				key, err := keyFunc(newVal)
-				if err != nil {
-					return
-				}
-				oldPod, newPod := old.(*apiv1.Pod), newVal.(*apiv1.Pod)
-				if oldPod.ResourceVersion == newPod.ResourceVersion {
-					return
-				}
-				if !significantPodChange(oldPod, newPod) {
-					log.WithField("key", key).Debug(ctx, "insignificant pod change")
-					diff.LogChanges(ctx, oldPod, newPod)
-					return
-				}
-				podController.updatePodEvent(ctx, oldPod, newPod)
-			},
-			DeleteFunc: func(obj any) {
-				podController.deletePodEvent(ctx, obj)
-			},
-		},
-	)
+	podController.podInformer.AddEventHandler(podController.eventHandlers(ctx))
 	return podController
+}
+
+// eventHandlers passes informer events to the callback: adds and deletes with a
+// nil oldPod, and significant updates with the previous and current pod.
+func (c *Controller) eventHandlers(ctx context.Context) cache.ResourceEventHandlerFuncs {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			pod, err := podFromObj(obj)
+			if err != nil {
+				c.log.WithError(err).Error(ctx, "object from informer wasn't a pod")
+				return
+			}
+			c.addPodEvent(ctx, pod)
+		},
+		UpdateFunc: func(old, newVal any) {
+			key, err := keyFunc(newVal)
+			if err != nil {
+				return
+			}
+			oldPod, newPod := old.(*apiv1.Pod), newVal.(*apiv1.Pod)
+			if oldPod.ResourceVersion == newPod.ResourceVersion {
+				return
+			}
+			if !significantPodChange(oldPod, newPod) {
+				c.log.WithField("key", key).Debug(ctx, "insignificant pod change")
+				diff.LogChanges(ctx, oldPod, newPod)
+				return
+			}
+			c.updatePodEvent(ctx, oldPod, newPod)
+		},
+		DeleteFunc: func(obj any) {
+			c.deletePodEvent(ctx, obj)
+		},
+	}
 }
 
 func (c *Controller) HasSynced() func() bool {
@@ -239,7 +244,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 }
 
 func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
-	err := c.callBack(pod)
+	err := c.callBack(ctx, nil, pod)
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod add failed")
 	}
@@ -247,9 +252,9 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, _ *apiv1.Pod, newPod *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, oldPod *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
-	err := c.callBack(newPod)
+	err := c.callBack(ctx, oldPod, newPod)
 	if err != nil {
 		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
 	}
@@ -272,7 +277,7 @@ func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 		}
 	}
 	// enqueue the workflow for the deleted pod
-	err = c.callBack(pod)
+	err = c.callBack(ctx, nil, pod)
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod delete failed")
 	}
