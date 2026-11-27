@@ -104,3 +104,31 @@ func GetWorkflowPodNameVersion(wf *v1alpha1.Workflow) PodNameVersion {
 		return DefaultPodNameVersion
 	}
 }
+
+// The markers PooledTaskPodName gives a task no worker holds.
+const (
+	PooledTaskQueued    = "queued"
+	PooledTaskUnclaimed = "unclaimed"
+	PooledTaskReleased  = "released"
+)
+
+// PooledTaskPodName returns the name a pooled node shows where a pod node shows
+// its pod name: the claiming worker pod once a worker has claimed the task,
+// otherwise the task's `{{node.taskName}}` with a marker saying why no worker
+// holds it: queued while the node runs, then unclaimed or released once it
+// has ended.
+func PooledTaskPodName(task *v1alpha1.PooledTaskStatus, ended bool) (name, marker string) {
+	state := task.State()
+	switch {
+	case state != v1alpha1.PooledTaskEnqueued && task.WorkerPodName != "":
+		return task.WorkerPodName, ""
+	case state != v1alpha1.PooledTaskEnqueued:
+		return task.TaskName, ""
+	case !ended:
+		return task.TaskName, PooledTaskQueued
+	case task.Released():
+		return task.TaskName, PooledTaskReleased
+	default:
+		return task.TaskName, PooledTaskUnclaimed
+	}
+}

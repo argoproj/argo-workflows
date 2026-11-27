@@ -71,8 +71,8 @@ func buildPoolSpec(ctx context.Context, in *podBuilderInputs, x poolSpecExtras) 
 		TerminationGracePeriodSeconds: in.config.HotWorkers.GetTerminationGracePeriodSeconds(),
 		ReleaseReserveSeconds:         in.config.HotWorkers.GetReleaseReserveSeconds(),
 	}
-	// Validation checks both as written; once dispatch is wired the
-	// controller validates the substituted template before building its pool.
+	// Validation checks both as written, and dispatch checks them again on the
+	// substituted template (validate.Poolable) before building its pool.
 	if r, ok, err := pool.InitialReplicas.Value(tmpl.Pool.InitialReplicas); err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "pool.%s", err)
 	} else if ok {

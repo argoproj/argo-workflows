@@ -165,6 +165,8 @@ Workflow is the definition of a workflow resource
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
@@ -684,6 +686,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
@@ -1173,6 +1177,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
@@ -1566,6 +1572,8 @@ Arguments to a template
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
@@ -2078,6 +2086,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
@@ -2331,7 +2341,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podResources`|[`ResourceRequirements`](#resourcerequirements)|PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
-|`pool`|[`Pool`](#pool)|Pool is reserved for hot workers, which will run a template's tasks on a pool of long-lived worker pods instead of a pod per task. EXPERIMENTAL and not yet functional. See https://github.com/argoproj/argo-workflows/issues/16530|
+|`pool`|[`Pool`](#pool)|Pool runs this template's tasks on a pool of long-lived worker pods instead of a pod per task. Only container and script templates can be pooled. Experimental: it needs hotWorkers.enabled in the workflow controller configmap when the controller starts, and without it the template's nodes fail. See https://argo-workflows.readthedocs.io/en/latest/hot-workers/|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
 |`resourceClaims`|`Array<`[`PodResourceClaim`](#podresourceclaim)`>`|ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. Replaces the workflow-level resourceClaims as a whole rather than merging with it. Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod. A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.|
@@ -2557,6 +2567,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
 
@@ -2891,6 +2903,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`global-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
@@ -3520,6 +3534,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
 - [`http-success-condition.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-success-condition.yaml)
@@ -3664,6 +3680,12 @@ Plugin is an Object with exactly one key
 
 Pool runs a container or script template's tasks on a pool of long-lived worker pods, one task at a time per worker pod, instead of a pod per task.
 
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3745,6 +3767,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`expression-reusing-verbose-snippets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/expression-reusing-verbose-snippets.yaml)
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
@@ -3879,6 +3903,8 @@ WorkflowStep is a reference to a template to execute in a series of step Note: C
 - [`hdfs-artifact.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hdfs-artifact.yaml)
 
 - [`hello-hybrid.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-hybrid.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
@@ -4469,6 +4495,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
@@ -4869,6 +4897,8 @@ DataSource sources external data into a data template
 
 - [`fibonacci-seq-conditional-param.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/fibonacci-seq-conditional-param.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-param-result.yaml)
 
 - [`map-reduce.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/map-reduce.yaml)
@@ -5040,6 +5070,8 @@ Sequence expands a workflow step into numeric range
 - [`dag-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-daemon-retry-strategy.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
 
@@ -5421,6 +5453,8 @@ _No description available_
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
@@ -5697,6 +5731,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`hello-windows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`http-hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/http-hello-world.yaml)
 
@@ -6274,6 +6310,8 @@ _No description available_
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/default-pdb-support.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
 
@@ -7564,6 +7602,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hello-world.yaml)
 
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
+
 - [`image-pull-secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/image-pull-secrets.yaml)
 
 - [`influxdb-ci.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/influxdb-ci.yaml)
@@ -7986,6 +8026,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`global-parameters-from-configmap.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/global-parameters-from-configmap.yaml)
 
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
+
+- [`hot-workers.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/hot-workers.yaml)
 
 - [`intermediate-parameters.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/intermediate-parameters.yaml)
 

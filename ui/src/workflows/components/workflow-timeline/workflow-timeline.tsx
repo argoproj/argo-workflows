@@ -10,7 +10,6 @@ import './workflow-timeline.scss';
 const ROUND_START_DIFF_MS = 1000;
 const NODE_NAME_WIDTH = 250;
 const MIN_WIDTH = 800;
-const COMPLETED_PHASES = [models.NODE_PHASE.ERROR, models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.SKIPPED, models.NODE_PHASE.OMITTED, models.NODE_PHASE.FAILED];
 
 interface WorkflowTimelineProps {
     workflow: models.Workflow;
@@ -48,7 +47,7 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
     }, []);
 
     useEffect(() => {
-        const isCompleted = props.workflow?.status && COMPLETED_PHASES.includes(props.workflow.status.phase);
+        const isCompleted = props.workflow?.status && models.isEndedPhase(props.workflow.status.phase);
         if (!refreshSubscription.current && !isCompleted) {
             refreshSubscription.current = interval(1000).subscribe(() => {
                 setNow(new Date());

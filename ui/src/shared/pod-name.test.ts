@@ -1,8 +1,19 @@
 import {TextEncoder} from 'util';
 
 import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
-import {NodeStatus, Workflow} from './models';
-import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
+import {NodeStatus, PooledTaskStatus, Workflow} from './models';
+import {
+    createFNVHash,
+    ensurePodNamePrefixLength,
+    getPodName,
+    getPooledTaskPodName,
+    getPooledTaskState,
+    getTemplateNameFromNode,
+    k8sNamingHashLength,
+    maxK8sResourceNameLength,
+    POD_NAME_V1,
+    POD_NAME_V2
+} from './pod-name';
 
 global.TextEncoder = TextEncoder;
 
@@ -157,5 +168,43 @@ describe('pod names', () => {
         // case: template name defined
         node.templateName = 'test-template';
         expect(getTemplateNameFromNode(node)).toEqual(node.templateName);
+    });
+
+    // note: the below is intended to be equivalent to the server-side Go code in pkg/apis/workflow/v1alpha1/pool_types_test.go
+    test('getPooledTaskState', () => {
+        const at = '2026-10-15T00:00:00Z';
+        expect(getPooledTaskState({conditions: [{type: 'Claimed', status: 'False', reason: 'Enqueued', lastTransitionTime: at}]} as PooledTaskStatus)).toEqual('Enqueued');
+        expect(getPooledTaskState({} as PooledTaskStatus)).toEqual('Enqueued');
+        expect(getPooledTaskState({conditions: [{type: 'Claimed', status: 'True', reason: 'Claimed', lastTransitionTime: at}]} as PooledTaskStatus)).toEqual('Claimed');
+        expect(
+            getPooledTaskState({
+                conditions: [
+                    {type: 'Claimed', status: 'True', reason: 'Claimed', lastTransitionTime: at},
+                    {type: 'Interrupted', status: 'True', reason: 'Interrupted', lastTransitionTime: at}
+                ]
+            } as PooledTaskStatus)
+        ).toEqual('Interrupted');
+    });
+
+    // note: the below is intended to be equivalent to the server-side Go code in workflow/util/pod_name_pooled_test.go
+    test('getPooledTaskPodName', () => {
+        const at = '2026-10-15T00:00:00Z';
+        const task = (reason: string, workerPodName?: string, interrupted = false) =>
+            ({
+                taskName: 'my-wf-main-1',
+                workerPodName,
+                conditions: [
+                    {type: 'Claimed', status: reason === 'Claimed' ? 'True' : 'False', reason, lastTransitionTime: at},
+                    ...(interrupted ? [{type: 'Interrupted', status: 'True', reason: 'Interrupted', lastTransitionTime: at}] : [])
+                ]
+            }) as PooledTaskStatus;
+        expect(getPooledTaskPodName(task('Enqueued'), false)).toEqual({name: 'my-wf-main-1', marker: 'queued'});
+        expect(getPooledTaskPodName(task('Released'), false)).toEqual({name: 'my-wf-main-1', marker: 'queued'});
+        expect(getPooledTaskPodName(task('Enqueued'), true)).toEqual({name: 'my-wf-main-1', marker: 'unclaimed'});
+        expect(getPooledTaskPodName(task('Released'), true)).toEqual({name: 'my-wf-main-1', marker: 'released'});
+        expect(getPooledTaskPodName(task('Claimed', 'pool-abc-1'), false)).toEqual({name: 'pool-abc-1'});
+        expect(getPooledTaskPodName(task('Claimed', 'pool-abc-1', true), true)).toEqual({name: 'pool-abc-1'});
+        // claimed without a claimant
+        expect(getPooledTaskPodName(task('Claimed'), false)).toEqual({name: 'my-wf-main-1'});
     });
 });

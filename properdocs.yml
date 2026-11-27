@@ -137,6 +137,7 @@ nav:
           - dag-and-steps-execution.md
           - node-field-selector.md
           - pod-restarts.md
+          - hot-workers.md
       - Status:
           - resource-duration.md
           - estimated-duration.md

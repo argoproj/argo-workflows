@@ -102,3 +102,9 @@ This also affects Workflows that are already running, not only new ones.
 The controller reads the defaults again on every reconcile, so a broken ConfigMap, or a second labelled one, puts every running Workflow in the namespace into `Error`.
 Under `templateReferencing: Secure` even a valid edit does this.
 On every reconcile the controller re-merges the spec of a running `workflowTemplateRef` Workflow and compares it with the stored one, so any edit to the `spec` defaults that changes the result, including adding one, puts it into `Error`.
+
+## Workflow defaults and hot workers
+
+Pooled templates, which run on [hot workers](hot-workers.md), reject some fields, such as `podSpecPatch` and `retryStrategy.affinity`.
+If `workflowDefaults` sets one of these fields, such as `spec.podSpecPatch`, or a `spec.templateDefaults` that adds one to pooled templates, every workflow that uses a pooled template fails its checks.
+See [what a pooled template can't use](hot-workers.md#what-a-pooled-template-cant-use).

@@ -1,0 +1,72 @@
+# This example runs a fan-out of short scripts on a hot worker pool:
+# long-lived worker pods that run the scripts one after another, instead of a pod for each.
+# Before you run it, set up hot workers as docs/hot-workers.md describes:
+# 1. Add the manifests/components/hot-workers RBAC component to your install.
+# 2. Set hotWorkers.enabled in the workflow-controller-configmap, then restart the workflow controller.
+# 3. Bind the hot-worker Role to the default service account, which the pool runs as.
+#    The quick-start manifests include the Role and this binding.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hot-workers-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/description: |
+      Squares ten numbers on a pool of two worker pods, then adds up the squares.
+      The pool stays for 15 minutes after its last task, so the next run starts without waiting for pods.
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: square
+            template: square
+            arguments:
+              parameters:
+                - name: number
+                  value: "{{item}}"
+            withSequence:
+              count: "10"
+        - - name: sum
+            template: sum
+            arguments:
+              parameters:
+                - name: squares
+                  value: "{{steps.square.outputs.parameters.square}}"
+
+    - name: square
+      pool:
+        name: python-squares
+        initialReplicas: "2"
+        retentionSeconds: "900"
+      inputs:
+        parameters:
+          - name: number
+      outputs:
+        parameters:
+          - name: square
+            valueFrom:
+              path: /tmp/square.txt
+      script:
+        image: python:alpine3.23
+        command: [python]
+        source: |
+          n = {{inputs.parameters.number}}
+          with open("/tmp/square.txt", "w") as f:
+              f.write(str(n * n))
+
+    - name: sum
+      pool:
+        name: python-squares
+        initialReplicas: "2"
+        retentionSeconds: "900"
+      inputs:
+        parameters:
+          - name: squares
+      script:
+        image: python:alpine3.23
+        command: [python]
+        source: |
+          import json
+          print(sum(int(s) for s in json.loads('{{inputs.parameters.squares}}')))
