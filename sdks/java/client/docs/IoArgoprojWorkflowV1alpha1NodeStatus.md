@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **outputs** | [**IoArgoprojWorkflowV1alpha1Outputs**](IoArgoprojWorkflowV1alpha1Outputs.md) |  |  [optional]
 **phase** | **String** | Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \&quot;Pending\&quot;, \&quot;Running\&quot; before the node is completed, or \&quot;Succeeded\&quot;, \&quot;Skipped\&quot;, \&quot;Failed\&quot;, \&quot;Error\&quot;, or \&quot;Omitted\&quot; as a final state. |  [optional]
 **podIP** | **String** | PodIP captures the IP of the pod for daemoned steps |  [optional]
+**pooledTask** | [**IoArgoprojWorkflowV1alpha1PooledTaskStatus**](IoArgoprojWorkflowV1alpha1PooledTaskStatus.md) |  |  [optional]
 **progress** | **String** | Progress to completion |  [optional]
 **resourcesDuration** | **Map&lt;String, Long&gt;** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. |  [optional]
 **restartingPodUID** | **String** | RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running. |  [optional]

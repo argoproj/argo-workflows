@@ -209,6 +209,16 @@ func (*PluginArtifactRepository) ProtoMessage() {}
 
 func (*PodGC) ProtoMessage() {}
 
+func (*Pool) ProtoMessage() {}
+
+func (*PoolArtifactPlugin) ProtoMessage() {}
+
+func (*PoolKubeConfig) ProtoMessage() {}
+
+func (*PoolSpec) ProtoMessage() {}
+
+func (*PooledTaskStatus) ProtoMessage() {}
+
 func (*Prometheus) ProtoMessage() {}
 
 func (*RawArtifact) ProtoMessage() {}
@@ -258,6 +268,8 @@ func (*SynchronizationStatus) ProtoMessage() {}
 func (*TTLStrategy) ProtoMessage() {}
 
 func (*TarStrategy) ProtoMessage() {}
+
+func (*TaskDispatch) ProtoMessage() {}
 
 func (*Template) ProtoMessage() {}
 

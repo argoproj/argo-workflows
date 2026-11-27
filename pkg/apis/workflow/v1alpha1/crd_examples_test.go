@@ -7,10 +7,12 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsinternal "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -304,4 +306,13 @@ func enableStrictValidationHelper(schema *apiextensionsinternal.JSONSchemaProps,
 	if schema.Not != nil {
 		enableStrictValidationHelper(schema.Not, false)
 	}
+}
+
+// TestTaskSetCRDNotMinimized checks the full WorkflowTaskSet CRD stays under
+// the size at which hack/manifests minimizes a CRD and drops its schema.
+func TestTaskSetCRDNotMinimized(t *testing.T) {
+	const minimizeAbove = 1024 * 1024 // hack/manifests/crds.go minimizeCRD
+	info, err := os.Stat(filepath.Join(repoRoot, "manifests", "base", "crds", "full", "argoproj.io_workflowtasksets.yaml"))
+	require.NoError(t, err)
+	assert.Less(t, info.Size(), int64(minimizeAbove))
 }

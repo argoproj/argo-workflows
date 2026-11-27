@@ -3467,6 +3467,26 @@ definitions:
                 $ref: '#/definitions/WindowsSecurityContextOptions'
         title: PodSecurityContext holds pod-level security attributes and common container settings.
         type: object
+    Pool:
+        description: |-
+            Pool runs a container or script template's tasks on a pool of long-lived
+            worker pods, one task at a time per worker pod, instead of a pod per task.
+        properties:
+            initialReplicas:
+                $ref: '#/definitions/IntOrString'
+            name:
+                description: |-
+                    Name of the pool. Templates with the same pool name and the same pod
+                    settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                    template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                    the template's name. It must be a DNS label of at most 35 characters. It
+                    may hold a template variable, such as `inputs.parameters.pool`, and is
+                    then checked once substituted.
+                    +optional
+                type: string
+            retentionSeconds:
+                $ref: '#/definitions/IntOrString'
+        type: object
     PortworxVolumeSource:
         properties:
             fsType:
@@ -4822,6 +4842,8 @@ definitions:
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                     container fields which are not strings (e.g. resource limits).
                 type: string
+            pool:
+                $ref: '#/definitions/Pool'
             priorityClassName:
                 description: PriorityClassName to apply to workflow pods.
                 type: string

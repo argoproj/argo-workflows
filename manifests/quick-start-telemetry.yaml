@@ -12832,6 +12832,21 @@ spec:
                     type: object
                   podSpecPatch:
                     type: string
+                  pool:
+                    properties:
+                      initialReplicas:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                      name:
+                        type: string
+                      retentionSeconds:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
                   priorityClassName:
                     type: string
                   resource:
@@ -30878,6 +30893,42 @@ spec:
                         PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                         container fields which are not strings (e.g. resource limits).
                       type: string
+                    pool:
+                      description: |-
+                        Pool is reserved for hot workers, which will run a template's tasks on a
+                        pool of long-lived worker pods instead of a pod per task.
+                        EXPERIMENTAL and not yet functional. See
+                        https://github.com/argoproj/argo-workflows/issues/16530
+                      properties:
+                        initialReplicas:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            InitialReplicas is the number of worker pods a new pool starts with, at
+                            least 1. It applies only when the pool is created. Defaults to 1. It is a
+                            whole number, or a template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                        name:
+                          description: |-
+                            Name of the pool. Templates with the same pool name and the same pod
+                            settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                            template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                            the template's name. It must be a DNS label of at most 35 characters. It
+                            may hold a template variable, such as `inputs.parameters.pool`, and is
+                            then checked once substituted.
+                          type: string
+                        retentionSeconds:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            RetentionSeconds is how long the pool is kept once no task uses it, at
+                            least 0. The most recently dispatched task's value applies. Defaults to
+                            the controller's hot workers retention. It is a whole number, or a
+                            template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                      type: object
                     priorityClassName:
                       description: PriorityClassName to apply to workflow pods.
                       type: string
@@ -55879,6 +55930,21 @@ spec:
                         type: object
                       podSpecPatch:
                         type: string
+                      pool:
+                        properties:
+                          initialReplicas:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
+                          name:
+                            type: string
+                          retentionSeconds:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
+                        type: object
                       priorityClassName:
                         type: string
                       resource:
@@ -74238,6 +74304,42 @@ spec:
                             PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                             container fields which are not strings (e.g. resource limits).
                           type: string
+                        pool:
+                          description: |-
+                            Pool is reserved for hot workers, which will run a template's tasks on a
+                            pool of long-lived worker pods instead of a pod per task.
+                            EXPERIMENTAL and not yet functional. See
+                            https://github.com/argoproj/argo-workflows/issues/16530
+                          properties:
+                            initialReplicas:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                InitialReplicas is the number of worker pods a new pool starts with, at
+                                least 1. It applies only when the pool is created. Defaults to 1. It is a
+                                whole number, or a template variable that resolves to one.
+                              x-kubernetes-int-or-string: true
+                            name:
+                              description: |-
+                                Name of the pool. Templates with the same pool name and the same pod
+                                settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                                template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                                the template's name. It must be a DNS label of at most 35 characters. It
+                                may hold a template variable, such as `inputs.parameters.pool`, and is
+                                then checked once substituted.
+                              type: string
+                            retentionSeconds:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                RetentionSeconds is how long the pool is kept once no task uses it, at
+                                least 0. The most recently dispatched task's value applies. Defaults to
+                                the controller's hot workers retention. It is a whole number, or a
+                                template variable that resolves to one.
+                              x-kubernetes-int-or-string: true
+                          type: object
                         priorityClassName:
                           description: PriorityClassName to apply to workflow pods.
                           type: string
@@ -101844,6 +101946,21 @@ spec:
                     type: object
                   podSpecPatch:
                     type: string
+                  pool:
+                    properties:
+                      initialReplicas:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                      name:
+                        type: string
+                      retentionSeconds:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
                   priorityClassName:
                     type: string
                   resource:
@@ -119890,6 +120007,42 @@ spec:
                         PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                         container fields which are not strings (e.g. resource limits).
                       type: string
+                    pool:
+                      description: |-
+                        Pool is reserved for hot workers, which will run a template's tasks on a
+                        pool of long-lived worker pods instead of a pod per task.
+                        EXPERIMENTAL and not yet functional. See
+                        https://github.com/argoproj/argo-workflows/issues/16530
+                      properties:
+                        initialReplicas:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            InitialReplicas is the number of worker pods a new pool starts with, at
+                            least 1. It applies only when the pool is created. Defaults to 1. It is a
+                            whole number, or a template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                        name:
+                          description: |-
+                            Name of the pool. Templates with the same pool name and the same pod
+                            settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                            template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                            the template's name. It must be a DNS label of at most 35 characters. It
+                            may hold a template variable, such as `inputs.parameters.pool`, and is
+                            then checked once substituted.
+                          type: string
+                        retentionSeconds:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            RetentionSeconds is how long the pool is kept once no task uses it, at
+                            least 0. The most recently dispatched task's value applies. Defaults to
+                            the controller's hot workers retention. It is a whole number, or a
+                            template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                      type: object
                     priorityClassName:
                       description: PriorityClassName to apply to workflow pods.
                       type: string
@@ -133598,6 +133751,83 @@ spec:
                       type: string
                     podIP:
                       type: string
+                    pooledTask:
+                      properties:
+                        activeDeadlineSeconds:
+                          format: int64
+                          type: integer
+                        claimUID:
+                          type: string
+                        conditions:
+                          items:
+                            properties:
+                              lastTransitionTime:
+                                format: date-time
+                                type: string
+                              message:
+                                maxLength: 32768
+                                type: string
+                              observedGeneration:
+                                format: int64
+                                minimum: 0
+                                type: integer
+                              reason:
+                                maxLength: 1024
+                                minLength: 1
+                                pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                                type: string
+                              status:
+                                enum:
+                                - "True"
+                                - "False"
+                                - Unknown
+                                type: string
+                              type:
+                                maxLength: 316
+                                pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                                type: string
+                            required:
+                            - lastTransitionTime
+                            - message
+                            - reason
+                            - status
+                            - type
+                            type: object
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - type
+                          x-kubernetes-list-type: map
+                        deadline:
+                          format: date-time
+                          type: string
+                        enqueuedAt:
+                          format: date-time
+                          type: string
+                        poolHash:
+                          type: string
+                        poolName:
+                          type: string
+                        releases:
+                          format: int32
+                          type: integer
+                        taskName:
+                          type: string
+                        taskSetUID:
+                          type: string
+                        workerPodName:
+                          type: string
+                        workerPodUID:
+                          type: string
+                        workerRestartCount:
+                          format: int32
+                          type: integer
+                      required:
+                      - enqueuedAt
+                      - poolHash
+                      - poolName
+                      - taskName
+                      - taskSetUID
+                      type: object
                     progress:
                       type: string
                     resourcesDuration:
@@ -136502,6 +136732,148 @@ spec:
             type: object
           spec:
             properties:
+              dispatch:
+                properties:
+                  activeDeadlineSeconds:
+                    format: int64
+                    type: integer
+                  command:
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  deadline:
+                    format: date-time
+                    type: string
+                  includeScriptOutput:
+                    type: boolean
+                  inputArtifactPlugins:
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  progressFileTickDuration:
+                    type: string
+                  progressPatchTickDuration:
+                    type: string
+                  taskName:
+                    type: string
+                  traceContext:
+                    additionalProperties:
+                      type: string
+                    type: object
+                required:
+                - taskName
+                type: object
+              pool:
+                properties:
+                  artifactPlugins:
+                    items:
+                      properties:
+                        command:
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        connectionTimeoutSeconds:
+                          format: int32
+                          type: integer
+                        image:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - image
+                      - name
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  artifactRepository:
+                    x-kubernetes-preserve-unknown-fields: true
+                  artifactSecrets:
+                    items:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          default: ""
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - key
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  automountServiceAccountToken:
+                    type: boolean
+                  controllerVersion:
+                    type: string
+                  executor:
+                    x-kubernetes-preserve-unknown-fields: true
+                  executorImage:
+                    type: string
+                  executorImagePullPolicy:
+                    type: string
+                  executorLogArgs:
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  executorServiceAccountTokenSecretName:
+                    type: string
+                  initialReplicas:
+                    format: int32
+                    type: integer
+                  initlessPod:
+                    type: boolean
+                  instanceID:
+                    type: string
+                  kubeConfig:
+                    properties:
+                      mountPath:
+                        type: string
+                      secretKey:
+                        type: string
+                      secretName:
+                        type: string
+                      volumeName:
+                        type: string
+                    required:
+                    - mountPath
+                    - secretKey
+                    - secretName
+                    - volumeName
+                    type: object
+                  mainContainer:
+                    x-kubernetes-preserve-unknown-fields: true
+                  name:
+                    type: string
+                  releaseReserveSeconds:
+                    format: int64
+                    type: integer
+                  retentionSeconds:
+                    format: int64
+                    type: integer
+                  serviceAccountName:
+                    type: string
+                  template:
+                    x-kubernetes-preserve-unknown-fields: true
+                  terminationGracePeriodSeconds:
+                    format: int64
+                    type: integer
+                  workflowSpec:
+                    x-kubernetes-preserve-unknown-fields: true
+                required:
+                - controllerVersion
+                - executorImage
+                - initialReplicas
+                - name
+                - releaseReserveSeconds
+                - retentionSeconds
+                - terminationGracePeriodSeconds
+                type: object
               tasks:
                 additionalProperties:
                   properties:
@@ -143239,6 +143611,21 @@ spec:
                       type: object
                     podSpecPatch:
                       type: string
+                    pool:
+                      properties:
+                        initialReplicas:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          x-kubernetes-int-or-string: true
+                        name:
+                          type: string
+                        retentionSeconds:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          x-kubernetes-int-or-string: true
+                      type: object
                     priorityClassName:
                       type: string
                     resource:
@@ -161815,6 +162202,21 @@ spec:
                     type: object
                   podSpecPatch:
                     type: string
+                  pool:
+                    properties:
+                      initialReplicas:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                      name:
+                        type: string
+                      retentionSeconds:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
+                    type: object
                   priorityClassName:
                     type: string
                   resource:
@@ -179861,6 +180263,42 @@ spec:
                         PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
                         container fields which are not strings (e.g. resource limits).
                       type: string
+                    pool:
+                      description: |-
+                        Pool is reserved for hot workers, which will run a template's tasks on a
+                        pool of long-lived worker pods instead of a pod per task.
+                        EXPERIMENTAL and not yet functional. See
+                        https://github.com/argoproj/argo-workflows/issues/16530
+                      properties:
+                        initialReplicas:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            InitialReplicas is the number of worker pods a new pool starts with, at
+                            least 1. It applies only when the pool is created. Defaults to 1. It is a
+                            whole number, or a template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                        name:
+                          description: |-
+                            Name of the pool. Templates with the same pool name and the same pod
+                            settings share a pool. Defaults to `<workflowtemplate>-<template>` for a
+                            template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to
+                            the template's name. It must be a DNS label of at most 35 characters. It
+                            may hold a template variable, such as `inputs.parameters.pool`, and is
+                            then checked once substituted.
+                          type: string
+                        retentionSeconds:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: |-
+                            RetentionSeconds is how long the pool is kept once no task uses it, at
+                            least 0. The most recently dispatched task's value applies. Defaults to
+                            the controller's hot workers retention. It is a whole number, or a
+                            template variable that resolves to one.
+                          x-kubernetes-int-or-string: true
+                      type: object
                     priorityClassName:
                       description: PriorityClassName to apply to workflow pods.
                       type: string

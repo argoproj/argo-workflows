@@ -2331,6 +2331,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podResources`|[`ResourceRequirements`](#resourcerequirements)|PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
+|`pool`|[`Pool`](#pool)|Pool is reserved for hot workers, which will run a template's tasks on a pool of long-lived worker pods instead of a pod per task. EXPERIMENTAL and not yet functional. See https://github.com/argoproj/argo-workflows/issues/16530|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
 |`resourceClaims`|`Array<`[`PodResourceClaim`](#podresourceclaim)`>`|ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. Replaces the workflow-level resourceClaims as a whole rather than merging with it. Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod. A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.|
@@ -2488,6 +2489,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values "Pending", "Running" before the node is completed, or "Succeeded", "Skipped", "Failed", "Error", or "Omitted" as a final state.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
+|`pooledTask`|[`PooledTaskStatus`](#pooledtaskstatus)|PooledTask records the task of a node whose template has a pool, which runs on a pool's worker pod instead of its own pod. Nil for other nodes.|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`restartingPodUID`|`string`|RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.|
@@ -3658,6 +3660,17 @@ Plugin is an Object with exactly one key
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
+## Pool
+
+Pool runs a container or script template's tasks on a pool of long-lived worker pods, one task at a time per worker pod, instead of a pod per task.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`initialReplicas`|[`IntOrString`](#intorstring)|InitialReplicas is the number of worker pods a new pool starts with, at least 1. It applies only when the pool is created. Defaults to 1. It is a whole number, or a template variable that resolves to one.|
+|`name`|`string`|Name of the pool. Templates with the same pool name and the same pod settings share a pool. Defaults to `<workflowtemplate>-<template>` for a template from a WorkflowTemplate or ClusterWorkflowTemplate, otherwise to the template's name. It must be a DNS label of at most 35 characters. It may hold a template variable, such as `inputs.parameters.pool`, and is then checked once substituted.|
+|`retentionSeconds`|[`IntOrString`](#intorstring)|RetentionSeconds is how long the pool is kept once no task uses it, at least 0. The most recently dispatched task's value applies. Defaults to the controller's hot workers retention. It is a whole number, or a template variable that resolves to one.|
+
 ## ResourceTemplate
 
 ResourceTemplate is a template subtype to manipulate kubernetes resources
@@ -4076,6 +4089,27 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`hooked`|`boolean`|Hooked tracks whether or not this node was triggered by hook or onExit|
 |`retried`|`boolean`|Retried tracks whether or not this node was retried by retryStrategy|
+
+## PooledTaskStatus
+
+PooledTaskStatus is the controller's record of a pooled node's task.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`activeDeadlineSeconds`|`integer`|ActiveDeadlineSeconds limits how long the task may run once claimed, as dispatched.|
+|`claimUID`|`string`|ClaimUID is the UID of the WorkflowTaskResult the claiming worker created.|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions record the task's hand-off to a worker: Claimed and Interrupted. Its state is derived from them (State). Change them only through Enqueue, Claim, Release and Interrupt.|
+|`deadline`|[`Time`](#time)|Deadline is the task's absolute deadline, as dispatched.|
+|`enqueuedAt`|[`Time`](#time)|EnqueuedAt is when the task's WorkflowTaskSet was created or adopted.|
+|`poolHash`|`string`|PoolHash is the hash of the pool the task was dispatched to.|
+|`poolName`|`string`|PoolName is the name of the pool the task was dispatched to.|
+|`releases`|`integer`|Releases is how many times a worker has released the task.|
+|`taskName`|`string`|TaskName is the task's `node.taskName`.|
+|`taskSetUID`|`string`|TaskSetUID is the UID of the task's WorkflowTaskSet. Only results that carry it are applied to the node.|
+|`workerPodName`|`string`|WorkerPodName is the name of the claiming worker pod.|
+|`workerPodUID`|`string`|WorkerPodUID is the UID of the claiming worker pod.|
+|`workerRestartCount`|`integer`|WorkerRestartCount is the claiming pod's worker container restart count when the claim was first seen.|
 
 ## NodeSynchronizationStatus
 
@@ -6866,6 +6900,20 @@ volumeDevice describes a mapping of a raw block device within a container.
 |:----------:|:----------:|---------------|
 |`devicePath`|`string`|devicePath is the path inside of the container that the device will be mapped to.|
 |`name`|`string`|name must match the name of a persistentVolumeClaim in the pod|
+
+## Condition
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`lastTransitionTime`|[`Time`](#time)|lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed. If that is not known, then using the time when the API field changed is acceptable.|
+|`message`|`string`|message is a human readable message indicating details about the transition. This may be an empty string.|
+|`observedGeneration`|`integer`|observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.|
+|`reason`|`string`|reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.|
+|`status`|`string`|status of the condition, one of True, False, Unknown.|
+|`type`|`string`|type of condition in CamelCase or in foo.example.com/CamelCase.|
 
 ## SecretKeySelector
 
