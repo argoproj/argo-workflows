@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -55,6 +56,11 @@ type Controller struct {
 	callBack      podEventCallback
 	log           logging.Logger
 	restConfig    *rest.Config
+
+	// cleanupMu protects cleanup requests and their workqueue entries.
+	cleanupMu       sync.Mutex
+	cleanupRequests map[string]*podCleanupRequest
+	cleanupSequence uint64
 }
 
 // NewController creates a pod controller
