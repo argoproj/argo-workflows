@@ -94,6 +94,13 @@ COVERAGE_DIR          := dist/coverage
 COVER                 ?= false
 GOBUILD_COVER         := $(if $(filter true,$(COVER)),-cover)
 E2E_COVERAGE_DIR      := dist/e2e-coverage
+# make can't see a change of COVER, so dist/argo and dist/argoexec each record
+# the COVER they were built with in <binary>.cover, and one built with a
+# different COVER is rebuilt; no record means an older build, without -cover.
+# Otherwise an instrumented binary survives COVER=false and prints "GOCOVERDIR
+# not set" into output the e2e tests parse, and an uninstrumented one survives
+# COVER=true and records no coverage.
+cover_changed          = $(if $(filter $(COVER),$(or $(shell cat $(1).cover 2>/dev/null),false)),,FORCE)
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -395,13 +402,14 @@ dist/argo-%.gz: dist/argo-%
 dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
+dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt $(call cover_changed,dist/argo)
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build $(GOBUILD_COVER) -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 else
 	CGO_ENABLED=0 go build $(GOBUILD_COVER) -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 endif
+	echo $(COVER) > $@.cover
 
 argocli-image:
 
@@ -425,12 +433,13 @@ workflow-controller-image:
 
 # argoexec
 
-dist/argoexec: $(ARGOEXEC_PKG_FILES) vendor/modules.txt
+dist/argoexec: $(ARGOEXEC_PKG_FILES) vendor/modules.txt $(call cover_changed,dist/argoexec)
 ifeq ($(shell uname -s),Darwin)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOBUILD_COVER) -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
 	CGO_ENABLED=0 go build $(GOBUILD_COVER) -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
+	echo $(COVER) > $@.cover
 
 argoexec-image: ## Build the executor image
 argoexec-nonroot-image:
@@ -906,6 +915,10 @@ test-cli: ./dist/argo
 test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(if $(filter true,$(COVER)),E2E_CLI_GOCOVERDIR=$(CURDIR)/$(E2E_COVERAGE_DIR)/cli) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
 
+# a prerequisite that always rebuilds its target (see cover_changed)
+.PHONY: FORCE
+FORCE:
+
 # Gather the e2e coverage counters into one profile. Every container (see
 # test/e2e/manifests/coverage) and every CLI call writes to a directory of its
 # own, so concurrent processes never race on the same meta-data file; flatten
@@ -913,7 +926,9 @@ test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 .PHONY: e2e-coverage.out
 e2e-coverage.out:
 	rm -rf dist/e2e-coverage-merged && mkdir -p dist/e2e-coverage-merged
-	find $(E2E_COVERAGE_DIR) -type f \( -name 'covmeta.*' -o -name 'covcounters.*' \) -exec cp -n -t dist/e2e-coverage-merged {} +
+	# not cp -n -t: BSD cp has no -t, and GNU cp 9.2 to 9.4 exit 1 when -n skips a file
+	find $(E2E_COVERAGE_DIR) -type f \( -name 'covmeta.*' -o -name 'covcounters.*' \) -exec sh -c \
+		'for f; do [ -e "dist/e2e-coverage-merged/$${f##*/}" ] || cp "$$f" dist/e2e-coverage-merged/ || exit 1; done' sh {} +
 	go tool covdata textfmt -i=dist/e2e-coverage-merged -o $@
 
 .PHONY: test-%-sdk

@@ -276,8 +276,8 @@ else:
     cli_target = 'argocli-dev'
     cli_deps = ['dist/argo', 'hack/ssh_known_hosts', 'hack/nsswitch.conf', 'Dockerfile']
     cli_prebuild = 'make dist/argo STATIC_FILES=false'
-    # make won't rebuild an up-to-date binary for a COVER change
-    exec_prebuild = ('rm -f dist/argoexec && make dist/argoexec COVER=true' if coverage else 'make dist/argoexec')
+    # make rebuilds dist/argoexec when COVER differs from its last build
+    exec_prebuild = 'make dist/argoexec' + (' COVER=true' if coverage else '')
     exec_target = 'argoexec-dev'
 
 # The argocli image is needed even without the server: e2e test workflows
