@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -69,6 +70,14 @@ func (s *fakeWorkflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws
 		return status.Error(codes.PermissionDenied, "watch denied")
 	}
 	return nil
+}
+
+func (s *fakeWorkflowServer) DeleteWorkflow(_ context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
+	// Only succeed if the query-populated propagation policy arrived intact.
+	if req.DeleteOptions == nil || req.DeleteOptions.PropagationPolicy == nil || *req.DeleteOptions.PropagationPolicy != metav1.DeletePropagationBackground {
+		return nil, status.Error(codes.InvalidArgument, "propagation policy not received")
+	}
+	return &workflowpkg.WorkflowDeleteResponse{}, nil
 }
 
 func (s *fakeWorkflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws grpc.ServerStreamingServer[workflowpkg.LogEntry]) error {
@@ -219,4 +228,39 @@ func TestGatewayRoundtrip_LogQueryParamsPopulateK8sOptions(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, status, "body: %s", s)
 	assert.Contains(t, s, "container=main follow=true")
+}
+
+// DELETE requests populate ?deleteOptions.*= query parameters into the
+// embedded metav1.DeleteOptions, which then travels over gRPC. Kubernetes tags
+// the propagationPolicy field (a string type) as varint; without the
+// hack/vendor-patches.sh tag fix, protobuf cannot populate, encode or decode a
+// request that sets it.
+func TestGatewayRoundtrip_DeleteQueryParamsPopulateK8sOptions(t *testing.T) {
+	server := newGatewayServer(t)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodDelete, server.URL+"/api/v1/workflows/argo/my-wf?deleteOptions.propagationPolicy=Background", nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "body: %s", body)
+}
+
+// gRPC clients and the server encode and decode the embedded
+// metav1.DeleteOptions through the same struct-tag derived descriptor, so a
+// set propagationPolicy must survive a binary round trip too.
+func TestDeleteRequestPropagationPolicyRoundtrip(t *testing.T) {
+	policy := metav1.DeletePropagationBackground
+	in := &workflowpkg.WorkflowDeleteRequest{Name: "my-wf", Namespace: "argo", DeleteOptions: &metav1.DeleteOptions{PropagationPolicy: &policy}}
+
+	data, err := proto.Marshal(in)
+	require.NoError(t, err)
+	out := &workflowpkg.WorkflowDeleteRequest{}
+	require.NoError(t, proto.Unmarshal(data, out))
+
+	require.NotNil(t, out.DeleteOptions)
+	assert.Equal(t, &policy, out.DeleteOptions.PropagationPolicy)
 }

@@ -72,7 +72,8 @@ fi
 # on every ?podLogOptions.*= log request. Fix the tag to match reality.
 # (k8s has a few more type-vs-tag mismatches, e.g. *int32 fields tagged
 # "bytes", but none are reachable via query population and the marshal paths
-# use the generated gogo fast paths, so only this one needs patching.)
+# use the generated gogo fast paths, so only this one and
+# DeleteOptions.PropagationPolicy below need patching.)
 FILE2="$REPO_ROOT/vendor/k8s.io/api/core/v1/types.go"
 BAD_TAG='Stream *string `json:"stream,omitempty" protobuf:"varint,10,opt,name=stream"`'
 GOOD_TAG='Stream *string `json:"stream,omitempty" protobuf:"bytes,10,opt,name=stream"`'
@@ -94,5 +95,36 @@ if ! grep -qF "$GOOD_TAG" "$FILE2"; then
   ' "$FILE2" > "$TMP2"
   grep -qF "$GOOD_TAG" "$TMP2" || { echo "vendor-patches: PodLogOptions.Stream tag fix did not apply in $FILE2" >&2; exit 1; }
   mv "$TMP2" "$FILE2"
+  trap - EXIT
+fi
+
+# The same mis-tag on DeleteOptions.PropagationPolicy (a *DeletionPropagation,
+# which is a string type). DeleteOptions sits directly in our delete request
+# messages, so protobuf derives its descriptor from the struct tags both for
+# ?deleteOptions.*= query population and for encoding and decoding those
+# requests over gRPC; every request that sets the policy fails with "invalid Go
+# type v1.DeletionPropagation for field
+# k8s_io.apimachinery.pkg.apis.meta.v1.DeleteOptions.propagationPolicy".
+FILE3="$REPO_ROOT/vendor/k8s.io/apimachinery/pkg/apis/meta/v1/types.go"
+BAD_TAG3='PropagationPolicy *DeletionPropagation `json:"propagationPolicy,omitempty" protobuf:"varint,4,opt,name=propagationPolicy"`'
+GOOD_TAG3='PropagationPolicy *DeletionPropagation `json:"propagationPolicy,omitempty" protobuf:"bytes,4,opt,name=propagationPolicy"`'
+
+if ! grep -qF "$GOOD_TAG3" "$FILE3"; then
+  count=$(grep -cF "$BAD_TAG3" "$FILE3" || true)
+  if [ "$count" != 1 ]; then
+    echo "vendor-patches: expected the mis-tagged DeleteOptions.PropagationPolicy exactly once in $FILE3, found $count — has k8s.io/apimachinery changed (upstream fix?)? Update this script." >&2
+    exit 1
+  fi
+  TMP3="$(mktemp "$FILE3.XXXXXX")"
+  trap 'rm -f "$TMP3"' EXIT
+  awk -v bad="$BAD_TAG3" -v good="$GOOD_TAG3" '
+    n = index($0, bad) {
+      print substr($0, 1, n-1) good substr($0, n+length(bad))
+      next
+    }
+    { print }
+  ' "$FILE3" > "$TMP3"
+  grep -qF "$GOOD_TAG3" "$TMP3" || { echo "vendor-patches: DeleteOptions.PropagationPolicy tag fix did not apply in $FILE3" >&2; exit 1; }
+  mv "$TMP3" "$FILE3"
   trap - EXIT
 fi
