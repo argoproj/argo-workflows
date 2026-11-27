@@ -674,8 +674,8 @@ schema = 3
     version = "v1.1.1"
     hash = "sha256-bxBjtl+6846Ed3QHwdssOrNvlHV6b+Dn17zPISSQGP8="
   [mod."github.com/pandatix/go-abnf"]
-    version = "v0.5.3"
-    hash = "sha256-8SG0jl8sfZntAqRfmbrfLacdf6GKGF1nx5YT/Bo+aYw="
+    version = "v0.5.5"
+    hash = "sha256-HTxLPMqTr7q4SRTXBEBtXfNpOENm0e0EJh6zFn22hQQ="
   [mod."github.com/pelletier/go-toml/v2"]
     version = "v2.4.3"
     hash = "sha256-CyCjKBN+zUciGhQiaFpq54qv+NDITcuh5U2HmjArow4="
@@ -710,8 +710,8 @@ schema = 3
     version = "v0.6.3"
     hash = "sha256-uYXpFkXMT4AXWJShrCRnu51vhGQAuAU3LFQhhGVJ+74="
   [mod."github.com/prometheus/common"]
-    version = "v0.73.1"
-    hash = "sha256-giSwpD4bQweEAr8IaaQB/gDF9IT/6WtDNQrcAjHFR9U="
+    version = "v0.74.0"
+    hash = "sha256-E8O4VKQMzEcDWF/qqlmHwA62Df2jKIlSnEq9AnQO2DE="
   [mod."github.com/prometheus/otlptranslator"]
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
@@ -923,8 +923,8 @@ schema = 3
     version = "v0.6.0"
     hash = "sha256-m11cxIbrvOowa6xj11AztzfFk86DwR6SNO1lStcKzvo="
   [mod."go.yaml.in/yaml/v2"]
-    version = "v2.4.4"
-    hash = "sha256-ecT2ZXw7iT+63J4210xA6sMz0fUFXmDzLwZe2FzaNFU="
+    version = "v2.4.5"
+    hash = "sha256-IgH3TTCecXTo2/O68OjZmA5vzqZJTVO2dht68v12hdg="
   [mod."go.yaml.in/yaml/v3"]
     version = "v3.0.6"
     hash = "sha256-4XBaZyVp0pU1FzRY+M/juXISzENKJ+v189aVvU0mvqM="
