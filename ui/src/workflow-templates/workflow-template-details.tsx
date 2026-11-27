@@ -10,6 +10,7 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {Loading} from '../shared/components/loading';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
+import {getSubmitPrefillSearchParams} from '../shared/get_workflow_params';
 import {historyUrl} from '../shared/history';
 import * as models from '../shared/models';
 import {Workflow, WorkflowTemplate} from '../shared/models';
@@ -56,7 +57,8 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                 namespace,
                 name,
                 sidePanel,
-                tab
+                tab,
+                extraSearchParams: getSubmitPrefillSearchParams(location.search)
             })
         );
     }, [namespace, name, sidePanel, tab]);
