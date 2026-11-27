@@ -26,6 +26,7 @@ export class ListWatch<T extends Resource> {
     private retryWatch: RetryWatch<T>;
     private timeout: any;
     private reconnectAfterMs = 3000;
+    private generation = 0;
 
     constructor(
         list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>,
@@ -56,14 +57,21 @@ export class ListWatch<T extends Resource> {
     // Idempotent.
     public start() {
         this.stop();
+        const generation = this.generation;
         this.list()
             .then(x => {
+                if (generation !== this.generation) {
+                    return;
+                }
                 this.items = (x.items || []).sort(this.sorter);
                 this.onLoad(x.metadata);
                 this.onChange(this.items);
                 this.retryWatch.start(x.metadata.resourceVersion);
             })
             .catch(e => {
+                if (generation !== this.generation) {
+                    return;
+                }
                 this.stop();
                 this.onError(e);
                 this.reconnect();
@@ -74,6 +82,7 @@ export class ListWatch<T extends Resource> {
     // Must invoke on component unload.
     // Idempotent.
     public stop() {
+        this.generation++;
         clearTimeout(this.timeout);
         this.retryWatch.stop();
     }
