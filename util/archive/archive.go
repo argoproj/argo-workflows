@@ -186,12 +186,26 @@ func zipDir(ctx context.Context, sourcePath string, zw *zip.Writer) error {
 		logger.WithField("name", nameInArchive).Info(ctx, "writing")
 		count++
 
-		fileWriter, err := zw.Create(nameInArchive)
+		if !info.Mode().IsRegular() {
+			// Non-regular entries keep exactly today's shape: an entry with
+			// no content and no mode. Carrying a symlink properly means
+			// marking the entry ModeSymlink and writing its target as the
+			// content, which changes what a downstream extractor does with
+			// the archive. TestUnzipMaliciousSymlink pins how argo's own
+			// extractor treats symlinks today, so that belongs in its own
+			// change rather than this one.
+			if _, createErr := zw.Create(nameInArchive); createErr != nil {
+				return errors.InternalWrapError(createErr)
+			}
+			return nil
+		}
+		header, err := zipFileHeader(info, nameInArchive)
+		if err != nil {
+			return err
+		}
+		fileWriter, err := zw.CreateHeader(header)
 		if err != nil {
 			return errors.InternalWrapError(err)
-		}
-		if !info.Mode().IsRegular() {
-			return nil
 		}
 		f, err := os.Open(filepath.Clean(fpath))
 		if err != nil {
@@ -220,10 +234,37 @@ func zipFile(sourcePath string, zw *zip.Writer) error {
 		return errors.InternalWrapError(err)
 	}
 	defer util.Close(f)
-	fileWriter, err := zw.Create(sourcePath)
+	info, err := f.Stat()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	// The entry name is left as it is today; #17249 changes it separately.
+	header, err := zipFileHeader(info, sourcePath)
+	if err != nil {
+		return err
+	}
+	fileWriter, err := zw.CreateHeader(header)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 	_, err = io.Copy(fileWriter, f)
 	return err
+}
+
+// zipFileHeader builds the entry header for one file, carrying its mode and
+// modification time the way tar.FileInfoHeader does for the tar strategy.
+// zip.Writer.Create cannot: it builds a header from the name alone, so every
+// entry came out 0666 with a zero timestamp and an archived executable lost
+// its exec bit.
+func zipFileHeader(info os.FileInfo, nameInArchive string) (*zip.FileHeader, error) {
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	header.Name = nameInArchive
+	// FileInfoHeader leaves Method at its zero value, which is Store, while
+	// Create sets Deflate. Without this line the fix would silently stop
+	// compressing every zip artifact.
+	header.Method = zip.Deflate
+	return header, nil
 }
