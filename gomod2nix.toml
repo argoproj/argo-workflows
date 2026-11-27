@@ -50,8 +50,8 @@ schema = 3
     version = "v0.1.0"
     hash = "sha256-7+CxuCxeHdtixlWB+CfY1lFA5eBpS5iFuqJEfx9b5WY="
   [mod."github.com/Azure/go-ansiterm"]
-    version = "v0.0.0-20250102033503-faa5f7b0171c"
-    hash = "sha256-4WYKJtxjnm3egDAh9ocTR+gy5UUqVoY3knHy9c17XIY="
+    version = "v0.0.0-20261006220739-8c912ac31dd4"
+    hash = "sha256-Uts6NF0MNDrqAOcYAewZz2sS7jv7SjE8eyNgul0VBOw="
   [mod."github.com/AzureAD/microsoft-authentication-library-for-go"]
     version = "v1.10.1"
     hash = "sha256-/rLq0Jln9MPmA1thVK0XDgQrhZOY2DuU2tu0gov09Ek="
@@ -266,8 +266,8 @@ schema = 3
     version = "v0.9.5"
     hash = "sha256-7fm66H8bvqjiEssTy/oiAMmQd7T15aVS+EANrw+4H4U="
   [mod."github.com/docker/go-connections"]
-    version = "v0.7.0"
-    hash = "sha256-J+3epfT+oKV2Q8ELESsPyBFIzgnXfITH1GlgbDSkRwg="
+    version = "v0.8.2"
+    hash = "sha256-Fp4ekXeNvPSgym+22GClOH+htjKfqt5GK/aQLWQKFws="
   [mod."github.com/docker/go-units"]
     version = "v0.5.0"
     hash = "sha256-iK/V/jJc+borzqMeqLY+38Qcts2KhywpsTk95++hImE="
@@ -569,8 +569,8 @@ schema = 3
     version = "v0.0.0-20260330125221-c963978e514e"
     hash = "sha256-BmFzkPZ+UeYgJom+1VesNiqIrTwKEGhUmYY0cWzAwfE="
   [mod."github.com/magiconair/properties"]
-    version = "v1.8.10"
-    hash = "sha256-smE+l2A9yDnDJFI7iNCjjF9NQnPySxEFFnbRUHyCq7I="
+    version = "v1.18.12"
+    hash = "sha256-bLTnnl1Gyk/V3xj3rM47yDNZtXHvgBZvKWIn6fEVEpM="
   [mod."github.com/mattn/go-colorable"]
     version = "v0.1.16"
     hash = "sha256-f6a+e6/dSux1xiWSkd/8gmfoWV1i4sNy6Z+6CuXkhrk="
@@ -605,14 +605,14 @@ schema = 3
     version = "v1.3.1"
     hash = "sha256-xwSNLmMagzywdGJIuhrWl1r7cIWBYCOMNYbuDDT6Jhs="
   [mod."github.com/moby/go-archive"]
-    version = "v0.3.0"
-    hash = "sha256-Z+o+XaOID/aD8KyTrabgSlYnZ5w2NS35h4fdNmU/Ylo="
+    version = "v0.3.3"
+    hash = "sha256-tsMMSUnktXji5AhHgPBwennrH+2AEzvcljaymoUQHME="
   [mod."github.com/moby/moby/api"]
     version = "v1.57.0"
     hash = "sha256-6+A+WWhExVeEVZK+iT0uCvV411fDALc+OO8wVQu3YD0="
   [mod."github.com/moby/moby/client"]
-    version = "v0.5.1"
-    hash = "sha256-0Uj7VPVisEFRJJf2S7a14t0u9LjjBLh36Nhc3NYigN4="
+    version = "v0.6.2"
+    hash = "sha256-AvrpjuDRbTVu4rQhxGwe905b/JlM8pVvFFGr75LSi2g="
   [mod."github.com/moby/patternmatcher"]
     version = "v0.6.1"
     hash = "sha256-Oj3pxvOxwUnKpRXC7eNz4VECOzmwAMFgboqK06aKu3U="
@@ -788,8 +788,8 @@ schema = 3
     version = "v1.6.0"
     hash = "sha256-LspbjTniiq2xAICSXmgqP7carwlNaLqnCTQfw2pa80A="
   [mod."github.com/testcontainers/testcontainers-go"]
-    version = "v0.44.0"
-    hash = "sha256-RbqBM+Gc6jGOZzaBr5zQKlJ4Uhb/z/1q083goQXPmow="
+    version = "v0.45.0"
+    hash = "sha256-PY51TPgPXPWTyiC6Yr/0qo4EKelVbgSp5qlHAzhZLsQ="
   [mod."github.com/testcontainers/testcontainers-go/modules/mysql"]
     version = "v0.44.0"
     hash = "sha256-ijxJLIZi/AKuEizAQkot0EEYnpOVD+dLbakxaehKNK4="
