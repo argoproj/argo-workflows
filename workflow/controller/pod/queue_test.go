@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"testing/synctest"
@@ -40,7 +41,7 @@ func TestPodCleanupQueueNormalEvents(t *testing.T) {
 		c.queuePodForCleanup(ctx, "ns", "running", terminateContainers)
 		c.queuePodForCleanupAfter(ctx, "ns", "zero", deletePod, 0)
 		c.queuePodForCleanupAfter(ctx, "ns", "expired", deletePod, -time.Second)
-		c.queuePodForCleanupByUID(ctx, "ns", "replacement", "pod-uid")
+		c.DeletePodByUID(ctx, "ns", "replacement", "pod-uid")
 		c.queuePodForCleanupAfter(ctx, "ns", "delayed", deletePod, time.Minute)
 		synctest.Wait()
 		assert.True(t, bucket.AllowN(time.Now(), burst), "normal events must leave all retry tokens available")
@@ -79,7 +80,7 @@ func TestPodCleanupQueueRetriesTransientError(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		queue := workqueue.NewTypedRateLimitingQueue(workqueue.NewTypedItemExponentialFailureRateLimiter[string](time.Minute, time.Hour))
 		defer queue.ShutDown()
-		client := fake.NewClientset()
+		client := fake.NewClientset(&apiv1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "pod", UID: "pod-uid"}})
 		c := &Controller{
 			config:        &config.Config{},
 			kubeclientset: client,
@@ -96,10 +97,10 @@ func TestPodCleanupQueueRetriesTransientError(t *testing.T) {
 			if attempts == 1 {
 				return true, nil, apierr.NewTimeoutError("try again", 1)
 			}
-			return false, nil, nil // the fake client returns NotFound on retry
+			return true, nil, apierr.NewNotFound(apiv1.Resource("pods"), "pod")
 		})
 
-		c.queuePodForCleanupByUID(ctx, "ns", "pod", "pod-uid")
+		c.DeletePodByUID(ctx, "ns", "pod", "pod-uid")
 		require.True(t, c.processNextPodCleanupItem(ctx))
 		synctest.Wait()
 		require.Zero(t, queue.Len())
@@ -269,49 +270,46 @@ func TestNewPodCleanupKeyWithUID(t *testing.T) {
 	assert.Equal(t, "my-pod", podName)
 	assert.Equal(t, deletePodByUID, action)
 	assert.Equal(t, "pod-uid-123", uid)
+
+	key = newPodCleanupKeyWithUID("my-namespace", "my-pod", removeFinalizer, "pod-uid-123")
+	assert.Equal(t, "my-namespace/my-pod/removeFinalizer/pod-uid-123", key)
+	_, _, action, uid = parsePodCleanupKey(key)
+	assert.Equal(t, removeFinalizer, action)
+	assert.Equal(t, "pod-uid-123", uid)
 }
 
 func TestPodCleanupPatch(t *testing.T) {
-	c := &Controller{}
-
-	pod := &apiv1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:          map[string]string{common.LabelKeyCompleted: "false"},
-			Finalizers:      []string{common.FinalizerPodStatus},
-			ResourceVersion: "123456",
-		},
+	const retain = "example.com/retain"
+	for _, tc := range []struct {
+		name           string
+		flag           string
+		finalizers     []string
+		labelCompleted bool
+		wantPatch      string
+	}{
+		{"enabled", "true", []string{common.FinalizerPodStatus}, false, `{"metadata":{"resourceVersion":"123","finalizers":[]}}`},
+		{"disabled and labeling", "false", []string{retain, common.FinalizerPodStatus}, true, `{"metadata":{"resourceVersion":"123","finalizers":["example.com/retain"],"labels":{"workflows.argoproj.io/completed":"true"}}}`},
+		{"unset", "unset", []string{common.FinalizerPodStatus, retain}, false, `{"metadata":{"resourceVersion":"123","finalizers":["example.com/retain"]}}`},
+		{"label only", "false", []string{retain}, true, `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`},
+		{"other finalizer only", "false", []string{retain}, false, ""},
+		{"no finalizers", "false", nil, false, ""},
+		{"empty finalizers", "false", []string{}, false, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(common.EnvVarPodStatusCaptureFinalizer, tc.flag)
+			if tc.flag == "unset" {
+				require.NoError(t, os.Unsetenv(common.EnvVarPodStatusCaptureFinalizer))
+			}
+			pod := &apiv1.Pod{ObjectMeta: metav1.ObjectMeta{ResourceVersion: "123", Finalizers: tc.finalizers}}
+			original := pod.DeepCopy()
+			patch, err := (&Controller{}).getPodCleanupPatch(pod, tc.labelCompleted)
+			require.NoError(t, err)
+			if tc.wantPatch == "" {
+				assert.Nil(t, patch)
+			} else {
+				assert.JSONEq(t, tc.wantPatch, string(patch))
+			}
+			assert.Equal(t, original, pod)
+		})
 	}
-
-	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "true")
-
-	// pod finalizer enabled, patch label
-	patch, err := c.getPodCleanupPatch(pod, true)
-	require.NoError(t, err)
-	expected := `{"metadata":{"resourceVersion":"123456","finalizers":[],"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer enabled, do not patch label
-	patch, err = c.getPodCleanupPatch(pod, false)
-	require.NoError(t, err)
-	expected = `{"metadata":{"resourceVersion":"123456","finalizers":[]}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer enabled, do not patch label, nil/empty finalizers
-	podWithNilFinalizers := &apiv1.Pod{}
-	patch, err = c.getPodCleanupPatch(podWithNilFinalizers, false)
-	require.NoError(t, err)
-	assert.Nil(t, patch)
-
-	t.Setenv(common.EnvVarPodStatusCaptureFinalizer, "false")
-
-	// pod finalizer disabled, patch both
-	patch, err = c.getPodCleanupPatch(pod, true)
-	require.NoError(t, err)
-	expected = `{"metadata":{"labels":{"workflows.argoproj.io/completed":"true"}}}`
-	assert.JSONEq(t, expected, string(patch))
-
-	// pod finalizer disabled, do not patch label
-	patch, err = c.getPodCleanupPatch(pod, false)
-	require.NoError(t, err)
-	assert.Nil(t, patch)
 }

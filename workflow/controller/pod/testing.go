@@ -19,3 +19,7 @@ func (c *Controller) TestingProcessNextItem(ctx context.Context) bool {
 func (c *Controller) TestingQueueNumRequeues(key string) int {
 	return c.workqueue.NumRequeues(key)
 }
+
+func (c *Controller) TestingQueueLen() int {
+	return c.workqueue.Len()
+}
