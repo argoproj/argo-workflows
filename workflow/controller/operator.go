@@ -1106,7 +1106,13 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
-	if woc.GetShutdownStrategy().Enabled() || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+	// An exit handler runs after the workflow's activeDeadlineSeconds (#2603).
+	// Its retryStrategy still has to take the next attempt: the deadline is
+	// already in the past when the handler starts (#17265). Shutdown still
+	// stops the retry, exit handler or not.
+	pastWorkflowDeadline := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) &&
+		!node.IsPartOfExitHandler(ctx, woc.wf.Status.Nodes)
+	if woc.GetShutdownStrategy().Enabled() || pastWorkflowDeadline {
 		var message string
 		if woc.GetShutdownStrategy().Enabled() {
 			message = fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
