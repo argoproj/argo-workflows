@@ -83,7 +83,7 @@ func TestPodCleanupQueueRetriesTransientError(t *testing.T) {
 		c := &Controller{
 			config:        &config.Config{},
 			kubeclientset: client,
-			podInformer:   newInformer(client, new(""), new("ns")),
+			podInformer:   newInformer(ctx, client, new(""), new("ns")),
 			workqueue:     queue,
 			log:           logging.RequireLoggerFromContext(ctx),
 		}
@@ -129,7 +129,7 @@ func TestPodCleanupQueueCoalescesRetries(t *testing.T) {
 				queue := workqueue.NewTypedRateLimitingQueue(&workqueue.TypedBucketRateLimiter[string]{Limiter: bucket})
 				defer queue.ShutDown()
 				client := fake.NewClientset()
-				informer := newInformer(client, new(""), new("ns"))
+				informer := newInformer(ctx, client, new(""), new("ns"))
 				for _, name := range []string{"a", "b"} {
 					pod := &apiv1.Pod{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: name}}
 					require.NoError(t, informer.GetStore().Add(pod))
@@ -183,7 +183,7 @@ func TestPodCleanupQueueSupersedesDelay(t *testing.T) {
 		client := fake.NewClientset()
 		c := &Controller{
 			config: &config.Config{}, kubeclientset: client, workqueue: queue,
-			podInformer: newInformer(client, new(""), new("ns")), log: logging.RequireLoggerFromContext(ctx),
+			podInformer: newInformer(ctx, client, new(""), new("ns")), log: logging.RequireLoggerFromContext(ctx),
 		}
 
 		attempts := 0
