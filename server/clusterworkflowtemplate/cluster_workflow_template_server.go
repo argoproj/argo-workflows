@@ -111,6 +111,9 @@ func (cwts *Server) DeleteClusterWorkflowTemplate(ctx context.Context, req *clus
 }
 
 func (cwts *Server) LintClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateLintRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
+	if req.Template == nil {
+		return nil, serverutils.ToStatusError(fmt.Errorf("cluster workflow template was not found in the request body"), codes.InvalidArgument)
+	}
 	cwts.instanceIDService.Label(req.Template)
 	creator.LabelCreator(ctx, req.Template)
 	cwftmplGetter := cwts.cwftmplStore.Getter(ctx)

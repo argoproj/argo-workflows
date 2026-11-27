@@ -7,6 +7,8 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -287,6 +289,12 @@ func TestWorkflowTemplateServer_LintClusterWorkflowTemplate(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "message", resp.Spec.Arguments.Parameters[0].Name)
 		assert.Nil(t, resp.Spec.Arguments.Parameters[0].Value)
+	})
+
+	t.Run("Nil template", func(t *testing.T) {
+		_, err := server.LintClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateLintRequest{})
+		require.Error(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 }
 

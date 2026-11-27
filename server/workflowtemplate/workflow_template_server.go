@@ -184,6 +184,9 @@ func (wts *Server) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemp
 }
 
 func (wts *Server) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
+	if req.Template == nil {
+		return nil, sutils.ToStatusError(fmt.Errorf("workflow template was not found in the request body"), codes.InvalidArgument)
+	}
 	wts.instanceIDService.Label(req.Template)
 	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
