@@ -3151,6 +3151,7 @@ func (woc *wfOperationCtx) recordNodePhaseEvent(ctx context.Context, node *wfv1.
 		annotations,
 		eventType,
 		fmt.Sprintf("WorkflowNode%s", node.Phase),
+		"%s",
 		message,
 	)
 }

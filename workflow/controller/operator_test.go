@@ -3808,6 +3808,26 @@ spec:
 	}
 }
 
+// A node message is user-controlled text, so a '%' in it must reach the event
+// unchanged rather than being read as a format verb.
+func TestRecordNodePhaseEventMessageWithPercent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "percent"}}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.recordNodePhaseEvent(ctx, &wfv1.NodeStatus{
+		ID:      "percent",
+		Name:    "percent",
+		Type:    wfv1.NodeTypePod,
+		Phase:   wfv1.NodeFailed,
+		Message: "disk 100% full: %d %s",
+	})
+	assert.Equal(t,
+		[]string{"Warning WorkflowNodeFailed Failed node percent: disk 100% full: %d %s"},
+		getEventsWithoutAnnotations(controller, 1))
+}
+
 func getEventsWithoutAnnotations(controller *WorkflowController, num int) []string {
 	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
