@@ -3,8 +3,10 @@ package pod
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -98,17 +100,100 @@ func (c *Controller) patchPodForCleanup(ctx context.Context, pods typedv1.PodInt
 	return nil
 }
 
+// podCleanupRequest tracks one logical cleanup key across ready, running, and delayed entries.
+type podCleanupRequest struct {
+	entry      string
+	readyAt    time.Time
+	pendingAt  time.Time
+	processing bool
+	retrying   bool
+}
+
+func (c *Controller) addPodCleanup(key string, delay time.Duration) {
+	c.cleanupMu.Lock()
+	defer c.cleanupMu.Unlock()
+
+	readyAt := time.Now().Add(max(delay, 0))
+	if request := c.cleanupRequests[key]; request != nil {
+		switch {
+		case request.retrying:
+			return
+		case request.processing:
+			if request.pendingAt.IsZero() || readyAt.Before(request.pendingAt) {
+				request.pendingAt = readyAt
+			}
+			return
+		case !readyAt.Before(request.readyAt):
+			return
+		case delay > 0:
+			request.readyAt = readyAt
+			c.workqueue.AddAfter(request.entry, time.Until(readyAt))
+			return
+		}
+	}
+	c.schedulePodCleanup(key, readyAt, false)
+}
+
+// schedulePodCleanup must hold cleanupMu. A new entry lets workers ignore timers
+// left behind when immediate work supersedes a delay or a failure starts a retry.
+func (c *Controller) schedulePodCleanup(key string, readyAt time.Time, retry bool) {
+	if c.cleanupRequests == nil {
+		c.cleanupRequests = make(map[string]*podCleanupRequest)
+	}
+	c.cleanupSequence++
+	entry := fmt.Sprintf("%d:%s", c.cleanupSequence, key)
+	c.cleanupRequests[key] = &podCleanupRequest{entry: entry, readyAt: readyAt, retrying: retry}
+	delay := time.Until(readyAt)
+	switch {
+	case retry:
+		c.workqueue.AddRateLimited(entry)
+		// Preserve the cleanup queue's existing per-attempt limiter reset.
+		c.workqueue.Forget(entry)
+	case delay > 0:
+		c.workqueue.AddAfter(entry, delay)
+	default:
+		c.workqueue.Add(entry)
+	}
+}
+
+func (c *Controller) startPodCleanup(key, entry string) bool {
+	c.cleanupMu.Lock()
+	defer c.cleanupMu.Unlock()
+
+	request := c.cleanupRequests[key]
+	if request == nil || request.entry != entry {
+		return false
+	}
+	request.processing = true
+	request.retrying = false
+	return true
+}
+
+func (c *Controller) finishPodCleanup(key string, retry bool) {
+	c.cleanupMu.Lock()
+	defer c.cleanupMu.Unlock()
+
+	pendingAt := c.cleanupRequests[key].pendingAt
+	delete(c.cleanupRequests, key)
+	if retry || !pendingAt.IsZero() {
+		c.schedulePodCleanup(key, pendingAt, retry)
+	}
+}
+
 // all pods will ultimately be cleaned up by either deleting them, or labelling them
 func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
-	key, quit := c.workqueue.Get()
+	entry, quit := c.workqueue.Get()
 	if quit {
 		return false
 	}
+	defer c.workqueue.Done(entry)
 
-	defer func() {
-		c.workqueue.Forget(key)
-		c.workqueue.Done(key)
-	}()
+	_, key, _ := strings.Cut(entry, ":")
+	if !c.startPodCleanup(key, entry) {
+		return true
+	}
+	retry := false
+	defer func() { c.finishPodCleanup(key, retry) }()
 
 	namespace, podName, action, uid := parsePodCleanupKey(key)
 	ctx, log := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName}).InContext(ctx)
@@ -171,30 +256,29 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 	}()
 	if err != nil {
 		log.WithError(err).Warn(ctx, "failed to clean-up pod")
-		if errorsutil.IsTransientErr(ctx, err) || apierr.IsConflict(err) {
-			c.workqueue.AddRateLimited(key)
-		}
+		retry = errorsutil.IsTransientErr(ctx, err) || apierr.IsConflict(err)
 	}
 	return true
 }
 
 func (c *Controller) queuePodForCleanup(ctx context.Context, namespace string, podName string, action podCleanupAction) {
 	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Debug(ctx, "queueing pod for cleanup")
-	c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
+	// AddRateLimited reserves retry tokens before the queue deduplicates pod events.
+	c.addPodCleanup(newPodCleanupKey(namespace, podName, action), 0)
 }
 
 func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace string, podName string, action podCleanupAction, duration time.Duration) {
 	logCtx := c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
 	if duration > 0 {
 		logCtx.Debug(ctx, "queueing pod for cleanup after")
-		c.workqueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
+		c.addPodCleanup(newPodCleanupKey(namespace, podName, action), duration)
 	} else {
 		logCtx.Warn(ctx, "queueing pod for cleanup now, rather than delayed")
-		c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
+		c.addPodCleanup(newPodCleanupKey(namespace, podName, action), 0)
 	}
 }
 
 func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, uid string) {
 	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": deletePodByUID}).Info(ctx, "queueing pod for cleanup by UID")
-	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid))
+	c.addPodCleanup(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid), 0)
 }
