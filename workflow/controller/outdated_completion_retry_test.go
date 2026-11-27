@@ -11,10 +11,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 const (
@@ -80,8 +85,6 @@ func assertReadyAfter(t *testing.T, controller *WorkflowController, want time.Du
 	require.Equal(t, 1, controller.wfQueue.Len(), "not ready after %s", want)
 }
 
-var outdatedRetryOwners = []metav1.OwnerReference{{APIVersion: workflow.APIVersion, Kind: workflow.WorkflowKind, Name: "workflow", UID: "uid"}}
-
 // TestOutdatedCompletionRetry checks that a completion reconcile skipped because the
 // informer is behind runs again after minCompletionDelay once the informer
 // delivers the controller's last write, and that nothing else changes timing.
@@ -89,7 +92,7 @@ func TestOutdatedCompletionRetry(t *testing.T) {
 	t.Run("caught up", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, new(outdatedRetryFloor))
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryFloor)
 			require.Zero(t, controller.wfQueue.Len(), "outdated reconcile is skipped")
 			informerDelivers(t, controller, outdatedRetryWritten)
@@ -99,7 +102,7 @@ func TestOutdatedCompletionRetry(t *testing.T) {
 	t.Run("still behind, then caught up", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, new(outdatedRetryFloor))
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryFloor)
 			informerDelivers(t, controller, "9")
 			time.Sleep(time.Second)
@@ -123,7 +126,7 @@ func TestOutdatedCompletionRetry(t *testing.T) {
 	t.Run("routine reconcile while still behind", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, new(outdatedRetryFloor))
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryFloor)
 			// A throttler or semaphore enqueue bypasses the rate limit; that
 			// reconcile is skipped as outdated too and must keep the retry.
@@ -147,7 +150,7 @@ func TestOutdatedCompletionRetry(t *testing.T) {
 	t.Run("disabled", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, nil)
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryRoutineDelay)
 			informerDelivers(t, controller, outdatedRetryWritten)
 			assertReadyAfter(t, controller, outdatedRetryRoutineDelay)
@@ -204,7 +207,7 @@ func TestOutdatedCompletionRetryNoLeak(t *testing.T) {
 	t.Run("informer stays behind until the workflow is deleted", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, new(outdatedRetryFloor))
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryFloor)
 			// The fallback reconcile is skipped again, keeps the skip and requeues.
 			processWhenReady(t, controller, outdatedRetryRoutineDelay)
@@ -218,7 +221,7 @@ func TestOutdatedCompletionRetryNoLeak(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, new(outdatedRetryFloor))
 			require.NoError(t, controller.wfInformer.GetIndexer().Delete(outdatedRetryWorkflow(outdatedRetryBehind)))
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryFloor)
 			assertNoRecords(t, controller)
 		})
@@ -226,7 +229,7 @@ func TestOutdatedCompletionRetryNoLeak(t *testing.T) {
 	t.Run("disabled records nothing", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			controller := newOutdatedRetryController(t, nil)
-			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, outdatedRetryOwners)
+			controller.enqueueNodeCompletion(logging.TestContext(t.Context()), outdatedRetryKey, podCompletionOwners)
 			processWhenReady(t, controller, outdatedRetryRoutineDelay)
 			informerDelivers(t, controller, outdatedRetryWritten)
 			assert.Nil(t, controller.outdatedCompletionRetries.enqueuedByCompletion)
@@ -242,4 +245,43 @@ func TestMinCompletionDelay(t *testing.T) {
 	assert.Equal(t, outdatedRetryFloor, controller.minCompletionDelay())
 	controller.minCompletionRequeueDelay = new(time.Minute)
 	assert.Equal(t, outdatedRetryRoutineDelay, controller.minCompletionDelay(), "capped at DEFAULT_REQUEUE_TIME")
+}
+
+// TestOutdatedCompletionRetryInformer runs the real workflow informer and its
+// handlers: the update that brings the informer up to the controller's last
+// write retries the skipped completion, and the delete drops its record.
+func TestOutdatedCompletionRetryInformer(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// The routine delay is far longer than the test, so only the retry can enqueue in time.
+	controller, _ := newCompletionDelayController(t, time.Hour, new(10*time.Millisecond))
+	controller.workflowKeyLock = syncpkg.NewKeyLock()
+	controller.lastWrittenVersions.versions = map[types.UID]lastWrittenVersion{}
+	controller.recordWorkflowWrite(outdatedRetryWorkflow(outdatedRetryWritten))
+	controller.throttler = controller.newThrottler()
+	controller.kubeclientset = fake.NewClientset()
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, outdatedRetryWorkflow(outdatedRetryBehind))
+	workflows := dynamicClient.Resource(wfv1.WorkflowSchemaGroupVersionKind.GroupVersion().WithResource(workflow.WorkflowPlural)).Namespace("default")
+	controller.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, controller.tweakListRequestListOptions, controller.tweakWatchRequestListOptions, cache.Indexers{})
+	require.NoError(t, controller.addWorkflowInformerHandlers(ctx))
+	go controller.wfInformer.Run(ctx.Done())
+	require.True(t, cache.WaitForCacheSync(ctx.Done(), controller.wfInformer.HasSynced))
+
+	// Drop the enqueue from the informer's initial add.
+	key, _ := controller.wfQueue.Get()
+	controller.wfQueue.Done(key)
+
+	controller.enqueueNodeCompletion(ctx, outdatedRetryKey, podCompletionOwners)
+	require.True(t, controller.processNextItem(ctx))
+	require.Zero(t, controller.wfQueue.Len(), "outdated reconcile is skipped")
+
+	_, err := workflows.Update(ctx, outdatedRetryWorkflow(outdatedRetryWritten), metav1.UpdateOptions{})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 1 }, 5*time.Second, time.Millisecond, "the informer update retries the skipped completion")
+
+	require.NoError(t, workflows.Delete(ctx, "workflow", metav1.DeleteOptions{}))
+	require.Eventually(t, func() bool {
+		controller.outdatedCompletionRetries.mutex.Lock()
+		defer controller.outdatedCompletionRetries.mutex.Unlock()
+		return len(controller.outdatedCompletionRetries.enqueuedByCompletion) == 0 && len(controller.outdatedCompletionRetries.skippedAsOutdated) == 0
+	}, 5*time.Second, time.Millisecond, "the informer delete forgets the key")
 }
