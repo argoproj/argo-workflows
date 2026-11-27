@@ -197,19 +197,21 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 				stream = s
 				return true, nil
 			}
-			if !IsOssErrCode(err, "NoSuchKey") {
+			if !IsOssErrCode(origErr, "NoSuchKey") {
 				return !isTransientOSSErr(ctx, origErr), fmt.Errorf("failed to get file: %w", origErr)
 			}
+			// If we get here, the error was a NoSuchKey. The key might be an OSS "directory"
 			isDir, err := IsOssDirectory(bucket, inputArtifact.OSS.Key)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to test if %s/%s is a directory: %w", bucketName, inputArtifact.OSS.Key, err)
 			}
 			if !isDir {
-				return false, origErr
+				// It's neither a file, nor a directory. Return the original NoSuchKey error
+				return true, argoerrors.New(argoerrors.CodeNotFound, origErr.Error())
 			}
 			// directory case:
 			// todo: make a .tgz file which can be streamed to user
-			return false, argoerrors.New(argoerrors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
+			return true, argoerrors.New(argoerrors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
 		})
 	return stream, err
 }
