@@ -66,6 +66,13 @@ and point the tests at it with `ARGO_UI_BASE_URL`.
   cover the server-sent-events watch. Everything seeded is cleaned up on
   teardown; resources the *browser* creates (submit, resubmit, the create
   panels) are handed to `api.track()` so they are cleaned up too.
+- **The workflow archive** (`persistence.archive`, on in the `mysql` and
+  `postgres` profiles): the suite runs with it on or off. With it on, the
+  workflow list also serves archived workflows, a workflow is only settled once
+  the controller has archived it (`waitForPhase` waits for that too), and
+  teardown deletes archived copies as well. Specs that depend on it ask
+  `api.archiveEnabled()` and assert, skip or `fixme` accordingly; to run those
+  locally, start the stack with `make start PROFILE=mysql AUTH_MODE=client`.
 - **Page objects** (`e2e/pages/`) centralise selectors. Prefer role/text/href
   locators; add a `data-testid` only when nothing stable exists.
 
@@ -87,6 +94,9 @@ the dev server contributors use are covered:
   argo-server started with `--base-href=/argo/` to match. The dev server's
   `pathRewrite` is then the prefix-stripping proxy a sub-path deployment needs
   in front of argo-server, which serves its API at `/api/` regardless.
+
+The first two passes run with the workflow archive on (the `mysql` profile) and
+the base-href pass with it off (`minimal`), so the UI is covered both ways.
 
 `E2E_RUN` names each pass so results and reports land in their own
 sub-directory of `test-results/` and `playwright-report/`.
