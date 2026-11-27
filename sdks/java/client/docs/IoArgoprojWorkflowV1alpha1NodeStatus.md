@@ -27,6 +27,8 @@ Name | Type | Description | Notes
 **phase** | **String** | Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. Will be one of these values \&quot;Pending\&quot;, \&quot;Running\&quot; before the node is completed, or \&quot;Succeeded\&quot;, \&quot;Skipped\&quot;, \&quot;Failed\&quot;, \&quot;Error\&quot;, or \&quot;Omitted\&quot; as a final state. |  [optional]
 **podIP** | **String** | PodIP captures the IP of the pod for daemoned steps |  [optional]
 **progress** | **String** | Progress to completion |  [optional]
+**recoveringResourcePodUID** | **String** | RecoveringResourcePodUID identifies the failed resource executor being replaced. Duplicate observations of this pod must not consume another recovery attempt. Cleared when a different executor pod is observed. |  [optional]
+**resourcePodRecoveries** | **Integer** | ResourcePodRecoveries counts recorded recoveries after infrastructure failure or loss of a running resource executor. It is independent of FailedPodRestart. |  [optional]
 **resourcesDuration** | **Map&lt;String, Long&gt;** | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. |  [optional]
 **restartingPodUID** | **String** | RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running. |  [optional]
 **startedAt** | **java.time.Instant** |  |  [optional]

@@ -15,6 +15,7 @@ func TestPodSource_YieldsOnce(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	t.Setenv(common.EnvVarTemplate, `{"name":"t"}`)
 	t.Setenv(common.EnvVarNodeID, "node-1")
+	t.Setenv(common.EnvVarResourceTemplateRecovering, "true")
 	t.Setenv(common.EnvVarDeadline, time.Now().Format(time.RFC3339))
 	dir := t.TempDir()
 	s := &PodSource{VarRunArgo: dir}
@@ -24,6 +25,7 @@ func TestPodSource_YieldsOnce(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "t", task.Config.Template.Name)
 	assert.Equal(t, "node-1", task.Config.NodeID)
+	assert.True(t, task.Config.ResourceTemplateRecovering)
 	assert.Equal(t, PodPaths(dir), task.Paths)
 
 	_, ok, err = s.Next(ctx)
