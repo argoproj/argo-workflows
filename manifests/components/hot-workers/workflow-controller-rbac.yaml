@@ -1,0 +1,15 @@
+# The verbs are poolcontroller.DeploymentVerbs, which a unit test checks.
+- op: add
+  path: /rules/-
+  value:
+    apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - delete

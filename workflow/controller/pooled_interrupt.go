@@ -136,8 +136,7 @@ func (woc *wfOperationCtx) endPooledTasksOnShutdownOrDeadline(ctx context.Contex
 // handler (their boundary is the workflow's), is the fallback for a TaskSet
 // not cached.
 func (woc *wfOperationCtx) pooledOnExit(ctx context.Context, node *wfv1.NodeStatus) bool {
-	key := woc.pooledKey(node)
-	if taskSet, ok := cachedWithUID[metav1.Object](woc.controller.pooledTaskSetInformer.GetStore(), key.Namespace+"/"+key.TaskSetName(), node.PooledTask.TaskSetUID); ok {
+	if taskSet, ok := woc.cachedPooledTaskSet(pooledTaskSetRef(node)); ok {
 		return taskSet.GetLabels()[common.LabelKeyOnExit] == "true"
 	}
 	return node.IsPartOfExitHandler(ctx, woc.wf.Status.Nodes)

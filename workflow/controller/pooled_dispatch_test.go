@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/argoproj/argo-workflows/v4"
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -118,23 +119,30 @@ func TestPooledDispatchFlagOff(t *testing.T) {
 	assert.Equal(t, []string{woc.getPodName(plainStep, "plain")}, podNames(ctx, woc), "the plain step gets its pod")
 }
 
-// TestPooledDispatchFollowsLiveConfig checks that turning the flag on starts
-// dispatch with the next reconcile, without a restart.
-func TestPooledDispatchFollowsLiveConfig(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
-	later := wf.DeepCopy()
-	later.Name, later.UID = "pooled-later", "later-uid"
-	ctx, controller, fake := newPooledDispatchController(t, false, wf, later)
+// TestPooledDispatchFollowsFlagAtStart checks that dispatch follows the flag
+// as the controller started with it, as the pool controller does: changing
+// it in the configmap takes a restart.
+func TestPooledDispatchFollowsFlagAtStart(t *testing.T) {
+	t.Run("TurnedOn", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+		ctx, controller, fake := newPooledDispatchController(t, false, wf)
 
-	woc := reconcilePooled(ctx, t, controller, wf)
-	require.Equal(t, wfv1.NodeError, mustNode(t, woc, pooledStep).Phase)
+		controller.Config.HotWorkers.Enabled = true
+		node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		assert.Contains(t, node.Message, "restart the controller")
+		assert.Empty(t, fake.TaskSets(wf.Namespace))
+	})
+	t.Run("TurnedOff", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+		ctx, controller, fake := newPooledDispatchController(t, true, wf)
 
-	controller.Config.HotWorkers.Enabled = true
-	woc = reconcilePooled(ctx, t, controller, later)
-	node := mustNode(t, woc, "pooled-later[0].a")
-	assert.Equal(t, wfv1.NodePending, node.Phase)
-	require.NotNil(t, node.PooledTask)
-	assert.Len(t, fake.TaskSets(wf.Namespace), 1)
+		controller.Config.HotWorkers.Enabled = false
+		node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+		require.NotNil(t, node.PooledTask)
+		assert.Len(t, fake.TaskSets(wf.Namespace), 1)
+	})
 }
 
 // TestPooledDispatchEnqueues checks that a pooled node gets one TaskSet with
@@ -942,4 +950,208 @@ func TestPooledDispatchSettings(t *testing.T) {
 	assert.Contains(t, plugins, wfv1.ArtifactPluginName("out-plugin"))
 	require.Contains(t, d.TraceContext, "traceparent")
 	assert.Equal(t, traceContext(controller.tracing.ContextWithNode(ctx, wf.Name, wf.Namespace, node.ID)), d.TraceContext, "the node's span's")
+}
+
+// TestPooledTaskOfAnotherControllerVersion checks a pooled node whose task
+// another controller version enqueued, as before an upgrade: while no worker
+// has claimed it, the next reconcile drops its TaskSet and enqueues it again
+// for this version, whose pool is the one this controller builds; once a
+// worker has claimed it, the task finishes on its TaskSet undisturbed.
+func TestPooledTaskOfAnotherControllerVersion(t *testing.T) {
+	for _, claimed := range []bool{false, true} {
+		t.Run(fmt.Sprintf("claimed=%v", claimed), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+			// For the operation to count its active pods.
+			wf.Spec.Parallelism = new(int64(10))
+			ctx, controller, fake := newPooledDispatchController(t, true, wf)
+			id := wf.NodeID(pooledStep)
+			old := olderVersionTaskSet(t, fake, wf)
+			adoptOlderVersionTask(ctx, t, controller, fake, wf, old)
+			var h dispatch.Claimed
+			if claimed {
+				h = claimPooled(ctx, t, controller, fake, wf.Namespace, id)
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+			}
+
+			woc := reconcilePooled(ctx, t, controller, wf)
+			node := mustNode(t, woc, pooledStep)
+			ts, ok := fake.TaskSet(wf.Namespace, id+"-task")
+			require.True(t, ok)
+			if claimed {
+				assert.Equal(t, old.UID, ts.UID, "a claimed task's TaskSet is left")
+				assert.Equal(t, old.UID, node.PooledTask.TaskSetUID)
+				assert.Equal(t, wfv1.PooledTaskClaimed, node.PooledTask.State())
+				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded}))
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+				woc = reconcilePooled(ctx, t, controller, wf)
+				assert.Equal(t, wfv1.NodeSucceeded, mustNode(t, woc, pooledStep).Phase)
+				return
+			}
+			assert.NotEqual(t, old.UID, ts.UID, "enqueued again")
+			assert.Equal(t, ts.UID, node.PooledTask.TaskSetUID)
+			assert.Equal(t, wfv1.PooledTaskEnqueued, node.PooledTask.State())
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+			assert.Equal(t, woc.getActivePods(""), woc.activePods, "counted once, when the operation started, from the node with its ledger")
+			assert.True(t, controller.pooledTaskSetsGone.has(wf.UID, old.UID))
+			version := argo.GetVersion().Version
+			assert.Equal(t, version, ts.Annotations[common.AnnotationKeyPoolControllerVersion])
+			assert.Equal(t, version, ts.Spec.Pool.ControllerVersion)
+			assert.NotEqual(t, "older-hash", node.PooledTask.PoolHash, "a pool of this version")
+			assert.Equal(t, ts.Labels[common.LabelKeyPoolHash], node.PooledTask.PoolHash)
+			assert.NotEqual(t, "older-task-name", node.PooledTask.TaskName)
+			claimPooled(ctx, t, controller, fake, wf.Namespace, id)
+		})
+	}
+}
+
+// olderVersionTaskSet creates the pooled step's TaskSet as an older
+// controller version enqueued it.
+func olderVersionTaskSet(t *testing.T, fake *dispatch.Fake, wf *wfv1.Workflow) *wfv1.WorkflowTaskSet {
+	t.Helper()
+	id := wf.NodeID(pooledStep)
+	old, err := fake.CreateTaskSet(&wfv1.WorkflowTaskSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       wf.Namespace,
+			Name:            id + "-task",
+			Labels:          map[string]string{common.LabelKeyWorkflow: wf.Name, common.LabelKeyPoolName: "work", common.LabelKeyPoolHash: "older-hash"},
+			Annotations:     map[string]string{common.AnnotationKeyPoolControllerVersion: "v3.9.0"},
+			OwnerReferences: []metav1.OwnerReference{common.WorkflowOwnerReference(wf.Name, wf.UID)},
+		},
+		Spec: wfv1.WorkflowTaskSetSpec{
+			Tasks:    map[string]wfv1.Template{id: {Name: "work"}},
+			Pool:     &wfv1.PoolSpec{Name: "work", ControllerVersion: "v3.9.0"},
+			Dispatch: &wfv1.TaskDispatch{TaskName: "older-task-name"},
+		},
+	})
+	require.NoError(t, err)
+	return old
+}
+
+// adoptOlderVersionTask has the pooled step's node adopt old, the TaskSet an
+// older controller version enqueued, which the node's next reconcile replaces.
+func adoptOlderVersionTask(ctx context.Context, t *testing.T, controller *WorkflowController, fake *dispatch.Fake, wf *wfv1.Workflow, old *wfv1.WorkflowTaskSet) {
+	t.Helper()
+	woc := reconcilePooled(ctx, t, controller, wf)
+	require.Equal(t, old.UID, mustNode(t, woc, pooledStep).PooledTask.TaskSetUID)
+	observeTaskSet(ctx, t, controller, fake, wf.Namespace, wf.NodeID(pooledStep))
+}
+
+// TestPooledTaskOfAnotherControllerVersionRacedClaim checks a claim a worker
+// makes, unseen by the cache, as the task of another controller version is
+// dropped to be enqueued again: a completed one is the node's ending; an
+// incomplete one is interrupted, and the node ends Error once the task
+// stops, unless its worker withdrew, when the task, which never ran, is
+// enqueued again; if the interrupt fails, the task runs on to its end.
+func TestPooledTaskOfAnotherControllerVersionRacedClaim(t *testing.T) {
+	for _, tt := range []string{"incomplete", "completed", "withdrawn", "interrupt fails"} {
+		t.Run(tt, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+			ctx, controller, fake := newPooledDispatchController(t, true, wf)
+			id := wf.NodeID(pooledStep)
+			old := olderVersionTaskSet(t, fake, wf)
+			adoptOlderVersionTask(ctx, t, controller, fake, wf, old)
+			h := claimPooled(ctx, t, controller, fake, wf.Namespace, id)
+			switch tt {
+			case "completed":
+				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded, Outputs: &wfv1.Outputs{ExitCode: new("0")}}))
+			case "withdrawn":
+				fake.SetFault(func(op dispatch.Op) error {
+					if op.Verb == "patch" && op.Resource == dispatch.ResourceResults {
+						fake.DeleteResult(op.Namespace, op.Name)
+					}
+					return nil
+				})
+			case "interrupt fails":
+				fake.SetFault(func(op dispatch.Op) error {
+					if op.Verb == "patch" && op.Resource == dispatch.ResourceResults {
+						return apierr.NewServiceUnavailable("try again")
+					}
+					return nil
+				})
+			}
+
+			node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+			fake.SetFault(nil)
+			switch tt {
+			case "completed":
+				assert.Equal(t, wfv1.NodeSucceeded, node.Phase, "the task ended before the drop")
+				assert.True(t, node.Fulfilled())
+				assert.False(t, hasTaskSet(fake, wf.Namespace, id), "not enqueued again")
+			case "withdrawn":
+				ts, ok := fake.TaskSet(wf.Namespace, id+"-task")
+				require.True(t, ok)
+				assert.NotEqual(t, old.UID, ts.UID, "enqueued again")
+				assert.Equal(t, ts.UID, node.PooledTask.TaskSetUID)
+				assert.Equal(t, wfv1.PooledTaskEnqueued, node.PooledTask.State())
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+			case "interrupt fails":
+				assert.Equal(t, wfv1.NodeRunning, node.Phase)
+				assert.Equal(t, wfv1.PooledTaskClaimed, node.PooledTask.State())
+				assert.Equal(t, h.Claim().UID, node.PooledTask.ClaimUID)
+				assert.False(t, hasTaskSet(fake, wf.Namespace, id), "not enqueued again")
+				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded}))
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+				assert.Equal(t, wfv1.NodeSucceeded, mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep).Phase)
+			case "incomplete":
+				assert.Equal(t, wfv1.NodeError, node.Phase)
+				assert.Equal(t, racedClaimMessage, node.Message)
+				assert.False(t, node.Fulfilled(), "the node waits for its task to stop")
+				assert.Equal(t, wfv1.PooledTaskInterrupted, node.PooledTask.State())
+				assert.Equal(t, h.Claim().UID, node.PooledTask.ClaimUID)
+				assert.False(t, hasTaskSet(fake, wf.Namespace, id), "not enqueued again")
+				interruptedResult(t, fake, wf.Namespace, id)
+				require.NoError(t, h.Complete(ctx, wfv1.NodeResult{Phase: wfv1.NodeSucceeded}))
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+				node = mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+				assert.True(t, node.Fulfilled())
+				assert.Equal(t, wfv1.NodeError, node.Phase, "the first ending wins")
+			}
+		})
+	}
+}
+
+// TestPooledTaskOfAnotherControllerVersionLeft checks the tasks of another
+// controller version that are not enqueued again: one a worker released,
+// which has run on its own version's pool; any while the controller runs
+// with hot workers disabled; and one whose drop fails, until a later
+// reconcile.
+func TestPooledTaskOfAnotherControllerVersionLeft(t *testing.T) {
+	for _, tt := range []string{"released", "hot workers disabled", "drop fails"} {
+		t.Run(tt, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+			ctx, controller, fake := newPooledDispatchController(t, true, wf)
+			id := wf.NodeID(pooledStep)
+			old := olderVersionTaskSet(t, fake, wf)
+			adoptOlderVersionTask(ctx, t, controller, fake, wf, old)
+			switch tt {
+			case "released":
+				h := claimPooled(ctx, t, controller, fake, wf.Namespace, id)
+				observeResult(ctx, t, controller, fake, wf.Namespace, id)
+				require.Equal(t, wfv1.PooledTaskClaimed, mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep).PooledTask.State())
+				require.NoError(t, h.Release(ctx))
+				forgetResult(ctx, t, controller, wf.Namespace, id)
+				require.True(t, mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep).PooledTask.Released())
+			case "hot workers disabled":
+				controller.hotWorkersAtStart.Store(hotWorkersOff)
+			case "drop fails":
+				fake.SetFault(func(op dispatch.Op) error {
+					if op.Verb == "delete" && op.Resource == dispatch.ResourceTaskSets {
+						return assert.AnError
+					}
+					return nil
+				})
+			}
+
+			node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+			assert.Equal(t, old.UID, node.PooledTask.TaskSetUID)
+			ts, ok := fake.TaskSet(wf.Namespace, id+"-task")
+			require.True(t, ok)
+			assert.Equal(t, old.UID, ts.UID, "left")
+			if tt == "drop fails" {
+				fake.SetFault(nil)
+				node = mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
+				assert.NotEqual(t, old.UID, node.PooledTask.TaskSetUID, "enqueued again at a later reconcile")
+			}
+		})
+	}
 }

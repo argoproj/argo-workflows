@@ -797,3 +797,32 @@ func TestBuild_TemplateTimeoutOnlyTightensActiveDeadlineSeconds(t *testing.T) {
 		})
 	}
 }
+
+// TestBuild_UserSidecarNamedWorker checks that the name
+// of a pool pod's worker container isn't reserved on workflow pods, so a user
+// sidecar named worker is built as any user sidecar is, in either layout:
+// wrapped in the emissary and given none of the executor's mounts.
+func TestBuild_UserSidecarNamedWorker(t *testing.T) {
+	assert.False(t, common.IsArgoAuxilliary(common.WorkerContainerName))
+	assert.False(t, common.IsArgoSidecar(common.WorkerContainerName))
+	for _, initless := range []bool{false, true} {
+		ctx := logging.TestContext(t.Context())
+		tmpl := simpleContainerTemplate()
+		tmpl.Container.VolumeMounts = []apiv1.VolumeMount{{Name: "data", MountPath: "/data"}}
+		tmpl.Volumes = []apiv1.Volume{{Name: "data", VolumeSource: apiv1.VolumeSource{EmptyDir: &apiv1.EmptyDirVolumeSource{}}}}
+		tmpl.Sidecars = []wfv1.UserContainer{{Container: apiv1.Container{Name: common.WorkerContainerName, Image: "redis", Command: []string{"redis-server"}}}}
+		pb := newTestPodBuilder(tmpl, []apiv1.Container{*tmpl.Container}, initless, newStubDeps())
+
+		result, err := pb.build(ctx)
+		require.NoError(t, err)
+		sidecar := containerByName(result.Pod.Spec.Containers, common.WorkerContainerName)
+		require.NotNil(t, sidecar, "initless=%v", initless)
+		assert.Equal(t, []string{pb.layout.argoexecBinaryPath(), "emissary"}, sidecar.Command[:2], "initless=%v", initless)
+		assert.Equal(t, "redis-server", sidecar.Command[len(sidecar.Command)-1], "initless=%v", initless)
+		for _, m := range sidecar.VolumeMounts {
+			assert.False(t, strings.HasPrefix(m.MountPath, common.ExecutorMainFilesystemDir), "initless=%v: no mirrored main mounts, got %s", initless, m.MountPath)
+		}
+		_, hasPoolHash := envValue(sidecar, common.EnvVarPoolHash)
+		assert.False(t, hasPoolHash, "initless=%v", initless)
+	}
+}

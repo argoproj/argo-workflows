@@ -160,7 +160,7 @@ func TestBuildArgoBinVolume(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	pb := woc.newPodBuilder(ctx, "wf", nil, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	vol := initlessLayout{}.extraVolumes(pb)[0]
+	vol := initlessLayout{}.extraVolumes(pb.in.execCfg.image, pb.in.execCfg.imagePullPolicy)[0]
 	assert.Equal(t, argoBinVolumeName, vol.Name)
 	require.NotNil(t, vol.Image, "volume source must be Image (KEP-4639)")
 	assert.Equal(t, "quay.io/argoproj/argoexec:testtag", vol.Image.Reference)

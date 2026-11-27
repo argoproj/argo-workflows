@@ -36,6 +36,12 @@ func (woc *wfOperationCtx) dropPooledTask(ctx context.Context, node *wfv1.NodeSt
 	}
 }
 
+// waitingForClaim reports whether the pooled node is unended with its task
+// queued, never claimed: one a worker released has run.
+func waitingForClaim(node *wfv1.NodeStatus) bool {
+	return !node.Phase.Completed() && node.PooledTask.State() == wfv1.PooledTaskEnqueued && !node.PooledTask.Released()
+}
+
 // timedOutPhase is the phase a node past its template's timeout ends in:
 // Failed, or Error for a hook, which like a hook that could not run ends its
 // task's boundary Error.
@@ -57,7 +63,7 @@ func (woc *wfOperationCtx) checkPooledTimeouts(ctx context.Context, node *wfv1.N
 	ledger := node.PooledTask
 	// A released task's deadline is checkReleasedDeadline's, and its
 	// timeouts, which bound a Pending node, no longer apply.
-	if node.Phase.Completed() || ledger.State() != wfv1.PooledTaskEnqueued || ledger.Released() {
+	if !waitingForClaim(node) {
 		return node
 	}
 	now := time.Now().UTC()
