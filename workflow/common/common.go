@@ -74,6 +74,13 @@ const (
 	// AnnotationKeySpanID is added as an annotation to workflows and pods for their span-id
 	AnnotationKeySpanID = workflow.WorkflowFullName + "/span-id"
 
+	// AnnotationKeyDeadlineNodesFailed records that the controller failed this
+	// workflow's nodes at its deadline because pod reconciliation could not
+	// complete (#17380). operate() reads it to let only such a workflow past
+	// the suspension check while its exit handler finishes, rather than every
+	// expired workflow with an unfinished exit handler.
+	AnnotationKeyDeadlineNodesFailed = workflow.WorkflowFullName + "/deadline-nodes-failed"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"

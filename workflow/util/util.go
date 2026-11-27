@@ -1009,6 +1009,11 @@ func createNewRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, parameters [
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
 	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
+	// The retried workflow is a fresh run: it must not inherit the marker that
+	// let a workflow whose nodes were failed at its deadline finish while
+	// suspended (#17380), or a later suspension of this run could be bypassed
+	// for a failure that belonged to the previous one.
+	delete(newWF.Annotations, common.AnnotationKeyDeadlineNodesFailed)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
 	newWF.Status.Phase = wfv1.WorkflowUnknown
 	newWF.Status.Nodes = make(wfv1.Nodes)
