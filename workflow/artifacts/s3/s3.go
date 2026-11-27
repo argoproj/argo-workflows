@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
@@ -38,6 +39,13 @@ import (
 )
 
 const nullIAMEndpoint = ""
+
+// AWS STS DurationSeconds limits for AssumeRole.
+// See https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
+const (
+	minTokenExpiration = 15 * time.Minute
+	maxTokenExpiration = 12 * time.Hour
+)
 
 type Client interface {
 	// PutFile puts a single file to a bucket at the specified key
@@ -106,6 +114,7 @@ type ClientOpts struct {
 	UseSDKCreds     bool
 	EncryptOpts     EncryptOpts
 	SendContentMd5  bool
+	TokenExpiration *time.Duration
 }
 
 type s3client struct {
@@ -133,6 +142,7 @@ type ArtifactDriver struct {
 	EnableEncryption      bool
 	ServerSideCustomerKey string
 	AddressingStyle       string
+	TokenExpiration       *time.Duration
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
@@ -167,6 +177,7 @@ func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
 		SendContentMd5:  true,
+		TokenExpiration: s3Driver.TokenExpiration,
 		AddressingStyle: parseAddressingStyle(s3Driver.AddressingStyle),
 	}
 
@@ -424,7 +435,18 @@ func (s3Driver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.
 
 // Get AWS credentials based on default order from aws SDK
 func getAWSCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credentials, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
+	loadOpts := []func(*config.LoadOptions) error{config.WithRegion(opts.Region)}
+	if opts.TokenExpiration != nil || opts.RoleSessionName != "" {
+		loadOpts = append(loadOpts, config.WithWebIdentityRoleCredentialOptions(func(o *stscreds.WebIdentityRoleOptions) {
+			if opts.TokenExpiration != nil {
+				o.Duration = *opts.TokenExpiration
+			}
+			if opts.RoleSessionName != "" {
+				o.RoleSessionName = opts.RoleSessionName
+			}
+		}))
+	}
+	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +461,11 @@ func getAWSCredentials(ctx context.Context, opts ClientOpts) (*credentials.Crede
 	return credentials.NewStaticV4(value.AccessKeyID, value.SecretAccessKey, value.SessionToken), nil
 }
 
-// GetAssumeRoleCredentials gets Assumed role credentials
+// getAssumeRoleCredentials gets Assumed role credentials via AWS STS AssumeRole.
+// When opts.TokenExpiration is set it is forwarded as DurationSeconds (must be pre-validated
+// to be within [minTokenExpiration, maxTokenExpiration]).
+// When opts.RoleSessionName is non-empty it is forwarded as the STS session name;
+// otherwise the SDK default ("s") is used.
 func getAssumeRoleCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credentials, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(opts.Region))
 	if err != nil {
@@ -451,10 +477,17 @@ func getAssumeRoleCredentials(ctx context.Context, opts ClientOpts) (*credential
 
 	client := sts.NewFromConfig(cfg)
 
-	// Create the credentials from AssumeRoleProvider to assume the role
-	// referenced by the "myRoleARN" ARN. Prompt for MFA token from stdin.
+	// Build functional options for AssumeRoleProvider.
+	providerOptFn := func(o *stscreds.AssumeRoleOptions) {
+		if opts.TokenExpiration != nil {
+			o.Duration = *opts.TokenExpiration
+		}
+		if opts.RoleSessionName != "" {
+			o.RoleSessionName = opts.RoleSessionName
+		}
+	}
 
-	creds := stscreds.NewAssumeRoleProvider(client, opts.RoleARN)
+	creds := stscreds.NewAssumeRoleProvider(client, opts.RoleARN, providerOptFn)
 	value, err := creds.Retrieve(ctx)
 	if err != nil {
 		return nil, err
@@ -463,6 +496,11 @@ func getAssumeRoleCredentials(ctx context.Context, opts ClientOpts) (*credential
 }
 
 func GetCredentials(ctx context.Context, opts ClientOpts) (*credentials.Credentials, error) {
+	if opts.TokenExpiration != nil {
+		if *opts.TokenExpiration < minTokenExpiration || *opts.TokenExpiration > maxTokenExpiration {
+			return nil, fmt.Errorf("tokenExpiration %v is outside the AWS STS allowed range [%v, %v]", *opts.TokenExpiration, minTokenExpiration, maxTokenExpiration)
+		}
+	}
 	log := logging.RequireLoggerFromContext(ctx)
 	switch {
 	case opts.AccessKey != "" && opts.SecretKey != "":

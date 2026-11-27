@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
@@ -677,6 +678,7 @@ func TestNewClient(t *testing.T) {
 	assert.Equal(t, opts.Trace, s3cli.Trace)
 	assert.Equal(t, opts.EncryptOpts, s3cli.EncryptOpts)
 	assert.Equal(t, opts.AddressingStyle, s3cli.AddressingStyle)
+	assert.Nil(t, s3cli.TokenExpiration)
 	// s3cli.minioClient.
 	// 	s3client.minioClient
 }
@@ -764,6 +766,71 @@ func TestDisallowedComboOptions(t *testing.T) {
 		_, err := NewClient(ctx, opts)
 		assert.Error(t, err)
 	})
+}
+
+func TestGetCredentialsTokenExpirationBounds(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	roleARN := "arn:aws:iam::123456789012:role/test"
+
+	tests := []struct {
+		name          string
+		expiration    *time.Duration
+		wantBoundsErr bool
+	}{
+		{
+			name:          "nil – uses STS default, no validation error",
+			expiration:    nil,
+			wantBoundsErr: false,
+		},
+		{
+			name:          "below minimum (14m)",
+			expiration:    new(14 * time.Minute),
+			wantBoundsErr: true,
+		},
+		{
+			name:          "zero duration",
+			expiration:    new(time.Duration(0)),
+			wantBoundsErr: true,
+		},
+		{
+			name:          "exactly minimum (15m) – valid",
+			expiration:    new(minTokenExpiration),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "valid mid-range (1h)",
+			expiration:    new(1 * time.Hour),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "exactly maximum (12h) – valid",
+			expiration:    new(maxTokenExpiration),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "above maximum (13h)",
+			expiration:    new(13 * time.Hour),
+			wantBoundsErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := ClientOpts{
+				RoleARN:         roleARN,
+				TokenExpiration: tc.expiration,
+			}
+			_, err := GetCredentials(ctx, opts)
+			if tc.wantBoundsErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "outside the AWS STS allowed range")
+			} else if err != nil {
+				// Bounds check passed; the call will fail because there are no real AWS
+				// credentials in the test environment – that is expected.
+				assert.NotContains(t, err.Error(), "outside the AWS STS allowed range")
+			}
+		})
+	}
 }
 
 func TestParseAddressingStyle(t *testing.T) {

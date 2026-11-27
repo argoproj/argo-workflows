@@ -2155,6 +2155,19 @@ spec:
                                   - key
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                tokenExpirationSeconds:
+                                  description: |-
+                                    TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                    obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                    set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                    environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                    DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                    range, otherwise the request is rejected. It has no effect on static credentials or
+                                    other SDK-resolved credential providers.
+                                  format: int32
+                                  maximum: 43200
+                                  minimum: 900
+                                  type: integer
                                 useSDKCreds:
                                   description: UseSDKCreds tells the driver to figure
                                     out credentials based on sdk defaults.
@@ -5172,6 +5185,19 @@ spec:
                                         - key
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      tokenExpirationSeconds:
+                                        description: |-
+                                          TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                          obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                          set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                          environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                          DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                          range, otherwise the request is rejected. It has no effect on static credentials or
+                                          other SDK-resolved credential providers.
+                                        format: int32
+                                        maximum: 43200
+                                        minimum: 900
+                                        type: integer
                                       useSDKCreds:
                                         description: UseSDKCreds tells the driver
                                           to figure out credentials based on sdk defaults.
@@ -7180,6 +7206,11 @@ spec:
                                 - key
                                 type: object
                                 x-kubernetes-map-type: atomic
+                              tokenExpirationSeconds:
+                                format: int32
+                                maximum: 43200
+                                minimum: 900
+                                type: integer
                               useSDKCreds:
                                 type: boolean
                             type: object
@@ -9274,6 +9305,11 @@ spec:
                                                 - key
                                                 type: object
                                                 x-kubernetes-map-type: atomic
+                                              tokenExpirationSeconds:
+                                                format: int32
+                                                maximum: 43200
+                                                minimum: 900
+                                                type: integer
                                               useSDKCreds:
                                                 type: boolean
                                             type: object
@@ -9951,6 +9987,11 @@ spec:
                                                       - key
                                                       type: object
                                                       x-kubernetes-map-type: atomic
+                                                    tokenExpirationSeconds:
+                                                      format: int32
+                                                      maximum: 43200
+                                                      minimum: 900
+                                                      type: integer
                                                     useSDKCreds:
                                                       type: boolean
                                                   type: object
@@ -10695,6 +10736,11 @@ spec:
                                         - key
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      tokenExpirationSeconds:
+                                        format: int32
+                                        maximum: 43200
+                                        minimum: 900
+                                        type: integer
                                       useSDKCreds:
                                         type: boolean
                                     type: object
@@ -12107,6 +12153,11 @@ spec:
                                       - key
                                       type: object
                                       x-kubernetes-map-type: atomic
+                                    tokenExpirationSeconds:
+                                      format: int32
+                                      maximum: 43200
+                                      minimum: 900
+                                      type: integer
                                     useSDKCreds:
                                       type: boolean
                                   type: object
@@ -12888,6 +12939,11 @@ spec:
                                       - key
                                       type: object
                                       x-kubernetes-map-type: atomic
+                                    tokenExpirationSeconds:
+                                      format: int32
+                                      maximum: 43200
+                                      minimum: 900
+                                      type: integer
                                     useSDKCreds:
                                       type: boolean
                                   type: object
@@ -13615,6 +13671,11 @@ spec:
                                         - key
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      tokenExpirationSeconds:
+                                        format: int32
+                                        maximum: 43200
+                                        minimum: 900
+                                        type: integer
                                       useSDKCreds:
                                         type: boolean
                                     type: object
@@ -15819,6 +15880,11 @@ spec:
                                               - key
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            tokenExpirationSeconds:
+                                              format: int32
+                                              maximum: 43200
+                                              minimum: 900
+                                              type: integer
                                             useSDKCreds:
                                               type: boolean
                                           type: object
@@ -16489,6 +16555,11 @@ spec:
                                                     - key
                                                     type: object
                                                     x-kubernetes-map-type: atomic
+                                                  tokenExpirationSeconds:
+                                                    format: int32
+                                                    maximum: 43200
+                                                    minimum: 900
+                                                    type: integer
                                                   useSDKCreds:
                                                     type: boolean
                                                 type: object
@@ -19462,6 +19533,19 @@ spec:
                                   - key
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                tokenExpirationSeconds:
+                                  description: |-
+                                    TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                    obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                    set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                    environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                    DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                    range, otherwise the request is rejected. It has no effect on static credentials or
+                                    other SDK-resolved credential providers.
+                                  format: int32
+                                  maximum: 43200
+                                  minimum: 900
+                                  type: integer
                                 useSDKCreds:
                                   description: UseSDKCreds tells the driver to figure
                                     out credentials based on sdk defaults.
@@ -23918,6 +24002,19 @@ spec:
                                                   - key
                                                   type: object
                                                   x-kubernetes-map-type: atomic
+                                                tokenExpirationSeconds:
+                                                  description: |-
+                                                    TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                                    obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                                    set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                                    environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                                    DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                                    range, otherwise the request is rejected. It has no effect on static credentials or
+                                                    other SDK-resolved credential providers.
+                                                  format: int32
+                                                  maximum: 43200
+                                                  minimum: 900
+                                                  type: integer
                                                 useSDKCreds:
                                                   description: UseSDKCreds tells the
                                                     driver to figure out credentials
@@ -25395,6 +25492,19 @@ spec:
                                                         - key
                                                         type: object
                                                         x-kubernetes-map-type: atomic
+                                                      tokenExpirationSeconds:
+                                                        description: |-
+                                                          TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                                          obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                                          set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                                          environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                                          DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                                          range, otherwise the request is rejected. It has no effect on static credentials or
+                                                          other SDK-resolved credential providers.
+                                                        format: int32
+                                                        maximum: 43200
+                                                        minimum: 900
+                                                        type: integer
                                                       useSDKCreds:
                                                         description: UseSDKCreds tells
                                                           the driver to figure out
@@ -26850,6 +26960,19 @@ spec:
                                           - key
                                           type: object
                                           x-kubernetes-map-type: atomic
+                                        tokenExpirationSeconds:
+                                          description: |-
+                                            TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                            obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                            set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                            environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                            DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                            range, otherwise the request is rejected. It has no effect on static credentials or
+                                            other SDK-resolved credential providers.
+                                          format: int32
+                                          maximum: 43200
+                                          minimum: 900
+                                          type: integer
                                         useSDKCreds:
                                           description: UseSDKCreds tells the driver
                                             to figure out credentials based on sdk
@@ -29690,6 +29813,19 @@ spec:
                                         - key
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      tokenExpirationSeconds:
+                                        description: |-
+                                          TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                          obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                          set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                          environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                          DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                          range, otherwise the request is rejected. It has no effect on static credentials or
+                                          other SDK-resolved credential providers.
+                                        format: int32
+                                        maximum: 43200
+                                        minimum: 900
+                                        type: integer
                                       useSDKCreds:
                                         description: UseSDKCreds tells the driver
                                           to figure out credentials based on sdk defaults.
@@ -31137,6 +31273,19 @@ spec:
                                         - key
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      tokenExpirationSeconds:
+                                        description: |-
+                                          TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                          obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                          set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                          environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                          DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                          range, otherwise the request is rejected. It has no effect on static credentials or
+                                          other SDK-resolved credential providers.
+                                        format: int32
+                                        maximum: 43200
+                                        minimum: 900
+                                        type: integer
                                       useSDKCreds:
                                         description: UseSDKCreds tells the driver
                                           to figure out credentials based on sdk defaults.
@@ -32555,6 +32704,19 @@ spec:
                                           - key
                                           type: object
                                           x-kubernetes-map-type: atomic
+                                        tokenExpirationSeconds:
+                                          description: |-
+                                            TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                            obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                            set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                            environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                            DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                            range, otherwise the request is rejected. It has no effect on static credentials or
+                                            other SDK-resolved credential providers.
+                                          format: int32
+                                          maximum: 43200
+                                          minimum: 900
+                                          type: integer
                                         useSDKCreds:
                                           description: UseSDKCreds tells the driver
                                             to figure out credentials based on sdk
@@ -37262,6 +37424,19 @@ spec:
                                                 - key
                                                 type: object
                                                 x-kubernetes-map-type: atomic
+                                              tokenExpirationSeconds:
+                                                description: |-
+                                                  TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                                  obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                                  set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                                  environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                                  DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                                  range, otherwise the request is rejected. It has no effect on static credentials or
+                                                  other SDK-resolved credential providers.
+                                                format: int32
+                                                maximum: 43200
+                                                minimum: 900
+                                                type: integer
                                               useSDKCreds:
                                                 description: UseSDKCreds tells the
                                                   driver to figure out credentials
@@ -38689,6 +38864,19 @@ spec:
                                                       - key
                                                       type: object
                                                       x-kubernetes-map-type: atomic
+                                                    tokenExpirationSeconds:
+                                                      description: |-
+                                                        TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+                                                        obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+                                                        set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+                                                        environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+                                                        DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+                                                        range, otherwise the request is rejected. It has no effect on static credentials or
+                                                        other SDK-resolved credential providers.
+                                                      format: int32
+                                                      maximum: 43200
+                                                      minimum: 900
+                                                      type: integer
                                                     useSDKCreds:
                                                       description: UseSDKCreds tells
                                                         the driver to figure out credentials

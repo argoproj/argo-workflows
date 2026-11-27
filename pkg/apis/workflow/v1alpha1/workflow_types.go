@@ -2910,6 +2910,17 @@ type S3Bucket struct {
 	//
 	// +kubebuilder:validation:Enum="";path;virtual-hosted
 	AddressingStyle string `json:"addressingStyle,omitempty" protobuf:"bytes,13,opt,name=addressingStyle"`
+
+	// TokenExpirationSeconds specifies the expiration time, in seconds, for the token
+	// obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is
+	// set) and STS web-identity credentials (when UseSDKCreds is set and web-identity
+	// environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS
+	// DurationSeconds and must be between 900 and 43200 seconds, matching the AWS STS allowed
+	// range, otherwise the request is rejected. It has no effect on static credentials or
+	// other SDK-resolved credential providers.
+	// +kubebuilder:validation:Minimum=900
+	// +kubebuilder:validation:Maximum=43200
+	TokenExpirationSeconds *int32 `json:"tokenExpirationSeconds,omitempty" protobuf:"varint,14,opt,name=tokenExpirationSeconds"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
