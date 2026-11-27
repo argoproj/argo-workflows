@@ -15,8 +15,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kfields "k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
@@ -31,6 +34,7 @@ import (
 	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
 	argoutil "github.com/argoproj/argo-workflows/v4/util"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/fields"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -401,16 +405,74 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	}
 }
 
+// Events do not inherit the instance ID label of their involved object.
+func (s *workflowServer) eventObjectUID(ctx context.Context, namespace, fieldSelector string) (types.UID, error) {
+	if s.instanceIDService.InstanceID() == "" || namespace == "" {
+		return "", nil
+	}
+	selector, err := kfields.ParseSelector(fieldSelector)
+	if err != nil {
+		return "", nil //nolint:nilerr // The event watch forwards the original selector to Kubernetes for validation.
+	}
+	kind, _ := selector.RequiresExactMatch("involvedObject.kind")
+	name, _ := selector.RequiresExactMatch("involvedObject.name")
+	if len(validation.IsDNS1123Subdomain(name)) != 0 {
+		return "", nil
+	}
+	var obj metav1.Object
+	switch kind {
+	case "Pod":
+		obj, err = auth.GetKubeClient(ctx).CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	case workflow.WorkflowKind:
+		obj, err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, metav1.GetOptions{})
+	default:
+		return "", nil
+	}
+	if err == nil {
+		err = s.instanceIDService.Validate(obj)
+		if err == nil {
+			return matchingEventUID(selector, obj.GetUID()), nil
+		}
+	} else if !apierr.IsNotFound(err) && !apierr.IsForbidden(err) && !errorsutil.IsTransientErrQuiet(ctx, err) {
+		return "", err
+	}
+	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": namespace, "kind": kind, "name": name}).
+		WithError(err).Debug(ctx, "Filtering events by instance ID label because object ownership could not be verified")
+	return "", nil
+}
+
+// Keep the instance label filter for historical events when the caller excludes the live UID.
+func matchingEventUID(selector kfields.Selector, uid types.UID) types.UID {
+	for _, r := range selector.Requirements() {
+		if r.Field != "involvedObject.uid" {
+			continue
+		}
+		if (r.Operator == selection.Equals && r.Value != string(uid)) ||
+			(r.Operator == selection.NotEquals && r.Value == string(uid)) {
+			return ""
+		}
+	}
+	return uid
+}
+
 func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws workflowpkg.WorkflowService_WatchEventsServer) error {
 	ctx := ws.Context()
 	kubeClient := auth.GetKubeClient(ctx)
-	opts := &metav1.ListOptions{}
+	var opts metav1.ListOptions
 	if req.ListOptions != nil {
-		opts = req.ListOptions
+		opts = *req.ListOptions
 	}
-	s.instanceIDService.With(opts)
+	uid, err := s.eventObjectUID(ctx, req.Namespace, opts.FieldSelector)
+	if err != nil {
+		return sutils.ToStatusError(err, codes.Internal)
+	}
+	if uid == "" {
+		s.instanceIDService.With(&opts)
+	} else {
+		opts.FieldSelector += "," + kfields.OneTermEqualSelector("involvedObject.uid", string(uid)).String()
+	}
 	eventInterface := kubeClient.CoreV1().Events(req.Namespace)
-	watch, err := eventInterface.Watch(ctx, *opts)
+	watch, err := eventInterface.Watch(ctx, opts)
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}

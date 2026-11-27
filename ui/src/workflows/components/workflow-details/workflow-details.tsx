@@ -524,9 +524,9 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                                 {(tab === 'workflow' && (
                                     <WorkflowPanel workflowMetadata={workflow.metadata} workflowStatus={workflow.status} selectedNodeId={nodeId} nodeClicked={setNodeId} />
                                 )) ||
-                                    (tab === 'events' && <EventsPanel namespace={workflow.metadata.namespace} kind='Workflow' name={workflow.metadata.name} />) || (
-                                        <WorkflowTimeline workflow={workflow} selectedNodeId={nodeId} nodeClicked={node => setNodeId(node.id)} />
-                                    )}
+                                    (tab === 'events' && (
+                                        <EventsPanel namespace={workflow.metadata.namespace} kind='Workflow' name={workflow.metadata.name} uid={workflow.metadata.uid} />
+                                    )) || <WorkflowTimeline workflow={workflow} selectedNodeId={nodeId} nodeClicked={node => setNodeId(node.id)} />}
                             </div>
                             <div
                                 className='workflow-details__step-info'

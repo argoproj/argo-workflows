@@ -122,6 +122,13 @@ data:
     instanceID: i1
 ```
 
+In client auth mode, you need `watch` on `events` in the namespace to subscribe to events.
+With an instance ID configured, this permission lets you see events carrying the matching instance label.
+If you also have `get` on the selected Pod or Workflow (`pods` or `workflows.argoproj.io`), Argo Server can verify its instance ID and show unlabeled events for its UID.
+If the object is missing, its instance ID cannot be verified, or the request excludes its current UID, the watch keeps the caller's filters and shows only events carrying the matching instance label.
+This also applies when the Kubernetes API temporarily fails to return the object.
+The **Show All** view also filters events by that label.
+
 #### CLI Usage
 
 When you are using the CLI, set the `--instanceid` to interact with a specific instance.
