@@ -46,6 +46,14 @@ func (s *HTTPArtifactsSuite) TestOAuthArtifactHttp() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *HTTPArtifactsSuite) TestBearerAuthArtifactHttp() {
+	s.Given().
+		Workflow("@testdata/http/bearer-auth-artifact-http.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *HTTPArtifactsSuite) TestClientCertAuthArtifactHttp() {
 	s.Given().
 		Workflow("@testdata/http/clientcert-auth-artifact-http.yaml").

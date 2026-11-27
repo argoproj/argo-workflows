@@ -96,6 +96,77 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	})
 }
 
+func TestHTTPArtifactDriver_BearerToken(t *testing.T) {
+	const token = "my-service-account-token"
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer "+token, r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("content"))
+	}))
+	defer svr.Close()
+
+	driver := &ArtifactDriver{
+		BearerToken: token,
+		Client:      &http.Client{},
+	}
+	tempFile := filepath.Join(t.TempDir(), "out")
+	ctx := logging.TestContext(t.Context())
+	err := driver.Load(ctx, &wfv1.Artifact{
+		ArtifactLocation: wfv1.ArtifactLocation{
+			HTTP: &wfv1.HTTPArtifact{URL: svr.URL},
+		},
+	}, tempFile)
+	require.NoError(t, err)
+	assert.FileExists(t, tempFile)
+}
+
+// TestHTTPArtifactDriver_SaveBearerToken checks that Save sends the bearer token, and that it takes precedence over basic auth.
+func TestHTTPArtifactDriver_SaveBearerToken(t *testing.T) {
+	const token = "my-service-account-token"
+	content := "artifact content"
+	tempFile := filepath.Join(t.TempDir(), "in")
+	require.NoError(t, os.WriteFile(tempFile, []byte(content), 0o600))
+
+	tests := []struct {
+		name     string
+		username string
+		password string
+	}{
+		{name: "bearer only"},
+		{name: "bearer overrides basic auth", username: "user", password: "pass"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotBody string
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth = r.Header.Get("Authorization")
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
+				gotBody = string(body)
+				w.WriteHeader(http.StatusCreated)
+			}))
+			defer svr.Close()
+
+			driver := &ArtifactDriver{
+				Username:    tt.username,
+				Password:    tt.password,
+				BearerToken: token,
+				Client:      svr.Client(),
+			}
+			ctx := logging.TestContext(t.Context())
+			err := driver.Save(ctx, tempFile, &wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{
+					HTTP: &wfv1.HTTPArtifact{URL: svr.URL},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "Bearer "+token, gotAuth)
+			assert.Equal(t, content, gotBody)
+		})
+	}
+}
+
 func TestSaveHTTPArtifactRedirect(t *testing.T) {
 	tempDir := t.TempDir()
 

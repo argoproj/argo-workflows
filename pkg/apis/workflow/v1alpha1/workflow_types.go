@@ -3215,10 +3215,21 @@ type OAuth2EndpointParam struct {
 	Value string `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
 }
 
+// BearerAuth holds the bearer token for HTTP authentication
+type BearerAuth struct {
+	TokenSecret *apiv1.SecretKeySelector `json:"tokenSecret,omitempty" protobuf:"bytes,1,opt,name=tokenSecret"`
+}
+
+// HTTPAuth describes how to authenticate to an HTTP artifact server.
+// When more than one method is set, the Authorization header comes from
+// OAuth2 if set, otherwise from Bearer, otherwise from BasicAuth.
+// ClientCert replaces the HTTP client, so setting it disables OAuth2;
+// it combines with a Bearer or BasicAuth header.
 type HTTPAuth struct {
 	ClientCert ClientCertAuth `json:"clientCert,omitempty" protobuf:"bytes,1,opt,name=clientCert"`
 	OAuth2     OAuth2Auth     `json:"oauth2,omitempty" protobuf:"bytes,2,opt,name=oauth2"`
 	BasicAuth  BasicAuth      `json:"basicAuth,omitempty" protobuf:"bytes,3,opt,name=basicAuth"`
+	Bearer     BearerAuth     `json:"bearer,omitempty" protobuf:"bytes,4,opt,name=bearer"`
 }
 
 // HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a container

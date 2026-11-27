@@ -43,10 +43,11 @@ The above examples show minimal use cases without authentication. However, in a 
 The authentication mechanism is limited to those supported by HTTP artifacts:
 
 - HTTP Basic Auth
+- Bearer Token
 - OAuth2
 - Client Certificates
 
-Examples for the latter two mechanisms can be found in the [full webHDFS example](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml).
+Examples for OAuth2 and Client Certificates can be found in the [full webHDFS example](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml).
 
 !!! Warning "Provider dependent"
     While your webHDFS provider may support the above mechanisms, Hadoop _itself_ only supports [authentication](https://hadoop.apache.org/docs/r3.3.3/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Authentication) via Kerberos SPNEGO and Hadoop delegation token. HTTP artifacts do not currently support SPNEGO, but delegation tokens can be used via the `delegation` query parameter.

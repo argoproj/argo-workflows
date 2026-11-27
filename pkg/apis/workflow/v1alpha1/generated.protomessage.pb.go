@@ -55,6 +55,8 @@ func (*Backoff) ProtoMessage() {}
 
 func (*BasicAuth) ProtoMessage() {}
 
+func (*BearerAuth) ProtoMessage() {}
+
 func (*Cache) ProtoMessage() {}
 
 func (*ClientCertAuth) ProtoMessage() {}

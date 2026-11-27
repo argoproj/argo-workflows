@@ -75,6 +75,8 @@ func (m *Backoff) Reset() { *m = Backoff{} }
 
 func (m *BasicAuth) Reset() { *m = BasicAuth{} }
 
+func (m *BearerAuth) Reset() { *m = BearerAuth{} }
+
 func (m *Cache) Reset() { *m = Cache{} }
 
 func (m *ClientCertAuth) Reset() { *m = ClientCertAuth{} }
@@ -1860,6 +1862,41 @@ func (m *BasicAuth) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.UsernameSecret != nil {
 		{
 			size, err := m.UsernameSecret.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *BearerAuth) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BearerAuth) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BearerAuth) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.TokenSecret != nil {
+		{
+			size, err := m.TokenSecret.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -3772,6 +3809,16 @@ func (m *HTTPAuth) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	{
+		size, err := m.Bearer.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
 	{
 		size, err := m.BasicAuth.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -10307,6 +10354,19 @@ func (m *BasicAuth) Size() (n int) {
 	return n
 }
 
+func (m *BearerAuth) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.TokenSecret != nil {
+		l = m.TokenSecret.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
 func (m *Cache) Size() (n int) {
 	if m == nil {
 		return 0
@@ -10993,6 +11053,8 @@ func (m *HTTPAuth) Size() (n int) {
 	l = m.OAuth2.Size()
 	n += 1 + l + sovGenerated(uint64(l))
 	l = m.BasicAuth.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Bearer.Size()
 	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
@@ -13520,6 +13582,16 @@ func (this *BasicAuth) String() string {
 	}, "")
 	return s
 }
+func (this *BearerAuth) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&BearerAuth{`,
+		`TokenSecret:` + strings.Replace(fmt.Sprintf("%v", this.TokenSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Cache) String() string {
 	if this == nil {
 		return "nil"
@@ -14039,6 +14111,7 @@ func (this *HTTPAuth) String() string {
 		`ClientCert:` + strings.Replace(strings.Replace(this.ClientCert.String(), "ClientCertAuth", "ClientCertAuth", 1), `&`, ``, 1) + `,`,
 		`OAuth2:` + strings.Replace(strings.Replace(this.OAuth2.String(), "OAuth2Auth", "OAuth2Auth", 1), `&`, ``, 1) + `,`,
 		`BasicAuth:` + strings.Replace(strings.Replace(this.BasicAuth.String(), "BasicAuth", "BasicAuth", 1), `&`, ``, 1) + `,`,
+		`Bearer:` + strings.Replace(strings.Replace(this.Bearer.String(), "BearerAuth", "BearerAuth", 1), `&`, ``, 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -20482,6 +20555,92 @@ func (m *BasicAuth) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *BearerAuth) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BearerAuth: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BearerAuth: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokenSecret", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.TokenSecret == nil {
+				m.TokenSecret = &v1.SecretKeySelector{}
+			}
+			if err := m.TokenSecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Cache) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -26274,6 +26433,39 @@ func (m *HTTPAuth) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.BasicAuth.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bearer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Bearer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
