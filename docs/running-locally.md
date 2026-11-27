@@ -215,8 +215,8 @@ make e2e-coverage.out
 go tool cover -func=e2e-coverage.out
 ```
 
-A process writes its coverage when it exits, so a container that is killed with `SIGKILL` writes none.
-The controller and the Argo Server don't handle `SIGTERM`, so they aren't measured.
+A process writes its coverage when it exits, so a container that gets `SIGKILL` writes none.
+The controller and the Argo Server don't handle `SIGTERM`, so they never write coverage.
 Make doesn't rebuild an up-to-date `dist/argo` for `COVER=true`, so delete it first if you built it without coverage.
 
 ### Running UI E2E tests locally
