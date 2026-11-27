@@ -918,6 +918,14 @@ Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
+# Compare the unit-test benchmarks (not test/e2e) of BENCH_BASE, a git ref, with
+# the working tree; CI runs it on every push to main against the previous commit.
+# Results land in dist/bench; settings are in hack/bench-compare.sh.
+BENCH_BASE ?= origin/main
+.PHONY: bench-compare
+bench-compare:
+	hack/bench-compare.sh $(BENCH_BASE) dist/bench
+
 # clean
 
 .PHONY: clean
