@@ -3971,6 +3971,13 @@ func schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref common.ReferenceCal
 							Format:      "",
 						},
 					},
+					"maxAge": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxAge is the resolved maximum age used when saving this node's cache entry.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"hit", "key", "cacheName"},
 			},

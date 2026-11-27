@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -48,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
@@ -177,6 +179,10 @@ type WorkflowController struct {
 	throttler                  sync.Throttler
 	workflowKeyLock            syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	sessionProxy               *utilsqldb.SessionProxy
+	memoizationConfigLock      gosync.Mutex // serializes initialization/reconfiguration, never queries
+	memoizationInitialized     bool
+	memoizationConfig          string
+	memoCacheGCPeriod          time.Duration
 	offloadNodeStatusRepo      sqldb.OffloadNodeStatusRepo
 	hydrator                   hydrator.Interface
 	wfArchive                  sqldb.WorkflowArchive
@@ -215,11 +221,30 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
+func memoizationGCPeriodFromEnv() (time.Duration, error) {
+	value := os.Getenv("MEMO_CACHE_GC_PERIOD_SECONDS")
+	if value == "" {
+		return 24 * time.Hour, nil
+	}
+	seconds, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || seconds > math.MaxInt64/int64(time.Second) {
+		return 0, fmt.Errorf("MEMO_CACHE_GC_PERIOD_SECONDS must be an integer number of seconds representable as a duration: %q", value)
+	}
+	if seconds <= 0 {
+		return 0, nil
+	}
+	return time.Duration(seconds) * time.Second, nil
+}
+
 // NewWorkflowController initializes a controller from its clients and startup configuration.
 // COMPLETED_REQUEUE_TIME_MS optionally sets the minimum delay for newly terminal
 // WorkflowTaskSet results; unset or empty keeps normal rate limiting.
 // A non-positive, malformed or overflowing override returns an error before initialization.
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
+	memoCacheGCPeriod, err := memoizationGCPeriodFromEnv()
+	if err != nil {
+		return nil, err
+	}
 	taskSetCompletionDelay, err := env.LookupEnvPositiveMilliseconds("COMPLETED_REQUEUE_TIME_MS")
 	if err != nil {
 		return nil, err
@@ -258,6 +283,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		indexWorkflowSemaphoreKeys: os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false",
 		cacheGCPeriod:              env.LookupEnvDurationOr(ctx, "CACHE_GC_PERIOD", 0),
+		memoCacheGCPeriod:          memoCacheGCPeriod,
 		semaphoreNotifyDelay:       env.LookupEnvDurationOr(ctx, "SEMAPHORE_NOTIFY_DELAY", time.Second),
 		gcAfterNotHitDuration:      env.LookupEnvDurationOr(ctx, "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second),
 		artifactGCRetryWindow:      env.LookupEnvDurationOr(ctx, "ARGO_ARTIFACT_GC_RETRY_WINDOW", 60*time.Minute),
@@ -397,6 +423,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		os.Exit(1)
 	}
 
+	defer wfc.cacheFactory.SetQueries(ctx, nil)
 	defer wfc.wfQueue.ShutDown()
 	// The archive workers block in Get() until the queue shuts down, so
 	// cancelling their context alone does not release them.
@@ -485,6 +512,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
+	go wfc.memoizationCacheGarbageCollector(ctx)
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
@@ -942,6 +970,42 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Cont
 			if err != nil {
 				logger.WithField("err", err).Error(ctx, "Failed to delete archived workflows")
 			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger = logger.WithField("component", "memo_cache_garbage_collector")
+	ctx = logging.WithLogger(ctx, logger)
+
+	if wfc.memoCacheGCPeriod <= 0 || ctx.Err() != nil {
+		return
+	}
+	prune := func() {
+		_ = wfc.cacheFactory.WithQueries(func(queries memodb.MemoizationDB) error {
+			if queries.IsEnabled() {
+				n, err := queries.Prune(ctx)
+				if err != nil {
+					logger.WithError(err).Error(ctx, "Failed to prune memoization cache")
+				} else {
+					logger.WithField("deleted", n).Info(ctx, "Memoization cache GC complete")
+				}
+			}
+			return nil
+		})
+	}
+	prune()
+	ticker := time.NewTicker(wfc.memoCacheGCPeriod)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			prune()
 		}
 	}
 }

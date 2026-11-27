@@ -26,12 +26,13 @@ status:
         hit: false
         key: cache-demo-1
         cacheName: cache-demo-1
+        maxAge: 10s
       outputs:
         parameters:
         - name: result
           value: |
             { demo }
       phase: Pending
-      templateName: http
+      templateName: main
       type: HTTP
   phase: Running

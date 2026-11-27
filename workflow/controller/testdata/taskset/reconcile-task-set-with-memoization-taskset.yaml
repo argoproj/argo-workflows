@@ -8,7 +8,13 @@ spec:
     http-template-fqgsf-2338098285:
       http:
         url: http://localhost
-      name: http
+      name: main
+      memoize:
+        key: cache-demo-1
+        maxAge: "10s"
+        cache:
+          configMap:
+            name: cache-demo-1
 status:
   nodes:
     http-template-fqgsf-2338098285:

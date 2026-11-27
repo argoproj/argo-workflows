@@ -4066,6 +4066,7 @@ MemoizationStatus is the status of this memoized node
 |`cacheName`|`string`|Cache is the name of the cache that was used|
 |`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
 |`key`|`string`|Key is the name of the key used for this node's cache|
+|`maxAge`|`string`|MaxAge is the resolved maximum age used when saving this node's cache entry.|
 
 ## NodeFlag
 

@@ -1011,6 +1011,9 @@ message MemoizationStatus {
 
   // Cache is the name of the cache that was used
   optional string cacheName = 3;
+
+  // MaxAge is the resolved maximum age used when saving this node's cache entry.
+  optional string maxAge = 4;
 }
 
 // Memoize enables caching for the Outputs of the template.

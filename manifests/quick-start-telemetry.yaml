@@ -132919,6 +132919,8 @@ spec:
                           type: boolean
                         key:
                           type: string
+                        maxAge:
+                          type: string
                       required:
                       - cacheName
                       - hit

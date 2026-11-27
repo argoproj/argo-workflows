@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	persistsqldb "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
@@ -18,6 +19,12 @@ type migrationSection struct {
 }
 
 var migrationSections = []migrationSection{
+	{
+		title: "Memoization Database",
+		changes: func(dbType sqldb.DBType) []sqldb.Change {
+			return memodb.MigrateChanges(memodb.TableName(nil), dbType)
+		},
+	},
 	{
 		title: "Archive Database",
 		changes: func(dbType sqldb.DBType) []sqldb.Change {
@@ -39,18 +46,23 @@ var migrationSections = []migrationSection{
 
 const docHeader = `# Database Migrations
 
-This page lists the SQL migrations that Argo Workflows applies automatically at startup.
+This page lists the SQL migrations that Argo Workflows applies when initializing its databases.
+Memoization migrations run only on the leader, including when its memoization configuration changes.
 Migrations are applied incrementally and tracked by a version table.
-Each migration is only run once. Do not re-order or remove entries.
+Each migration is only run once.
+Do not re-order or remove entries.
 
 The table names and cluster name shown here are defaults.
 Your deployment may use different values depending on your configuration.
 
-See [Workflow Archive](workflow-archive.md) and [Synchronization](synchronization.md) for configuration details.
+See [Workflow Archive](workflow-archive.md), [Synchronization](synchronization.md), and [Memoization](memoization.md) for configuration details.
+For memoization, the default migration history table is ` + "`cache_entries_schema_history`" + `; a custom cache table uses ` + "`<tableName>_schema_history`" + `.
+The expiry index is named ` + "`<tableName>_i1`" + `.
 
 ## Steps
 
-Each migration is numbered as a ` + "`Step`" + `. When Argo Workflows runs the automatic migration at controller startup, it records the highest applied step number in a version table (` + "`schema_history`" + ` for the archive database,` + "`sync_schema_history`" + ` for the sync database) and only runs steps with a higher number on subsequent starts.
+Each migration is numbered as a ` + "`Step`" + `.
+When Argo Workflows runs the automatic migration at controller startup, it records the highest applied step number in a version table (` + "`schema_history`" + ` for the archive database,` + "`sync_schema_history`" + ` for the sync database) and only runs steps with a higher number on subsequent starts.
 Steps may be missing where the step does nothing for the database type.
 This means steps must never be re-ordered or removed — a new schema change is always appended as a new step.
 
