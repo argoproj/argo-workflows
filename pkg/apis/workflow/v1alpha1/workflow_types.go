@@ -4335,11 +4335,31 @@ func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders
 	i, semaphoreWaiting := ss.GetWaiting(lockKey)
 	if i < 0 {
 		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: currentHolders})
-	} else {
-		semaphoreWaiting.Holders = currentHolders
-		ss.Waiting[i] = semaphoreWaiting
+		return true
 	}
+	// Holders is a set of workflow keys. Lock backends do not return holders in a
+	// stable order; only a change in membership should be treated as a
+	// synchronization status change, or the controller persists and requeues the
+	// workflow while it keeps waiting.
+	if sameHolders(semaphoreWaiting.Holders, currentHolders) {
+		return false
+	}
+	semaphoreWaiting.Holders = currentHolders
+	ss.Waiting[i] = semaphoreWaiting
 	return true
+}
+
+// sameHolders reports whether a and b contain the same holder keys.
+// Order does not matter. A nil slice and an empty slice are the same.
+func sameHolders(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	left := slices.Clone(a)
+	right := slices.Clone(b)
+	slices.Sort(left)
+	slices.Sort(right)
+	return slices.Equal(left, right)
 }
 
 func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
