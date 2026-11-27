@@ -12,6 +12,7 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {openLinkWithKey, processURL} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {SecurityNudge} from '../../../shared/components/security-nudge';
+import {Tooltip} from '../../../shared/components/tooltip';
 import {hasArtifactGCError, hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
@@ -196,9 +197,27 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             .filter(actionName => !workflowOperationsMap[actionName].disabled(workflow))
             .map(actionName => {
                 const workflowOperation = workflowOperationsMap[actionName];
+                const label = workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1);
+                // ActionMenu (argo-ui) has no tooltip prop; put icon+label in the tooltip target.
+                const title = workflowOperation.description ? (
+                    <Tooltip
+                        // Pass a node (not a string) so shared Tooltip skips ReactMarkdown + 50vw maxWidth,
+                        // which caused uneven padding and left-shift into the nav.
+                        content={<span className='workflow-action-tooltip'>{workflowOperation.description}</span>}
+                        theme='wf-action'
+                        arrow={true}
+                        placement='bottom'>
+                        <span>
+                            <i className={workflowOperation.iconClassName} style={{marginLeft: '-5px', marginRight: '5px'}} />
+                            {label}
+                        </span>
+                    </Tooltip>
+                ) : (
+                    label
+                );
                 return {
-                    title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
-                    iconClassName: workflowOperation.iconClassName,
+                    title,
+                    iconClassName: workflowOperation.description ? undefined : workflowOperation.iconClassName,
                     action: () => {
                         if (workflowOperation.title === 'DELETE') {
                             popup

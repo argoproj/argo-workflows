@@ -22,6 +22,15 @@ const failedWorkflow = (suspend?: boolean): Workflow =>
         status: {phase: 'Failed'}
     }) as unknown as Workflow;
 
+describe('WorkflowOperationsMap descriptions', () => {
+    test('documents the ambiguous retry/resubmit and stop/terminate pairs', () => {
+        expect(WorkflowOperationsMap.RETRY.description).toMatch(/failed or errored steps/i);
+        expect(WorkflowOperationsMap.RESUBMIT.description).toMatch(/new workflow/i);
+        expect(WorkflowOperationsMap.STOP.description).toMatch(/exit handlers/i);
+        expect(WorkflowOperationsMap.TERMINATE.description).toMatch(/without exit handlers/i);
+    });
+});
+
 describe('WorkflowOperationsMap RESUME', () => {
     test('enabled for a suspended workflow with no shutdown strategy', () => {
         expect(WorkflowOperationsMap.RESUME.disabled(suspendedWorkflow())).toBe(false);
