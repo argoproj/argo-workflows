@@ -34,6 +34,7 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
             return {
                 title: action.title,
                 iconClassName: action.iconClassName,
+                description: action.description,
                 isDisabled: props.disabledActions[actionName],
                 action: async () => {
                     const confirmed = await popup.confirm('Confirm', `Are you sure you want to ${action.title.toLowerCase()} all selected workflows?`);
@@ -118,7 +119,8 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
                             key={operation.title}
                             onClick={operation.action}
                             className={`workflows-toolbar__actions--${operation.title} workflows-toolbar__actions--action`}
-                            disabled={numberSelected === 0 || operation.isDisabled}>
+                            disabled={numberSelected === 0 || operation.isDisabled}
+                            title={operation.description}>
                             <i className={operation.iconClassName} />
                             &nbsp;{operation.title}
                         </button>

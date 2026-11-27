@@ -203,6 +203,47 @@
   }
 }
 
+// Dark tippy theme for workflow action help (matches argo-ui slate tooltips).
+.tippy-tooltip.wf-action-theme {
+  background-color: $argo-color-gray-8;
+  color: $argo-color-gray-1;
+  font-size: 12px;
+  line-height: 1.35;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  // Keep the box narrow so Popper does not shove it under the left nav.
+  max-width: 220px;
+
+  > .tippy-content {
+    padding: 6px 10px;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &[data-placement^='top'] > .tippy-arrow {
+    border-top-color: $argo-color-gray-8;
+  }
+
+  &[data-placement^='bottom'] > .tippy-arrow {
+    border-bottom-color: $argo-color-gray-8;
+  }
+
+  &[data-placement^='left'] > .tippy-arrow {
+    border-left-color: $argo-color-gray-8;
+  }
+
+  &[data-placement^='right'] > .tippy-arrow {
+    border-right-color: $argo-color-gray-8;
+  }
+}
+
+.workflow-action-tooltip {
+  display: block;
+  white-space: normal;
+}
+
 .artifact-row {
   color: $argo-color-gray-8;
   display: flex;

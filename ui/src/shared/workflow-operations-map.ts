@@ -13,6 +13,8 @@ export interface WorkflowOperation {
     action: WorkflowOperationAction;
     iconClassName: string;
     disabled: (wf: Workflow) => boolean;
+    /** Hover text shown on the action button in the UI. */
+    description?: string;
 }
 
 export type WorkflowOperationAction = (wf: Workflow) => Promise<Workflow | WorkflowDeleteResponse>;
@@ -25,6 +27,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
     RETRY: {
         title: 'RETRY',
         iconClassName: 'fa fa-undo',
+        description: 'Rerun failed or errored steps on this workflow',
         disabled: (wf: Workflow) => {
             const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
             return workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error');
@@ -34,6 +37,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
     RESUBMIT: {
         title: 'RESUBMIT',
         iconClassName: 'fa fa-plus-circle',
+        description: 'Create a new workflow from the same spec',
         disabled: () => false,
         action: (wf: Workflow) => services.workflows.resubmit(wf.metadata.name, wf.metadata.namespace, null)
     },
@@ -52,12 +56,14 @@ export const WorkflowOperationsMap: WorkflowOperations = {
     STOP: {
         title: 'STOP',
         iconClassName: 'fa fa-stop-circle',
+        description: 'Stop the workflow and run exit handlers',
         disabled: (wf: Workflow) => !isWorkflowRunning(wf),
         action: (wf: Workflow) => services.workflows.stop(wf.metadata.name, wf.metadata.namespace)
     },
     TERMINATE: {
         title: 'TERMINATE',
         iconClassName: 'fa fa-times-circle',
+        description: 'Stop the workflow immediately without exit handlers',
         disabled: (wf: Workflow) => !isWorkflowRunning(wf),
         action: (wf: Workflow) => services.workflows.terminate(wf.metadata.name, wf.metadata.namespace)
     },
