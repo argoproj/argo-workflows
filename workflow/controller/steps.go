@@ -116,7 +116,6 @@ func (s *StepAdapter) body(name string) wfv1.DAGTask {
 		OnExit:       s.step.OnExit, //nolint:staticcheck // OnExit is deprecated but still honored for backward compatibility
 		TemplateRef:  s.step.TemplateRef,
 		Hooks:        s.step.Hooks,
-		Dependencies: s.dependencies,
 	}
 }
 

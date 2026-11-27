@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
@@ -104,4 +105,39 @@ func TestPullOrder(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestNewWorkflowTasks_SharesEqualDependencies(t *testing.T) {
+	// As executeSteps builds them: every step of a group carries the names of
+	// all the steps of the group before it.
+	group0 := []string{"[0].a", "[0].b"}
+	group1 := []string{"[1].c", "[1].d"}
+	tasks := toTasks([]wfv1.DAGTask{
+		{Name: "[0].a"},
+		{Name: "[0].b", ContinueOn: &wfv1.ContinueOn{Failed: true}},
+		{Name: "[1].c", Dependencies: group0},
+		{Name: "[1].d", Dependencies: group0},
+		{Name: "[2].e", Dependencies: group1},
+		{Name: "bad", Depends: "x.Unknown"},
+		{Name: "bad-too", Depends: "x.Unknown"},
+		{Name: "good", Depends: "x"},
+	})
+	w := newWorkflowTasks(tasks)
+
+	// Every task resolves as it does on its own.
+	for _, task := range tasks {
+		name := task.GetName()
+		deps, logic, err := resolveTaskDepends(task, w.GetTask)
+		assert.Equal(t, deps, w.topology.dependencies[name], name)
+		assert.Equal(t, logic, w.topology.dependsLogic[name], name)
+		assert.Equal(t, err, w.GetDependsError(name), name)
+	}
+	require.Error(t, w.GetDependsError("bad"))
+	require.Error(t, w.GetDependsError("bad-too"))
+	require.NoError(t, w.GetDependsError("good"))
+
+	// The steps of a group hold one resolution between them, not one each.
+	c, d := w.topology.dependencies["[1].c"], w.topology.dependencies["[1].d"]
+	require.Equal(t, group0, c)
+	assert.Same(t, &c[0], &d[0])
 }

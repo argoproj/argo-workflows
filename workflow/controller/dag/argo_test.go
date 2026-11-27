@@ -2,6 +2,7 @@ package dag
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -690,8 +691,8 @@ func TestDAGEvaluator_DaemonedFailedNode(t *testing.T) {
 
 func TestResolveTaskDepends_StepNames(t *testing.T) {
 	// Steps tasks carry synthetic legacy dependencies named "[groupIndex].stepName".
-	// They are structured data, expanded directly and never parsed as an
-	// expression, so the ".A" suffix is never mistaken for a result qualifier.
+	// They are structured data and never made into an expression, so the
+	// ".A" suffix is never mistaken for a result qualifier.
 	stepA := wfv1.DAGTask{Name: "[0].A"}
 	stepB := wfv1.DAGTask{Name: "[1].B", Dependencies: []string{"[0].A"}}
 	provider := func(name string) Task {
@@ -703,7 +704,84 @@ func TestResolveTaskDepends_StepNames(t *testing.T) {
 	deps, logic, err := resolveTaskDepends(&DAGTask{DAGTask: &stepB}, provider)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"[0].A"}, deps)
-	assert.Equal(t, common.ExpandDependency("[0].A", nil, normalizeTaskName), logic)
+	assert.Empty(t, logic)
+}
+
+func TestDependencyMet_MatchesExpandDependency(t *testing.T) {
+	// A legacy dependency is held to the condition a bare task reference in
+	// a depends expression expands to, whatever the dependency's outcome.
+	evaluator := NewDAGEvaluator(newTestWorkflow("test-wf"), createDAGTemplate(nil), "", "dag")
+	results := map[string]taskResult{
+		"Succeeded": {Succeeded: true},
+		"Failed":    {Failed: true},
+		"Errored":   {Errored: true},
+		"Skipped":   {Skipped: true},
+		"Omitted":   {Omitted: true},
+		"Daemoned":  {Daemoned: true},
+		"Pending":   {},
+	}
+	continueOns := []*wfv1.ContinueOn{nil, {}, {Error: true}, {Failed: true}, {Error: true, Failed: true}}
+	for _, continueOn := range continueOns {
+		logic := common.ExpandDependency("A", continueOn, normalizeTaskName)
+		for name, result := range results {
+			want, err := evaluator.evalBool(logic, map[string]taskResult{normalizeTaskName("A"): result})
+			require.NoError(t, err)
+			assert.Equal(t, want, dependencyMet(result, continueOn), "%s with continueOn %+v", name, continueOn)
+		}
+	}
+}
+
+func TestDAGEvaluator_LegacyDependenciesOmit(t *testing.T) {
+	// A task waits while any legacy dependency is unfinished, then is omitted
+	// unless every one of them is met.
+	ctx := testCtx(t)
+	wf := newTestWorkflow("test-wf")
+	addNodeToWorkflow(ctx, wf, "dag.A", wfv1.NodeFailed)
+	addNodeToWorkflow(ctx, wf, "dag.B", wfv1.NodeFailed)
+	tmpl := createDAGTemplate([]wfv1.DAGTask{
+		{Name: "A"},
+		{Name: "B", ContinueOn: &wfv1.ContinueOn{Failed: true}},
+		{Name: "C"},
+		{Name: "after-A", Dependencies: []string{"A", "B"}},
+		{Name: "after-B", Dependencies: []string{"B"}},
+		{Name: "after-C", Dependencies: []string{"A", "C"}},
+	})
+	evaluator := NewDAGEvaluator(wf, tmpl, "", "dag")
+
+	result := evaluator.Evaluate(ctx, "after-A")
+	require.NoError(t, result.Error)
+	assert.True(t, result.Skipped, "A failed without continueOn")
+	assert.False(t, result.ShouldRun)
+
+	result = evaluator.Evaluate(ctx, "after-B")
+	require.NoError(t, result.Error)
+	assert.True(t, result.ShouldRun, "B failed with continueOn.failed")
+
+	result = evaluator.Evaluate(ctx, "after-C")
+	require.NoError(t, result.Error)
+	assert.True(t, result.Suspended, "C has not started")
+	assert.False(t, result.Skipped)
+}
+
+func TestDAGEvaluator_ManyLegacyDependencies(t *testing.T) {
+	// A step depends on every step of the group before it. A large group
+	// must not make its successors fail to evaluate.
+	ctx := testCtx(t)
+	wf := newTestWorkflow("test-wf")
+	dagTasks := make([]wfv1.DAGTask, 2000)
+	deps := make([]string, len(dagTasks))
+	for i := range dagTasks {
+		deps[i] = fmt.Sprintf("[0].step-%d", i)
+		dagTasks[i] = wfv1.DAGTask{Name: deps[i]}
+		addNodeToWorkflow(ctx, wf, TaskNodeName("steps", deps[i]), wfv1.NodeSucceeded)
+	}
+	dagTasks = append(dagTasks, wfv1.DAGTask{Name: "[1].next", Dependencies: deps})
+	evaluator := NewDAGEvaluator(wf, createDAGTemplate(dagTasks), "", "steps")
+
+	result := evaluator.Evaluate(ctx, "[1].next")
+
+	require.NoError(t, result.Error)
+	assert.True(t, result.ShouldRun)
 }
 
 func TestResolveTaskDepends_UsesValidationGrammar(t *testing.T) {

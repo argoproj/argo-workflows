@@ -66,18 +66,32 @@ func (e *DAGEvaluator) evalBool(input string, env map[string]taskResult) (bool, 
 	return resultBool, nil
 }
 
+// dependencyMet reports whether a legacy dependency lets its dependants run:
+// it Succeeded, was Skipped or is Daemoned, or it Errored or Failed with the
+// matching continueOn set. This is the expression common.ExpandDependency
+// writes for a bare task reference, decided directly.
+func dependencyMet(result taskResult, continueOn *wfv1.ContinueOn) bool {
+	if result.Succeeded || result.Skipped || result.Daemoned {
+		return true
+	}
+	return continueOn != nil && ((continueOn.Error && result.Errored) || (continueOn.Failed && result.Failed))
+}
+
 // evaluateDependsReadiness evaluates the depends expression for a task and
 // returns a readinessResult. The task waits while any dependency it references
 // is still pending; once every one has finished, the expression decides
 // whether it runs or is omitted: an expression is never evaluated against a
-// dependency that has not finished.
+// dependency that has not finished. A task with a legacy "dependencies" list
+// has no expression: it runs if every dependency is met (dependencyMet).
 func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName string) (readinessResult, error) {
 	node := e.store.getNode(taskName)
 	if node != nil && node.Fulfilled() {
 		return ready, nil
 	}
 
+	logic := e.tasks.GetDependsLogic(ctx, taskName)
 	evalScope := make(map[string]taskResult)
+	allMet := true
 
 	deps, _ := e.tasks.GetDependencies(ctx, taskName)
 	for _, depName := range deps {
@@ -119,7 +133,7 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 			}
 		}
 
-		evalScope[normalizeTaskName(depName)] = taskResult{
+		result := taskResult{
 			Succeeded:    depNode.Phase == wfv1.NodeSucceeded,
 			Failed:       depNode.Phase == wfv1.NodeFailed,
 			Errored:      depNode.Phase == wfv1.NodeError,
@@ -129,11 +143,22 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 			AnySucceeded: anySucceeded,
 			AllFailed:    allFailed,
 		}
+		if logic == "" {
+			var continueOn *wfv1.ContinueOn
+			if dep := e.tasks.GetTask(depName); dep != nil {
+				continueOn = dep.GetContinueOn()
+			}
+			allMet = allMet && dependencyMet(result, continueOn)
+			continue
+		}
+		evalScope[normalizeTaskName(depName)] = result
 	}
 
-	logic := e.tasks.GetDependsLogic(ctx, taskName)
 	if logic == "" {
-		return ready, nil
+		if allMet {
+			return ready, nil
+		}
+		return omit, nil
 	}
 
 	result, err := e.evalBool(logic, evalScope)

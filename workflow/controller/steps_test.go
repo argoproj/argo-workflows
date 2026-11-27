@@ -127,6 +127,21 @@ func TestExpandStepGroupWithItems(t *testing.T) {
 	assert.Equal(t, "Hello\"Argo", expanded[0].Arguments.Parameters[0].Value.String())
 }
 
+func TestStepExpandItemsCarryNoDependencies(t *testing.T) {
+	// The Engine reads a step's dependencies from the step, never from its
+	// expanded items, so the items must not each copy the list.
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps/steps-with-items.yaml")
+	woc := newWoc(ctx, *wf)
+	step := wf.Spec.Templates[0].Steps[0].Steps[0]
+	task := &StepAdapter{step: &step, dependencies: []string{"[0].a", "[0].b"}, groupIndex: 1}
+
+	expanded, err := task.Expand(ctx, map[string]string{}, woc)
+	require.NoError(t, err)
+	require.Len(t, expanded, 1)
+	assert.Empty(t, expanded[0].GetDependencies())
+}
+
 func TestResourceDurationMetric(t *testing.T) {
 	woc := wfOperationCtx{wf: &wfv1.Workflow{}, scope: variables.NewScope()}
 	var node wfv1.NodeStatus
