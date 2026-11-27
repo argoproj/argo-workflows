@@ -26,20 +26,17 @@ import (
 // when a task result first becomes terminal.
 // Updates without a valid object key are ignored; repeated terminal results
 // retain normal rate limiting rather than triggering the completion delay again.
-func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
+func (wfc *WorkflowController) onWorkflowTaskSetUpdate(ctx context.Context, old, newObj any) {
 	key, err := cache.MetaNamespaceKeyFunc(newObj)
 	if err != nil {
 		return
 	}
-	if wfc.taskSetCompletionDelay != nil {
+	if wfc.minCompletionRequeueDelay != nil {
 		previous := old.(*wfv1.WorkflowTaskSet)
 		current := newObj.(*wfv1.WorkflowTaskSet)
 		for id, result := range current.Status.Nodes {
 			if result.Phase.Fulfilled(nil) && !previous.Status.Nodes[id].Phase.Fulfilled(nil) {
-				// The workqueue coalesces pending keys and serializes work per key.
-				// processNextItem still rejects stale workflow versions and falls
-				// back to a rate-limited retry while the workflow informer catches up.
-				wfc.wfQueue.AddAfter(key, min(*wfc.taskSetCompletionDelay, wfc.requeueTime))
+				wfc.enqueueNodeCompletion(ctx, key, current.OwnerReferences)
 				return
 			}
 		}
