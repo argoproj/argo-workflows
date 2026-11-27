@@ -9,3 +9,7 @@ kind: KubeletConfiguration
 # We probably don't need to specify both, but it doesn't hurt.
 imageMinimumGCAge: 1h
 imageGCHighThresholdPercent: 100
+# Kill every process in a container that runs out of memory, not just the
+# largest. This is the default on cgroup v2, set here because the hot workers
+# suite's TestOOMKilled relies on it.
+singleProcessOOMKill: false

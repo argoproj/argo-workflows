@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"bytes"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"strings"
@@ -1347,41 +1346,7 @@ spec:
 // checkArtifactContent reads an artifact from MinIO and verifies it contains expected content
 func (s *ArtifactsSuite) checkArtifactContent(t *testing.T, bucketName, key, expectedContent string) {
 	t.Helper()
-
-	// Create MinIO client
-	c, err := minio.New("localhost:9000", &minio.Options{
-		Creds: credentials.NewStaticV4("admin", "password", ""),
-	})
-	require.NoError(t, err)
-
-	// Get the object
-	ctx := logging.TestContext(t.Context())
-	obj, err := c.GetObject(ctx, bucketName, key, minio.GetObjectOptions{})
-	require.NoError(t, err)
-	defer obj.Close()
-
-	// Read the content
-	content, err := io.ReadAll(obj)
-	require.NoError(t, err)
-
-	var contentStr string
-	// Check if content is gzipped (artifacts may be compressed)
-	if len(content) > 2 && content[0] == 0x1f && content[1] == 0x8b {
-		// Content is gzipped, decompress it
-		gzipReader, err := gzip.NewReader(bytes.NewReader(content))
-		require.NoError(t, err, "Failed to create gzip reader")
-		defer gzipReader.Close()
-
-		decompressed, err := io.ReadAll(gzipReader)
-		require.NoError(t, err, "Failed to decompress gzipped content")
-		contentStr = string(decompressed)
-	} else {
-		// Content is not compressed, use as-is
-		contentStr = string(content)
-	}
-
-	// Check that the expected content is present
-	assert.Contains(t, contentStr, expectedContent, "Artifact content should contain expected text")
+	assert.Contains(t, fixtures.ArtifactContent(t, bucketName, key), expectedContent, "Artifact content should contain expected text")
 }
 
 func TestArtifactsSuite(t *testing.T) {
