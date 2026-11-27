@@ -3812,7 +3812,7 @@ spec:
 // unchanged rather than being read as a format verb.
 func TestRecordNodePhaseEventMessageWithPercent(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator/node-event-message-percent.yaml")
+	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "percent"}}
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
