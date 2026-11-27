@@ -1,0 +1,20 @@
+// `ToolbarActions` is rendered in the toolbar's tools, which are in the right-hand 25% wide column.
+// Hide the (empty) action menu column and let the tools span the toolbar, so the layout matches the action menu's.
+.top-bar.row:has(.top-bar__actions) {
+  .top-bar__left-side {
+    display: none;
+  }
+
+  .top-bar__right-side {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-left: 20px;
+    text-align: left;
+  }
+}
+
+.top-bar__actions {
+  display: flex;
+  justify-content: space-between;
+  white-space: nowrap;
+}
