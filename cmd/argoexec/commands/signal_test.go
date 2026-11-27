@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"testing/synctest"
@@ -93,4 +94,30 @@ func TestForwardSignals_StopBeforeNextAttempt(t *testing.T) {
 		t.Fatal("stopped forwarder signalled the previous attempt")
 	default:
 	}
+}
+
+func TestGoUntilStopped(t *testing.T) {
+	t.Run("StopCancelsAndWaits", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			var returned atomic.Bool
+			stop := goUntilStopped(t.Context(), func(ctx context.Context) {
+				<-ctx.Done()
+				time.Sleep(time.Second)
+				returned.Store(true)
+			})
+			synctest.Wait()
+			require.False(t, returned.Load(), "f runs until stopped")
+			stop()
+			require.True(t, returned.Load(), "stop waits for f to return")
+			stop()
+		})
+	})
+	t.Run("FReturnsFirst", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			stop := goUntilStopped(t.Context(), func(context.Context) {})
+			synctest.Wait()
+			stop()
+			stop()
+		})
+	})
 }

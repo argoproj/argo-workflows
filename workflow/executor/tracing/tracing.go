@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"context"
+	"strings"
 
 	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
@@ -21,6 +22,23 @@ func New(ctx context.Context, serviceName string) (*Tracing, error) {
 	return &Tracing{
 		Tracing: tracing,
 	}, nil
+}
+
+// TraceContextFromEnv reads the W3C trace context the controller gave a
+// task, as TRACEPARENT and TRACESTATE in the env lookupEnv reads, or nil if
+// it has no traceparent. Unlike InjectTraceContext it reads any env, such as
+// a pooled task's, not only the process's own.
+func TraceContextFromEnv(lookupEnv func(string) (string, bool)) map[string]string {
+	carrier := propagation.MapCarrier{}
+	for _, key := range (propagation.TraceContext{}).Fields() {
+		if v, _ := lookupEnv(strings.ToUpper(key)); v != "" {
+			carrier.Set(key, v)
+		}
+	}
+	if carrier.Get("traceparent") == "" {
+		return nil
+	}
+	return carrier
 }
 
 func InjectTraceContext(ctx context.Context) context.Context {

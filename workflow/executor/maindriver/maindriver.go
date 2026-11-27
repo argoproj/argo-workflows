@@ -46,9 +46,30 @@ const (
 // Output is a file produced by a task's main command.
 type Output struct {
 	Kind OutputKind
+	// Name is the declared output parameter's or artifact's name, empty for
+	// logs.
+	Name string
 	// Path is where the file is now. It may not exist: optional outputs are
 	// the stager's decision.
 	Path string
+}
+
+// DeclaredOutputs are the output parameters and artifacts the template
+// declares a path for, parameters first: the files the command writes for
+// the stager to stage.
+func DeclaredOutputs(tmpl *wfv1.Template) []Output {
+	var outs []Output
+	for _, p := range tmpl.Outputs.Parameters {
+		if p.ValueFrom != nil && p.ValueFrom.Path != "" {
+			outs = append(outs, Output{Kind: OutputParameter, Name: p.Name, Path: p.ValueFrom.Path})
+		}
+	}
+	for _, a := range tmpl.Outputs.Artifacts {
+		if a.Path != "" {
+			outs = append(outs, Output{Kind: OutputArtifact, Name: a.Name, Path: a.Path})
+		}
+	}
+	return outs
 }
 
 // OutputStager receives a task's output files as main produces them.

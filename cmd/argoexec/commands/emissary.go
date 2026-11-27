@@ -53,15 +53,24 @@ func injectTraceParent(ctx context.Context, env []string) []string {
 }
 
 func NewEmissaryCommand() *cobra.Command {
-	return &cobra.Command{
+	var loop bool
+	command := &cobra.Command{
 		Use:          "emissary",
 		SilenceUsage: true, // this prevents confusing usage message being printed when we SIGTERM
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if loop {
+				if len(args) > 0 {
+					return errors.New("emissary --loop runs the tasks its pool's worker hands it, and takes no command")
+				}
+				return runLoopCommand(cmd.Context())
+			}
 			containerName := os.Getenv(common.EnvVarContainerName)
 			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true" // capture stdout/combined
 			return runEmissary(cmd.Context(), containerName, newPodTask(containerName, includeScriptOutput, args), maindriver.Container{})
 		},
 	}
+	command.Flags().BoolVar(&loop, "loop", false, "run one task after another as the main container of a hot worker pool pod (Linux only)")
+	return command
 }
 
 // newPodTask returns a loader for the one task a pod spec delivers, from env

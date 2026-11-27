@@ -33,6 +33,17 @@ func Acquire(path string) (*os.File, error) {
 	return f, nil
 }
 
+// IsLockHeld is always false on Windows: only loop mode waits on a held
+// lock, and it is Linux-only.
+func IsLockHeld(error) bool {
+	return false
+}
+
+// LockHeld probes a lock only for loop mode, so it is Linux-only.
+func LockHeld(path string) (bool, error) {
+	return false, fmt.Errorf("probe lock on %q: %w", path, errors.ErrUnsupported)
+}
+
 // WaitForSharedLock blocks until the exclusive holder of path releases
 // (including by process death, which on Windows includes TerminateProcess).
 // On ctx cancel, CancelIoEx aborts the pending lock and ctx.Err() is

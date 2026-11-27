@@ -49,7 +49,7 @@ func TestContainerRun(t *testing.T) {
 	assert.Equal(t, recordingStager{
 		{Kind: OutputStdout, Path: filepath.Join(dir, "stdout")},
 		{Kind: OutputCombined, Path: filepath.Join(dir, "combined")},
-		{Kind: OutputParameter, Path: param},
+		{Kind: OutputParameter, Name: "p", Path: param},
 	}, stager)
 }
 

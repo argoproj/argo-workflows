@@ -2,6 +2,7 @@ package validate
 
 import (
 	"encoding/json"
+	"path"
 	"slices"
 	"strings"
 
@@ -57,9 +58,22 @@ func poolableExceptClaims(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error 
 	if err := rejectPodNameTag(prefix, tmpl); err != nil {
 		return err
 	}
+	ctr := tmpl.Container
+	if tmpl.Script != nil {
+		ctr = &tmpl.Script.Container
+	}
 	for _, art := range tmpl.Inputs.Artifacts {
 		if art.Path == "" {
 			continue
+		}
+		// Staging links each input into place at its absolute path
+		// (poolpod.Isolation), so a relative path fails every task. A path
+		// holding a variable is checked once substituted. It is a path in
+		// a Linux container, wherever this runs, so path, not filepath.
+		if !path.IsAbs(art.Path) && !strings.Contains(art.Path, "{{") {
+			return errors.Errorf(errors.CodeBadRequest,
+				"%s.inputs.artifacts.%s.path '%s' isn't absolute, which a pooled template's input path must be",
+				prefix, art.Name, art.Path)
 		}
 		// As init-less pods reject it (see addInputArtifactsVolumes), for the
 		// same reason.
@@ -67,6 +81,21 @@ func poolableExceptClaims(tmpl *wfv1.Template, wfSpec *wfv1.WorkflowSpec) error 
 			return errors.Errorf(errors.CodeBadRequest,
 				"%s.inputs.artifacts.%s.path '%s' is an ancestor of volume mount '%s' (%s), which a pooled template can't have: staging the artifact would clear the mounted volume",
 				prefix, art.Name, art.Path, mnt.Name, mnt.MountPath)
+		}
+		// The container runtime creates the workingDir, and a pooled task's
+		// input path must not exist (poolpod.ErrPathExists), so every task
+		// would fail. An input on a volume may exist: the worker stages it
+		// there in place.
+		if _, ok := common.RelWithin(art.Path, ctr.WorkingDir); ctr.WorkingDir != "" && ok && common.FindOverlappingVolume(tmpl, art.Path) == nil {
+			return errors.Errorf(errors.CodeBadRequest,
+				"%s.inputs.artifacts.%s.path '%s' is or holds the workingDir '%s', which a pooled template can't have: the container runtime creates the workingDir, and a pooled task's input path must not exist",
+				prefix, art.Name, art.Path, ctr.WorkingDir)
+		}
+	}
+	for _, e := range ctr.Env {
+		if e.Name == common.EnvVarDebugPauseBefore || e.Name == common.EnvVarDebugPauseAfter {
+			return errors.Errorf(errors.CodeBadRequest,
+				"%s: %s can't be set on a pooled template: its pool's pods run every task of the pool, so can't pause for one", prefix, e.Name)
 		}
 	}
 	if wfSpec == nil {

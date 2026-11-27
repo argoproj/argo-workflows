@@ -197,3 +197,28 @@ func TestPlansAreWellFormed(t *testing.T) {
 		}
 	}
 }
+
+// TestInstall checks the install plan: one well-formed stage, which only
+// copies the binary, run on an executor with no task, template, runtime
+// executor or API clients.
+func TestInstall(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	plan := installPlan(nil, "/shared")
+	require.Len(t, plan.Prepare, 1)
+	assert.Equal(t, "copy-argoexec", plan.Prepare[0].Name)
+	assert.NotNil(t, plan.Prepare[0].Run)
+	assert.False(t, plan.Prepare[0].NeedsMainOutputs)
+	assert.Empty(t, plan.Run)
+	assert.Empty(t, plan.Collect)
+
+	var installedTo []string
+	require.NoError(t, Install(ctx, func(dir string) error {
+		installedTo = append(installedTo, dir)
+		return nil
+	}, "/shared"))
+	assert.Equal(t, []string{"/shared"}, installedTo)
+
+	err := Install(ctx, func(string) error { return assert.AnError }, "/shared")
+	require.ErrorIs(t, err, assert.AnError)
+	assert.ErrorContains(t, err, "copy-argoexec")
+}
