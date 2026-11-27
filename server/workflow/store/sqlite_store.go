@@ -48,6 +48,7 @@ create index if not exists idx_name_value on argo_workflows_labels (name, value)
 	insertWorkflowQuery      = `insert into argo_workflows (uid, instanceid, name, namespace, phase, startedat, finishedat, workflow) values (?, ?, ?, ?, ?, ?, ?, ?)`
 	insertWorkflowLabelQuery = `insert into argo_workflows_labels (uid, name, value) values (?, ?, ?)`
 	deleteWorkflowQuery      = `delete from argo_workflows where uid = ?`
+	selectWorkflowQuery      = `select workflow from argo_workflows where uid = ?`
 )
 
 func initDB() (*sqlite.Conn, error) {
@@ -94,7 +95,9 @@ func (s *SQLiteStore) ListWorkflows(ctx context.Context, namespace, nameFilter, 
 	if err != nil {
 		return nil, err
 	}
-	query := `select workflow from argo_workflows
+	// Page on uids and then fetch each workflow by primary key: selecting the workflow column in the
+	// paged query would copy every matching workflow into SQLite's sorter.
+	query := `select uid from argo_workflows
 where instanceid = ?
 `
 	args := []any{s.instanceService.InstanceID()}
@@ -104,25 +107,39 @@ where instanceid = ?
 		return nil, err
 	}
 
+	var uids []string
 	var workflows = wfv1.Workflows{}
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	err = sqlitex.Execute(s.conn, query, &sqlitex.ExecOptions{
 		Args: args,
 		ResultFunc: func(stmt *sqlite.Stmt) error {
-			wf := stmt.ColumnText(0)
-			w := wfv1.Workflow{}
-			unmarshalErr := json.Unmarshal([]byte(wf), &w)
-			if unmarshalErr != nil {
-				logging.RequireLoggerFromContext(ctx).WithError(unmarshalErr).WithField("workflow", wf).Error(ctx, "unable to unmarshal workflow from database")
-			} else {
-				workflows = append(workflows, w)
-			}
+			uids = append(uids, stmt.ColumnText(0))
 			return nil
 		},
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	for _, uid := range uids {
+		err = sqlitex.Execute(s.conn, selectWorkflowQuery, &sqlitex.ExecOptions{
+			Args: []any{uid},
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				wf := stmt.ColumnText(0)
+				w := wfv1.Workflow{}
+				unmarshalErr := json.Unmarshal([]byte(wf), &w)
+				if unmarshalErr != nil {
+					logging.RequireLoggerFromContext(ctx).WithError(unmarshalErr).WithField("workflow", wf).Error(ctx, "unable to unmarshal workflow from database")
+				} else {
+					workflows = append(workflows, w)
+				}
+				return nil
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &wfv1.WorkflowList{

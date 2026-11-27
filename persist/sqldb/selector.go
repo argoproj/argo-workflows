@@ -55,8 +55,10 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		options.Limit = -1
 		options.Offset = -1
 	}
+	// uid breaks ties so paging is stable, and ascending matches the primary key suffix MySQL's
+	// secondary indexes carry after startedat. ListWorkflows repeats this order in Go.
 	return selector.
-		OrderBy("-startedat").
+		OrderBy("-startedat", "uid").
 		Limit(options.Limit).
 		Offset(options.Offset), nil
 }
