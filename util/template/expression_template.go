@@ -73,19 +73,19 @@ func anyVarNotInEnv(expression string, env map[string]any) *string {
 	return nil
 }
 
-func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string, env map[string]any, strictRegex *regexp.Regexp) (int, error) {
+func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string, env map[string]any, envHasPlaceholder bool, strictRegex *regexp.Regexp) (int, error) {
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
 	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
 	if err != nil {
 		// If we can't unmarshal, we can't parse. Fallback to expressionReplaceCore to handle it (likely error).
-		return expressionReplaceCore(ctx, w, expression, env, false)
+		return expressionReplaceCore(ctx, w, expression, env, envHasPlaceholder, false)
 	}
 
 	missingIdentifiers, err := missingVarsInEnv(unmarshalledExpression, env)
 	if err != nil {
 		// If we can't parse, we can't check variables. Fallback to expressionReplaceCore(false) to report syntax error.
-		return expressionReplaceCore(ctx, w, expression, env, false)
+		return expressionReplaceCore(ctx, w, expression, env, envHasPlaceholder, false)
 	}
 
 	// An expression naming the current task or step, guarded or not, waits for
@@ -105,7 +105,7 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 	// unless the caller allows unresolved (strictRegex == nil), in which case runtime
 	// failures are tolerated and the expression is left unresolved for later evaluation.
 	allowUnresolved := len(missingIdentifiers) > 0 || strictRegex == nil
-	return expressionReplaceCore(ctx, w, expression, env, allowUnresolved)
+	return expressionReplaceCore(ctx, w, expression, env, envHasPlaceholder, allowUnresolved)
 }
 
 // referencesCurrentNodeName reports whether expression accesses tasks.name or
@@ -243,19 +243,25 @@ func getIdentifiers(expression string) ([]string, error) {
 	return visitor.identifiers, nil
 }
 
-func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
-	shouldAllowFailure := false
-
+// hasPlaceholder reports whether any value in env is a placeholder. It depends only on
+// env, so callers work it out once per env and pass it to expressionReplaceCore.
+func hasPlaceholder(env map[string]any) bool {
+	found := false
 	maps.VisitMap(env, func(key string, value any) bool {
 		rv := reflect.Indirect(reflect.ValueOf(value))
 		if rv.Kind() == reflect.String {
 			if IsPlaceholder(rv.String()) {
-				shouldAllowFailure = true
+				found = true
 				return false
 			}
 		}
 		return true
 	})
+	return found
+}
+
+func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, envHasPlaceholder bool, allowUnresolved bool) (int, error) {
+	shouldAllowFailure := envHasPlaceholder
 
 	log := logging.RequireLoggerFromContext(ctx)
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.

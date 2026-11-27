@@ -24,7 +24,7 @@ func TestExpressionReplaceCore_AsIntPlaceholder(t *testing.T) {
 	for _, allowUnresolved := range []bool{true, false} {
 		t.Run(fmt.Sprintf("AllowUnresolved=%v", allowUnresolved), func(t *testing.T) {
 			var b strings.Builder
-			_, err := expressionReplaceCore(ctx, &b, expression, e, allowUnresolved)
+			_, err := expressionReplaceCore(ctx, &b, expression, e, hasPlaceholder(e), allowUnresolved)
 
 			t.Logf("Result: %q, Error: %v", b.String(), err)
 			// Even with allowUnresolved=false, placeholders cause it to allow unresolved.

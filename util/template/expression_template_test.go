@@ -1,6 +1,7 @@
 package template
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -242,5 +243,53 @@ func BenchmarkReplaceStrictDeepMemberPath(b *testing.B) {
 				_, _ = tmpl.ReplaceStrict(ctx, replaceMap, []string{"tasks"})
 			}
 		})
+	}
+}
+
+// Every expression tag in one string shares the env built for that Replace call,
+// so substituting the tags together must match substituting each one alone.
+func TestReplaceStrictExpressionTagsShareEnv(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	replaceMap := map[string]any{
+		"tasks.a.outputs.result":       "1",
+		"tasks.b.outputs.parameters.p": "two",
+		"inputs.parameters.x":          "__argo__internal__placeholder-1",
+	}
+	tags := []string{
+		"{{=tasks.a.outputs.result}}",
+		"{{=tasks.b.outputs.parameters.p}}",
+		"{{=asInt(tasks.a.outputs.result) + 1}}",
+		"{{=inputs.parameters.x}}",
+		"{{tasks.a.outputs.result}}",
+	}
+	var want []string
+	for _, tag := range tags {
+		tmpl, err := NewTemplate(tag)
+		require.NoError(t, err)
+		got, err := tmpl.ReplaceStrict(ctx, replaceMap, []string{"tasks"})
+		require.NoError(t, err)
+		want = append(want, got)
+	}
+	tmpl, err := NewTemplate(strings.Join(tags, " "))
+	require.NoError(t, err)
+	got, err := tmpl.ReplaceStrict(ctx, replaceMap, []string{"tasks"})
+	require.NoError(t, err)
+	assert.Equal(t, strings.Join(want, " "), got)
+}
+
+func BenchmarkReplaceStrictManyExpressionTags(b *testing.B) {
+	replaceMap := make(map[string]any, 2000)
+	for i := range 2000 {
+		replaceMap[fmt.Sprintf("tasks.task-%d.outputs.parameters.p", i)] = strconv.Itoa(i)
+	}
+	tags := make([]string, 20)
+	for i := range tags {
+		tags[i] = fmt.Sprintf("{{=tasks['task-%d'].outputs.parameters.p}}", i)
+	}
+	ctx := logging.TestContext(b.Context())
+	tmpl, err := NewTemplate(strings.Join(tags, ","))
+	require.NoError(b, err)
+	for b.Loop() {
+		_, _ = tmpl.ReplaceStrict(ctx, replaceMap, []string{"tasks"})
 	}
 }

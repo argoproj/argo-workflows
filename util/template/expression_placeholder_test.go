@@ -22,7 +22,7 @@ func TestExpressionReplaceCore_PlaceholderBehavior(t *testing.T) {
 	for _, allowUnresolved := range []bool{true, false} {
 		t.Run(fmt.Sprintf("AllowUnresolved=%v", allowUnresolved), func(t *testing.T) {
 			var b strings.Builder
-			_, err := expressionReplaceCore(ctx, &b, expression, env, allowUnresolved)
+			_, err := expressionReplaceCore(ctx, &b, expression, env, hasPlaceholder(env), allowUnresolved)
 
 			t.Logf("Result: %q, Error: %v", b.String(), err)
 			assert.Equal(t, "__argo__internal__placeholder-1", b.String())

@@ -37,12 +37,19 @@ type impl struct {
 
 func (t *impl) replace(ctx context.Context, replaceMap map[string]any, regex *regexp.Regexp, allowUnresolvedArtifacts bool) (string, error) {
 	replacedTmpl := &bytes.Buffer{}
+	// The env depends only on replaceMap, so it is built at most once per call and
+	// shared by every expression tag, instead of expanding the whole map per tag.
+	var env map[string]any
+	var envHasPlaceholder bool
 	_, err := t.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:
-			env := exprenv.GetFuncMap(replaceMap)
-			return expressionReplaceStrict(ctx, w, expression, env, regex)
+			if env == nil {
+				env = exprenv.GetFuncMap(replaceMap)
+				envHasPlaceholder = hasPlaceholder(env)
+			}
+			return expressionReplaceStrict(ctx, w, expression, env, envHasPlaceholder, regex)
 		default:
 			return simpleReplaceStrict(ctx, w, tag, replaceMap, regex, allowUnresolvedArtifacts)
 		}
