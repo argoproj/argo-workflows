@@ -16,7 +16,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // Key is the key within the ConfigMap holding the defaults, as the YAML of a Workflow.
@@ -89,11 +88,11 @@ func Merged(ctx context.Context, i Interface, controllerDefaults *wfv1.Workflow,
 	// MergeTo lets the target win, so merging the more specific layer first leaves the
 	// namespace values in place and lets the controller layer fill only what is still empty.
 	merged := &wfv1.Workflow{}
-	if err := util.MergeTo(namespaceDefaults, merged); err != nil {
+	if err := common.MergeTo(namespaceDefaults, merged); err != nil {
 		return nil, err
 	}
 	if controllerDefaults != nil {
-		if err := util.MergeTo(controllerDefaults, merged); err != nil {
+		if err := common.MergeTo(controllerDefaults, merged); err != nil {
 			return nil, err
 		}
 	}

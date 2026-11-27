@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -326,6 +328,54 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		return nil, errors.InternalWrapError(err)
 	}
 	return &newTmpl, nil
+}
+
+// MergeTemplateDefaults sets tmpl's unset fields from defaults, a workflow's
+// templateDefaults, by strategic merge, ignoring the defaults of other
+// template types. defaults may be nil.
+func MergeTemplateDefaults(tmpl, defaults *wfv1.Template) error {
+	if defaults == nil {
+		return nil
+	}
+
+	originalTmplType := tmpl.GetType()
+	applicableDefaults := defaults.DeepCopy()
+
+	v := reflect.ValueOf(applicableDefaults).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+		// Check if the field is a pointer to a struct.
+		if field.Type.Kind() != reflect.Pointer || field.Type.Elem().Kind() != reflect.Struct {
+			continue
+		}
+
+		// Unset any Template-type defaults not applicable to the target type.
+		if t := wfv1.TemplateType(field.Name); t.IsValid() && t != originalTmplType {
+			v.Field(i).Set(reflect.Zero(v.Field(i).Type()))
+		}
+	}
+
+	tmplDefaultsJSON, err := json.Marshal(applicableDefaults)
+	if err != nil {
+		return err
+	}
+
+	targetTmplJSON, err := json.Marshal(tmpl)
+	if err != nil {
+		return err
+	}
+
+	resultTmpl, err := strategicpatch.StrategicMergePatch(tmplDefaultsJSON, targetTmplJSON, wfv1.Template{})
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(resultTmpl, tmpl); err != nil {
+		return err
+	}
+
+	tmpl.SetType(originalTmplType)
+	return nil
 }
 
 // GetTemplateGetterString returns string of TemplateHolder.
