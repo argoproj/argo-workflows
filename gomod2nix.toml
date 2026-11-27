@@ -791,8 +791,8 @@ schema = 3
     version = "v0.45.0"
     hash = "sha256-PY51TPgPXPWTyiC6Yr/0qo4EKelVbgSp5qlHAzhZLsQ="
   [mod."github.com/testcontainers/testcontainers-go/modules/mysql"]
-    version = "v0.44.0"
-    hash = "sha256-ijxJLIZi/AKuEizAQkot0EEYnpOVD+dLbakxaehKNK4="
+    version = "v0.45.0"
+    hash = "sha256-oszWo9KgS9T4SpVYXeKoabBX0qb4JFfGFSsdFrkmp4A="
   [mod."github.com/testcontainers/testcontainers-go/modules/postgres"]
     version = "v0.45.0"
     hash = "sha256-hCZtcSqUSiabwHYzdoDzEg7UwOAjngWGOKk9sjcyz6o="
