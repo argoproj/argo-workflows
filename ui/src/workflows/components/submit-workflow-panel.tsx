@@ -1,6 +1,6 @@
 import {Select} from 'argo-ui/src/components/select/select';
 import {History} from 'history';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 
 import {uiUrl} from '../../shared/base';
 import {ArtifactsInput, ArtifactUploadResponse} from '../../shared/components/artifacts-input';
@@ -33,11 +33,53 @@ const defaultTemplate: Template = {
     }
 };
 
+// Parameters for the entrypoint selected in the dropdown. `<default>` is the synthetic
+// option and contributes no template parameters; workflow arguments are tracked separately.
+// Hide an entrypoint input only when a same-named workflow argument already supplies a
+// value or valueFrom; otherwise keep the entrypoint default in the single editable field.
+function parametersForEntrypoint(templates: Template[], entrypoint: string, workflowArguments: Parameter[] = []): Parameter[] {
+    const entrypointParameters = templates.find(template => template.name === entrypoint)?.inputs?.parameters || [];
+    return entrypointParameters.filter(p => {
+        const argument = workflowArguments.find(a => a.name === p.name);
+        if (!argument) {
+            return true;
+        }
+        return argument.value === undefined && !argument.valueFrom;
+    });
+}
+
+function detectEditedEntrypointParameterNames(previous: Parameter[], next: Parameter[]): string[] {
+    const edited: string[] = [];
+    for (const parameter of next) {
+        const previousParameter = previous.find(p => p.name === parameter.name);
+        if (!previousParameter || parameter.value === previousParameter.value) {
+            continue;
+        }
+        // ParametersInput copies defaults onto sibling fields when one input changes.
+        if (previousParameter.value === undefined && parameter.value === previousParameter.default) {
+            continue;
+        }
+        edited.push(parameter.name);
+    }
+    return edited;
+}
+
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
-    const [parameters, setParameters] = useState<Parameter[]>([]);
+    const templates = useMemo(() => {
+        return [defaultTemplate].concat(props.templates);
+    }, [props.templates]);
+    const propsWorkflowParametersKey = useMemo(() => JSON.stringify(props.workflowParameters), [props.workflowParameters]);
+    const initialEntrypoint = props.entrypoint || workflowEntrypoint;
+    const [entrypoint, setEntrypoint] = useState(initialEntrypoint);
+    // The dropdown is pre-selected from spec.entrypoint, but its onChange is the only
+    // other writer of this list. Seed it (and refresh it when the template changes)
+    // so those inputs show up without re-selecting the same entrypoint.
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
+    const [parameters, setParameters] = useState<Parameter[]>(() => parametersForEntrypoint(templates, initialEntrypoint, workflowParameters));
+    const [editedEntrypointParameterNames, setEditedEntrypointParameterNames] = useState<Set<string>>(() => new Set());
+    const workflowParametersRef = useRef(workflowParameters);
+    workflowParametersRef.current = workflowParameters;
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,18 +111,48 @@ export function SubmitWorkflowPanel(props: Props) {
     };
 
     useEffect(() => {
+        const fromProps = JSON.parse(JSON.stringify(props.workflowParameters)) as Parameter[];
         const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
-        // Get the user arguments from the query params
-        const updatedParams = workflowParameters.map(param => ({
-            ...param,
-            value: templatePropertiesInQuery[param.name] || param.value
-        }));
-        setWorkflowParameters(updatedParams);
-    }, [props.history, setWorkflowParameters]);
+        setWorkflowParameters(
+            fromProps.map(param => ({
+                ...param,
+                value: templatePropertiesInQuery[param.name] || param.value
+            }))
+        );
+    }, [propsWorkflowParametersKey, props.history]);
 
-    const templates = useMemo(() => {
-        return [defaultTemplate].concat(props.templates);
-    }, [props.templates]);
+    const entrypointParameterFilterKey = useMemo(
+        () =>
+            workflowParameters
+                .filter(argument => argument.value !== undefined || argument.valueFrom)
+                .map(argument => argument.name)
+                .sort()
+                .join('\n'),
+        [workflowParameters]
+    );
+
+    useEffect(() => {
+        setEntrypoint(props.entrypoint || workflowEntrypoint);
+    }, [props.entrypoint]);
+
+    useEffect(() => {
+        setParameters(parametersForEntrypoint(templates, entrypoint, workflowParametersRef.current));
+        setEditedEntrypointParameterNames(new Set());
+    }, [templates, entrypoint, entrypointParameterFilterKey]);
+
+    function onEntrypointParametersChange(nextParameters: Parameter[]) {
+        setParameters(previousParameters => {
+            const edited = detectEditedEntrypointParameterNames(previousParameters, nextParameters);
+            if (edited.length > 0) {
+                setEditedEntrypointParameterNames(previous => {
+                    const next = new Set(previous);
+                    edited.forEach(name => next.add(name));
+                    return next;
+                });
+            }
+            return nextParameters;
+        });
+    }
 
     const templateOptions = useMemo(() => {
         return templates.map(t => ({
@@ -102,7 +174,9 @@ export function SubmitWorkflowPanel(props: Props) {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
                 parameters: [
                     ...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p)),
-                    ...parameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))
+                    ...parameters
+                        .filter(p => editedEntrypointParameterNames.has(p.name) && getValueFromParameter(p) !== undefined)
+                        .map(p => p.name + '=' + getValueFromParameter(p))
                 ],
                 labels: labels.join(','),
                 artifacts: artifactOverrides.length > 0 ? artifactOverrides : undefined
@@ -134,16 +208,16 @@ export function SubmitWorkflowPanel(props: Props) {
                         value={entrypoint}
                         options={templateOptions}
                         onChange={selected => {
-                            const selectedTemp = templates.find(t => t.name === selected.value);
                             setEntrypoint(selected.value);
-                            setParameters(selectedTemp?.inputs?.parameters || []);
+                            setParameters(parametersForEntrypoint(templates, selected.value, workflowParameters));
+                            setEditedEntrypointParameterNames(new Set());
                         }}
                     />
                 </div>
                 <div key='parameters' style={{marginBottom: 25}}>
                     <label>Parameters</label>
                     {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
-                    {parameters.length > 0 && <ParametersInput parameters={parameters} onChange={setParameters} />}
+                    {parameters.length > 0 && <ParametersInput parameters={parameters} onChange={onEntrypointParametersChange} />}
                     {workflowParameters.length === 0 && parameters.length === 0 ? (
                         <>
                             <br />
