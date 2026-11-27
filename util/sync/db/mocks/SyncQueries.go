@@ -1342,6 +1342,132 @@ func (_c *SyncQueries_RemoveFromQueue_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// RemoveHolderFromQueues provides a mock function for the type SyncQueries
+func (_mock *SyncQueries) RemoveHolderFromQueues(ctx context.Context, holderKey string, controllerName string) error {
+	ret := _mock.Called(ctx, holderKey, controllerName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveHolderFromQueues")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, holderKey, controllerName)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// SyncQueries_RemoveHolderFromQueues_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveHolderFromQueues'
+type SyncQueries_RemoveHolderFromQueues_Call struct {
+	*mock.Call
+}
+
+// RemoveHolderFromQueues is a helper method to define mock.On call
+//   - ctx context.Context
+//   - holderKey string
+//   - controllerName string
+func (_e *SyncQueries_Expecter) RemoveHolderFromQueues(ctx any, holderKey any, controllerName any) *SyncQueries_RemoveHolderFromQueues_Call {
+	return &SyncQueries_RemoveHolderFromQueues_Call{Call: _e.mock.On("RemoveHolderFromQueues", ctx, holderKey, controllerName)}
+}
+
+func (_c *SyncQueries_RemoveHolderFromQueues_Call) Run(run func(ctx context.Context, holderKey string, controllerName string)) *SyncQueries_RemoveHolderFromQueues_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *SyncQueries_RemoveHolderFromQueues_Call) Return(err error) *SyncQueries_RemoveHolderFromQueues_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *SyncQueries_RemoveHolderFromQueues_Call) RunAndReturn(run func(ctx context.Context, holderKey string, controllerName string) error) *SyncQueries_RemoveHolderFromQueues_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RemoveWorkflowFromQueues provides a mock function for the type SyncQueries
+func (_mock *SyncQueries) RemoveWorkflowFromQueues(ctx context.Context, workflowKey string, controllerName string) error {
+	ret := _mock.Called(ctx, workflowKey, controllerName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveWorkflowFromQueues")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, workflowKey, controllerName)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// SyncQueries_RemoveWorkflowFromQueues_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveWorkflowFromQueues'
+type SyncQueries_RemoveWorkflowFromQueues_Call struct {
+	*mock.Call
+}
+
+// RemoveWorkflowFromQueues is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workflowKey string
+//   - controllerName string
+func (_e *SyncQueries_Expecter) RemoveWorkflowFromQueues(ctx any, workflowKey any, controllerName any) *SyncQueries_RemoveWorkflowFromQueues_Call {
+	return &SyncQueries_RemoveWorkflowFromQueues_Call{Call: _e.mock.On("RemoveWorkflowFromQueues", ctx, workflowKey, controllerName)}
+}
+
+func (_c *SyncQueries_RemoveWorkflowFromQueues_Call) Run(run func(ctx context.Context, workflowKey string, controllerName string)) *SyncQueries_RemoveWorkflowFromQueues_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *SyncQueries_RemoveWorkflowFromQueues_Call) Return(err error) *SyncQueries_RemoveWorkflowFromQueues_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *SyncQueries_RemoveWorkflowFromQueues_Call) RunAndReturn(run func(ctx context.Context, workflowKey string, controllerName string) error) *SyncQueries_RemoveWorkflowFromQueues_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateControllerTimestamp provides a mock function for the type SyncQueries
 func (_mock *SyncQueries) UpdateControllerTimestamp(ctx context.Context, controllerName string, timestamp time.Time) error {
 	ret := _mock.Called(ctx, controllerName, timestamp)

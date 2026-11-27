@@ -1359,3 +1359,248 @@ spec:
 	require.NoError(t, err)
 	assert.Equal(t, "Pod failed", node.Message, "still, on the next reconcile")
 }
+
+// dagWithErroringLockWaiter runs, side by side, a task that holds the
+// semaphore and a task that asks for the semaphore and a mutex but errors on
+// its display name, which is checked only once its node exists: after it has
+// joined the queues of both locks (#17013).
+const dagWithErroringLockWaiter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: lock-waiter
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: holder
+            template: job
+            arguments: {parameters: [{name: label, value: ok}]}
+          - name: victim
+            template: job
+            arguments: {parameters: [{name: label, value: "has space"}]}
+    - name: job
+      inputs:
+        parameters: [{name: label}]
+      annotations:
+        workflows.argoproj.io/display-name: "job-{{inputs.parameters.label}}"
+      synchronization:
+        semaphores:
+          - configMapKeyRef: {name: lock-waiter, key: slots}
+        mutexes:
+          - name: lock-waiter-{{inputs.parameters.label}}
+      container:
+        image: busybox
+        command: [sleep, "60"]
+`
+
+// wfWithMutex is a workflow whose only step needs the mutex name.
+func wfWithMutex(name, mutex string) *wfv1.Workflow {
+	return wfv1.MustUnmarshalWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: %s
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      synchronization:
+        mutexes:
+          - name: %s
+      container:
+        image: busybox
+        command: [sleep, "60"]
+`, name, mutex))
+}
+
+// newLockWaiterController returns a controller whose ConfigMap semaphore
+// lock-waiter/slots has slots slots.
+func newLockWaiterController(ctx context.Context, t *testing.T, slots int) (context.CancelFunc, *WorkflowController) {
+	t.Helper()
+	cancel, controller := newController(ctx)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "lock-waiter", Namespace: "default"},
+		Data:       map[string]string{"slots": strconv.Itoa(slots)},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+	return cancel, controller
+}
+
+// operateNew creates wf and operates on it once.
+func operateNew(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow) *wfOperationCtx {
+	t.Helper()
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	return woc
+}
+
+func holdsMutex(wf *wfv1.Workflow) bool {
+	return wf.Status.Synchronization != nil && wf.Status.Synchronization.Mutex != nil && len(wf.Status.Synchronization.Mutex.Holding) == 1
+}
+
+// A node that errors while it waits for its locks leaves the queues of all of
+// them at once, so another workflow can take the free mutex while the
+// node's own workflow still runs (#17013).
+func TestErroredLockWaiterLeavesEveryQueue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newLockWaiterController(ctx, t, 1)
+	defer cancel()
+
+	woc := operateNew(ctx, t, controller, wfv1.MustUnmarshalWorkflow(dagWithErroringLockWaiter))
+	victim, err := woc.wf.GetNodeByName("lock-waiter.victim")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, victim.Phase)
+	assert.Contains(t, victim.Message, "displayName must match")
+	require.NotNil(t, victim.SynchronizationStatus, "the node waited for a lock")
+	holder, err := woc.wf.GetNodeByName("lock-waiter.holder")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodePending, holder.Phase)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	other := operateNew(ctx, t, controller, wfWithMutex("other", "lock-waiter-has space"))
+	assert.True(t, holdsMutex(other.wf), "the free mutex must be acquirable while the errored node's workflow still runs")
+}
+
+// A node that errors after it acquired its locks, while its pod runs, keeps
+// them until it is finished: leaving the queues releases nothing.
+func TestErroredLockHolderKeepsItsLocks(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newLockWaiterController(ctx, t, 2)
+	defer cancel()
+
+	woc := operateNew(ctx, t, controller, wfv1.MustUnmarshalWorkflow(dagWithErroringLockWaiter))
+	victim, err := woc.wf.GetNodeByName("lock-waiter.victim")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, victim.Phase)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 2, "the victim's pod was created")
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	other := operateNew(ctx, t, controller, wfWithMutex("other", "lock-waiter-has space"))
+	assert.False(t, holdsMutex(other.wf), "the mutex is still held")
+}
+
+// A retried node that errors while it waits for its locks leaves their queues
+// too.
+func TestErroredRetriedLockWaiterLeavesEveryQueue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newLockWaiterController(ctx, t, 1)
+	defer cancel()
+
+	woc := operateNew(ctx, t, controller, wfv1.MustUnmarshalWorkflow(strings.Replace(dagWithErroringLockWaiter,
+		"    - name: job\n", "    - name: job\n      retryStrategy: {limit: 2, retryPolicy: Always}\n", 1)))
+	victim, err := woc.wf.GetNodeByName("lock-waiter.victim")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeRetry, victim.Type)
+	assert.Equal(t, wfv1.NodeError, victim.Phase)
+
+	other := operateNew(ctx, t, controller, wfWithMutex("other", "lock-waiter-has space"))
+	assert.True(t, holdsMutex(other.wf), "the free mutex must be acquirable")
+}
+
+// A node whose locks cannot all be queued for leaves the queues it did join,
+// while its workflow still runs.
+func TestLockWaiterFailingToQueueLeavesEveryQueue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newLockWaiterController(ctx, t, 1)
+	defer cancel()
+
+	// The free semaphore is queued for first; the second semaphore cannot be
+	// built, because its ConfigMap does not exist.
+	woc := operateNew(ctx, t, controller, wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: lock-waiter
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: runner
+            template: runner
+          - name: victim
+            template: victim
+    - name: runner
+      container:
+        image: busybox
+        command: [sleep, "60"]
+    - name: victim
+      synchronization:
+        semaphores:
+          - configMapKeyRef: {name: lock-waiter, key: slots}
+          - configMapKeyRef: {name: missing, key: slots}
+      container:
+        image: busybox
+        command: [sleep, "60"]
+`))
+	victim, err := woc.wf.GetNodeByName("lock-waiter.victim")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, victim.Phase)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	other := operateNew(ctx, t, controller, wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: other
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      synchronization:
+        semaphores:
+          - configMapKeyRef: {name: lock-waiter, key: slots}
+      container:
+        image: busybox
+        command: [sleep, "60"]
+`))
+	require.NotNil(t, other.wf.Status.Synchronization)
+	require.NotNil(t, other.wf.Status.Synchronization.Semaphore)
+	assert.Len(t, other.wf.Status.Synchronization.Semaphore.Holding, 1, "the free semaphore must be acquirable")
+}
+
+// A node without synchronization that errors on its display name has no lock
+// queues to leave, and does not use the lock manager, as handleSynchronization
+// does not.
+func TestErroredNodeWithoutSynchronizationDoesNotUseLockManager(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.syncManager = nil
+
+	woc := operateNew(ctx, t, controller, wfv1.MustUnmarshalWorkflow(strings.Replace(dagWithErroringLockWaiter, `      synchronization:
+        semaphores:
+          - configMapKeyRef: {name: lock-waiter, key: slots}
+        mutexes:
+          - name: lock-waiter-{{inputs.parameters.label}}
+`, "", 1)))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, woc.wf.Status.Message)
+	victim, err := woc.wf.GetNodeByName("lock-waiter.victim")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, victim.Phase)
+	assert.Contains(t, victim.Message, "displayName must match")
+}
