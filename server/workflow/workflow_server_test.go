@@ -2,7 +2,10 @@ package workflow
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/go-jose/go-jose/v4/jwt"
@@ -13,11 +16,17 @@ import (
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 	ktesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
@@ -706,6 +715,147 @@ type testWatchWorkflowServer struct {
 
 func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 	panic("implement me")
+}
+
+type testWatchEventsServer struct {
+	testServerStream
+}
+
+func (s testWatchEventsServer) Send(event *workflowpkg.EventWatchEvent) error {
+	return s.SendMsg(event)
+}
+
+func TestWatchEventsInstanceID(t *testing.T) {
+	t.Run("Pod", func(t *testing.T) { testWatchEventsInstanceID(t, "Pod", "pods") })
+	t.Run("Workflow", func(t *testing.T) { testWatchEventsInstanceID(t, "Workflow", "workflows") })
+}
+
+func testWatchEventsInstanceID(t *testing.T, kind, resource string) {
+	t.Helper()
+	kindSelector := "involvedObject.kind=" + kind
+	selector := kindSelector + ",involvedObject.name=worker"
+	const (
+		instance    = "instance-a"
+		instanceKey = common.LabelKeyControllerInstanceID
+		namespace   = "workflows"
+	)
+	for _, tt := range []struct {
+		name, namespace, instanceID, selector string
+		labelSelector                         string
+		unlabeled                             bool
+		getErr                                error
+		wantCode                              codes.Code
+		wantGet, wantUID, matchesCurrent      bool
+	}{
+		{name: "Events", namespace: namespace, instanceID: instance, selector: selector, wantGet: true, wantUID: true, matchesCurrent: true},
+		{name: "Warnings", namespace: namespace, instanceID: instance, selector: selector + ",type!=Normal", labelSelector: "app=test", wantGet: true, wantUID: true, matchesCurrent: true},
+		{name: "Current UID", namespace: namespace, instanceID: instance, selector: selector + ",involvedObject.uid=current", wantGet: true, wantUID: true, matchesCurrent: true},
+		{name: "Previous UID", namespace: namespace, instanceID: instance, selector: selector + ",involvedObject.uid=old", wantGet: true},
+		{name: "Exclude current UID", namespace: namespace, instanceID: instance, selector: selector + ",involvedObject.uid!=current", wantGet: true},
+		{name: "Conflicting names", namespace: namespace, instanceID: instance, selector: selector + ",involvedObject.name=worker-two", wantGet: true, wantUID: true},
+		{name: "Other instance", namespace: namespace, instanceID: "instance-b", selector: selector, wantGet: true},
+		{name: "Unlabeled object", namespace: namespace, instanceID: instance, selector: selector, unlabeled: true, wantGet: true},
+		{name: "Deleted object", namespace: namespace, instanceID: instance, selector: selector, getErr: apierr.NewNotFound(schema.GroupResource{Resource: resource}, "worker"), wantGet: true},
+		{name: "Forbidden object", namespace: namespace, instanceID: instance, selector: selector, getErr: apierr.NewForbidden(schema.GroupResource{Resource: resource}, "worker", nil), wantGet: true},
+		{name: "GET unavailable", namespace: namespace, instanceID: instance, selector: selector, getErr: apierr.NewServiceUnavailable("unavailable"), wantGet: true},
+		{name: "GET throttled", namespace: namespace, instanceID: instance, selector: selector, getErr: apierr.NewTooManyRequests("throttled", 1), wantGet: true},
+		{name: "GET unauthorized", namespace: namespace, instanceID: instance, selector: selector, getErr: apierr.NewUnauthorized("unauthorized"), wantGet: true, wantCode: codes.Unauthenticated},
+		{name: "Default instance", namespace: namespace, selector: selector},
+		{name: "Show all", namespace: namespace, instanceID: instance},
+		{name: "All namespaces", instanceID: instance, selector: selector},
+		{name: "Other kind", namespace: namespace, instanceID: instance, selector: "involvedObject.kind=Sensor,involvedObject.name=worker"},
+		{name: "No exact name", namespace: namespace, instanceID: instance, selector: kindSelector + ",involvedObject.name!=worker"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			meta := metav1.ObjectMeta{Namespace: namespace, Name: "worker", UID: "current", Labels: map[string]string{instanceKey: instance}}
+			if tt.unlabeled {
+				delete(meta.Labels, instanceKey)
+			}
+			client := fake.NewClientset(&corev1.Pod{ObjectMeta: meta})
+			wfClient := v1alpha.NewClientset(&v1alpha1.Workflow{ObjectMeta: meta})
+			objectClient := &client.Fake
+			if kind == "Workflow" {
+				objectClient = &wfClient.Fake
+			}
+			if tt.getErr != nil {
+				objectClient.PrependReactor("get", resource, func(ktesting.Action) (bool, runtime.Object, error) {
+					return true, nil, tt.getErr
+				})
+			}
+			ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClient)
+			ctx, cancel := context.WithCancel(context.WithValue(ctx, auth.KubeKey, client))
+			defer cancel()
+			client.PrependWatchReactor("events", func(ktesting.Action) (bool, watch.Interface, error) {
+				cancel()
+				return true, watch.NewRaceFreeFake(), nil
+			})
+			server := &workflowServer{instanceIDService: instanceid.NewService(tt.instanceID)}
+			timeout := int64(25)
+			opts := metav1.ListOptions{FieldSelector: tt.selector, LabelSelector: tt.labelSelector, ResourceVersion: "42", TimeoutSeconds: &timeout}
+			req := &workflowpkg.WatchEventsRequest{Namespace: tt.namespace, ListOptions: opts.DeepCopy()}
+			err := server.WatchEvents(req, testWatchEventsServer{testServerStream{ctx}})
+			assert.Equal(t, opts, *req.ListOptions)
+			actions := append(wfClient.Actions(), client.Actions()...)
+			if tt.wantGet {
+				require.NotEmpty(t, actions)
+				assert.True(t, actions[0].Matches("get", resource))
+				assert.Equal(t, namespace, actions[0].GetNamespace())
+				assert.Equal(t, "worker", actions[0].(ktesting.GetAction).GetName())
+				actions = actions[1:]
+			}
+			if tt.wantCode != codes.OK {
+				require.Equal(t, tt.wantCode, status.Code(err))
+				require.Empty(t, actions)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, actions, 1)
+			action := actions[0].(ktesting.WatchActionImpl)
+			assert.True(t, action.Matches("watch", "events"))
+			assert.Equal(t, tt.namespace, action.GetNamespace())
+			want := opts
+			want.Watch = true
+			if tt.wantUID {
+				want.FieldSelector += ",involvedObject.uid=current"
+				event := fields.Set{"involvedObject.kind": kind, "involvedObject.name": "worker", "involvedObject.uid": "current", "type": "Warning"}
+				selector := action.GetWatchRestrictions().Fields
+				assert.Equal(t, tt.matchesCurrent, selector.Matches(event))
+				event["involvedObject.name"] = "worker-two"
+				assert.False(t, selector.Matches(event))
+				event["involvedObject.name"] = "worker"
+				event["involvedObject.uid"] = "old"
+				assert.False(t, selector.Matches(event))
+			} else {
+				server.instanceIDService.With(&want)
+			}
+			assert.Equal(t, want, action.GetListOptions())
+		})
+	}
+}
+
+func TestWatchEventsInvalidFieldSelector(t *testing.T) {
+	const selector = "involvedObject.kind=Pod,involvedObject.name=worker,invalid"
+	const message = "invalid field selector"
+	// The client-go fake panics on malformed selectors before it invokes a watch reactor.
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/namespaces/workflows/events", r.URL.Path)
+		assert.Equal(t, "true", r.URL.Query().Get("watch"))
+		assert.Equal(t, selector, r.URL.Query().Get("fieldSelector"))
+		assert.Equal(t, common.LabelKeyControllerInstanceID+"=instance-a", r.URL.Query().Get("labelSelector"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		response := apierr.NewBadRequest(message).ErrStatus
+		response.TypeMeta = metav1.TypeMeta{APIVersion: "v1", Kind: "Status"}
+		assert.NoError(t, json.NewEncoder(w).Encode(response))
+	}))
+	defer api.Close()
+	client, err := kubernetes.NewForConfig(&rest.Config{Host: api.URL})
+	require.NoError(t, err)
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, client)
+	server := &workflowServer{instanceIDService: instanceid.NewService("instance-a")}
+	err = server.WatchEvents(&workflowpkg.WatchEventsRequest{Namespace: "workflows", ListOptions: &metav1.ListOptions{FieldSelector: selector}}, testWatchEventsServer{testServerStream{ctx}})
+	require.ErrorContains(t, err, message)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
 
 func TestWatchWorkflows(t *testing.T) {

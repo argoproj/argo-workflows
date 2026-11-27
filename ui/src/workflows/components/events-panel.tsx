@@ -11,7 +11,7 @@ import {Event} from '../../shared/models';
 import {services} from '../../shared/services';
 import useTimestamp, {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
-export function EventsPanel({namespace, name, kind}: {namespace: string; name: string; kind: string}) {
+export function EventsPanel({namespace, name, kind, uid}: {namespace: string; name: string; kind: string; uid?: string}) {
     const [showAll, setShowAll] = useState(false);
     const [hideNormal, setHideNormal] = useState(false);
     const [events, setEvents] = useState<Event[]>();
@@ -22,6 +22,9 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
         if (!showAll) {
             fieldSelectors.push('involvedObject.kind=' + kind);
             fieldSelectors.push('involvedObject.name=' + name);
+            if (uid) {
+                fieldSelectors.push('involvedObject.uid=' + uid);
+            }
         }
         if (hideNormal) {
             fieldSelectors.push('type!=Normal');
@@ -39,7 +42,7 @@ export function EventsPanel({namespace, name, kind}: {namespace: string; name: s
         );
         lw.start();
         return () => lw.stop();
-    }, [showAll, hideNormal]);
+    }, [namespace, name, kind, uid, showAll, hideNormal]);
 
     const tableRef = useRef<HTMLDivElement | null>(null);
 
