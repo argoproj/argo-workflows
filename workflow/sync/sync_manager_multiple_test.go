@@ -326,3 +326,38 @@ func TestSyncManagersContendingForSemaphore(t *testing.T) {
 		})
 	}
 }
+
+func TestDatabaseLockDroppedWhenUnused(t *testing.T) {
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			ctx, deferfn, syncMgr1, syncMgr2 := setupMultipleLockManagers(t, dbType, 1)
+			defer deferfn()
+			const lockName = "default/Database/my-db-semaphore"
+
+			wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
+			wf01.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+			wf01.Name = "wf-01"
+			wf02 := wf01.DeepCopy()
+			wf02.CreationTimestamp = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+			wf02.Name = "wf-02"
+
+			checkCanAcquire(ctx, t, syncMgr1, wf01)
+			checkCannotAcquire(ctx, t, syncMgr2, wf02)
+
+			// wf-02 still waits on the other controller, so neither drops the lock.
+			syncMgr1.Release(ctx, wf01, wf01.Name, wf01.Spec.Synchronization)
+			assert.Contains(t, syncMgr1.syncLockMap, lockName)
+			assert.Contains(t, syncMgr2.syncLockMap, lockName)
+
+			// wf-02 holds the lock now, then releases it.
+			checkCanAcquire(ctx, t, syncMgr2, wf02)
+			syncMgr1.CheckWorkflowExistence(ctx)
+			assert.Contains(t, syncMgr1.syncLockMap, lockName)
+			syncMgr2.Release(ctx, wf02, wf02.Name, wf02.Spec.Synchronization)
+			assert.NotContains(t, syncMgr2.syncLockMap, lockName)
+
+			syncMgr1.CheckWorkflowExistence(ctx)
+			assert.NotContains(t, syncMgr1.syncLockMap, lockName)
+		})
+	}
+}

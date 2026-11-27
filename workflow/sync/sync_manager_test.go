@@ -731,12 +731,9 @@ func TestReleaseAllReleasesEverySemaphoreHolder(t *testing.T) {
 	syncManager.ReleaseAll(ctx, wf)
 	assert.Nil(t, wf.Status.Synchronization)
 
-	// Every holder's slot must have been released, not just the first one.
-	sema := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-	require.NotNil(t, sema)
-	holders, err := sema.getCurrentHolders(ctx)
-	require.NoError(t, err)
-	assert.Empty(t, holders)
+	// Every holder's slot must have been released, not just the first one,
+	// so nothing uses the semaphore any more and it is dropped from the map.
+	assert.NotContains(t, syncManager.syncLockMap, "default/ConfigMap/my-config/template")
 }
 
 type mockGetSyncLimit struct {
@@ -1721,4 +1718,92 @@ func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
 			assert.True(t, acquired, "live-holder must keep its lock")
 		})
 	}
+}
+
+func TestUnusedLocksAreDroppedFromMap(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewClientset()
+	var cm v1.ConfigMap
+	wfv1.MustUnmarshal("@testdata/sync_manager/config-map.yaml", &cm)
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	const mutexKey = "default/Mutex/my-mutex"
+	const semaphoreKey = "default/ConfigMap/my-config/workflow"
+
+	newManager := func(t *testing.T, exists func(string) bool) *Manager {
+		t.Helper()
+		syncManager, err := NewLockManager(ctx, kube, "", nil, GetSyncLimitFunc(kube), func(string) {}, exists, false)
+		require.NoError(t, err)
+		return syncManager
+	}
+	tryAcquire := func(t *testing.T, syncManager *Manager, wf *wfv1.Workflow) bool {
+		t.Helper()
+		acquired, _, _, _, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+		require.NoError(t, err)
+		return acquired
+	}
+
+	t.Run("MutexKeptWhileHeldOrWaitedOn", func(t *testing.T) {
+		existing := map[string]bool{"default/waiter": true}
+		syncManager := newManager(t, func(key string) bool { return existing[key] })
+		holder := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
+		waiter := holder.DeepCopy()
+		waiter.Name = "waiter"
+
+		require.True(t, tryAcquire(t, syncManager, holder))
+		require.False(t, tryAcquire(t, syncManager, waiter))
+
+		// The holder is done but the waiter is still queued.
+		syncManager.ReleaseAll(ctx, holder)
+		require.Contains(t, syncManager.syncLockMap, mutexKey)
+
+		// The waiter now holds the mutex and its workflow still exists.
+		require.True(t, tryAcquire(t, syncManager, waiter))
+		syncManager.CheckWorkflowExistence(ctx)
+		require.Contains(t, syncManager.syncLockMap, mutexKey)
+
+		// Nothing holds or waits for the mutex any more.
+		syncManager.Release(ctx, waiter, "", waiter.Spec.Synchronization)
+		assert.NotContains(t, syncManager.syncLockMap, mutexKey)
+
+		// The mutex is recreated on next use and still excludes a second workflow.
+		next := holder.DeepCopy()
+		next.Name = "next"
+		other := holder.DeepCopy()
+		other.Name = "other"
+		require.True(t, tryAcquire(t, syncManager, next))
+		assert.False(t, tryAcquire(t, syncManager, other))
+	})
+
+	t.Run("SemaphoreDroppedAfterLastRelease", func(t *testing.T) {
+		syncManager := newManager(t, WorkflowExistenceFunc)
+		holder := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-semaphore.yaml")
+
+		require.True(t, tryAcquire(t, syncManager, holder))
+		require.Contains(t, syncManager.syncLockMap, semaphoreKey)
+
+		syncManager.ReleaseAll(ctx, holder)
+		assert.NotContains(t, syncManager.syncLockMap, semaphoreKey)
+	})
+
+	t.Run("CheckWorkflowExistenceDropsLocksOfDeletedWorkflows", func(t *testing.T) {
+		syncManager := newManager(t, WorkflowExistenceFunc)
+		holder := wfv1.MustUnmarshalWorkflow("@testdata/sync_manager/wf-with-mutex.yaml")
+		waiter := holder.DeepCopy()
+		waiter.Name = "waiter"
+		require.True(t, tryAcquire(t, syncManager, holder))
+		require.False(t, tryAcquire(t, syncManager, waiter))
+
+		syncManager.CheckWorkflowExistence(ctx)
+		assert.Empty(t, syncManager.syncLockMap)
+	})
+
+	t.Run("PoisonedLockKept", func(t *testing.T) {
+		syncManager := newManager(t, WorkflowExistenceFunc)
+		syncManager.poison(ctx, mutexKey, "test")
+
+		syncManager.CheckWorkflowExistence(ctx)
+		assert.Contains(t, syncManager.syncLockMap, mutexKey)
+	})
 }
