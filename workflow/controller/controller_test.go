@@ -93,6 +93,9 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 // test exporter extract metric values from the metrics subsystem
 var testExporter *telemetry.TestMetricsExporter
 
+// newController builds a test controller from fake API objects and configuration
+// callbacks, then starts and syncs its informers. The returned cancel function
+// stops background work and shuts down the workflow queue.
 func newController(ctx context.Context, options ...any) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
@@ -153,6 +156,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		healthzAge:                 5 * time.Minute,
 		maxOperationTime:           30 * time.Second,
 		requeueTime:                10 * time.Second,
+		completionDutyCyclePercent: 20,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},

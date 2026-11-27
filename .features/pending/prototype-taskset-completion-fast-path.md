@@ -7,5 +7,5 @@ This opt-in prototype sets the minimum delay before reconciling a workflow after
 Set `COMPLETED_REQUEUE_TIME_MS` on the controller to a positive integer number of milliseconds, for example `250` or `1000`; zero, negative, malformed and overflowing values fail startup.
 `DEFAULT_REQUEUE_TIME` caps the completion delay.
 The agent still batches results on its own ticker, so lower `ARGO_AGENT_PATCH_RATE` too to see much benefit.
-There is no per-workflow throttling, so a large executor-plugin fan-out can reconcile at roughly the configured rate, increasing load on the controller, API server and etcd.
+The controller increases completion delays for expensive workflows using `COMPLETED_REQUEUE_DUTY_CYCLE_PERCENT`, which defaults to `20` percent of one worker's time per workflow.
 Gains may vary under load: if the workflow informer is behind the controller's last write, the reconcile is rejected as outdated and waits the full `DEFAULT_REQUEUE_TIME` before retrying.
