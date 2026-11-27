@@ -62,6 +62,7 @@
     "ffsv",
 	"gcflags",
     "gloglevel",
+    "GOCOVERDIR",
     "GOPATH",
     "goroutines",
     "govaluate",

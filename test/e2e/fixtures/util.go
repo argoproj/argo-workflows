@@ -28,6 +28,20 @@ func Exec(ctx context.Context, name string, stdin string, args ...string) (strin
 		cmd.Stdin = bytes.NewReader(data)
 	}
 	cmd.Env = os.Environ()
+	if dir := os.Getenv("E2E_CLI_GOCOVERDIR"); dir != "" && filepath.Base(name) == "argo" {
+		// The CLI is built with -cover (make COVER=true). Give each call a
+		// directory of its own: every process rewrites the shared meta-data
+		// file at startup, and a race on it prints an error into the output
+		// the tests parse.
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return "", err
+		}
+		coverDir, err := os.MkdirTemp(dir, "argo-")
+		if err != nil {
+			return "", err
+		}
+		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
+	}
 	_, _ = fmt.Println(cmd.String())
 	output, err := runWithTimeout(cmd)
 	// Command completed before timeout. Print output and error if it exists.
