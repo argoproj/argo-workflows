@@ -159,7 +159,7 @@ func TestTracingWaitContainerChildSpans(t *testing.T) {
 	require.NoError(t, err)
 	we := newTaskResultTestExecutor(t, wfv1.Template{Container: &corev1.Container{}}, &mocks.ContainerRuntimeExecutor{}, argofake.NewClientset())
 	we.Tracing = tr
-	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID}, false)
+	we.sink = we.NewTaskResultSink(TaskConfig{WorkflowName: we.workflow, WorkflowUID: we.workflowUID, NodeID: we.nodeID})
 
 	// Create parent span
 	ctx, waitSpan := tr.StartRunWaitContainer(ctx, fakeWorkflow, fakeNamespace)

@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
-	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -597,37 +595,18 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	deadline := taskDeadline(pb.in.workflowDeadline, opts.executionDeadline, opts.onExitPod)
 
 	// Add standard environment variables, making pod spec larger
-	envVars := []apiv1.EnvVar{
-		{Name: common.EnvVarNodeID, Value: nodeID},
-		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
-		{Name: common.EnvVarDeadline, Value: deadline.Format(time.RFC3339)},
-		{Name: common.EnvVarWorkflowName, Value: pb.in.wfName},
-	}
-
-	carrier := &envcar.Carrier{SetEnvFunc: func(key, value string) {
-		envVars = append(envVars, apiv1.EnvVar{Name: key, Value: value})
-	}}
-	prop := propagation.TraceContext{}
-	prop.Inject(ctx, carrier)
-	// only set tick durations/EnvVarProgressFile if progress is enabled.
-	// The progress is only monitored if the tick durations are >0.
-
-	if pb.in.progressPatchTickDuration != 0 && pb.in.progressFileTickDuration != 0 {
-		envVars = append(envVars,
-			apiv1.EnvVar{
-				Name:  common.EnvVarProgressFile,
-				Value: common.ArgoProgressPath,
-			},
-			apiv1.EnvVar{
-				Name:  common.EnvVarProgressPatchTickDuration,
-				Value: pb.in.progressPatchTickDuration.String(),
-			},
-			apiv1.EnvVar{
-				Name:  common.EnvVarProgressFileTickDuration,
-				Value: pb.in.progressFileTickDuration.String(),
-			},
-		)
-	}
+	traceContext := propagation.MapCarrier{}
+	propagation.TraceContext{}.Inject(ctx, traceContext)
+	envVars := common.TaskEnv{
+		NodeID:                    nodeID,
+		IncludeScriptOutput:       opts.includeScriptOutput,
+		Deadline:                  deadline,
+		WorkflowName:              pb.in.wfName,
+		TraceContext:              traceContext,
+		ProgressFile:              common.ArgoProgressPath,
+		ProgressPatchTickDuration: pb.in.progressPatchTickDuration,
+		ProgressFileTickDuration:  pb.in.progressFileTickDuration,
+	}.EnvVars()
 
 	for i, c := range pod.Spec.InitContainers {
 		c.Env = append(c.Env, containerNameEnv(c.Name))

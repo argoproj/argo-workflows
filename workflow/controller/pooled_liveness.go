@@ -125,7 +125,7 @@ func (woc *wfOperationCtx) checkLease(ctx context.Context, node *wfv1.NodeStatus
 // task: its worker completes or releases it.
 //
 // The worker never recovers a task from an earlier run: when it runs again
-// it fails every claim its pod holds before it claims anything.
+// it fails every claim its pod holds before it claims anything (RecoverPool).
 // So a restart since the claim is taken for the claim's end only once the
 // worker container isn't running, as when it crash loops before it can fail
 // the claim, and a running worker fails the claim, or made it. That lets

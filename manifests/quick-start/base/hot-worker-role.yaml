@@ -1,0 +1,31 @@
+# https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hot-worker
+  annotations:
+    workflows.argoproj.io/description: |
+      The minimum permissions a hot worker pool pod's worker needs, if you use hot workers (`pool:` on a template).
+
+      The worker finds its pool's tasks by watching WorkflowTaskSets, claims each by creating its WorkflowTaskResult, and reports through it.
+      Without `executor.serviceAccountName`, this is the pool's own service account: the template's or the workflow's.
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresults
+    verbs:
+      - create
+      - get
+      - patch
+      - delete
+      - list
+      - watch

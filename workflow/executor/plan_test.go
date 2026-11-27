@@ -174,9 +174,9 @@ func TestPlansAreWellFormed(t *testing.T) {
 		"resource":  {Resource: &wfv1.ResourceTemplate{}},
 	}
 	for name, tmpl := range templates {
-		for _, layout := range []Layout{LayoutLegacy, LayoutInitless, LayoutWorker} {
-			if layout == LayoutWorker && name == "resource" {
-				continue // the worker runs container and script templates only
+		for _, layout := range []Layout{LayoutLegacy, LayoutInitless, LayoutPool} {
+			if layout == LayoutPool && name == "resource" {
+				continue // a pool runs container and script templates only
 			}
 			t.Run(fmt.Sprintf("%s/layout=%v", name, layout), func(t *testing.T) {
 				plan := planFor(tmpl, layout, []wfv1.ArtifactPluginName{"s3"})

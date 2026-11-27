@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -51,6 +52,17 @@ const DeadlineExceededMessage = "Step exceeded its deadline"
 // controller or the restarted worker reports it, whichever sees it first.
 func WorkerRestartedMessage(podName string) string {
 	return fmt.Sprintf("worker container of pod %s restarted", podName)
+}
+
+// ContainerFailureMessage is the message of a node whose container name
+// exited non-zero, as the controller words it from the container's
+// terminated state: its reason and exit code, then its own message, if any.
+func ContainerFailureMessage(name, reason string, exitCode int, message string) string {
+	msg := fmt.Sprintf("%s: %s (exit code %d)", name, reason, exitCode)
+	if message != "" {
+		msg += ": " + message
+	}
+	return msg
 }
 
 // RelWithin reports the path of target relative to base, and whether target is
@@ -450,4 +462,21 @@ func ExecutorTemplate(tmpl *wfv1.Template) *wfv1.Template {
 		Artifacts: simplified.Inputs.Artifacts,
 	}
 	return simplified
+}
+
+// MainArgs is the args main runs a container or script template with: its
+// container's, then, for a script with source, sourcePath, where the
+// source is staged.
+func MainArgs(tmpl *wfv1.Template, sourcePath string) []string {
+	switch {
+	case tmpl.Script != nil:
+		args := slices.Clone(tmpl.Script.Args)
+		if tmpl.Script.Source != "" {
+			args = append(args, sourcePath)
+		}
+		return args
+	case tmpl.Container != nil:
+		return slices.Clone(tmpl.Container.Args)
+	}
+	return nil
 }

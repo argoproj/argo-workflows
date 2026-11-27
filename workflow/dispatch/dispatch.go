@@ -38,9 +38,14 @@ var (
 	// deleted or replaced. A worker discards the task's work.
 	ErrClaimLost = errors.New("claim lost")
 	// ErrTaskGone means the TaskSet was deleted or replaced just after the
-	// claim was created; the claim was withdrawn, unless the error also says
-	// withdrawing it failed.
+	// claim was created; the claim was withdrawn, unless the error is also
+	// ErrClaimUnsettled.
 	ErrTaskGone = errors.New("task set gone")
+	// ErrClaimUnsettled means Claim made a claim it then had to withdraw,
+	// and couldn't: the claim stays held by the worker, which never runs its
+	// task, and no other worker can claim it. Only the worker's restart,
+	// which fails the claims it holds (FailOwn), settles it.
+	ErrClaimUnsettled = errors.New("claim made but not withdrawn")
 	// ErrNotFound means the object doesn't exist.
 	ErrNotFound = errors.New("not found")
 	// ErrStale means an object of that name exists but isn't the one meant:

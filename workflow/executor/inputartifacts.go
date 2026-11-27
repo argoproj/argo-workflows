@@ -21,8 +21,7 @@ import (
 // fails, the original working directory is restored before returning.
 //
 // The chdir is process-wide, so StageInputArtifacts is for a process that
-// runs one task (the emissary). An in-process caller should use
-// linkInputArtifacts and give the command its working directory instead.
+// runs one task (the emissary).
 func StageInputArtifacts(ctx context.Context, paths TaskPaths, tmpl *wfv1.Template) error {
 	origWd, err := os.Getwd()
 	if err != nil {
