@@ -8,10 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestExecuteWfLifeCycleHook(t *testing.T) {
@@ -306,4 +308,308 @@ func TestExitHookSkippedOutputAbsenceSemantics(t *testing.T) {
 	require.NotNil(t, in2)
 	require.NotNil(t, in2.Value)
 	assert.Equal(t, "hook-fallback", in2.Value.String(), "?? must fire on the absent optional in hook arguments")
+}
+
+// A retried hook must not be counted as an attempt of the node it hooks.
+func TestRetriedHookIsNotCountedAsAttempt(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		workflow  string
+		retryNode string
+		hookNode  string
+		// hookRetried: the hook has a retryStrategy, so its pod is "<hookNode>(0)".
+		hookRetried bool
+	}{
+		{
+			// Issue #15163's example. The hook has no retryStrategy, so this guards #16290 (no re-run while the hook runs).
+			name:      "workflow level hook, template retryStrategy",
+			workflow:  "@testdata/hooks/wf-hook-retry-running-hook.yaml",
+			retryNode: "wf-hook-retry-running-hook",
+			hookNode:  "wf-hook-retry-running-hook.hooks.running",
+		},
+		{
+			name:        "workflow level hook, spec retryStrategy",
+			workflow:    "@testdata/hooks/wf-hook-spec-retry-running-hook.yaml",
+			retryNode:   "wf-hook-spec-retry-running-hook",
+			hookNode:    "wf-hook-spec-retry-running-hook.hooks.running",
+			hookRetried: true,
+		},
+		{
+			name:        "step level hook",
+			workflow:    "@testdata/hooks/step-hook-retry-running-hook.yaml",
+			retryNode:   "step-hook-retry-running-hook(0)[0].step",
+			hookNode:    "step-hook-retry-running-hook(0)[0].step.hooks.running",
+			hookRetried: true,
+		},
+		{
+			// Memoization creates the hook node before handleRetries does.
+			name:        "step level memoized hook",
+			workflow:    "@testdata/hooks/step-hook-retry-memoized-running-hook.yaml",
+			retryNode:   "step-hook-retry-memoized-running-hook(0)[0].step",
+			hookNode:    "step-hook-retry-memoized-running-hook(0)[0].step.hooks.running",
+			hookRetried: true,
+		},
+		{
+			name:        "dag task hook",
+			workflow:    "@testdata/hooks/dag-hook-retry-running-hook.yaml",
+			retryNode:   "dag-hook-retry-running-hook(0).task",
+			hookNode:    "dag-hook-retry-running-hook(0).task.hooks.running",
+			hookRetried: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+
+			hookPod := tt.hookNode
+			if tt.hookRetried {
+				hookPod += "(0)"
+			}
+
+			// The first attempt succeeds while the hook keeps running.
+			setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+				if node.Name == tt.retryNode+"(0)" {
+					return apiv1.PodSucceeded
+				}
+				return apiv1.PodRunning
+			})
+			// Reconcile 0 completes the retry node; reconcile 1 must leave it alone.
+			for i := range 2 {
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+
+				retryNode := woc.wf.Status.Nodes.FindByName(tt.retryNode)
+				require.NotNil(t, retryNode, "reconcile %d", i)
+				assert.Equal(t, wfv1.NodeSucceeded, retryNode.Phase, "reconcile %d", i)
+				assert.Len(t, getChildNodeIdsRetried(retryNode, woc.wf.Status.Nodes), 1, "reconcile %d: the retry node must have a single attempt", i)
+				hookNode := woc.wf.Status.Nodes.FindByName(tt.hookNode)
+				require.NotNil(t, hookNode, "reconcile %d", i)
+				assert.False(t, hookNode.Fulfilled(), "reconcile %d: the hook must still be running", i)
+				assert.Equal(t, &wfv1.NodeFlag{Hooked: true}, hookNode.NodeFlag, "reconcile %d: the hook must not be flagged as an attempt", i)
+				if tt.hookRetried {
+					hookAttempt := woc.wf.Status.Nodes.FindByName(hookPod)
+					require.NotNil(t, hookAttempt, "reconcile %d", i)
+					assert.Equal(t, &wfv1.NodeFlag{Hooked: true, Retried: true}, hookAttempt.NodeFlag, "reconcile %d", i)
+				}
+				assert.ElementsMatch(t, []string{tt.retryNode + "(0)", hookPod}, r4PodNodeNames(ctx, t, woc), "reconcile %d: only the attempt and the hook must have run", i)
+				assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "reconcile %d", i)
+			}
+
+			makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
+			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+		})
+	}
+}
+
+// A retried exit hook must not be flagged Retried. The workflow succeeds either
+// way, so only the flags and attempt count catch it.
+func TestRetriedExitHookIsNotCountedAsAttempt(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		workflow  string
+		retryNode string
+		hookNode  string
+	}{
+		{
+			name:      "step exit hook",
+			workflow:  "@testdata/hooks/step-exit-hook-retry.yaml",
+			retryNode: "step-exit-hook-retry(0)[0].step",
+			hookNode:  "step-exit-hook-retry(0)[0].step.onExit",
+		},
+		{
+			name:      "workflow onExit",
+			workflow:  "@testdata/hooks/wf-on-exit-retry.yaml",
+			retryNode: "wf-on-exit-retry",
+			hookNode:  "wf-on-exit-retry.onExit",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(tt.workflow)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := operateUntilFulfilled(t, newWorkflowOperationCtx(ctx, wf, controller), apiv1.PodSucceeded, 4)
+			assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+			retryNode := woc.wf.Status.Nodes.FindByName(tt.retryNode)
+			require.NotNil(t, retryNode)
+			assert.Len(t, getChildNodeIdsRetried(retryNode, woc.wf.Status.Nodes), 1, "the retry node must have a single attempt")
+			hookNode := woc.wf.Status.Nodes.FindByName(tt.hookNode)
+			require.NotNil(t, hookNode)
+			assert.Equal(t, &wfv1.NodeFlag{Hooked: true}, hookNode.NodeFlag, "the hook must not be flagged as an attempt")
+			hookAttempt := woc.wf.Status.Nodes.FindByName(tt.hookNode + "(0)")
+			require.NotNil(t, hookAttempt)
+			assert.Equal(t, &wfv1.NodeFlag{Hooked: true, Retried: true}, hookAttempt.NodeFlag)
+			assert.ElementsMatch(t, []string{tt.retryNode + "(0)", tt.hookNode + "(0)"}, r4PodNodeNames(ctx, t, woc))
+		})
+	}
+}
+
+// A hook saved as {Hooked, Retried} by an older controller must not be counted
+// as an attempt.
+func TestLegacyRetriedHookFlagIsNotCountedAsAttempt(t *testing.T) {
+	const (
+		retryNode = "step-hook-retry-running-hook(0)[0].step"
+		hookNode  = retryNode + ".hooks.running"
+	)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/step-hook-retry-running-hook.yaml")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// Simulate a hook saved by an older controller.
+	hook := woc.wf.Status.Nodes.FindByName(hookNode)
+	require.NotNil(t, hook)
+	hook.NodeFlag = &wfv1.NodeFlag{Hooked: true, Retried: true}
+	woc.wf.Status.Nodes.Set(ctx, hook.ID, *hook)
+
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == retryNode+"(0)" {
+			return apiv1.PodSucceeded
+		}
+		return apiv1.PodRunning
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	step := woc.wf.Status.Nodes.FindByName(retryNode)
+	require.NotNil(t, step)
+	assert.Equal(t, wfv1.NodeSucceeded, step.Phase)
+	assert.Len(t, getChildNodeIdsRetried(step, woc.wf.Status.Nodes), 1, "the saved hook must not count as an attempt")
+	assert.ElementsMatch(t, []string{retryNode + "(0)", hookNode + "(0)"}, r4PodNodeNames(ctx, t, woc))
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// An older controller counted a retried hook as an attempt, so it numbered the
+// attempt after (0) as (2). With the hook no longer counted, the next attempt
+// must not be numbered (2) again.
+func TestLegacyGapInRetryAttemptsIsNotReused(t *testing.T) {
+	const (
+		retryNode = "step-hook-retry-running-hook(0)[0].step"
+		hookNode  = retryNode + ".hooks.running"
+	)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/step-hook-retry-running-hook.yaml")
+	limit := intstr.FromInt32(5)
+	wf.Spec.RetryStrategy.Limit = &limit
+	run := wf.GetTemplateByName("run")
+	require.NotNil(t, run)
+	run.Container.Args = []string{"retries={{retries}}"}
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// Simulate what an older controller saved: the hook flagged as an attempt,
+	// and a failed attempt numbered (2), after (0) and the hook.
+	hook := woc.wf.Status.Nodes.FindByName(hookNode)
+	require.NotNil(t, hook)
+	hook.NodeFlag = &wfv1.NodeFlag{Hooked: true, Retried: true}
+	woc.wf.Status.Nodes.Set(ctx, hook.ID, *hook)
+	first := woc.wf.Status.Nodes.FindByName(retryNode + "(0)")
+	require.NotNil(t, first)
+	gapped := first.DeepCopy()
+	gapped.Name = retryNode + "(2)"
+	gapped.DisplayName = "step(2)"
+	gapped.ID = woc.wf.NodeID(gapped.Name)
+	gapped.Phase = wfv1.NodeFailed
+	gapped.FinishedAt = metav1.Now()
+	woc.wf.Status.Nodes.Set(ctx, gapped.ID, *gapped)
+	step := woc.wf.Status.Nodes.FindByName(retryNode)
+	require.NotNil(t, step)
+	require.Equal(t, []string{first.ID, hook.ID}, step.Children)
+	step.Children = append(step.Children, gapped.ID)
+	woc.wf.Status.Nodes.Set(ctx, step.ID, *step)
+
+	// (0) fails too, with retries left.
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == retryNode+"(0)" {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodRunning
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	step = woc.wf.Status.Nodes.FindByName(retryNode)
+	require.NotNil(t, step)
+	assert.Equal(t, wfv1.NodeRunning, step.Phase, step.Message)
+	assert.NotNil(t, woc.wf.Status.Nodes.FindByName(retryNode+"(3)"), "the next attempt must be (3)")
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	var args []string
+	for _, pod := range pods.Items {
+		if pod.Annotations[common.AnnotationKeyNodeName] == retryNode+"(3)" {
+			for _, c := range pod.Spec.Containers {
+				if c.Name == common.MainContainerName {
+					args = c.Args
+				}
+			}
+		}
+	}
+	assert.Contains(t, args, "retries=3", "{{retries}} must match the attempt's number")
+}
+
+// Issue #13233: with templateDefaults.retryStrategy, the workflow-level hook
+// is retried too. It must not use up the entrypoint's only retry.
+func TestTemplateDefaultsRetryWithWorkflowHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/wf-hook-template-defaults-retry.yaml")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	// The entrypoint keeps failing while the hook runs.
+	for i := range 3 {
+		setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+			if node.TemplateName == "main" {
+				return apiv1.PodFailed
+			}
+			return apiv1.PodRunning
+		})
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+		require.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase, "reconcile %d", i)
+	}
+
+	root := woc.wf.Status.Nodes.FindByName(wf.Name)
+	require.NotNil(t, root)
+	assert.Equal(t, wfv1.NodeFailed, root.Phase)
+	assert.Len(t, getChildNodeIdsRetried(root, woc.wf.Status.Nodes), 2, "the entrypoint must be retried once")
+	assert.ElementsMatch(t, []string{wf.Name + "(0)", wf.Name + "(1)", wf.Name + ".hooks.running(0)"}, r4PodNodeNames(ctx, t, woc))
+}
+
+// Issue #14058: with spec.retryStrategy and a DAG entrypoint, the workflow-level
+// hook must not start a second run of the DAG.
+func TestSpecRetryDAGWithWorkflowHook(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/hooks/wf-hook-spec-retry-dag.yaml")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := operateUntilFulfilled(t, newWorkflowOperationCtx(ctx, wf, controller), apiv1.PodSucceeded, 8)
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	root := woc.wf.Status.Nodes.FindByName(wf.Name)
+	require.NotNil(t, root)
+	assert.Len(t, getChildNodeIdsRetried(root, woc.wf.Status.Nodes), 1, "the DAG must run once")
+	assert.ElementsMatch(t, []string{wf.Name + "(0).a(0)", wf.Name + "(0).b(0)", wf.Name + ".hooks.running(0)"}, r4PodNodeNames(ctx, t, woc))
+	assert.Empty(t, r4UnfulfilledTyped(woc.wf), "every node must finish")
 }

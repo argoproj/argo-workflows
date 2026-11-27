@@ -2287,7 +2287,13 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	if lastChildNode == nil || len(childNodeIds) == 0 {
 		return localScope
 	}
-	localScope[varkeys.Retries.Template()] = strconv.Itoa(len(childNodeIds) - 1)
+	// The last attempt's number, as in handleRetries: a workflow saved by an
+	// older controller can skip a number, so the count can be lower.
+	retries := len(childNodeIds) - 1
+	if n, ok := retryAttemptNum(node.Name, lastChildNode.Name); ok {
+		retries = n
+	}
+	localScope[varkeys.Retries.Template()] = strconv.Itoa(retries)
 
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
@@ -4587,8 +4593,10 @@ func setWfTemplateLabel(wf *wfv1.Workflow) {
 	}
 }
 
-// getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.
-// This function aims to remove some unnecessary child nodes for `NodeType: Retry`, such as hooked nodes.
+// getChildNodeIdsAndLastRetriedNode returns the ids of the attempts of a Retry
+// node and its last attempt. Attempts are the children named "<retry node>(N)"
+// with `NodeStatus.NodeFlag.Retried=true` (or no NodeFlag, from older
+// controllers). Its other children, such as hooks, are left out.
 func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) ([]string, *wfv1.NodeStatus) {
 	childNodeIds := getChildNodeIdsRetried(node, nodes)
 
@@ -4603,12 +4611,19 @@ func getChildNodeIdsAndLastRetriedNode(node *wfv1.NodeStatus, nodes wfv1.Nodes) 
 	return childNodeIds, lastChildNode
 }
 
-// getChildNodeIdsRetried returns child node ids `NodeStatus.NodeFlag.Retried` are set to true.
+// getChildNodeIdsRetried returns the ids of the attempts of a Retry node: the
+// children named "<retry node>(N)" that have NodeFlag.Retried set or no
+// NodeFlag at all.
 func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	childrenIds := []string{}
 	for i := 0; i < len(node.Children); i++ {
 		n := getChildNodeIndex(node, nodes, i)
 		if n == nil {
+			continue
+		}
+		// Attempts are always named "<retry node>(N)". A hook saved by an
+		// older controller can carry the Retried flag, but it is not an attempt.
+		if !isRetryAttemptName(node.Name, n.Name) {
 			continue
 		}
 		// Include children with Retried flag set, OR children with no NodeFlag
@@ -4618,6 +4633,24 @@ func getChildNodeIdsRetried(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 		}
 	}
 	return childrenIds
+}
+
+// isRetryAttemptName reports whether name is that of an attempt of the Retry
+// node retryNodeName: "<retryNodeName>(N)".
+func isRetryAttemptName(retryNodeName, name string) bool {
+	_, ok := retryAttemptNum(retryNodeName, name)
+	return ok
+}
+
+// retryAttemptNum reports whether name is that of an attempt of the Retry node
+// retryNodeName, "<retryNodeName>(N)", and returns N.
+func retryAttemptNum(retryNodeName, name string) (int, bool) {
+	num, ok := strings.CutPrefix(name, retryNodeName+"(")
+	if !ok || !strings.HasSuffix(num, ")") {
+		return 0, false
+	}
+	n, err := strconv.Atoi(num[:len(num)-1])
+	return n, err == nil
 }
 
 func (woc *wfOperationCtx) setNodeDisplayName(ctx context.Context, node *wfv1.NodeStatus, displayName string) {

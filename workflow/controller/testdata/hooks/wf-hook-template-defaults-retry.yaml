@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-hook-template-defaults-retry
+  namespace: argo
+spec:
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: hook
+  templateDefaults:
+    retryStrategy:
+      limit: 1
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+    - name: hook
+      container:
+        image: argoproj/argosay:v2

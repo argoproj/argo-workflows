@@ -6499,6 +6499,23 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
 }
 
+// An older controller counted a retried hook as an attempt, so it can have
+// saved attempts (0) and (2). retries must be 2, the last attempt's number.
+func TestBuildRetryStrategyLocalScopeLegacyGap(t *testing.T) {
+	const step = "wf[0].step"
+	nodes := wfv1.Nodes{
+		"step": {ID: "step", Name: step, Type: wfv1.NodeTypeRetry, Children: []string{"a0", "hook", "a2"}},
+		"a0":   {ID: "a0", Name: step + "(0)", Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, NodeFlag: &wfv1.NodeFlag{Retried: true}},
+		"hook": {ID: "hook", Name: step + ".hooks.running", Type: wfv1.NodeTypeRetry, Phase: wfv1.NodeFailed, NodeFlag: &wfv1.NodeFlag{Hooked: true, Retried: true}},
+		"a2":   {ID: "a2", Name: step + "(2)", Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed, NodeFlag: &wfv1.NodeFlag{Retried: true}},
+	}
+	retryNode := nodes["step"]
+
+	localScope := buildRetryStrategyLocalScope(&retryNode, nodes)
+
+	assert.Equal(t, "2", localScope[varkeys.Retries.Template()])
+}
+
 // TestOperatorRetryExpressionError tests that retryStrategy.expression works when the last node Errored.
 // The expression says retry "true" and as the policy is not specified
 // we are proving that the policy applied was Always not OnFailure
@@ -7804,4 +7821,33 @@ func TestGenerateOutputResultRegex(t *testing.T) {
 	ref, expr = generateOutputResultRegex("template-name", stepsTmpl)
 	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
 	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
+}
+
+func TestIsRetryAttemptName(t *testing.T) {
+	const step = "wf(0)[0].step"
+	for _, tt := range []struct {
+		name, node string
+		want       bool
+	}{
+		{"first attempt", step + "(0)", true},
+		{"multi-digit attempt", step + "(12)", true},
+		{"lifecycle hook", step + ".hooks.running", false},
+		{"exit hook", step + ".onExit", false},
+		{"hook's own attempt", step + ".hooks.running(0)", false},
+		{"not a number", step + "(x)", false},
+		{"no closing bracket", step + "(0", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isRetryAttemptName(step, tt.node))
+		})
+	}
+}
+
+func TestRetryAttemptNum(t *testing.T) {
+	const step = "wf(0)[0].step"
+	num, ok := retryAttemptNum(step, step+"(12)")
+	assert.True(t, ok)
+	assert.Equal(t, 12, num)
+	_, ok = retryAttemptNum(step, step+".hooks.running(0)")
+	assert.False(t, ok)
 }
