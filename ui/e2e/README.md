@@ -70,7 +70,8 @@ and point the tests at it with `ARGO_UI_BASE_URL`.
   `postgres` profiles): the suite runs with it on or off. With it on, the
   workflow list also serves archived workflows, a workflow is only settled once
   the controller has archived it (`waitForPhase` waits for that too), and
-  teardown deletes archived copies as well. Specs that depend on it ask
+  teardown deletes archived copies as well, failing the test if a completed
+  workflow is never archived. Specs that depend on it ask
   `api.archiveEnabled()` and assert, skip or `fixme` accordingly; to run those
   locally, start the stack with `make start PROFILE=mysql AUTH_MODE=client`.
 - **Page objects** (`e2e/pages/`) centralise selectors. Prefer role/text/href

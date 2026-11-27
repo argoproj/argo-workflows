@@ -119,6 +119,8 @@ export class ApiClient {
      * supported" without it.
      */
     async archiveEnabled(): Promise<boolean> {
+        // A failed probe is not cached: it would fail every later call in
+        // this worker, teardown included.
         archiveEnabled ??= (async () => {
             const res = await this.request.get(`api/v1/archived-workflows/00000000-0000-0000-0000-000000000000?namespace=${this.namespace}`, {headers: this.headers});
             if (res.status() === 404) {
@@ -129,7 +131,10 @@ export class ApiClient {
                 return false;
             }
             throw new Error(`cannot tell whether the workflow archive is enabled: ${res.status()} ${body}`);
-        })();
+        })().catch(err => {
+            archiveEnabled = undefined;
+            throw err;
+        });
         return archiveEnabled;
     }
 
@@ -179,34 +184,81 @@ export class ApiClient {
      * so archived rows do not pile up in the list across tests and passes. A
      * completed workflow may not be archived yet (a test can end the moment the
      * page shows the final phase), and archiving it after its copy was deleted
-     * would leave the copy behind, so wait for that first.
+     * would leave the copy behind, so wait for that first. If the archive
+     * cannot be checked or the workflow is never archived, this still deletes
+     * what it can and then fails, rather than leave a row behind unnoticed.
      */
     private async deleteWorkflowEverywhere(name: string, uid?: string): Promise<void> {
-        if (!(await this.archiveEnabled())) {
+        let archive: boolean;
+        try {
+            archive = await this.archiveEnabled();
+        } catch (err) {
+            await this.delete('workflow', name);
+            throw err;
+        }
+        if (!archive) {
             return this.delete('workflow', name);
         }
-        const res = await this.request.get(this.path('workflow', name), {headers: this.headers});
-        if (res.ok()) {
-            const wf = await res.json();
-            uid ??= wf.metadata.uid;
-            if (TERMINAL_PHASES.has(wf.status?.phase)) {
-                await this.waitForArchived(name, 10_000).catch(() => undefined);
+        try {
+            const res = await this.request.get(this.path('workflow', name), {headers: this.headers});
+            if (res.ok()) {
+                const wf = await res.json();
+                uid ??= wf.metadata.uid;
+                if (TERMINAL_PHASES.has(wf.status?.phase)) {
+                    await this.waitForArchived(name);
+                }
+            }
+        } finally {
+            await this.delete('workflow', name);
+            if (uid) {
+                await this.deleteArchivedWorkflow(uid);
             }
         }
-        await this.delete('workflow', name);
-        if (uid) {
-            await this.request.delete(`api/v1/archived-workflows/${uid}?namespace=${this.namespace}`, {headers: this.headers});
+    }
+
+    private async deleteArchivedWorkflow(uid: string): Promise<void> {
+        await this.request.delete(`api/v1/archived-workflows/${uid}?namespace=${this.namespace}`, {headers: this.headers});
+    }
+
+    /**
+     * Deletes a cron workflow. Kubernetes garbage-collects the workflows it
+     * spawned, which carry an owner reference to it, but not their archived
+     * copies: the UI's example cron workflow runs every minute, so a test that
+     * spans a minute can leave one behind. Delete those by their cron label.
+     */
+    private async deleteCronWorkflowEverywhere(name: string): Promise<void> {
+        await this.delete('cronWorkflow', name);
+        if (!(await this.archiveEnabled())) {
+            return;
         }
+        const selector = encodeURIComponent(`workflows.argoproj.io/cron-workflow=${name}`);
+        const res = await this.request.get(`api/v1/archived-workflows?namespace=${this.namespace}&listOptions.labelSelector=${selector}`, {headers: this.headers});
+        expect(res.ok(), `list archived workflows of ${name} failed: ${res.status()}`).toBeTruthy();
+        const {items} = await res.json();
+        await Promise.all((items ?? []).map((wf: any) => this.deleteArchivedWorkflow(wf.metadata.uid)));
     }
 
     /**
      * Removes everything this client created or tracked; called on fixture
-     * teardown. Workflows a cron workflow spawned carry an owner reference to
-     * it, so Kubernetes garbage-collects them along with it.
+     * teardown. It attempts every deletion, then fails if any of them did, so
+     * a test that leaves something behind fails rather than the test after it.
      */
     async cleanup(): Promise<void> {
-        await Promise.all(
-            this.created.splice(0).map(({kind, name, uid}) => (kind === 'workflow' ? this.deleteWorkflowEverywhere(name, uid) : this.delete(kind, name)).catch(() => undefined))
+        const results = await Promise.allSettled(
+            this.created.splice(0).map(({kind, name, uid}) => {
+                switch (kind) {
+                    case 'workflow':
+                        return this.deleteWorkflowEverywhere(name, uid);
+                    case 'cronWorkflow':
+                        return this.deleteCronWorkflowEverywhere(name);
+                    default:
+                        return this.delete(kind, name);
+                }
+            })
         );
+        const errors = results.flatMap(r => (r.status === 'rejected' ? [r.reason] : []));
+        if (errors.length > 0) {
+            throw new Error(`teardown failed:\n\n${errors.map(err => err?.stack ?? String(err)).join('\n\n')}`);
+        }
     }
 }
