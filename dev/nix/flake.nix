@@ -263,11 +263,11 @@
                 owner = "grpc";
                 repo = "grpc-go";
                 rev = "cmd/protoc-gen-go-grpc/v${version}";
-                sha256 = "sha256-PAUM0chkZCb4hGDQtCgHF3omPm0jP1sSDolx4EuOwXo=";
+                sha256 = "sha256-I1sPfKhpCb/GNznKgEE2BZ11vAwJIc6HYf78/nIDRy4=";
               };
               modRoot = "cmd/protoc-gen-go-grpc";
               doCheck = false;
-              vendorHash = "sha256-yn6jo6Ku/bnbSX8FL0B/Uu3Knn59r1arjhsVUkZ0m9g=";
+              vendorHash = "sha256-lBOgdAE2FT5ZQxfG/ugqxtH5RB3946VJYjm+VUT1AEI=";
             };
             grpc-ecosystem = pkgs.buildGoModule rec {
               pname = "grpc-ecosystem";
