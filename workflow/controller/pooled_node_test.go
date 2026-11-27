@@ -281,7 +281,8 @@ func TestPooledNodeNotMissing(t *testing.T) {
 
 // TestPooledNodeNotKilled checks that stop, terminate, the workflow deadline
 // and a template timeout never act on a pod carrying a pooled node's ID, and
-// that the pod-lookup paths never return one for it.
+// that the pod-lookup paths never return one for it. A pooled node's
+// template timeout is checked with its task (TestPooledTimeoutDropsQueuedTask).
 func TestPooledNodeNotKilled(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -339,7 +340,7 @@ func TestPooledNodeNotKilled(t *testing.T) {
 				if podNode {
 					require.ErrorIs(t, err, ErrTimeout)
 				} else {
-					require.NoError(t, err, "a pooled node's timeouts don't end a pod")
+					require.NoError(t, err, "a pooled node's timeouts end it where its task is reconciled (checkPooledTimeouts)")
 				}
 
 				deletions := woc.controller.PodController.TestingQueueNumRequeues(pod.Namespace + "/" + pod.Name + "/deletePodByUID/" + string(pod.UID))

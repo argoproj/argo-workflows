@@ -185,13 +185,13 @@ func TestPooledReleaseWaitsForTaskSet(t *testing.T) {
 	node := mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
 	assert.Equal(t, wfv1.PooledTaskClaimed, node.PooledTask.State())
 	assert.False(t, node.PooledTask.Released())
-	n := requeued.take()
+	n, _ := requeued.take()
 	assert.Equal(t, 1, n, "requeued until the TaskSet is cached")
 
 	observeTaskSet(ctx, t, controller, fake, wf.Namespace, id)
 	node = mustNode(t, reconcilePooled(ctx, t, controller, wf), pooledStep)
 	assert.True(t, node.PooledTask.Released())
-	n = requeued.take()
+	n, _ = requeued.take()
 	assert.Zero(t, n)
 }
 
@@ -270,6 +270,8 @@ func TestPooledClaimGoneIsNotARelease(t *testing.T) {
 		claimUID types.UID
 		legacy   bool
 		released bool
+		// stopped is set when the claim going finishes the interrupted node.
+		stopped bool
 	}{
 		{name: "released", phase: wfv1.NodeRunning, state: wfv1.PooledTaskClaimed, taskSetUID: "task-set-uid", released: true},
 		{name: "released, legacy completion status", phase: wfv1.NodeRunning, state: wfv1.PooledTaskClaimed, taskSetUID: "task-set-uid", legacy: true, released: true},
@@ -278,6 +280,8 @@ func TestPooledClaimGoneIsNotARelease(t *testing.T) {
 		{name: "another TaskSet cached", phase: wfv1.NodeRunning, state: wfv1.PooledTaskClaimed, taskSetUID: "another-task-set-uid"},
 		{name: "node ended, TaskSet acked", phase: wfv1.NodeSucceeded, state: wfv1.PooledTaskClaimed},
 		{name: "node ended, TaskSet not acked yet", phase: wfv1.NodeSucceeded, state: wfv1.PooledTaskClaimed, taskSetUID: "task-set-uid"},
+		{name: "interrupted", phase: wfv1.NodeFailed, state: wfv1.PooledTaskInterrupted, taskSetUID: "task-set-uid", stopped: true},
+		{name: "interrupted, claimed again", phase: wfv1.NodeFailed, state: wfv1.PooledTaskInterrupted, taskSetUID: "task-set-uid", claimUID: "another-claim-uid"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			synced := tt.phase == wfv1.NodeSucceeded
@@ -313,6 +317,13 @@ func TestPooledClaimGoneIsNotARelease(t *testing.T) {
 			woc.taskResultReconciliation(ctx)
 			node, err := woc.wf.Status.Nodes.Get(id)
 			require.NoError(t, err)
+			if tt.stopped {
+				assert.True(t, node.Fulfilled())
+				assert.False(t, node.FinishedAt.IsZero())
+				node.TaskResultSynced, node.FinishedAt = before.TaskResultSynced, before.FinishedAt
+				assert.Equal(t, before, node)
+				return
+			}
 			if !tt.released {
 				assert.Equal(t, before, node)
 				assert.Equal(t, synced, !woc.wf.Status.IsTaskResultIncomplete(id))

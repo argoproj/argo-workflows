@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -181,14 +182,14 @@ func TestPooledTaskSetAckRetried(t *testing.T) {
 	reconcilePooled(ctx, t, controller, wf)
 	assert.Equal(t, int32(1), deletes.Load())
 	assert.True(t, hasTaskSet(fake, wf.Namespace, id))
-	n := requeued.take()
+	n, _ := requeued.take()
 	assert.Equal(t, 1, n, "a failed ack requeues")
 
 	deletes = countTaskSetDeletes(fake, nil)
 	reconcilePooled(ctx, t, controller, wf)
 	assert.Equal(t, int32(1), deletes.Load())
 	assert.False(t, hasTaskSet(fake, wf.Namespace, id))
-	n = requeued.take()
+	n, _ = requeued.take()
 	assert.Zero(t, n)
 
 	// A restart forgets what was acked, and the cache no longer holds it.
@@ -223,7 +224,7 @@ func TestPooledTaskSetAckFindsItReplaced(t *testing.T) {
 	require.True(t, mustNode(t, woc, pooledAckStep).Fulfilled())
 	assert.Equal(t, int32(1), deletes.Load())
 	assert.True(t, controller.pooledTaskSetsGone.has(wf.UID, ts.UID), "recorded gone")
-	n := requeued.take()
+	n, _ := requeued.take()
 	assert.Zero(t, n)
 
 	// Once cached, the replacement is still no reason to ack again.
@@ -330,6 +331,28 @@ spec:
 	assert.True(t, hasTaskSet(fake, wf.Namespace, "earlier-workflow"))
 }
 
+// TestPooledCompletionAfterSizeLimit checks that a workflow whose write hits
+// the size limit, and so is persisted as Error from the status it had before
+// the operation, completes only once the TaskSets that operation enqueued are
+// deleted too, though neither the ledgers it persists nor the cache know them.
+func TestPooledCompletionAfterSizeLimit(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(pooledDispatchWf)
+	ctx, controller, fake := newPooledDispatchController(t, true, wf)
+	var writes atomic.Int32
+	controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+		if writes.Add(1) == 1 {
+			return true, nil, apierr.NewRequestEntityTooLargeError("etcdserver: request is too large")
+		}
+		return false, nil, nil
+	})
+
+	woc := reconcilePooled(ctx, t, controller, wf)
+	require.Equal(t, int32(2), writes.Load(), "the size limit, then the error")
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.True(t, workflowCompleted(woc))
+	assert.False(t, hasTaskSet(fake, wf.Namespace, wf.NodeID(pooledStep)), "the operation's TaskSet is deleted")
+}
+
 // TestPooledCompletionHeld checks that a transient failure to delete a
 // pooled TaskSet holds the workflow's completion, and the next attempt
 // deletes only what remains, though the cache and the ledgers still name the
@@ -352,7 +375,7 @@ func TestPooledCompletionHeld(t *testing.T) {
 	assert.False(t, workflowCompleted(woc))
 	assert.True(t, hasTaskSet(fake, wf.Namespace, x))
 	assert.False(t, hasTaskSet(fake, wf.Namespace, y))
-	n := requeued.take()
+	n, _ := requeued.take()
 	assert.Equal(t, 2, n, "the failed ack and the held completion each requeue")
 	assert.Contains(t, woc.wf.Status.Message, "waiting to delete pooled WorkflowTaskSets: ", "the workflow says why it can't complete")
 	assert.Equal(t, 1, countEvents(controller, "WorkflowPooledTaskSetsRemain"))

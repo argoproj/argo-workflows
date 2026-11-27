@@ -199,6 +199,8 @@ type WorkflowController struct {
 	pooledTaskSetInformer cache.SharedIndexInformer
 	// poolPodInformer caches hot worker pool pods, which the pod controller doesn't see
 	poolPodInformer cache.SharedIndexInformer
+	// poolHealth reports hot worker pools' health for the nodes waiting on them; nil when nothing reports it
+	poolHealth dispatch.PoolHealth
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.

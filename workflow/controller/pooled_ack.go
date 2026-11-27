@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -132,11 +133,24 @@ func (woc *wfOperationCtx) pooledTaskSetAdoptable(nodeID string) bool {
 	return err == nil && m.GetDeletionTimestamp() == nil && dispatch.OwnedByWorkflow(m, woc.wf.UID)
 }
 
+// pooledTaskSetRefs are the refs of the TaskSets the workflow's pooled nodes'
+// ledgers record.
+func (woc *wfOperationCtx) pooledTaskSetRefs() []dispatch.TaskSetRef {
+	var refs []dispatch.TaskSetRef
+	for _, node := range woc.wf.Status.Nodes {
+		if isPooled(&node) {
+			refs = append(refs, pooledTaskSetRef(&node))
+		}
+	}
+	return refs
+}
+
 // pooledTaskSetsRemain deletes the workflow's pooled TaskSets before it
 // completes, since a TaskSet left behind once its results are deleted could be
 // claimed and run again. They are found from the cache, owned by this
 // workflow, and from the ledgers, since a TaskSet created this operation may
-// not be cached yet; those already found gone are left out. It
+// not be cached yet, including those of a status this operation discarded
+// (unpersistedPooledTaskSets); those already found gone are left out. It
 // reports whether any may remain, in which case completion is held and the
 // workflow requeued. A TaskSet whose node hasn't ended is deleted too: once
 // the workflow completes, nothing would take its result.
@@ -161,9 +175,9 @@ func (woc *wfOperationCtx) pooledTaskSetsRemain(ctx context.Context) bool {
 			cached = append(cached, ref)
 		}
 	}
-	for _, node := range woc.wf.Status.Nodes {
-		if isPooled(&node) && !gone.has(woc.wf.UID, node.PooledTask.TaskSetUID) {
-			ledgers = append(ledgers, pooledTaskSetRef(&node))
+	for _, ref := range slices.Concat(woc.pooledTaskSetRefs(), woc.unpersistedPooledTaskSets) {
+		if !gone.has(woc.wf.UID, ref.UID) {
+			ledgers = append(ledgers, ref)
 		}
 	}
 	if len(cached) == 0 && len(ledgers) == 0 {
