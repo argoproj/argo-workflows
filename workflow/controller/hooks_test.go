@@ -106,7 +106,7 @@ func TestWfHookHasFailures(t *testing.T) {
 	assert.NotNil(t, node)
 	assert.Contains(t,
 		woc.globalParams()[varkeys.WorkflowFailures.Template()],
-		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\"`,
+		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\",\"taskName\":\"hook-failures\"`,
 	)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 	makePodsPhase(ctx, woc, apiv1.PodFailed)

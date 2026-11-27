@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,9 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 )
 
 // onWorkflowTaskSetUpdate keeps routine updates rate-limited, but optionally
@@ -48,6 +47,9 @@ func (wfc *WorkflowController) onWorkflowTaskSetUpdate(old, newObj any) {
 }
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
+	if err := woc.checkAgentTaskSetName(); err != nil {
+		return err
+	}
 	patchByte, err := json.Marshal(patch)
 	if err != nil {
 		return argoerrors.InternalWrapError(err)
@@ -156,13 +158,39 @@ func (woc *wfOperationCtx) getWorkflowTaskSet() (*wfv1.WorkflowTaskSet, error) {
 	return taskSet.(*wfv1.WorkflowTaskSet), nil
 }
 
+// errPooledTaskSetName is a workflow's agent TaskSet name being a pooled
+// task's TaskSet.
+var errPooledTaskSetName = errors.New("is a pooled task's, not this workflow's: rename the workflow")
+
+// checkAgentTaskSetName fails with errPooledTaskSetName if the TaskSet named
+// after the workflow, which every write of its agent tasks patches, is a
+// pooled task's: a pooled task's TaskSet is named after its node, so a
+// workflow can be named like one, and patching it would hand this workflow's
+// agent tasks to it and mark it completed. The pooled TaskSet informer holds
+// every pooled TaskSet of this controller instance, so the check reads
+// nothing: only a pooled TaskSet created so recently that it isn't cached
+// yet, under exactly this workflow's name, would be missed.
+func (woc *wfOperationCtx) checkAgentTaskSetName() error {
+	_, pooled, err := woc.controller.pooledTaskSetInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + woc.wf.Name)
+	switch {
+	case err != nil:
+		return fmt.Errorf("looking up WorkflowTaskSet %s/%s: %w", woc.wf.Namespace, woc.wf.Name, err)
+	case pooled:
+		return fmt.Errorf("WorkflowTaskSet %s/%s %w", woc.wf.Namespace, woc.wf.Name, errPooledTaskSetName)
+	}
+	return nil
+}
+
 func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 	if err := woc.reconcileTaskSet(ctx); err != nil {
 		woc.log.WithError(err).Error(ctx, "error in workflowtaskset reconciliation")
 		// The same write fails on every reconcile, so error the tasks that do not
 		// fit rather than leave them pending with no message.
-		if argokubeerr.IsRequestEntityTooLargeErr(err) {
+		switch {
+		case argokubeerr.IsRequestEntityTooLargeErr(err):
 			woc.markUnwrittenTaskSetNodesError(ctx, fmt.Errorf("WorkflowTaskSet would exceed the Kubernetes object size limit; reduce the number or size of HTTP and plugin templates running at once: %w", err))
+		case errors.Is(err, errPooledTaskSetName):
+			woc.markUnwrittenTaskSetNodesError(ctx, err)
 		}
 		return
 	}
@@ -228,13 +256,8 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			// (the task set holds it), as the Engine has already run.
 			tmpl := workflowTaskSet.Spec.Tasks[nodeID]
 			woc.handleNodeFulfilled(ctx, node, &tmpl)
-			if node.MemoizationStatus != nil && node.Succeeded() {
-				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-				if err != nil {
-					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
-				}
-			}
+			// A failed save is only logged: the node is finished already.
+			_ = woc.saveMemoizedOutputs(ctx, node)
 			woc.updated = true
 		}
 	}

@@ -163,6 +163,17 @@ func templateTimeoutDeadlines(tmpl *wfv1.Template, node *wfv1.NodeStatus, now ti
 	return deadline, pendingDeadline, nil
 }
 
+// earliest is the earliest of the times that are set, or nil if none is.
+func earliest(times ...*time.Time) *time.Time {
+	var first *time.Time
+	for _, t := range times {
+		if t != nil && (first == nil || t.Before(*first)) {
+			first = t
+		}
+	}
+	return first
+}
+
 // applyTemplateDeadline lowers activeDeadlineSeconds to the whole seconds left
 // before templateDeadline (the node's StartedAt plus the template timeout, see
 // templateTimeoutDeadlines) as of now. It only ever lowers it: a smaller
@@ -534,15 +545,9 @@ func artifactLocationSecrets(l *wfv1.ArtifactLocation) []*apiv1.SecretKeySelecto
 	return nil
 }
 
-// executorTemplate is the template as the executor receives it (ARGO_TEMPLATE),
-// simplified by clearing the already-substituted `inputs.parameters` and
-// preserving `inputs.artifacts`.
+// executorTemplate is the template as the executor receives it (ARGO_TEMPLATE).
 func executorTemplate(tmpl *wfv1.Template) string {
-	simplifiedTmpl := tmpl.DeepCopy()
-	simplifiedTmpl.Inputs = wfv1.Inputs{
-		Artifacts: simplifiedTmpl.Inputs.Artifacts,
-	}
-	return wfv1.MustMarshallJSON(simplifiedTmpl)
+	return wfv1.MustMarshallJSON(common.ExecutorTemplate(tmpl))
 }
 
 // execContainerConfig is the controller and workflow configuration every

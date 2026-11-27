@@ -80,6 +80,66 @@ func TestCreateTaskSet(t *testing.T) {
 	})
 }
 
+// TestCreateTaskSetLeavesAPooledTaskSet checks that a workflow named like a
+// pooled task's TaskSet doesn't patch its agent tasks into that TaskSet.
+func TestCreateTaskSetLeavesAPooledTaskSet(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/create-task-set-workflow.yaml")
+	ctx := logging.TestContext(t.Context())
+	pooled := &wfv1.WorkflowTaskSet{
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: wf.Namespace,
+			Name:      wf.Name,
+			Labels:    map[string]string{common.LabelKeyWorkflow: "victim", common.LabelKeyPoolHash: "hash-1"},
+		},
+		Spec: wfv1.WorkflowTaskSetSpec{Tasks: map[string]wfv1.Template{"victim-1": {Name: "work"}}},
+	}
+	cancel, controller := newController(ctx, wf.DeepCopy(), pooled, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf.DeepCopy(), controller)
+	woc.operate(ctx)
+	// The write fails on every reconcile, so the tasks fail rather than wait.
+	node, err := woc.wf.GetNodeByName("http-template[0].good")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, node.Phase)
+	assert.Contains(t, node.Message, "is a pooled task's")
+	// Nor does removing the finished tasks' status, which would also label
+	// the TaskSet completed.
+	woc.wf.Status.Phase = wfv1.WorkflowError
+	require.ErrorIs(t, woc.removeCompletedTaskSetStatus(ctx, woc.wf.Status.Nodes), errPooledTaskSetName)
+	got, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, wf.Name, v1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, pooled.Spec.Tasks, got.Spec.Tasks)
+	assert.Equal(t, pooled.Labels, got.Labels)
+	assert.Empty(t, got.Status.Nodes)
+}
+
+// TestPatchTaskSetReadsNoTaskSet checks that guarding a workflow's own agent
+// TaskSet against a pooled task's name reads nothing from the API server,
+// even when the agent TaskSet isn't cached yet.
+func TestPatchTaskSetReadsNoTaskSet(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/create-task-set-workflow.yaml")
+	ctx := logging.TestContext(t.Context())
+	own := &wfv1.WorkflowTaskSet{ObjectMeta: v1.ObjectMeta{Namespace: wf.Namespace, Name: wf.Name}}
+	cancel, controller := newController(ctx, wf.DeepCopy(), own, defaultServiceAccount)
+	defer cancel()
+	// As just after the agent TaskSet was created.
+	require.NoError(t, controller.wfTaskSetInformer.Informer().GetStore().Delete(own))
+	clientset := controller.wfclientset.(*fakewfclientset.Clientset)
+	clientset.ClearActions()
+
+	woc := newWorkflowOperationCtx(ctx, wf.DeepCopy(), controller)
+	woc.operate(ctx)
+	var patched bool
+	for _, action := range clientset.Actions() {
+		if action.GetResource().Resource != "workflowtasksets" {
+			continue
+		}
+		assert.NotEqual(t, "get", action.GetVerb(), "the guard reads the pooled TaskSet cache")
+		patched = patched || action.GetVerb() == "patch"
+	}
+	assert.True(t, patched, "the agent tasks were patched in")
+}
+
 func TestRemoveCompletedTaskSetStatus(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/taskset/remove-completed-task-set-status-workflow.yaml")
 	ctx := logging.TestContext(t.Context())

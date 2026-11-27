@@ -427,3 +427,15 @@ func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
 	}
 	return true
 }
+
+// ExecutorTemplate is a task's template as its executor gets it, simplified
+// by clearing the already-substituted `inputs.parameters` and preserving
+// `inputs.artifacts`. A pod gets it as ARGO_TEMPLATE; a pool's worker
+// derives it from the TaskSet's template, so both run the same template.
+func ExecutorTemplate(tmpl *wfv1.Template) *wfv1.Template {
+	simplified := tmpl.DeepCopy()
+	simplified.Inputs = wfv1.Inputs{
+		Artifacts: simplified.Inputs.Artifacts,
+	}
+	return simplified
+}

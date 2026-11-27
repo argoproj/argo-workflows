@@ -15,8 +15,8 @@ func (woc *wfOperationCtx) getActivePodsCounter(boundaryID string) counter {
 			(node.Phase == wfv1.NodePending || node.Phase == wfv1.NodeRunning) &&
 			// Only count pods that are NOT waiting for a lock
 			(node.SynchronizationStatus == nil || node.SynchronizationStatus.Waiting == "") &&
-			// Only count pods that are created.
-			woc.nodePodExist(node)
+			// Only count nodes with a backing execution: a created pod or an enqueued pooled task.
+			woc.nodeHasExecution(node)
 	}
 }
 
@@ -55,6 +55,18 @@ func (woc *wfOperationCtx) getUnsuccessfulChildren(boundaryID string) int64 {
 func (woc *wfOperationCtx) nodePodExist(node wfv1.NodeStatus) bool {
 	_, podExist, _ := woc.podExists(node.ID)
 	return podExist
+}
+
+// isPooled reports whether node's task has been enqueued for a hot worker
+// pool. A pooled node never has a pod of its own.
+func isPooled(node *wfv1.NodeStatus) bool {
+	return node.PooledTask != nil
+}
+
+// nodeHasExecution reports whether node's task has been handed to something
+// that runs it: its pod has been created, or it has been enqueued for a pool.
+func (woc *wfOperationCtx) nodeHasExecution(node wfv1.NodeStatus) bool {
+	return isPooled(&node) || woc.nodePodExist(node)
 }
 
 func (woc *wfOperationCtx) countNodes(counter counter) int64 {
