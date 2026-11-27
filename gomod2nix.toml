@@ -1013,7 +1013,7 @@ schema = 3
     version = "v0.35.4"
     hash = "sha256-Mtv+T3dwaceLUHuqGpXn0wezJyov/Spxy4eu29r8BaU="
   [mod."k8s.io/gengo"]
-    version = "v0.0.0-20260408192533-25e2208e0dc3"
+    version = "v0.0.0-20261127004247-4075b3b62abc"
     hash = "sha256-oX1jUQcNzbAjBwKtzOpafc0qi8zyEFBQphyzyPQ6nfA="
   [mod."k8s.io/klog/v2"]
     version = "v2.140.0"
