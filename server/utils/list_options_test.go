@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"encoding/base64"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -77,7 +79,7 @@ func TestBuildListOptions(t *testing.T) {
 			options: metav1.ListOptions{
 				Continue: "invalid",
 			},
-			expectedError: status.Error(codes.InvalidArgument, "listOptions.continue must be int"),
+			expectedError: status.Error(codes.InvalidArgument, "listOptions.continue must be int or cursor"),
 		},
 		{
 			name: "Negative continue",
@@ -282,4 +284,58 @@ func mustParseToRequirements(t *testing.T, labelSelector string) labels.Requirem
 	requirements, err := labels.ParseToRequirements(labelSelector)
 	require.NoError(t, err)
 	return requirements
+}
+
+func TestArchivedWorkflowCursor(t *testing.T) {
+	t.Run("RoundTrip", func(t *testing.T) {
+		startedAt := time.Date(2024, 3, 15, 12, 30, 0, 0, time.UTC)
+		uid := "abc-123-def"
+		token := EncodeArchivedWorkflowCursor(startedAt, uid)
+		require.True(t, strings.HasPrefix(token, "c:"))
+
+		cursor, ok := DecodeArchivedWorkflowCursor(token)
+		require.True(t, ok)
+		require.Equal(t, startedAt, cursor.StartedAt)
+		require.Equal(t, uid, cursor.UID)
+	})
+
+	t.Run("ZeroTime", func(t *testing.T) {
+		token := EncodeArchivedWorkflowCursor(time.Time{}, "")
+		cursor, ok := DecodeArchivedWorkflowCursor(token)
+		require.True(t, ok)
+		require.True(t, cursor.StartedAt.IsZero())
+		require.Empty(t, cursor.UID)
+	})
+
+	t.Run("InvalidPrefix", func(t *testing.T) {
+		_, ok := DecodeArchivedWorkflowCursor("not-a-cursor")
+		require.False(t, ok)
+	})
+
+	t.Run("InvalidBase64", func(t *testing.T) {
+		_, ok := DecodeArchivedWorkflowCursor("c:not-valid-base64!!!")
+		require.False(t, ok)
+	})
+
+	t.Run("InvalidJSON", func(t *testing.T) {
+		token := "c:" + base64.StdEncoding.EncodeToString([]byte("not json"))
+		_, ok := DecodeArchivedWorkflowCursor(token)
+		require.False(t, ok)
+	})
+}
+
+func TestBuildListOptionsCursor(t *testing.T) {
+	startedAt := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	uid := "my-workflow-uid"
+	cursorToken := EncodeArchivedWorkflowCursor(startedAt, uid)
+
+	result, err := BuildListOptions(metav1.ListOptions{
+		Continue: cursorToken,
+		Limit:    10,
+	}, "", "", "", "", "")
+	require.NoError(t, err)
+	require.Equal(t, startedAt, result.CursorStartedAt)
+	require.Equal(t, uid, result.CursorUID)
+	require.Equal(t, 10, result.Limit)
+	require.Equal(t, 0, result.Offset)
 }

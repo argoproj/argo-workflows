@@ -46,17 +46,26 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 	if err != nil {
 		return nil, err
 	}
+	// Keyset pagination: resume after the cursor's (startedat, uid) instead of
+	// skipping rows with OFFSET. Applied before the count return so that
+	// RemainingItemCount only counts workflows after the cursor.
+	selector = selector.And(cursorClause(options.CursorStartedAt, options.CursorUID))
 	if count {
 		return selector, nil
 	}
+
 	// If we were passed 0 as the limit, then we should load all available archived workflows
 	// to match the behavior of the `List` operations in the Kubernetes API
 	if options.Limit == 0 {
 		options.Limit = -1
 		options.Offset = -1
 	}
+	// uid breaks ties between workflows with the same startedat so that pages
+	// neither repeat nor skip workflows. It is ascending because InnoDB
+	// secondary indexes end with the primary key (clustername, uid), so
+	// argo_archived_workflows_i1 already holds rows in this order.
 	return selector.
-		OrderBy("-startedat").
+		OrderBy("-startedat", "uid").
 		Limit(options.Limit).
 		Offset(options.Offset), nil
 }
