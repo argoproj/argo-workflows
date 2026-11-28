@@ -374,7 +374,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	}
 	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, wfDefaults, &resourceCacheNamespace, artifactRepositories)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, wfDefaults, config.WorkflowDefaults)
-	httpServer := as.newHTTPServer(ctx, port, artifactServer)
+	// The grpc-gateway closes its connection to the gRPC server when this context is done,
+	// so it must outlive ctx until shutdown has drained in-flight HTTP API requests.
+	gatewayCtx, cancelGateway := context.WithCancel(context.WithoutCancel(ctx))
+	defer cancelGateway()
+	httpServer := as.newHTTPServer(gatewayCtx, port, artifactServer)
 
 	// Start listener
 	var conn net.Listener
@@ -430,7 +434,27 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	log.WithField("url", url).Info(ctx, "Argo Server started successfully")
 	browserOpenFunc(url)
 
-	<-as.stopCh
+	<-ctx.Done()
+	log.Info(ctx, "Shutting down Argo Server")
+	shutdownHTTPServer(ctx, muxServer, shutdownTimeout)
+	close(as.stopCh)
+}
+
+// shutdownTimeout bounds how long in-flight requests get to finish on shutdown.
+// It is kept below the default 30s pod terminationGracePeriodSeconds.
+const shutdownTimeout = 20 * time.Second
+
+// shutdownHTTPServer stops srv accepting connections and waits up to timeout for
+// in-flight requests to finish, then closes whatever is left, such as long-lived
+// watch and log streams.
+func shutdownHTTPServer(ctx context.Context, srv *http.Server, timeout time.Duration) {
+	log := logging.RequireLoggerFromContext(ctx)
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.WithError(err).Warn(ctx, "in-flight requests did not finish in time, closing their connections")
+		_ = srv.Close()
+	}
 }
 
 func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService instanceid.Service, workflowServer workflowpkg.WorkflowServiceServer, wftmplStore types.WorkflowTemplateStore, cwftmplStore types.ClusterWorkflowTemplateStore, wfArchiveServer workflowarchivepkg.ArchivedWorkflowServiceServer, syncServer syncpkg.SyncServiceServer, eventServer *event.Controller, links []*v1alpha1.Link, columns []*v1alpha1.Column, navColor string, wfDefaults namespacedefaults.Func, controllerDefaults *v1alpha1.Workflow) *grpc.Server {
@@ -716,14 +740,9 @@ func mustRegisterGWHandler(ctx context.Context, register registerFunc, mux *runt
 func (as *argoServer) checkServeErr(ctx context.Context, name string, err error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	nameField := logging.Fields{"name": name}
-	if err != nil {
-		if as.stopCh != nil {
-			log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
-			os.Exit(1)
-		}
-		// a nil stopCh indicates a graceful shutdown
-		log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
-	} else {
-		log.WithFields(nameField).Info(ctx, "graceful shutdown")
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
+		os.Exit(1)
 	}
+	log.WithFields(nameField).Info(ctx, "graceful shutdown")
 }
