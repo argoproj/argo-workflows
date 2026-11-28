@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hook-parallelism-templates
+  namespace: default
+spec:
+  templates:
+    - name: notify
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo running-notify-ref"]

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: running-hook-parallelism
+  namespace: argo
+spec:
+  parallelism: 1
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: notify
+  templates:
+    - name: main
+      steps:
+        - - name: work
+            template: work
+    - name: work
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo work"]
+    - name: notify
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo running-notify"]

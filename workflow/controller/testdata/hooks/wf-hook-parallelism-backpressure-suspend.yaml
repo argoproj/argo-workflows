@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: running-hook-parallelism-suspend
+  namespace: default
+spec:
+  parallelism: 1
+  entrypoint: main
+  hooks:
+    running:
+      expression: workflow.status == "Running"
+      template: approve
+  templates:
+    - name: main
+      steps:
+        - - name: work
+            template: work
+    - name: work
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo work"]
+    - name: approve
+      inputs:
+        parameters:
+          - name: decision
+            value: "{\"enum\": [\"approve\", \"reject\"], \"default\": \"approve\"}"
+      suspend: {}
