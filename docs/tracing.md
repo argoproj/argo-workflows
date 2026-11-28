@@ -85,6 +85,7 @@ flowchart TD
     ReconcileTaskResults[<a href='#reconcile_task_results'>reconcile_task_results</a>]
     RunInitContainer[<a href='#run_init_container'>run_init_container</a>]
     RunMainContainer[<a href='#run_main_container'>run_main_container</a>]
+    RunResourceContainer[<a href='#run_resource_container'>run_resource_container</a>]
     RunSupervisorContainer[<a href='#run_supervisor_container'>run_supervisor_container</a>]
     RunWaitContainer[<a href='#run_wait_container'>run_wait_container</a>]
     RunWorkload[<a href='#run_workload'>run_workload</a>]
@@ -114,6 +115,7 @@ flowchart TD
     ReconcileWorkflow --> ReconcileTaskResults
     CreateWorkflowPod --> RunInitContainer
     CreateWorkflowPod --> RunMainContainer
+    CreateWorkflowPod --> RunResourceContainer
     CreateWorkflowPod --> RunSupervisorContainer
     CreateWorkflowPod --> RunWaitContainer
     RunMainContainer --> RunWorkload
@@ -122,6 +124,7 @@ flowchart TD
     RunWaitContainer --> SaveLogs
     RunSupervisorContainer --> SaveLogs
     RunInitContainer --> StageFiles
+    RunResourceContainer --> StageFiles
     RunSupervisorContainer --> StageFiles
     RunWaitContainer --> WaitWorkload
     RunSupervisorContainer --> WaitWorkload
@@ -129,11 +132,13 @@ flowchart TD
     RunSupervisorContainer --> CaptureScriptResult
     RunWaitContainer --> CreateTaskResult
     RunMainContainer --> CreateTaskResult
+    RunResourceContainer --> CreateTaskResult
     RunSupervisorContainer --> CreateTaskResult
     RunInitContainer --> LoadArtifacts
     RunSupervisorContainer --> LoadArtifacts
     RunWaitContainer --> PatchTaskResult
     RunMainContainer --> PatchTaskResult
+    RunResourceContainer --> PatchTaskResult
     RunSupervisorContainer --> PatchTaskResult
     RunMainContainer --> ProcessDataTemplate
     ReconcileTaskResults --> ReconcileTaskResult
@@ -278,6 +283,15 @@ Run the init container of a workload.
 #### `run_main_container`
 
 Run the main container of a workload.
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
+
+#### `run_resource_container`
+
+Run the resource container of a resource template's pod.
 
 |  attribute  |              explanation              |
 |-------------|---------------------------------------|

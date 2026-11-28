@@ -354,4 +354,51 @@ func TestRoles_Finally(t *testing.T) {
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(WaitRole.Finally))
 	assert.Equal(t, []string{"kill-artifact-sidecars", "finalize-output"}, names(SupervisorRole.Finally))
 	assert.Equal(t, []string{"remove-task-root", "finalize-output"}, names(WorkerRole.Finally))
+	assert.Equal(t, []string{"finalize-resource-output"}, names(ResourceContainerRole.Finally))
+}
+
+// finalizeCountingSink counts the placeholder and final writes.
+type finalizeCountingSink struct {
+	recordingSink
+	started, finalized int
+}
+
+func (s *finalizeCountingSink) Start(context.Context) error    { s.started++; return nil }
+func (s *finalizeCountingSink) Finalize(context.Context) error { s.finalized++; return nil }
+
+// The resource container marks its outputs complete itself, unless the
+// template archives its logs: then the wait container does.
+func TestResourceContainerRole(t *testing.T) {
+	original := kubectlRunnerFn
+	kubectlRunnerFn = func(context.Context, ...string) ([]byte, error) { return nil, nil }
+	t.Cleanup(func() { kubectlRunnerFn = original })
+
+	run := func(t *testing.T, tmpl wfv1.Template) (*finalizeCountingSink, error) {
+		task := Task{Config: TaskConfig{NodeID: "a", Template: tmpl}, Paths: PodPaths()}
+		ctx, h, _ := newTestHarness(t, &sliceSource{tasks: []Task{task}}, ResourceContainerRole)
+		s := &finalizeCountingSink{}
+		h.Sink = func(Task) ResultSink { return s }
+		return s, h.Run(ctx)
+	}
+	deletion := &wfv1.ResourceTemplate{Action: "delete", Manifest: "kind: Foo"}
+
+	t.Run("Finalizes", func(t *testing.T) {
+		s, err := run(t, wfv1.Template{Resource: deletion})
+		require.NoError(t, err)
+		assert.Equal(t, 1, s.started)
+		assert.Equal(t, 1, s.finalized)
+	})
+	t.Run("LeavesFinalizeToWaitWhenLogsAreArchived", func(t *testing.T) {
+		s, err := run(t, wfv1.Template{Resource: deletion, ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}})
+		require.NoError(t, err)
+		assert.Equal(t, 0, s.finalized)
+	})
+	t.Run("DeleteWithConditionFails", func(t *testing.T) {
+		withCondition := deletion.DeepCopy()
+		withCondition.SuccessCondition = "status.phase == Done"
+		s, err := run(t, wfv1.Template{Resource: withCondition})
+		require.EqualError(t, err, "successCondition, failureCondition and outputs are not supported for delete action")
+		assert.Equal(t, []string{err.Error()}, s.failures)
+		assert.Equal(t, 1, s.finalized)
+	})
 }

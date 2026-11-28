@@ -32,20 +32,83 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
+
+func (we *WorkflowExecutor) runResourceContainer(ctx, bgCtx context.Context) error {
+	we.InitializeOutput(bgCtx)
+	if err := we.execAndWaitResource(ctx); err != nil {
+		we.AddError(ctx, err)
+		return err
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) execAndWaitResource(ctx context.Context) error {
+	if err := we.StageFiles(ctx); err != nil {
+		return err
+	}
+	resource := we.Template.Resource
+	if err := we.checkResourceDelete(); err != nil {
+		return err
+	}
+	namespace, name, selfLink, err := we.ExecResource(ctx, resource.Action, we.resourceManifestPath(), resource.Flags)
+	if err != nil || resource.Action == "delete" {
+		return err
+	}
+	if err := we.WaitResource(ctx, namespace, name, selfLink); err != nil {
+		return err
+	}
+	return we.SaveResourceParameters(ctx, namespace, name, !we.Template.SaveLogsAsArtifact())
+}
+
+func (we *WorkflowExecutor) checkResourceDelete() error {
+	resource := we.Template.Resource
+	if resource.Action == "delete" && (resource.SuccessCondition != "" || resource.FailureCondition != "" || len(we.Template.Outputs.Parameters) > 0) {
+		return errors.New("successCondition, failureCondition and outputs are not supported for delete action")
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) resourceManifestPath() string {
+	from := we.Template.Resource.ManifestFrom
+	if from == nil {
+		return common.ExecutorResourceManifestPath
+	}
+	for _, art := range we.Template.Inputs.Artifacts {
+		if art.Name == from.Artifact.Name {
+			return art.Path
+		}
+	}
+	return common.ExecutorResourceManifestPath
+}
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
+	obj, err := we.execResource(ctx, action, manifestPath, flags)
+	if err != nil || obj == nil {
+		return "", "", "", err
+	}
+	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(obj.GetKind()), obj.GroupVersionKind().Group, obj.GetName())
+	selfLink := inferObjectSelfLink(*obj)
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
+	return obj.GetNamespace(), resourceFullName, selfLink, nil
+}
+
+// execResource runs the kubectl action and returns the object it printed:
+// none for a delete, or a get that found nothing.
+func (we *WorkflowExecutor) execResource(ctx context.Context, action string, manifestPath string, flags []string) (*unstructured.Unstructured, error) {
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
 
 	var out []byte
 	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		return argoerr.IsTransientErr(ctx, err)
 	}, func() error {
-		out, err = runKubectl(ctx, args...)
+		out, err = kubectlRunnerFn(ctx, args...)
 		if err != nil {
 			return err
 		}
@@ -59,40 +122,34 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
 		}
 		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
-		return "", "", "", err
+		return nil, err
 	}
 	if action == "delete" {
-		return "", "", "", nil
+		return nil, nil
 	}
 	if action == "get" && len(out) == 0 {
-		return "", "", "", nil
+		return nil, nil
 	}
-	obj := unstructured.Unstructured{}
-	err = json.Unmarshal(out, &obj)
-	if err != nil {
-		return "", "", "", err
+	obj := &unstructured.Unstructured{}
+	if err := json.Unmarshal(out, obj); err != nil {
+		return nil, err
 	}
-	resourceGroup := obj.GroupVersionKind().Group
-	resourceName := obj.GetName()
-	resourceKind := obj.GroupVersionKind().Kind
-	if resourceName == "" || resourceKind == "" {
-		return "", "", "", argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+	if obj.GetName() == "" || obj.GetKind() == "" {
+		return nil, argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
-	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
-	selfLink := inferObjectSelfLink(obj)
-	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
-	return obj.GetNamespace(), resourceFullName, selfLink, nil
+	return obj, nil
+}
+
+// inferPlural guesses the resource name of a kind as `kubectl` does under
+// the hood.
+func inferPlural(kind string) string {
+	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
+	return lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{Name: kind}})
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	gvk := obj.GroupVersionKind()
-	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
-	// REST client would remove the need to infer the plural name.
-	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
-	pluralName := lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
-		Name: gvk.Kind,
-	}})
+	pluralName := inferPlural(gvk.Kind)
 
 	var selfLinkPrefix string
 	if gvk.Group == "" {
@@ -396,26 +453,36 @@ func (we *WorkflowExecutor) saveResourceParameters(ctx context.Context, resource
 			outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		var output string
-		var err error
-		switch {
-		case param.ValueFrom.JSONPath != "":
-			output, err = jsonPathFilter(obj, param.ValueFrom.JSONPath)
-			logger.WithError(err).WithField("jsonPath", param.ValueFrom.JSONPath).Info(ctx, "jsonpath")
-		case param.ValueFrom.JQFilter != "":
-			output, err = jqFilter(ctx, jsonBytes, param.ValueFrom.JQFilter)
-			logger.WithError(err).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
-		default:
-			continue
-		}
+		output, ok, err := resourceParameterValue(ctx, param, obj, jsonBytes)
 		if err != nil {
 			return err
 		}
-
+		if !ok {
+			continue
+		}
 		outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
 	return nil
+}
+
+// resourceParameterValue resolves one output parameter against the
+// resource: obj as `kubectl get -o jsonpath=` saw it, jsonBytes as
+// `kubectl get -o json` printed it. ok is false for a parameter resolved
+// neither way. JSONPath wins if a parameter sets both.
+func resourceParameterValue(ctx context.Context, param wfv1.Parameter, obj *unstructured.Unstructured, jsonBytes []byte) (string, bool, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	switch {
+	case param.ValueFrom.JSONPath != "":
+		output, err := jsonPathFilter(obj, param.ValueFrom.JSONPath)
+		logger.WithError(err).WithField("jsonPath", param.ValueFrom.JSONPath).Info(ctx, "jsonpath")
+		return output, true, err
+	case param.ValueFrom.JQFilter != "":
+		output, err := jqFilter(ctx, jsonBytes, param.ValueFrom.JQFilter)
+		logger.WithError(err).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
+		return output, true, err
+	}
+	return "", false, nil
 }
 
 // needsJSONPathRead and needsJQRead report which form of the resource resolving this output
