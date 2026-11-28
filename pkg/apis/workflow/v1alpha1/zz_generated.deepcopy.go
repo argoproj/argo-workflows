@@ -1165,6 +1165,13 @@ func (in *CronWorkflowStatus) DeepCopyInto(out *CronWorkflowStatus) {
 		*out = make(Conditions, len(*in))
 		copy(*out, *in)
 	}
+	if in.ResolvedSchedules != nil {
+		in, out := &in.ResolvedSchedules, &out.ResolvedSchedules
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
