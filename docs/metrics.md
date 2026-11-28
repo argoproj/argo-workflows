@@ -283,11 +283,11 @@ Total number of pods automatically restarted due to infrastructure failures befo
 This counter tracks pods that were automatically restarted by the [failed pod restart](pod-restarts.md) feature.
 These are infrastructure-level failures (like node eviction) that occur before the main container enters the Running state.
 
-|       attribute        |                                                 explanation                                                 |
-|------------------------|-------------------------------------------------------------------------------------------------------------|
-| `reason`               | The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError` |
-| `condition` (optional) | The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`                      |
-| `namespace`            | The namespace that the pod is in                                                                            |
+|       attribute        |                                                                       explanation                                                                       |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `reason`               | The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, `UnexpectedAdmissionError`, `TopologyAffinityError`, or `OutOf<resource>` |
+| `condition` (optional) | The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`                                                                  |
+| `namespace`            | The namespace that the pod is in                                                                                                                        |
 
 `reason` will be one of:
 
@@ -295,6 +295,8 @@ These are infrastructure-level failures (like node eviction) that occur before t
 - `NodeShutdown`: Graceful node shutdown
 - `NodeAffinity`: Node affinity/selector no longer matches
 - `UnexpectedAdmissionError`: Unexpected error during pod admission
+- `TopologyAffinityError`: The topology manager rejected the pod at admission
+- `OutOf<resource>`: The node lacked a resource at admission, for example CPU or memory
 
 `condition` is extracted from the pod status message when available (e.g., `DiskPressure`, `MemoryPressure`).
 It will be empty if the condition cannot be determined.
