@@ -3,6 +3,7 @@ import * as React from 'react';
 import {useContext, useMemo} from 'react';
 
 import {Context} from '../../../shared/context';
+import {getErrorMessage} from '../../../shared/errors';
 import {isArchivedWorkflow, isWorkflowInCluster, Workflow} from '../../../shared/models';
 import {services} from '../../../shared/services';
 import * as Actions from '../../../shared/workflow-operations-map';
@@ -52,13 +53,17 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
                         }
                     }
 
-                    await performActionOnSelectedWorkflows(action.title, action.action, deleteArchived);
+                    const succeeded = await performActionOnSelectedWorkflows(action.title, action.action, deleteArchived);
 
                     props.clearSelection();
-                    notifications.show({
-                        content: `Performed '${action.title}' on selected workflows.`,
-                        type: NotificationType.Success
-                    });
+                    // each failure has already shown its own error, do not also report success
+                    // nothing is attempted when only archived workflows are selected and deleting those was declined
+                    if (succeeded.length > 0 && succeeded.every(ok => ok)) {
+                        notifications.show({
+                            content: `Performed '${action.title}' on selected workflows.`,
+                            type: NotificationType.Success
+                        });
+                    }
                     props.loadWorkflows();
                 },
                 disabled: () => false
@@ -66,39 +71,38 @@ export function WorkflowsToolbar(props: WorkflowsToolbarProps) {
         });
     }, [props.selectedWorkflows]);
 
-    async function performActionOnSelectedWorkflows(title: string, action: WorkflowOperationAction, deleteArchived: boolean): Promise<any> {
-        const promises: Promise<any>[] = [];
+    // resolves to whether each action succeeded
+    async function performActionOnSelectedWorkflows(title: string, action: WorkflowOperationAction, deleteArchived: boolean): Promise<boolean[]> {
+        const promises: Promise<boolean>[] = [];
+        const failed = (content: string) => {
+            notifications.show({content, type: NotificationType.Error});
+            return false;
+        };
         props.selectedWorkflows.forEach((wf: Workflow) => {
             if (title === 'DELETE') {
                 // The ones without archivalStatus label or with 'Archived' labels are the live workflows.
                 if (isWorkflowInCluster(wf)) {
                     promises.push(
-                        services.workflows.delete(wf.metadata.name, wf.metadata.namespace).catch(reason =>
-                            notifications.show({
-                                content: `Unable to delete workflow ${wf.metadata.name} in the cluster: ${reason.toString()}`,
-                                type: NotificationType.Error
-                            })
+                        services.workflows.delete(wf.metadata.name, wf.metadata.namespace).then(
+                            () => true,
+                            reason => failed(`Unable to delete workflow ${wf.metadata.name} in the cluster: ${getErrorMessage(reason)}`)
                         )
                     );
                 }
                 if (deleteArchived && isArchivedWorkflow(wf)) {
                     promises.push(
-                        services.workflows.deleteArchived(wf.metadata.uid, wf.metadata.namespace).catch(reason =>
-                            notifications.show({
-                                content: `Unable to delete workflow ${wf.metadata.name} in database: ${reason.toString()}`,
-                                type: NotificationType.Error
-                            })
+                        services.workflows.deleteArchived(wf.metadata.uid, wf.metadata.namespace).then(
+                            () => true,
+                            reason => failed(`Unable to delete workflow ${wf.metadata.name} in database: ${getErrorMessage(reason)}`)
                         )
                     );
                 }
             } else {
                 promises.push(
-                    action(wf).catch(reason => {
-                        notifications.show({
-                            content: `Unable to ${title} workflow: ${reason.content.toString()}`,
-                            type: NotificationType.Error
-                        });
-                    })
+                    action(wf).then(
+                        () => true,
+                        reason => failed(`Unable to ${title.toLowerCase()} workflow ${wf.metadata.name}: ${getErrorMessage(reason)}`)
+                    )
                 );
             }
         });
