@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 
 import {Button} from '../shared/components/button';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -13,8 +13,29 @@ import {useEditableObject} from '../shared/use-editable-object';
 import {CronWorkflowEditor} from './cron-workflow-editor';
 
 export function CronWorkflowCreator({onCreate, namespace}: {namespace: string; onCreate: (cronWorkflow: CronWorkflow) => void}) {
-    const {object: cronWorkflow, setObject: setCronWorkflow, serialization, lang, setLang} = useEditableObject(exampleCronWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
+    const {
+        object: cronWorkflow,
+        setObject: setCronWorkflow,
+        serialization,
+        lang,
+        setLang,
+        resetObject
+    } = useEditableObject(exampleCronWorkflow(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
+
+    // Sync cronWorkflow metadata.namespace when namespace prop changes (e.g., managed namespace becomes available)
+    useEffect(() => {
+        if (cronWorkflow.metadata.namespace !== namespace) {
+            resetObject({
+                ...cronWorkflow,
+                metadata: {
+                    ...cronWorkflow.metadata,
+                    namespace
+                }
+            });
+        }
+    }, [namespace, cronWorkflow, resetObject]);
+
     return (
         <>
             <div>
