@@ -90,6 +90,44 @@ export function echoWorkflowTemplate(clusterScoped = false, generateName = 'e2e-
     };
 }
 
+export const UPLOAD_CONTENT = 'hello uploaded e2e';
+
+export function artifactWorkflowTemplate(clusterScoped = false, generateName = 'e2e-artifact-'): TestResource {
+    const {metadata} = base(generateName);
+    if (clusterScoped) {
+        delete metadata.namespace;
+    }
+    return {
+        metadata,
+        spec: {
+            entrypoint: 'main',
+            arguments: {
+                artifacts: [
+                    {
+                        name: 'input-artifact',
+                        s3: {
+                            endpoint: 'minio:9000',
+                            bucket: 'my-bucket',
+                            insecure: true,
+                            accessKeySecret: {name: 'my-minio-cred', key: 'accesskey'},
+                            secretKeySecret: {name: 'my-minio-cred', key: 'secretkey'},
+                            // Placeholder: an upload from the submit panel replaces it.
+                            key: 'e2e/placeholder.txt'
+                        }
+                    }
+                ]
+            },
+            templates: [
+                {
+                    name: 'main',
+                    inputs: {artifacts: [{name: 'input-artifact', path: '/tmp/input.txt'}]},
+                    container: {image: ARGOSAY, args: ['assert_contains', '/tmp/input.txt', UPLOAD_CONTENT]}
+                }
+            ]
+        }
+    };
+}
+
 /**
  * A cron workflow running `echoWorkflow`'s step. The default schedule (midnight
  * on 1 January) is valid but never due mid-test, so it spawns no workflows.
