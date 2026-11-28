@@ -1153,6 +1153,10 @@ spec:
                         deleted:
                           description: Has this been deleted?
                           type: boolean
+                        description:
+                          description: Description is informational only; the UI shows
+                            it only when submitting a WorkflowTemplate, for spec.arguments.artifacts
+                          type: string
                         from:
                           description: From allows an artifact to reference an artifact
                             from a previous step
@@ -4086,6 +4090,11 @@ spec:
                               deleted:
                                 description: Has this been deleted?
                                 type: boolean
+                              description:
+                                description: Description is informational only; the
+                                  UI shows it only when submitting a WorkflowTemplate,
+                                  for spec.arguments.artifacts
+                                type: string
                               from:
                                 description: From allows an artifact to reference
                                   an artifact from a previous step
@@ -8619,6 +8628,8 @@ spec:
                                         type: object
                                       deleted:
                                         type: boolean
+                                      description:
+                                        type: string
                                       from:
                                         type: string
                                       fromExpression:
@@ -9295,6 +9306,8 @@ spec:
                                               type: object
                                             deleted:
                                               type: boolean
+                                            description:
+                                              type: string
                                             from:
                                               type: string
                                             fromExpression:
@@ -10039,6 +10052,8 @@ spec:
                                 type: object
                               deleted:
                                 type: boolean
+                              description:
+                                type: string
                               from:
                                 type: string
                               fromExpression:
@@ -11451,6 +11466,8 @@ spec:
                               type: object
                             deleted:
                               type: boolean
+                            description:
+                              type: string
                             from:
                               type: string
                             fromExpression:
@@ -12231,6 +12248,8 @@ spec:
                               type: object
                             deleted:
                               type: boolean
+                            description:
+                              type: string
                             from:
                               type: string
                             fromExpression:
@@ -12958,6 +12977,8 @@ spec:
                                 type: object
                               deleted:
                                 type: boolean
+                              description:
+                                type: string
                               from:
                                 type: string
                               fromExpression:
@@ -15161,6 +15182,8 @@ spec:
                                       type: object
                                     deleted:
                                       type: boolean
+                                    description:
+                                      type: string
                                     from:
                                       type: string
                                     fromExpression:
@@ -15831,6 +15854,8 @@ spec:
                                             type: object
                                           deleted:
                                             type: boolean
+                                          description:
+                                            type: string
                                           from:
                                             type: string
                                           fromExpression:
@@ -22663,6 +22688,11 @@ spec:
                                         deleted:
                                           description: Has this been deleted?
                                           type: boolean
+                                        description:
+                                          description: Description is informational
+                                            only; the UI shows it only when submitting
+                                            a WorkflowTemplate, for spec.arguments.artifacts
+                                          type: string
                                         from:
                                           description: From allows an artifact to
                                             reference an artifact from a previous
@@ -24016,6 +24046,12 @@ spec:
                                               deleted:
                                                 description: Has this been deleted?
                                                 type: boolean
+                                              description:
+                                                description: Description is informational
+                                                  only; the UI shows it only when
+                                                  submitting a WorkflowTemplate, for
+                                                  spec.arguments.artifacts
+                                                type: string
                                               from:
                                                 description: From allows an artifact
                                                   to reference an artifact from a
@@ -25530,6 +25566,11 @@ spec:
                                 deleted:
                                   description: Has this been deleted?
                                   type: boolean
+                                description:
+                                  description: Description is informational only;
+                                    the UI shows it only when submitting a WorkflowTemplate,
+                                    for spec.arguments.artifacts
+                                  type: string
                                 from:
                                   description: From allows an artifact to reference
                                     an artifact from a previous step
@@ -28330,6 +28371,11 @@ spec:
                               deleted:
                                 description: Has this been deleted?
                                 type: boolean
+                              description:
+                                description: Description is informational only; the
+                                  UI shows it only when submitting a WorkflowTemplate,
+                                  for spec.arguments.artifacts
+                                type: string
                               from:
                                 description: From allows an artifact to reference
                                   an artifact from a previous step
@@ -29735,6 +29781,11 @@ spec:
                               deleted:
                                 description: Has this been deleted?
                                 type: boolean
+                              description:
+                                description: Description is informational only; the
+                                  UI shows it only when submitting a WorkflowTemplate,
+                                  for spec.arguments.artifacts
+                                type: string
                               from:
                                 description: From allows an artifact to reference
                                   an artifact from a previous step
@@ -31097,6 +31148,11 @@ spec:
                                 deleted:
                                   description: Has this been deleted?
                                   type: boolean
+                                description:
+                                  description: Description is informational only;
+                                    the UI shows it only when submitting a WorkflowTemplate,
+                                    for spec.arguments.artifacts
+                                  type: string
                                 from:
                                   description: From allows an artifact to reference
                                     an artifact from a previous step
@@ -35712,6 +35768,11 @@ spec:
                                       deleted:
                                         description: Has this been deleted?
                                         type: boolean
+                                      description:
+                                        description: Description is informational
+                                          only; the UI shows it only when submitting
+                                          a WorkflowTemplate, for spec.arguments.artifacts
+                                        type: string
                                       from:
                                         description: From allows an artifact to reference
                                           an artifact from a previous step
@@ -37041,6 +37102,11 @@ spec:
                                             deleted:
                                               description: Has this been deleted?
                                               type: boolean
+                                            description:
+                                              description: Description is informational
+                                                only; the UI shows it only when submitting
+                                                a WorkflowTemplate, for spec.arguments.artifacts
+                                              type: string
                                             from:
                                               description: From allows an artifact
                                                 to reference an artifact from a previous

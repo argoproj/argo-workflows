@@ -128,6 +128,10 @@ export interface Artifact {
      */
     name: string;
     /**
+     * Description is informational only; the UI shows it only when submitting a WorkflowTemplate, for spec.arguments.artifacts
+     */
+    description?: string;
+    /**
      * Path is the container path to the artifact
      */
     path?: string;
