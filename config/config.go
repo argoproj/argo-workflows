@@ -61,8 +61,9 @@ type Config struct {
 	// by default.
 	MetricsConfig MetricsConfig `json:"metricsConfig,omitzero"`
 
-	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
-	// as metrics by default, but can be overridden using this config.
+	// TelemetryConfig configured a separate telemetry endpoint in v3.5 and earlier.
+	//
+	// Deprecated: The separate telemetry endpoint was removed in v3.6, this field is ignored. Use MetricsConfig instead.
 	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitzero"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time

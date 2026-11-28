@@ -256,13 +256,12 @@ data:
     # DEPRECATED: Legacy metrics are now removed, this field is ignored
     disableLegacy: false
 
-  # telemetryConfig controls the path and port for prometheus telemetry. Telemetry is enabled and emitted in the same endpoint
-  # as metrics by default, but can be overridden using this config.
+  # DEPRECATED: The separate telemetry endpoint was removed in v3.6, telemetryConfig is ignored.
+  # The controller logs a warning when it is set. Use metricsConfig instead.
   telemetryConfig: |
     enabled: true
     path: /telemetry
     port: 8080
-    secure: true  # Use a self-signed cert for TLS, default false
 
   # enable persistence using postgres
   persistence: |
