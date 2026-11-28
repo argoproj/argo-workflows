@@ -37,16 +37,17 @@ type OffloadNodeStatusRepo interface {
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(ctx context.Context, log logging.Logger, sessionProxy *sqldb.SessionProxy, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
+func NewOffloadNodeStatusRepo(ctx context.Context, log logging.Logger, sessionProxy *sqldb.SessionProxy, clusterName, instanceID, tableName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
 	ttl := env.LookupEnvDurationOr(ctx, "OFFLOAD_NODE_STATUS_TTL", 5*time.Minute)
 	log.WithField("ttl", ttl).Debug(ctx, "Node status offloading config")
-	return &nodeOffloadRepo{sessionProxy: sessionProxy, clusterName: clusterName, tableName: tableName, ttl: ttl, log: log}, nil
+	return &nodeOffloadRepo{sessionProxy: sessionProxy, clusterName: clusterName, instanceID: instanceID, tableName: tableName, ttl: ttl, log: log}, nil
 }
 
 type nodesRecord struct {
-	ClusterName string `db:"clustername"`
+	ClusterName string  `db:"clustername"`
+	InstanceID  *string `db:"instanceid"`
 	UUIDVersion
 	Namespace string `db:"namespace"`
 	Nodes     string `db:"nodes"`
@@ -55,6 +56,7 @@ type nodesRecord struct {
 type nodeOffloadRepo struct {
 	sessionProxy *sqldb.SessionProxy
 	clusterName  string
+	instanceID   string
 	tableName    string
 	// time to live - at what ttl an offload becomes old
 	ttl time.Duration
@@ -84,6 +86,7 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 
 	record := &nodesRecord{
 		ClusterName: wdc.clusterName,
+		InstanceID:  &wdc.instanceID,
 		UUIDVersion: UUIDVersion{
 			UID:     uid,
 			Version: version,
@@ -228,6 +231,7 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(ctx context.Context, namespace strin
 			From(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(namespaceEqual(namespace)).
+			And(wdc.instanceIDEqual()).
 			And(wdc.oldOffload()).
 			All(&records)
 		if err != nil {
@@ -305,6 +309,13 @@ func (wdc *nodeOffloadRepo) DeleteIfOld(ctx context.Context, uid, version string
 		logCtx.WithField("rowsAffected", rowsAffected).Debug(ctx, "Conditionally deleted old offloaded nodes")
 		return nil
 	})
+}
+
+// instanceIDEqual limits GC to records written by this controller instance, so that controllers with different
+// instance IDs sharing a database and cluster name do not delete each other's live records. Records written before
+// the instanceid column existed are NULL and are still collected by every controller.
+func (wdc *nodeOffloadRepo) instanceIDEqual() db.LogicalExpr {
+	return db.Or(db.Cond{"instanceid": wdc.instanceID}, db.Cond{"instanceid IS": nil})
 }
 
 func (wdc *nodeOffloadRepo) oldOffload() string {

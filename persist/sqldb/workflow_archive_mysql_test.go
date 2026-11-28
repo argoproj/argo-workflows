@@ -27,6 +27,12 @@ import (
 // setupMySQLArchiveTest starts a MySQL or MariaDB container, runs migrations, and returns a WorkflowArchive.
 func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v usqldb.MySQLVariant) WorkflowArchive {
 	t.Helper()
+	return NewWorkflowArchive(setupMySQLSessionProxy(ctx, t, v), "test", "", instanceid.NewService(""))
+}
+
+// setupMySQLSessionProxy starts a MySQL or MariaDB container, runs migrations, and returns a SessionProxy.
+func setupMySQLSessionProxy(ctx context.Context, t *testing.T, v usqldb.MySQLVariant) *usqldb.SessionProxy {
+	t.Helper()
 
 	c, err := testmysql.Run(ctx,
 		v.Image,
@@ -73,7 +79,7 @@ func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v usqldb.MySQLVari
 
 	t.Cleanup(func() { proxy.Close() })
 
-	return NewWorkflowArchive(proxy, "test", "", instanceid.NewService(""))
+	return proxy
 }
 
 // TestMySQLListWorkflows verifies that JSON_EXTRACT/JSON_UNQUOTE queries in
