@@ -163,7 +163,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                             workflow={w}
                                             displayISOFormatCreation={storedDisplayISOFormatCreation}
                                             displayISOFormatNextScheduled={storedDisplayISOFormatNextScheduled}
-                                            key={`{w.metadata.namespace}/${w.metadata.name}`}
+                                            key={`${w.metadata.namespace}/${w.metadata.name}`}
                                         />
                                     );
                                 })}
