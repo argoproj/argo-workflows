@@ -1,0 +1,100 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: azure-vm-lifecycle
+spec:
+  entrypoint: main
+  nodeSelector:
+    kubernetes.io/os: linux
+  arguments:
+    parameters:
+      - name: subscription-id
+        value: ""
+      - name: resource-group
+        value: ""
+      - name: vm-name
+        value: "WinSrv22"
+      - name: location
+        value: "eastus"
+      - name: vm-size
+        value: "Standard_D4s_v3"
+      - name: image-publisher
+        value: "MicrosoftWindowsServer"
+      - name: image-offer
+        value: "WindowsServer"
+      - name: image-sku
+        value: "2022-Datacenter"
+      - name: image-version
+        value: "latest"
+      - name: vnet-name
+        value: ""
+      - name: subnet-name
+        value: ""
+      - name: os-disk-size-gb
+        value: "256"
+      - name: admin-username
+        value: "tester"
+
+  templates:
+    - name: main
+      steps:
+        - - name: execute-azure-vm-create
+            templateRef:
+              name: azure-vm-create
+              template: main
+            arguments:
+              parameters:
+                - name: subscription-id
+                  value: "{{workflow.parameters.subscription-id}}"
+                - name: resource-group
+                  value: "{{workflow.parameters.resource-group}}"
+                - name: vm-name
+                  value: "{{workflow.parameters.vm-name}}"
+                - name: location
+                  value: "{{workflow.parameters.location}}"
+                - name: vm-size
+                  value: "{{workflow.parameters.vm-size}}"
+                - name: image-publisher
+                  value: "{{workflow.parameters.image-publisher}}"
+                - name: image-offer
+                  value: "{{workflow.parameters.image-offer}}"
+                - name: image-sku
+                  value: "{{workflow.parameters.image-sku}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: vnet-name
+                  value: "{{workflow.parameters.vnet-name}}"
+                - name: subnet-name
+                  value: "{{workflow.parameters.subnet-name}}"
+                - name: os-disk-size-gb
+                  value: "{{workflow.parameters.os-disk-size-gb}}"
+                - name: admin-username
+                  value: "{{workflow.parameters.admin-username}}"
+
+        - - name: execute-install-python-ansible
+            templateRef:
+              name: install-python-ansible
+              template: main
+            arguments:
+              parameters:
+                - name: subscription-id
+                  value: "{{workflow.parameters.subscription-id}}"
+                - name: resource-group
+                  value: "{{workflow.parameters.resource-group}}"
+                - name: vm-name
+                  value: "{{workflow.parameters.vm-name}}"
+                - name: admin-username
+                  value: "{{workflow.parameters.admin-username}}"
+
+        - - name: execute-azure-vm-delete
+            templateRef:
+              name: azure-vm-delete
+              template: main
+            arguments:
+              parameters:
+                - name: subscription-id
+                  value: "{{workflow.parameters.subscription-id}}"
+                - name: resource-group
+                  value: "{{workflow.parameters.resource-group}}"
+                - name: vm-name
+                  value: "{{workflow.parameters.vm-name}}"

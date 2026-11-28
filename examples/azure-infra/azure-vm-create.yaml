@@ -1,0 +1,126 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: azure-vm-create
+spec:
+  nodeSelector:
+    kubernetes.io/os: linux
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: subscription-id
+        value: ""
+      - name: resource-group
+        value: ""
+      - name: vm-name
+        value: "WinSrv22"
+      - name: location
+        value: "eastus"
+      - name: vm-size
+        value: "Standard_D4s_v3"
+      - name: image-publisher
+        value: "MicrosoftWindowsServer"
+      - name: image-offer
+        value: "WindowsServer"
+      - name: image-sku
+        value: "2022-Datacenter"
+      - name: image-version
+        value: "latest"
+      - name: vnet-name
+        value: ""
+      - name: subnet-name
+        value: ""
+      - name: os-disk-size-gb
+        value: "256"
+      - name: admin-username
+        value: "tester"
+
+  templates:
+    - name: main
+      steps:
+        - - name: retrieve-secrets
+            templateRef:
+              name: retrieve-secrets
+              template: retrieve-secrets
+        - - name: create-vm
+            template: create-vm
+            arguments:
+              parameters:
+                - name: admin-password
+                  value: "{{steps.retrieve-secrets.outputs.parameters.admin-password}}"
+                - name: client-id
+                  value: "{{steps.retrieve-secrets.outputs.parameters.client-id}}"
+                - name: client-secret
+                  value: "{{steps.retrieve-secrets.outputs.parameters.client-secret}}"
+                - name: tenant-id
+                  value: "{{steps.retrieve-secrets.outputs.parameters.tenant-id}}"
+                - name: subscription-id
+                  value: "{{workflow.parameters.subscription-id}}"
+                - name: resource-group
+                  value: "{{workflow.parameters.resource-group}}"
+                - name: vm-name
+                  value: "{{workflow.parameters.vm-name}}"
+                - name: location
+                  value: "{{workflow.parameters.location}}"
+                - name: vm-size
+                  value: "{{workflow.parameters.vm-size}}"
+                - name: image-publisher
+                  value: "{{workflow.parameters.image-publisher}}"
+                - name: image-offer
+                  value: "{{workflow.parameters.image-offer}}"
+                - name: image-sku
+                  value: "{{workflow.parameters.image-sku}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: vnet-name
+                  value: "{{workflow.parameters.vnet-name}}"
+                - name: subnet-name
+                  value: "{{workflow.parameters.subnet-name}}"
+                - name: os-disk-size-gb
+                  value: "{{workflow.parameters.os-disk-size-gb}}"
+                - name: admin-username
+                  value: "{{workflow.parameters.admin-username}}"
+                - name: nsg-name
+                  value: "{{workflow.parameters.vm-name}}-nsg"
+
+    - name: create-vm
+      nodeSelector:
+        kubernetes.io/os: linux
+      inputs:
+        parameters:
+          - name: admin-password
+          - name: client-id
+          - name: client-secret
+          - name: tenant-id
+          - name: subscription-id
+          - name: resource-group
+          - name: vm-name
+          - name: location
+          - name: vm-size
+          - name: image-publisher
+          - name: image-offer
+          - name: image-sku
+          - name: image-version
+          - name: vnet-name
+          - name: subnet-name
+          - name: os-disk-size-gb
+          - name: admin-username
+          - name: nsg-name
+      container:
+        image: bitnami/azure-cli:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            az login --service-principal -u {{inputs.parameters.client-id}} -p {{inputs.parameters.client-secret}} --tenant {{inputs.parameters.tenant-id}} &&
+            az vm create \
+              --subscription {{inputs.parameters.subscription-id}} \
+              --resource-group {{inputs.parameters.resource-group}} \
+              --name {{inputs.parameters.vm-name}} \
+              --location {{inputs.parameters.location}} \
+              --size {{inputs.parameters.vm-size}} \
+              --image "{{inputs.parameters.image-publisher}}:{{inputs.parameters.image-offer}}:{{inputs.parameters.image-sku}}:{{inputs.parameters.image-version}}" \
+              --admin-username {{inputs.parameters.admin-username}} \
+              --admin-password {{inputs.parameters.admin-password}} \
+              --vnet-name {{inputs.parameters.vnet-name}} \
+              --subnet {{inputs.parameters.subnet-name}} \
+              --os-disk-size-gb {{inputs.parameters.os-disk-size-gb}} 
