@@ -167,7 +167,7 @@ data:
 | `ARGO_ARTIFACT_CONTENT_SECURITY_POLICY`    | `string` | `sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'` | `Content-Security-Policy` header set on responses from the artifact download endpoints. |
 | `ARGO_ARTIFACT_SERVER`                     | `bool`   | `true`  | Enable [Workflow Archive](workflow-archive.md) endpoints
 | `ARGO_ARTIFACT_X_FRAME_OPTIONS`            | `string` | `SAMEORIGIN` | `X-Frame-Options` header set on responses from the artifact download endpoints.                                     |
-| `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
+| `ARGO_PPROF`                               | `bool`   | `false` | Serve [pprof profiles](#profiling-argo-server) on `127.0.0.1:6060` inside the Argo Server pod. |
 | `ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES`    | `int`    | `1073741824` | Maximum total request body size accepted by the input artifact upload endpoint, in bytes. Requests over this size receive `413 Request Entity Too Large`.  |
 | `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
 | `ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL`       | `time.Duration` | `1m` | How long a successful `SelfSubjectReview` of a `client` auth mode token is remembered before the API server is consulted again. `0` disables the cache. |
@@ -223,3 +223,19 @@ spec:
           ports:
           # ...
 ```
+
+### Profiling Argo Server
+
+With `ARGO_PPROF=true`, forward the profiling port to your machine:
+
+```sh
+kubectl -n argo port-forward deployment/argo-server 16060:6060
+```
+
+While the port-forward is running, collect a heap profile from another terminal:
+
+```sh
+go tool pprof http://127.0.0.1:16060/debug/pprof/heap
+```
+
+If the API or another listener in the pod already occupies `127.0.0.1:6060`, Argo Server logs a warning and keeps serving the API without profiling.
