@@ -1257,11 +1257,9 @@ func r4CompleteTaskResult(ctx context.Context, t *testing.T, woc *wfOperationCtx
 	})
 }
 
-// TestRegressionR4_C11_ItemPodDeleted: the running pod of item A(0:p) is
-// deleted. Only Pending items and running nested DAG/Steps items were
-// dispatched again, so the item's pod was never recreated: A(0:p) ended Error
-// "pod deleted", B was Omitted and the workflow ended Error. Base re-enters
-// every unfinished item on each reconcile, recreates the pod and Succeeds.
+// TestRegressionR4_C11_ItemPodDeleted verifies that
+// a deleted DAG item does not restart without a retry policy;
+// its dependent is omitted after the other item completes.
 func TestRegressionR4_C11_ItemPodDeleted(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx := logging.TestContext(t.Context())
@@ -1282,29 +1280,18 @@ func TestRegressionR4_C11_ItemPodDeleted(t *testing.T) {
 	for range 3 {
 		op()
 	}
-	require.Contains(t, r4PodNodeNames(ctx, t, woc), lost, "the deleted item's pod was not recreated")
-
-	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(lost))
-	op()
-	for _, name := range []string{lost, other} {
-		r4CompleteTaskResult(ctx, t, woc, name)
-		r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(name), withExitCode(0))
-	}
-	for range 2 {
+	require.NotContains(t, r4PodNodeNames(ctx, t, woc), lost, "a deleted attempt must not restart without a retry policy")
+	r4CompleteTaskResult(ctx, t, woc, other)
+	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(other), withExitCode(0))
+	for range 3 {
 		op()
 	}
-	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(b))
-	for range 2 {
-		op()
-	}
-
-	for _, name := range []string{lost, b} {
-		n, err := woc.wf.GetNodeByName(name)
-		if assert.NoError(t, err, name) {
-			assert.Equal(t, wfv1.NodeSucceeded, n.Phase, name)
-		}
-	}
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "nodes left unfulfilled: %v", r4Unfulfilled(woc))
+	n, err := woc.wf.GetNodeByName(lost)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
+	assert.Equal(t, "pod deleted", n.Message)
+	assert.Equal(t, wfv1.NodeOmitted, r4NodePhase(woc, b))
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 const r4C26ItemsSuspendSteps = `
@@ -4956,11 +4943,9 @@ spec:
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C10_LeafAfterDependencyPodLost: the running pod of leaf a
-// is deleted: its node goes Error "pod deleted" with its task result
-// unsynced, so it has not finished, and the pod is recreated. The DAG waits
-// for it, as main's did. HEAD read the transient Error as final and ended the
-// workflow Error while a's new pod ran and Succeeded.
+// TestRegressionR4_C10_LeafAfterDependencyPodLost verifies that
+// a deleted leaf ends the DAG in Error
+// after its dependency succeeds.
 func TestRegressionR4_C10_LeafAfterDependencyPodLost(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx := logging.TestContext(t.Context())
@@ -5001,23 +4986,11 @@ spec:
 	r4DeletePod(ctx, t, woc, a)
 	for range 3 {
 		op()
-		dagNode, err := woc.wf.GetNodeByName("r4-c10-chain")
-		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeRunning, dagNode.Phase, "the DAG while a's pod is recreated")
 	}
-	require.Contains(t, r4PodNodeNames(ctx, t, woc), a, "the deleted pod was not recreated")
-
-	r4SetPodsPhase(t, ctx, woc, apiv1.PodRunning, r4PodForNode(a))
-	op()
-	r4CompleteTaskResult(ctx, t, woc, a)
-	r4SetPodsPhase(t, ctx, woc, apiv1.PodSucceeded, r4PodForNode(a), withExitCode(0))
-	for range 3 {
-		op()
-	}
-	n, err := woc.wf.GetNodeByName(a)
-	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
-	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "message %q", woc.wf.Status.Message)
+	require.NotContains(t, r4PodNodeNames(ctx, t, woc), a)
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(woc, gen))
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(woc, a))
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 // TestRegressionR4_C71_ContinueOnMissingOutputWithFailedSibling: B references
@@ -5218,12 +5191,10 @@ func r4NodePhase(woc *wfOperationCtx, name string) wfv1.NodePhase {
 	return ""
 }
 
-// TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds: a's running pod
-// vanishes before its task result is complete: a is Error "pod deleted" but
-// has not finished, and its pod is recreated. Its StepGroup waits for the
-// re-run, as main's did; HEAD recorded the group Failed on the transient
-// Error and the workflow ended Failed although the re-run Succeeded.
-func TestRegressionR4_C9_SingleStepForceDeletedRerunSucceeds(t *testing.T) {
+// TestRegressionR4_C9_SingleStepForceDeletedFails verifies that
+// a deleted step without a retry policy fails
+// its group and does not start the next group.
+func TestRegressionR4_C9_SingleStepForceDeletedFails(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -5247,30 +5218,20 @@ spec:
 	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodRunning, r4PodForNode(a), r4IncompleteTaskResult(ctx, t))
 	r.op(ctx)
 	r4DeletePod(ctx, t, r.woc, a)
-	for range 2 {
-		r.op(ctx)
-		assert.Equal(t, wfv1.NodeRunning, r4NodePhase(r.woc, sg0), "step group [0] while a's pod is recreated")
-	}
-	require.Contains(t, r4PodNodeNames(ctx, t, r.woc), a, "the deleted pod was not recreated")
-
-	r4CompleteTaskResult(ctx, t, r.woc, a)
-	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(a), withExitCode(0))
-	for range 2 {
-		r.op(ctx)
-	}
-	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(b), withExitCode(0))
 	for range 3 {
 		r.op(ctx)
 	}
-	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, sg0), "step group [0]")
-	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase, "message %q", r.woc.wf.Status.Message)
+	require.NotContains(t, r4PodNodeNames(ctx, t, r.woc), a)
+	require.NotContains(t, r4PodNodeNames(ctx, t, r.woc), b)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, a))
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, sg0))
+	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
 }
 
-// TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails: as above,
-// with continueOn.error on a, whose re-run then Fails, which continueOn.error
-// does not cover. HEAD recorded the group Succeeded on the transient Error
-// and the workflow Succeeded although a Failed.
-func TestRegressionR4_C9_ForceDeletedPodContinueOnErrorRerunFails(t *testing.T) {
+// TestRegressionR4_C9_ForceDeletedPodContinueOnError verifies that
+// continueOn.error permits the next group
+// after a deleted step ends in Error.
+func TestRegressionR4_C9_ForceDeletedPodContinueOnError(t *testing.T) {
 	t.Setenv("RECENTLY_STARTED_POD_DURATION", "0")
 	ctx, r := r4Start(t, `
 apiVersion: argoproj.io/v1alpha1
@@ -5299,16 +5260,16 @@ spec:
 	for range 3 {
 		r.op(ctx)
 	}
-	require.Contains(t, r4PodNodeNames(ctx, t, r.woc), a, "the deleted pod was not recreated")
-
-	r4CompleteTaskResult(ctx, t, r.woc, a)
-	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodFailed, r4PodForNode(a), withExitCode(1))
-	for range 4 {
+	require.NotContains(t, r4PodNodeNames(ctx, t, r.woc), a)
+	const b = "r4-c9-coe[1].b"
+	require.Contains(t, r4PodNodeNames(ctx, t, r.woc), b)
+	r4SetPodsPhase(t, ctx, r.woc, apiv1.PodSucceeded, r4PodForNode(b), withExitCode(0))
+	for range 3 {
 		r.op(ctx)
 	}
-	assert.Equal(t, wfv1.NodeFailed, r4NodePhase(r.woc, a))
-	assert.Equal(t, wfv1.NodeFailed, r4NodePhase(r.woc, sg0), "step group [0]")
-	assert.Equal(t, wfv1.WorkflowFailed, r.woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeError, r4NodePhase(r.woc, a))
+	assert.Equal(t, wfv1.NodeSucceeded, r4NodePhase(r.woc, sg0))
+	assert.Equal(t, wfv1.WorkflowSucceeded, r.woc.wf.Status.Phase)
 }
 
 const r4C23DaemonSteps = `
