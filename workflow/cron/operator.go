@@ -16,6 +16,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 
@@ -54,6 +55,12 @@ type cronWfOperationCtx struct {
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	log             logging.Logger
 	metrics         *metrics.Metrics
+	// cronWfIndexer is the informer's index of live CronWorkflows. run
+	// consults it before submitting so a job that fires after its
+	// CronWorkflow was deleted - queued as a tombstone delete during a
+	// watch gap, not yet processed (#17442) - does not submit an orphan
+	// Workflow. A nil indexer disables the check.
+	cronWfIndexer cache.Indexer
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
 	//nolint: containedctx
@@ -63,6 +70,7 @@ type cronWfOperationCtx struct {
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults namespacedefaults.Func,
+	cronWfIndexer cache.Indexer,
 ) *cronWfOperationCtx {
 	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
@@ -77,7 +85,8 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 			"workflow":  cronWorkflow.Name,
 			"namespace": cronWorkflow.Namespace,
 		}),
-		metrics: metrics,
+		metrics:       metrics,
+		cronWfIndexer: cronWfIndexer,
 		// inferScheduledTime returns an inferred scheduled time based on the current time and only works if it is called
 		// within 59 seconds of the scheduled time. Here it acts as a placeholder until it is replaced by a similar
 		// function that returns the last scheduled time deterministically from the cron engine. Since we are only able
@@ -95,6 +104,26 @@ func (woc *cronWfOperationCtx) Run() {
 }
 
 func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Time) {
+	// Backstop for deletes that arrive as tombstones during a watch gap
+	// (#17442): the scheduled job is only removed once the queued delete key
+	// is processed, so a job firing in that window would otherwise submit a
+	// Workflow owned by a CronWorkflow that no longer exists - Kubernetes
+	// garbage-collects it, but not before the workflow controller may have
+	// started its pods. The informer drops an object only once it is really
+	// gone, so if it is not in the index, do not submit. An indexer error
+	// keeps the old behaviour: submit rather than skip on a failure that
+	// cannot be interpreted. This runs before persistUpdate so a skipped run
+	// does not patch a CronWorkflow that has been deleted.
+	if woc.cronWfIndexer != nil {
+		key := woc.cronWf.Namespace + "/" + woc.cronWf.Name
+		if _, exists, err := woc.cronWfIndexer.GetByKey(key); err != nil {
+			woc.log.WithError(err).Warn(ctx, "Failed to look up CronWorkflow in the informer, running anyway")
+		} else if !exists {
+			woc.log.Info(ctx, "CronWorkflow is no longer in the informer, skipping run")
+			return
+		}
+	}
+
 	defer woc.persistUpdate(ctx)
 
 	woc.log.Info(ctx, "Running")

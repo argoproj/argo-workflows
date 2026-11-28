@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: tombstone-repro
+  namespace: argo
+spec:
+  schedules:
+    - "* * * * *"
+  workflowSpec:
+    entrypoint: main
+    templates:
+      - name: main
+        container:
+          image: busybox
+          command: [echo, hello]
