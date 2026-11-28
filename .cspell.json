@@ -22,7 +22,7 @@
   ],
   "ignoreRegExpList": [
     "/```[\\s\\S]*?```/",
-    "/`[^`]+`/"
+    "/`[^`\\n]+`/"
   ],
   "ignorePaths": [
     "docs/fields.md",
@@ -42,6 +42,7 @@
   "words": [
     "alibabacloud",
     "aliyuncs",
+    "anded",
     "Anthos",
     "apiclient",
     "appr",
@@ -57,7 +58,9 @@
     "cronworkflows",
     "cwft",
     "daemoned",
+    "distroless",
     "embeddoc",
+    "errgroup",
     "featuregen",
     "ffsv",
 	"gcflags",
@@ -67,7 +70,10 @@
     "govaluate",
     "grpcurl",
     "HEALTHZ",
+    "heartbeated",
+    "infobox",
     "instanceid",
+    "Invocators",
     "Kaniko",
     "Killercoda",
     "klog",
@@ -76,12 +82,18 @@
     "maxworkflowcount",
     "mypassword",
     "nonroot",
+    "optimisation",
+    "parameterizing",
     "podpriority",
     "promtail",
+    "recompiles",
     "robfig",
+    "rollouts",
+    "RRSA",
     "SAMEORIGIN",
     "secretkey",
     "Siri",
+    "SPNEGO",
     "STEPNAME",
     "strconv",
     "STRFTIMECHAR",
@@ -94,6 +106,7 @@
     "workflowkey",
     "workflowtemplate",
     "workflowtemplates",
+    "workqueue",
     "zstd",
     "pgsty"
   ]
