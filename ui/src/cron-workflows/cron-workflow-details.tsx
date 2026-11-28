@@ -9,11 +9,13 @@ import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {openLinkWithKey} from '../shared/components/links';
 import {Loading} from '../shared/components/loading';
+import {PaginationPanel} from '../shared/components/pagination-panel';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {historyUrl} from '../shared/history';
 import * as models from '../shared/models';
 import {CronWorkflow, Link, Workflow} from '../shared/models';
+import {Pagination, parseLimit} from '../shared/pagination';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {useEditableObject} from '../shared/use-editable-object';
@@ -36,6 +38,9 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [tab, setTab] = useState(queryParams.get('tab'));
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
+    const [pagination, setPagination] = useState<Pagination>({
+        limit: parseLimit(queryParams.get('limit')) || 50
+    });
 
     const {object: cronWorkflow, setObject: setCronWorkflow, resetObject: resetCronWorkflow, serialization, edited, lang, setLang} = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
@@ -44,6 +49,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
         useQueryParams(history, p => {
             setSidePanel(p.get('sidePanel'));
             setTab(p.get('tab'));
+            setPagination(prev => ({...prev, limit: parseLimit(p.get('limit')) || prev.limit}));
         }),
         [history]
     );
@@ -58,10 +64,11 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                 namespace,
                 name,
                 sidePanel,
-                tab
+                tab,
+                limit: pagination.limit ? pagination.limit.toString() : undefined
             })
         );
-    }, [namespace, name, sidePanel, tab]);
+    }, [namespace, name, sidePanel, tab, pagination.limit]);
 
     useEffect(() => {
         services.cronWorkflows
@@ -73,13 +80,13 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
 
     useEffect(() => {
         (async () => {
-            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], {limit: 50});
+            const workflowList = await services.workflows.list(namespace, null, [`${models.labels.cronWorkflow}=${name}`], pagination);
             const workflowsInfo = await services.info.getInfo();
 
             setWorkflows(workflowList.items);
             setColumns(workflowsInfo.columns);
         })();
-    }, []);
+    }, [pagination.limit]);
 
     useCollectEvent('openedCronWorkflowDetails');
 
@@ -231,7 +238,10 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                             <p> You can create new cron workflows here or using the CLI. </p>
                         </ZeroState>
                     ) : (
-                        <WorkflowDetailsList workflows={workflows} columns={columns} />
+                        <>
+                            <WorkflowDetailsList workflows={workflows} columns={columns} />
+                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={workflows.length} />
+                        </>
                     )}
                 </>
             </>
