@@ -32,3 +32,19 @@ func TestExpand(t *testing.T) {
 		})
 	}
 }
+
+func TestExpandParentChildWithInterveningSibling(t *testing.T) {
+	// "a-c" contains a hyphen, which sorts between "a" and "a.b". The parent
+	// "a" still has a child ("a.b") and must be dropped, otherwise Expand tries
+	// to make "a" both a scalar and a nested map and silently drops the child.
+	before := map[string]any{
+		"a":   3,
+		"a-c": 4,
+		"a.b": 1,
+	}
+	after := Expand(before)
+	assert.Equal(t, map[string]any{
+		"a":   map[string]any{"b": 1},
+		"a-c": 4,
+	}, after)
+}
